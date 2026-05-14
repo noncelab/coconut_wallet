@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -31,7 +32,8 @@ class FaucetRequestBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<FaucetRequestBottomSheet> createState() => _FaucetRequestBottomSheetState();
+  State<FaucetRequestBottomSheet> createState() =>
+      _FaucetRequestBottomSheetState();
 }
 
 enum _AvailabilityState { checking, bad, good, dailyLimitReached }
@@ -56,7 +58,10 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   bool _isRequesting = false;
 
   bool canRequestFaucet() =>
-      _state == _AvailabilityState.good && _requestAmount > 0 && !_isErrorInAddress && !_isRequesting;
+      _state == _AvailabilityState.good &&
+      _requestAmount > 0 &&
+      !_isErrorInAddress &&
+      !_isRequesting;
 
   @override
   void initState() {
@@ -68,7 +73,9 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
     textController.text = _walletAddress;
     _isRequesting = widget.isRequesting;
 
-    var requestHistory = SharedPrefsRepository().getFaucetHistoryWithId(_walletId);
+    var requestHistory = SharedPrefsRepository().getFaucetHistoryWithId(
+      _walletId,
+    );
     _todayRequestCount = requestHistory.isToday ? requestHistory.count : 0;
 
     if (_todayRequestCount >= kMaxFaucetRequestCount) {
@@ -87,8 +94,14 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {
-                _requestAmount = (_todayRequestCount == 0) ? response.maxLimit : response.minLimit;
-                _state = (_requestAmount != 0) ? _AvailabilityState.good : _AvailabilityState.bad;
+                _requestAmount =
+                    (_todayRequestCount == 0)
+                        ? response.maxLimit
+                        : response.minLimit;
+                _state =
+                    (_requestAmount != 0)
+                        ? _AvailabilityState.good
+                        : _AvailabilityState.bad;
               });
             }
           });
@@ -133,7 +146,12 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                         Navigator.pop(context);
                       },
                     ),
-                    Text(t.faucet_request_bottom_sheet.title, style: CoconutTypography.body1_16),
+                    Text(
+                      t.faucet_request_bottom_sheet.title,
+                      style: CoconutTypography.body1_16.setColor(
+                        context.coconutColors.primaryText,
+                      ),
+                    ),
                     Visibility(
                       visible: false,
                       maintainSize: true,
@@ -142,7 +160,10 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                       maintainSemantics: false,
                       maintainInteractivity: false,
                       child: IconButton(
-                        icon: const Icon(Icons.close, color: CoconutColors.white),
+                        icon: const Icon(
+                          Icons.close,
+                          color: CoconutColors.white,
+                        ),
                         onPressed: () {
                           Navigator.pop(context);
                         },
@@ -158,12 +179,21 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                   children: [
                     const SizedBox(height: 30),
                     MediaQuery(
-                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                      child: Text(t.faucet_request_bottom_sheet.recipient, style: CoconutTypography.body1_16_Bold),
+                      data: MediaQuery.of(
+                        context,
+                      ).copyWith(textScaler: const TextScaler.linear(1.0)),
+                      child: Text(
+                        t.faucet_request_bottom_sheet.recipient,
+                        style: CoconutTypography.body1_16_Bold.setColor(
+                          context.coconutColors.primaryText,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     MediaQuery(
-                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                      data: MediaQuery.of(
+                        context,
+                      ).copyWith(textScaler: const TextScaler.linear(1.0)),
                       child: CustomTextField(
                         controller: textController,
                         placeholder: t.faucet_request_bottom_sheet.placeholder,
@@ -171,13 +201,17 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                           _validateAddress(text.toLowerCase());
                         },
                         maxLines: 2,
-                        style: CoconutTypography.body1_16_Number,
+                        style: CoconutTypography.body1_16_Number.setColor(
+                          context.coconutColors.primaryText,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 2),
                     const SizedBox(height: 2),
                     MediaQuery(
-                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                      data: MediaQuery.of(
+                        context,
+                      ).copyWith(textScaler: const TextScaler.linear(1.0)),
                       child: Visibility(
                         visible: !_isErrorInAddress,
                         maintainSize: true,
@@ -188,8 +222,13 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: Text(
-                            t.faucet_request_bottom_sheet.my_address(name: _walletName, index: _walletIndex),
-                            style: CoconutTypography.body2_14_Number,
+                            t.faucet_request_bottom_sheet.my_address(
+                              name: _walletName,
+                              index: _walletIndex,
+                            ),
+                            style: CoconutTypography.body2_14_Number.setColor(
+                              context.coconutColors.primaryText,
+                            ),
                           ),
                         ),
                       ),
@@ -207,29 +246,46 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                   },
                   borderRadius: BorderRadius.circular(8.0),
                   padding: EdgeInsets.zero,
-                  color: canRequestFaucet() ? CoconutColors.white : CoconutColors.white.withValues(alpha: 0.3),
+                  color:
+                      canRequestFaucet()
+                          ? CoconutColors.white
+                          : CoconutColors.white.withValues(alpha: 0.3),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 12,
+                    ),
                     child:
                         _state == _AvailabilityState.checking
                             ? const SizedBox(
                               height: 28,
                               width: 28,
-                              child: CircularProgressIndicator(color: CoconutColors.white),
+                              child: CircularProgressIndicator(
+                                color: CoconutColors.white,
+                              ),
                             )
                             : Text(
                               _isRequesting
                                   ? t.faucet_request_bottom_sheet.requesting
-                                  : t.faucet_request_bottom_sheet.request_amount(
-                                    bitcoin: _requestAmount.toTrimmedString(),
-                                  ),
+                                  : t.faucet_request_bottom_sheet
+                                      .request_amount(
+                                        bitcoin:
+                                            _requestAmount.toTrimmedString(),
+                                      ),
                               style: CoconutTypography.body2_14
                                   .setColor(
                                     (canRequestFaucet())
                                         ? CoconutColors.black
-                                        : CoconutColors.black.withValues(alpha: 0.5),
+                                        : CoconutColors.black.withValues(
+                                          alpha: 0.5,
+                                        ),
                                   )
-                                  .merge(const TextStyle(letterSpacing: -0.1, fontWeight: FontWeight.w600)),
+                                  .merge(
+                                    const TextStyle(
+                                      letterSpacing: -0.1,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                             ),
                   ),
                 ),
@@ -238,7 +294,9 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
               if (_state == _AvailabilityState.bad) ...{
                 _buildWarningMessage(t.alert.faucet.no_test_bitcoin),
               } else if (_state == _AvailabilityState.dailyLimitReached) ...{
-                _buildWarningMessage(t.alert.faucet.try_again(count: _remainingTimeString)),
+                _buildWarningMessage(
+                  t.alert.faucet.try_again(count: _remainingTimeString),
+                ),
               } else if (_isErrorInAddress) ...{
                 _buildWarningMessage(t.alert.faucet.check_address),
               },
@@ -274,7 +332,11 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
 
   Future<void> _resetFaucetRecord() {
     return SharedPrefsRepository().saveFaucetHistory(
-      FaucetRecord(id: _walletId, dateTime: DateTime.now().millisecondsSinceEpoch, count: 0),
+      FaucetRecord(
+        id: _walletId,
+        dateTime: DateTime.now().millisecondsSinceEpoch,
+        count: 0,
+      ),
     );
   }
 
@@ -282,7 +344,12 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
     _walletAddress = address;
     textController.value = textController.value.copyWith(
       text: _walletAddress,
-      selection: TextSelection.collapsed(offset: textController.selection.baseOffset.clamp(0, _walletAddress.length)),
+      selection: TextSelection.collapsed(
+        offset: textController.selection.baseOffset.clamp(
+          0,
+          _walletAddress.length,
+        ),
+      ),
     );
 
     _isErrorInAddress = !_isValidAddress(address);
@@ -291,7 +358,10 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
 
   bool _isValidAddress(String address) {
     try {
-      return widget.walletProvider.containsAddress(widget.walletItem.id, address) &&
+      return widget.walletProvider.containsAddress(
+            widget.walletItem.id,
+            address,
+          ) &&
           WalletUtility.validateAddress(address);
     } catch (_) {
       return false;
@@ -307,7 +377,10 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   }
 
   Widget _buildWarningMessage(String message) {
-    return Text(message, style: CoconutTypography.body3_12.setColor(CoconutColors.red));
+    return Text(
+      message,
+      style: CoconutTypography.body3_12.setColor(CoconutColors.red),
+    );
   }
 
   @override

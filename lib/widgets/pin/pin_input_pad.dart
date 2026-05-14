@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -73,13 +74,20 @@ class PinInputPadState extends State<PinInputPad> {
                     widget.step == 0
                         ? IconButton(
                           onPressed: widget.onClosePressed,
-                          icon: const Icon(Icons.close, color: CoconutColors.white, size: 22),
+                          icon: const Icon(
+                            Icons.close,
+                            color: CoconutColors.white,
+                            size: 22,
+                          ),
                         )
                         : IconButton(
                           onPressed: widget.onBackPressed,
                           icon: SvgPicture.asset(
                             'assets/svg/back.svg',
-                            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                            colorFilter: const ColorFilter.mode(
+                              CoconutColors.white,
+                              BlendMode.srcIn,
+                            ),
                           ),
                         ),
               )
@@ -91,7 +99,13 @@ class PinInputPadState extends State<PinInputPad> {
           // initOptionVisible: 앱진입 핀체크 화면(true), 핀 설정 화면(false)
           // centerWidget: 앱진입 핀체크 화면(null), 핀 설정 화면(notNull)
           if (widget.initOptionVisible) const SizedBox(height: 60),
-          Text(widget.title, style: CoconutTypography.body1_16_Bold, textAlign: TextAlign.center),
+          Text(
+            widget.title,
+            style: CoconutTypography.body1_16_Bold.setColor(
+              context.coconutColors.primaryText,
+            ),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 20),
           SizedBox(
             height: 50,
@@ -100,7 +114,10 @@ class PinInputPadState extends State<PinInputPad> {
               children: List.generate(widget.pinLength, (index) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: PinBox(isSet: widget.pin.length > index, size: widget.pinLength == 4 ? null : 40),
+                  child: PinBox(
+                    isSet: widget.pin.length > index,
+                    size: widget.pinLength == 4 ? null : 40,
+                  ),
                 );
               }),
             ),
@@ -114,7 +131,9 @@ class PinInputPadState extends State<PinInputPad> {
               padding: const EdgeInsets.only(top: 16),
               child: Text(
                 widget.errorMessage,
-                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                style: CoconutTypography.body3_12.setColor(
+                  CoconutColors.hotPink,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -127,7 +146,10 @@ class PinInputPadState extends State<PinInputPad> {
               maintainState: true,
               child: Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: SizedBox(height: 40, child: widget.centerWidget ?? const SizedBox()),
+                child: SizedBox(
+                  height: 40,
+                  child: widget.centerWidget ?? const SizedBox(),
+                ),
               ),
             ),
           Expanded(
@@ -146,7 +168,10 @@ class PinInputPadState extends State<PinInputPad> {
                       _pinShuffleNumbers.map((key) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: KeyButton(keyValue: key, onKeyTap: widget.onKeyTap),
+                          child: KeyButton(
+                            keyValue: key,
+                            onKeyTap: widget.onKeyTap,
+                          ),
                         );
                       }).toList(),
                 ),
@@ -159,7 +184,9 @@ class PinInputPadState extends State<PinInputPad> {
                       },
                       child: Text(
                         t.forgot_password,
-                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray600),
+                        style: CoconutTypography.body2_14_Bold.setColor(
+                          CoconutColors.gray600,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ),

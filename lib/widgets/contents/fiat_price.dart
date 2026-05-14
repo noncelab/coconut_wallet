@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +26,7 @@ class _FiatPriceState extends State<FiatPrice> {
           return const SizedBox.shrink();
         }
 
-        final defaultStyle = CoconutTypography.body2_14_Number.copyWith(color: CoconutColors.gray500);
+        final defaultStyle = CoconutTypography.body2_14_Number.copyWith(color: context.coconutColors.secondaryText);
         final appliedStyle =
             widget.textStyle?.copyWith(color: widget.textColor ?? defaultStyle.color) ??
             defaultStyle.copyWith(color: widget.textColor ?? defaultStyle.color);

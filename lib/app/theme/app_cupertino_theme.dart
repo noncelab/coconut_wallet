@@ -1,10 +1,10 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/design_system/theme/coconut_theme_extension.dart';
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:flutter/cupertino.dart';
 
-CupertinoThemeData buildAppCupertinoTheme() {
+CupertinoThemeData buildAppCupertinoTheme({CoconutThemeVariant? variant}) {
   CoconutTheme.setTheme(Brightness.dark);
-  final tokens = CoconutThemeExtension.dark();
+  final tokens = resolveCoconutThemeExtension(variant: variant);
 
   return CupertinoThemeData(
     brightness: Brightness.dark,

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
@@ -206,7 +207,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
     final currentUnit = context.read<PreferenceProvider>().currentUnit;
 
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       resizeToAvoidBottomInset: false,
       appBar: CoconutAppBar.build(
         title: widget.title,

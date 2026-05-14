@@ -1,4 +1,4 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -50,12 +50,15 @@ class BottomActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: padding ?? EdgeInsets.only(left: 16.0, right: 16.0, bottom: MediaQuery.paddingOf(context).bottom + 16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Color.fromARGB(255, 29, 29, 29)],
-          stops: [0.0, 0.6],
+          colors: [
+            context.coconutColors.bottomActionBarBackground.withValues(alpha: 0.0),
+            context.coconutColors.bottomActionBarBackground,
+          ],
+          stops: const [0.0, 0.6],
         ),
       ),
       child: Padding(padding: const EdgeInsets.only(top: _gradientExtensionAboveChild), child: child),
@@ -141,8 +144,8 @@ class _BottomActionButtonState extends State<BottomActionButton> {
           : BottomActionButton.verticalHeight;
 
   Color get _foregroundColor {
-    if (!widget.enabled) return CoconutColors.gray600;
-    return _isPressed ? CoconutColors.gray400 : CoconutColors.white;
+    if (!widget.enabled) return context.coconutColors.tertiaryText;
+    return _isPressed ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
   }
 
   Widget _buildIcon() {

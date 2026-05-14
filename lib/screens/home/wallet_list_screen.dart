@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -126,7 +127,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   }
                 },
                 child: Scaffold(
-                  backgroundColor: CoconutColors.black,
+                  backgroundColor: context.coconutColors.background,
                   extendBodyBehindAppBar: true,
                   appBar: _buildAppBar(context),
                   body: SafeArea(
@@ -613,7 +614,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           signers: signers,
           walletImportSource: walletImportSource,
           currentUnit: currentUnit,
-          backgroundColor: CoconutColors.black,
+          backgroundColor: context.coconutColors.background,
           isPrimaryWallet: isFirstItem,
           isExcludeFromTotalBalance: isExludedFromTotalBalance,
           isEditMode: isEditMode,
@@ -743,7 +744,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                   title: t.wallet_list.bottom_sheet.hide_fiat_price,
                   subtitle: t.wallet_list.bottom_sheet.hide_fiat_price_description,
                   isVerticalSubtitle: true,
-                  backgroundColor: CoconutColors.black,
+                  backgroundColor: context.coconutColors.background,
                   onPressed: () {
                     viewModel.toggleWalletListFiatHidden();
                     vibrateExtraLight();

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/qrcode_info.dart';
@@ -19,11 +20,11 @@ class QrcodeBottomSheet extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
       child: Scaffold(
-        backgroundColor: CoconutColors.black,
+        backgroundColor: context.coconutColors.background,
         appBar: AppBar(
           title: Text(title ?? ''),
           centerTitle: true,
-          backgroundColor: CoconutColors.black,
+          backgroundColor: context.coconutColors.background,
           titleTextStyle: CoconutTypography.heading4_18,
           toolbarTextStyle: CoconutTypography.body3_12,
           leading: IconButton(

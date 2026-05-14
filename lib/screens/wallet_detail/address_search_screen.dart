@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -75,7 +76,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     final String? scannedAddress = await CommonBottomSheets.showBottomSheet_100(
       context: context,
       child: Scaffold(
-        backgroundColor: CoconutColors.black,
+        backgroundColor: context.coconutColors.background,
         appBar: CoconutAppBar.build(
           title: '',
           context: context,
@@ -161,10 +162,10 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
           child: Stack(
             children: [
               Scaffold(
-                backgroundColor: CoconutColors.black,
+                backgroundColor: context.coconutColors.background,
                 appBar: AppBar(
                   scrolledUnderElevation: 0,
-                  backgroundColor: CoconutColors.black,
+                  backgroundColor: context.coconutColors.background,
                   leading: IconButton(
                     icon: SvgPicture.asset(
                       'assets/svg/arrow-back.svg',

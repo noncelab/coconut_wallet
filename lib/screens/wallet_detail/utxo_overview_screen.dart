@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -235,7 +236,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     return CoconutAppBar.build(
       context: context,
       entireWidgetKey: _appBarKey,
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       customTitle: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 260),
         child: CoconutSegmentedControl(
@@ -264,7 +265,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       appBar: _buildAppBar(context),
       body: Consumer<UtxoTagProvider>(
         builder: (context, tagProvider, _) {

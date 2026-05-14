@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -16,11 +17,15 @@ class UtxoTagCrudScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoTagCrudViewModel>(
-      create: (context) => UtxoTagCrudViewModel(Provider.of<UtxoTagProvider>(context, listen: false), id),
+      create:
+          (context) => UtxoTagCrudViewModel(
+            Provider.of<UtxoTagProvider>(context, listen: false),
+            id,
+          ),
       child: Consumer<UtxoTagCrudViewModel>(
         builder: (context, model, child) {
           return Scaffold(
-            backgroundColor: CoconutColors.black,
+            backgroundColor: context.coconutColors.background,
             appBar: CoconutAppBar.build(
               title: t.tag_manage,
               context: context,
@@ -46,7 +51,9 @@ class UtxoTagCrudScreen extends StatelessWidget {
                     _buildEditButtons(context, model),
                     Expanded(
                       child: CustomTagVerticalSelector(
-                        key: ValueKey(model.utxoTagList.map((e) => e.name).join(':')),
+                        key: ValueKey(
+                          model.utxoTagList.map((e) => e.name).join(':'),
+                        ),
                         tags: model.utxoTagList,
                         externalUpdatedTagName: model.updatedTagName,
                         onSelectedTag: model.toggleUtxoTag,
@@ -67,9 +74,19 @@ class UtxoTagCrudScreen extends StatelessWidget {
       children: [
         CoconutLayout.spacing_900h,
         const SizedBox(height: 56),
-        Text(t.utxo_tag_screen.onboarding_title, style: CoconutTypography.body1_16_Bold),
+        Text(
+          t.utxo_tag_screen.onboarding_title,
+          style: CoconutTypography.body1_16_Bold.setColor(
+            context.coconutColors.primaryText,
+          ),
+        ),
         CoconutLayout.spacing_200h,
-        Text(t.utxo_tag_screen.add_tag, style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray350)),
+        Text(
+          t.utxo_tag_screen.add_tag,
+          style: CoconutTypography.body2_14.copyWith(
+            color: CoconutColors.gray350,
+          ),
+        ),
       ],
     );
   }
@@ -108,7 +125,10 @@ class UtxoTagCrudScreen extends StatelessWidget {
     );
   }
 
-  void _handeDeleteTagPressed(BuildContext context, UtxoTagCrudViewModel model) {
+  void _handeDeleteTagPressed(
+    BuildContext context,
+    UtxoTagCrudViewModel model,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -121,7 +141,9 @@ class UtxoTagCrudScreen extends StatelessWidget {
                     name: model.selectedUtxoTag!.name,
                     count: model.selectedUtxoTag?.utxoIdList!.length ?? 0,
                   )
-                  : t.alert.tag_delete.description(name: model.selectedUtxoTag!.name),
+                  : t.alert.tag_delete.description(
+                    name: model.selectedUtxoTag!.name,
+                  ),
           onTapRight: () {
             if (model.deleteUtxoTag()) {
               Navigator.of(context).pop();

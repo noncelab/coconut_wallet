@@ -1,5 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class ButtonGroup extends StatelessWidget {
@@ -17,12 +17,18 @@ class ButtonGroup extends StatelessWidget {
         buttonListWithDividers.add(
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: Sizes.size20),
-            child: Divider(color: CoconutColors.white.withValues(alpha: 0.12), height: 1),
+            child: Divider(color: context.coconutColors.borderSubtle.withValues(alpha: 0.21), height: 1),
           ),
         );
       }
     }
 
-    return Container(decoration: defaultBoxDecoration, child: Column(children: buttonListWithDividers));
+    return Container(
+      decoration: BoxDecoration(
+        color: context.coconutColors.surface,
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
+      ),
+      child: Column(children: buttonListWithDividers),
+    );
   }
 }

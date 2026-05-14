@@ -9,7 +9,8 @@ class WalletExpandableInfoCard extends StatefulWidget {
   const WalletExpandableInfoCard({super.key});
 
   @override
-  State<WalletExpandableInfoCard> createState() => _WalletExpandableInfoCardState();
+  State<WalletExpandableInfoCard> createState() =>
+      _WalletExpandableInfoCardState();
 }
 
 class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
@@ -22,7 +23,9 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
       padding: const EdgeInsets.all(CoconutStyles.radius_200),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: const BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
+        borderRadius: const BorderRadius.all(
+          Radius.circular(CoconutStyles.radius_200),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -39,15 +42,22 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
               child: Row(
                 children: [
                   SvgPicture.asset(
-                    _isExpanded ? 'assets/svg/circle-warning.svg' : 'assets/svg/circle-help.svg',
+                    _isExpanded
+                        ? 'assets/svg/circle-warning.svg'
+                        : 'assets/svg/circle-help.svg',
                     width: 18,
-                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                    colorFilter: const ColorFilter.mode(
+                      CoconutColors.white,
+                      BlendMode.srcIn,
+                    ),
                   ),
                   CoconutLayout.spacing_100w,
                   Expanded(
                     child: Text(
                       t.wallet_add_scanner_screen.paste.wallet_description_text,
-                      style: CoconutTypography.body2_14,
+                      style: CoconutTypography.body2_14.setColor(
+                        context.coconutColors.primaryText,
+                      ),
                     ),
                   ),
                 ],
@@ -59,18 +69,34 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
             _buildWalletInfoSection(
               context: context,
               titleText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[0],
-              descriptionList: [...t.wallet_add_scanner_screen.paste.blue_wallet_texts.getRange(1, 3)],
-              addressText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[3],
+              descriptionList: [
+                ...t.wallet_add_scanner_screen.paste.blue_wallet_texts.getRange(
+                  1,
+                  3,
+                ),
+              ],
+              addressText:
+                  t.wallet_add_scanner_screen.paste.blue_wallet_texts[3],
             ),
             CoconutLayout.spacing_200h,
             _buildWalletInfoSection(
               context: context,
-              titleText: t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[0],
-              descriptionList: [...t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts.getRange(1, 2)],
+              titleText:
+                  t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[0],
+              descriptionList: [
+                ...t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts
+                    .getRange(1, 2),
+              ],
               addressText:
                   Platform.isAndroid
-                      ? t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[2]
-                      : t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[3],
+                      ? t
+                          .wallet_add_scanner_screen
+                          .paste
+                          .nunchuck_wallet_texts[2]
+                      : t
+                          .wallet_add_scanner_screen
+                          .paste
+                          .nunchuck_wallet_texts[3],
             ),
             CoconutLayout.spacing_200h,
           ],
@@ -88,13 +114,25 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(titleText, style: CoconutTypography.body3_12),
+        Text(
+          titleText,
+          style: CoconutTypography.body3_12.setColor(
+            context.coconutColors.primaryText,
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Sizes.size12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ...descriptionList.map((desc) => Text(desc, style: CoconutTypography.body3_12)),
+              ...descriptionList.map(
+                (desc) => Text(
+                  desc,
+                  style: CoconutTypography.body3_12.setColor(
+                    context.coconutColors.primaryText,
+                  ),
+                ),
+              ),
               CoconutLayout.spacing_200h,
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
@@ -102,9 +140,14 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: context.coconutColors.background,
-                    borderRadius: const BorderRadius.all(Radius.circular(CoconutStyles.radius_100)),
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(CoconutStyles.radius_100),
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Sizes.size12,
+                    vertical: Sizes.size8,
+                  ),
                   child: RichText(
                     text: TextSpan(
                       text: addressText.substring(0, 4),
@@ -112,7 +155,14 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
                           addressText.startsWith("zpub")
                               ? CoconutTypography.body3_12_NumberBold
                               : CoconutTypography.body3_12_Number,
-                      children: [TextSpan(text: addressText.substring(4), style: CoconutTypography.body3_12_Number)],
+                      children: [
+                        TextSpan(
+                          text: addressText.substring(4),
+                          style: CoconutTypography.body3_12_Number.setColor(
+                            context.coconutColors.primaryText,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

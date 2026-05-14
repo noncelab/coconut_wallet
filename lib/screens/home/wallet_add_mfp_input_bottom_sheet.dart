@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -9,13 +10,19 @@ class WalletAddMfpInputBottomSheet extends StatefulWidget {
   final Function(String) onComplete;
   final VoidCallback? onSkip;
 
-  const WalletAddMfpInputBottomSheet({super.key, required this.onComplete, this.onSkip});
+  const WalletAddMfpInputBottomSheet({
+    super.key,
+    required this.onComplete,
+    this.onSkip,
+  });
 
   @override
-  State<WalletAddMfpInputBottomSheet> createState() => _WalletAddMfpInputBottomSheetState();
+  State<WalletAddMfpInputBottomSheet> createState() =>
+      _WalletAddMfpInputBottomSheetState();
 }
 
-class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSheet> {
+class _WalletAddMfpInputBottomSheetState
+    extends State<WalletAddMfpInputBottomSheet> {
   final TextEditingController _mfpController = TextEditingController();
   final FocusNode _mfpFocusNode = FocusNode();
   final mfpRegex = RegExp("[0-9a-fA-F]{8}");
@@ -65,7 +72,10 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Sizes.size8, vertical: Sizes.size8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Sizes.size8,
+                  vertical: Sizes.size8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -75,7 +85,12 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                         Navigator.pop(context);
                       },
                     ),
-                    Text(t.wallet_add_scanner_screen.paste.mfp_title, style: CoconutTypography.body1_16),
+                    Text(
+                      t.wallet_add_scanner_screen.paste.mfp_title,
+                      style: CoconutTypography.body1_16.setColor(
+                        context.coconutColors.primaryText,
+                      ),
+                    ),
                     Visibility(
                       visible: false,
                       maintainSize: true,
@@ -84,7 +99,10 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       maintainSemantics: false,
                       maintainInteractivity: false,
                       child: IconButton(
-                        icon: const Icon(Icons.close, color: CoconutColors.white),
+                        icon: const Icon(
+                          Icons.close,
+                          color: CoconutColors.white,
+                        ),
                         onPressed: () {
                           Navigator.pop(context);
                         },
@@ -102,7 +120,9 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       padding: const EdgeInsets.all(CoconutStyles.radius_200),
                       decoration: const BoxDecoration(
                         color: CoconutColors.gray800,
-                        borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(CoconutStyles.radius_200),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,33 +131,57 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                             children: [
                               SvgPicture.asset(
                                 'assets/svg/circle-warning.svg',
-                                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                colorFilter: const ColorFilter.mode(
+                                  CoconutColors.white,
+                                  BlendMode.srcIn,
+                                ),
                               ),
                               CoconutLayout.spacing_100w,
                               Text(
-                                t.wallet_add_scanner_screen.paste.mfp_description_title,
-                                style: CoconutTypography.body2_14_Bold,
+                                t
+                                    .wallet_add_scanner_screen
+                                    .paste
+                                    .mfp_description_title,
+                                style: CoconutTypography.body2_14_Bold.setColor(
+                                  context.coconutColors.primaryText,
+                                ),
                               ),
                             ],
                           ),
                           CoconutLayout.spacing_200h,
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Sizes.size8,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 RichText(
                                   text: TextSpan(
-                                    text: t.wallet_add_scanner_screen.paste.mfp_description_texts[0],
-                                    style: CoconutTypography.body3_12,
+                                    text:
+                                        t
+                                            .wallet_add_scanner_screen
+                                            .paste
+                                            .mfp_description_texts[0],
+                                    style: CoconutTypography.body3_12.setColor(
+                                      context.coconutColors.primaryText,
+                                    ),
                                     children: [
                                       TextSpan(
-                                        text: " ${t.wallet_add_scanner_screen.paste.mfp_description_texts[1]}",
-                                        style: CoconutTypography.body3_12,
+                                        text:
+                                            " ${t.wallet_add_scanner_screen.paste.mfp_description_texts[1]}",
+                                        style: CoconutTypography.body3_12
+                                            .setColor(
+                                              context.coconutColors.primaryText,
+                                            ),
                                       ),
                                       TextSpan(
-                                        text: " ${t.wallet_add_scanner_screen.paste.mfp_description_texts[2]}",
-                                        style: CoconutTypography.body3_12_Bold,
+                                        text:
+                                            " ${t.wallet_add_scanner_screen.paste.mfp_description_texts[2]}",
+                                        style: CoconutTypography.body3_12_Bold
+                                            .setColor(
+                                              context.coconutColors.primaryText,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -151,7 +195,11 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                     CoconutLayout.spacing_600h,
                     CoconutTextField(
                       height: Sizes.size52,
-                      padding: const EdgeInsets.only(bottom: 0, left: Sizes.size14, right: Sizes.size14),
+                      padding: const EdgeInsets.only(
+                        bottom: 0,
+                        left: Sizes.size14,
+                        right: Sizes.size14,
+                      ),
                       textAlign: TextAlign.left,
                       backgroundColor: CoconutColors.gray800,
                       errorColor: CoconutColors.hotPink,
@@ -167,8 +215,13 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       onChanged: (text) {},
                       isError: _isError,
                       isLengthVisible: true,
-                      errorText: t.wallet_add_scanner_screen.paste.format_error_text,
-                      placeholderText: t.wallet_add_scanner_screen.paste.mfp_input_placeholder,
+                      errorText:
+                          t.wallet_add_scanner_screen.paste.format_error_text,
+                      placeholderText:
+                          t
+                              .wallet_add_scanner_screen
+                              .paste
+                              .mfp_input_placeholder,
                       suffix: IconButton(
                         iconSize: 14,
                         padding: EdgeInsets.zero,
@@ -198,7 +251,9 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                             flex: 4,
                             child: CoconutButton(
                               onPressed: () {
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
                                   FocusScope.of(context).unfocus();
                                 });
                                 widget.onSkip?.call();

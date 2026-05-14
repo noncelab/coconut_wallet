@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -28,21 +29,42 @@ class TransactionItemCard extends StatelessWidget {
     status = TransactionUtil.getStatus(tx);
   }
 
-  Widget _buildStatus() {
+  LinearGradient _buildSelfStatusGradient(BuildContext context) {
+    return LinearGradient(
+      colors: [context.coconutColors.sendingColor, context.coconutColors.receivingColor],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    );
+  }
+
+  Widget _buildGradientMasked({required BuildContext context, required Widget child}) {
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => _buildSelfStatusGradient(context).createShader(bounds),
+      child: child,
+    );
+  }
+
+  Widget _buildStatus(BuildContext context) {
     final iconPath = TransactionUtil.getStatusIconAsset(status);
     String statusText;
+    Color? iconColor;
     switch (status) {
       case TransactionStatus.received:
         statusText = t.status_received;
+        iconColor = context.coconutColors.receivingColor;
         break;
       case TransactionStatus.receiving:
         statusText = t.status_receiving;
+        iconColor = context.coconutColors.receivingColor;
         break;
       case TransactionStatus.sent:
         statusText = t.status_sent;
+        iconColor = context.coconutColors.sendingColor;
         break;
       case TransactionStatus.sending:
         statusText = t.status_sending;
+        iconColor = context.coconutColors.sendingColor;
         break;
       case TransactionStatus.self:
         statusText = t.status_sent;
@@ -53,21 +75,39 @@ class TransactionItemCard extends StatelessWidget {
       default:
         return const SizedBox.shrink(); // fallback
     }
-    return _buildIconStatus(iconPath, statusText);
+    return _buildIconStatus(context, iconPath, iconColor, statusText);
   }
 
-  Widget _buildIconStatus(String assetPath, String statusString) {
+  Widget _buildIconStatus(BuildContext context, String assetPath, Color? iconColor, String statusString) {
+    final icon =
+        iconColor == null
+            ? _buildGradientMasked(
+              context: context,
+              child: SvgPicture.asset(
+                assetPath,
+                width: 24,
+                height: 24,
+                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+              ),
+            )
+            : SvgPicture.asset(
+              assetPath,
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+            );
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        SvgPicture.asset(assetPath, width: 24, height: 24),
+        icon,
         CoconutLayout.spacing_200w,
-        Text(statusString, style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
+        Text(statusString, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
       ],
     );
   }
 
-  Widget _buildAmount() {
+  Widget _buildAmount(BuildContext context) {
     final String amountString = currentUnit.displayBitcoinAmount(tx.amount);
     final bool isReceived = status == TransactionStatus.received || status == TransactionStatus.receiving;
     final String prefix = isReceived ? '+' : '';
@@ -76,13 +116,16 @@ class TransactionItemCard extends StatelessWidget {
       child: FittedBox(
         alignment: Alignment.centerRight,
         fit: BoxFit.scaleDown,
-        child: Text('$prefix$amountString', style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+        child: Text(
+          '$prefix$amountString',
+          style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+        ),
       ),
     );
   }
 
-  Widget _buildTimestamp(List<String> transactionTimeStamp) {
-    final textStyle = CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400);
+  Widget _buildTimestamp(BuildContext context, List<String> transactionTimeStamp) {
+    final textStyle = CoconutTypography.body3_12_Number.setColor(context.coconutColors.tertiaryText);
     return Row(
       children: [
         Text(transactionTimeStamp[0], style: textStyle),
@@ -94,19 +137,19 @@ class TransactionItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMemo() {
+  Widget _buildMemo(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         SvgPicture.asset(
           'assets/svg/pen.svg',
-          colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
           width: Sizes.size12,
         ),
         CoconutLayout.spacing_100w,
         Text(
           TextUtils.ellipsisIfLonger(tx.memo!, maxLength: 13),
-          style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
         ),
       ],
     );
@@ -126,14 +169,14 @@ class TransactionItemCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildTimestamp(transactionTimeStamp),
+            _buildTimestamp(context, transactionTimeStamp),
             CoconutLayout.spacing_200h,
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: [_buildStatus(), CoconutLayout.spacing_200w, _buildAmount()],
+              children: [_buildStatus(context), CoconutLayout.spacing_200w, _buildAmount(context)],
             ),
-            if (tx.memo != null && tx.memo!.isNotEmpty) _buildMemo(),
+            if (tx.memo != null && tx.memo!.isNotEmpty) _buildMemo(context),
           ],
         ),
       ),

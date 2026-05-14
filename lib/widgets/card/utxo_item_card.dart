@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -30,11 +31,9 @@ class UtxoItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateString = DateTimeUtil.formatTimestamp(utxo.timestamp);
+    final colors = context.coconutColors;
 
     return ShrinkAnimationButton(
-      defaultColor: CoconutColors.gray900,
-      pressedColor: CoconutColors.gray800,
-      borderRadius: CoconutStyles.radius_300,
       borderWidth: 0,
       onPressed: () {
         onPressed();
@@ -43,7 +42,7 @@ class UtxoItemCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelectionMode ? CoconutColors.white.withValues(alpha: isSelected ? 1 : 0.2) : Colors.transparent,
+            color: isSelectionMode ? colors.borderStrong.withValues(alpha: isSelected ? 1 : 0.2) : Colors.transparent,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
@@ -71,7 +70,7 @@ class UtxoItemCard extends StatelessWidget {
                                       ? 'assets/svg/circle-check-filled.svg'
                                       : 'assets/svg/circle-check-outline.svg',
                                   colorFilter: ColorFilter.mode(
-                                    isSelected ? CoconutColors.white : CoconutColors.gray600,
+                                    isSelected ? context.coconutColors.iconDefault : context.coconutColors.iconDisabled,
                                     BlendMode.srcIn,
                                   ),
                                 ),
@@ -84,11 +83,11 @@ class UtxoItemCard extends StatelessWidget {
                 // data string
                 Row(
                   children: [
-                    Text(dateString[0], style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray350)),
+                    Text(dateString[0], style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText)),
                     CoconutLayout.spacing_200w,
-                    Text('|', style: CoconutTypography.caption_10.setColor(CoconutColors.gray350)),
+                    Text('|', style: CoconutTypography.caption_10.setColor(colors.secondaryText)),
                     CoconutLayout.spacing_200w,
-                    Text(dateString[1], style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray350)),
+                    Text(dateString[1], style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText)),
                   ],
                 ),
                 CoconutLayout.spacing_200w,
@@ -103,12 +102,17 @@ class UtxoItemCard extends StatelessWidget {
                           _buildPendingStatus(utxo.status),
                           const SizedBox(width: 4),
                         ] else if (utxo.status == UtxoStatus.locked) ...[
-                          SvgPicture.asset('assets/svg/lock_simple.svg', width: 16, height: 16),
+                          SvgPicture.asset(
+                            'assets/svg/lock_simple.svg',
+                            width: 16,
+                            height: 16,
+                            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                          ),
                           const SizedBox(width: 4),
                         ],
                         Text(
                           currentUnit.displayBitcoinAmount(utxo.amount),
-                          style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
+                          style: CoconutTypography.heading4_18_NumberBold.setColor(context.coconutColors.primaryText),
                         ),
                       ],
                     ),
@@ -124,7 +128,7 @@ class UtxoItemCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     utxo.to,
-                    style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray350).copyWith(height: 1.3),
+                    style: CoconutTypography.body2_14_Number.setColor(colors.secondaryText).copyWith(height: 1.3),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -147,11 +151,11 @@ class UtxoItemCard extends StatelessWidget {
                               return IntrinsicWidth(
                                 child: CoconutChip(
                                   minWidth: 40,
-                                  color: CoconutColors.gray800,
-                                  borderColor: CoconutColors.gray800,
+                                  color: colors.surfaceCard,
+                                  borderColor: colors.surfaceCard,
                                   label: t.change,
                                   labelSize: 12,
-                                  labelColor: CoconutColors.white,
+                                  labelColor: colors.primaryText,
                                 ),
                               );
                             } else {

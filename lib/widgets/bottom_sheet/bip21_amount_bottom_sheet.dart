@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -14,11 +15,18 @@ class Bip21AmountBottomSheetResult {
   final bool didEdit;
   final int? amountInSats;
 
-  const Bip21AmountBottomSheetResult({required this.didEdit, required this.amountInSats});
+  const Bip21AmountBottomSheetResult({
+    required this.didEdit,
+    required this.amountInSats,
+  });
 }
 
 class Bip21AmountBottomSheet extends StatefulWidget {
-  const Bip21AmountBottomSheet({super.key, required this.currentUnit, this.initialAmountSats});
+  const Bip21AmountBottomSheet({
+    super.key,
+    required this.currentUnit,
+    this.initialAmountSats,
+  });
 
   final BitcoinUnit currentUnit;
   final int? initialAmountSats;
@@ -34,7 +42,10 @@ class Bip21AmountBottomSheet extends StatefulWidget {
       showCloseButton: true,
       showDragHandle: true,
       titlePadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      child: Bip21AmountBottomSheet(currentUnit: currentUnit, initialAmountSats: initialAmountSats),
+      child: Bip21AmountBottomSheet(
+        currentUnit: currentUnit,
+        initialAmountSats: initialAmountSats,
+      ),
     );
   }
 
@@ -80,11 +91,14 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
 
   String _formatInitialBtcAmountText(int amountSats) {
     final rawBtcText = UnitUtil.convertSatoshiToBitcoinString(amountSats);
-    final normalizedBtcText = rawBtcText.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+    final normalizedBtcText = rawBtcText
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
 
     final parts = normalizedBtcText.split('.');
     final integerPart = parts[0].isEmpty ? '0' : parts[0];
-    final formattedIntegerPart = int.parse(integerPart).toThousandsSeparatedString();
+    final formattedIntegerPart =
+        int.parse(integerPart).toThousandsSeparatedString();
 
     if (parts.length == 1) {
       return formattedIntegerPart;
@@ -111,7 +125,12 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
     if (widget.currentUnit.isBip177Unit) {
       return Padding(
         padding: const EdgeInsets.only(left: 12, right: 6),
-        child: Text(widget.currentUnit.symbol, style: CoconutTypography.body2_14_Bold),
+        child: Text(
+          widget.currentUnit.symbol,
+          style: CoconutTypography.body2_14_Bold.setColor(
+            context.coconutColors.primaryText,
+          ),
+        ),
       );
     }
     return null;
@@ -119,7 +138,8 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
 
   Widget? _buildAmountSuffix() {
     final showClearButton = _amountFocusNode.hasFocus;
-    final showUnitSuffix = widget.currentUnit.isBtcUnit || widget.currentUnit.isSatsUnit;
+    final showUnitSuffix =
+        widget.currentUnit.isBtcUnit || widget.currentUnit.isSatsUnit;
 
     if (!showUnitSuffix && !showClearButton) return null;
 
@@ -128,8 +148,16 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
       children: [
         if (showUnitSuffix)
           Padding(
-            padding: EdgeInsets.only(left: 8.0, right: showClearButton ? 0.0 : 4.0),
-            child: Text(widget.currentUnit.symbol, style: CoconutTypography.body2_14_Bold),
+            padding: EdgeInsets.only(
+              left: 8.0,
+              right: showClearButton ? 0.0 : 4.0,
+            ),
+            child: Text(
+              widget.currentUnit.symbol,
+              style: CoconutTypography.body2_14_Bold.setColor(
+                context.coconutColors.primaryText,
+              ),
+            ),
           ),
         if (!showClearButton) CoconutLayout.spacing_400w,
         if (showClearButton)
@@ -141,7 +169,10 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
             onPressed: _amountController.clear,
             icon: SvgPicture.asset(
               'assets/svg/text-field-clear.svg',
-              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+              colorFilter: const ColorFilter.mode(
+                CoconutColors.white,
+                BlendMode.srcIn,
+              ),
             ),
           ),
       ],
@@ -157,7 +188,10 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
       ];
     }
 
-    return [FilteringTextInputFormatter.digitsOnly, const SatoshiAmountInputFormatter()];
+    return [
+      FilteringTextInputFormatter.digitsOnly,
+      const SatoshiAmountInputFormatter(),
+    ];
   }
 
   @override
@@ -198,7 +232,13 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
             bottomPadding: 0,
             onButtonClicked: () {
               if (!_didEditAmount) return;
-              Navigator.pop(context, Bip21AmountBottomSheetResult(didEdit: true, amountInSats: _amountInSats));
+              Navigator.pop(
+                context,
+                Bip21AmountBottomSheetResult(
+                  didEdit: true,
+                  amountInSats: _amountInSats,
+                ),
+              );
             },
             text: t.done,
           ),
@@ -210,7 +250,10 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
 
 class SingleDotInputFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if ('.'.allMatches(newValue.text).length > 1) {
       return oldValue;
     }

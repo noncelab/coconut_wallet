@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -6,7 +7,11 @@ class ErrorTooltip extends StatelessWidget {
   final bool isShown;
   final String errorMessage;
 
-  const ErrorTooltip({super.key, required this.isShown, required this.errorMessage});
+  const ErrorTooltip({
+    super.key,
+    required this.isShown,
+    required this.errorMessage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,13 +23,23 @@ class ErrorTooltip extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: CoconutToolTip(
-          richText: RichText(text: TextSpan(text: errorMessage, style: CoconutTypography.body3_12)),
+          richText: RichText(
+            text: TextSpan(
+              text: errorMessage,
+              style: CoconutTypography.body3_12.setColor(
+                context.coconutColors.primaryText,
+              ),
+            ),
+          ),
           showIcon: true,
           tooltipType: CoconutTooltipType.fixed,
           tooltipState: CoconutTooltipState.error,
           icon: SvgPicture.asset(
             'assets/svg/triangle-warning.svg',
-            colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
+            colorFilter: const ColorFilter.mode(
+              CoconutColors.hotPink,
+              BlendMode.srcIn,
+            ),
           ),
         ),
       ),

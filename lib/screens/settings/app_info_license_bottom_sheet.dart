@@ -16,7 +16,10 @@ class LicenseBottomSheet extends StatefulWidget {
 }
 
 class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
-  late List<bool> licenseExplanationVisible = List.filled(dependencies.length, false);
+  late List<bool> licenseExplanationVisible = List.filled(
+    dependencies.length,
+    false,
+  );
   final defaultTextStyle = CoconutTypography.body2_14;
 
   String? identifyLicense(String licenseText) {
@@ -26,7 +29,8 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
       'BSD License': 'Redistribution and use in source and binary forms,',
       'GPL License': 'This program is free software:',
       'EPL License': 'Eclipse Public License - v 2.0',
-      'Creative Commons License': 'This work is licensed under a Creative Commons Attribution',
+      'Creative Commons License':
+          'This work is licensed under a Creative Commons Attribution',
       'Proprietary License': 'This software is proprietary and confidential',
       'Public Domain': 'The person who associated a work with this',
       'LGPL License': 'This library is free software; you can redistribute it',
@@ -44,7 +48,10 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
   TextSpan linkSpan({required String text, required String url}) {
     return TextSpan(
       text: text,
-      style: defaultTextStyle.copyWith(color: CoconutColors.sky, decoration: TextDecoration.underline),
+      style: defaultTextStyle.copyWith(
+        color: CoconutColors.sky,
+        decoration: TextDecoration.underline,
+      ),
       recognizer:
           TapGestureRecognizer()
             ..onTap = () async {
@@ -81,13 +88,22 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                           text: t.license_bottom_sheet.copyright_text1,
                           style: defaultTextStyle,
                           children: <TextSpan>[
-                            linkSpan(text: MIT_LICENSE_URL, url: MIT_LICENSE_URL),
-                            TextSpan(text: t.license_bottom_sheet.copyright_text2),
+                            linkSpan(
+                              text: MIT_LICENSE_URL,
+                              url: MIT_LICENSE_URL,
+                            ),
+                            TextSpan(
+                              text: t.license_bottom_sheet.copyright_text2,
+                            ),
                             linkSpan(
                               text: CONTACT_EMAIL_ADDRESS,
-                              url: 'mailto:$CONTACT_EMAIL_ADDRESS?subject=${t.license_bottom_sheet.email_subject}',
+                              url:
+                                  'mailto:$CONTACT_EMAIL_ADDRESS?subject=${t.license_bottom_sheet.email_subject}',
                             ),
-                            TextSpan(text: t.license_bottom_sheet.copyright_text3, style: defaultTextStyle),
+                            TextSpan(
+                              text: t.license_bottom_sheet.copyright_text3,
+                              style: defaultTextStyle,
+                            ),
                           ],
                         ),
                       ),
@@ -100,7 +116,9 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                 final license = dependencies[index - 1];
                 final licenseName = license.name;
                 String copyRight = '';
-                List<String>? licenseClassExplanation = license.license?.split('\n');
+                List<String>? licenseClassExplanation = license.license?.split(
+                  '\n',
+                );
                 String? licenseClass = '';
 
                 /// License 종류 찾기
@@ -120,14 +138,20 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                 }
 
                 return Padding(
-                  padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 8),
+                  padding: const EdgeInsets.only(
+                    left: 10,
+                    right: 10,
+                    top: 10,
+                    bottom: 8,
+                  ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () {
                         if (licenseClass != null && licenseClass.isNotEmpty) {
                           setState(() {
-                            licenseExplanationVisible[index - 1] = !licenseExplanationVisible[index - 1];
+                            licenseExplanationVisible[index - 1] =
+                                !licenseExplanationVisible[index - 1];
                           });
                         }
                       },
@@ -135,20 +159,48 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(licenseName, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-                            if (copyRight.isNotEmpty) Text(copyRight, style: CoconutTypography.body3_12),
+                            Text(
+                              licenseName,
+                              style: CoconutTypography.body2_14_Bold.setColor(
+                                CoconutColors.white,
+                              ),
+                            ),
+                            if (copyRight.isNotEmpty)
+                              Text(
+                                copyRight,
+                                style: CoconutTypography.body3_12.setColor(
+                                  context.coconutColors.primaryText,
+                                ),
+                              ),
                             SizedBox(
                               width: MediaQuery.of(context).size.width,
-                              child: Text(licenseClass ?? 'Unknown License', style: CoconutTypography.body3_12),
+                              child: Text(
+                                licenseClass ?? 'Unknown License',
+                                style: CoconutTypography.body3_12.setColor(
+                                  context.coconutColors.primaryText,
+                                ),
+                              ),
                             ),
                             if (licenseExplanationVisible[index - 1])
                               Container(
                                 margin: const EdgeInsets.only(top: 8),
                                 height: 200,
-                                decoration: BoxDecoration(border: Border.all(width: 1, color: CoconutColors.gray700)),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    width: 1,
+                                    color: CoconutColors.gray700,
+                                  ),
+                                ),
                                 child: SingleChildScrollView(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                                  child: Text(license.license!, style: const TextStyle(color: CoconutColors.gray700)),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                  ),
+                                  child: Text(
+                                    license.license!,
+                                    style: const TextStyle(
+                                      color: CoconutColors.gray700,
+                                    ),
+                                  ),
                                 ),
                               ),
                           ],

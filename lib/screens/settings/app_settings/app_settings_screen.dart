@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -273,6 +274,17 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                   if (kDebugMode) ...[
                     CoconutLayout.spacing_400h,
                     _category('개발자 도구'),
+                    ValueListenableBuilder<CoconutThemeVariant>(
+                      valueListenable: CoconutThemeController.variantNotifier,
+                      builder: (context, variant, _) {
+                        final isPreviewEnabled = variant == CoconutThemeVariant.ccosPreview;
+                        return _buildAnimatedButton(
+                          title: isPreviewEnabled ? 'CCOS Theme Preview 끄기' : 'CCOS Theme Preview 켜기',
+                          subtitle: isPreviewEnabled ? '현재: Preview theme' : '현재: Default dark theme',
+                          onPressed: CoconutThemeController.togglePreview,
+                        );
+                      },
+                    ),
                     _buildAnimatedButton(
                       title: 'Realm 디버그용 뷰어',
                       onPressed: () {
@@ -319,7 +331,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
 
   Widget _category(String label) => Container(
     padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
-    child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+    child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText)),
   );
 
   Widget _buildAnimatedButton({required String title, required VoidCallback onPressed, String? subtitle}) {

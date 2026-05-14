@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class CustomUnderlinedButton extends StatefulWidget {
@@ -68,9 +69,9 @@ class _CustomUnderlinedButtonState extends State<CustomUnderlinedButton> {
                 color:
                     widget.isEnable
                         ? _isPressing
-                            ? widget.pressingColor ?? CoconutColors.gray500
-                            : widget.defaultColor ?? CoconutColors.white
-                        : CoconutColors.white.withValues(alpha: 0.2),
+                            ? widget.pressingColor ?? context.coconutColors.tertiaryText
+                            : widget.defaultColor ?? context.coconutColors.primaryText
+                        : context.coconutColors.primaryText.withValues(alpha: 0.2),
                 width: 0.5,
               ),
             ),
@@ -84,9 +85,9 @@ class _CustomUnderlinedButtonState extends State<CustomUnderlinedButton> {
               color:
                   widget.isEnable
                       ? _isPressing
-                          ? widget.pressingColor ?? CoconutColors.gray500
-                          : widget.defaultColor ?? CoconutColors.white
-                      : CoconutColors.white.withValues(alpha: 0.2),
+                          ? widget.pressingColor ?? context.coconutColors.tertiaryText
+                          : widget.defaultColor ?? context.coconutColors.primaryText
+                      : context.coconutColors.primaryText.withValues(alpha: 0.2),
             ),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
@@ -45,7 +46,9 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
       _tagName = widget.updateUtxoTag!.name;
       _tagColorIndex = widget.updateUtxoTag!.colorIndex;
       _controller.text = _tagName;
-      _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
+      _controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: _controller.text.length),
+      );
     }
 
     // 포커스 요청
@@ -73,11 +76,19 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
         isBottom: true,
         context: context,
         onBackPressed: () => Navigator.pop(context),
-        title: isUpdateMode ? t.tag_bottom_sheet.title_edit_tag : t.tag_bottom_sheet.title_new_tag,
+        title:
+            isUpdateMode
+                ? t.tag_bottom_sheet.title_edit_tag
+                : t.tag_bottom_sheet.title_new_tag,
       ),
       bottomMargin: 20,
       body: Padding(
-        padding: EdgeInsets.only(bottom: keyboardHeight > 0 ? keyboardHeight : 0, left: 16, right: 16, top: 16),
+        padding: EdgeInsets.only(
+          bottom: keyboardHeight > 0 ? keyboardHeight : 0,
+          left: 16,
+          right: 16,
+          top: 16,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -102,9 +113,14 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
                   child: CustomLimitTextField(
                     controller: _controller,
                     focusNode: _focusNode,
-                    prefix: const Padding(
-                      padding: EdgeInsets.only(left: 16),
-                      child: Text("#", style: CoconutTypography.body3_12),
+                    prefix: Padding(
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Text(
+                        "#",
+                        style: CoconutTypography.body3_12.setColor(
+                          context.coconutColors.primaryText,
+                        ),
+                      ),
                     ),
                     onChanged: _onTextChanged,
                     onClear: () {
@@ -183,8 +199,11 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
       final originalTag = widget.updateUtxoTag!;
       isActive =
           _tagName.isNotEmpty &&
-          (_tagName != originalTag.name || _tagColorIndex != originalTag.colorIndex) &&
-          !widget.existingTags.any((tag) => tag.name == _tagName && tag.id != originalTag.id);
+          (_tagName != originalTag.name ||
+              _tagColorIndex != originalTag.colorIndex) &&
+          !widget.existingTags.any(
+            (tag) => tag.name == _tagName && tag.id != originalTag.id,
+          );
     } else {
       // 생성 모드: 유효한 이름이고 중복되지 않으면 활성화
       isActive =
@@ -203,8 +222,16 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
 
     final tag =
         isUpdateMode
-            ? widget.updateUtxoTag!.copyWith(name: _tagName, colorIndex: _tagColorIndex)
-            : UtxoTag(id: const Uuid().v4(), walletId: widget.walletId, name: _tagName, colorIndex: _tagColorIndex);
+            ? widget.updateUtxoTag!.copyWith(
+              name: _tagName,
+              colorIndex: _tagColorIndex,
+            )
+            : UtxoTag(
+              id: const Uuid().v4(),
+              walletId: widget.walletId,
+              name: _tagName,
+              colorIndex: _tagColorIndex,
+            );
 
     widget.onTagCreated(tag);
     Navigator.pop(context);

@@ -6,13 +6,6 @@ import 'dart:math' as math;
 const defaultIconColor = Color.fromRGBO(218, 216, 228, 1);
 const defaultBackgroundColor = Color.fromRGBO(255, 255, 255, 0.1);
 
-const defaultBoxDecoration = BoxDecoration(
-  color: CoconutColors.gray800,
-  borderRadius: BorderRadius.all(Radius.circular(24)),
-);
-
-const defaultCardColor = Color.fromRGBO(255, 255, 255, 0.06);
-
 // FIXME: deprecated
 class ColorSet {
   final Color color;

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -141,7 +142,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   // ──────────────────────────────
   Widget _buildScaffold(BuildContext context) {
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       appBar: _buildAppBar(context),
       body: Selector<UtxoListViewModel, (bool, bool, List<UtxoState>)>(
         selector: (_, vm) => (vm.isSyncing, vm.isUtxoTagListEmpty, vm.utxoList),
@@ -187,13 +188,13 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       entireWidgetKey: _appBarKey,
       title: t.utxo_list,
       context: context,
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       actionButtonList: [
         Container(
           alignment: Alignment.center,
           child: CoconutUnderlinedButton(
             text: _isSelectionMode ? t.done : t.select,
-            textStyle: CoconutTypography.body2_14.setColor(CoconutColors.onPrimary(CoconutTheme.brightness())),
+            textStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             onTap: _toggleSelectionMode,
           ),
         ),
@@ -457,7 +458,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       buttonLayout: BottomActionButtonLayout.vertical,
       iconSize: 24,
       spacing: 4,
-      textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+      textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
     );
   }
 
@@ -738,7 +739,10 @@ class _UtxoListState extends State<UtxoList> {
     return SliverFillRemaining(
       child: Padding(
         padding: const EdgeInsets.only(top: 80),
-        child: Align(alignment: Alignment.topCenter, child: Text(t.utxo_not_found, style: CoconutTypography.body1_16)),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Text(t.utxo_not_found, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+        ),
       ),
     );
   }
@@ -965,7 +969,9 @@ class _UtxoListState extends State<UtxoList> {
     if (oldList.length != newList.length) return true;
     if (oldList.isEmpty && newList.isEmpty) return false;
 
-    for (int i = 0; i < oldList.length; i++) if (oldList[i].utxoId != newList[i].utxoId) return true;
+    for (int i = 0; i < oldList.length; i++) {
+      if (oldList[i].utxoId != newList[i].utxoId) return true;
+    }
 
     final oldMap = {for (var u in oldList) u.utxoId: u};
     final newMap = {for (var u in newList) u.utxoId: u};

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -120,7 +121,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         builder:
             (context, viewModel, child) => Scaffold(
               floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-              backgroundColor: CoconutColors.black,
+              backgroundColor: context.coconutColors.background,
               appBar: CoconutAppBar.build(title: t.broadcasting_screen.title, context: context),
               body: SafeArea(
                 child: Stack(

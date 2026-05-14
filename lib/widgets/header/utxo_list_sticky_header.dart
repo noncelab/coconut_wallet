@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -66,6 +67,7 @@ class UtxoListStickyHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalCount = this.totalCount ?? 0;
+    final colors = context.coconutColors;
 
     return Consumer<UtxoListViewModel>(
       builder: (context, viewModel, _) {
@@ -87,10 +89,14 @@ class UtxoListStickyHeader extends StatelessWidget {
                     child: Container(
                       width: MediaQuery.sizeOf(context).width,
                       height: 10,
-                      decoration: const BoxDecoration(
-                        color: CoconutColors.black,
+                      decoration: BoxDecoration(
+                        color: colors.background,
                         boxShadow: [
-                          BoxShadow(color: Color.fromRGBO(255, 255, 255, 0.2), offset: Offset(0, 3), blurRadius: 4),
+                          BoxShadow(
+                            color: colors.shadowDefault.withValues(alpha: 0.2),
+                            offset: const Offset(0, 3),
+                            blurRadius: 4,
+                          ),
                         ],
                       ),
                     ),
@@ -98,10 +104,12 @@ class UtxoListStickyHeader extends StatelessWidget {
 
                   // 본문 영역
                   Container(
-                    color: CoconutColors.black,
+                    color: colors.background,
                     child: Column(
                       children: [
-                        isSelectionMode ? _buildSelectionModeStickyHeader() : _buildStickyHeader(context, totalCount),
+                        isSelectionMode
+                            ? _buildSelectionModeStickyHeader()
+                            : _buildStickyHeader(context, totalCount),
                         CoconutLayout.spacing_50h,
                         tagListWidget,
                         CoconutLayout.spacing_300h,
@@ -128,10 +136,18 @@ class UtxoListStickyHeader extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.only(left: 20, right: 16, top: 20),
             child: Row(
-              crossAxisAlignment: currentUnit.isPrefixSymbol ? CrossAxisAlignment.center : CrossAxisAlignment.end,
+              crossAxisAlignment:
+                  currentUnit.isPrefixSymbol
+                      ? CrossAxisAlignment.center
+                      : CrossAxisAlignment.end,
               children: [
                 if (currentUnit.isPrefixSymbol) ...[
-                  Text(currentUnit.symbol, style: CoconutTypography.body2_14_Number),
+                  Text(
+                    currentUnit.symbol,
+                    style: CoconutTypography.body2_14_Number.setColor(
+                      context.coconutColors.primaryText,
+                    ),
+                  ),
                   CoconutLayout.spacing_50w,
                 ],
                 AnimatedBalance(
@@ -148,12 +164,19 @@ class UtxoListStickyHeader extends StatelessWidget {
                     child: Row(
                       children: [
                         if (!currentUnit.isPrefixSymbol) ...[
-                          Text(currentUnit.symbol, style: CoconutTypography.body2_14_Number),
+                          Text(
+                            currentUnit.symbol,
+                            style: CoconutTypography.body2_14_Number.setColor(
+                              context.coconutColors.primaryText,
+                            ),
+                          ),
                           CoconutLayout.spacing_50w,
                         ],
                         Text(
                           t.total_item_count(count: totalCount),
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                          style: CoconutTypography.body3_12.setColor(
+                            context.coconutColors.secondaryText,
+                          ),
                         ),
                       ],
                     ),
@@ -169,17 +192,23 @@ class UtxoListStickyHeader extends StatelessWidget {
           children: [
             const Spacer(),
             if (!isLoadComplete)
-              const Padding(
-                padding: EdgeInsets.only(right: 4),
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
                 child: SizedBox(
                   width: 12,
                   height: 12,
-                  child: CircularProgressIndicator(color: CoconutColors.gray400, strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    color: context.coconutColors.secondaryText,
+                    strokeWidth: 2,
+                  ),
                 ),
               ),
             CupertinoButton(
               key: dropdownGlobalKey,
-              padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8).copyWith(right: 26),
+              padding: const EdgeInsets.symmetric(
+                vertical: 7,
+                horizontal: 8,
+              ).copyWith(right: 26),
               minSize: 0,
               onPressed: enableDropdown ? () => onTapDropdown() : null,
               child: Row(
@@ -187,13 +216,20 @@ class UtxoListStickyHeader extends StatelessWidget {
                   Text(
                     activeOption,
                     style: CoconutTypography.body3_12.setColor(
-                      enableDropdown ? CoconutColors.white : CoconutColors.gray700,
+                      enableDropdown
+                          ? context.coconutColors.primaryText
+                          : context.coconutColors.tertiaryText,
                     ),
                   ),
                   CoconutLayout.spacing_200w,
                   SvgPicture.asset(
                     'assets/svg/arrow-down.svg',
-                    colorFilter: enableDropdown ? null : const ColorFilter.mode(CoconutColors.gray700, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(
+                      enableDropdown
+                          ? context.coconutColors.iconDefault
+                          : context.coconutColors.iconDisabled,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ],
               ),

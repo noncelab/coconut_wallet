@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
@@ -145,7 +146,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     return ChangeNotifierProvider<UtxoMergeViewModel>.value(
       value: _viewModel,
       child: Scaffold(
-        backgroundColor: CoconutColors.black,
+        backgroundColor: context.coconutColors.background,
         appBar: _buildAppBar(context),
         body: SafeArea(child: _buildBody(context)),
       ),
@@ -155,7 +156,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       context: context,
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       title: t.merge_utxos_screen.title,
       isBottom: true,
       isBackButton: true,

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -29,11 +30,16 @@ Map<int, int> _buildBalanceMapIncludingPending(BuildContext context) {
   });
 }
 
-Map<int, int> _buildBalanceMapOnlyUnspent(BuildContext context, List<WalletListItemBase> walletList) {
+Map<int, int> _buildBalanceMapOnlyUnspent(
+  BuildContext context,
+  List<WalletListItemBase> walletList,
+) {
   final walletProvider = context.read<WalletProvider>();
   Map<int, int> balanceMap = {};
   for (var wallet in walletList) {
-    balanceMap[wallet.id] = _getUnspentUtxoSum(walletProvider.getUtxoList(wallet.id));
+    balanceMap[wallet.id] = _getUnspentUtxoSum(
+      walletProvider.getUtxoList(wallet.id),
+    );
   }
 
   return balanceMap;
@@ -49,13 +55,17 @@ int _getUnspentUtxoSum(List<UtxoState> utxos) {
 }
 
 Widget _buildWalletRow({
+  required BuildContext context,
   required WalletListItemBase walletBase,
   required BitcoinUnit currentUnit,
   required int? balance,
   required bool showCheckIcon,
   required bool isChecked,
 }) {
-  String amountText = currentUnit.displayBitcoinAmount(balance ?? 0, withUnit: true);
+  String amountText = currentUnit.displayBitcoinAmount(
+    balance ?? 0,
+    withUnit: true,
+  );
   List<MultisigSigner>? signer;
   if (walletBase.walletType == WalletType.multiSignature) {
     signer = (walletBase as MultisigWalletListItem).signers;
@@ -72,7 +82,8 @@ Widget _buildWalletRow({
                 walletImportSource: walletBase.walletImportSource,
                 iconIndex: walletBase.iconIndex,
                 colorIndex: walletBase.colorIndex,
-                gradientColors: signer != null ? ColorUtil.getGradientColors(signer) : null,
+                gradientColors:
+                    signer != null ? ColorUtil.getGradientColors(signer) : null,
               ),
             ),
             CoconutLayout.spacing_300w,
@@ -80,10 +91,17 @@ Widget _buildWalletRow({
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(amountText, style: CoconutTypography.body2_14_Number),
+                  Text(
+                    amountText,
+                    style: CoconutTypography.body2_14_Number.setColor(
+                      context.coconutColors.primaryText,
+                    ),
+                  ),
                   Text(
                     walletBase.name,
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                    style: CoconutTypography.body3_12.setColor(
+                      CoconutColors.gray400,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -93,7 +111,9 @@ Widget _buildWalletRow({
           ],
         ),
       ),
-      if (showCheckIcon && isChecked) ...{SvgPicture.asset('assets/svg/check.svg')},
+      if (showCheckIcon && isChecked) ...{
+        SvgPicture.asset('assets/svg/check.svg'),
+      },
     ],
   );
 }
@@ -117,7 +137,8 @@ class SelectWalletBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<SelectWalletBottomSheet> createState() => _SelectWalletBottomSheetState();
+  State<SelectWalletBottomSheet> createState() =>
+      _SelectWalletBottomSheetState();
 }
 
 class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
@@ -128,7 +149,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       appBar: CoconutAppBar.build(
         title: t.send_screen.select_wallet,
         context: context,
@@ -146,7 +167,11 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                   children: List.generate(_walletList.length, (index) {
                     int walletId = _walletList[index].id;
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: Sizes.size24, left: 14, right: 22),
+                      padding: const EdgeInsets.only(
+                        bottom: Sizes.size24,
+                        left: 14,
+                        right: 22,
+                      ),
                       child: GestureDetector(
                         behavior: HitTestBehavior.translucent,
                         onTap: () {
@@ -154,7 +179,9 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                           setState(() {});
                         },
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Sizes.size8,
+                          ),
                           child: _buildWalletItem(
                             _walletList[index],
                             _walletBalanceMap[walletId],
@@ -198,12 +225,16 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     if (preferenceProvider.walletOrder.isNotEmpty) {
       final walletMap = {for (var wallet in _walletList) wallet.id: wallet};
       var orderedList =
-          preferenceProvider.walletOrder.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+          preferenceProvider.walletOrder
+              .map((id) => walletMap[id])
+              .whereType<WalletListItemBase>()
+              .toList();
       _walletList = orderedList;
     }
 
     if (widget.showOnlyMfpWallets) {
-      _walletList = _walletList.where((wallet) => !isWalletWithoutMfp(wallet)).toList();
+      _walletList =
+          _walletList.where((wallet) => !isWalletWithoutMfp(wallet)).toList();
     }
     _walletBalanceMap = _initBalanceMap();
     _selectedWalletId = widget.walletId;
@@ -218,8 +249,13 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     }
   }
 
-  Widget _buildWalletItem(WalletListItemBase walletBase, int? balance, bool isChecked) {
+  Widget _buildWalletItem(
+    WalletListItemBase walletBase,
+    int? balance,
+    bool isChecked,
+  ) {
     return _buildWalletRow(
+      context: context,
       walletBase: walletBase,
       currentUnit: widget.currentUnit,
       balance: balance,
@@ -246,10 +282,12 @@ class P2PSelectWalletBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<P2PSelectWalletBottomSheet> createState() => _P2PSelectWalletBottomSheetState();
+  State<P2PSelectWalletBottomSheet> createState() =>
+      _P2PSelectWalletBottomSheetState();
 }
 
-class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet> {
+class _P2PSelectWalletBottomSheetState
+    extends State<P2PSelectWalletBottomSheet> {
   late List<WalletListItemBase> _walletList;
   late final Map<int, int> _walletBalanceMap;
 
@@ -263,12 +301,16 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
     if (preferenceProvider.walletOrder.isNotEmpty) {
       final walletMap = {for (var wallet in _walletList) wallet.id: wallet};
       var orderedList =
-          preferenceProvider.walletOrder.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+          preferenceProvider.walletOrder
+              .map((id) => walletMap[id])
+              .whereType<WalletListItemBase>()
+              .toList();
       _walletList = orderedList;
     }
 
     if (widget.showOnlyMfpWallets) {
-      _walletList = _walletList.where((wallet) => !isWalletWithoutMfp(wallet)).toList();
+      _walletList =
+          _walletList.where((wallet) => !isWalletWithoutMfp(wallet)).toList();
     }
     _walletBalanceMap = _initBalanceMap();
   }
@@ -285,7 +327,7 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       appBar: CoconutAppBar.build(
         title: t.send_screen.select_wallet,
         context: context,
@@ -309,8 +351,14 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
                         widget.onWalletSelected(walletId);
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: Sizes.size12, horizontal: 22),
-                        child: _buildWalletItem(_walletList[index], _walletBalanceMap[walletId]),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: Sizes.size12,
+                          horizontal: 22,
+                        ),
+                        child: _buildWalletItem(
+                          _walletList[index],
+                          _walletBalanceMap[walletId],
+                        ),
                       ),
                     );
                   }),
@@ -326,6 +374,7 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
 
   Widget _buildWalletItem(WalletListItemBase walletBase, int? balance) {
     return _buildWalletRow(
+      context: context,
       walletBase: walletBase,
       currentUnit: widget.currentUnit,
       balance: balance,

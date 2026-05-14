@@ -507,8 +507,8 @@ class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTex
             if (widget.isDisabled) return;
             if (widget.onTap != null) widget.onTap!();
           },
-          defaultColor: CoconutColors.gray900,
-          pressedColor: CoconutColors.gray800,
+          defaultColor: context.coconutColors.surfaceBottomSheet,
+          pressedColor: context.coconutColors.surfaceCard,
           borderRadius: 8,
           borderWidth: 0,
           child: Padding(

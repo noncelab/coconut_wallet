@@ -258,7 +258,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
         minChildSize: 0.45,
         maxChildSize: 0.8,
         initialChildSize: 0.45,
-        backgroundColor: CoconutColors.black,
+        backgroundColor: context.coconutColors.background,
         adjustForKeyboardInset: false,
         childBuilder:
             (scrollController) => MediaQuery(
@@ -562,7 +562,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
               child: CoconutTextField(
                 controller: controller,
                 focusNode: focusNode,
-                backgroundColor: CoconutColors.black,
+                backgroundColor: context.coconutColors.background,
                 height: 52,
                 padding: const EdgeInsets.only(left: 16, right: 0),
                 onChanged: onChanged,

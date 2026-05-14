@@ -27,6 +27,15 @@ class CoconutThemeExtension extends ThemeExtension<CoconutThemeExtension> {
     );
   }
 
+  factory CoconutThemeExtension.ccosPreview() {
+    return CoconutThemeExtension(
+      colors: CoconutColors.ccosPreview(),
+      typography: CoconutTypography.dark(),
+      spacing: const CoconutSpacing.base(),
+      radius: const CoconutRadius.base(),
+    );
+  }
+
   @override
   ThemeExtension<CoconutThemeExtension> copyWith({
     CoconutColors? colors,

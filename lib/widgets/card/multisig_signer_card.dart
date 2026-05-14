@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
@@ -27,25 +28,31 @@ class MultisigSignerCard extends StatelessWidget {
     final name = signer.name ?? '';
     final memo = signer.memo ?? '';
     final useMemoInsteadOfName = name.isEmpty && memo.isNotEmpty;
-    final String? finalName = name.isNotEmpty ? name : (useMemoInsteadOfName ? memo : null);
+    final String? finalName =
+        name.isNotEmpty ? name : (useMemoInsteadOfName ? memo : null);
     // icon
     final colorIndex = signer.colorIndex ?? 0;
     final iconIndex = signer.iconIndex ?? 0;
 
     String? importSourceIconPath;
     if (!isInnerWallet && signer.signerSource?.isNotEmpty == true) {
-      final WalletImportSource? walletImportSource = WalletImportSourceExtension.fromString(signer.signerSource!);
+      final WalletImportSource? walletImportSource =
+          WalletImportSourceExtension.fromString(signer.signerSource!);
       if (walletImportSource != null) {
         importSourceIconPath = walletImportSource.externalWalletIconPath;
       }
     }
 
     final finalIconPath =
-        isInnerWallet ? CustomIcons.getPathByIndex(iconIndex) : (importSourceIconPath ?? 'assets/svg/puzzle-piece.svg');
+        isInnerWallet
+            ? CustomIcons.getPathByIndex(iconIndex)
+            : (importSourceIconPath ?? 'assets/svg/puzzle-piece.svg');
     final Color finalIconColor =
         isInnerWallet
             ? ColorUtil.getColor(colorIndex).color
-            : (importSourceIconPath != null ? CoconutColors.white : CoconutColors.gray600);
+            : (importSourceIconPath != null
+                ? CoconutColors.white
+                : CoconutColors.gray600);
 
     return Container(
       color: Colors.transparent,
@@ -54,7 +61,13 @@ class MultisigSignerCard extends StatelessWidget {
           // 왼쪽 인덱스 번호
           SizedBox(
             width: 24,
-            child: Text('${index + 1}', textAlign: TextAlign.center, style: CoconutTypography.body1_16_NumberBold),
+            child: Text(
+              '${index + 1}',
+              textAlign: TextAlign.center,
+              style: CoconutTypography.body1_16_NumberBold.setColor(
+                context.coconutColors.primaryText,
+              ),
+            ),
           ),
           CoconutLayout.spacing_200w,
           // 카드 영역
@@ -72,12 +85,18 @@ class MultisigSignerCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(Sizes.size10),
                     decoration: BoxDecoration(
-                      color: isInnerWallet ? ColorUtil.getColor(8).backgroundColor : CoconutColors.gray800,
+                      color:
+                          isInnerWallet
+                              ? ColorUtil.getColor(8).backgroundColor
+                              : CoconutColors.gray800,
                       borderRadius: BorderRadius.circular(12.0),
                     ),
                     child: SvgPicture.asset(
                       finalIconPath,
-                      colorFilter: ColorFilter.mode(finalIconColor, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(
+                        finalIconColor,
+                        BlendMode.srcIn,
+                      ),
                       width: 18, //isInnerWallet ? 18 : 15
                     ),
                   ),
@@ -89,9 +108,13 @@ class MultisigSignerCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          finalName != null ? TextUtils.ellipsisIfLonger(finalName) : t.wallet_info_screen.no_info,
+                          finalName != null
+                              ? TextUtils.ellipsisIfLonger(finalName)
+                              : t.wallet_info_screen.no_info,
                           style: CoconutTypography.body2_14.setColor(
-                            finalName != null ? CoconutColors.white : CoconutColors.gray500,
+                            finalName != null
+                                ? CoconutColors.white
+                                : CoconutColors.gray500,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -100,7 +123,9 @@ class MultisigSignerCard extends StatelessWidget {
                           visible: !useMemoInsteadOfName && memo.isNotEmpty,
                           child: Text(
                             memo,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                            style: CoconutTypography.body3_12.setColor(
+                              CoconutColors.gray500,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -112,9 +137,19 @@ class MultisigSignerCard extends StatelessWidget {
                   // MFP, Derivation Path
                   Column(
                     children: [
-                      Text(masterFingerprint, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
+                      Text(
+                        masterFingerprint,
+                        style: CoconutTypography.body2_14_Number.setColor(
+                          CoconutColors.white,
+                        ),
+                      ),
                       CoconutLayout.spacing_50h,
-                      Text(derivationPath, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
+                      Text(
+                        derivationPath,
+                        style: CoconutTypography.body3_12.setColor(
+                          CoconutColors.gray500,
+                        ),
+                      ),
                     ],
                   ),
                 ],

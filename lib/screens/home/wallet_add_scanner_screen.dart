@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
@@ -32,13 +33,18 @@ const String className = 'WalletAddScannerScreen';
 class WalletAddScannerScreen extends StatefulWidget {
   final WalletImportSource importSource;
   final Function(ResultOfSyncFromVault)? onNewWalletAdded;
-  const WalletAddScannerScreen({super.key, required this.importSource, this.onNewWalletAdded});
+  const WalletAddScannerScreen({
+    super.key,
+    required this.importSource,
+    this.onNewWalletAdded,
+  });
 
   @override
   State<WalletAddScannerScreen> createState() => _WalletAddScannerScreenState();
 }
 
-class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with WidgetsBindingObserver {
+class _WalletAddScannerScreenState extends State<WalletAddScannerScreen>
+    with WidgetsBindingObserver {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   MobileScannerController? controller;
   bool _isProcessing = false;
@@ -100,56 +106,80 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         {
           if (!isEnglishOrSpanish) {
             return [
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step1,
+              ),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step2),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step2,
+              ),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step2_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step3),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step3,
+              ),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step3_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step4),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step4,
+              ),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em1),
               TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.next),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em2),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step5),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step5,
+              ),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step5_em),
-              const TextSpan(text: '\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step6),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step6,
+              ),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step6_em),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step6_end),
             ];
           } else {
             return [
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step1,
+              ),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
-              const TextSpan(text: '\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step2),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step2,
+              ),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step2_em),
-              const TextSpan(text: '\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step3),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step3,
+              ),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step3_em),
-              const TextSpan(text: '\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step4),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step4,
+              ),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em1),
               TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.next),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em2),
-              const TextSpan(text: '\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step5),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step5,
+              ),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step5_em),
-              const TextSpan(text: '\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step6),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_seedsigner.step6,
+              ),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step6_em),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step6_end),
             ];
@@ -161,29 +191,29 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             return [
               // 키스톤 3 프로 외 에센셜, 이전 프로 기기 호환되지 않음에 따른 임시 조치
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
               _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step2),
               _em(t.wallet_add_scanner_screen.guide_keystone.step2_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step3),
             ];
           } else {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step2),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_keystone.step2_em),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step3),
             ];
           }
@@ -194,33 +224,35 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             return [
               _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step1),
               _em(t.wallet_add_scanner_screen.guide_jade.step1_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step2),
               _em(t.wallet_add_scanner_screen.guide_jade.step2_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step3),
               _em(t.wallet_add_scanner_screen.guide_jade.step3_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
             ];
           } else {
             return [
-              TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0_preposition),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_jade.step0_preposition,
+              ),
               _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step1),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_jade.step1_em),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step2),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_jade.step2_em),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step3),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_jade.step3_em),
@@ -234,37 +266,47 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step1),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step1_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step2),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step2_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step3),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step3_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step4),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step4_em),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step4_end),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_coldcard.step4_end,
+              ),
             ];
           } else {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step1),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step1_em),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step2),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step2_em),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step3),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step3_em),
-              const TextSpan(text: '\n'),
+              TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step4),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step4_preposition),
+              TextSpan(
+                text:
+                    t
+                        .wallet_add_scanner_screen
+                        .guide_coldcard
+                        .step4_preposition,
+              ),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step4_em),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step4_end),
+              TextSpan(
+                text: t.wallet_add_scanner_screen.guide_coldcard.step4_end,
+              ),
             ];
           }
         }
@@ -272,7 +314,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         {
           if (!isEnglishOrSpanish) {
             return [
-              TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
+              TextSpan(
+                text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n',
+              ),
               TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),
               _em(t.wallet_add_scanner_screen.guide_krux.step1_em),
               TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
@@ -282,7 +326,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             ];
           } else {
             return [
-              TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
+              TextSpan(
+                text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n',
+              ),
               TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(' ${t.wallet_add_scanner_screen.guide_krux.step1_em}\n'),
@@ -297,7 +343,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     }
   }
 
-  TextSpan _em(String text) => TextSpan(text: text, style: CoconutTypography.body2_14_Bold.copyWith(height: 1.3));
+  TextSpan _em(String text) => TextSpan(
+    text: text,
+    style: CoconutTypography.body2_14_Bold.copyWith(height: 1.3),
+  );
 
   @override
   void dispose() {
@@ -321,7 +370,11 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
                 controller!.switchCamera();
               }
             },
-            icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
+            icon: SvgPicture.asset(
+              'assets/svg/arrow-reload.svg',
+              width: 20,
+              height: 20,
+            ),
             color: CoconutColors.white,
           ),
         ],
@@ -329,7 +382,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       body: Stack(
         children: [
           CoconutQrScanner(
-            setMobileScannerController: (MobileScannerController qrViewcontroller) {
+            setMobileScannerController: (
+              MobileScannerController qrViewcontroller,
+            ) {
               controller = qrViewcontroller;
             },
             onComplete: _onCompletedScanning,
@@ -347,7 +402,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
                     ? const WalletExpandableInfoCard()
                     : _buildDefaultToolTip(),
           ),
-          if (widget.importSource == WalletImportSource.extendedPublicKey && _clipboardContentAvailable)
+          if (widget.importSource == WalletImportSource.extendedPublicKey &&
+              _clipboardContentAvailable)
             FixedBottomButton(
               onButtonClicked: _handleClipboardImport,
               text: t.wallet_add_scanner_screen.paste.paste_button,
@@ -410,7 +466,11 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         String? mfp = await _showMfpInputBottomSheet();
         if (!mounted) return;
         context.loaderOverlay.show();
-        addResult = await _viewModel.addWallet(extendedPublicKey!, isExtendedPublicKey: true, masterFingerPrint: mfp);
+        addResult = await _viewModel.addWallet(
+          extendedPublicKey!,
+          isExtendedPublicKey: true,
+          masterFingerPrint: mfp,
+        );
       }
       await _handleAddWalletResult(addResult);
     } catch (e, stackTrace) {
@@ -425,7 +485,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       context: context,
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: WalletAddMfpInputBottomSheet(
             onSkip: () {
               Navigator.pop(context, null);
@@ -436,7 +498,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           ),
         );
       },
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
@@ -461,16 +523,30 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       icon: SvgPicture.asset(
         'assets/svg/circle-info.svg',
         width: 20,
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: const ColorFilter.mode(
+          CoconutColors.white,
+          BlendMode.srcIn,
+        ),
       ),
       tooltipType: CoconutTooltipType.fixed,
-      richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
+      richText: RichText(
+        text: TextSpan(
+          style: CoconutTypography.body2_14.setColor(
+            context.coconutColors.primaryText,
+          ),
+          children: _getGuideTextSpan(),
+        ),
+      ),
     );
   }
 
   Future<void> _onCompletedScanning(dynamic additionInfo) async {
     const methodName = '_onCompletedScanning';
-    FileLogger.log(className, methodName, 'additionInfo type: ${additionInfo.runtimeType}');
+    FileLogger.log(
+      className,
+      methodName,
+      'additionInfo type: ${additionInfo.runtimeType}',
+    );
 
     if (_isProcessing) return;
     _isProcessing = true;
@@ -496,7 +572,11 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   Future<void> _handleAddWalletResult(ResultOfSyncFromVault addResult) async {
-    FileLogger.log(className, '_handleAddWalletResult', 'result: ${addResult.result.name}');
+    FileLogger.log(
+      className,
+      '_handleAddWalletResult',
+      'result: ${addResult.result.name}',
+    );
 
     if (!mounted) return;
 
@@ -505,7 +585,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         {
           context.read<AnalyticsService>().logEvent(
             eventName: AnalyticsEventNames.walletAddCompleted,
-            parameters: {AnalyticsParameterNames.walletAddImportSource: widget.importSource.name},
+            parameters: {
+              AnalyticsParameterNames.walletAddImportSource:
+                  widget.importSource.name,
+            },
           );
 
           if (widget.onNewWalletAdded != null) {
@@ -515,7 +598,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             Navigator.pushReplacementNamed(
               context,
               '/wallet-detail',
-              arguments: {'id': addResult.walletId, 'entryPoint': kEntryPointWalletHome},
+              arguments: {
+                'id': addResult.walletId,
+                'entryPoint': kEntryPointWalletHome,
+              },
             );
           }
           break;
@@ -531,7 +617,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           _showErrorDialog(
             t.alert.wallet_add.update_failed,
             t.alert.wallet_add.update_failed_description(
-              name: TextUtils.ellipsisIfLonger(_viewModel.getWalletName(addResult.walletId!), maxLength: 15),
+              name: TextUtils.ellipsisIfLonger(
+                _viewModel.getWalletName(addResult.walletId!),
+                maxLength: 15,
+              ),
             ),
           );
 
@@ -540,7 +629,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       case WalletSyncResult.existingName:
         vibrateLightDouble();
         if (mounted) {
-          _showErrorDialog(t.alert.wallet_add.duplicate_name, t.alert.wallet_add.duplicate_name_description);
+          _showErrorDialog(
+            t.alert.wallet_add.duplicate_name,
+            t.alert.wallet_add.duplicate_name_description,
+          );
         }
       case WalletSyncResult.existingWalletUpdateImpossible:
         vibrateLightDouble();
@@ -548,7 +640,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           _showErrorDialog(
             t.alert.wallet_add.already_exist,
             t.alert.wallet_add.already_exist_description(
-              name: TextUtils.ellipsisIfLonger(_viewModel.getWalletName(addResult.walletId!), maxLength: 15),
+              name: TextUtils.ellipsisIfLonger(
+                _viewModel.getWalletName(addResult.walletId!),
+                maxLength: 15,
+              ),
             ),
           );
         }
@@ -556,10 +651,16 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   void _handleAddWalletError(Object e, StackTrace stackTrace) {
-    FileLogger.error(className, '_handleAddWalletError', 'failed: $e', stackTrace);
+    FileLogger.error(
+      className,
+      '_handleAddWalletError',
+      'failed: $e',
+      stackTrace,
+    );
     vibrateLightDouble();
     if (mounted) {
-      String errorMessage = "${t.wallet_add_scanner_screen.paste.format_error_text}\n${e.toString()}";
+      String errorMessage =
+          "${t.wallet_add_scanner_screen.paste.format_error_text}\n${e.toString()}";
       if (e.toString().contains("network type")) {
         errorMessage =
             NetworkType.currentNetworkType == NetworkType.mainnet
@@ -595,7 +696,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
     String errorMessage;
     if (message == CoconutQrScanner.qrFormatErrorMessage) {
-      errorMessage = '${t.alert.invalid_qr}${scannedData != null ? "\ndata: $scannedData" : null}';
+      errorMessage =
+          '${t.alert.invalid_qr}${scannedData != null ? "\ndata: $scannedData" : null}';
       FileLogger.error(className, methodName, 'QR format error detected');
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
@@ -634,7 +736,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           title: title,
           backgroundColor: CoconutColors.black.withValues(alpha: 0.7),
           description: description,
-          descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+          descriptionPadding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: 12,
+          ),
           insetPadding: const EdgeInsets.symmetric(horizontal: 50),
           leftButtonText: t.cancel,
           leftButtonColor: CoconutColors.black.withValues(alpha: 0.7),

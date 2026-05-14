@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/address.dart';
@@ -23,7 +24,12 @@ class AddressListScreen extends StatefulWidget {
   final bool isFullScreen;
   final double paddingTop;
 
-  const AddressListScreen({super.key, required this.id, this.isFullScreen = true, this.paddingTop = 0});
+  const AddressListScreen({
+    super.key,
+    required this.id,
+    this.isFullScreen = true,
+    this.paddingTop = 0,
+  });
 
   @override
   State<AddressListScreen> createState() => _AddressListScreenState();
@@ -49,18 +55,24 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final Tuple2<bool, bool> isTooltipDisabled = context.select<PreferenceProvider, Tuple2<bool, bool>>(
-      (provider) => Tuple2(provider.isReceivingTooltipDisabled, provider.isChangeTooltipDisabled),
-    );
+    final Tuple2<bool, bool> isTooltipDisabled = context
+        .select<PreferenceProvider, Tuple2<bool, bool>>(
+          (provider) => Tuple2(
+            provider.isReceivingTooltipDisabled,
+            provider.isChangeTooltipDisabled,
+          ),
+        );
     return ChangeNotifierProvider.value(
       value: viewModel,
       child: Consumer<AddressListViewModel>(
         builder: (context, viewModel, child) {
           List<WalletAddress> addressList =
-              _isReceivingSelected ? viewModel.receivingAddressList : viewModel.changeAddressList;
+              _isReceivingSelected
+                  ? viewModel.receivingAddressList
+                  : viewModel.changeAddressList;
           return Scaffold(
             extendBodyBehindAppBar: true,
-            backgroundColor: CoconutColors.black,
+            backgroundColor: context.coconutColors.background,
             appBar: _buildAppBar(context),
             body: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -68,7 +80,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 children: [
                   _buildSegmentedControl(),
                   _buildShowOnlyUsedAddressesButton(),
-                  Expanded(child: _buildAddressList(addressList, isTooltipDisabled)),
+                  Expanded(
+                    child: _buildAddressList(addressList, isTooltipDisabled),
+                  ),
                 ],
               ),
             ),
@@ -96,9 +110,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_appBarKey.currentContext?.mounted ?? false) {
-        final renderBox = _appBarKey.currentContext!.findRenderObject() as RenderBox;
+        final renderBox =
+            _appBarKey.currentContext!.findRenderObject() as RenderBox;
         final renderSize = renderBox.size;
-        final topPadding = widget.isFullScreen ? 0.0 : MediaQuery.of(context).padding.top;
+        final topPadding =
+            widget.isFullScreen ? 0.0 : MediaQuery.of(context).padding.top;
         setState(() {
           _appBarSize = Size(renderSize.width, renderSize.height + topPadding);
         });
@@ -118,7 +134,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
       });
     }
 
-    final showOnlyUnusedAddresses = context.read<PreferenceProvider>().showOnlyUnusedAddresses;
+    final showOnlyUnusedAddresses =
+        context.read<PreferenceProvider>().showOnlyUnusedAddresses;
 
     if (_isReceivingSelected) {
       viewModel.receivingAddressList.clear();
@@ -126,7 +143,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
       viewModel.changeAddressList.clear();
     }
 
-    await viewModel.initializeAddressList(kInitialAddressCount, showOnlyUnusedAddresses);
+    await viewModel.initializeAddressList(
+      kInitialAddressCount,
+      showOnlyUnusedAddresses,
+    );
 
     if (mounted) {
       setState(() {
@@ -138,7 +158,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
   Future<void> scrollToTop() async {
     _isScrollingToTop = true;
     if (_controller.hasClients) {
-      await _controller.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.decelerate);
+      await _controller.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.decelerate,
+      );
     }
     _isScrollingToTop = false;
   }
@@ -147,12 +171,21 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return CoconutAppBar.build(
       context: context,
       entireWidgetKey: _appBarKey,
-      backgroundColor: _isScrollOverTitleHeight ? CoconutColors.black.withValues(alpha: 0.5) : CoconutColors.black,
-      title: t.address_list_screen.wallet_name(name: viewModel.walletBaseItem!.name),
+      backgroundColor:
+          _isScrollOverTitleHeight
+              ? CoconutColors.black.withValues(alpha: 0.5)
+              : CoconutColors.black,
+      title: t.address_list_screen.wallet_name(
+        name: viewModel.walletBaseItem!.name,
+      ),
       actionButtonList: [
         IconButton(
           onPressed: () {
-            Navigator.pushNamed(context, '/address-search', arguments: {'id': widget.id});
+            Navigator.pushNamed(
+              context,
+              '/address-search',
+              arguments: {'id': widget.id},
+            );
           },
           icon: const Icon(Icons.search_rounded, color: CoconutColors.white),
         ),
@@ -185,18 +218,27 @@ class _AddressListScreenState extends State<AddressListScreen> {
       builder: (context, showOnlyUnusedAddresses, child) {
         return GestureDetector(
           onTap: () {
-            context.read<PreferenceProvider>().changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
+            context.read<PreferenceProvider>().changeShowOnlyUnusedAddresses(
+              !showOnlyUnusedAddresses,
+            );
             scrollToTop().then((_) => _initializeAddressList());
           },
           child: Container(
             color: Colors.transparent,
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: 8,
+            ),
             child: Row(
               children: [
                 SvgPicture.asset(
                   'assets/svg/check.svg',
                   colorFilter: ColorFilter.mode(
-                    showOnlyUnusedAddresses ? CoconutColors.white : CoconutColors.gray700,
+                    showOnlyUnusedAddresses
+                        ? CoconutColors.white
+                        : CoconutColors.gray700,
                     BlendMode.srcIn,
                   ),
                   width: 10,
@@ -207,7 +249,12 @@ class _AddressListScreenState extends State<AddressListScreen> {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
-                    child: Text(t.address_list_screen.show_only_unused_address, style: CoconutTypography.body3_12),
+                    child: Text(
+                      t.address_list_screen.show_only_unused_address,
+                      style: CoconutTypography.body3_12.setColor(
+                        context.coconutColors.primaryText,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -256,23 +303,33 @@ class _AddressListScreenState extends State<AddressListScreen> {
             CoconutLayout.spacing_100h,
             if (_isReceivingSelected)
               Selector<PreferenceProvider, bool>(
-                selector: (context, provider) => provider.isReceivingTooltipDisabled,
+                selector:
+                    (context, provider) => provider.isReceivingTooltipDisabled,
                 builder: (context, isReceivingTooltipDisabled, child) {
                   return _buildAnimatedTooltip(
                     isDisabled: isReceivingTooltipDisabled,
                     text: t.tooltip.address_receiving,
-                    onDisable: () => context.read<PreferenceProvider>().setReceivingTooltipDisabledPermanently(),
+                    onDisable:
+                        () =>
+                            context
+                                .read<PreferenceProvider>()
+                                .setReceivingTooltipDisabledPermanently(),
                   );
                 },
               ),
             if (!_isReceivingSelected)
               Selector<PreferenceProvider, bool>(
-                selector: (context, provider) => provider.isChangeTooltipDisabled,
+                selector:
+                    (context, provider) => provider.isChangeTooltipDisabled,
                 builder: (context, isChangeTooltipDisabled, child) {
                   return _buildAnimatedTooltip(
                     isDisabled: isChangeTooltipDisabled,
                     text: t.tooltip.address_change,
-                    onDisable: () => context.read<PreferenceProvider>().setChangeTooltipDisabledPermanently(),
+                    onDisable:
+                        () =>
+                            context
+                                .read<PreferenceProvider>()
+                                .setChangeTooltipDisabledPermanently(),
                   );
                 },
               ),
@@ -282,7 +339,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
     );
   }
 
-  Widget _buildAnimatedTooltip({required bool isDisabled, required String text, required VoidCallback onDisable}) {
+  Widget _buildAnimatedTooltip({
+    required bool isDisabled,
+    required String text,
+    required VoidCallback onDisable,
+  }) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 500),
       height: isDisabled ? 0 : null,
@@ -290,7 +351,12 @@ class _AddressListScreenState extends State<AddressListScreen> {
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 500),
         opacity: isDisabled ? 0.0 : 1.0,
-        child: Column(children: [_buildTooltip(text, onDisable), CoconutLayout.spacing_700h]),
+        child: Column(
+          children: [
+            _buildTooltip(text, onDisable),
+            CoconutLayout.spacing_700h,
+          ],
+        ),
       ),
     );
   }
@@ -310,14 +376,22 @@ class _AddressListScreenState extends State<AddressListScreen> {
           SvgPicture.asset(
             'assets/svg/circle-info.svg',
             width: 20,
-            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+            colorFilter: const ColorFilter.mode(
+              CoconutColors.white,
+              BlendMode.srcIn,
+            ),
           ),
           CoconutLayout.spacing_200w,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(text, style: CoconutTypography.body2_14),
+                Text(
+                  text,
+                  style: CoconutTypography.body2_14.setColor(
+                    context.coconutColors.primaryText,
+                  ),
+                ),
                 CoconutLayout.spacing_50h,
                 CoconutUnderlinedButton(
                   padding: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
@@ -333,7 +407,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
     );
   }
 
-  Widget _buildAddressList(List<WalletAddress> addressList, Tuple2<bool, bool> isTooltipDisabled) {
+  Widget _buildAddressList(
+    List<WalletAddress> addressList,
+    Tuple2<bool, bool> isTooltipDisabled,
+  ) {
     return _isInitializing
         ? const Center(child: CircularProgressIndicator())
         : NotificationListener<ScrollNotification>(
@@ -343,11 +420,16 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 ((_isReceivingSelected && !isTooltipDisabled.item1) ||
                     (!_isReceivingSelected && !isTooltipDisabled.item2))) {
               final currentOffset = _controller.offset;
-              final scrollTreshold = _appBarSize.height + 32 + widget.paddingTop;
+              final scrollTreshold =
+                  _appBarSize.height + 32 + widget.paddingTop;
               Future.microtask(() {
                 if (!_controller.hasClients) return;
                 if (currentOffset < scrollTreshold / 2) {
-                  _controller.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+                  _controller.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                  );
                 } else if (currentOffset < scrollTreshold) {
                   _controller.animateTo(
                     scrollTreshold,
@@ -385,17 +467,25 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                     qrcodeTopWidget: Text(
                                       addressList[index].derivationPath,
                                       style: CoconutTypography.body2_14.merge(
-                                        TextStyle(color: CoconutColors.white.withValues(alpha: 0.7)),
+                                        TextStyle(
+                                          color: CoconutColors.white.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                     qrData: addressList[index].address,
                                     isAddress: true,
-                                    title: t.address_list_screen.address_index(index: addressList[index].index),
+                                    title: t.address_list_screen.address_index(
+                                      index: addressList[index].index,
+                                    ),
                                     isBottom: true,
                                     showPulldownMenu: false,
                                     showQrEmbedImage: true,
                                   ),
-                            ).whenComplete(() => AppGuard.enablePrivacyScreen());
+                            ).whenComplete(
+                              () => AppGuard.enablePrivacyScreen(),
+                            );
                           },
                           address: addressList[index].address,
                           derivationPath: addressList[index].derivationPath,
@@ -412,7 +502,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 const SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.only(bottom: 40, top: 20),
-                    child: Center(child: CircularProgressIndicator(color: CoconutColors.white)),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: CoconutColors.white,
+                      ),
+                    ),
                   ),
                 ),
             ],
@@ -424,16 +518,23 @@ class _AddressListScreenState extends State<AddressListScreen> {
     final currentOffset = _controller.offset;
     if (currentOffset < _appBarSize.height + widget.paddingTop + 100) {
       final provider = context.read<PreferenceProvider>();
-      final isTooltipDisabled = Tuple2(provider.isReceivingTooltipDisabled, provider.isChangeTooltipDisabled);
-      if ((_isReceivingSelected && !isTooltipDisabled.item1) || (!_isReceivingSelected && !isTooltipDisabled.item2)) {
+      final isTooltipDisabled = Tuple2(
+        provider.isReceivingTooltipDisabled,
+        provider.isChangeTooltipDisabled,
+      );
+      if ((_isReceivingSelected && !isTooltipDisabled.item1) ||
+          (!_isReceivingSelected && !isTooltipDisabled.item2)) {
         // 스크롤이 _appBarSize.height + 32 부근에 도달하면 멈추도록 설정
-        if (_controller.position.pixels.toInt() == _appBarSize.height + widget.paddingTop + 32) {
+        if (_controller.position.pixels.toInt() ==
+            _appBarSize.height + widget.paddingTop + 32) {
           _controller.jumpTo(_appBarSize.height + widget.paddingTop + 32);
         }
       }
     }
 
-    if (_isInitializing || _isLoadMoreRunning || _controller.position.extentAfter > 500) {
+    if (_isInitializing ||
+        _isLoadMoreRunning ||
+        _controller.position.extentAfter > 500) {
       return;
     }
 
@@ -446,7 +547,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
     List<WalletAddress> newAddresses = [];
     try {
-      final cursor = !_isReceivingSelected ? viewModel.changeInitialCursor : viewModel.receivingInitialCursor;
+      final cursor =
+          !_isReceivingSelected
+              ? viewModel.changeInitialCursor
+              : viewModel.receivingInitialCursor;
       newAddresses = await viewModel.getWalletAddressList(
         viewModel.walletBaseItem!,
         cursor,
@@ -456,7 +560,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
       );
 
       // UI 업데이트 - 탭 상태가 변경되지 않았을 때만 데이터 추가
-      if (mounted && wasReceivingSelected == _isReceivingSelected && !_isScrollingToTop) {
+      if (mounted &&
+          wasReceivingSelected == _isReceivingSelected &&
+          !_isScrollingToTop) {
         setState(() {
           if (_isReceivingSelected) {
             viewModel.receivingAddressList.addAll(newAddresses);
@@ -482,7 +588,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   /// 추후 다시 조회할 경우 조회 속도 향상을 위해 백그라운드에서 주소를 저장
-  void _addAddressesWithGapLimit(List<WalletAddress> newAddresses, bool isChange) {
+  void _addAddressesWithGapLimit(
+    List<WalletAddress> newAddresses,
+    bool isChange,
+  ) {
     if (viewModel.walletBaseItem == null) {
       return;
     }
@@ -495,7 +604,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
           isChange: isChange,
         );
       } catch (e) {
-        Logger.error('[_preloadAddressesInBackground] Failed to preload addresses: $e');
+        Logger.error(
+          '[_preloadAddressesInBackground] Failed to preload addresses: $e',
+        );
       }
     });
   }

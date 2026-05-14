@@ -12,7 +12,8 @@ class WalletAdditionGuideCard extends StatefulWidget {
   const WalletAdditionGuideCard({super.key, required this.onPressed});
 
   @override
-  State<WalletAdditionGuideCard> createState() => _WalletAdditionGuideCardState();
+  State<WalletAdditionGuideCard> createState() =>
+      _WalletAdditionGuideCardState();
 }
 
 class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
@@ -20,7 +21,9 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+      padding: const EdgeInsets.symmetric(
+        horizontal: CoconutLayout.defaultPadding,
+      ),
       child: ShrinkAnimationButton(
         defaultColor: CoconutColors.gray800,
         pressedColor: colors.surfacePressed,
@@ -37,7 +40,12 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
                 children: [
                   SvgPicture.asset('assets/svg/wallet-eyes.svg'),
                   CoconutLayout.spacing_100w,
-                  Text(t.wallet_list_add_guide_card.add_watch_only, style: CoconutTypography.body2_14),
+                  Text(
+                    t.wallet_list_add_guide_card.add_watch_only,
+                    style: CoconutTypography.body2_14.setColor(
+                      context.coconutColors.primaryText,
+                    ),
+                  ),
                 ],
               ),
             ),

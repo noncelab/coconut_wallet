@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -35,7 +36,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
           resizeToAvoidBottomInset: false,
-          backgroundColor: CoconutColors.black,
+          backgroundColor: context.coconutColors.background,
           body: SafeArea(child: _buildBroadcastingCompleteScreen()),
         ),
       ),

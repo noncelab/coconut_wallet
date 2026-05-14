@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -21,7 +22,8 @@ class SignedPsbtScannerScreen extends StatefulWidget {
   const SignedPsbtScannerScreen({super.key});
 
   @override
-  State<SignedPsbtScannerScreen> createState() => _SignedPsbtScannerScreenState();
+  State<SignedPsbtScannerScreen> createState() =>
+      _SignedPsbtScannerScreenState();
 }
 
 class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
@@ -43,14 +45,18 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         controller = null;
       },
       child: Scaffold(
-        backgroundColor: CoconutColors.black,
+        backgroundColor: context.coconutColors.background,
         appBar: CoconutAppBar.build(
           title: t.signed_psbt_scanner_screen.title,
           context: context,
           backgroundColor: CoconutColors.black.withValues(alpha: 0.95),
           actionButtonList: [
             IconButton(
-              icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
+              icon: SvgPicture.asset(
+                'assets/svg/arrow-reload.svg',
+                width: 20,
+                height: 20,
+              ),
               color: CoconutColors.white,
               onPressed: () {
                 controller?.switchCamera();
@@ -90,7 +96,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
     String? currentRoute = ModalRoute.of(context)?.settings.name;
 
-    if (currentRoute != null && currentRoute.startsWith('/signed-psbt-scanner')) {
+    if (currentRoute != null &&
+        currentRoute.startsWith('/signed-psbt-scanner')) {
       _isProcessing = false;
     }
   }
@@ -137,7 +144,10 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   Future<void> _onCompletedScanning(dynamic signedPsbt) async {
-    assert(_qrScanDataHandler.isCompleted() && _qrScanDataHandler.scanDataType != null);
+    assert(
+      _qrScanDataHandler.isCompleted() &&
+          _qrScanDataHandler.scanDataType != null,
+    );
 
     switch (_qrScanDataHandler.scanDataType) {
       case SignedPsbtScanDataType.ur:
@@ -162,7 +172,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       final cborBytes = ur.cbor;
       final decodedCbor = cbor.decode(cborBytes) as CborBytes;
 
-      psbt = _viewModel.parseBase64EncodedToPsbt(base64Encode(decodedCbor.bytes));
+      psbt = _viewModel.parseBase64EncodedToPsbt(
+        base64Encode(decodedCbor.bytes),
+      );
     } catch (e) {
       await _showErrorDialog(t.alert.invalid_qr);
       return;
@@ -177,7 +189,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       if (_viewModel.isMultisig) {
         int missingCount = _viewModel.getMissingSignaturesCount(psbt);
         if (missingCount > 0) {
-          await _showErrorDialog(t.alert.signed_psbt.need_more_sign(count: missingCount));
+          await _showErrorDialog(
+            t.alert.signed_psbt.need_more_sign(count: missingCount),
+          );
           return;
         }
       }
@@ -247,7 +261,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
     String errorMessage;
     if (message == CoconutQrScanner.qrFormatErrorMessage) {
-      errorMessage = '${t.alert.invalid_qr}${scannedData != null ? "\ndata: $scannedData" : null}';
+      errorMessage =
+          '${t.alert.invalid_qr}${scannedData != null ? "\ndata: $scannedData" : null}';
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
     }
@@ -291,10 +306,20 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       icon: SvgPicture.asset(
         'assets/svg/circle-info.svg',
         width: 20,
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: const ColorFilter.mode(
+          CoconutColors.white,
+          BlendMode.srcIn,
+        ),
       ),
       tooltipType: CoconutTooltipType.fixed,
-      richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
+      richText: RichText(
+        text: TextSpan(
+          style: CoconutTypography.body2_14.setColor(
+            context.coconutColors.primaryText,
+          ),
+          children: _getGuideTextSpan(),
+        ),
+      ),
     );
   }
 
@@ -325,13 +350,22 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       case WalletImportSource.jade:
         return [t.tooltip.scan_signed_psbt.by_jade, t.third_party.jade];
       case WalletImportSource.seedSigner:
-        return [t.tooltip.scan_signed_psbt.by_seed_signer, t.third_party.seed_signer];
+        return [
+          t.tooltip.scan_signed_psbt.by_seed_signer,
+          t.third_party.seed_signer,
+        ];
       case WalletImportSource.coldCard:
-        return [t.tooltip.scan_signed_psbt.by_coldcard, t.third_party.cold_card];
+        return [
+          t.tooltip.scan_signed_psbt.by_coldcard,
+          t.third_party.cold_card,
+        ];
       case WalletImportSource.krux:
         return [t.tooltip.scan_signed_psbt.by_krux, t.third_party.krux];
       default:
-        return [t.tooltip.scan_signed_psbt.by_hardware_wallet, t.hardware_wallet];
+        return [
+          t.tooltip.scan_signed_psbt.by_hardware_wallet,
+          t.hardware_wallet,
+        ];
     }
   }
 }

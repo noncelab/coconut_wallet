@@ -69,6 +69,7 @@ class WalletItemCard extends StatelessWidget {
     final displayedFakeBalance = currentUnit.displayBitcoinAmount(fakeBalance);
     if (isEditMode) {
       return _buildWalletItemContent(
+        context,
         displayedFakeBalance,
         isEditMode: true,
         onTapStar: (pair) {
@@ -80,15 +81,11 @@ class WalletItemCard extends StatelessWidget {
       );
     }
     final row = ShrinkAnimationButton(
-      defaultColor: backgroundColor ?? colors.surfaceMuted,
+      defaultColor: backgroundColor ?? colors.surfaceCard,
       pressedColor: pressedColor ?? colors.surfacePressed,
       borderRadius: 12,
       onPressed: () {
-        Navigator.pushNamed(
-          context,
-          '/wallet-detail',
-          arguments: {'id': id, 'entryPoint': entryPoint},
-        );
+        Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id, 'entryPoint': entryPoint});
       },
       onLongPress: () {
         onLongPressed?.call();
@@ -100,7 +97,7 @@ class WalletItemCard extends StatelessWidget {
       // borderGradientColors: signers?.isNotEmpty == true
       //     ? ColorUtil.getGradientColors(signers!)
       //     : [CoconutColors.gray800, CoconutColors.gray800],
-      child: _buildWalletItemContent(displayedFakeBalance),
+      child: _buildWalletItemContent(context, displayedFakeBalance),
     );
 
     if (isLastItem) {
@@ -111,6 +108,7 @@ class WalletItemCard extends StatelessWidget {
   }
 
   Widget _buildWalletItemContent(
+    BuildContext context,
     String displayFakeBalance, {
     bool isEditMode = false,
     ValueChanged<(bool, int)>? onTapStar,
@@ -119,15 +117,11 @@ class WalletItemCard extends StatelessWidget {
     final walletDescriptionParts = <String>[
       name,
       if (isPrimaryWallet == true) t.wallet_list.primary_wallet,
-      if (isExcludeFromTotalBalance == true)
-        t.wallet_list.exclude_from_total_amount,
+      if (isExcludeFromTotalBalance == true) t.wallet_list.exclude_from_total_amount,
     ];
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isEditMode ? 8 : 20,
-        vertical: 12,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: isEditMode ? 8 : 20, vertical: 12),
       child: Row(
         children: [
           if (isEditMode)
@@ -141,9 +135,7 @@ class WalletItemCard extends StatelessWidget {
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: SvgPicture.asset(
-                    'assets/svg/${isFavorite ? 'star-filled' : 'star-outlined'}.svg',
-                  ),
+                  child: SvgPicture.asset('assets/svg/${isFavorite ? 'star-filled' : 'star-outlined'}.svg'),
                 ),
               ),
             ),
@@ -151,8 +143,7 @@ class WalletItemCard extends StatelessWidget {
             walletImportSource: walletImportSource,
             iconIndex: iconIndex,
             colorIndex: colorIndex,
-            gradientColors:
-                signers != null ? ColorUtil.getGradientColors(signers!) : null,
+            gradientColors: signers != null ? ColorUtil.getGradientColors(signers!) : null,
           ),
           CoconutLayout.spacing_200w,
           Expanded(
@@ -162,9 +153,7 @@ class WalletItemCard extends StatelessWidget {
                 isBalanceHidden
                     ? Text(
                       t.view_balance,
-                      style: CoconutTypography.body2_14_Bold.copyWith(
-                        color: CoconutColors.gray600,
-                      ),
+                      style: CoconutTypography.body2_14_Bold.copyWith(color: context.coconutColors.tertiaryText),
                     )
                     : fakeBalance != null
                     ? FittedBox(
@@ -176,21 +165,18 @@ class WalletItemCard extends StatelessWidget {
                           if (currentUnit.isPrefixSymbol) ...[
                             Text(
                               currentUnit.symbol,
-                              style: CoconutTypography.body2_14_NumberBold
-                                  .setColor(CoconutColors.white),
+                              style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
                             ),
                             CoconutLayout.spacing_50w,
                           ],
                           Text(
                             displayFakeBalance,
-                            style: CoconutTypography.body2_14_NumberBold
-                                .setColor(CoconutColors.white),
+                            style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
                           ),
                           if (!currentUnit.isPrefixSymbol) ...[
                             Text(
                               " ${currentUnit.symbol}",
-                              style: CoconutTypography.body2_14_NumberBold
-                                  .setColor(CoconutColors.white),
+                              style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
                             ),
                             CoconutLayout.spacing_50w,
                           ],
@@ -206,8 +192,7 @@ class WalletItemCard extends StatelessWidget {
                           if (currentUnit.isPrefixSymbol) ...[
                             Text(
                               currentUnit.symbol,
-                              style: CoconutTypography.body2_14_NumberBold
-                                  .setColor(CoconutColors.white),
+                              style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
                             ),
                             CoconutLayout.spacing_50w,
                           ],
@@ -215,15 +200,15 @@ class WalletItemCard extends StatelessWidget {
                             prevValue: animatedBalanceData.previous,
                             value: animatedBalanceData.current,
                             currentUnit: currentUnit,
-                            textStyle: CoconutTypography.body2_14_NumberBold
-                                .setColor(CoconutColors.white),
+                            textStyle: CoconutTypography.body2_14_NumberBold.setColor(
+                              context.coconutColors.primaryText,
+                            ),
                           ),
                           if (!currentUnit.isPrefixSymbol) ...[
                             CoconutLayout.spacing_50w,
                             Text(
                               currentUnit.symbol,
-                              style: CoconutTypography.body2_14_NumberBold
-                                  .setColor(CoconutColors.white),
+                              style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
                             ),
                           ],
                         ],
@@ -237,9 +222,7 @@ class WalletItemCard extends StatelessWidget {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           walletDescriptionParts.join(' • '),
-                          style: CoconutTypography.body3_12.setColor(
-                            CoconutColors.gray500,
-                          ),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                         ),
                       ),
                     ),
@@ -263,10 +246,7 @@ class WalletItemCard extends StatelessWidget {
                 'assets/svg/arrow-right.svg',
                 width: 6,
                 height: 10,
-                colorFilter: const ColorFilter.mode(
-                  CoconutColors.gray400,
-                  BlendMode.srcIn,
-                ),
+                colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
               ),
         ],
       ),

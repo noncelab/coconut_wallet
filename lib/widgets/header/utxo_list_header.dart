@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -61,7 +62,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
       key: widget.headerGlobalKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        widget.isSelectionMode ? _buildSelectionModeHeader() : _buildHeader(),
+        widget.isSelectionMode ? _buildSelectionModeHeader(context) : _buildHeader(context),
         CoconutLayout.spacing_50h,
         widget.tagListWidget,
         CoconutLayout.spacing_300h,
@@ -72,7 +73,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
   // --------------------
   // 일반 모드 헤더
   // --------------------
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 170),
       padding: const EdgeInsets.only(left: 20, top: 28, right: 20),
@@ -80,7 +81,10 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(t.utxo_list_screen.total_balance, style: CoconutTypography.body1_16_Bold),
+          Text(
+            t.utxo_list_screen.total_balance,
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+          ),
           CoconutLayout.spacing_100h,
           GestureDetector(
             onTap: widget.onPressedUnitToggle,
@@ -90,7 +94,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                 IntrinsicWidth(
                   child: BitcoinAmountUnit(
                     currentUnit: widget.currentUnit,
-                    unitStyle: CoconutTypography.heading4_18_Number,
+                    unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
                     child: Expanded(
                       child: FittedBox(
                         alignment: Alignment.centerLeft,
@@ -99,7 +103,9 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                           prevValue: widget.animatedBalanceData.previous,
                           value: widget.animatedBalanceData.current,
                           currentUnit: widget.currentUnit,
-                          textStyle: CoconutTypography.heading2_28_NumberBold,
+                          textStyle: CoconutTypography.heading2_28_NumberBold.setColor(
+                            context.coconutColors.primaryText,
+                          ),
                         ),
                       ),
                     ),
@@ -131,14 +137,18 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     Text(
                       widget.activeOption,
                       style: CoconutTypography.body3_12.setColor(
-                        widget.isLoadComplete ? CoconutColors.white : CoconutColors.gray700,
+                        widget.isLoadComplete ? context.coconutColors.primaryText : context.coconutColors.tertiaryText,
                       ),
                     ),
                     CoconutLayout.spacing_200w,
                     SvgPicture.asset(
                       'assets/svg/arrow-down.svg',
-                      colorFilter:
-                          widget.isLoadComplete ? null : const ColorFilter.mode(CoconutColors.gray700, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(
+                        widget.isLoadComplete
+                            ? context.coconutColors.iconDefault
+                            : context.coconutColors.iconSubDefault,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ],
                 ),
@@ -153,7 +163,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
   // --------------------
   // 선택 모드 헤더
   // --------------------
-  Widget _buildSelectionModeHeader() {
+  Widget _buildSelectionModeHeader(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 170),
       width: MediaQuery.sizeOf(context).width,

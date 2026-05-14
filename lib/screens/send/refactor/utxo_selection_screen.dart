@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -84,9 +85,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                 GestureDetector(
                   onTap: () => _removeUtxoOrderDropdown(),
                   child: Scaffold(
-                    backgroundColor: CoconutColors.black,
+                    backgroundColor: context.coconutColors.background,
                     appBar: CoconutAppBar.build(
-                      backgroundColor: CoconutColors.black,
+                      backgroundColor: context.coconutColors.background,
                       customTitle: Text(
                         titleText,
                         style:

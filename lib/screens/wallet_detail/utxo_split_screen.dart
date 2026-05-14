@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -125,7 +126,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
       child: Builder(
         builder: (context) {
           return Scaffold(
-            backgroundColor: CoconutColors.black,
+            backgroundColor: context.coconutColors.background,
             appBar: _buildAppBar(context),
             body: _buildBody(context),
           );
@@ -161,7 +162,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       context: context,
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       title: t.split_utxo_screen.title,
       isBottom: true,
       isBackButton: true,
@@ -1517,7 +1518,10 @@ class _SplitResultSkeletonContent extends StatelessWidget {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     int titleLines = 1;
-                    final span = TextSpan(text: dummyTitle, style: CoconutTypography.body1_16_Bold);
+                    final span = TextSpan(
+                      text: dummyTitle,
+                      style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+                    );
                     final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
                     tp.layout(maxWidth: constraints.maxWidth);
                     titleLines = tp.computeLineMetrics().length;

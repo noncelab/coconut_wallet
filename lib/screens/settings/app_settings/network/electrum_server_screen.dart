@@ -153,8 +153,9 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     if (_serverAddressController.text.isEmpty ||
         _portController.text.isEmpty ||
         !_viewModel.isValidDomain(_serverAddressController.text) ||
-        !_viewModel.isValidPort(_portController.text))
+        !_viewModel.isValidPort(_portController.text)) {
       return false;
+    }
 
     return !_viewModel.isSameWithCurrentServer(_serverAddressController.text, _portController.text, _currentSslState);
   }
@@ -402,7 +403,16 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(children: [Expanded(child: Text(serverList[i].host, style: CoconutTypography.body2_14))]),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  serverList[i].host,
+                                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                                ),
+                              ),
+                            ],
+                          ),
                           Row(
                             children: [
                               Text(
@@ -674,7 +684,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
         children: [
           _buildAlertIcon(status),
           CoconutLayout.spacing_300w,
-          Expanded(child: Text(_getAlertString(status), style: CoconutTypography.body2_14_Bold)),
+          Expanded(
+            child: Text(
+              _getAlertString(status),
+              style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+            ),
+          ),
         ],
       ),
     );
