@@ -82,9 +82,9 @@ const List<Color> BackgroundColorPalette = [
 @immutable
 class CoconutColors {
   final Color background;
+  final Color backgroundSubtle;
   final Color surface;
   final Color surfaceCard;
-  final Color surfaceCardStrong;
   final Color surfaceButton;
   final Color surfaceMuted;
   final Color surfaceDisabled;
@@ -104,6 +104,7 @@ class CoconutColors {
   final Color textFilterChipSelected;
   final Color borderSubtle;
   final Color borderStrong;
+  final Color iconBackground;
   final Color iconDefault;
   final Color iconSubDefault;
   final Color iconHighlight;
@@ -115,17 +116,21 @@ class CoconutColors {
   final Color pulldownMenuTextColor;
   final Color shadowDefault;
   final Color popupBackground;
+  final Color dimOverlay;
   final Color pageIndicatorActive;
   final Color pageIndicatorInactive;
   final Color sendingColor;
   final Color receivingColor;
   final Color bottomActionBarBackground;
+  final Color loadingIndicatorColor;
+  final Color glossaryKeywordBackground;
+  final Color glossaryKeywordText;
 
   const CoconutColors({
     required this.background,
     required this.surface,
+    required this.backgroundSubtle,
     required this.surfaceCard,
-    required this.surfaceCardStrong,
     required this.surfaceButton,
     required this.surfaceMuted,
     required this.surfaceDisabled,
@@ -145,6 +150,7 @@ class CoconutColors {
     required this.textFilterChipSelected,
     required this.borderSubtle,
     required this.borderStrong,
+    required this.iconBackground,
     required this.iconDefault,
     required this.iconSubDefault,
     required this.iconHighlight,
@@ -156,19 +162,23 @@ class CoconutColors {
     required this.pulldownMenuTextColor,
     required this.shadowDefault,
     required this.popupBackground,
+    required this.dimOverlay,
     required this.pageIndicatorActive,
     required this.pageIndicatorInactive,
     required this.sendingColor,
     required this.receivingColor,
     required this.bottomActionBarBackground,
+    required this.loadingIndicatorColor,
+    required this.glossaryKeywordBackground,
+    required this.glossaryKeywordText,
   });
 
   factory CoconutColors.dark() {
     return const CoconutColors(
       background: ds.CoconutColors.black,
+      backgroundSubtle: ds.CoconutColors.gray850,
       surface: ds.CoconutColors.gray850,
       surfaceCard: ds.CoconutColors.gray850,
-      surfaceCardStrong: ds.CoconutColors.gray900,
       surfaceButton: ds.CoconutColors.gray850,
       surfaceMuted: ds.CoconutColors.gray850,
       surfaceDisabled: ds.CoconutColors.gray850,
@@ -188,9 +198,10 @@ class CoconutColors {
       textFilterChipSelected: ds.CoconutColors.gray800,
       borderSubtle: ds.CoconutColors.gray700,
       borderStrong: ds.CoconutColors.white,
+      iconBackground: ds.CoconutColors.gray750,
       iconDefault: ds.CoconutColors.white,
       iconSubDefault: ds.CoconutColors.gray400,
-      iconHighlight: ds.CoconutColors.gray850,
+      iconHighlight: ds.CoconutColors.black,
       iconDisabled: ds.CoconutColors.gray600,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
@@ -199,21 +210,25 @@ class CoconutColors {
       pulldownMenuTextColor: ds.CoconutColors.white,
       shadowDefault: ds.CoconutColors.white,
       popupBackground: ds.CoconutColors.gray900,
+      dimOverlay: ds.CoconutColors.black,
       pageIndicatorActive: ds.CoconutColors.gray400,
       pageIndicatorInactive: ds.CoconutColors.gray800,
       sendingColor: ds.CoconutColors.primary,
       receivingColor: ds.CoconutColors.cyanBlue,
       bottomActionBarBackground: ds.CoconutColors.gray900,
+      loadingIndicatorColor: ds.CoconutColors.white,
+      glossaryKeywordBackground: Color(0xFFA6E1E7),
+      glossaryKeywordText: ds.CoconutColors.black,
     );
   }
 
   factory CoconutColors.ccosPreview() {
     return const CoconutColors(
       background: Color(0xFFF6F3EA),
+      backgroundSubtle: Color(0xFFE5EEF7),
       surface: Color(0xFFE5EEF7),
       surfaceCard: Color(0xFFD9E8F5),
-      surfaceCardStrong: Color(0xFFCDBFD9),
-      surfaceButton: Color(0xFFDCEFE3),
+      surfaceButton: Color(0xFFD9E8F5),
       surfaceMuted: Color(0xFFEDE3CF),
       surfaceDisabled: Color(0xFFE2D9DE),
       surfaceBottomSheet: Color(0xFFE8E0F2),
@@ -224,17 +239,18 @@ class CoconutColors {
       surfaceSkeletonHighlight: Color(0xFFF0EBFA),
       surfacePressed: Color(0xFFCBB8D8),
       inputSurface: Color(0xFFE6DCCB),
-      primary: ds.CoconutColors.primary,
+      primary: Color.fromARGB(255, 87, 65, 232),
       primaryText: Color(0xFF181A1F),
       secondaryText: Color(0xFF454B57),
       tertiaryText: Color(0xFF727987),
       textFilterChip: Color(0xFF181A1F),
       textFilterChipSelected: Color(0xFFF6F3EA),
-      borderSubtle: Color(0xFF98A3B3),
+      borderSubtle: Color.fromARGB(255, 69, 126, 211),
       borderStrong: Color(0xFF181A1F),
+      iconBackground: Color.fromARGB(255, 213, 228, 243),
       iconDefault: Color(0xFF181A1F),
       iconSubDefault: Color(0xFF727987),
-      iconHighlight: Color(0xFFD9E8F5),
+      iconHighlight: Color.fromARGB(255, 60, 73, 86),
       iconDisabled: Color(0xFF727987),
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
@@ -243,11 +259,15 @@ class CoconutColors {
       shadowDefault: Color(0xFF181A1F),
       pulldownMenuTextColor: Color(0xFF181A1F),
       popupBackground: Color(0xFFE8E0F2),
+      dimOverlay: Color(0xFFEEEEEE),
       pageIndicatorActive: Color(0xFF454B57),
       pageIndicatorInactive: Color(0xFFCBB8D8),
       sendingColor: Color.fromARGB(255, 163, 124, 189),
       receivingColor: Color.fromARGB(255, 102, 136, 136),
       bottomActionBarBackground: Color(0xFFE8E0F2),
+      loadingIndicatorColor: Color.fromARGB(255, 69, 126, 211),
+      glossaryKeywordBackground: Color(0xFFE8E0F2),
+      glossaryKeywordText: Color(0xFF181A1F),
     );
   }
 }

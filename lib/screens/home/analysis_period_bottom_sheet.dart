@@ -211,11 +211,11 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: context.coconutColors.background,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       body: SafeArea(
         bottom: true,
         child: Container(
-          color: CoconutColors.black,
+          color: context.coconutColors.surfaceBottomSheet,
           child: Stack(
             children: [
               Container(
@@ -231,7 +231,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                           width: 55,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: CoconutColors.gray400,
+                            color: context.coconutColors.secondaryText,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -240,7 +240,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                     CoconutLayout.spacing_400h,
                     Text(
                       t.wallet_home_screen.analysis_period_bottom_sheet.period_for_analysis,
-                      style: CoconutTypography.body1_16_Bold,
+                      style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                     ),
                     CoconutLayout.spacing_300h,
                     MediaQuery(
@@ -283,7 +283,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                       borderWidth: 1,
                                       buttonType: CoconutButtonType.outlined,
                                       foregroundColor: CoconutColors.black,
-                                      textStyle: CoconutTypography.body2_14,
+                                      textStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                                       text: _fmt(_startDate),
                                     ),
                                   ),
@@ -302,7 +302,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                       borderWidth: 1,
                                       buttonType: CoconutButtonType.outlined,
                                       foregroundColor: CoconutColors.black,
-                                      textStyle: CoconutTypography.body2_14,
+                                      textStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                                       text: _fmt(_endDate),
                                     ),
                                   ),
@@ -313,7 +313,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                     CoconutLayout.spacing_400h,
                     Text(
                       t.wallet_home_screen.analysis_period_bottom_sheet.transaction_type,
-                      style: CoconutTypography.body1_16_Bold,
+                      style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                     ),
                     CoconutLayout.spacing_300h,
                     MediaQuery(

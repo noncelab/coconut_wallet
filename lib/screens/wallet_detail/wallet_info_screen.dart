@@ -85,11 +85,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Padding(
-                          padding: const EdgeInsets.only(
-                            top: 12,
-                            left: 16,
-                            right: 16,
-                          ),
+                          padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
                           child: WalletInfoItemCard(
                             id: widget.id,
                             walletItem: viewModel.walletItemBase,
@@ -100,37 +96,29 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               }
                               _removeTooltip();
 
-                              Future.delayed(
-                                const Duration(milliseconds: 50),
-                                () {
-                                  setState(() {
-                                    _tooltipRemainingTime = kTooltipDuration;
-                                  });
+                              Future.delayed(const Duration(milliseconds: 50), () {
+                                setState(() {
+                                  _tooltipRemainingTime = kTooltipDuration;
+                                });
 
-                                  _tooltipTimer?.cancel();
-                                  _tooltipTimer = Timer.periodic(
-                                    const Duration(seconds: 1),
-                                    (timer) {
-                                      setState(() {
-                                        if (_tooltipRemainingTime > 0) {
-                                          _tooltipRemainingTime--;
-                                        } else {
-                                          _removeTooltip();
-                                          timer.cancel();
-                                        }
-                                      });
-                                    },
-                                  );
-                                },
-                              );
+                                _tooltipTimer?.cancel();
+                                _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                                  setState(() {
+                                    if (_tooltipRemainingTime > 0) {
+                                      _tooltipRemainingTime--;
+                                    } else {
+                                      _removeTooltip();
+                                      timer.cancel();
+                                    }
+                                  });
+                                });
+                              });
                             },
                             onShowMfpInputBottomSheet: () {
                               _showMfpInputBottomSheet();
                             },
                             tooltipKey: _walletTooltipKey,
-                            onNameChanged:
-                                (updatedName) =>
-                                    viewModel.updateWalletName(updatedName),
+                            onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
                           ),
                         ),
                         if (widget.isMultisig) ...{
@@ -139,22 +127,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             child: ListView.separated(
                               physics: const NeverScrollableScrollPhysics(),
                               shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
                               itemCount: viewModel.multisigTotalSignerCount,
-                              separatorBuilder:
-                                  (context, index) => const SizedBox(height: 8),
+                              separatorBuilder: (context, index) => const SizedBox(height: 8),
                               itemBuilder: (context, index) {
                                 return MultisigSignerCard(
                                   index: index,
                                   signer: viewModel.getSigner(index),
-                                  masterFingerprint: viewModel
-                                      .getSignerMasterFingerprint(index),
-                                  derivationPath:
-                                      viewModel
-                                          .getSignerBsms(index)
-                                          .derivationPath,
+                                  masterFingerprint: viewModel.getSignerMasterFingerprint(index),
+                                  derivationPath: viewModel.getSignerBsms(index).derivationPath,
                                 );
                               },
                             ),
@@ -167,14 +148,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           transactionCount: viewModel.transactionCount,
                           utxoCount: viewModel.utxoCount,
                           balanceSats: viewModel.walletBalance.total,
-                          currentUnit:
-                              context.read<PreferenceProvider>().currentUnit,
+                          currentUnit: context.read<PreferenceProvider>().currentUnit,
                           targetSats: viewModel.targetSats,
-                          onEditTargetTap:
-                              () => _showTargetSettingBottomSheet(
-                                context,
-                                viewModel,
-                              ),
+                          onEditTargetTap: () => _showTargetSettingBottomSheet(context, viewModel),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -185,11 +161,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 title: t.view_all_addresses,
                                 onPressed: () {
                                   _removeTooltip();
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/address-list',
-                                    arguments: {'id': widget.id},
-                                  );
+                                  Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
                                 },
                               ),
                               if (!widget.isMultisig) ...{
@@ -200,9 +172,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     _removeTooltip();
                                     _handleAuthFlow(
                                       onComplete: () {
-                                        _showExtendedBottomSheet(
-                                          viewModel.extendedPublicKey,
-                                        );
+                                        _showExtendedBottomSheet(viewModel.extendedPublicKey);
                                       },
                                     );
                                   },
@@ -211,20 +181,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               if (widget.isMultisig) ...{
                                 SingleButton(
                                   enableShrinkAnim: true,
-                                  title:
-                                      t
-                                          .wallet_info_screen
-                                          .view_wallet_backup_data,
+                                  title: t.wallet_info_screen.view_wallet_backup_data,
                                   onPressed: () {
                                     _removeTooltip();
 
                                     Navigator.pushNamed(
                                       context,
                                       '/wallet-backup-data',
-                                      arguments: {
-                                        'id': widget.id,
-                                        'walletName': viewModel.walletName,
-                                      },
+                                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
                                     );
                                   },
                                 ),
@@ -234,11 +198,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 title: t.tag_manage_label,
                                 onPressed: () {
                                   _removeTooltip();
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/utxo-tag',
-                                    arguments: {'id': widget.id},
-                                  );
+                                  Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
                                 },
                               ),
                             ],
@@ -263,18 +223,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             rightElement: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: CoconutColors.white.withValues(
-                                  alpha: 0.1,
-                                ),
+                                color: CoconutColors.white.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: SvgPicture.asset(
                                 'assets/svg/trash.svg',
                                 width: 16,
-                                colorFilter: const ColorFilter.mode(
-                                  CoconutColors.hotPink,
-                                  BlendMode.srcIn,
-                                ),
+                                colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
                               ),
                             ),
                             onPressed: () {
@@ -283,23 +238,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 context: context,
                                 builder: (BuildContext context) {
                                   return CoconutPopup(
-                                    languageCode:
-                                        context
-                                            .read<PreferenceProvider>()
-                                            .language,
+                                    languageCode: context.read<PreferenceProvider>().language,
                                     title: t.alert.wallet_delete.confirm_delete,
-                                    description:
-                                        t
-                                            .alert
-                                            .wallet_delete
-                                            .confirm_delete_description,
+                                    description: t.alert.wallet_delete.confirm_delete_description,
                                     onTapRight: () {
                                       _handleAuthFlow(
                                         onComplete: () async {
-                                          await _deleteWalletAndGoToEntryPoint(
-                                            context,
-                                            viewModel,
-                                          );
+                                          await _deleteWalletAndGoToEntryPoint(context, viewModel);
                                         },
                                       );
                                     },
@@ -307,7 +252,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       Navigator.of(context).pop();
                                     },
                                     rightButtonText: t.delete,
-                                    rightButtonColor: CoconutColors.hotPink,
+                                    rightButtonColor: context.coconutColors.danger,
                                     leftButtonText: t.cancel,
                                   );
                                 },
@@ -326,9 +271,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 right:
                     MediaQuery.of(context).size.width -
                     _walletTooltipIconPosition.dx -
-                    (_walletTooltipIconRenderBox == null
-                        ? 0
-                        : _walletTooltipIconRenderBox!.size.width) -
+                    (_walletTooltipIconRenderBox == null ? 0 : _walletTooltipIconRenderBox!.size.width) -
                     10,
                 child: CoconutToolTip(
                   width: MediaQuery.sizeOf(context).width,
@@ -387,9 +330,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       context: context,
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: WalletAddMfpInputBottomSheet(
             onComplete: (text) {
               Navigator.pop(context, text);
@@ -404,10 +345,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     );
 
     if (result != null && result.isNotEmpty && mounted) {
-      await context.read<WalletProvider>().updateWalletDescriptor(
-        widget.id,
-        result,
-      );
+      await context.read<WalletProvider>().updateWalletDescriptor(widget.id, result);
     }
 
     return result;
@@ -415,15 +353,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   void _initializeTooltipPosition() {
     try {
-      _walletTooltipIconRenderBox =
-          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox?;
+      _walletTooltipIconRenderBox = _walletTooltipKey.currentContext?.findRenderObject() as RenderBox?;
       if (_walletTooltipIconRenderBox != null) {
-        _walletTooltipIconPosition = _walletTooltipIconRenderBox!.localToGlobal(
-          Offset.zero,
-        );
-        _tooltipTopPadding =
-            _walletTooltipIconPosition.dy +
-            _walletTooltipIconRenderBox!.size.height;
+        _walletTooltipIconPosition = _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
+        _tooltipTopPadding = _walletTooltipIconPosition.dy + _walletTooltipIconRenderBox!.size.height;
 
         // debugPrint('MediaQuery.paddingOf(context).top = ${MediaQuery.paddingOf(context).top}');
         // debugPrint('kToolbarHeight = $kToolbarHeight');
@@ -445,14 +378,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     _tooltipTimer?.cancel();
   }
 
-  void _showTargetSettingBottomSheet(
-    BuildContext context,
-    WalletInfoViewModel viewModel,
-  ) {
-    final btcString =
-        viewModel.targetSats != null
-            ? _satsToBtcInputString(viewModel.targetSats!)
-            : '';
+  void _showTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
+    final btcString = viewModel.targetSats != null ? _satsToBtcInputString(viewModel.targetSats!) : '';
     final parentContext = context;
 
     SingleTextFieldBottomSheet.show(
@@ -482,9 +409,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       cursorColor: CoconutColors.white,
       suffix: Text(
         BitcoinUnit.btc.symbol,
-        style: CoconutTypography.body2_14_Bold.setColor(
-          context.coconutColors.primaryText,
-        ),
+        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
       ),
       onComplete: (text) {
         final btc = double.tryParse(text.replaceAll(',', ''));
@@ -531,16 +456,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   static String _satsToBtcInputString(int sats) {
     final btc = sats / 100000000.0;
-    return btc
-        .toStringAsFixed(8)
-        .replaceFirst(RegExp(r'0+$'), '')
-        .replaceFirst(RegExp(r'\.$'), '');
+    return btc.toStringAsFixed(8).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
   }
 
-  Future<void> _deleteWalletAndGoToEntryPoint(
-    BuildContext context,
-    WalletInfoViewModel viewModel,
-  ) async {
+  Future<void> _deleteWalletAndGoToEntryPoint(BuildContext context, WalletInfoViewModel viewModel) async {
     Navigator.of(context).pop();
 
     final navigator = Navigator.of(context);
@@ -559,22 +478,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         if (widget.entryPoint == kEntryPointWalletHome) {
           navigator.pushNamedAndRemoveUntil('/', (route) => false);
         } else {
-          navigator.pushNamedAndRemoveUntil(
-            kEntryPointWalletList,
-            (route) => route.isFirst,
-          );
+          navigator.pushNamedAndRemoveUntil(kEntryPointWalletList, (route) => route.isFirst);
         }
       }
     } catch (e) {
       debugPrint('Delete wallet failed: $e');
       _setOverlayLoading(false);
       if (context.mounted) {
-        await showInfoDialog(
-          context,
-          languageCode,
-          t.wallet_info_screen.error.delete,
-          e.toString(),
-        );
+        await showInfoDialog(context, languageCode, t.wallet_info_screen.error.delete, e.toString());
       }
     }
   }
@@ -604,9 +515,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: CustomLoadingOverlay(
-        child: PinCheckScreen(onComplete: onComplete),
-      ),
+      child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: onComplete)),
     );
   }
 
@@ -614,11 +523,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: QrWithCopyTextScreen(
-        qrData: extendedPublicKey,
-        title: t.extended_public_key,
-        showPulldownMenu: false,
-      ),
+      child: QrWithCopyTextScreen(qrData: extendedPublicKey, title: t.extended_public_key, showPulldownMenu: false),
     );
   }
 }
@@ -655,12 +560,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(
-                child: _StatCard(
-                  label: t.wallet_info_screen.transaction,
-                  value: '$transactionCount',
-                ),
-              ),
+              Expanded(child: _StatCard(label: t.wallet_info_screen.transaction, value: '$transactionCount')),
               const SizedBox(width: 12),
               Expanded(
                 child: ShrinkAnimationButton(
@@ -668,17 +568,9 @@ class _WalletInfoStatsSection extends StatelessWidget {
                   pressedColor: colors.surfacePressed,
                   borderRadius: 24,
                   onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/utxo-overview',
-                      arguments: {'id': walletId},
-                    );
+                    Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
                   },
-                  child: _StatCard(
-                    label: t.wallet_info_screen.utxo,
-                    value: '$utxoCount',
-                    transparentBackground: true,
-                  ),
+                  child: _StatCard(label: t.wallet_info_screen.utxo, value: '$utxoCount', transparentBackground: true),
                 ),
               ),
             ],
@@ -708,19 +600,14 @@ class _StatCard extends StatelessWidget {
   final String value;
   final bool transparentBackground;
 
-  const _StatCard({
-    required this.label,
-    required this.value,
-    this.transparentBackground = false,
-  });
+  const _StatCard({required this.label, required this.value, this.transparentBackground = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:
-            transparentBackground ? Colors.transparent : CoconutColors.gray800,
+        color: transparentBackground ? Colors.transparent : context.coconutColors.surfaceCard,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -728,19 +615,10 @@ class _StatCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                label,
-                style: CoconutTypography.body2_14_Bold.setColor(
-                  CoconutColors.gray500,
-                ),
-              ),
+              Text(label, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText)),
               const SizedBox(width: 4),
               transparentBackground
-                  ? const Icon(
-                    Icons.keyboard_arrow_right_rounded,
-                    size: 20,
-                    color: CoconutColors.gray500,
-                  )
+                  ? Icon(Icons.keyboard_arrow_right_rounded, size: 20, color: context.coconutColors.iconSubDefault)
                   : const SizedBox.shrink(),
             ],
           ),
@@ -749,9 +627,7 @@ class _StatCard extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Text(
               value,
-              style: CoconutTypography.heading3_21_NumberBold.setColor(
-                CoconutColors.white,
-              ),
+              style: CoconutTypography.heading3_21_NumberBold.setColor(context.coconutColors.primaryText),
             ),
           ),
         ],
@@ -778,10 +654,7 @@ class _TargetQuantityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveTarget = targetSats ?? maxSats;
-    final progress =
-        effectiveTarget > 0
-            ? (balanceSats / effectiveTarget).clamp(0.0, 1.0)
-            : 0.0;
+    final progress = effectiveTarget > 0 ? (balanceSats / effectiveTarget).clamp(0.0, 1.0) : 0.0;
     final percent = _formatProgressPercent(progress);
     final isTargetReached = targetSats != null && progress >= 1.0;
 
@@ -791,10 +664,7 @@ class _TargetQuantityCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color:
-                transparentBackground
-                    ? Colors.transparent
-                    : CoconutColors.gray800,
+            color: transparentBackground ? Colors.transparent : CoconutColors.gray800,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
@@ -804,19 +674,14 @@ class _TargetQuantityCard extends StatelessWidget {
                 children: [
                   Text(
                     t.wallet_info_screen.target_quantity,
-                    style: CoconutTypography.body2_14_Bold.setColor(
-                      CoconutColors.gray500,
-                    ),
+                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500),
                   ),
                   const SizedBox(width: 4),
                   SvgPicture.asset(
                     'assets/svg/edit-outlined.svg',
                     width: 12,
                     height: 12,
-                    colorFilter: const ColorFilter.mode(
-                      CoconutColors.gray500,
-                      BlendMode.srcIn,
-                    ),
+                    colorFilter: const ColorFilter.mode(CoconutColors.gray500, BlendMode.srcIn),
                   ),
                 ],
               ),
@@ -827,24 +692,19 @@ class _TargetQuantityCard extends StatelessWidget {
                     children: [
                       Text(
                         'Stay humble, stack sats!',
-                        style: CoconutTypography.heading4_18_NumberBold
-                            .setColor(CoconutColors.gray500),
+                        style: CoconutTypography.heading4_18_NumberBold.setColor(context.coconutColors.secondaryText),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         t.wallet_info_screen.target_not_set_secondary,
-                        style: CoconutTypography.body3_12.setColor(
-                          CoconutColors.gray600,
-                        ),
+                        style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
                       ),
                     ],
                   )
                   : _buildTargetProgressText(
+                    context: context,
                     percent: percent,
-                    amountText: currentUnit.displayBitcoinAmount(
-                      effectiveTarget,
-                      withUnit: false,
-                    ),
+                    amountText: currentUnit.displayBitcoinAmount(effectiveTarget, withUnit: false),
                     unitSymbol: currentUnit.symbol,
                     isPrefixUnit: currentUnit.isPrefixSymbol,
                   ),
@@ -858,13 +718,9 @@ class _TargetQuantityCard extends StatelessWidget {
                       inactiveTrackColor: CoconutColors.gray600,
                       overlayShape: SliderComponentShape.noOverlay,
                       trackHeight: 6,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 0,
-                      ),
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 0),
                     ),
-                    child: IgnorePointer(
-                      child: Slider(value: progress, onChanged: (_) {}),
-                    ),
+                    child: IgnorePointer(child: Slider(value: progress, onChanged: (_) {})),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -878,9 +734,7 @@ class _TargetQuantityCard extends StatelessWidget {
             right: 10,
             child: IgnorePointer(
               child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(24),
-                ),
+                borderRadius: const BorderRadius.only(topRight: Radius.circular(24)),
                 child: Lottie.asset(
                   'assets/lottie/fireworks.json',
                   width: 140,
@@ -896,17 +750,14 @@ class _TargetQuantityCard extends StatelessWidget {
   }
 
   Widget _buildTargetProgressText({
+    required BuildContext context,
     required String percent,
     required String amountText,
     required String unitSymbol,
     required bool isPrefixUnit,
   }) {
-    final whiteStyle = CoconutTypography.heading3_21_Number.setColor(
-      CoconutColors.white,
-    );
-    final grayStyle = CoconutTypography.body1_16_Number.setColor(
-      CoconutColors.gray400,
-    );
+    final whiteStyle = CoconutTypography.heading3_21_Number.setColor(context.coconutColors.primaryText);
+    final grayStyle = CoconutTypography.body1_16_Number.setColor(context.coconutColors.secondaryText);
 
     return RichText(
       text: TextSpan(
@@ -963,10 +814,7 @@ class _TargetQuantityCard extends StatelessWidget {
 
 class _SingleDotInputFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if ('.'.allMatches(newValue.text).length > 1) return oldValue;
     return newValue;
   }

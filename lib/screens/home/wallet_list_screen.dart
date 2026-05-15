@@ -328,7 +328,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                         // 전체 총액
                         BitcoinAmountUnit(
                           currentUnit: currentUnit,
-                          unitStyle: CoconutTypography.heading4_18_NumberBold,
+                          unitStyle: CoconutTypography.heading4_18_NumberBold.setColor(
+                            context.coconutColors.primaryText,
+                          ),
                           spacing: CoconutLayout.spacing_100w,
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
@@ -337,7 +339,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                               prevValue: prevTotalBalance,
                               value: totalBalance,
                               currentUnit: currentUnit,
-                              textStyle: CoconutTypography.heading4_18_NumberBold,
+                              textStyle: CoconutTypography.heading4_18_NumberBold.setColor(
+                                context.coconutColors.primaryText,
+                              ),
                             ),
                           ),
                         ),
@@ -681,7 +685,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         if (!isEditMode) ...[
           CoconutUnderlinedButton(
             text: t.edit,
-            textStyle: CoconutTypography.body2_14,
+            textStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             onTap: () {
               _viewModel.setEditMode(true);
             },
@@ -779,7 +783,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                                 child: Column(
                                   children: [
                                     for (var fiat in viewModel.orderedFiats) ...[
-                                      _buildFiatRow(fiat, onTogglePressed, viewModel.visibleFiats),
+                                      _buildFiatRow(context, fiat, onTogglePressed, viewModel.visibleFiats),
                                       CoconutLayout.spacing_400h,
                                     ],
                                   ],
@@ -796,7 +800,12 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildFiatRow(FiatCode fiat, Function(FiatCode) onTogglePressed, List<FiatCode> currentVisibleFiats) {
+  Widget _buildFiatRow(
+    BuildContext context,
+    FiatCode fiat,
+    Function(FiatCode) onTogglePressed,
+    List<FiatCode> currentVisibleFiats,
+  ) {
     final isVisible = currentVisibleFiats.contains(fiat);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -814,12 +823,17 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
               child: Center(
                 child: Text(
                   fiat.symbol,
-                  style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400).copyWith(height: 1.4),
+                  style: CoconutTypography.body3_12_Number
+                      .setColor(context.coconutColors.secondaryText)
+                      .copyWith(height: 1.4),
                 ),
               ),
             ),
             CoconutLayout.spacing_200w,
-            Text(fiat.name, style: CoconutTypography.body3_12_Bold.copyWith(height: 1.4)),
+            Text(
+              fiat.name,
+              style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText).copyWith(height: 1.4),
+            ),
             CoconutLayout.spacing_150w,
             AnimatedOpacity(
               opacity: isVisible ? 1.0 : 0.0,
@@ -841,7 +855,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
             child: Text(
               isVisible ? t.hide : t.show,
               textAlign: TextAlign.center,
-              style: CoconutTypography.body3_12.setColor(CoconutColors.white).copyWith(height: 1.4),
+              style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText).copyWith(height: 1.4),
             ),
           ),
           onPressed: () {

@@ -59,18 +59,19 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
   @override
   void initState() {
     super.initState();
-    _textColor = CoconutColors.white;
+    _textColor = Colors.transparent;
     _buttonColor = Colors.transparent;
-    _iconColor = CoconutColors.white;
-    _prefixLength =
-        NetworkType.currentNetworkType == NetworkType.regtest ? 6 : 4;
+    _iconColor = Colors.transparent;
+    _prefixLength = NetworkType.currentNetworkType == NetworkType.regtest ? 6 : 4;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_didInitThemeColors) return;
+    _textColor = context.coconutColors.primaryText;
     _buttonColor = context.coconutColors.surfaceMuted;
+    _iconColor = context.coconutColors.iconDefault;
     _didInitThemeColors = true;
   }
 
@@ -80,19 +81,15 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
     return GestureDetector(
       onTap: () async {
         setState(() {
-          _textColor = CoconutColors.white;
+          _textColor = colors.primaryText;
           _buttonColor = colors.surfaceMuted;
-          _iconColor = CoconutColors.white;
+          _iconColor = colors.iconDefault;
         });
 
-        Clipboard.setData(
-          ClipboardData(text: widget.copyText ?? widget.text),
-        ).then((value) => null);
+        Clipboard.setData(ClipboardData(text: widget.copyText ?? widget.text)).then((value) => null);
         if (Platform.isAndroid) {
           try {
-            final int version = await CopyTextContainer._channel.invokeMethod(
-              'getSdkVersion',
-            );
+            final int version = await CopyTextContainer._channel.invokeMethod('getSdkVersion');
 
             // 안드로이드13 부터는 클립보드 복사 메세지가 나오기 때문에 예외 적용
             if (version > 31) {
@@ -109,34 +106,28 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
 
         fToast.init(context);
         final toast = MyToast.getToastWidget(widget.toastMsg ?? t.copied);
-        fToast.showToast(
-          child: toast,
-          gravity: ToastGravity.BOTTOM,
-          toastDuration: const Duration(seconds: 2),
-        );
+        fToast.showToast(child: toast, gravity: ToastGravity.BOTTOM, toastDuration: const Duration(seconds: 2));
       },
       onTapDown: (details) {
         setState(() {
-          _textColor = CoconutColors.gray400;
-          _buttonColor = CoconutColors.gray900;
-          _iconColor = CoconutColors.gray400;
+          _textColor = colors.secondaryText;
+          _buttonColor = colors.surfacePressed;
+          _iconColor = colors.iconSubDefault;
         });
       },
       onTapCancel: () {
         setState(() {
-          _textColor = CoconutColors.white;
+          _textColor = colors.primaryText;
           _buttonColor = colors.surfaceMuted;
-          _iconColor = CoconutColors.white;
+          _iconColor = colors.iconDefault;
         });
       },
       child: Container(
         width: MediaQuery.sizeOf(context).width,
-        padding:
-            widget.padding ??
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
-          color: CoconutColors.gray850,
+          color: colors.surfaceCard,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,12 +138,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
 
                 if (widget.middleText != null) ...[
                   CoconutLayout.spacing_400w,
-                  Text(
-                    widget.middleText!,
-                    style: CoconutTypography.body2_14_Number.setColor(
-                      CoconutColors.gray500,
-                    ),
-                  ),
+                  Text(widget.middleText!, style: CoconutTypography.body2_14_Number.setColor(colors.tertiaryText)),
                   CoconutLayout.spacing_200w,
                 ] else ...[
                   CoconutLayout.spacing_400w,
@@ -162,17 +148,12 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(
-                        CoconutStyles.radius_100,
-                      ),
+                      borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
                       color: _buttonColor,
                     ),
                     child: SvgPicture.asset(
                       'assets/svg/copy.svg',
-                      colorFilter: ColorFilter.mode(
-                        _iconColor,
-                        BlendMode.srcIn,
-                      ),
+                      colorFilter: ColorFilter.mode(_iconColor, BlendMode.srcIn),
                     ),
                   ),
               ],
@@ -181,9 +162,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
               CoconutLayout.spacing_100h,
               Text(
                 widget.suffixText!,
-                style:
-                    widget.suffixTextStyle ??
-                    CoconutTypography.body2_14.setColor(CoconutColors.gray500),
+                style: widget.suffixTextStyle ?? CoconutTypography.body2_14.setColor(colors.tertiaryText),
               ),
             ],
           ],
@@ -204,13 +183,12 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
     return Text(
       widget.text,
       textAlign: widget.textAlign ?? TextAlign.start,
-      style:
-          widget.textStyle?.setColor(_textColor) ??
-          CoconutTypography.body1_16_Number.setColor(_textColor),
+      style: widget.textStyle?.setColor(_textColor) ?? CoconutTypography.body1_16_Number.setColor(_textColor),
     );
   }
 
   List<TextSpan> _buildAddressSpans() {
+    final colors = context.coconutColors;
     final text = widget.text;
     final address = extractAddressFromBip21(text);
     final schemeIndex = text.toLowerCase().startsWith('bitcoin:') ? 8 : 0;
@@ -219,51 +197,35 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
     final spans = <TextSpan>[];
     if (schemeIndex > 0) {
       spans.add(
-        TextSpan(
-          text: text.substring(0, schemeIndex),
-          style: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
-        ),
+        TextSpan(text: text.substring(0, schemeIndex), style: CoconutTypography.body2_14.setColor(colors.tertiaryText)),
       );
     }
 
     if (address.length <= _prefixLength + 8) {
-      spans.add(
-        TextSpan(
-          text: address,
-          style: CoconutTypography.body2_14_Bold.setColor(
-            CoconutColors.cyanBlue,
-          ),
-        ),
-      );
+      spans.add(TextSpan(text: address, style: CoconutTypography.body2_14_Bold.setColor(colors.success)));
     } else {
       spans.add(
         TextSpan(
           text: address.substring(0, _prefixLength),
-          style: CoconutTypography.body2_14_Bold.setColor(
-            CoconutColors.gray500,
-          ),
+          style: CoconutTypography.body2_14_Bold.setColor(colors.tertiaryText),
         ),
       );
       spans.add(
         TextSpan(
           text: address.substring(_prefixLength, _prefixLength + 4),
-          style: CoconutTypography.body2_14_Bold.setColor(
-            CoconutColors.cyanBlue,
-          ),
+          style: CoconutTypography.body2_14_Bold.setColor(colors.success),
         ),
       );
       spans.add(
         TextSpan(
           text: address.substring(_prefixLength + 4, address.length - 4),
-          style: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
+          style: CoconutTypography.body2_14.setColor(colors.tertiaryText),
         ),
       );
       spans.add(
         TextSpan(
           text: address.substring(address.length - 4),
-          style: CoconutTypography.body2_14_Bold.setColor(
-            CoconutColors.cyanBlue,
-          ),
+          style: CoconutTypography.body2_14_Bold.setColor(colors.success),
         ),
       );
     }
@@ -272,7 +234,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       spans.add(
         TextSpan(
           text: text.substring(queryStartIndex),
-          style: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
+          style: CoconutTypography.body2_14.setColor(colors.tertiaryText),
         ),
       );
     }

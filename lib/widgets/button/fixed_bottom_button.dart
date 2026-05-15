@@ -21,10 +21,10 @@ class FixedBottomButton extends StatefulWidget {
     this.bottomPadding = FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
     this.gradientPadding,
     this.subWidget,
-    this.backgroundColor = CoconutColors.primary,
+    this.backgroundColor,
     this.pressedBackgroundColor,
-    this.textColor = CoconutColors.black,
-    this.gradientColor = CoconutColors.black,
+    this.textColor,
+    this.gradientColor,
     this.gradientKey,
     this.buttonKey,
   });
@@ -39,10 +39,10 @@ class FixedBottomButton extends StatefulWidget {
   final double bottomPadding;
   final EdgeInsets? gradientPadding;
   final Widget? subWidget;
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final Color? pressedBackgroundColor;
-  final Color textColor;
-  final Color gradientColor;
+  final Color? textColor;
+  final Color? gradientColor;
   final Key? gradientKey;
   final Key? buttonKey;
 
@@ -54,6 +54,9 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final resolvedBackgroundColor = widget.backgroundColor ?? colors.primary;
+    final resolvedTextColor = widget.textColor ?? colors.iconHighlight;
+    final resolvedGradientColor = widget.gradientColor ?? colors.background;
     final mediaQuery = MediaQuery.of(context);
     final keyboardHeight = widget.isVisibleAboveKeyboard ? mediaQuery.viewInsets.bottom : 0.0;
     final anchoredBottomBase = keyboardHeight > 0 ? keyboardHeight : mediaQuery.padding.bottom;
@@ -89,15 +92,8 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        widget.gradientColor.withValues(alpha: 0.1),
-                        widget.gradientColor.withValues(alpha: 0.4),
-                        widget.gradientColor.withValues(alpha: 0.8),
-                        widget.gradientColor,
-                        widget.gradientColor,
-                      ],
-                      stops: const [0.0, 0.1, 0.2, 0.35, 0.5, 1.0],
+                      colors: [resolvedGradientColor.withValues(alpha: 0.0), resolvedGradientColor],
+                      stops: const [0.0, 0.5],
                     ),
                   ),
                 ),
@@ -119,8 +115,8 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                       widget.onButtonClicked();
                     },
                     isActive: widget.isActive,
-                    defaultColor: widget.backgroundColor,
-                    pressedColor: widget.pressedBackgroundColor ?? getDarkerColor(widget.backgroundColor),
+                    defaultColor: resolvedBackgroundColor,
+                    pressedColor: widget.pressedBackgroundColor ?? getDarkerColor(resolvedBackgroundColor),
                     disabledColor: colors.surfaceDisabled,
                     borderRadius: 12,
                     child: SizedBox(
@@ -133,7 +129,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                             widget.text,
                             textAlign: TextAlign.center,
                             style: CoconutTypography.body2_14_Bold
-                                .setColor(widget.isActive ? widget.textColor : CoconutColors.gray700)
+                                .setColor(widget.isActive ? resolvedTextColor : colors.tertiaryText)
                                 .copyWith(height: 1.0),
                           ),
                         ),

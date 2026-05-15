@@ -287,8 +287,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _amountController.dispose();
     _amountFocusNode.dispose();
 
-    for (var focusNode in _addressFocusNodeList) focusNode.dispose();
-    for (var controller in _addressControllerList) controller.dispose();
+    for (var focusNode in _addressFocusNodeList) {
+      focusNode.dispose();
+    }
+    for (var controller in _addressControllerList) {
+      controller.dispose();
+    }
 
     _addressFocusNodeList.clear();
     _addressControllerList.clear();
@@ -517,7 +521,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               ),
               CoconutLayout.spacing_50h,
               if (!isWalletWithoutMfp(_viewModel.selectedWalletItem))
-                _buildUtxoSelectionModeContainer(isUtxoSelectionAuto, amountText, selectedUtxoListLength),
+                _buildUtxoSelectionModeContainer(context, isUtxoSelectionAuto, amountText, selectedUtxoListLength),
             ],
           );
         },
@@ -573,15 +577,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     }
   }
 
-  Widget _buildUtxoSelectionModeContainer(bool isUtxoSelectionAuto, String amountText, int selectedUtxoListLength) {
-    final bgColor = isUtxoSelectionAuto || selectedUtxoListLength == 0 ? CoconutColors.gray700 : CoconutColors.primary;
+  Widget _buildUtxoSelectionModeContainer(
+    BuildContext context,
+    bool isUtxoSelectionAuto,
+    String amountText,
+    int selectedUtxoListLength,
+  ) {
+    final colors = context.coconutColors;
+    final bgColor = isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButton : colors.primary;
     final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
     final textColor =
         isUtxoSelectionAuto
-            ? CoconutColors.white
+            ? colors.primaryText
             : selectedUtxoListLength == 0
-            ? CoconutColors.white
-            : CoconutColors.black;
+            ? colors.primaryText
+            : colors.background;
     final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
 
     return !isUtxoSelectionAuto

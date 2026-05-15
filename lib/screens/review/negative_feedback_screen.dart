@@ -47,7 +47,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
                   FittedBox(
                     child: Text(
                       t.negative_feedback_screen.text2,
-                      style: CoconutTypography.body1_16,
+                      style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
                       textAlign: TextAlign.center,
                     ),
                   ),

@@ -142,7 +142,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                   constraints: const BoxConstraints(maxWidth: 100),
                   child: Text(
                     t.unsigned_tx_qr_screen.low_density_qr,
-                    style: CoconutTypography.body3_12,
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -175,7 +175,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                   constraints: const BoxConstraints(maxWidth: 100),
                   child: Text(
                     t.unsigned_tx_qr_screen.high_density_qr,
-                    style: CoconutTypography.body3_12,
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -198,7 +198,10 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
       ),
       tooltipType: CoconutTooltipType.fixed,
       richText: RichText(
-        text: TextSpan(style: CoconutTypography.body2_14.copyWith(height: 1.3), children: _getGuideTextSpan()),
+        text: TextSpan(
+          style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.3),
+          children: _getGuideTextSpan(),
+        ),
       ),
     );
   }
@@ -214,41 +217,58 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             return [
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
-                style: CoconutTypography.body2_14.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
               ),
               TextSpan(
                 text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)}',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14_Bold
+                    .setColor(context.coconutColors.primaryText)
+                    .copyWith(height: 1.2),
               ),
               TextSpan(
                 text: ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14_Bold
+                    .setColor(context.coconutColors.primaryText)
+                    .copyWith(height: 1.2),
               ),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.scan_qr_below,
-                style: CoconutTypography.body2_14.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
               ),
             ];
           } else {
             return [
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
-                style: CoconutTypography.body2_14.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
               ),
-              TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
+              TextSpan(
+                text: ', ',
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
+              ),
               TextSpan(
                 text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)}',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14_Bold
+                    .setColor(context.coconutColors.primaryText)
+                    .copyWith(height: 1.2),
               ),
-              TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
+              TextSpan(
+                text: ', ',
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
+              ),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\''),
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14_Bold
+                    .setColor(context.coconutColors.primaryText)
+                    .copyWith(height: 1.2),
               ),
-              TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
+              TextSpan(
+                text: ', ',
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
+              ),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.scan_qr_below,
-                style: CoconutTypography.body2_14.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
               ),
             ];
           }
@@ -357,5 +377,8 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     }
   }
 
-  TextSpan _em(String text) => TextSpan(text: text, style: CoconutTypography.body2_14_Bold.copyWith(height: 1.3));
+  TextSpan _em(String text) => TextSpan(
+    text: text,
+    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText).copyWith(height: 1.3),
+  );
 }

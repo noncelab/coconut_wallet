@@ -233,7 +233,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           _buildAppBar(networkStatus),
                           // pull to refresh시 로딩 인디케이터를 보이기 위함
                           CupertinoSliverRefreshControl(onRefresh: viewModel.onRefresh),
-                          _buildLoadingIndicator(viewModel),
+                          _buildLoadingIndicator(context, viewModel),
                           _buildHeader(
                             balanceVisibilityData.item1,
                             balanceVisibilityData.item2,
@@ -498,7 +498,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(''),
+                  const Text(''),
                   Shimmer.fromColors(
                     baseColor: context.coconutColors.surfaceSkeletonBase,
                     highlightColor: context.coconutColors.surfaceSkeletonHighlight,
@@ -1939,7 +1939,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildLoadingIndicator(WalletHomeViewModel viewModel) {
+  Widget _buildLoadingIndicator(BuildContext context, WalletHomeViewModel viewModel) {
     return SliverToBoxAdapter(
       child: AnimatedSwitcher(
         transitionBuilder:
@@ -1948,11 +1948,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         duration: const Duration(milliseconds: 300),
         child:
             viewModel.shouldShowLoadingIndicator && viewModel.walletItemList.isNotEmpty
-                ? const Center(
+                ? Center(
                   child: Padding(
-                    key: ValueKey("loading"),
-                    padding: EdgeInsets.only(bottom: 20.0),
-                    child: LoadingIndicator(),
+                    key: const ValueKey("loading"),
+                    padding: const EdgeInsets.only(bottom: 20.0),
+                    child: LoadingIndicator(color: context.coconutColors.loadingIndicatorColor),
                   ),
                 )
                 : null,

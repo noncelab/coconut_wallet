@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -258,25 +257,23 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(initial, style: Styles.body1Bold),
+                          Text(initial, style: CoconutTypography.body1_16.setColor(colors.primaryText)),
                           Wrap(
                             children:
                                 groupedTermList[initial]!.map((term) {
                                   return Padding(
                                     padding: const EdgeInsets.all(4.0),
                                     child: GestureDetector(
-                                      onTap: () => _showBottomSheet(term),
+                                      onTap: () => _showBottomSheet(term: term),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(32),
-                                          color: MyColors.borderLightgrey,
+                                          color: colors.surfaceMuted,
                                         ),
                                         child: Text(
                                           term,
-                                          style: Styles.body2.merge(
-                                            const TextStyle(color: MyColors.transparentWhite_70),
-                                          ),
+                                          style: CoconutTypography.body2_14.setColor(colors.secondaryText),
                                         ),
                                       ),
                                     ),
@@ -295,14 +292,14 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
     );
   }
 
-  void _showBottomSheet(String term) {
+  void _showBottomSheet({required String term}) {
     var details = termDetails[term];
 
     CommonBottomSheets.showDraggableScrollableSheet(
       useSafeArea: true,
       isScrollControlled: true,
       enableDrag: true,
-      backgroundColor: MyColors.grey,
+      backgroundColor: context.coconutColors.backgroundSubtle,
       context: context,
       child:
           details != null
@@ -319,7 +316,16 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
                             padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [Text(term, style: Styles.h3), Text('${details['en']}', style: Styles.label)],
+                              children: [
+                                Text(
+                                  term,
+                                  style: CoconutTypography.heading4_18.setColor(context.coconutColors.primaryText),
+                                ),
+                                Text(
+                                  '${details['en']}',
+                                  style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                                ),
+                              ],
                             ),
                           ),
 
@@ -338,10 +344,13 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
                                 children: [
                                   Text(
                                     '${details['content']}',
-                                    style: Styles.label.merge(const TextStyle(color: CoconutColors.white)),
+                                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                                   ),
                                   const SizedBox(height: 32),
-                                  Text(t.glossary_bottom_sheet.synonym, style: Styles.body2Bold),
+                                  Text(
+                                    t.glossary_bottom_sheet.synonym,
+                                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                                  ),
                                   const SizedBox(height: 8),
                                   if (details['synonym'] != null) ...[
                                     Wrap(
@@ -351,7 +360,12 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
                                           details['synonym'].map<Widget>((text) => Keyword(keyword: text)).toList(),
                                     ),
                                     const SizedBox(height: 32),
-                                    Text(t.glossary_bottom_sheet.related, style: Styles.body2Bold),
+                                    Text(
+                                      t.glossary_bottom_sheet.related,
+                                      style: CoconutTypography.body2_14_Bold.setColor(
+                                        context.coconutColors.primaryText,
+                                      ),
+                                    ),
                                     const SizedBox(height: 8),
                                     if (details['related'] != null) ...[
                                       Wrap(
@@ -417,18 +431,12 @@ class AskCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(4),
                 margin: const EdgeInsets.only(bottom: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: const Color.fromRGBO(255, 255, 255, 0.5),
-                ),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Colors.white38),
                 child: Image.asset(imagePath, width: 28, height: 28),
               ),
               FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(
-                  title,
-                  style: Styles.body2.merge(const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
-                ),
+                child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.background)),
               ),
             ],
           ),
@@ -447,13 +455,11 @@ class Keyword extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(100), color: MyColors.lightblue),
-      child: Text(
-        keyword,
-        style: Styles.caption.merge(
-          TextStyle(fontFamily: CustomFonts.text.getFontFamily, color: MyColors.darkgrey, letterSpacing: 0.1),
-        ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(100),
+        color: context.coconutColors.glossaryKeywordBackground,
       ),
+      child: Text(keyword, style: CoconutTypography.body3_12.setColor(context.coconutColors.glossaryKeywordText)),
     );
   }
 }

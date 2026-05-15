@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
@@ -43,14 +44,17 @@ class WalletIconSmall extends StatelessWidget {
       ),
       child: Container(
         margin: EdgeInsets.all(gradientColors != null ? 1.5 : 0),
-        decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(color: context.coconutColors.iconBackground, borderRadius: BorderRadius.circular(8)),
         child: Stack(
           children: [
             Container(
               width: MediaQuery.of(context).size.width,
               height: MediaQuery.of(context).size.height,
               decoration: BoxDecoration(
-                color: isExternalWallet ? CoconutColors.gray700 : CoconutColors.backgroundColorPaletteLight[colorIndex],
+                color:
+                    isExternalWallet
+                        ? context.coconutColors.iconBackground
+                        : CoconutColors.backgroundColorPaletteLight[colorIndex],
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -63,7 +67,7 @@ class WalletIconSmall extends StatelessWidget {
                   isExternalWallet
                       ? SvgPicture.asset(
                         walletImportSource.externalWalletIconPath,
-                        colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
+                        colorFilter: ColorFilter.mode(context.coconutColors.iconHighlight, BlendMode.srcIn),
                       )
                       : SvgPicture.asset(
                         CustomIcons.getPathByIndex(iconIndex),

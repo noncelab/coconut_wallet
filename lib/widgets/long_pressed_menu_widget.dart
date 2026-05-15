@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -183,6 +184,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                         childSize.width * 1.05,
                         childSize.height * 1.05,
                       ),
+                      dimColor: Colors.transparent,
                     ),
                   ),
                 ),
@@ -247,13 +249,13 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                             borderRadius: BorderRadius.circular(12),
                             child: Material(
                               elevation: 4,
-                              color: Colors.transparent,
+                              color: context.coconutColors.surfaceCard.withValues(alpha: 0.68),
                               child: BackdropFilter(
                                 filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                                 child: Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
-                                    color: CoconutColors.white.withValues(alpha: 0.1),
+                                    color: context.coconutColors.surfaceCard.withValues(alpha: 0.1),
                                   ),
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                                   child: IntrinsicWidth(
@@ -264,7 +266,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                         widget.menuItems.length,
                                         (index) => ShrinkAnimationButton(
                                           defaultColor: Colors.transparent,
-                                          pressedColor: CoconutColors.white.withValues(alpha: 0.1),
+                                          pressedColor: context.coconutColors.primaryText.withValues(alpha: 0.1),
                                           onPressed: () {
                                             _startHideAnimation();
                                             widget.menuItems[index].onSelected();
@@ -281,8 +283,8 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                                   widget.menuItems[index].iconPath,
                                                   width: 16,
                                                   height: 16,
-                                                  colorFilter: const ColorFilter.mode(
-                                                    CoconutColors.white,
+                                                  colorFilter: ColorFilter.mode(
+                                                    context.coconutColors.primaryText,
                                                     BlendMode.srcIn,
                                                   ),
                                                 ),
@@ -292,6 +294,9 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                                     widget.menuItems[index].title,
                                                     maxLines: 1,
                                                     overflow: TextOverflow.ellipsis,
+                                                    style: CoconutTypography.body2_14.setColor(
+                                                      context.coconutColors.primaryText,
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -393,12 +398,12 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                   height: 24,
                                   padding: const EdgeInsets.all(2),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
+                                    color: context.coconutColors.iconBackground.withValues(alpha: 0.28),
                                     shape: BoxShape.circle,
                                   ),
                                   child: SvgPicture.asset(
                                     'assets/svg/remove-minus.svg',
-                                    colorFilter: const ColorFilter.mode(CoconutColors.gray850, BlendMode.srcIn),
+                                    colorFilter: ColorFilter.mode(context.coconutColors.iconHighlight, BlendMode.srcIn),
                                   ),
                                 ),
                               ),
@@ -441,13 +446,14 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
 /// 화면 전체를 살짝 어둡게 하되, [highlightRect] 주변은 상대적으로 밝게 보이도록 하는 페인터
 class _DimExceptRectPainter extends CustomPainter {
   final Rect highlightRect;
+  final Color dimColor;
 
-  _DimExceptRectPainter({required this.highlightRect});
+  _DimExceptRectPainter({required this.highlightRect, required this.dimColor});
 
   @override
   void paint(Canvas canvas, Size size) {
     // highlightRect 바깥만 어둡게 덮는 영역 (안쪽은 그대로 둠)
-    final dimPaint = Paint()..color = CoconutColors.black.withValues(alpha: 0.2);
+    final dimPaint = Paint()..color = dimColor;
     final path =
         Path()
           ..fillType = PathFillType.evenOdd

@@ -331,7 +331,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             CoconutLayout.spacing_1000h,
             Text(
               t.broadcasting_screen.description,
-              style: CoconutTypography.heading4_18_Bold,
+              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
               textAlign: TextAlign.center,
             ),
             CoconutLayout.spacing_400h,
@@ -353,7 +353,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               Text(
                 t.broadcasting_screen.self_sending,
                 textAlign: TextAlign.center,
-                style: CoconutTypography.caption_10_Number,
+                style: CoconutTypography.caption_10_Number.setColor(context.coconutColors.secondaryText),
               ),
             ],
             CoconutLayout.spacing_500h,

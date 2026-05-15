@@ -280,11 +280,12 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                         final isPreviewEnabled = variant == CoconutThemeVariant.ccosPreview;
                         return _buildAnimatedButton(
                           title: isPreviewEnabled ? 'CCOS Theme Preview 끄기' : 'CCOS Theme Preview 켜기',
-                          subtitle: isPreviewEnabled ? '현재: Preview theme' : '현재: Default dark theme',
+                          subtitle: isPreviewEnabled ? 'Preview' : 'Default dark',
                           onPressed: CoconutThemeController.togglePreview,
                         );
                       },
                     ),
+                    CoconutLayout.spacing_200h,
                     _buildAnimatedButton(
                       title: 'Realm 디버그용 뷰어',
                       onPressed: () {

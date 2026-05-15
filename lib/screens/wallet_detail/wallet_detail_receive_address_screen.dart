@@ -67,14 +67,10 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   String get qrData {
     if (_receiveAddress == null) return '';
     if (_enteredReceiveAmountSats == null) return _receiveAddress!.address;
-    return buildBip21UriFromWalletAddress(
-      _receiveAddress!,
-      amount: _enteredReceiveAmountSats,
-    );
+    return buildBip21UriFromWalletAddress(_receiveAddress!, amount: _enteredReceiveAmountSats);
   }
 
-  int get selectedWalletId =>
-      _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
+  int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
 
   @override
   void initState() {
@@ -83,8 +79,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     AppGuard.disablePrivacyScreen();
 
     final walletProvider = context.read<WalletProvider>();
-    _selectedWalletItem =
-        walletProvider.walletItemList.where((e) => e.id == widget.id).first;
+    _selectedWalletItem = walletProvider.walletItemList.where((e) => e.id == widget.id).first;
     _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
     _walletCount = walletProvider.walletItemList.length;
   }
@@ -109,17 +104,11 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
               children: [
                 Text(
                   _selectedWalletItem?.name ?? t.send_screen.select_wallet,
-                  style: CoconutTypography.body1_16.setColor(
-                    context.coconutColors.primaryText,
-                  ),
+                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
                 ),
                 if (_walletCount > 1) ...[
                   CoconutLayout.spacing_50w,
-                  const Icon(
-                    Icons.keyboard_arrow_down_sharp,
-                    color: CoconutColors.white,
-                    size: 16,
-                  ),
+                  Icon(Icons.keyboard_arrow_down_sharp, color: context.coconutColors.iconDefault, size: 16),
                 ],
               ],
             ),
@@ -129,9 +118,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
         context: context,
         isBottom: true,
         actionButtonList: [
-          _walletCount > 1
-              ? const SizedBox(width: 24, height: 24)
-              : const SizedBox(width: 48, height: 48),
+          _walletCount > 1 ? const SizedBox(width: 24, height: 24) : const SizedBox(width: 48, height: 48),
         ],
         onBackPressed: () {
           Navigator.of(context).pop();
@@ -143,8 +130,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                 child: InputAndShareOverlay(
                   shareButtonKey: _shareButtonKey,
                   onEnterAmountTap: () async {
-                    final currentUnit =
-                        context.read<PreferenceProvider>().currentUnit;
+                    final currentUnit = context.read<PreferenceProvider>().currentUnit;
                     final result = await Bip21AmountBottomSheet.show(
                       context: context,
                       currentUnit: currentUnit,
@@ -158,44 +144,26 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                   onShareTap: () async {
                     try {
                       final RenderRepaintBoundary boundary =
-                          _qrCaptureKey.currentContext!.findRenderObject()
-                              as RenderRepaintBoundary;
+                          _qrCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
 
-                      final ui.Image image = await boundary.toImage(
-                        pixelRatio: 3.0,
-                      );
-                      final ByteData? byteData = await image.toByteData(
-                        format: ui.ImageByteFormat.png,
-                      );
+                      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+                      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
                       final Uint8List pngBytes = byteData!.buffer.asUint8List();
 
                       final directory = await getTemporaryDirectory();
-                      final file = File(
-                        '${directory.path}/share_qr_address.png',
-                      );
+                      final file = File('${directory.path}/share_qr_address.png');
                       await file.writeAsBytes(pngBytes);
 
                       // 버튼 위치 계산
-                      final box =
-                          _shareButtonKey.currentContext?.findRenderObject()
-                              as RenderBox?;
+                      final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
                       final Rect sharePositionOrigin =
                           box != null
                               ? box.localToGlobal(Offset.zero) & box.size
-                              : const Rect.fromLTWH(
-                                0,
-                                400,
-                                300,
-                                50,
-                              ); // fallback
+                              : const Rect.fromLTWH(0, 400, 300, 50); // fallback
 
                       AppGuard.disablePrivacyScreen();
                       await SharePlus.instance.share(
-                        ShareParams(
-                          files: [XFile(file.path)],
-                          text: qrData,
-                          sharePositionOrigin: sharePositionOrigin,
-                        ),
+                        ShareParams(files: [XFile(file.path)], text: qrData, sharePositionOrigin: sharePositionOrigin),
                       );
                     } catch (e, stack) {
                       debugPrint('Failed to capture and share: $e');
@@ -205,18 +173,13 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 20,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                     child: Column(
                       children: [
                         QrCodeInfo(
                           qrCaptureKey: _qrCaptureKey,
                           qrcodeTopWidget: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,
@@ -226,28 +189,17 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                                     alignment: Alignment.centerLeft,
                                     fit: BoxFit.scaleDown,
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          t.address_list_screen.address_index(
-                                            index: receiveAddressIndex,
-                                          ),
-                                          style: CoconutTypography.body1_16
-                                              .setColor(
-                                                context
-                                                    .coconutColors
-                                                    .primaryText,
-                                              ),
+                                          t.address_list_screen.address_index(index: receiveAddressIndex),
+                                          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
                                         ),
                                         Text(
                                           derivationPath,
-                                          style: CoconutTypography.body2_14
-                                              .setColor(
-                                                CoconutColors.white.withValues(
-                                                  alpha: 0.7,
-                                                ),
-                                              ),
+                                          style: CoconutTypography.body2_14.setColor(
+                                            context.coconutColors.secondaryText,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -256,22 +208,14 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                                 GestureDetector(
                                   onTap: _onAddressListButtonPressed,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
-                                      color: CoconutColors.white.withValues(
-                                        alpha: 0.15,
-                                      ),
+                                      color: context.coconutColors.surfaceCard,
                                     ),
                                     child: Text(
                                       t.view_all_addresses,
-                                      style: CoconutTypography.body3_12
-                                          .setColor(
-                                            context.coconutColors.primaryText,
-                                          ),
+                                      style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                                     ),
                                   ),
                                 ),
@@ -295,10 +239,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: AddressListScreen(
-        id: _selectedWalletItem!.id,
-        isFullScreen: false,
-      ),
+      child: AddressListScreen(id: _selectedWalletItem!.id, isFullScreen: false),
     );
   }
 
@@ -315,12 +256,8 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
             walletId: selectedWalletId,
             onWalletChanged: (id) {
               final walletProvider = context.read<WalletProvider>();
-              _selectedWalletItem = walletProvider.walletItemList.firstWhere(
-                (e) => e.id == id,
-              );
-              _receiveAddress = walletProvider.getReceiveAddress(
-                _selectedWalletItem!.id,
-              );
+              _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
+              _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
               setState(() {});
               Navigator.pop(context);
             },

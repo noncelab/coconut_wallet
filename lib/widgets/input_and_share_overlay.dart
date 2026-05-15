@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -121,6 +122,7 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return LayoutBuilder(
       builder: (context, constraints) {
         return Stack(
@@ -158,14 +160,8 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                CoconutColors.black.withValues(alpha: 0.1),
-                                CoconutColors.black.withValues(alpha: 0.4),
-                                CoconutColors.black.withValues(alpha: 0.7),
-                                CoconutColors.black.withValues(alpha: 0.9),
-                              ],
-                              stops: const [0.0, 0.1, 0.2, 0.5, 0.9],
+                              colors: [colors.dimOverlay.withValues(alpha: 0.0), colors.dimOverlay],
+                              stops: const [0.0, 0.5],
                             ),
                           ),
                         ),
@@ -189,7 +185,7 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
                                 curve: Curves.easeOutCubic,
                                 child: CoconutUnderlinedButton(
                                   text: t.address_list_screen.set_amount,
-                                  textStyle: CoconutTypography.body3_12,
+                                  textStyle: CoconutTypography.body3_12.setColor(colors.primaryText),
                                   onTap: widget.onEnterAmountTap,
                                 ),
                               ),
@@ -207,18 +203,23 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
                                   key: widget.shareButtonKey,
                                   onPressed: widget.onShareTap,
                                   borderRadius: 8,
-                                  pressedColor: CoconutColors.gray850,
+                                  pressedColor: colors.surfacePressed,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        SvgPicture.asset('assets/svg/export.svg'),
+                                        SvgPicture.asset(
+                                          'assets/svg/export.svg',
+                                          colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
+                                        ),
                                         CoconutLayout.spacing_100w,
                                         Text(
                                           t.address_list_screen.share,
-                                          style: CoconutTypography.body3_12.copyWith(height: 1.0),
+                                          style: CoconutTypography.body3_12
+                                              .setColor(colors.primaryText)
+                                              .copyWith(height: 1.0),
                                         ),
                                       ],
                                     ),

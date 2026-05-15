@@ -36,12 +36,10 @@ class SelectWalletWithOptionsBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<SelectWalletWithOptionsBottomSheet> createState() =>
-      _SelectWalletWithOptionsBottomSheetState();
+  State<SelectWalletWithOptionsBottomSheet> createState() => _SelectWalletWithOptionsBottomSheetState();
 }
 
-class _SelectWalletWithOptionsBottomSheetState
-    extends State<SelectWalletWithOptionsBottomSheet> {
+class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOptionsBottomSheet> {
   late final WalletProvider _walletProvider;
 
   WalletListItemBase? _selectedWalletItem;
@@ -56,11 +54,9 @@ class _SelectWalletWithOptionsBottomSheetState
   late final bool _initialIsUtxoSelectionAuto;
   late final List<UtxoState> _initialSelectedUtxoList;
 
-  int get selectedWalletId =>
-      _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
+  int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
 
-  int get selectedWalletBalance =>
-      _selectedWalletItem != null ? _unspentUtxoAmountSum : 0;
+  int get selectedWalletBalance => _selectedWalletItem != null ? _unspentUtxoAmountSum : 0;
 
   /// 변경사항이 있는지 확인
   bool get hasChanges {
@@ -75,13 +71,10 @@ class _SelectWalletWithOptionsBottomSheetState
 
     // 수동 모드일 때 UTXO 선택 변경 확인
     if (!_isUtxoSelectionAuto) {
-      if (_selectedUtxoList.length != _initialSelectedUtxoList.length)
-        return true;
+      if (_selectedUtxoList.length != _initialSelectedUtxoList.length) return true;
 
       for (final utxo in _selectedUtxoList) {
-        if (!_initialSelectedUtxoList.any(
-          (initial) => initial.utxoId == utxo.utxoId,
-        )) {
+        if (!_initialSelectedUtxoList.any((initial) => initial.utxoId == utxo.utxoId)) {
           return true;
         }
       }
@@ -92,9 +85,7 @@ class _SelectWalletWithOptionsBottomSheetState
 
   /// 변경사항이 있고 처리 가능한지 확인
   bool get isButtonActive {
-    return hasChanges &&
-        _selectedWalletItem != null &&
-        (_isUtxoSelectionAuto || _selectedUtxoList.isNotEmpty);
+    return hasChanges && _selectedWalletItem != null && (_isUtxoSelectionAuto || _selectedUtxoList.isNotEmpty);
   }
 
   @override
@@ -103,15 +94,9 @@ class _SelectWalletWithOptionsBottomSheetState
     _walletProvider = context.read<WalletProvider>();
     _isUtxoSelectionAuto = widget.isUtxoSelectionAuto;
     _selectedUtxoList = widget.selectedUtxoList;
-    selectedUtxoAmountSum = _selectedUtxoList.fold<int>(
-      0,
-      (totalAmount, utxo) => totalAmount + utxo.amount,
-    );
+    selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
 
-    final selectedWalletItem =
-        _walletProvider.walletItemList
-            .where((e) => e.id == widget.selectedWalletId)
-            .firstOrNull;
+    final selectedWalletItem = _walletProvider.walletItemList.where((e) => e.id == widget.selectedWalletId).firstOrNull;
     if (selectedWalletItem != null) {
       _selectedWalletItem = selectedWalletItem;
       _initConfirmedUtxoListAndAmountSum();
@@ -148,13 +133,8 @@ class _SelectWalletWithOptionsBottomSheetState
         onPressed: () {
           vibrateLight();
           Navigator.of(context).pop();
-          final utxoList =
-              _isUtxoSelectionAuto ? _unspentUtxoList : _selectedUtxoList;
-          widget.onWalletInfoUpdated(
-            _selectedWalletItem!,
-            utxoList,
-            _isUtxoSelectionAuto,
-          );
+          final utxoList = _isUtxoSelectionAuto ? _unspentUtxoList : _selectedUtxoList;
+          widget.onWalletInfoUpdated(_selectedWalletItem!, utxoList, _isUtxoSelectionAuto);
         },
         disabledBackgroundColor: CoconutColors.gray800,
         disabledForegroundColor: CoconutColors.gray700,
@@ -186,21 +166,13 @@ class _SelectWalletWithOptionsBottomSheetState
                 children: [
                   Text(
                     t.select_wallet_with_options_bottom_sheet.select_utxo_auto,
-                    style: CoconutTypography.body2_14.setColor(
-                      context.coconutColors.primaryText,
-                    ),
+                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                   ),
                   Text(
                     _isUtxoSelectionAuto
-                        ? t
-                            .select_wallet_with_options_bottom_sheet
-                            .select_utxo_auto_minimal_fee_description
-                        : t
-                            .select_wallet_with_options_bottom_sheet
-                            .select_utxo_auto_selected_utxo_description,
-                    style: CoconutTypography.body3_12.setColor(
-                      CoconutColors.gray400,
-                    ),
+                        ? t.select_wallet_with_options_bottom_sheet.select_utxo_auto_minimal_fee_description
+                        : t.select_wallet_with_options_bottom_sheet.select_utxo_auto_selected_utxo_description,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                   ),
                 ],
               ),
@@ -212,9 +184,7 @@ class _SelectWalletWithOptionsBottomSheetState
             child: CoconutSwitch(
               scale: 0.7,
               isOn: _isUtxoSelectionAuto,
-              activeColor: CoconutColors.gray100.withValues(
-                alpha: isNonMpfWallet ? 0.3 : 1.0,
-              ),
+              activeColor: CoconutColors.gray100.withValues(alpha: isNonMpfWallet ? 0.3 : 1.0),
               trackColor: CoconutColors.gray600,
               thumbColor: CoconutColors.gray800,
               onChanged: (isOn) {
@@ -264,7 +234,7 @@ class _SelectWalletWithOptionsBottomSheetState
               borderRadius: 8,
               isActive: _selectedWalletItem != null,
               text: t.select_wallet_with_options_bottom_sheet.select_utxo,
-              textStyle: CoconutTypography.caption_10,
+              textStyle: CoconutTypography.caption_10.setColor(context.coconutColors.primaryText),
               padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
             ),
             CoconutLayout.spacing_100h,
@@ -284,13 +254,10 @@ class _SelectWalletWithOptionsBottomSheetState
       width: 30,
       height: 30,
       child: WalletIconSmall(
-        walletImportSource:
-            _selectedWalletItem?.walletImportSource ??
-            WalletImportSource.coconutVault,
+        walletImportSource: _selectedWalletItem?.walletImportSource ?? WalletImportSource.coconutVault,
         iconIndex: _selectedWalletItem?.iconIndex ?? 0,
         colorIndex: _selectedWalletItem?.colorIndex ?? 0,
-        gradientColors:
-            signers != null ? ColorUtil.getGradientColors(signers) : null,
+        gradientColors: signers != null ? ColorUtil.getGradientColors(signers) : null,
       ),
     );
   }
@@ -335,18 +302,12 @@ class _SelectWalletWithOptionsBottomSheetState
                                 ? '${_selectedWalletItem!.name.substring(0, 10)}...'
                                 : _selectedWalletItem!.name)
                             : t.send_screen.select_wallet,
-                        style: CoconutTypography.body2_14_Bold.setColor(
-                          context.coconutColors.primaryText,
-                        ),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       CoconutLayout.spacing_50w,
-                      const Icon(
-                        Icons.keyboard_arrow_down_sharp,
-                        color: CoconutColors.white,
-                        size: Sizes.size20,
-                      ),
+                      const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: Sizes.size20),
                     ],
                   ),
                 ),
@@ -358,9 +319,7 @@ class _SelectWalletWithOptionsBottomSheetState
             alignment: Alignment.centerLeft,
             child: Text(
               amountText,
-              style: CoconutTypography.body2_14_Number.setColor(
-                context.coconutColors.primaryText,
-              ),
+              style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
             ),
           ),
         ],
@@ -369,18 +328,10 @@ class _SelectWalletWithOptionsBottomSheetState
   }
 
   Widget _buildSelectedWalletWithOptions(BuildContext context) {
-    int balanceInt =
-        _isUtxoSelectionAuto || _selectedUtxoList.isEmpty
-            ? selectedWalletBalance
-            : selectedUtxoAmountSum;
-    String amountText = widget.currentUnit.displayBitcoinAmount(
-      balanceInt,
-      withUnit: true,
-    );
+    int balanceInt = _isUtxoSelectionAuto || _selectedUtxoList.isEmpty ? selectedWalletBalance : selectedUtxoAmountSum;
+    String amountText = widget.currentUnit.displayBitcoinAmount(balanceInt, withUnit: true);
     if (!_isUtxoSelectionAuto && _selectedUtxoList.isNotEmpty) {
-      amountText += t.select_wallet_with_options_bottom_sheet.n_utxos(
-        count: _selectedUtxoList.length,
-      );
+      amountText += t.select_wallet_with_options_bottom_sheet.n_utxos(count: _selectedUtxoList.length);
     }
     return Padding(
       padding: const EdgeInsets.only(left: 22, top: 27, right: 22),
@@ -396,12 +347,7 @@ class _SelectWalletWithOptionsBottomSheetState
             ],
           ),
           Column(
-            children: [
-              CoconutLayout.spacing_400h,
-              _buildDivider(),
-              CoconutLayout.spacing_400h,
-              _buildUtxoOption(),
-            ],
+            children: [CoconutLayout.spacing_400h, _buildDivider(), CoconutLayout.spacing_400h, _buildUtxoOption()],
           ),
         ],
       ),
@@ -425,11 +371,8 @@ class _SelectWalletWithOptionsBottomSheetState
   }
 
   void _selectWalletItem(int walletId) {
-    if (_selectedWalletItem != null && _selectedWalletItem!.id == walletId)
-      return;
-    _selectedWalletItem = _walletProvider.walletItemList.firstWhere(
-      (e) => e.id == walletId,
-    );
+    if (_selectedWalletItem != null && _selectedWalletItem!.id == walletId) return;
+    _selectedWalletItem = _walletProvider.walletItemList.firstWhere((e) => e.id == walletId);
     _selectedUtxoList = [];
     selectedUtxoAmountSum = 0;
     _initConfirmedUtxoListAndAmountSum();
@@ -447,10 +390,7 @@ class _SelectWalletWithOptionsBottomSheetState
 
   void _setSelectedUtxoList(List<UtxoState> utxoList) {
     _selectedUtxoList = utxoList;
-    selectedUtxoAmountSum = utxoList.fold<int>(
-      0,
-      (totalAmount, utxo) => totalAmount + utxo.amount,
-    );
+    selectedUtxoAmountSum = utxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
     setState(() {});
   }
 }

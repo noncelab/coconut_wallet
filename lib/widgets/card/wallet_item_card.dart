@@ -135,7 +135,10 @@ class WalletItemCard extends StatelessWidget {
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: SvgPicture.asset('assets/svg/${isFavorite ? 'star-filled' : 'star-outlined'}.svg'),
+                  child: SvgPicture.asset(
+                    'assets/svg/${isFavorite ? 'star-filled' : 'star-outlined'}.svg',
+                    colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
+                  ),
                 ),
               ),
             ),
@@ -238,7 +241,10 @@ class WalletItemCard extends StatelessWidget {
                 child: GestureDetector(
                   child: Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: SvgPicture.asset('assets/svg/hamburger.svg'),
+                    child: SvgPicture.asset(
+                      'assets/svg/hamburger.svg',
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+                    ),
                   ),
                 ),
               )

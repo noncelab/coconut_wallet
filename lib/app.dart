@@ -55,17 +55,21 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         networkType: CoconutWalletApp.kNetworkType,
       ),
       child: TranslationProvider(
-        child: Builder(
-          builder: (context) {
-            final app = CupertinoApp(
+        child: ValueListenableBuilder<CoconutThemeVariant>(
+          valueListenable: CoconutThemeController.variantNotifier,
+          builder: (context, variant, _) {
+            final materialTheme = buildCoconutThemeData(variant: variant);
+            final cupertinoTheme = buildAppCupertinoTheme(variant: variant);
+
+            return CupertinoApp(
               navigatorKey: _navigatorKey,
               builder: (context, child) {
                 final currentChild = child ?? const SizedBox.shrink();
                 if (_appEntryFlow != AppEntryFlow.main) {
-                  return Theme(data: buildCoconutThemeData(), child: currentChild);
+                  return Theme(data: materialTheme, child: currentChild);
                 }
                 return Theme(
-                  data: buildCoconutThemeData(),
+                  data: materialTheme,
                   child: AppGuard(child: DeepLinkListener(navigatorKey: _navigatorKey, child: currentChild)),
                 );
               },
@@ -80,7 +84,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 DefaultCupertinoLocalizations.delegate,
               ],
               debugShowCheckedModeBanner: false,
-              theme: buildAppCupertinoTheme(),
+              theme: cupertinoTheme,
               home:
                   _appEntryFlow == AppEntryFlow.splash
                       ? StartScreen(onComplete: _completeSplash)
@@ -98,8 +102,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       ),
               routes: buildAppRoutes(),
             );
-
-            return app;
           },
         ),
       ),

@@ -25,8 +25,8 @@ class QrcodeBottomSheet extends StatelessWidget {
           title: Text(title ?? ''),
           centerTitle: true,
           backgroundColor: context.coconutColors.background,
-          titleTextStyle: CoconutTypography.heading4_18,
-          toolbarTextStyle: CoconutTypography.body3_12,
+          titleTextStyle: CoconutTypography.heading4_18.setColor(context.coconutColors.primaryText),
+          toolbarTextStyle: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
           leading: IconButton(
             color: CoconutColors.white,
             focusColor: CoconutColors.gray400,
