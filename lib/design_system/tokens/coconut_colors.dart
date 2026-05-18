@@ -100,6 +100,7 @@ class CoconutColors {
   final Color primaryText;
   final Color secondaryText;
   final Color tertiaryText;
+  final Color mutedText;
   final Color textFilterChip;
   final Color textFilterChipSelected;
   final Color borderSubtle;
@@ -109,6 +110,7 @@ class CoconutColors {
   final Color iconSubDefault;
   final Color iconHighlight;
   final Color iconDisabled;
+  final Color warning;
   final Color danger;
   final Color success;
   final Color pulldownMenuBackground;
@@ -125,6 +127,9 @@ class CoconutColors {
   final Color loadingIndicatorColor;
   final Color glossaryKeywordBackground;
   final Color glossaryKeywordText;
+  final Color divider;
+  final Color txFlowLine;
+  final Color feeBumpingHistoryLine;
 
   const CoconutColors({
     required this.background,
@@ -146,6 +151,7 @@ class CoconutColors {
     required this.primaryText,
     required this.secondaryText,
     required this.tertiaryText,
+    required this.mutedText,
     required this.textFilterChip,
     required this.textFilterChipSelected,
     required this.borderSubtle,
@@ -155,6 +161,7 @@ class CoconutColors {
     required this.iconSubDefault,
     required this.iconHighlight,
     required this.iconDisabled,
+    required this.warning,
     required this.danger,
     required this.success,
     required this.pulldownMenuBackground,
@@ -171,6 +178,9 @@ class CoconutColors {
     required this.loadingIndicatorColor,
     required this.glossaryKeywordBackground,
     required this.glossaryKeywordText,
+    required this.divider,
+    required this.txFlowLine,
+    required this.feeBumpingHistoryLine,
   });
 
   factory CoconutColors.dark() {
@@ -194,6 +204,7 @@ class CoconutColors {
       primaryText: ds.CoconutColors.white,
       secondaryText: ds.CoconutColors.gray400,
       tertiaryText: ds.CoconutColors.gray600,
+      mutedText: ds.CoconutColors.gray500,
       textFilterChip: ds.CoconutColors.white,
       textFilterChipSelected: ds.CoconutColors.gray800,
       borderSubtle: ds.CoconutColors.gray700,
@@ -203,6 +214,7 @@ class CoconutColors {
       iconSubDefault: ds.CoconutColors.gray400,
       iconHighlight: ds.CoconutColors.black,
       iconDisabled: ds.CoconutColors.gray600,
+      warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
       pulldownMenuBackground: ds.CoconutColors.gray900,
@@ -219,6 +231,9 @@ class CoconutColors {
       loadingIndicatorColor: ds.CoconutColors.white,
       glossaryKeywordBackground: Color(0xFFA6E1E7),
       glossaryKeywordText: ds.CoconutColors.black,
+      divider: ds.CoconutColors.gray800,
+      txFlowLine: ds.CoconutColors.gray600,
+      feeBumpingHistoryLine: ds.CoconutColors.gray700,
     );
   }
 
@@ -243,6 +258,7 @@ class CoconutColors {
       primaryText: Color(0xFF181A1F),
       secondaryText: Color(0xFF454B57),
       tertiaryText: Color(0xFF727987),
+      mutedText: Color(0xFF5E6675),
       textFilterChip: Color(0xFF181A1F),
       textFilterChipSelected: Color(0xFFF6F3EA),
       borderSubtle: Color.fromARGB(255, 69, 126, 211),
@@ -252,6 +268,7 @@ class CoconutColors {
       iconSubDefault: Color(0xFF727987),
       iconHighlight: Color.fromARGB(255, 60, 73, 86),
       iconDisabled: Color(0xFF727987),
+      warning: Color(0xFFD08A00),
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
       pulldownMenuBackground: Color.fromARGB(255, 85, 61, 115),
@@ -268,6 +285,9 @@ class CoconutColors {
       loadingIndicatorColor: Color.fromARGB(255, 69, 126, 211),
       glossaryKeywordBackground: Color(0xFFE8E0F2),
       glossaryKeywordText: Color(0xFF181A1F),
+      divider: Color(0xFFE8E0F2),
+      txFlowLine: Color.fromARGB(255, 180, 188, 209),
+      feeBumpingHistoryLine: Color.fromARGB(255, 180, 188, 209),
     );
   }
 }

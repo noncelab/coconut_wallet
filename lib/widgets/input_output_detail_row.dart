@@ -1,4 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart' as app_tokens;
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -12,12 +14,11 @@ class InputOutputDetailRow extends StatelessWidget {
   final InputOutputRowType rowType;
   final bool? isCurrentAddress;
   final TransactionStatus? transactionStatus;
-  final RowProperty rowProperty;
   final BitcoinUnit currentUnit;
   final Color? colorOverride;
   final Color Function(Color base)? colorTransform;
 
-  InputOutputDetailRow({
+  const InputOutputDetailRow({
     super.key,
     required this.address,
     required this.balance,
@@ -28,7 +29,7 @@ class InputOutputDetailRow extends StatelessWidget {
     this.transactionStatus,
     this.colorOverride,
     this.colorTransform,
-  }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
+  });
 
   String get balanceText => currentUnit.displayBitcoinAmount(balance.abs(), forceEightDecimals: true);
 
@@ -40,6 +41,7 @@ class InputOutputDetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false, context.coconutColors);
     bool shouldTrimText = (balanceMaxWidth != 0.0 ? balanceMaxWidth : 100.0) > MediaQuery.of(context).size.width * 0.3;
     final leftColor = _resolveColor(rowProperty.leftItemColor);
     final rightColor = _resolveColor(rowProperty.rightItemColor);
@@ -141,10 +143,11 @@ class InputOutputDetailRow extends StatelessWidget {
     InputOutputRowType rowType,
     TransactionStatus? transactionStatus,
     bool isCurrentAddress,
+    app_tokens.CoconutColors colors,
   ) {
-    Color leftItemColor = CoconutColors.gray500;
-    Color rightItemColor = CoconutColors.gray500;
-    Color svgColor = CoconutColors.gray500;
+    Color leftItemColor = colors.mutedText;
+    Color rightItemColor = colors.mutedText;
+    Color svgColor = colors.mutedText;
 
     String svgPath = 'assets/svg/circle-arrow-right.svg';
 
@@ -161,10 +164,10 @@ class InputOutputDetailRow extends StatelessWidget {
       }
 
       if (transactionStatus == TransactionStatus.sending || transactionStatus == TransactionStatus.sent) {
-        leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
+        leftItemColor = rightItemColor = svgColor = colors.sendingColor;
       } else if (transactionStatus == TransactionStatus.self || transactionStatus == TransactionStatus.selfsending) {
-        leftItemColor = CoconutColors.white;
-        rightItemColor = svgColor = CoconutColors.primary;
+        leftItemColor = colors.primaryText;
+        rightItemColor = svgColor = colors.receivingColor;
       }
 
       return RowProperty(
@@ -182,42 +185,42 @@ class InputOutputDetailRow extends StatelessWidget {
         case TransactionStatus.receiving:
           if (rowType == InputOutputRowType.input) {
             if (!isCurrentAddress) {
-              leftItemColor = rightItemColor = svgColor = CoconutColors.gray500;
+              leftItemColor = rightItemColor = svgColor = colors.mutedText;
             }
           } else {
             if (isCurrentAddress) {
-              leftItemColor = rightItemColor = svgColor = CoconutColors.cyan;
+              leftItemColor = rightItemColor = svgColor = colors.receivingColor;
             } else {
-              leftItemColor = rightItemColor = svgColor = CoconutColors.gray500;
+              leftItemColor = rightItemColor = svgColor = colors.mutedText;
             }
           }
           break;
         case TransactionStatus.sending:
         case TransactionStatus.sent:
           if (rowType == InputOutputRowType.input) {
-            leftItemColor = rightItemColor = svgColor = CoconutColors.white;
+            leftItemColor = rightItemColor = svgColor = colors.primaryText;
           } else if (rowType == InputOutputRowType.output) {
             if (isCurrentAddress) {
-              leftItemColor = rightItemColor = svgColor = CoconutColors.white;
+              leftItemColor = rightItemColor = svgColor = colors.primaryText;
             } else {
-              leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
+              leftItemColor = rightItemColor = svgColor = colors.sendingColor;
             }
           } else if (rowType == InputOutputRowType.fee) {
-            leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
+            leftItemColor = rightItemColor = svgColor = colors.sendingColor;
           }
           break;
         case TransactionStatus.self:
         case TransactionStatus.selfsending:
           if (rowType == InputOutputRowType.input) {
             if (isCurrentAddress) {
-              leftItemColor = rightItemColor = svgColor = CoconutColors.white;
+              leftItemColor = rightItemColor = svgColor = colors.primaryText;
             }
           } else if (rowType == InputOutputRowType.fee) {
-            leftItemColor = CoconutColors.white;
+            leftItemColor = colors.primaryText;
           } else {
             if (isCurrentAddress) {
-              leftItemColor = CoconutColors.white;
-              rightItemColor = svgColor = CoconutColors.cyan;
+              leftItemColor = colors.primaryText;
+              rightItemColor = svgColor = colors.receivingColor;
             }
           }
           break;
@@ -225,7 +228,7 @@ class InputOutputDetailRow extends StatelessWidget {
     } else {
       /// transactionStatus가 null이면 UTXO 상세 화면
       if (rowType == InputOutputRowType.output && isCurrentAddress) {
-        leftItemColor = rightItemColor = svgColor = CoconutColors.white;
+        leftItemColor = rightItemColor = svgColor = colors.primaryText;
       }
     }
     return RowProperty(

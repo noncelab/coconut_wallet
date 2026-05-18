@@ -291,10 +291,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           child: FittedBox(
             child: BitcoinAmountUnit(
               currentUnit: _currentUnit,
-              unitStyle: CoconutTypography.heading4_18_Number,
+              unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
               child: Text(
                 _currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                style: CoconutTypography.heading2_28_NumberBold,
+                style: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
               ),
             ),
           ),
@@ -333,7 +333,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           CoconutLayout.spacing_200w,
           Text(
             status == UtxoStatus.incoming ? t.status_receiving : t.status_sending,
-            style: CoconutTypography.body2_14_Number.copyWith(color: CoconutColors.gray200),
+            style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
           ),
         ],
       ),
@@ -354,9 +354,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             children: [
               CopyTextContainer(
                 text: widget.utxo.to,
-                textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
                 suffixText: '${path.join('/')} · ${_viewModel.walletNameDisplay}',
-                suffixTextStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                suffixTextStyle: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
               ),
             ],
           ),
@@ -370,7 +370,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       label: t.tx_memo,
       child: Text(
         memo?.isNotEmpty == true ? memo! : '-',
-        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }
@@ -392,7 +392,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         children: [
           CopyTextContainer(
             text: widget.utxo.transactionHash,
-            textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+            textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
           ),
           CoconutLayout.spacing_300h,
           child,
@@ -413,20 +413,20 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       },
       child: Text(
         widget.utxo.blockHeight != 0 ? widget.utxo.blockHeight.toString() : '-',
-        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }
 
   Widget _buildTransactionInputOutputSkeleton() {
     return Shimmer.fromColors(
-      baseColor: CoconutColors.gray850,
-      highlightColor: CoconutColors.gray800,
+      baseColor: context.coconutColors.surfaceSkeletonBase,
+      highlightColor: context.coconutColors.surfaceSkeletonHighlight,
       child: Container(
         width: double.infinity,
         height: 60,
         decoration: BoxDecoration(
-          color: CoconutColors.gray850,
+          color: context.coconutColors.surfaceSkeletonBase,
           borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
         ),
       ),
@@ -442,7 +442,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (selectedTags.isEmpty) ...{
-            Text('-', style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
+            Text('-', style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText)),
           } else ...{
             Wrap(
               spacing: 4,
@@ -542,7 +542,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildSuspiciousDustUtxoWarning(bool isSuspiciousDustUtxo, bool isLocked) {
     if (!isSuspiciousDustUtxo) return const SizedBox(height: 20);
 
-    final color = isLocked ? CoconutColors.white : CoconutColors.red;
+    final color = isLocked ? context.coconutColors.primaryText : context.coconutColors.danger;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
@@ -605,7 +605,10 @@ class UtxoLockStatusChip extends StatefulWidget {
 class _UtxoLockStatusChip extends State<UtxoLockStatusChip> {
   @override
   Widget build(BuildContext context) {
-    final color = widget.isSuspiciousDustUtxo && !widget.isLocked ? CoconutColors.red : CoconutColors.white;
+    final color =
+        widget.isSuspiciousDustUtxo && !widget.isLocked
+            ? context.coconutColors.danger
+            : context.coconutColors.primaryText;
 
     return Row(
       children: [

@@ -87,7 +87,7 @@ class TransactionItemCard extends StatelessWidget {
                 assetPath,
                 width: 24,
                 height: 24,
-                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
               ),
             )
             : SvgPicture.asset(

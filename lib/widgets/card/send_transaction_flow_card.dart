@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -123,7 +124,7 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureAnchors());
 
     return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: CoconutColors.gray850),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: context.coconutColors.surfaceCard),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: SizedBox(
         key: _paintAreaKey,
@@ -140,6 +141,9 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
                         inputAnchors: _inputAnchors,
                         outputAnchors: _outputAnchors,
                         flowProgress: _flowController!.value,
+                        lineColor: context.coconutColors.txFlowLine,
+                        primaryFlowColor: context.coconutColors.sendingColor,
+                        secondaryFlowColor: context.coconutColors.receivingColor,
                       ),
                     );
                   },
@@ -529,8 +533,18 @@ class _FlowConnectionPainter extends CustomPainter {
   final List<Offset> inputAnchors;
   final List<Offset> outputAnchors;
   final double flowProgress;
+  final Color lineColor;
+  final Color primaryFlowColor;
+  final Color secondaryFlowColor;
 
-  const _FlowConnectionPainter({required this.inputAnchors, required this.outputAnchors, required this.flowProgress});
+  const _FlowConnectionPainter({
+    required this.inputAnchors,
+    required this.outputAnchors,
+    required this.flowProgress,
+    required this.lineColor,
+    required this.primaryFlowColor,
+    required this.secondaryFlowColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -540,13 +554,13 @@ class _FlowConnectionPainter extends CustomPainter {
 
     final paint =
         Paint()
-          ..color = CoconutColors.gray600
+          ..color = lineColor
           ..strokeWidth = 2
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.butt;
     final trunkPaint =
         Paint()
-          ..color = CoconutColors.gray600
+          ..color = lineColor
           ..strokeWidth = 2
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.butt;
@@ -558,7 +572,7 @@ class _FlowConnectionPainter extends CustomPainter {
           ..shader = LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: const [Colors.transparent, CoconutColors.primary, CoconutColors.cyan, Colors.transparent],
+            colors: [Colors.transparent, primaryFlowColor, secondaryFlowColor, Colors.transparent],
             stops: [leadStart, (head - 0.015).clamp(0.0, 1.0), (head + 0.015).clamp(0.0, 1.0), leadEnd],
           ).createShader(Offset.zero & size)
           ..strokeWidth = 2
@@ -635,7 +649,10 @@ class _FlowConnectionPainter extends CustomPainter {
   bool shouldRepaint(covariant _FlowConnectionPainter oldDelegate) {
     return oldDelegate.inputAnchors != inputAnchors ||
         oldDelegate.outputAnchors != outputAnchors ||
-        oldDelegate.flowProgress != flowProgress;
+        oldDelegate.flowProgress != flowProgress ||
+        oldDelegate.lineColor != lineColor ||
+        oldDelegate.primaryFlowColor != primaryFlowColor ||
+        oldDelegate.secondaryFlowColor != secondaryFlowColor;
   }
 }
 
@@ -675,10 +692,11 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
   }
 
   Color _resolveTextColor(_FlowNode node, bool isChange, bool isEllipsis) {
-    if (isEllipsis) return CoconutColors.gray400;
+    final colors = context.coconutColors;
+    if (isEllipsis) return colors.secondaryText;
     final status = widget.transactionStatus;
     if (status == null) {
-      return isChange && node.tapTarget == null ? CoconutColors.cyan : CoconutColors.white;
+      return isChange && node.tapTarget == null ? colors.receivingColor : colors.primaryText;
     }
 
     final isIncoming = status == TransactionStatus.received || status == TransactionStatus.receiving;
@@ -695,34 +713,35 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
           widget.walletId != null &&
           widget.isOutputToMyWallet != null &&
           widget.isOutputToMyWallet!(widget.walletId!, address)) {
-        return CoconutColors.cyan;
+        return colors.receivingColor;
       }
-      return CoconutColors.gray500;
+      return colors.tertiaryText;
     } else if (isOutgoing) {
-      if (node.type == _FlowNodeType.input) return CoconutColors.white;
-      if (node.type == _FlowNodeType.fee) return CoconutColors.primary;
+      if (node.type == _FlowNodeType.input) return colors.primaryText;
+      if (node.type == _FlowNodeType.fee) return colors.sendingColor;
       if (node.type == _FlowNodeType.output) {
-        if (isSelf) return CoconutColors.white;
-        if (node.tapTarget == null) return CoconutColors.primary;
+        if (isSelf) return colors.primaryText;
+        if (node.tapTarget == null) return colors.sendingColor;
         final isCurrentWallet =
             widget.walletId != null &&
             widget.isOutputToMyWallet != null &&
             widget.isOutputToMyWallet!(widget.walletId!, node.tapTarget!.address);
-        return isCurrentWallet ? CoconutColors.white : CoconutColors.primary;
+        return isCurrentWallet ? colors.primaryText : colors.sendingColor;
       }
-      if (isChange) return CoconutColors.white;
+      if (isChange) return colors.primaryText;
     }
-    return CoconutColors.white;
+    return colors.primaryText;
   }
 
   Color _resolveAmountColor(_FlowNode node, bool isChange, bool isEllipsis, Color titleColor) {
-    if (isEllipsis) return CoconutColors.gray400;
+    final colors = context.coconutColors;
+    if (isEllipsis) return colors.secondaryText;
     final status = widget.transactionStatus;
     if (status == null) return titleColor;
 
     final isSelf = status == TransactionStatus.self || status == TransactionStatus.selfsending;
     if (isSelf && (node.type == _FlowNodeType.output || node.type == _FlowNodeType.change)) {
-      return CoconutColors.cyan;
+      return colors.receivingColor;
     }
     return titleColor;
   }
@@ -778,7 +797,9 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
                     : Text(
                       node.title,
                       style:
-                          isEllipsis ? CoconutTypography.body1_16.copyWith(color: CoconutColors.gray400) : titleStyle,
+                          isEllipsis
+                              ? CoconutTypography.body1_16.copyWith(color: context.coconutColors.secondaryText)
+                              : titleStyle,
                     ),
           ),
           if (!isEllipsis) ...[

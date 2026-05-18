@@ -1,8 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/material.dart';
-
-const _divider = Divider(color: CoconutColors.gray800);
 
 class UnderlineButtonItemCard extends StatelessWidget {
   final String label;
@@ -22,6 +21,8 @@ class UnderlineButtonItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final divider = Divider(color: context.coconutColors.divider);
+
     return Container(
       padding: const EdgeInsets.only(left: 2, right: 2, bottom: 12),
       child: Column(
@@ -29,7 +30,10 @@ class UnderlineButtonItemCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(label, style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray400, height: 1.0)),
+              Text(
+                label,
+                style: CoconutTypography.body2_14.copyWith(color: context.coconutColors.secondaryText, height: 1.0),
+              ),
               CoconutLayout.spacing_100w,
               if (underlineButtonLabel != null)
                 Expanded(
@@ -52,7 +56,7 @@ class UnderlineButtonItemCard extends StatelessWidget {
           CoconutLayout.spacing_100h,
           child,
           CoconutLayout.spacing_300h,
-          if (showDivider == true) _divider,
+          if (showDivider == true) divider,
         ],
       ),
     );
