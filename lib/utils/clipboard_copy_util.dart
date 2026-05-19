@@ -1,0 +1,33 @@
+import 'dart:io';
+
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/main.dart';
+import 'package:coconut_wallet/utils/logger.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class ClipboardCopyUtil {
+  static const MethodChannel _channel = MethodChannel(methodChannelOS);
+
+  static Future<void> copyWithToast(BuildContext context, {required String text, String? toastMessage}) async {
+    await Clipboard.setData(ClipboardData(text: text));
+
+    if (Platform.isAndroid) {
+      try {
+        final int version = await _channel.invokeMethod('getSdkVersion');
+
+        // Android 13(API 33)부터는 시스템 클립보드 안내가 표시됨
+        if (version > 31) {
+          return;
+        }
+      } on PlatformException catch (e) {
+        Logger.log("Failed to get platform version: '${e.message}'.");
+      }
+    }
+
+    if (!context.mounted) return;
+
+    CoconutToast.showBottomToast(context: context, text: t.copied);
+  }
+}

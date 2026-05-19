@@ -37,7 +37,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
@@ -430,11 +429,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       final now = DateTime.now();
       if (_lastPressedAt == null || now.difference(_lastPressedAt!) > const Duration(seconds: 3)) {
         _lastPressedAt = now;
-        Fluttertoast.showToast(
-          backgroundColor: CoconutColors.gray800,
-          msg: t.toast.back_exit,
-          toastLength: Toast.LENGTH_SHORT,
-        );
+        CoconutToast.showBottomToast(context: context, text: t.toast.back_exit, seconds: 1);
       } else {
         SystemNavigator.pop();
       }

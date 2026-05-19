@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -812,8 +813,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           CoconutUnderlinedButton(
             text: t.utility.p2p_calculator.copy_all,
             textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
-            onTap: () {
-              _viewModel.copyAll(
+            onTap: () async {
+              final textToCopy = _viewModel.generateTransactionBill(
                 btcPriceStr,
                 fiatAmountStr,
                 btcAmountStr,
@@ -822,6 +823,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 premiumAmountStr,
                 premiumSatsStr,
               );
+              await ClipboardCopyUtil.copyWithToast(context, text: textToCopy);
             },
           ),
           CoconutLayout.spacing_200h,
