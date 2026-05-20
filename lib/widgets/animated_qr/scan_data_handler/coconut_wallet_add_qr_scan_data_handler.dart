@@ -17,7 +17,12 @@ class CoconutQrScanDataHandler implements IQrScanDataHandler {
   bool joinData(String data) {
     try {
       Map<String, dynamic> jsonData = jsonDecode(data);
-      _result = WatchOnlyWallet.fromJson(jsonData);
+      final wallet = WatchOnlyWallet.fromJson(jsonData);
+      if (wallet.isTaproot && !wallet.isSupportedTaprootConfiguration) {
+        Logger.error('Unsupported Taproot configuration');
+        return false;
+      }
+      _result = wallet;
       return true;
     } catch (e) {
       Logger.error(e.toString());
