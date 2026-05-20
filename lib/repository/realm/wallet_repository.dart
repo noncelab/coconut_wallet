@@ -1,15 +1,20 @@
+import 'dart:convert';
+
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
+import 'package:coconut_wallet/repository/realm/converter/taproot_wallet.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -30,6 +35,7 @@ class WalletRepository extends BaseRepository {
     var walletBases = realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id DESC)');
     var multisigWallets = realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id DESC)');
     var externalWallets = realm.all<RealmExternalWallet>().query('TRUEPREDICATE SORT(id DESC)');
+    final taprootWalletMap = {for (var w in realm.all<RealmTaprootWallet>()) w.id: w};
 
     for (var i = 0; i < walletBases.length; i++) {
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
@@ -48,6 +54,10 @@ class WalletRepository extends BaseRepository {
         } else {
           walletList.add(mapRealmToSingleSigWalletItem(walletBases[i], walletBases[i].descriptor, null));
         }
+      } else if (walletBases[i].walletType == WalletType.taproot.name) {
+        final realmTaprootWallet = taprootWalletMap[walletBases[i].id];
+        assert(realmTaprootWallet != null);
+        walletList.add(mapRealmToTaprootWalletItem(realmTaprootWallet!, walletBases[i].descriptor));
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         walletList.add(mapRealmToMultisigWalletItem(multisigWallets[multisigWalletIndex++], walletBases[i].descriptor));
@@ -89,6 +99,33 @@ class WalletRepository extends BaseRepository {
       watchOnlyWallet.descriptor,
       watchOnlyWallet.walletImportSource,
     );
+  }
+
+  /// 탭루트 지갑 추가
+  Future<TaprootWalletListItem> addTaprootWallet(WatchOnlyWallet watchOnlyWallet) async {
+    var id = _getNextWalletId();
+    var realmWalletBase = RealmWalletBase(
+      id,
+      watchOnlyWallet.colorIndex,
+      watchOnlyWallet.iconIndex,
+      watchOnlyWallet.descriptor,
+      watchOnlyWallet.name,
+      WalletType.taproot.name,
+    );
+    var realmTaprootWallet = RealmTaprootWallet(
+      id,
+      jsonEncode(watchOnlyWallet.keyPathSeedInfos),
+      jsonEncode(watchOnlyWallet.scriptPathSeedInfos!.map((e) => e.toJson()).toList()),
+      walletBase: realmWalletBase,
+    );
+
+    realm.write(() {
+      realm.add(realmWalletBase);
+      realm.add(realmTaprootWallet);
+    });
+
+    _recordNextWalletId(id + 1);
+    return mapRealmToTaprootWalletItem(realmTaprootWallet, watchOnlyWallet.descriptor);
   }
 
   /// 멀티시그 지갑 추가
@@ -170,6 +207,10 @@ class WalletRepository extends BaseRepository {
             : null;
     final realmExternalWallet = realmExternalWalletResults?.firstOrNull;
 
+    final realmTaprootWalletResults =
+        walletBase.walletType == WalletType.taproot.name ? realm.query<RealmTaprootWallet>('id == $walletId') : null;
+    final realmTaprootWallet = realmTaprootWalletResults?.firstOrNull;
+
     await realm.writeAsync(() {
       realm.delete(walletBase);
       if (transactions.isNotEmpty) {
@@ -180,6 +221,9 @@ class WalletRepository extends BaseRepository {
       }
       if (realmExternalWallet != null) {
         realm.delete(realmExternalWallet);
+      }
+      if (realmTaprootWallet != null) {
+        realm.delete(realmTaprootWallet);
       }
       if (walletBalance.isNotEmpty) {
         realm.deleteMany(walletBalance);

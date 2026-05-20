@@ -43,6 +43,9 @@ import 'package:realm/realm.dart';
 /// 1. RealmExternalWallet 중 walletImportSource가 extendedPublicKey인 지갑 중
 ///    SingleSignatureWallet.keyStore.masterFingerprint가 00000000이 아닌 경우 descriptor로 마이그레이션
 ///    (masterFingerprint가 placeholder면 xpub 기반, 실제 값이면 descriptor로 간주)
+///
+/// [addRealmTaprootWallet] (7 -> 8)
+/// 1. RealmTaprootWallet 스키마 추가 (신규 스키마이므로 Realm이 자동 처리)
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
