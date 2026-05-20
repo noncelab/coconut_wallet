@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -111,25 +112,22 @@ class WalletProvider extends ChangeNotifier {
     return await _walletRepository.getWalletItemList();
   }
 
-  int _findSameWalletIndex(String descriptorString, {required bool isMultisig}) {
-    WalletBase walletBase;
-    if (isMultisig) {
-      walletBase = MultisignatureWallet.fromDescriptor(descriptorString);
-    } else {
-      walletBase = SingleSignatureWallet.fromDescriptor(descriptorString);
-    }
-    var newWalletAddress = walletBase.getAddress(0);
+  int _findSameWalletIndex(String descriptorString, WalletType walletType) {
+    final WalletBase walletBase = switch (walletType) {
+      WalletType.multiSignature => MultisignatureWallet.fromDescriptor(descriptorString),
+      WalletType.taproot => TaprootWallet.fromDescriptor(descriptorString),
+      WalletType.singleSignature => SingleSignatureWallet.fromDescriptor(descriptorString),
+    };
+    final newWalletAddress = walletBase.getAddress(0);
     for (var index = 0; index < _walletItemList.length; index++) {
-      if (isMultisig) {
-        if (_walletItemList[index] is MultisigWalletListItem &&
-            _walletItemList[index].walletBase.getAddress(0) == newWalletAddress) {
-          return index;
-        }
-      } else {
-        if (_walletItemList[index] is SinglesigWalletListItem &&
-            _walletItemList[index].walletBase.getAddress(0) == newWalletAddress) {
-          return index;
-        }
+      final item = _walletItemList[index];
+      final matches = switch (walletType) {
+        WalletType.multiSignature => item is MultisigWalletListItem,
+        WalletType.taproot => item is TaprootWalletListItem,
+        WalletType.singleSignature => item is SinglesigWalletListItem,
+      };
+      if (matches && item.walletBase.getAddress(0) == newWalletAddress) {
+        return index;
       }
     }
     return -1;
@@ -162,8 +160,8 @@ class WalletProvider extends ChangeNotifier {
   /// case6. 같은 이름을 가진 다른 지갑이 있는 경우 ("같은 이름을 가진 지갑이 있습니다. 이름을 변경한 후 동기화 해주세요.")
 
   Future<ResultOfSyncFromVault> syncFromCoconutVault(WatchOnlyWallet watchOnlyWallet) async {
-    bool isMultisig = watchOnlyWallet.signers != null;
-    int index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: isMultisig);
+    final isSingleSig = watchOnlyWallet.walletType == WalletType.singleSignature;
+    final index = _findSameWalletIndex(watchOnlyWallet.descriptor, watchOnlyWallet.walletType);
 
     // Existing wallet (Case 1, 2, 3)
     if (index != -1) {
@@ -180,10 +178,10 @@ class WalletProvider extends ChangeNotifier {
         return ResultOfSyncFromVault(result: WalletSyncResult.existingWalletNoUpdate, walletId: existingWallet.id);
       }
 
-      String? resolvedName = _resolveWalletNameConflict(
+      final resolvedName = _resolveWalletNameConflict(
         desiredName: watchOnlyWallet.name,
         descriptor: watchOnlyWallet.descriptor,
-        isMultisig: isMultisig,
+        isSingleSig: isSingleSig,
         excludeWalletId: existingWallet.id,
       );
 
@@ -191,7 +189,7 @@ class WalletProvider extends ChangeNotifier {
         return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
       }
 
-      WatchOnlyWallet walletToUpdate = _copyWithNewName(watchOnlyWallet, resolvedName);
+      final walletToUpdate = _copyWithNewName(watchOnlyWallet, resolvedName);
       _walletRepository.updateWalletUI(existingWallet.id, walletToUpdate);
 
       _setWalletItemList(await _fetchWalletListFromDB());
@@ -201,10 +199,10 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // New Wallet (Case 4, 5, 6)
-    String? resolvedName = _resolveWalletNameConflict(
+    final resolvedName = _resolveWalletNameConflict(
       desiredName: watchOnlyWallet.name,
       descriptor: watchOnlyWallet.descriptor,
-      isMultisig: isMultisig,
+      isSingleSig: isSingleSig,
     );
 
     if (resolvedName == null) {
@@ -212,7 +210,7 @@ class WalletProvider extends ChangeNotifier {
     }
 
     watchOnlyWallet = _copyWithNewName(watchOnlyWallet, resolvedName);
-    var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
+    final newWallet = await _addNewWallet(watchOnlyWallet);
 
     Logger.log('--> syncFromCoconutVault:::::: ${_walletItemList.map((e) => e.id).toList()}');
     _handleNewWalletAdded(newWallet.id);
@@ -222,8 +220,7 @@ class WalletProvider extends ChangeNotifier {
 
   /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
   Future<ResultOfSyncFromVault> syncFromThirdParty(WatchOnlyWallet watchOnlyWallet) async {
-    bool isMultisig = watchOnlyWallet.signers != null;
-    final index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: isMultisig);
+    final index = _findSameWalletIndex(watchOnlyWallet.descriptor, watchOnlyWallet.walletType);
 
     if (index != -1) {
       return ResultOfSyncFromVault(
@@ -234,10 +231,10 @@ class WalletProvider extends ChangeNotifier {
 
     // 현재 wallet_add_scanner_view_model에서 getNextThirdPartyWalletName을 통해 중복 이름을 미리 처리해서
     // _resolveWalletNameConflict가 호출되는 경우가 없음
-    String? resolvedName = _resolveWalletNameConflict(
+    final resolvedName = _resolveWalletNameConflict(
       desiredName: watchOnlyWallet.name,
       descriptor: watchOnlyWallet.descriptor,
-      isMultisig: isMultisig,
+      isSingleSig: watchOnlyWallet.walletType == WalletType.singleSignature,
     );
 
     if (resolvedName == null) {
@@ -245,7 +242,7 @@ class WalletProvider extends ChangeNotifier {
     }
 
     watchOnlyWallet = _copyWithNewName(watchOnlyWallet, resolvedName);
-    var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
+    final newWallet = await _addNewWallet(watchOnlyWallet);
     _handleNewWalletAdded(newWallet.id);
 
     return ResultOfSyncFromVault(result: WalletSyncResult.newWalletAdded, walletId: newWallet.id);
@@ -256,7 +253,7 @@ class WalletProvider extends ChangeNotifier {
   String? _resolveWalletNameConflict({
     required String desiredName,
     required String descriptor,
-    required bool isMultisig,
+    required bool isSingleSig,
     int? excludeWalletId,
   }) {
     final conflictWallet = _walletItemList.firstWhereOrNull((w) => w.id != excludeWalletId && w.name == desiredName);
@@ -264,13 +261,13 @@ class WalletProvider extends ChangeNotifier {
     // No conflict
     if (conflictWallet == null) return desiredName;
 
-    // Multisig
-    if (isMultisig) return null;
+    // Multisig / Taproot: 자동 해소 불가
+    if (!isSingleSig) return null;
 
-    // Conflict
-    List<String> incomingMfps = _getMfpsFromDescriptor(descriptor, isMultisig);
-    List<String> conflictMfps = _getMfps(conflictWallet);
-    bool isSameMfp = const UnorderedIterableEquality().equals(incomingMfps, conflictMfps);
+    // Singlesig conflict: MFP 비교
+    final incomingMfps = [SingleSignatureWallet.fromDescriptor(descriptor).keyStore.masterFingerprint];
+    final conflictMfps = _getMfps(conflictWallet);
+    final isSameMfp = const UnorderedIterableEquality().equals(incomingMfps, conflictMfps);
 
     if (isSameMfp) {
       return _generateAccountName(desiredName, descriptor, excludeWalletId: excludeWalletId);
@@ -290,6 +287,8 @@ class WalletProvider extends ChangeNotifier {
       wallet.requiredSignatureCount,
       wallet.signers,
       wallet.walletImportSource.name,
+      keyPathSeedInfos: wallet.keyPathSeedInfos,
+      scriptPathSeedInfos: wallet.scriptPathSeedInfos,
     );
   }
 
@@ -300,14 +299,6 @@ class WalletProvider extends ChangeNotifier {
       return (wallet.walletBase as MultisignatureWallet).keyStoreList.map((k) => k.masterFingerprint).toList();
     }
     return [];
-  }
-
-  List<String> _getMfpsFromDescriptor(String descriptor, bool isMultisig) {
-    if (isMultisig) {
-      return MultisignatureWallet.fromDescriptor(descriptor).keyStoreList.map((k) => k.masterFingerprint).toList();
-    } else {
-      return [SingleSignatureWallet.fromDescriptor(descriptor).keyStore.masterFingerprint];
-    }
   }
 
   String _generateAccountName(String baseName, String descriptor, {int? excludeWalletId}) {
@@ -351,13 +342,12 @@ class WalletProvider extends ChangeNotifier {
 
   // -----------------------------------------------------------------------------
 
-  Future<WalletListItemBase> _addNewWallet(WatchOnlyWallet wallet, bool isMultisig) async {
-    WalletListItemBase newItem;
-    if (isMultisig) {
-      newItem = await _walletRepository.addMultisigWallet(wallet);
-    } else {
-      newItem = await _walletRepository.addSinglesigWallet(wallet);
-    }
+  Future<WalletListItemBase> _addNewWallet(WatchOnlyWallet wallet) async {
+    final WalletListItemBase newItem = switch (wallet.walletType) {
+      WalletType.multiSignature => await _walletRepository.addMultisigWallet(wallet),
+      WalletType.taproot => await _walletRepository.addTaprootWallet(wallet),
+      WalletType.singleSignature => await _walletRepository.addSinglesigWallet(wallet),
+    };
 
     // 지갑 추가 후 receive, change 주소 각각 1개씩 생성
     await _addressRepository.ensureAddressesInit(walletItemBase: newItem);
@@ -380,7 +370,7 @@ class WalletProvider extends ChangeNotifier {
       hasChanged = true;
     }
 
-    if (existingWallet is SinglesigWalletListItem) {
+    if (existingWallet is SinglesigWalletListItem || existingWallet is TaprootWalletListItem) {
       return hasChanged;
     }
 

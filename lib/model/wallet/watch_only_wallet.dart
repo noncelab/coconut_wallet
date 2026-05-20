@@ -44,6 +44,12 @@ class WatchOnlyWallet {
 
   bool get isTaproot => _keyPathSeedInfos != null || _scriptPathSeedInfos != null;
 
+  WalletType get walletType {
+    if (_signers != null) return WalletType.multiSignature;
+    if (isTaproot) return WalletType.taproot;
+    return WalletType.singleSignature;
+  }
+
   bool get isSupportedTaprootConfiguration {
     if (!isTaproot) return false;
     final keyPathCount = _descriptor.totalSigner;
