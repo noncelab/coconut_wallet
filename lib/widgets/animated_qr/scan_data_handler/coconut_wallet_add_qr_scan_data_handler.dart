@@ -5,7 +5,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
 /// 코코넛 볼트 - 지갑 내보내기 스캔용
-class CoconutQrScanDataHandler implements IQrScanDataHandler {
+class CoconutWalletAddQrScanDataHandler implements IQrScanDataHandler {
   WatchOnlyWallet? _result;
 
   @override
@@ -24,8 +24,9 @@ class CoconutQrScanDataHandler implements IQrScanDataHandler {
       }
       _result = wallet;
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       Logger.error(e.toString());
+      Logger.error(stackTrace);
       return false;
     }
   }

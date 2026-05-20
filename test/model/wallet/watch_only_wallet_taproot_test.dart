@@ -214,13 +214,13 @@ void main() {
       expect(wallet.isSupportedTaprootConfiguration, true);
     });
 
-    test('twoParentDescriptor: keypath 2개 + scriptpath 1개: 지원됨', () {
+    test('twoParentDescriptor: keyPathSeedInfos 1개 + scriptpath 1개: 지원됨', () {
       final json = {
         'name': 'Valid2',
         'colorIndex': 0,
         'iconIndex': 0,
         'descriptor': twoParentDescriptor,
-        'keyPathSeedInfos': ['vpub1', 'vpub2'],
+        'keyPathSeedInfos': ['vpub1'],
         'scriptPathSeedInfos': [
           {
             'miniscript': 'and_v(v:pk(key_1),older(500000000))',

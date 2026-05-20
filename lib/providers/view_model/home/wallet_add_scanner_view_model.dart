@@ -32,7 +32,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
 
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
-        _qrDataHandler = CoconutQrScanDataHandler();
+        _qrDataHandler = CoconutWalletAddQrScanDataHandler();
         break;
       case WalletImportSource.keystone:
       case WalletImportSource.jade:

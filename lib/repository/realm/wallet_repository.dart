@@ -114,8 +114,10 @@ class WalletRepository extends BaseRepository {
     );
     var realmTaprootWallet = RealmTaprootWallet(
       id,
-      jsonEncode(watchOnlyWallet.keyPathSeedInfos),
-      jsonEncode(watchOnlyWallet.scriptPathSeedInfos!.map((e) => e.toJson()).toList()),
+      jsonEncode(watchOnlyWallet.keyPathSeedInfos ?? const <String>[]),
+      jsonEncode(
+        watchOnlyWallet.scriptPathSeedInfos?.map((e) => e.toJson()).toList() ?? const <Map<String, dynamic>>[],
+      ),
       walletBase: realmWalletBase,
     );
 

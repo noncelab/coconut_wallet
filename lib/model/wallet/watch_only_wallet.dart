@@ -59,6 +59,7 @@ class WatchOnlyWallet {
     final keyPathSeedInfoCount = _keyPathSeedInfos?.length ?? 0;
     final scriptPathSeedInfoCount = _scriptPathSeedInfos?.length ?? 0;
     if (keyPathSeedInfoCount > 1 || scriptPathSeedInfoCount > 1) return false;
+    if (keyPathSeedInfoCount == 0 && scriptPathSeedInfoCount == 0) return false;
 
     // 모든 signers의 derivation path purpose가 86'인지 검증
     for (int i = 0; i < _descriptor.totalSigner; i++) {
@@ -76,7 +77,7 @@ class WatchOnlyWallet {
       if (pathSegments.length < 2 || (pathSegments[1] != "86'" && pathSegments[1] != "86h")) {
         return false;
       }
-    } catch (_) {
+    } catch (e) {
       return false;
     }
 
