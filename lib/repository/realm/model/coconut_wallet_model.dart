@@ -70,6 +70,7 @@ class _RealmTaprootWallet {
   late _RealmWalletBase? walletBase;
   late String keyPathSeedInfosInJsonSerialization;
   late String scriptPathSeedInfosInJsonSerialization;
+  late DateTime? createdAtInVault;
 }
 
 @RealmModel()

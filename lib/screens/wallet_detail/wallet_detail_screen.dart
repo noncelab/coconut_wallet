@@ -167,11 +167,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     await Navigator.pushNamed(
       context,
       '/wallet-info',
-      arguments: {
-        'id': widget.id,
-        'isMultisig': _viewModel.walletType == WalletType.multiSignature,
-        'entryPoint': widget.entryPoint,
-      },
+      arguments: {'id': widget.id, 'walletType': _viewModel.walletType, 'entryPoint': widget.entryPoint},
     );
 
     _viewModel.updateWalletName();
@@ -431,7 +427,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Navigator.pushNamed(
           context,
           '/wallet-info',
-          arguments: {'id': widget.id, 'isMultisig': false, 'entryPoint': widget.entryPoint, 'showMfpInput': true},
+          arguments: {
+            'id': widget.id,
+            'walletType': _viewModel.walletType,
+            'entryPoint': widget.entryPoint,
+            'showMfpInput': true,
+          },
         );
       });
       return true;

@@ -289,6 +289,7 @@ class WalletProvider extends ChangeNotifier {
       wallet.walletImportSource.name,
       keyPathSeedInfos: wallet.keyPathSeedInfos,
       scriptPathSeedInfos: wallet.scriptPathSeedInfos,
+      createdAtInVault: wallet.createdAtInVault,
     );
   }
 

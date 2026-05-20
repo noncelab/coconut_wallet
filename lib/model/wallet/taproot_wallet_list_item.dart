@@ -12,6 +12,7 @@ class TaprootWalletListItem extends WalletListItemBase {
     required super.descriptor,
     required this.keyPathSeedInfos,
     required this.scriptPathSeedInfos,
+    this.createdAtInVault,
     super.receiveUsedIndex,
     super.changeUsedIndex,
   }) : super(walletType: WalletType.taproot, walletImportSource: WalletImportSource.coconutVault) {
@@ -20,4 +21,5 @@ class TaprootWalletListItem extends WalletListItemBase {
 
   final List<String> keyPathSeedInfos;
   final List<TaprootScriptPathSeedInfo> scriptPathSeedInfos;
+  final DateTime? createdAtInVault;
 }

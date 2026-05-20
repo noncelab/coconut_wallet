@@ -3,6 +3,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
@@ -39,7 +41,6 @@ class WalletInfoItemCard extends StatefulWidget {
 
 class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   List<MultisigSigner>? signers;
-  bool isMultisig = false;
   late int colorIndex;
   late int iconIndex;
   late String rightText;
@@ -52,7 +53,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   bool isCustomAccount = false;
 
   bool _isWithoutMfp() {
-    if (isMultisig) {
+    if (walletItem is! SinglesigWalletListItem) {
       return false;
     }
     return isWalletWithoutMfp(walletItem) ||
@@ -100,7 +101,18 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
       iconIndex = multiWallet.iconIndex;
       rightText = '';
       rightSubText = '${multiWallet.requiredSignatureCount}/${multiWallet.signers.length}';
-      isMultisig = true;
+      walletImportSource = widget.walletItem.walletImportSource;
+      isCustomAccount = false;
+    } else if (walletItem is TaprootWalletListItem) {
+      /// 탭루트
+      final taprootWallet = walletItem.walletBase as TaprootWallet;
+      colorIndex = widget.walletItem.colorIndex;
+      iconIndex = widget.walletItem.iconIndex;
+      // TODO: UI createdAtInVault
+      rightText = _formatCreatedAtInVault((widget.walletItem as TaprootWalletListItem).createdAtInVault);
+      rightSubText = taprootWallet.derivationPath; // TODO:
+      walletImportSource = widget.walletItem.walletImportSource;
+      isCustomAccount = _getAccountIndex(taprootWallet.derivationPath) != 0;
     } else {
       /// 싱글 시그
       final singlesigWallet = walletItem.walletBase as SingleSignatureWallet;
@@ -115,8 +127,25 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     nameText = walletItem.name;
   }
 
+  String _formatCreatedAtInVault(DateTime? createdAtInVault) {
+    if (createdAtInVault == null) {
+      return '';
+    }
+
+    final localDateTime = createdAtInVault.toLocal();
+    final year = localDateTime.year.toString().padLeft(4, '0');
+    final month = localDateTime.month.toString().padLeft(2, '0');
+    final day = localDateTime.day.toString().padLeft(2, '0');
+    final hour = localDateTime.hour.toString().padLeft(2, '0');
+    final minute = localDateTime.minute.toString().padLeft(2, '0');
+
+    return '$year.$month.$day $hour:$minute';
+  }
+
   @override
   Widget build(BuildContext context) {
+    // TODO: taproot 지갑 일 때도 제어해줘야함
+    bool isMultisig = widget.walletItem.walletType == WalletType.multiSignature;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음

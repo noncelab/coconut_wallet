@@ -26,11 +26,13 @@ void main() {
 
   group('WatchOnlyWallet Taproot fromJson', () {
     test('oneParentDescriptor: keyPathSeedInfos + scriptPathSeedInfos 모두 있을 때', () {
+      final createdAtInVault = DateTime.utc(2026, 5, 20, 1, 2, 3);
       final json = {
         'name': 'Taproot Inheritance',
         'colorIndex': 2,
         'iconIndex': 3,
         'descriptor': oneParentDescriptor,
+        'createdAt': createdAtInVault.toIso8601String(),
         'keyPathSeedInfos': [parentTaprootXpub],
         'scriptPathSeedInfos': [
           {
@@ -52,6 +54,7 @@ void main() {
       expect(wallet.scriptPathSeedInfos!.length, 1);
       expect(wallet.scriptPathSeedInfos![0].miniscript, inheritanceMiniscript);
       expect(wallet.scriptPathSeedInfos![0].extendedPublicKeys.length, 1);
+      expect(wallet.createdAtInVault, createdAtInVault);
     });
 
     test('twoParentDescriptor: keyPathSeedInfos + scriptPathSeedInfos 모두 있을 때', () {
@@ -74,6 +77,21 @@ void main() {
       expect(wallet.isTaproot, true);
       expect(wallet.keyPathSeedInfos!.length, 2);
       expect(wallet.scriptPathSeedInfos!.length, 1);
+    });
+
+    test('createdAt이 잘못된 형식이면 null로 처리', () {
+      final json = {
+        'name': 'Taproot Inheritance',
+        'colorIndex': 2,
+        'iconIndex': 3,
+        'descriptor': oneParentDescriptor,
+        'createdAt': 'invalid',
+        'keyPathSeedInfos': [parentTaprootXpub],
+      };
+
+      final wallet = WatchOnlyWallet.fromJson(json);
+
+      expect(wallet.createdAtInVault, isNull);
     });
 
     test('기존 singlesig 볼트 QR JSON 파싱: Taproot 필드 없을 때', () {
@@ -272,7 +290,7 @@ void main() {
       expect(wallet.isSupportedTaprootConfiguration, false);
     });
 
-    test('keypath 0개 + scriptpath 1개: 지원 안됨', () {
+    test('keyPathSeedInfo 0개 + scriptPathSeedInfo 1개: 지원 됨', () {
       final json = {
         'name': 'Invalid3',
         'colorIndex': 0,
@@ -287,7 +305,7 @@ void main() {
         ],
       };
       final wallet = WatchOnlyWallet.fromJson(json);
-      expect(wallet.isSupportedTaprootConfiguration, false);
+      expect(wallet.isSupportedTaprootConfiguration, true);
     });
 
     test('purpose가 86이 아닌 descriptor: 지원 안됨', () {

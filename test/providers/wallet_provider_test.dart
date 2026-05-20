@@ -42,6 +42,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
 
   int addTaprootWalletCallCount = 0;
   late TaprootWalletListItem addTaprootWalletResult;
+  WatchOnlyWallet? lastTaprootWallet;
 
   int addSinglesigWalletCallCount = 0;
   late SinglesigWalletListItem addSinglesigWalletResult;
@@ -57,6 +58,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   @override
   Future<TaprootWalletListItem> addTaprootWallet(WatchOnlyWallet watchOnlyWallet) async {
     addTaprootWalletCallCount++;
+    lastTaprootWallet = watchOnlyWallet;
     return addTaprootWalletResult;
   }
 
@@ -189,13 +191,19 @@ WatchOnlyWallet _createMultisigWatchOnlyWallet({
   );
 }
 
-WatchOnlyWallet _createTaprootWatchOnlyWallet({String name = 'Taproot Wallet', int colorIndex = 0, int iconIndex = 0}) {
+WatchOnlyWallet _createTaprootWatchOnlyWallet({
+  String name = 'Taproot Wallet',
+  int colorIndex = 0,
+  int iconIndex = 0,
+  DateTime? createdAt,
+}) {
   return WatchOnlyWallet.fromJson({
     'name': name,
     'colorIndex': colorIndex,
     'iconIndex': iconIndex,
     'descriptor': _oneParentDescriptor,
     'walletImportSource': WalletImportSource.coconutVault.name,
+    if (createdAt != null) 'createdAt': createdAt.toIso8601String(),
     'keyPathSeedInfos': [_parentTaprootXpub],
     'scriptPathSeedInfos': [
       {
@@ -250,15 +258,17 @@ void main() {
   // ───────────────────────────────────────────
   group('WalletProvider - syncFromCoconutVault (탭루트)', () {
     test('신규 지갑 추가 시 addTaprootWallet 호출 및 newWalletAdded 반환', () async {
+      final createdAt = DateTime.utc(2026, 5, 20, 1, 2, 3);
       final walletRepo = FakeWalletRepository();
       walletRepo.addTaprootWalletResult = _createTaprootWalletListItem();
 
       final provider = await _buildProvider(walletRepo);
 
-      final result = await provider.syncFromCoconutVault(_createTaprootWatchOnlyWallet());
+      final result = await provider.syncFromCoconutVault(_createTaprootWatchOnlyWallet(createdAt: createdAt));
 
       expect(result.result, WalletSyncResult.newWalletAdded);
       expect(walletRepo.addTaprootWalletCallCount, 1);
+      expect(walletRepo.lastTaprootWallet!.createdAtInVault, createdAt);
 
       provider.dispose();
     });

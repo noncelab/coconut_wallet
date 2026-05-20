@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/bip/129/signer_bsms.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -32,9 +34,9 @@ class WalletInfoViewModel extends ChangeNotifier {
   late WalletListItemBase _walletItemBase;
   late WalletUpdateInfo _prevWalletUpdateInfo;
 
-  final bool _isMultisig;
+  final WalletType _walletType;
 
-  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, this._nodeProvider, this._isMultisig) {
+  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, this._nodeProvider, this._walletType) {
     _loadWalletData();
     _walletProvider.addListener(_onWalletProviderChanged);
   }
@@ -52,12 +54,18 @@ class WalletInfoViewModel extends ChangeNotifier {
     _walletItemBase = walletItemBase;
     _walletName = walletItemBase.name;
 
-    if (_isMultisig) {
-      final multisigItem = walletItemBase as MultisigWalletListItem;
-      _multisigTotalSignerCount = multisigItem.signers.length;
-      _multisigRequiredSignerCount = multisigItem.requiredSignatureCount;
-    } else {
-      _extendedPublicKey = (walletItemBase.walletBase as SingleSignatureWallet).keyStore.extendedPublicKey.serialize();
+    switch (_walletType) {
+      case WalletType.multiSignature:
+        final multisigItem = walletItemBase as MultisigWalletListItem;
+        _multisigTotalSignerCount = multisigItem.signers.length;
+        _multisigRequiredSignerCount = multisigItem.requiredSignatureCount;
+        break;
+      case WalletType.singleSignature:
+        _extendedPublicKey =
+            (walletItemBase.walletBase as SingleSignatureWallet).keyStore.extendedPublicKey.serialize();
+        break;
+      case WalletType.taproot:
+      // TODO
     }
 
     _prevWalletUpdateInfo = WalletUpdateInfo(_walletId);

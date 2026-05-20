@@ -7,6 +7,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -162,8 +163,15 @@ class WalletDetailViewModel extends ChangeNotifier {
   WalletType get walletType => _walletType;
   bool get isNetworkOff => _connectProvider.isInternetOff;
   bool get isMultisigWallet => _walletListBaseItem is MultisigWalletListItem;
-  String? get masterFingerprint =>
-      isMultisigWallet ? null : (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+  String? get masterFingerprint {
+    switch (_walletListBaseItem.walletType) {
+      case WalletType.multiSignature:
+      case WalletType.taproot:
+        return null;
+      case WalletType.singleSignature:
+        return (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+    }
+  }
 
   String _fiatPriceString = '';
 

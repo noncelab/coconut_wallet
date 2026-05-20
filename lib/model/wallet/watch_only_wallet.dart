@@ -14,6 +14,7 @@ class WatchOnlyWallet {
   late WalletImportSource _walletImportSource;
   List<String>? _keyPathSeedInfos;
   List<TaprootScriptPathSeedInfo>? _scriptPathSeedInfos;
+  DateTime? _createdAtInVault;
 
   WatchOnlyWallet(
     this._name,
@@ -25,8 +26,10 @@ class WatchOnlyWallet {
     String walletImportSource, {
     List<String>? keyPathSeedInfos,
     List<TaprootScriptPathSeedInfo>? scriptPathSeedInfos,
+    DateTime? createdAtInVault,
   }) : _keyPathSeedInfos = keyPathSeedInfos,
-       _scriptPathSeedInfos = scriptPathSeedInfos {
+       _scriptPathSeedInfos = scriptPathSeedInfos,
+       _createdAtInVault = createdAtInVault {
     _descriptor = Descriptor.parse(descriptor);
     _walletImportSource = WalletImportSourceExtension.fromStringDefaultCoconut(walletImportSource);
   }
@@ -41,6 +44,7 @@ class WatchOnlyWallet {
   WalletImportSource get walletImportSource => _walletImportSource;
   List<String>? get keyPathSeedInfos => _keyPathSeedInfos;
   List<TaprootScriptPathSeedInfo>? get scriptPathSeedInfos => _scriptPathSeedInfos;
+  DateTime? get createdAtInVault => _createdAtInVault;
 
   bool get isTaproot => _keyPathSeedInfos != null || _scriptPathSeedInfos != null;
 
@@ -105,6 +109,9 @@ class WatchOnlyWallet {
     if (_scriptPathSeedInfos != null) {
       json['scriptPathSeedInfos'] = _scriptPathSeedInfos!.map((e) => e.toJson()).toList();
     }
+    if (_createdAtInVault != null) {
+      json['createdAtInVault'] = _createdAtInVault!.toIso8601String();
+    }
     return jsonEncode(json);
   }
 
@@ -119,6 +126,8 @@ class WatchOnlyWallet {
                 .map((e) => TaprootScriptPathSeedInfo.fromJson(e as Map<String, dynamic>))
                 .toList()
             : null;
+    final createdAtInVaultJson = json['createdAt'];
+    final createdAtInVault = createdAtInVaultJson is String ? DateTime.tryParse(createdAtInVaultJson) : null;
 
     return WatchOnlyWallet(
       json['name'],
@@ -132,6 +141,7 @@ class WatchOnlyWallet {
       json['walletImportSource'] ?? WalletImportSource.coconutVault.name,
       keyPathSeedInfos: keyPathSeedInfos,
       scriptPathSeedInfos: scriptPathSeedInfos,
+      createdAtInVault: createdAtInVault,
     );
   }
 }

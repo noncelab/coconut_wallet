@@ -343,7 +343,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       context,
                       (args) => WalletInfoScreen(
                         id: args['id'],
-                        isMultisig: args['isMultisig'],
+                        walletType: args['walletType'],
                         entryPoint: args['entryPoint'],
                         showMfpInput: args['showMfpInput'] ?? false,
                       ),

@@ -119,6 +119,7 @@ class WalletRepository extends BaseRepository {
         watchOnlyWallet.scriptPathSeedInfos?.map((e) => e.toJson()).toList() ?? const <Map<String, dynamic>>[],
       ),
       walletBase: realmWalletBase,
+      createdAtInVault: watchOnlyWallet.createdAtInVault,
     );
 
     realm.write(() {

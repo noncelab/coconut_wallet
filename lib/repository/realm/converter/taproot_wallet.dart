@@ -20,6 +20,7 @@ TaprootWalletListItem mapRealmToTaprootWalletItem(RealmTaprootWallet realmTaproo
     descriptor: decryptedDescriptor ?? realmTaprootWallet.walletBase!.descriptor,
     keyPathSeedInfos: keyPathSeedInfos,
     scriptPathSeedInfos: scriptPathSeedInfos,
+    createdAtInVault: realmTaprootWallet.createdAtInVault,
     receiveUsedIndex: realmTaprootWallet.walletBase!.usedReceiveIndex,
     changeUsedIndex: realmTaprootWallet.walletBase!.usedChangeIndex,
   );

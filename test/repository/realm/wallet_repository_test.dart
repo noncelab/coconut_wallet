@@ -55,6 +55,7 @@ void main() {
   });
 
   group('WalletRepository - 탭루트', () {
+    final createdAtInVault = DateTime.utc(2026, 5, 20, 1, 2, 3);
     final scriptPathJson = jsonEncode([
       {
         'miniscript': _inheritanceMiniscript,
@@ -63,7 +64,13 @@ void main() {
     ]);
 
     RealmTaprootWallet createRealmTaprootWallet(int id, RealmWalletBase walletBase) {
-      return RealmTaprootWallet(id, jsonEncode([_parentTaprootXpub]), scriptPathJson, walletBase: walletBase);
+      return RealmTaprootWallet(
+        id,
+        jsonEncode([_parentTaprootXpub]),
+        scriptPathJson,
+        walletBase: walletBase,
+        createdAtInVault: createdAtInVault,
+      );
     }
 
     test('addTaprootWallet: RealmWalletBase와 RealmTaprootWallet 모두 생성', () async {
@@ -73,6 +80,7 @@ void main() {
         'iconIndex': 0,
         'descriptor': _oneParentDescriptor,
         'walletImportSource': WalletImportSource.coconutVault.name,
+        'createdAt': createdAtInVault.toIso8601String(),
         'keyPathSeedInfos': [_parentTaprootXpub],
         'scriptPathSeedInfos': [
           {
@@ -90,6 +98,7 @@ void main() {
       expect(result.keyPathSeedInfos, [_parentTaprootXpub]);
       expect(result.scriptPathSeedInfos.length, 1);
       expect(result.scriptPathSeedInfos.first.miniscript, _inheritanceMiniscript);
+      expect(result.createdAtInVault, createdAtInVault);
     });
 
     test('getWalletItemList: 탭루트 지갑이 TaprootWalletListItem으로 반환', () async {
@@ -106,6 +115,7 @@ void main() {
       final item = list.first as TaprootWalletListItem;
       expect(item.keyPathSeedInfos, [_parentTaprootXpub]);
       expect(item.scriptPathSeedInfos.first.miniscript, _inheritanceMiniscript);
+      expect(item.createdAtInVault, createdAtInVault);
     });
 
     test('deleteWallet: RealmTaprootWallet도 함께 삭제', () async {

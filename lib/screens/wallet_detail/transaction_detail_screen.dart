@@ -451,7 +451,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           '/wallet-info',
                           arguments: {
                             'id': widget.id,
-                            'isMultisig': false,
+                            'walletType': _viewModel.walletType,
                             'entryPoint': kEntryPointWalletHome,
                             'showMfpInput': true,
                           },
