@@ -27,6 +27,8 @@ class ElectrumUtil {
       return ScriptPublicKey.p2wpkh(address).serialize().substring(2);
     } else if (addressType == AddressType.p2wsh) {
       return ScriptPublicKey.p2wsh(address).serialize().substring(2);
+    } else if (addressType == AddressType.p2tr) {
+      return ScriptPublicKey.p2tr(address).serialize().substring(2);
     }
     throw 'Unsupported address type: $addressType';
   }
