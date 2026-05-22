@@ -162,15 +162,26 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       final ur = signedPsbt as UR;
       final cborBytes = ur.cbor;
       final decodedCbor = cbor.decode(cborBytes) as CborBytes;
+      final encodedSignedPsbt = base64Encode(decodedCbor.bytes);
+      //printLongString('Unsigned PSBT waiting for sign: ${_viewModel.unsignedPsbtString}');
+      //printLongString('Signed PSBT scanned result: $encodedSignedPsbt');
 
-      psbt = _viewModel.parseBase64EncodedToPsbt(base64Encode(decodedCbor.bytes));
+      psbt = _viewModel.parseBase64EncodedToPsbt(encodedSignedPsbt);
     } catch (e) {
       await _showErrorDialog(t.alert.invalid_qr);
       return;
     }
 
     try {
-      if (!_viewModel.isSignedPsbtMatchingUnsignedPsbt(psbt)) {
+      bool isMatchingSignedPsbt;
+      try {
+        isMatchingSignedPsbt = _viewModel.isSignedPsbtMatchingUnsignedPsbt(psbt);
+      } catch (e) {
+        await _showErrorDialog(e.toString());
+        return;
+      }
+
+      if (!isMatchingSignedPsbt) {
         await _showErrorDialog(t.alert.signed_psbt.wrong_send_info);
         return;
       }
