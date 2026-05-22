@@ -1,7 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -29,6 +29,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final SendInfoProvider _sendInfoProvider;
   final BlockExplorerProvider _blockExplorerProvider;
+
+  late final WalletType _walletType;
+  WalletType get walletType => _walletType;
 
   BlockTimestamp? _currentBlock;
 
@@ -79,7 +82,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   void setNeedsMfp() {
     final wallet = _walletProvider.getWalletById(_walletId);
-    if (wallet is MultisigWalletListItem) {
+    _walletType = wallet.walletType;
+    if (wallet.walletType == WalletType.multiSignature || wallet.walletType == WalletType.taproot) {
       _needsMfp = false;
       return;
     }

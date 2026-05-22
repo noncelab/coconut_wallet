@@ -14,6 +14,7 @@ final realmAllSchemas = [
   RealmWalletBase.schema,
   RealmMultisigWallet.schema,
   RealmExternalWallet.schema,
+  RealmTaprootWallet.schema,
   RealmTransaction.schema,
   RealmIntegerId.schema,
   RealmUtxoTag.schema,
@@ -60,6 +61,16 @@ class _RealmExternalWallet {
   late int id;
   late String walletImportSource;
   late _RealmWalletBase? walletBase;
+}
+
+@RealmModel()
+class _RealmTaprootWallet {
+  @PrimaryKey()
+  late int id;
+  late _RealmWalletBase? walletBase;
+  late String keyPathSeedInfosInJsonSerialization;
+  late String scriptPathSeedInfosInJsonSerialization;
+  late DateTime? createdAtInVault;
 }
 
 @RealmModel()
