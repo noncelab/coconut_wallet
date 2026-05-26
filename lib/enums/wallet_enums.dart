@@ -19,6 +19,10 @@ enum WalletType {
   }
 }
 
+/// Taproot 트랜잭션의 spend 경로.
+/// 기본값 선택 규칙은 `TaprootWalletListItem.defaultSpendType` 참고.
+enum TaprootSpendType { keyPath, scriptPath }
+
 enum WalletSyncResult {
   newWalletAdded,
   existingWalletUpdated, // coconut vault 지갑 ui 업데이트 됨

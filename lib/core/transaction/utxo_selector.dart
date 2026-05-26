@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
+import 'package:coconut_wallet/model/taproot_script_path_config.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_config.dart';
 
@@ -19,10 +20,15 @@ class UtxoSelector {
     double feeRate,
     WalletType walletType, {
     MultisigConfig? multisigConfig,
+    TaprootScriptPathConfig? taprootConfig,
+    TaprootSpendType? taprootSpendType,
     bool isFeeSubtractedFromAmount = false,
   }) {
     if (walletType == WalletType.multiSignature && multisigConfig == null) {
       throw Exception('MultisigConfig is required for multisignature wallet');
+    }
+    if (walletType == WalletType.taproot && taprootSpendType == TaprootSpendType.scriptPath && taprootConfig == null) {
+      throw Exception('TaprootConfig is required for taproot wallet when script path spending');
     }
 
     return _selectOptimalUtxosCommon(
@@ -31,6 +37,8 @@ class UtxoSelector {
       feeRate: feeRate,
       addressType: walletType.addressType,
       multisigConfig: multisigConfig,
+      taprootConfig: taprootConfig,
+      taprootSpendType: taprootSpendType,
       isFeeSubtractedFromAmount: isFeeSubtractedFromAmount,
     );
   }
@@ -50,6 +58,8 @@ class UtxoSelector {
     required double feeRate,
     required AddressType addressType,
     MultisigConfig? multisigConfig,
+    TaprootScriptPathConfig? taprootConfig,
+    TaprootSpendType? taprootSpendType,
     bool isFeeSubtractedFromAmount = false,
   }) {
     List<UtxoState> unspentUtxos = _getUnspentUtxosSortedByAmountDesc(utxoList);
@@ -61,6 +71,8 @@ class UtxoSelector {
       addressType: addressType,
       numOutputs: paymentMap.length + 1, // change output 포함
       multisigConfig: multisigConfig,
+      taprootConfig: taprootConfig,
+      taprootSpendType: taprootSpendType,
     );
 
     double virtualByte = virtualByteInfo.baseVirtualByte;
@@ -105,6 +117,8 @@ class UtxoSelector {
     required AddressType addressType,
     required int numOutputs,
     MultisigConfig? multisigConfig,
+    TaprootScriptPathConfig? taprootConfig,
+    TaprootSpendType? taprootSpendType,
   }) {
     double baseVirtualByte, virtualByteWith1Input;
 
@@ -129,6 +143,30 @@ class UtxoSelector {
         requiredSignature: multisigConfig.requiredSignature,
         totalSigner: multisigConfig.totalSigner,
       );
+    } else if (addressType == AddressType.p2tr) {
+      if (taprootSpendType == null) {
+        throw ArgumentError('TaprootSpendType is required for P2TR');
+      }
+      if (taprootSpendType == TaprootSpendType.scriptPath && taprootConfig == null) {
+        throw ArgumentError('TaprootConfig is required for P2TR when script path sending');
+      }
+
+      final bool isScriptPath = taprootSpendType == TaprootSpendType.scriptPath;
+
+      double estimateTaprootVirtualByte(int numberOfInputs) {
+        return WalletUtility.estimateVirtualByte(
+          addressType,
+          numberOfInputs,
+          numOutputs,
+          isScriptPath: isScriptPath,
+          requiredSignature: taprootConfig?.requiredSignature,
+          leafCount: taprootConfig?.leafCount,
+          tapScriptSize: taprootConfig?.tapScriptSize,
+        );
+      }
+
+      baseVirtualByte = estimateTaprootVirtualByte(0);
+      virtualByteWith1Input = estimateTaprootVirtualByte(1);
     } else {
       throw ArgumentError('Unsupported AddressType: $addressType');
     }

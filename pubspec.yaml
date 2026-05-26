@@ -95,7 +95,7 @@ dependencies:
   coconut_lib:
     git:
       url: https://github.com/noncelab/coconut_lib
-      ref: develop
+      ref: feat/p2tr
   
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
