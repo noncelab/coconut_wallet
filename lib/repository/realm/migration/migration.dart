@@ -46,6 +46,8 @@ import 'package:realm/realm.dart';
 ///
 /// [addRealmTaprootWallet] (7 -> 8)
 /// 1. RealmTaprootWallet 스키마 추가 (신규 스키마이므로 Realm이 자동 처리)
+///    포함 필드: keyPathSeedInfosInJsonSerialization, scriptPathSeedInfosInJsonSerialization,
+///    createdAtInVault, defaultSpendTypeName(nullable, 사용자 사전 선택 경로)
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');

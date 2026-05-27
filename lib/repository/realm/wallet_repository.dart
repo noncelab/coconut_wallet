@@ -131,6 +131,18 @@ class WalletRepository extends BaseRepository {
     return mapRealmToTaprootWalletItem(realmTaprootWallet, watchOnlyWallet.descriptor);
   }
 
+  /// 탭루트 지갑의 사용자 사전 선택 spend 경로 저장.
+  /// 둘 다 가능한 wallet 의 송신 path 기본값을 지갑 상세에서 변경할 때 호출.
+  /// 존재하지 않는 walletId 면 false 반환.
+  Future<bool> updateTaprootDefaultSpendType(int walletId, TaprootSpendType type) async {
+    final realmTaprootWallet = realm.query<RealmTaprootWallet>('id == $walletId').firstOrNull;
+    if (realmTaprootWallet == null) return false;
+    await realm.writeAsync(() {
+      realmTaprootWallet.defaultSpendTypeName = type.name;
+    });
+    return true;
+  }
+
   /// 멀티시그 지갑 추가
   Future<MultisigWalletListItem> addMultisigWallet(WatchOnlyWallet walletSync) async {
     var id = _getNextWalletId();
