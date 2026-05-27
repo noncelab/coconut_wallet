@@ -2,6 +2,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 
 class WalletMock {
   static SinglesigWalletListItem createSingleSigWalletItem({
@@ -50,6 +52,35 @@ class WalletMock {
       descriptor: descriptor,
       signers: signers,
       requiredSignatureCount: requiredSignatureCount,
+    );
+  }
+
+  static TaprootWalletListItem createTaprootWalletItem({
+    int id = 1,
+    String name = 'test_taproot_wallet',
+    bool hasKeyPathSeedInfo = true,
+    bool hasScriptPathSeedInfo = true,
+  }) {
+    const parentTaprootXpub =
+        'tpubDDMbU29QrSafD2Ui4yGv31Xp3PPSMvudreoohYjR8xLTng7hbsjYwUTeRhiKULFqX16M5M8zZh9siw5i6RRyisc6LtWjr1FwBYTiZUGGYJN';
+    const childTaprootXpub =
+        'tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8';
+    const inheritanceMiniscript = 'and_v(v:pk([70C4E9DE/86\'/1\'/0\']$childTaprootXpub/<0;1>/*),older(500000000))';
+    const descriptor = 'tr([9B1441E4/86\'/1\'/0\']$parentTaprootXpub/<0;1>/*,{$inheritanceMiniscript})#w0hf4lu5';
+
+    return TaprootWalletListItem(
+      id: id,
+      name: name,
+      colorIndex: 0,
+      iconIndex: 0,
+      descriptor: descriptor,
+      keyPathSeedInfos: hasKeyPathSeedInfo ? [parentTaprootXpub] : [],
+      scriptPathSeedInfos:
+          hasScriptPathSeedInfo
+              ? [
+                TaprootScriptPathSeedInfo(miniscript: inheritanceMiniscript, extendedPublicKeys: [childTaprootXpub]),
+              ]
+              : [],
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
+import 'package:coconut_wallet/model/taproot_script_path_config.dart';
 import 'package:coconut_wallet/model/wallet/multisig_config.dart';
 
 abstract class WalletListItemBase {
@@ -47,5 +48,22 @@ abstract class WalletListItemBase {
     }
 
     return null;
+  }
+
+  TaprootScriptPathConfig? get taprootConfig {
+    if (walletType != WalletType.taproot) return null;
+
+    final taprootWalletBase = walletBase as TaprootWalletBase;
+    final policyList = taprootWalletBase.policyList;
+    if (policyList.isEmpty || policyList.length > 1 || policyList.first is! InheritancePolicy) {
+      throw StateError('Unexpected taproot policy: $policyList');
+    }
+    return TaprootScriptPathConfig(
+      // InheritancePolicy = 단일 수혜자 서명 → script-path leaf의 요구 서명 수는 1
+      requiredSignature: 1,
+      leafCount: policyList.length,
+      // tapscript 원시 바이트 길이 (transaction.dart estimateVirtualByte 와 동일 계산)
+      tapScriptSize: Codec.decodeHex(policyList.last.toScript(0).rawSerialize()).length,
+    );
   }
 }

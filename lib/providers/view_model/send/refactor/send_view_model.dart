@@ -6,6 +6,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -116,6 +117,22 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   WalletListItemBase? _selectedWalletItem;
   late bool _isUtxoSelectionAuto;
+
+  /// 이번 송금에 대한 spend 경로 override. null = wallet 의 defaultSpendType 사용.
+  /// 둘 다 가능한 지갑에 한해 send_screen 토글(미구현)에서 setter 호출.
+  TaprootSpendType? _taprootSpendType;
+  TaprootSpendType? get taprootSpendType => _taprootSpendType;
+  bool get canChooseTaprootSpendType {
+    final w = _selectedWalletItem;
+    return w is TaprootWalletListItem && w.canSpendBothPaths;
+  }
+
+  void setTaprootSpendType(TaprootSpendType type) {
+    if (_taprootSpendType == type) return;
+    _taprootSpendType = type;
+    _buildTransaction();
+    notifyListeners();
+  }
 
   bool _isFeeSubtractedFromSendAmount = false;
   bool _previousIsFeeSubtractedFromSendAmount = false;
@@ -371,6 +388,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
     _isUtxoSelectionAuto = !_preferenceProvider.isManualUtxoSelectionMode;
     _initBalances(_allUtxos);
+
+    // per-send override 리셋. Builder 가 wallet 의 defaultSpendType 으로 자동 해석함.
+    _taprootSpendType = null;
   }
 
   void setIsUtxoSelectionAuto(bool value) {
@@ -512,6 +532,10 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       walletListItemBase: _selectedWalletItem!,
       isFeeSubtractedFromAmount: _isFeeSubtractedFromSendAmount,
       isUtxoFixed: !_isUtxoSelectionAuto,
+      scriptPathPolicy:
+          _taprootSpendType == TaprootSpendType.scriptPath
+              ? (_selectedWalletItem! as TaprootWalletListItem).defaultPolicy!
+              : null,
     );
 
     _txBuildResult = _txBuilder!.build();

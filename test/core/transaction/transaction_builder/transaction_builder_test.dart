@@ -6,7 +6,7 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../mock/wallet_mock.dart';
+import '../../../mock/wallet_mock.dart';
 
 void main() {
   SinglesigWalletListItem wallet = WalletMock.createSingleSigWalletItem();

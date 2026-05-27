@@ -1,8 +1,11 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/utxo_selector.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
+import 'package:coconut_wallet/model/taproot_script_path_config.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
@@ -77,6 +80,17 @@ class TransactionBuilder {
   final bool isFeeSubtractedFromAmount;
   final bool isUtxoFixed;
 
+  /// Taproot 서명 진행할 ScriptPath에 해당하는 Policy
+  /// `null` 이면 keyPath 서명. non-null이면 scriptPath 서명
+  /// scriptPath-only 지갑은 반드시 non-null 값을 전달해야 함
+  final Policy? scriptPathPolicy;
+  TaprootSpendType? get taprootSpendType =>
+      walletListItemBase is! TaprootWalletListItem
+          ? null
+          : (scriptPathPolicy == null ? TaprootSpendType.keyPath : TaprootSpendType.scriptPath);
+  TaprootScriptPathConfig? get _scriptPathConfig =>
+      taprootSpendType == TaprootSpendType.scriptPath ? walletListItemBase.taprootConfig : null;
+
   List<UtxoState>? _selectedUtxos;
   Transaction? _transaction;
   int? _estimatedFeeByFeeEstimator; // 처음엔 추정된 값으로 초기화됨
@@ -91,7 +105,13 @@ class TransactionBuilder {
     required this.walletListItemBase,
     required this.isFeeSubtractedFromAmount,
     required this.isUtxoFixed,
-  }) : assert(recipients.isNotEmpty);
+    this.scriptPathPolicy,
+  }) : assert(recipients.isNotEmpty),
+       assert(
+         !(walletListItemBase is TaprootWalletListItem && !walletListItemBase.canSpendViaKeyPath) ||
+             scriptPathPolicy != null,
+         'scriptPath-only Taproot wallet requires taprootPolicy to be provided.',
+       );
 
   TransactionBuildResult build() {
     try {
@@ -103,6 +123,9 @@ class TransactionBuilder {
           recipients.length + 1,
           requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
           totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+          isScriptPath: taprootSpendType == TaprootSpendType.scriptPath,
+          leafCount: walletListItemBase.taprootConfig?.leafCount,
+          tapScriptSize: walletListItemBase.taprootConfig?.tapScriptSize,
         ); // change output 있다고 가정
         _estimatedFeeByFeeEstimator = (virtualByte * feeRate).ceil();
       } else {
@@ -112,6 +135,8 @@ class TransactionBuilder {
           feeRate,
           walletListItemBase.walletType,
           multisigConfig: walletListItemBase.multisigConfig,
+          taprootConfig: walletListItemBase.taprootConfig,
+          taprootSpendType: taprootSpendType,
           isFeeSubtractedFromAmount: isFeeSubtractedFromAmount,
         );
         _selectedUtxos = utxoSelectionResult.selectedUtxos;
@@ -121,12 +146,7 @@ class TransactionBuilder {
       _createTransaction();
 
       /// 아래 결과는 changeOutput의 amount가 dust여서 수수료로 포함되는 값을 포함하지 않음
-      final estimatedFeeByTransaction = _transaction!.estimateFee(
-        feeRate,
-        walletListItemBase.walletType.addressType,
-        requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-        totalSigner: walletListItemBase.multisigConfig?.totalSigner,
-      );
+      final estimatedFeeByTransaction = _estimateTransactionFee(_transaction!);
 
       /// 아래 결과는 changeOutput의 amount가 dust여서 수수료로 포함되는 값을 포함함
       final realFee = _calculateRealFee(_transaction!);
@@ -159,6 +179,7 @@ class TransactionBuilder {
     WalletListItemBase? walletListItemBase,
     bool? isFeeSubtractedFromAmount,
     bool? isUtxoFixed,
+    Policy? taprootPolicy,
   }) {
     return TransactionBuilder(
       availableUtxos: availableUtxos ?? this.availableUtxos,
@@ -168,8 +189,17 @@ class TransactionBuilder {
       walletListItemBase: walletListItemBase ?? this.walletListItemBase,
       isFeeSubtractedFromAmount: isFeeSubtractedFromAmount ?? this.isFeeSubtractedFromAmount,
       isUtxoFixed: isUtxoFixed ?? this.isUtxoFixed,
+      scriptPathPolicy: taprootPolicy ?? this.scriptPathPolicy,
     );
   }
+
+  int _estimateTransactionFee(Transaction tx) => tx.estimateFee(
+    feeRate,
+    walletListItemBase.walletType.addressType,
+    requiredSignature: walletListItemBase.multisigConfig?.requiredSignature ?? _scriptPathConfig?.requiredSignature,
+    totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+    leafCount: _scriptPathConfig?.leafCount,
+  );
 
   Transaction? _createTransaction() {
     assert(_estimatedFeeByFeeEstimator != null);
@@ -223,6 +253,7 @@ class TransactionBuilder {
     recipients.entries.first.value,
     feeRate,
     walletListItemBase.walletBase,
+    policy: scriptPathPolicy,
   );
 
   Transaction _createBatchTransaction() => Transaction.forBatchPayment(
@@ -231,6 +262,7 @@ class TransactionBuilder {
     changeDerivationPath,
     feeRate,
     walletListItemBase.walletBase,
+    policy: scriptPathPolicy,
   );
 
   Transaction _createSingleWhenFeeSubtractedFromAmount() {
@@ -244,6 +276,7 @@ class TransactionBuilder {
           recipients.entries.first.key,
           feeRate,
           walletListItemBase.walletBase,
+          policy: scriptPathPolicy,
         );
         if (tx.outputs.first.amount <= _dustThreshold) {
           final outputSum = tx.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
@@ -286,13 +319,9 @@ class TransactionBuilder {
           sendAmount,
           feeRate,
           walletListItemBase.walletBase,
+          policy: scriptPathPolicy,
         );
-        final realEstimatedFee = tx.estimateFee(
-          feeRate,
-          walletListItemBase.walletType.addressType,
-          requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-          totalSigner: walletListItemBase.multisigConfig?.totalSigner,
-        );
+        final realEstimatedFee = _estimateTransactionFee(tx);
         if (initialFee != realEstimatedFee) {
           if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
             finalSubtractedFeeFromAmount = initialFee;
@@ -358,6 +387,7 @@ class TransactionBuilder {
           recipients.keys.last,
           feeRate,
           walletListItemBase.walletBase,
+          policy: scriptPathPolicy,
         );
         if (tx.outputs.last.amount <= _dustThreshold) {
           final outputSum = tx.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
@@ -399,13 +429,9 @@ class TransactionBuilder {
           changeDerivationPath,
           feeRate,
           walletListItemBase.walletBase,
+          policy: scriptPathPolicy,
         );
-        final realEstimatedFee = tx.estimateFee(
-          feeRate,
-          walletListItemBase.walletType.addressType,
-          requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-          totalSigner: walletListItemBase.multisigConfig?.totalSigner,
-        );
+        final realEstimatedFee = _estimateTransactionFee(tx);
         if (initialFee != realEstimatedFee) {
           if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
             finalTxWhenInfiniteLoop = tx;

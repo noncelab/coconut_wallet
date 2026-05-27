@@ -5,6 +5,7 @@ import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_
 import 'package:coconut_wallet/model/taproot_script_path_config.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_config.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 
 class UtxoSelectionResult {
   final List<UtxoState> selectedUtxos;
@@ -67,9 +68,12 @@ class UtxoSelector {
     List<UtxoState> selectedInputs = [];
     int totalInputAmount = 0;
 
+    final int totalOutputBytes = _computeTotalOutputBytes(paymentMap, addressType);
+
     final VirtualByteInfo virtualByteInfo = _calculateVirtualBytes(
       addressType: addressType,
       numOutputs: paymentMap.length + 1, // change output 포함
+      totalOutputBytes: totalOutputBytes,
       multisigConfig: multisigConfig,
       taprootConfig: taprootConfig,
       taprootSpendType: taprootSpendType,
@@ -116,6 +120,7 @@ class UtxoSelector {
   static VirtualByteInfo _calculateVirtualBytes({
     required AddressType addressType,
     required int numOutputs,
+    int? totalOutputBytes,
     MultisigConfig? multisigConfig,
     TaprootScriptPathConfig? taprootConfig,
     TaprootSpendType? taprootSpendType,
@@ -123,8 +128,18 @@ class UtxoSelector {
     double baseVirtualByte, virtualByteWith1Input;
 
     if (addressType == AddressType.p2wpkh) {
-      baseVirtualByte = WalletUtility.estimateVirtualByte(addressType, 0, numOutputs);
-      virtualByteWith1Input = WalletUtility.estimateVirtualByte(addressType, 1, numOutputs);
+      baseVirtualByte = WalletUtility.estimateVirtualByte(
+        addressType,
+        0,
+        numOutputs,
+        totalOutputBytes: totalOutputBytes,
+      );
+      virtualByteWith1Input = WalletUtility.estimateVirtualByte(
+        addressType,
+        1,
+        numOutputs,
+        totalOutputBytes: totalOutputBytes,
+      );
     } else if (addressType == AddressType.p2wsh) {
       if (multisigConfig == null) {
         throw ArgumentError('MultisigConfig is required for P2WSH');
@@ -135,6 +150,7 @@ class UtxoSelector {
         numOutputs,
         requiredSignature: multisigConfig.requiredSignature,
         totalSigner: multisigConfig.totalSigner,
+        totalOutputBytes: totalOutputBytes,
       );
       virtualByteWith1Input = WalletUtility.estimateVirtualByte(
         addressType,
@@ -142,6 +158,7 @@ class UtxoSelector {
         numOutputs,
         requiredSignature: multisigConfig.requiredSignature,
         totalSigner: multisigConfig.totalSigner,
+        totalOutputBytes: totalOutputBytes,
       );
     } else if (addressType == AddressType.p2tr) {
       if (taprootSpendType == null) {
@@ -162,6 +179,7 @@ class UtxoSelector {
           requiredSignature: taprootConfig?.requiredSignature,
           leafCount: taprootConfig?.leafCount,
           tapScriptSize: taprootConfig?.tapScriptSize,
+          totalOutputBytes: totalOutputBytes,
         );
       }
 
@@ -175,17 +193,20 @@ class UtxoSelector {
     return VirtualByteInfo(baseVirtualByte: baseVirtualByte, addedVBytePerInput: addedVBytePerInput);
   }
 
-  // static int getDustThreshold(AddressType addressType) {
-  //   if (addressType.isTaproot) {
-  //     return DustThresholds.taproot;
-  //   }
+  static int _computeTotalOutputBytes(Map<String, int> paymentMap, AddressType changeAddressType) {
+    int total = paymentMap.keys.fold(0, (sum, address) {
+      return sum + TransactionOutput.forPayment(0, address).length;
+    });
+    Logger.log('--> totalOutputBytes of PaymentMap: $total');
+    total += _changeOutputNonWitnessBytes(changeAddressType);
+    return total;
+  }
 
-  //   final threshold = DustThresholds.thresholds[addressType];
-  //   if (threshold == null) {
-  //     throw Exception('Unsupported Address Type: $addressType');
-  //   }
-  //   return threshold;
-  // }
+  static int _changeOutputNonWitnessBytes(AddressType type) {
+    if (type == AddressType.p2wpkh) return 31;
+    if (type == AddressType.p2wsh || type == AddressType.p2tr) return 43;
+    return 34;
+  }
 }
 
 class VirtualByteInfo {

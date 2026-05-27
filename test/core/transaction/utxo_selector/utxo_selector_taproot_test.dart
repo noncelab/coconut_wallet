@@ -19,7 +19,7 @@ void main() {
         amount: 100000,
         derivationPath: "m/86'/0'/0'/0/0",
         blockHeight: 0,
-        to: 'address1',
+        to: 'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e',
         timestamp: DateTime.now(),
         status: UtxoStatus.unspent,
       ),
@@ -29,7 +29,7 @@ void main() {
         amount: 50000,
         derivationPath: "m/86'/0'/0'/0/1",
         blockHeight: 0,
-        to: 'address2',
+        to: 'bcrt1qwpkzfxqnenazz5vd5afnhsxhjqpa6zf4vp7kz3',
         timestamp: DateTime.now(),
         status: UtxoStatus.unspent,
       ),
@@ -51,7 +51,7 @@ void main() {
   // ─────────────────────────────────────────────────────────────
   group('[UtxoSelector TaprootWallet - only keyPathSeedInfos]', () {
     test('should select optimal UTXOs for key path spending', () {
-      final paymentMap = {'address1': 60000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 60000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -68,7 +68,7 @@ void main() {
     });
 
     test('should select multiple UTXOs when single UTXO is not enough', () {
-      final paymentMap = {'address1': 120000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 120000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -85,7 +85,7 @@ void main() {
     });
 
     test('should throw exception when not enough funds (1)', () {
-      final paymentMap = {'address1': 1000000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 1000000};
       const feeRate = 1.0;
 
       expect(
@@ -103,7 +103,7 @@ void main() {
     });
 
     test('should throw exception when not enough funds (2)', () {
-      final paymentMap = {'address1': 175000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
       const feeRate = 1.0;
 
       expect(
@@ -123,7 +123,7 @@ void main() {
 
   group('[UtxoSelector TaprootWallet - only keyPathSeedInfos] when isFeeSubtractedFromAmount is true', () {
     test('should handle fee subtracted from amount (1)', () {
-      final paymentMap = {'address1': 100000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 100000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -141,7 +141,7 @@ void main() {
     });
 
     test('should handle fee subtracted from amount (2)', () {
-      final paymentMap = {'address1': 175000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -159,7 +159,7 @@ void main() {
     });
 
     test('should handle fee subtracted from amount (3)', () {
-      final paymentMap = {'address1': 175000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
       const feeRate = 2.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -177,7 +177,10 @@ void main() {
     });
 
     test('should throw exception when last payment value is too small to cover fee (1)', () {
-      final paymentMap = {'address1': 100000, 'address2': 300};
+      final paymentMap = {
+        'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 100000,
+        'bcrt1qwpkzfxqnenazz5vd5afnhsxhjqpa6zf4vp7kz3': 300,
+      };
       const feeRate = 1.0;
 
       expect(
@@ -199,7 +202,7 @@ void main() {
   // ─────────────────────────────────────────────────────────────
   group('[UtxoSelector TaprootWallet - only scriptPathSeedInfos]', () {
     test('should select optimal UTXOs for script path spending', () {
-      final paymentMap = {'address1': 60000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 60000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -217,7 +220,7 @@ void main() {
     });
 
     test('should select multiple UTXOs when single UTXO is not enough', () {
-      final paymentMap = {'address1': 120000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 120000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -235,7 +238,7 @@ void main() {
     });
 
     test('should throw exception when not enough funds (1)', () {
-      final paymentMap = {'address1': 1000000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 1000000};
       const feeRate = 1.0;
 
       expect(
@@ -254,7 +257,7 @@ void main() {
     });
 
     test('should throw exception when not enough funds (2)', () {
-      final paymentMap = {'address1': 175000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
       const feeRate = 1.0;
 
       expect(
@@ -275,7 +278,7 @@ void main() {
 
   group('[UtxoSelector TaprootWallet - only scriptPathSeedInfos] when isFeeSubtractedFromAmount is true', () {
     test('should handle fee subtracted from amount (1)', () {
-      final paymentMap = {'address1': 100000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 100000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -294,7 +297,7 @@ void main() {
     });
 
     test('should handle fee subtracted from amount (2)', () {
-      final paymentMap = {'address1': 175000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -313,7 +316,7 @@ void main() {
     });
 
     test('should handle fee subtracted from amount (3)', () {
-      final paymentMap = {'address1': 175000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
       const feeRate = 2.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -332,7 +335,10 @@ void main() {
     });
 
     test('should throw exception when last payment value is too small to cover fee (1)', () {
-      final paymentMap = {'address1': 100000, 'address2': 300};
+      final paymentMap = {
+        'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 100000,
+        'bcrt1qwpkzfxqnenazz5vd5afnhsxhjqpa6zf4vp7kz3': 300,
+      };
       const feeRate = 1.0;
 
       expect(
@@ -355,7 +361,7 @@ void main() {
   // ─────────────────────────────────────────────────────────────
   group('[UtxoSelector TaprootWallet - both keyPath and scriptPath seeds] key path spending', () {
     test('should select optimal UTXOs for key path spending', () {
-      final paymentMap = {'address1': 60000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 60000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -372,7 +378,7 @@ void main() {
     });
 
     test('should select multiple UTXOs when single UTXO is not enough', () {
-      final paymentMap = {'address1': 120000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 120000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -389,7 +395,7 @@ void main() {
     });
 
     test('should throw exception when not enough funds', () {
-      final paymentMap = {'address1': 175000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
       const feeRate = 1.0;
 
       expect(
@@ -412,7 +418,7 @@ void main() {
   // ─────────────────────────────────────────────────────────────
   group('[UtxoSelector TaprootWallet(2-keyPath, 1-scriptPath) - only keyPathSeedInfos]', () {
     test('should select optimal UTXOs for key path spending', () {
-      final paymentMap = {'address1': 60000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 60000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -428,7 +434,7 @@ void main() {
     });
 
     test('should select multiple UTXOs when single UTXO is not enough', () {
-      final paymentMap = {'address1': 120000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 120000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -444,7 +450,7 @@ void main() {
     });
 
     test('should throw exception when not enough funds (1)', () {
-      final paymentMap = {'address1': 1000000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 1000000};
       const feeRate = 1.0;
 
       expect(
@@ -462,7 +468,7 @@ void main() {
     });
 
     test('should throw exception when not enough funds (2)', () {
-      final paymentMap = {'address1': 175000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
       const feeRate = 1.0;
 
       expect(
@@ -484,7 +490,7 @@ void main() {
     '[UtxoSelector TaprootWallet(2-keyPath, 1-scriptPath) - only keyPathSeedInfos] when isFeeSubtractedFromAmount is true',
     () {
       test('should handle fee subtracted from amount (1)', () {
-        final paymentMap = {'address1': 100000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 100000};
         const feeRate = 1.0;
 
         final result = UtxoSelector.selectOptimalUtxos(
@@ -501,7 +507,7 @@ void main() {
       });
 
       test('should handle fee subtracted from amount (2)', () {
-        final paymentMap = {'address1': 175000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
         const feeRate = 1.0;
 
         final result = UtxoSelector.selectOptimalUtxos(
@@ -518,7 +524,7 @@ void main() {
       });
 
       test('should handle fee subtracted from amount (3)', () {
-        final paymentMap = {'address1': 175000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
         const feeRate = 2.0;
 
         final result = UtxoSelector.selectOptimalUtxos(
@@ -535,7 +541,10 @@ void main() {
       });
 
       test('should throw exception when last payment value is too small to cover fee (1)', () {
-        final paymentMap = {'address1': 100000, 'address2': 300};
+        final paymentMap = {
+          'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 100000,
+          'bcrt1qwpkzfxqnenazz5vd5afnhsxhjqpa6zf4vp7kz3': 300,
+        };
         const feeRate = 1.0;
 
         expect(
@@ -555,7 +564,7 @@ void main() {
 
   group('[UtxoSelector TaprootWallet(2-keyPath, 1-scriptPath) - only scriptPathSeedInfos]', () {
     test('should select optimal UTXOs for script path spending', () {
-      final paymentMap = {'address1': 60000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 60000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -572,7 +581,7 @@ void main() {
     });
 
     test('should select multiple UTXOs when single UTXO is not enough', () {
-      final paymentMap = {'address1': 120000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 120000};
       const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
@@ -589,7 +598,7 @@ void main() {
     });
 
     test('should throw exception when not enough funds (1)', () {
-      final paymentMap = {'address1': 1000000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 1000000};
       const feeRate = 1.0;
 
       expect(
@@ -608,7 +617,7 @@ void main() {
     });
 
     test('should throw exception when not enough funds (2)', () {
-      final paymentMap = {'address1': 175000};
+      final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
       const feeRate = 1.0;
 
       expect(
@@ -631,7 +640,7 @@ void main() {
     '[UtxoSelector TaprootWallet(2-keyPath, 1-scriptPath) - only scriptPathSeedInfos] when isFeeSubtractedFromAmount is true',
     () {
       test('should handle fee subtracted from amount (1)', () {
-        final paymentMap = {'address1': 100000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 100000};
         const feeRate = 1.0;
 
         final result = UtxoSelector.selectOptimalUtxos(
@@ -649,7 +658,7 @@ void main() {
       });
 
       test('should handle fee subtracted from amount (2)', () {
-        final paymentMap = {'address1': 175000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
         const feeRate = 1.0;
 
         final result = UtxoSelector.selectOptimalUtxos(
@@ -667,7 +676,7 @@ void main() {
       });
 
       test('should handle fee subtracted from amount (3)', () {
-        final paymentMap = {'address1': 175000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
         const feeRate = 2.0;
 
         final result = UtxoSelector.selectOptimalUtxos(
@@ -685,7 +694,10 @@ void main() {
       });
 
       test('should throw exception when last payment value is too small to cover fee (1)', () {
-        final paymentMap = {'address1': 100000, 'address2': 300};
+        final paymentMap = {
+          'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 100000,
+          'bcrt1qwpkzfxqnenazz5vd5afnhsxhjqpa6zf4vp7kz3': 300,
+        };
         const feeRate = 1.0;
 
         expect(
@@ -708,7 +720,7 @@ void main() {
     '[UtxoSelector TaprootWallet(2-keyPath, 1-scriptPath) - both keyPath and scriptPath seeds] key path spending',
     () {
       test('should select optimal UTXOs for key path spending', () {
-        final paymentMap = {'address1': 60000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 60000};
         const feeRate = 1.0;
 
         final result = UtxoSelector.selectOptimalUtxos(
@@ -724,7 +736,7 @@ void main() {
       });
 
       test('should select multiple UTXOs when single UTXO is not enough', () {
-        final paymentMap = {'address1': 120000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 120000};
         const feeRate = 1.0;
 
         final result = UtxoSelector.selectOptimalUtxos(
@@ -740,7 +752,7 @@ void main() {
       });
 
       test('should throw exception when not enough funds', () {
-        final paymentMap = {'address1': 175000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
         const feeRate = 1.0;
 
         expect(
@@ -761,7 +773,7 @@ void main() {
     '[UtxoSelector TaprootWallet(2-keyPath, 1-scriptPath) - both keyPath and scriptPath seeds] script path spending',
     () {
       test('should select optimal UTXOs for script path spending', () {
-        final paymentMap = {'address1': 60000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 60000};
         const feeRate = 1.0;
 
         final result = UtxoSelector.selectOptimalUtxos(
@@ -779,7 +791,7 @@ void main() {
       });
 
       test('should select multiple UTXOs when single UTXO is not enough', () {
-        final paymentMap = {'address1': 120000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 120000};
         const feeRate = 1.0;
 
         final result = UtxoSelector.selectOptimalUtxos(
@@ -797,7 +809,7 @@ void main() {
       });
 
       test('should throw exception when not enough funds', () {
-        final paymentMap = {'address1': 175000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
         const feeRate = 1.0;
 
         expect(
@@ -814,7 +826,7 @@ void main() {
       });
 
       test('script path fee should be higher than key path fee for the same transaction', () {
-        final paymentMap = {'address1': 60000};
+        final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 60000};
         const feeRate = 1.0;
 
         final keyPathResult = UtxoSelector.selectOptimalUtxos(
