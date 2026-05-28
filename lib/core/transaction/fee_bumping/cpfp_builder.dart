@@ -10,9 +10,10 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/utils/bitcoin/transaction_util.dart';
+import 'package:coconut_wallet/extensions/wallet_list_item_extension.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
@@ -84,11 +85,7 @@ class CpfpBuilder {
   }) {
     _pendingTx = preparer.pendingTx;
     _receivedUtxos = [...preparer.receivedUtxos]..sort((a, b) => b.amount.compareTo(a.amount));
-    _vSizeIncreasePerInput = estimateVSizePerInput(
-      isMultisig: walletListItemBase.walletType != WalletType.singleSignature,
-      requiredSignatureCount: walletListItemBase.multisigConfig?.requiredSignature,
-      totalSignerCount: walletListItemBase.multisigConfig?.totalSigner,
-    );
+    _vSizeIncreasePerInput = walletListItemBase.inputVSize;
     _assertAllUnspent(additionalSpendable);
     _additionalSpendable = [...additionalSpendable]..sort((a, b) => b.amount.compareTo(a.amount));
   }
@@ -103,6 +100,12 @@ class CpfpBuilder {
       walletListItemBase: walletListItemBase,
       isFeeSubtractedFromAmount: true,
       isUtxoFixed: true,
+      scriptPathPolicy:
+          walletListItemBase is TaprootWalletListItem
+              ? ((walletListItemBase as TaprootWalletListItem).defaultSpendType == TaprootSpendType.scriptPath
+                  ? (walletListItemBase as TaprootWalletListItem).defaultPolicy
+                  : null)
+              : null,
     ).build();
   }
 

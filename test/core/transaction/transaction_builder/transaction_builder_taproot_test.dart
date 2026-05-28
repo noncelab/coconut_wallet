@@ -794,7 +794,7 @@ void main() {
         paymentMap,
         feeRate,
         WalletType.taproot,
-        taprootConfig: taprootWallet.taprootConfig,
+        taprootConfig: taprootWallet.scriptPathConfigFor(taprootWallet.defaultPolicy!),
         taprootSpendType: TaprootSpendType.scriptPath,
       );
 

@@ -1,3 +1,7 @@
+import 'dart:math';
+
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/taproot_script_path_config.dart';
 import 'package:coconut_wallet/utils/hex_util.dart';
 
 const String rawTxVersion1Field = '01000000';
@@ -12,18 +16,6 @@ bool isRawTransactionHexString(String data) {
   } catch (_) {
     return false;
   }
-}
-
-/// 지갑 타입에 따라 input 1개 추가 시 증가하는 vSize(vbytes)를 반환합니다.
-///
-/// - singleSignature (P2WPKH): 68 vbytes
-/// - multisig (P2WSH): [p2wshMultisigInputVSize] 계산 결과
-int estimateVSizePerInput({required bool isMultisig, int? requiredSignatureCount, int? totalSignerCount}) {
-  if (!isMultisig) return 68;
-  if (requiredSignatureCount == null || totalSignerCount == null) {
-    throw ArgumentError('requiredSignatureCount and totalSignerCount are required for multisig');
-  }
-  return p2wshMultisigInputVSize(m: requiredSignatureCount, n: totalSignerCount);
 }
 
 /// Returns the *virtual size* (vbytes) added by **one P2WSH bare multisig input**
@@ -98,4 +90,46 @@ int p2wshMultisigInputVSize({
   final int vSize = (weight + 3) ~/ 4; // ceil(weight/4)
 
   return vSize;
+}
+
+int p2trInputVSize({required TaprootSpendType spendType, TaprootScriptPathConfig? scriptPathConfig}) {
+  int varIntSize(int v) {
+    if (v < 0xfd) return 1;
+    if (v <= 0xffff) return 3;
+    if (v <= 0xffffffff) return 5;
+    return 9;
+  }
+
+  switch (spendType) {
+    case TaprootSpendType.keyPath:
+      return 58;
+
+    case TaprootSpendType.scriptPath:
+      if (scriptPathConfig == null) {
+        throw ArgumentError('scriptPathConfig is required for scriptPath');
+      }
+
+      // outpoint(36) + scriptSigLen(1) + scriptSig(0) + sequence(4) = 41 bytes
+      const int nonWitnessBytes = 41;
+
+      final int merklePathLen = scriptPathConfig.leafCount <= 1 ? 0 : (log(scriptPathConfig.leafCount) / log(2)).ceil();
+
+      final int controlBlockSize = 33 + 32 * merklePathLen;
+
+      final int tapScriptElementSize = varIntSize(scriptPathConfig.tapScriptSize) + scriptPathConfig.tapScriptSize;
+
+      final int controlBlockElementSize = varIntSize(controlBlockSize) + controlBlockSize;
+
+      final int witnessItemCount = scriptPathConfig.requiredSignature + 2;
+
+      final int witnessBytes =
+          varIntSize(witnessItemCount) +
+          scriptPathConfig.requiredSignature * 65 +
+          tapScriptElementSize +
+          controlBlockElementSize;
+
+      final int weight = nonWitnessBytes * 4 + witnessBytes;
+
+      return (weight + 3) ~/ 4;
+  }
 }

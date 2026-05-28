@@ -8,13 +8,14 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
-import 'package:coconut_wallet/utils/bitcoin/transaction_util.dart';
+import 'package:coconut_wallet/extensions/wallet_list_item_extension.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
@@ -539,11 +540,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
     final inputCount = selectedUtxoCount;
     if (inputCount < 2) return null;
 
-    final inputSize = estimateVSizePerInput(
-      isMultisig: _wallet.walletType != WalletType.singleSignature,
-      requiredSignatureCount: _wallet.multisigConfig?.requiredSignature,
-      totalSignerCount: _wallet.multisigConfig?.totalSigner,
-    );
+    final inputSize = _wallet.inputVSize;
 
     const expectedFutureFeeRate = 15.0;
     final futureSavingFee = (inputCount - 1) * inputSize * expectedFutureFeeRate;
@@ -766,6 +763,10 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
             walletListItemBase: _wallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
+            scriptPathPolicy:
+                (_wallet is TaprootWalletListItem && _wallet.defaultSpendType == TaprootSpendType.scriptPath)
+                    ? _wallet.defaultPolicy
+                    : null,
           ).build();
 
       if (_isDisposed || nonce != _txPreparationNonce) return;

@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 
 extension TransactionExtension on Transaction {
@@ -15,10 +16,13 @@ extension TransactionExtension on Transaction {
         totalSigner: wallet.multisigConfig?.totalSigner,
       );
     } else {
+      final taprootItem = wallet as TaprootWalletListItem;
+      final policy = taprootItem.defaultPolicy;
+      final config = policy != null ? taprootItem.scriptPathConfigFor(policy) : null;
       return estimateVirtualByte(
         wallet.walletType.addressType,
-        requiredSignature: wallet.taprootConfig?.requiredSignature,
-        leafCount: wallet.taprootConfig?.leafCount,
+        requiredSignature: config?.requiredSignature,
+        leafCount: config?.leafCount,
       );
     }
   }

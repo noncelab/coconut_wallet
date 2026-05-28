@@ -390,7 +390,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _initBalances(_allUtxos);
 
     // per-send override 리셋. Builder 가 wallet 의 defaultSpendType 으로 자동 해석함.
-    _taprootSpendType = null;
+    if (_selectedWalletItem is TaprootWalletListItem) {
+      _taprootSpendType = (_selectedWalletItem! as TaprootWalletListItem).defaultSpendType;
+    }
   }
 
   void setIsUtxoSelectionAuto(bool value) {
@@ -524,6 +526,8 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     }
 
     final feeRate = double.parse(_feeRateText);
+    final isScriptPathPolicyRequired =
+        _taprootSpendType == TaprootSpendType.scriptPath || (_selectedWalletItem is TaprootWalletListItem);
     _txBuilder = TransactionBuilder(
       availableUtxos: _isUtxoSelectionAuto ? _allUtxos : _selectedUtxoList,
       recipients: _getRecipientMapForTx(recipientMap),
@@ -533,7 +537,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       isFeeSubtractedFromAmount: _isFeeSubtractedFromSendAmount,
       isUtxoFixed: !_isUtxoSelectionAuto,
       scriptPathPolicy:
-          _taprootSpendType == TaprootSpendType.scriptPath
+          (_taprootSpendType == TaprootSpendType.scriptPath)
               ? (_selectedWalletItem! as TaprootWalletListItem).defaultPolicy!
               : null,
     );

@@ -463,6 +463,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       _isAmountInsufficientAfterFee = true;
       _errorEstimatedFee = e.estimatedFee;
     } catch (e) {
+      Logger.error(e);
       _unexpectedErrorMessage = e.toString();
     }
 

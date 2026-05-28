@@ -16,7 +16,6 @@ abstract class WalletListItemBase {
   WalletImportSource walletImportSource;
   int receiveUsedIndex;
   int changeUsedIndex;
-  // bool isFavorite = false;
 
   late WalletBase walletBase;
 
@@ -32,7 +31,6 @@ abstract class WalletListItemBase {
     required this.walletImportSource,
     this.receiveUsedIndex = -1,
     this.changeUsedIndex = -1,
-    // this.isFavorite = false,
   });
 
   @override
@@ -48,22 +46,5 @@ abstract class WalletListItemBase {
     }
 
     return null;
-  }
-
-  TaprootScriptPathConfig? get taprootConfig {
-    if (walletType != WalletType.taproot) return null;
-
-    final taprootWalletBase = walletBase as TaprootWalletBase;
-    final policyList = taprootWalletBase.policyList;
-    if (policyList.isEmpty || policyList.length > 1 || policyList.first is! InheritancePolicy) {
-      throw StateError('Unexpected taproot policy: $policyList');
-    }
-    return TaprootScriptPathConfig(
-      // InheritancePolicy = 단일 수혜자 서명 → script-path leaf의 요구 서명 수는 1
-      requiredSignature: 1,
-      leafCount: policyList.length,
-      // tapscript 원시 바이트 길이 (transaction.dart estimateVirtualByte 와 동일 계산)
-      tapScriptSize: Codec.decodeHex(policyList.last.toScript(0).rawSerialize()).length,
-    );
   }
 }

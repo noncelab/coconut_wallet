@@ -88,8 +88,10 @@ class TransactionBuilder {
       walletListItemBase is! TaprootWalletListItem
           ? null
           : (scriptPathPolicy == null ? TaprootSpendType.keyPath : TaprootSpendType.scriptPath);
-  TaprootScriptPathConfig? get _scriptPathConfig =>
-      taprootSpendType == TaprootSpendType.scriptPath ? walletListItemBase.taprootConfig : null;
+  TaprootScriptPathConfig? get _scriptPathConfig {
+    if (taprootSpendType != TaprootSpendType.scriptPath) return null;
+    return (walletListItemBase as TaprootWalletListItem).scriptPathConfigFor(scriptPathPolicy!);
+  }
 
   List<UtxoState>? _selectedUtxos;
   Transaction? _transaction;
@@ -121,11 +123,12 @@ class TransactionBuilder {
           walletListItemBase.walletType.addressType,
           _selectedUtxos!.length,
           recipients.length + 1,
-          requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+          requiredSignature:
+              walletListItemBase.multisigConfig?.requiredSignature ?? _scriptPathConfig?.requiredSignature,
           totalSigner: walletListItemBase.multisigConfig?.totalSigner,
           isScriptPath: taprootSpendType == TaprootSpendType.scriptPath,
-          leafCount: walletListItemBase.taprootConfig?.leafCount,
-          tapScriptSize: walletListItemBase.taprootConfig?.tapScriptSize,
+          leafCount: _scriptPathConfig?.leafCount,
+          tapScriptSize: _scriptPathConfig?.tapScriptSize,
         ); // change output 있다고 가정
         _estimatedFeeByFeeEstimator = (virtualByte * feeRate).ceil();
       } else {
@@ -135,7 +138,7 @@ class TransactionBuilder {
           feeRate,
           walletListItemBase.walletType,
           multisigConfig: walletListItemBase.multisigConfig,
-          taprootConfig: walletListItemBase.taprootConfig,
+          taprootConfig: _scriptPathConfig,
           taprootSpendType: taprootSpendType,
           isFeeSubtractedFromAmount: isFeeSubtractedFromAmount,
         );
