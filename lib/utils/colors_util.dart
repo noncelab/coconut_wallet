@@ -1,5 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
@@ -64,6 +67,45 @@ const List<Color> tagColorPalette = [
   CoconutColors.gray400,
   CoconutColors.mint,
 ];
+
+class TaprootCardStyle {
+  final Gradient borderGradient;
+  final Gradient backgroundGradient;
+  final List<Color> iconGradientColors;
+
+  const TaprootCardStyle({
+    required this.borderGradient,
+    required this.backgroundGradient,
+    required this.iconGradientColors,
+  });
+
+  static TaprootCardStyle? from(WalletListItemBase wallet) {
+    if (wallet is! TaprootWalletListItem) return null;
+    return TaprootCardStyle.fromKeyPath(wallet.canSpendViaKeyPath);
+  }
+
+  static TaprootCardStyle fromKeyPath(bool canSpendViaKeyPath) {
+    final colors =
+        canSpendViaKeyPath
+            ? [CoconutColors.periwinkle, CoconutColors.lightSky]
+            : [CoconutColors.lightSky, CoconutColors.periwinkle];
+
+    const begin = Alignment(0.97, -0.25);
+    const end = Alignment(-0.97, 0.25);
+    const stops = [0.18, 0.89];
+
+    return TaprootCardStyle(
+      borderGradient: LinearGradient(begin: begin, end: end, colors: colors, stops: stops),
+      backgroundGradient: LinearGradient(
+        begin: begin,
+        end: end,
+        stops: stops,
+        colors: [colors[0].withValues(alpha: 0.2), colors[1].withValues(alpha: 0.2)],
+      ),
+      iconGradientColors: colors,
+    );
+  }
+}
 
 class ColorUtil {
   static ColorSet getColor(int index) {

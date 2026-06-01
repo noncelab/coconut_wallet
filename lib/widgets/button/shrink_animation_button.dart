@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/material.dart';
 
 class ShrinkAnimationButton extends StatefulWidget {
@@ -12,7 +11,7 @@ class ShrinkAnimationButton extends StatefulWidget {
   final double borderRadius;
   final Border? border;
   final double borderWidth;
-  final List<Color>? borderGradientColors;
+  final Gradient? borderGradient;
   final double? animationEndValue;
   final bool isActive;
 
@@ -27,7 +26,7 @@ class ShrinkAnimationButton extends StatefulWidget {
     this.borderRadius = 24.0,
     this.borderWidth = 2.0,
     this.border,
-    this.borderGradientColors,
+    this.borderGradient,
     this.animationEndValue = 0.97,
     this.isActive = true,
   });
@@ -94,6 +93,10 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
 
   @override
   Widget build(BuildContext context) {
+    final Color solidColor =
+        widget.isActive ? (_isPressed ? widget.pressedColor : widget.defaultColor) : widget.disabledColor;
+    final bool useGradientBorder = widget.borderGradient != null;
+
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
@@ -104,36 +107,15 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(widget.borderRadius + 2),
-            gradient:
-                widget.borderGradientColors != null
-                    ? ColorUtil.getMultisigLinearGradient(widget.borderGradientColors!)
-                    : null,
-            border:
-                widget.borderGradientColors == null
-                    ? Border.all(
-                      color:
-                          widget.isActive
-                              ? _isPressed
-                                  ? widget.pressedColor
-                                  : widget.defaultColor
-                              : widget.disabledColor,
-                    )
-                    : null,
+            gradient: useGradientBorder ? widget.borderGradient : null,
+            border: useGradientBorder ? null : Border.all(color: solidColor),
           ),
           child: AnimatedContainer(
-            margin: EdgeInsets.all(widget.borderGradientColors != null ? widget.borderWidth : 0),
+            margin: EdgeInsets.all(useGradientBorder ? widget.borderWidth : 0),
             duration: const Duration(milliseconds: 100),
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(widget.borderRadius)),
             child: Container(
-              decoration: BoxDecoration(
-                color:
-                    widget.isActive
-                        ? _isPressed
-                            ? widget.pressedColor
-                            : widget.defaultColor
-                        : widget.disabledColor,
-                borderRadius: BorderRadius.circular(widget.borderRadius),
-              ),
+              decoration: BoxDecoration(color: solidColor, borderRadius: BorderRadius.circular(widget.borderRadius)),
               child: widget.child,
             ),
           ),

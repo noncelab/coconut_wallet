@@ -29,6 +29,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
@@ -595,6 +596,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     if (walletItem.walletType == WalletType.multiSignature) {
       signers = (walletItem as MultisigWalletListItem).signers;
     }
+    final taprootStyle = TaprootCardStyle.from(walletItem);
     return Selector<PreferenceProvider, Tuple2<BitcoinUnit, List<int>>>(
       selector: (_, viewModel) => Tuple2(viewModel.currentUnit, viewModel.excludedFromTotalBalanceWalletIds),
       builder: (context, data, child) {
@@ -610,10 +612,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           colorIndex: colorIndex,
           isLastItem: isLastItem,
           isBalanceHidden: false,
-          signers: signers,
           walletImportSource: walletImportSource,
           currentUnit: currentUnit,
           backgroundColor: CoconutColors.black,
+          iconGradientColors: signers != null ? ColorUtil.getGradientColors(signers) : taprootStyle?.iconGradientColors,
           isPrimaryWallet: isFirstItem,
           isExcludeFromTotalBalance: isExludedFromTotalBalance,
           isEditMode: isEditMode,
