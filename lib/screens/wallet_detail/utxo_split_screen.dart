@@ -124,10 +124,18 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
           ),
       child: Builder(
         builder: (context) {
-          return Scaffold(
-            backgroundColor: CoconutColors.black,
-            appBar: _buildAppBar(context),
-            body: _buildBody(context),
+          return PopScope(
+            canPop: true,
+            onPopInvokedWithResult: (didPop, _) {
+              if (didPop) {
+                context.read<UtxoSplitViewModel>().clearSendInfo();
+              }
+            },
+            child: Scaffold(
+              backgroundColor: CoconutColors.black,
+              appBar: _buildAppBar(context),
+              body: _buildBody(context),
+            ),
           );
         },
       ),

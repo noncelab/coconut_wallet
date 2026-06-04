@@ -110,9 +110,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           // 편집모드에서 모든 지갑을 다 삭제했을 때 홈화면으로 자동 전환
           if (walletListItem.isEmpty) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.popUntil(context, (route) {
-                return route.settings.name == '/';
-              });
+              Navigator.popUntil(context, (route) => route.isFirst);
             });
           }
 

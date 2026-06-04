@@ -14,8 +14,25 @@ class WalletExpandableInfoCard extends StatefulWidget {
 class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
   bool _isExpanded = false;
 
+  TextPainter _buildDescriptionTextPainter(
+    BuildContext context, {
+    required String text,
+    required TextStyle style,
+    required double maxWidth,
+  }) {
+    return TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 2,
+    )..layout(maxWidth: maxWidth);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final descriptionText = t.wallet_add_scanner_screen.paste.wallet_description_text;
+    const descriptionStyle = CoconutTypography.body3_12;
+
     return Container(
       padding: const EdgeInsets.all(CoconutStyles.radius_200),
       decoration: const BoxDecoration(
@@ -34,21 +51,36 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
             },
             child: Container(
               color: Colors.transparent,
-              child: Row(
-                children: [
-                  SvgPicture.asset(
-                    _isExpanded ? 'assets/svg/circle-warning.svg' : 'assets/svg/circle-help.svg',
-                    width: 18,
-                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                  ),
-                  CoconutLayout.spacing_100w,
-                  Expanded(
-                    child: Text(
-                      t.wallet_add_scanner_screen.paste.wallet_description_text,
-                      style: CoconutTypography.body2_14,
-                    ),
-                  ),
-                ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final textPainter = _buildDescriptionTextPainter(
+                    context,
+                    text: descriptionText,
+                    style: descriptionStyle,
+                    maxWidth: constraints.maxWidth - 24,
+                  );
+                  final isSingleLine = textPainter.computeLineMetrics().length == 1;
+                  final firstLineCenterOffset = ((textPainter.preferredLineHeight - 20) / 2).clamp(
+                    0.0,
+                    double.infinity,
+                  );
+
+                  return Row(
+                    crossAxisAlignment: isSingleLine ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(top: isSingleLine ? 0 : firstLineCenterOffset),
+                        child: SvgPicture.asset(
+                          _isExpanded ? 'assets/svg/circle-warning.svg' : 'assets/svg/circle-help.svg',
+                          width: 20,
+                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                        ),
+                      ),
+                      CoconutLayout.spacing_100w,
+                      Expanded(child: Text(descriptionText, style: descriptionStyle)),
+                    ],
+                  );
+                },
               ),
             ),
           ),

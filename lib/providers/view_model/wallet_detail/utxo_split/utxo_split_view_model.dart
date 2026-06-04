@@ -180,6 +180,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       addressRepository: _addressRepository,
     );
     addManualSplitItem();
+    clearSendInfo();
     refreshRecommendedFees();
   }
 
@@ -633,6 +634,10 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     return null;
   }
 
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
+  }
+
   Future<bool> buildTxAndSaveForNext() async {
     if (!isSplitValid || _isPreparingNextStep) return false;
 
@@ -644,7 +649,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       _splitResult ??= await _buildTransaction();
 
       if (_splitResult != null && _splitResult!.isSuccess) {
-        _sendInfoProvider.clear();
+        clearSendInfo();
         _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
         _sendInfoProvider.setWalletId(_wallet.id);
         _sendInfoProvider.setTransaction(_splitResult!.transaction!);

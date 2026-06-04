@@ -89,7 +89,8 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   int? get unsignedDraftId => _sendInfoProvider.unsignedDraftId;
   Transaction? get signedTx => _signedTx;
-  bool get isAlreadySaved => _signedDraftId != null || _savedDraftId != null;
+  bool get isFromSignedDraft => _signedDraftId != null;
+  bool get isAlreadySaved => isFromSignedDraft || _savedDraftId != null;
 
   /// Electrum 브로드캐스트 실패 시 [Result]의 `error` getter(`AppError`)에 담기는 에러 코드
   /// - `1004` [ErrorCodes.nodeConnectionError]: `IsolateManager`에서 명령 전 소켓 상태 선검사 실패·종료
@@ -154,8 +155,8 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   Future<SelectedUtxoExcludedStatus?> setTxInfo() async {
-    if (_signedDraftId != null) {
-      await _setSendProviderFromSignedDraft(_signedDraftId);
+    if (isFromSignedDraft) {
+      await _setSendProviderFromSignedDraft(_signedDraftId!);
     }
 
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
@@ -190,7 +191,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     // input UTXO 유효성 검증 (단, feeBumping일 때는 제외)
     final inputUtxoIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
     final (_, excludedUtxoStatus) =
-        _signedDraftId != null
+        isFromSignedDraft
             ? _utxoRepository.getValidatedSelectedUtxoList(_walletId!, inputUtxoIds)
             : (inputUtxoIds, null);
 
@@ -304,6 +305,10 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     notifyListeners();
     return excludedUtxoStatus;
+  }
+
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
   }
 
   void _debugPrintSendInfoProvider() {
@@ -424,6 +429,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     assert(result.value.isSigned);
     final TransactionDraft draft = result.value;
+    clearSendInfo();
     _sendInfoProvider.setWalletId(draft.walletId);
     _sendInfoProvider.setFeeRate(draft.feeRate);
     _sendInfoProvider.setIsMaxMode(draft.isMaxMode);

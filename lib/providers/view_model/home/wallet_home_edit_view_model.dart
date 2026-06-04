@@ -244,24 +244,16 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     }
 
     final walletCount = wallets.length;
+    final int fakeSats = (_tempFakeBalanceTotalBtc! * 100000000).toInt();
 
-    if (!_tempFakeBalanceTotalBtc.toString().contains('.')) {
-      // input값이 정수 일 때 sats로 환산
-      _tempFakeBalanceTotalBtc = _tempFakeBalanceTotalBtc! * 100000000;
-    } else {
-      // input이 소수일 때 소수점 이하 8자리로 맞춘 후 정수로 변환
-      final fixedString = _tempFakeBalanceTotalBtc!.toStringAsFixed(8).replaceAll('.', '');
-      _tempFakeBalanceTotalBtc = double.parse(fixedString);
-    }
-
-    if (_tempFakeBalanceTotalBtc! < walletCount) return; // 최소 1사토시씩 못 주면 리턴
+    if (fakeSats < walletCount) return; // 최소 1사토시씩 못 주면 리턴
 
     final random = Random();
     // 1. 각 지갑에 최소 1사토시 할당
     // 2. 남은 사토시를 랜덤 가중치로 분배
     final List<int> weights = List.generate(walletCount, (_) => random.nextInt(100) + 1); // 1~100
     final int weightSum = weights.reduce((a, b) => a + b);
-    final int remainingSats = (_tempFakeBalanceTotalBtc! - walletCount).toInt();
+    final int remainingSats = (fakeSats - walletCount);
     final List<int> splits = [];
 
     for (int i = 0; i < walletCount; i++) {
@@ -270,7 +262,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     }
 
     // 보정: 분할의 총합이 totalSats보다 작을 수 있으므로 마지막 지갑에 부족분 추가
-    final int diff = (_tempFakeBalanceTotalBtc! - splits.reduce((a, b) => a + b)).toInt();
+    final int diff = fakeSats - splits.reduce((a, b) => a + b);
     splits[splits.length - 1] += diff;
 
     final Map<int, dynamic> fakeBalanceMap = {};
@@ -279,7 +271,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
       await _preferenceProvider.toggleFakeBalanceActivation(_tempIsFakeBalanceActive);
     }
 
-    await _preferenceProvider.setFakeBalanceTotalAmount(_tempFakeBalanceTotalBtc!.toInt());
+    await _preferenceProvider.setFakeBalanceTotalAmount(fakeSats);
 
     for (int i = 0; i < splits.length; i++) {
       final walletId = wallets[i].id;

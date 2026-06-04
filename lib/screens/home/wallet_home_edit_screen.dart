@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
@@ -5,6 +7,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -38,6 +41,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
 
   final FocusNode _textFieldFocusNode = FocusNode();
   bool _isRenderComplete = false;
+  Timer? _debounceTimer;
   @override
   void initState() {
     super.initState();
@@ -82,27 +86,22 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
       });
 
       _textEditingController.addListener(() {
-        double? input;
-        if (_textEditingController.text.isEmpty) {
-          _viewModel.setTempFakeBalanceTotalBtc(null);
-        }
-        try {
-          input = double.parse(_textEditingController.text);
-        } catch (e) {
-          debugPrint(e.toString());
-        }
+        _debounceTimer?.cancel();
+        _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+          if (!mounted) return;
 
-        setState(() {
+          final text = _textEditingController.text.replaceAll(',', '');
+          final input = text.isEmpty ? null : double.tryParse(text);
+          final error =
+              (input != null && input > _viewModel.maximumAmount)
+                  ? FakeBalanceInputError.exceedsTotalSupply
+                  : FakeBalanceInputError.none;
+
+          // ViewModel 상태 먼저 변경 (notifyListeners는 setState 밖에서)
           _viewModel.setTempFakeBalanceTotalBtc(input);
-          if (_viewModel.tempFakeBalanceTotalBtc == null) {
-            _viewModel.setInputError(FakeBalanceInputError.none);
-          } else {
-            if (_viewModel.tempFakeBalanceTotalBtc! > _viewModel.maximumAmount) {
-              _viewModel.setInputError(FakeBalanceInputError.exceedsTotalSupply);
-            } else {
-              _viewModel.setInputError(FakeBalanceInputError.none);
-            }
-          }
+          _viewModel.setInputError(error);
+
+          setState(() {});
         });
       });
 
@@ -114,6 +113,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _scrollController.dispose();
     _textEditingController.dispose();
     _textFieldFocusNode.dispose();

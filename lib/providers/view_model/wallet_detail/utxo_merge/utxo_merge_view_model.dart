@@ -64,6 +64,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   ) {
     _wallet = _walletProvider.getWalletById(walletId);
     _dustThreshold = _wallet.walletType.addressType.dustThreshold;
+    clearSendInfo();
     _initAddresses();
     refreshRecommendedFees();
   }
@@ -605,6 +606,10 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
     );
   }
 
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
+  }
+
   Future<bool> saveForNext() async {
     await Future.delayed(Duration.zero);
 
@@ -613,7 +618,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
       return false;
     }
 
-    _sendInfoProvider.clear();
+    clearSendInfo();
     _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
     _sendInfoProvider.setWalletId(_wallet.id);
     _sendInfoProvider.setTransaction(txBuildResult.transaction!);

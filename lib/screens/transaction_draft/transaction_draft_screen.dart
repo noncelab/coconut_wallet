@@ -218,7 +218,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
       // 중복으로 스택에 쌓이는 것을 방지하기 위해 pushNamedAndRemoveUntil을 사용합니다.
       await Navigator.of(context).pushNamedAndRemoveUntil(
         '/send',
-        ModalRoute.withName("/"),
+        (route) => route.isFirst,
         arguments: {
           'walletId': transactionDraft.walletId,
           'sendEntryPoint': SendEntryPoint.home,

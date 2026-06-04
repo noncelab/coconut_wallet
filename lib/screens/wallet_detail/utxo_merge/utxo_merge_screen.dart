@@ -142,12 +142,20 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<UtxoMergeViewModel>.value(
-      value: _viewModel,
-      child: Scaffold(
-        backgroundColor: CoconutColors.black,
-        appBar: _buildAppBar(context),
-        body: SafeArea(child: _buildBody(context)),
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          _viewModel.clearSendInfo();
+        }
+      },
+      child: ChangeNotifierProvider<UtxoMergeViewModel>.value(
+        value: _viewModel,
+        child: Scaffold(
+          backgroundColor: CoconutColors.black,
+          appBar: _buildAppBar(context),
+          body: SafeArea(child: _buildBody(context)),
+        ),
       ),
     );
   }

@@ -84,6 +84,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._walletPreferencesRepository,
     this._isNetworkOn,
   ) {
+    clearSendInfo();
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
     _isUtxoSelectionAuto = !_walletPreferencesRepository.isManualUtxoSelection(_walletId);
     _availableUtxos = _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
@@ -430,7 +431,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setIsMultisig(_walletListItemBase.walletType == WalletType.multiSignature);
     final transaction = isRbf ? _rbfBuildResult!.transaction! : _cpfpBuildResult!.transaction!;
     _sendInfoProvider.setTransaction(transaction);
-    _sendInfoProvider.setFeeBumpfingType(_type);
+    _sendInfoProvider.setFeeBumpingType(_type);
     _sendInfoProvider.setWalletImportSource(_walletListItemBase.walletImportSource);
     return true;
   }
@@ -472,6 +473,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
     notifyListeners();
+  }
+
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
   }
 
   // 노드 프로바이더에서 추천 수수료 조회

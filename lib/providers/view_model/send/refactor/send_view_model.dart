@@ -1021,6 +1021,10 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _sendInfoProvider.setUnsignedDraftId(_transactionDraftId);
   }
 
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
+  }
+
   /// --------------- 임시 저장 / 불러오기 --------------- ///
   Future<TransactionDraft> saveNewDraft() async {
     assert(_selectedWalletItem != null);

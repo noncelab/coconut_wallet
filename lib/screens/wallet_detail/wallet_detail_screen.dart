@@ -302,7 +302,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       Provider.of<TransactionProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<PriceProvider>(context, listen: false),
-      Provider.of<SendInfoProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false),
     );
@@ -450,7 +449,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     if (_showNoMfpDialogIfNeeded()) return;
     if (!_checkStateAndShowToast()) return;
-    _viewModel.clearSendInfo();
     Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
   }
 
@@ -465,7 +463,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     if (_showNoMfpDialogIfNeeded()) return;
     if (!_checkStateAndShowToast()) return;
-    _viewModel.clearSendInfo();
     Navigator.pushNamed(context, '/split-utxo', arguments: {'id': widget.id});
   }
 
@@ -476,7 +473,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   Future<void> _onTapSend() async {
     if (_showNoMfpDialogIfNeeded()) return;
     if (!_checkStateAndShowToast()) return;
-    _viewModel.clearSendInfo();
 
     final isManualUtxoSelection = _viewModel.isManualUtxoSelectionMode;
 

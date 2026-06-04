@@ -84,16 +84,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/broadcasting-complete', // 이동할 경로
-          ModalRoute.withName(
-            _viewModel.sendEntryPoint == SendEntryPoint.walletDetail
-                ? "/wallet-detail" // '/wallet-detail' 경로를 남기고 그 외의 경로 제거, '/'는 HomeScreen 까지
-                : "/",
-          ),
+          _viewModel.sendEntryPoint == SendEntryPoint.walletDetail
+              ? ModalRoute.withName("/wallet-detail") // '/wallet-detail' 경로를 남기고 그 외의 경로 제거
+              : (route) => route.isFirst, // HomeScreen까지 제거
           arguments: {'id': _viewModel.walletId!, 'txHash': _viewModel.signedTx!.transactionHash},
         );
       }
     } catch (e) {
-      Logger.log(">>>>> broadcast error: $e");
+      Logger.error(">>>>> broadcast error: $e");
       _setOverlayLoading(false);
       String message = t.alert.error_send.broadcasting_failed(error: e.toString());
       if (e.toString().contains('min relay fee not met')) {
@@ -107,76 +105,83 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, BroadcastingViewModel>(
-      create: (_) => _viewModel,
-      update: (_, connectivityProvider, walletProvider, viewModel) {
-        if (viewModel!.isNetworkOn != connectivityProvider.isInternetOn) {
-          viewModel.setIsNetworkOn(connectivityProvider.isInternetOn);
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop && _viewModel.isFromSignedDraft) {
+          _viewModel.clearSendInfo();
         }
-
-        return viewModel;
       },
-      child: Consumer<BroadcastingViewModel>(
-        builder:
-            (context, viewModel, child) => Scaffold(
-              floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-              backgroundColor: CoconutColors.black,
-              appBar: CoconutAppBar.build(title: t.broadcasting_screen.title, context: context),
-              body: SafeArea(
-                child: Stack(
-                  children: [
-                    _buildNormalBroadcastInfo(
-                      viewModel,
-                      viewModel.amount,
-                      viewModel.fee,
-                      viewModel.totalAmount,
-                      viewModel.sendingAmountWhenAddressIsMyChange,
-                      viewModel.isSendingToMyAddress,
-                      viewModel.recipientAddresses,
-                      viewModel.isNetworkOn,
-                    ),
-                    if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
-                      FixedBottomTweenButton(
-                        leftButtonRatio: 0.35,
-                        leftButtonClicked: () async {
-                          if (viewModel.isAlreadySaved) {
-                            CoconutToast.showToast(
-                              context: context,
-                              text: t.broadcasting_screen.toast.already_saved_draft,
-                              isVisibleIcon: true,
-                            );
-                            return;
-                          }
-                          try {
-                            final result = await viewModel.saveTransactionDraft();
-                            if (result.isSuccess) {
-                              _showTransactionDraftSavedDialog();
-                            } else {
-                              _showTransactionDraftSaveFailedDialog(result.error.message);
+      child: ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, BroadcastingViewModel>(
+        create: (_) => _viewModel,
+        update: (_, connectivityProvider, walletProvider, viewModel) {
+          if (viewModel!.isNetworkOn != connectivityProvider.isInternetOn) {
+            viewModel.setIsNetworkOn(connectivityProvider.isInternetOn);
+          }
+
+          return viewModel;
+        },
+        child: Consumer<BroadcastingViewModel>(
+          builder:
+              (context, viewModel, child) => Scaffold(
+                floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+                backgroundColor: CoconutColors.black,
+                appBar: CoconutAppBar.build(title: t.broadcasting_screen.title, context: context),
+                body: SafeArea(
+                  child: Stack(
+                    children: [
+                      _buildNormalBroadcastInfo(
+                        viewModel,
+                        viewModel.amount,
+                        viewModel.fee,
+                        viewModel.totalAmount,
+                        viewModel.sendingAmountWhenAddressIsMyChange,
+                        viewModel.isSendingToMyAddress,
+                        viewModel.recipientAddresses,
+                        viewModel.isNetworkOn,
+                      ),
+                      if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
+                        FixedBottomTweenButton(
+                          leftButtonRatio: 0.35,
+                          leftButtonClicked: () async {
+                            if (viewModel.isAlreadySaved) {
+                              CoconutToast.showToast(
+                                context: context,
+                                text: t.broadcasting_screen.toast.already_saved_draft,
+                                isVisibleIcon: true,
+                              );
+                              return;
                             }
-                          } catch (e) {
-                            _showTransactionDraftSaveFailedDialog(e.toString());
-                          }
-                        },
-                        rightButtonClicked: () async {
-                          _onBroadcastButtonClicked(viewModel);
-                        },
-                        leftText: t.transaction_draft.save,
-                        rightText: t.broadcasting_screen.btn_submit,
-                      ),
-                    } else ...{
-                      FixedBottomButton(
-                        isActive: viewModel.isNetworkOn && viewModel.isInitDone,
-                        onButtonClicked: () async {
-                          _onBroadcastButtonClicked(viewModel);
-                        },
-                        text: t.broadcasting_screen.btn_submit,
-                      ),
-                    },
-                  ],
+                            try {
+                              final result = await viewModel.saveTransactionDraft();
+                              if (result.isSuccess) {
+                                _showTransactionDraftSavedDialog();
+                              } else {
+                                _showTransactionDraftSaveFailedDialog(result.error.message);
+                              }
+                            } catch (e) {
+                              _showTransactionDraftSaveFailedDialog(e.toString());
+                            }
+                          },
+                          rightButtonClicked: () async {
+                            _onBroadcastButtonClicked(viewModel);
+                          },
+                          leftText: t.transaction_draft.save,
+                          rightText: t.broadcasting_screen.btn_submit,
+                        ),
+                      } else ...{
+                        FixedBottomButton(
+                          isActive: viewModel.isNetworkOn && viewModel.isInitDone,
+                          onButtonClicked: () async {
+                            _onBroadcastButtonClicked(viewModel);
+                          },
+                          text: t.broadcasting_screen.btn_submit,
+                        ),
+                      },
+                    ],
+                  ),
                 ),
               ),
-            ),
+        ),
       ),
     );
   }
@@ -192,10 +197,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           leftButtonText: t.transaction_draft.dialog.cancel,
           rightButtonText: t.transaction_draft.dialog.move,
           onTapRight: () {
+            _viewModel.clearSendInfo();
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/transaction-draft',
-              ModalRoute.withName("/"),
+              (route) => route.isFirst,
               arguments: {'isSignedTabActive': true},
             );
           },

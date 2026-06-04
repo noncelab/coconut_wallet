@@ -77,7 +77,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           Provider.of<NodeProvider>(context, listen: false),
           Provider.of<AddressRepository>(context, listen: false),
           Provider.of<ConnectivityProvider>(context, listen: false),
-          Provider.of<SendInfoProvider>(context, listen: false),
           Provider.of<BlockExplorerProvider>(context, listen: false),
         );
 
@@ -460,7 +459,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         return;
                       }
 
-                      _viewModel.clearSendInfo();
                       Navigator.pushNamed(
                         context,
                         '/transaction-fee-bumping',

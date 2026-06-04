@@ -33,7 +33,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   final TransactionProvider _txProvider;
   final ConnectivityProvider _connectProvider;
   final PriceProvider _priceProvider;
-  final SendInfoProvider _sendInfoProvider;
   final PreferenceProvider _preferenceProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   late final Stream<WalletUpdateInfo> _syncWalletStateStream;
@@ -97,7 +96,6 @@ class WalletDetailViewModel extends ChangeNotifier {
     this._txProvider,
     this._connectProvider,
     this._priceProvider,
-    this._sendInfoProvider,
     this._preferenceProvider,
     NodeProvider nodeProvider,
   ) : _syncWalletStateStream = nodeProvider.getWalletStateStream(_walletId),
@@ -346,9 +344,6 @@ class WalletDetailViewModel extends ChangeNotifier {
     _faucetRecord = _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
     _saveFaucetRecordToSharedPrefs();
   }
-  // <------ Faucet 메소드 끝
 
-  void clearSendInfo() {
-    _sendInfoProvider.clear();
-  }
+  // <------ Faucet 메소드 끝
 }
