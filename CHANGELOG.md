@@ -1,3 +1,32 @@
+## mainnet 0.12.1, regtest 3.11.1
+### Fixed
+* 보내기 / BBQR 형식의 QR 오류
+* 거래 메모 / 한글 입력 시 영문 자판으로 전환되는 버그
+* 초기 구동 시 일렉트럼 서버 상태 오류
+
+## mainnet 0.12.0, regtest 3.11.0
+### Added
+* UTXO 나누기 & 합치기
+* 받기 화면 '금액 입력' 가능
+
+### Enhanced
+* 펜딩 트랜잭션 수수료 조정 후 거래 정보 화면으로 이동
+* 보내기 화면 / 내 주소 박스 UI 보완 (현재 사용하는 지갑에 표시)
+* 갤럭시 폴드 화면 개선
+
+## mainnet 0.11.0, regtest 3.10.0
+### Added
+* 커스텀 account' 지갑 추가 가능 (코코넛 볼트로부터 추가한 지갑이고 account가 0'이 아닐때 아이콘 수정 가능)
+
+### Enhanced
+* UTXO 수동 선택 설정 시 보내기 플로우 최적화
+* MFP 없는 지갑의 Fee bumping 시 안내 팝업 추가
+* RBF 시 dust 잔돈이 생기지 않도록 개선
+* 계산기 오프라인 모드, 보내기 추가
+
+### Fixed
+* 보내기 화면 버그 수정
+
 ## mainnet 0.10.1, regtest 3.9.1
 * minor UI updates
   

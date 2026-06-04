@@ -1051,10 +1051,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                           _viewModel.setFeeRateText(formattedText);
                         });
                         if (isTooLow) {
-                          Fluttertoast.showToast(
-                            msg: t.send_screen.fee_rate_too_low,
-                            backgroundColor: CoconutColors.gray700,
-                            toastLength: Toast.LENGTH_SHORT,
+                          CoconutToast.showToast(
+                            context: context,
+                            isVisibleIcon: true,
+                            text: t.send_screen.fee_rate_too_low,
+                            seconds: 1,
+                            //backgroundColor: CoconutColors.gray700,
                           );
                         }
                       },
