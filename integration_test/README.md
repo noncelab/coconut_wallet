@@ -4,7 +4,7 @@
 
 ## 테스트 실행 환경
 
-- 실제 모바일 기기가 연결되어 있어야 합니다.
+- 실제 모바일 기기 또는 Android 에뮬레이터가 연결되어 있어야 합니다.
 - Regtest flavor를 사용합니다.
 
 ## 테스트 실행 방법
@@ -13,6 +13,12 @@
 
 ```bash
 flutter test integration_test/<test_file>.dart --flavor regtest
+```
+
+FVM으로 Flutter 버전을 고정한 환경에서는 다음처럼 실행할 수 있습니다:
+
+```bash
+fvm flutter test integration_test/<test_file>.dart --flavor regtest -d <device_id>
 ```
 
 ## 디버깅을 하고 싶을 때
@@ -48,6 +54,10 @@ Flutter Test를 클릭해주고, Test File 경로를 지정합니다. Additional
 
 2. `realm_migration_test.dart`
    - 스키마 버전, 월렛 여부에 따른 Realm 마이그레이션 테스트
+
+3. `hosted_regtest_e2e_test.dart`
+   - Hosted regtest 환경에서 faucet fund, UTXO sync, PSBT 생성, Vault 서명, Wallet broadcast, transaction 조회까지 검증하는 E2E smoke 테스트
+   - seed, private key, raw PSBT, signed transaction 원문은 출력하지 않고 실패 시 공개 txid 수준의 정보만 남깁니다.
 
 ## 주의사항
 
