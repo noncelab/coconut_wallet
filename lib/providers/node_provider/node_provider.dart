@@ -44,14 +44,18 @@ class NodeProvider extends ChangeNotifier {
   bool _isPendingInitialization = false;
   bool _hasConnectionError = false;
   bool _isServerChanging = false;
+  bool _isDisposed = false;
 
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
-  final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
+  final _walletStateController =
+      StreamController<Map<int, WalletUpdateInfo>>.broadcast();
   final _currentBlockController = StreamController<BlockTimestamp?>.broadcast();
 
-  final ValueNotifier<BlockTimestamp?> _currentBlockNotifier = ValueNotifier<BlockTimestamp?>(null);
+  final ValueNotifier<BlockTimestamp?> _currentBlockNotifier =
+      ValueNotifier<BlockTimestamp?>(null);
   Timer? _blockUpdateTimer;
-  ValueNotifier<BlockTimestamp?> get currentBlockNotifier => _currentBlockNotifier;
+  ValueNotifier<BlockTimestamp?> get currentBlockNotifier =>
+      _currentBlockNotifier;
 
   /// 전체 동기화 상태를 구독할 수 있는 스트림
   Stream<NodeSyncState> get syncStateStream {
@@ -86,7 +90,9 @@ class NodeProvider extends ChangeNotifier {
     return Stream.multi((controller) {
       controller.add(_currentBlockNotifier.value);
 
-      final subscription = _currentBlockController.stream.listen(controller.add);
+      final subscription = _currentBlockController.stream.listen(
+        controller.add,
+      );
       controller.onCancel = () => subscription.cancel();
     });
   }
@@ -144,7 +150,8 @@ class NodeProvider extends ChangeNotifier {
     _blockUpdateTimer = null;
   }
 
-  NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
+  NodeProviderState get state =>
+      _stateManager?.state ?? NodeProviderState.initial();
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
   String get host => _electrumServer.host;
   int get port => _electrumServer.port;
@@ -163,7 +170,9 @@ class NodeProvider extends ChangeNotifier {
     this._analyticsService, {
     IsolateManager? isolateManager,
   }) : _isolateManager = isolateManager ?? IsolateManager() {
-    Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
+    Logger.log(
+      'NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType',
+    );
 
     _connectivityProvider.addListener(_onConnectivityChanged);
     _walletLoadStateNotifier.addListener(_onWalletLoadStateChanged);
@@ -172,10 +181,16 @@ class NodeProvider extends ChangeNotifier {
     _checkInitialNetworkState();
   }
 
+  void _notifyListenersIfActive() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+
   void _setConnectionError(bool value) {
     if (_hasConnectionError != value) {
       _hasConnectionError = value;
-      notifyListeners();
+      _notifyListenersIfActive();
     }
   }
 
@@ -260,10 +275,14 @@ class NodeProvider extends ChangeNotifier {
         // 새로운 지갑 발견
         subscribeWallet(wallet).then((result) {
           if (result.isFailure) {
-            Logger.error('NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}');
+            Logger.error(
+              'NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}',
+            );
             _stateManager?.setNodeSyncStateToFailed();
           } else {
-            _analyticsService?.logEvent(eventName: AnalyticsEventNames.walletAddSyncCompleted);
+            _analyticsService?.logEvent(
+              eventName: AnalyticsEventNames.walletAddSyncCompleted,
+            );
           }
         });
       }
@@ -273,7 +292,7 @@ class NodeProvider extends ChangeNotifier {
   void _createStateManager() {
     _stateManager = NodeStateManager(
       () {
-        return notifyListeners();
+        return _notifyListenersIfActive();
       },
       _syncStateController,
       _walletStateController,
@@ -284,7 +303,9 @@ class NodeProvider extends ChangeNotifier {
   void _createNewCompleter() {
     if (_initCompleter != null && !_initCompleter!.isCompleted) {
       try {
-        _initCompleter!.completeError(Exception('NodeProvider: Previous initialization was cancelled'));
+        _initCompleter!.completeError(
+          Exception('NodeProvider: Previous initialization was cancelled'),
+        );
       } catch (e) {
         // 이미 완료된 경우 무시
       }
@@ -359,7 +380,7 @@ class NodeProvider extends ChangeNotifier {
       rethrow;
     } finally {
       _isInitializing = false;
-      notifyListeners();
+      _notifyListenersIfActive();
     }
   }
 
@@ -385,7 +406,8 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> subscribeWallets() async {
-    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted || _connectivityProvider.isInternetOff) {
+    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted ||
+        _connectivityProvider.isInternetOff) {
       return Result.success(false);
     }
     final walletItems = _walletItemListNotifier.value;
@@ -409,7 +431,9 @@ class NodeProvider extends ChangeNotifier {
   Future<Result<String>> broadcast(Transaction signedTx) async {
     final result = await _isolateManager.broadcast(signedTx);
     if (result.isFailure) {
-      Logger.error('NodeProvider.broadcast: failed code=${result.error.code} message=${result.error.message}');
+      Logger.error(
+        'NodeProvider.broadcast: failed code=${result.error.code} message=${result.error.message}',
+      );
       FileLogger.logBroadcast('NodeProvider failure code=${result.error.code}');
     }
     return result;
@@ -441,9 +465,15 @@ class NodeProvider extends ChangeNotifier {
     Duration? timeout,
   }) async {
     Logger.log('NodeProvider: getTransactionRecord called (txHash: $txHash)');
-    final result = await _isolateManager.getTransactionRecord(walletItem, txHash, timeout: timeout);
+    final result = await _isolateManager.getTransactionRecord(
+      walletItem,
+      txHash,
+      timeout: timeout,
+    );
     if (result.isFailure) {
-      Logger.error('NodeProvider.getTransactionRecord failed (txHash: $txHash) - error: ${result.error}');
+      Logger.error(
+        'NodeProvider.getTransactionRecord failed (txHash: $txHash) - error: ${result.error}',
+      );
     }
     return result;
   }
@@ -474,29 +504,39 @@ class NodeProvider extends ChangeNotifier {
       final walletLoadState = _walletLoadStateNotifier.value;
       final walletItems = _walletItemListNotifier.value;
 
-      if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isNotEmpty) {
-        Logger.log('NodeProvider: Wallet Loaded & Wallet Items is Not Empty, start subscribing');
+      if (walletLoadState == WalletLoadState.loadCompleted &&
+          walletItems.isNotEmpty) {
+        Logger.log(
+          'NodeProvider: Wallet Loaded & Wallet Items is Not Empty, start subscribing',
+        );
         final result = await subscribeWallets();
-        notifyListeners();
+        _notifyListenersIfActive();
 
         if (result.isSuccess) {
           Logger.log('NodeProvider: Reconnect completed successfully');
           _setConnectionError(false);
           _restartBlockUpdates();
         } else {
-          Logger.error('NodeProvider: subscribeWallets failed: ${result.error}');
+          Logger.error(
+            'NodeProvider: subscribeWallets failed: ${result.error}',
+          );
           _stateManager?.setNodeSyncStateToFailed();
           _setConnectionError(true);
         }
-      } else if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isEmpty) {
-        Logger.log('NodeProvider: Wallet Loaded & Wallet Items is Empty, set state to completed');
+      } else if (walletLoadState == WalletLoadState.loadCompleted &&
+          walletItems.isEmpty) {
+        Logger.log(
+          'NodeProvider: Wallet Loaded & Wallet Items is Empty, set state to completed',
+        );
         _stateManager?.setNodeSyncStateToCompleted();
         _setConnectionError(false);
-        notifyListeners();
+        _notifyListenersIfActive();
       } else {
-        Logger.log('NodeProvider: Wallet Loading, reset flag for auto-subscription');
+        Logger.log(
+          'NodeProvider: Wallet Loading, reset flag for auto-subscription',
+        );
         _isFirstInitialization = true;
-        notifyListeners();
+        _notifyListenersIfActive();
       }
     } catch (e) {
       Logger.error('NodeProvider: Reconnect failed: $e');
@@ -543,7 +583,7 @@ class NodeProvider extends ChangeNotifier {
       _initCompleter = null;
       _stateManager = null;
 
-      notifyListeners();
+      _notifyListenersIfActive();
       Logger.log('NodeProvider: Connection closed successfully');
     } catch (e) {
       Logger.error('NodeProvider: 연결 종료 중 오류 발생: $e');
@@ -552,17 +592,23 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<Result<bool>> checkServerConnection(ElectrumServer electrumServer) async {
+  Future<Result<bool>> checkServerConnection(
+    ElectrumServer electrumServer,
+  ) async {
     final electrumService = ElectrumService();
 
     try {
       await _establishSocketConnection(electrumService, electrumServer);
       await _verifyProtocolCommunication(electrumService);
 
-      Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
+      Logger.log(
+        'NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}',
+      );
       return Result.success(true);
     } catch (e) {
-      Logger.error('NodeProvider: 서버 연결 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
+      Logger.error(
+        'NodeProvider: 서버 연결 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e',
+      );
       await electrumService.close();
       return Result.failure(ErrorCodes.networkError);
     } finally {
@@ -570,11 +616,17 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
+  Future<void> _establishSocketConnection(
+    ElectrumService service,
+    ElectrumServer server,
+  ) async {
     final isOnionHost = server.host.trim().toLowerCase().endsWith('.onion');
-    final connectionTimeout = isOnionHost ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
+    final connectionTimeout =
+        isOnionHost ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
 
-    await service.connect(server.host, server.port, ssl: server.ssl).timeout(connectionTimeout);
+    await service
+        .connect(server.host, server.port, ssl: server.ssl)
+        .timeout(connectionTimeout);
 
     if (service.connectionStatus != SocketConnectionStatus.connected) {
       throw Exception('Socket connection failed');
@@ -599,17 +651,17 @@ class NodeProvider extends ChangeNotifier {
         if (result.isFailure) {
           Logger.error('NodeProvider: 서버 변경 실패: ${result.error}');
           _stateManager?.setNodeSyncStateToFailed();
-          notifyListeners();
+          _notifyListenersIfActive();
         }
       });
 
       Logger.log('NodeProvider: 서버 변경 성공');
-      notifyListeners();
+      _notifyListenersIfActive();
       return Result.success(true);
     } catch (e) {
       Logger.error('NodeProvider: 서버 변경 중 초기화 실패: $e');
       _stateManager?.setNodeSyncStateToFailed();
-      notifyListeners();
+      _notifyListenersIfActive();
       return Result.failure(ErrorCodes.networkError);
     } finally {
       _isServerChanging = false;
@@ -618,6 +670,7 @@ class NodeProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _connectivityProvider.removeListener(_onConnectivityChanged);
     _walletLoadStateNotifier.removeListener(_onWalletLoadStateChanged);
     _walletItemListNotifier.removeListener(_onWalletItemListChanged);
@@ -628,6 +681,7 @@ class NodeProvider extends ChangeNotifier {
     _syncStateController.close();
     _walletStateController.close();
     _currentBlockController.close();
+    _currentBlockNotifier.dispose();
 
     super.dispose();
   }
