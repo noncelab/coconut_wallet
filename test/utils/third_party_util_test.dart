@@ -50,6 +50,16 @@ void main() {
       expect(result, '시드사이너 2');
     });
 
+    test('패스포트 프라임 지갑이 없을 때는 기본 이름을 반환', () {
+      final result = getNextThirdPartyWalletName(WalletImportSource.passportPrime, []);
+      expect(result, '패스포트 프라임');
+    });
+
+    test('패스포트 프라임 지갑이 하나 있을 때는 "패스포트 프라임 2"를 반환', () {
+      final result = getNextThirdPartyWalletName(WalletImportSource.passportPrime, ['패스포트 프라임']);
+      expect(result, '패스포트 프라임 2');
+    });
+
     test('코코넛볼트를 입력하면 예외 발생', () {
       expect(() => getNextThirdPartyWalletName(WalletImportSource.coconutVault, []), throwsAssertionError);
     });

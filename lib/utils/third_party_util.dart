@@ -45,6 +45,8 @@ String _getThirdPartyDefaultName(WalletImportSource walletImportSource) {
       return t.third_party.cold_card;
     case WalletImportSource.krux:
       return t.third_party.krux;
+    case WalletImportSource.passportPrime:
+      return t.third_party.passport_prime;
     case WalletImportSource.extendedPublicKey:
     case WalletImportSource.descriptor:
       return NetworkType.currentNetworkType == NetworkType.mainnet

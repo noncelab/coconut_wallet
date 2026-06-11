@@ -8,3 +8,4 @@ const kJadeIconPath = 'assets/svg/jade.svg';
 const kZpubIconPath = 'assets/svg/zpub.svg';
 const kColdCardIconPath = 'assets/svg/cold-card.svg';
 const kKruxIconPath = 'assets/svg/krux.svg';
+const kPassportPrimeIconPath = 'assets/svg/passport-prime.svg';
