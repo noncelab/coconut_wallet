@@ -50,13 +50,35 @@ void main() {
       expect(result, '시드사이너 2');
     });
 
-    test('패스포트 프라임 지갑이 없을 때는 기본 이름을 반환', () {
-      final result = getNextThirdPartyWalletName(WalletImportSource.passportPrime, []);
+    test('패스포트 모델 정보가 없으면 기본 이름을 반환', () {
+      final result = getNextThirdPartyWalletName(WalletImportSource.passport, []);
+      expect(result, '패스포트');
+    });
+
+    test('패스포트 프라임 모델이면 "패스포트 프라임"을 반환', () {
+      final result = getNextThirdPartyWalletName(
+        WalletImportSource.passport,
+        [],
+        passportModel: 'passport-prime',
+      );
       expect(result, '패스포트 프라임');
     });
 
+    test('패스포트 코어 모델이면 "패스포트 코어"를 반환', () {
+      final result = getNextThirdPartyWalletName(
+        WalletImportSource.passport,
+        [],
+        passportModel: 'passport-core',
+      );
+      expect(result, '패스포트 코어');
+    });
+
     test('패스포트 프라임 지갑이 하나 있을 때는 "패스포트 프라임 2"를 반환', () {
-      final result = getNextThirdPartyWalletName(WalletImportSource.passportPrime, ['패스포트 프라임']);
+      final result = getNextThirdPartyWalletName(
+        WalletImportSource.passport,
+        ['패스포트 프라임'],
+        passportModel: 'passport-prime',
+      );
       expect(result, '패스포트 프라임 2');
     });
 

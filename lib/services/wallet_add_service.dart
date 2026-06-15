@@ -82,7 +82,7 @@ class WalletAddService {
     }
   }
 
-  /// Passport Prime은 지갑 정보(JSON)를 UR bytes 타입으로 인코딩하여 전달한다.
+  /// 패스포트는 지갑 정보(JSON)를 UR bytes 타입으로 인코딩하여 전달한다.
   WatchOnlyWallet createWalletFromUrBytes({
     required UR ur,
     required String name,
@@ -106,6 +106,21 @@ class WalletAddService {
     } catch (e, stackTrace) {
       FileLogger.error(className, methodName, 'failed: $e', stackTrace);
       rethrow;
+    }
+  }
+
+  /// UR bytes 페이로드에서 선택적 "model" 필드(예: "passport-prime", "passport-core")를 읽는다.
+  /// 가져온 지갑의 이름을 정하는 데 사용하며, 파싱에 실패하거나 필드가 없으면 null을 반환한다.
+  String? extractModelFromUrBytes(UR ur) {
+    try {
+      final decodedCbor = cbor.decode(ur.cbor);
+      if (decodedCbor is! List<int>) return null;
+      final json = jsonDecode(utf8.decode(decodedCbor));
+      if (json is! Map<String, dynamic>) return null;
+      final model = json['model'];
+      return model is String ? model : null;
+    } catch (_) {
+      return null;
     }
   }
 

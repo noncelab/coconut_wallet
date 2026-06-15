@@ -44,8 +44,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       case WalletImportSource.krux:
         _qrDataHandler = DescriptorQrScanDataHandler();
         break;
-      case WalletImportSource.passportPrime:
-        // Passport Prime은 지갑 정보(JSON)를 UR bytes 타입으로 인코딩하여 전달한다.
+      case WalletImportSource.passport:
+        // 패스포트는 지갑 정보(JSON)를 UR bytes 타입으로 인코딩하여 전달한다.
         _qrDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.bytes]);
         break;
       case WalletImportSource.coldCard:
@@ -82,7 +82,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       if (additionInfo is WatchOnlyWallet) {
         return _addCoconutVaultWallet(additionInfo);
       } else if (additionInfo is UR) {
-        if (_walletImportSource == WalletImportSource.passportPrime) {
+        if (_walletImportSource == WalletImportSource.passport) {
           return _addUrBytesWallet(_walletImportSource, additionInfo);
         }
         return _addBcUrWallet(_walletImportSource, additionInfo);
@@ -115,9 +115,11 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   }
 
   Future<ResultOfSyncFromVault> _addUrBytesWallet(WalletImportSource walletImportSource, UR ur) async {
+    final passportModel = _walletAddService.extractModelFromUrBytes(ur);
     final name = getNextThirdPartyWalletName(
       walletImportSource,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
+      passportModel: passportModel,
     );
     final wallet = _walletAddService.createWalletFromUrBytes(walletImportSource: walletImportSource, ur: ur, name: name);
     return await _walletProvider.syncFromThirdParty(wallet);

@@ -33,13 +33,32 @@ void main() {
       final wallet = walletAddService.createWalletFromUrBytes(
         ur: ur,
         name: '패스포트 프라임',
-        walletImportSource: WalletImportSource.passportPrime,
+        walletImportSource: WalletImportSource.passport,
       );
 
       expect(wallet.name, '패스포트 프라임');
-      expect(wallet.walletImportSource, WalletImportSource.passportPrime);
+      expect(wallet.walletImportSource, WalletImportSource.passport);
       expect(wallet.descriptor, contains(vpub));
       expect(wallet.descriptor.toUpperCase(), contains(fingerprint));
+    });
+
+    test('model 필드가 있으면 추출하고, 없으면 null을 반환', () {
+      final withModel = buildUrBytes({
+        'chain': 'TBTC',
+        'xfp': fingerprint,
+        'account': 0,
+        'model': 'passport-prime',
+        'bip84': {'deriv': "m/84'/1'/0'", 'xpub': vpub, 'xfp': fingerprint, 'name': 'p2wpkh'},
+      });
+      expect(walletAddService.extractModelFromUrBytes(withModel), 'passport-prime');
+
+      final withoutModel = buildUrBytes({
+        'chain': 'TBTC',
+        'xfp': fingerprint,
+        'account': 0,
+        'bip84': {'deriv': "m/84'/1'/0'", 'xpub': vpub, 'xfp': fingerprint, 'name': 'p2wpkh'},
+      });
+      expect(walletAddService.extractModelFromUrBytes(withoutModel), isNull);
     });
 
     test('bip84 정보가 없으면 예외 발생', () {
@@ -49,7 +68,7 @@ void main() {
         () => walletAddService.createWalletFromUrBytes(
           ur: ur,
           name: '패스포트 프라임',
-          walletImportSource: WalletImportSource.passportPrime,
+          walletImportSource: WalletImportSource.passport,
         ),
         throwsException,
       );
@@ -63,7 +82,7 @@ void main() {
         () => walletAddService.createWalletFromUrBytes(
           ur: ur,
           name: '패스포트 프라임',
-          walletImportSource: WalletImportSource.passportPrime,
+          walletImportSource: WalletImportSource.passport,
         ),
         throwsA(anything),
       );

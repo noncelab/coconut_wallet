@@ -293,27 +293,27 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             ];
           }
         }
-      case WalletImportSource.passportPrime:
+      case WalletImportSource.passport:
         {
           if (!isEnglishOrSpanish) {
             return [
-              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport_prime.step0}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport_prime.step1),
-              _em(t.wallet_add_scanner_screen.guide_passport_prime.step1_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
+              _em(t.wallet_add_scanner_screen.guide_passport.step1_em),
               TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport_prime.step2),
-              _em(t.wallet_add_scanner_screen.guide_passport_prime.step2_em),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
+              _em(t.wallet_add_scanner_screen.guide_passport.step2_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
             ];
           } else {
             return [
-              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport_prime.step0}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport_prime.step1),
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              _em(' ${t.wallet_add_scanner_screen.guide_passport_prime.step1_em}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport_prime.step2),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step1_em}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              _em(' ${t.wallet_add_scanner_screen.guide_passport_prime.step2_em}'),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step2_em}'),
             ];
           }
         }
@@ -678,7 +678,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     WalletImportSource.seedSigner => t.wallet_add_scanner_screen.seed_signer,
     WalletImportSource.coldCard => t.wallet_add_scanner_screen.cold_card,
     WalletImportSource.krux => t.wallet_add_scanner_screen.krux,
-    WalletImportSource.passportPrime => t.wallet_add_scanner_screen.passport_prime,
+    WalletImportSource.passport => t.wallet_add_scanner_screen.passport,
     WalletImportSource.extendedPublicKey => t.wallet_add_scanner_screen.self,
     _ => '',
   };

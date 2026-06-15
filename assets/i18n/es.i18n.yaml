@@ -275,7 +275,7 @@ wallet_add_scanner_screen:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
-  passport_prime: "Passport Prime"
+  passport: "Passport"
   self: "Ingresar datos de wallet"
   self_description: "Agrega una wallet watch-only desde otra app."
   select: "Seleccionar"
@@ -331,8 +331,8 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "Seleccionar"
-  guide_passport_prime:
-    step0: "En Passport Prime, abre la cuenta que deseas conectar"
+  guide_passport:
+    step0: "En Passport, abre la cuenta que deseas conectar"
     step1: "1. "
     step1_em: "Connect Wallet"
     step2: "2. "
@@ -1111,8 +1111,10 @@ third_party:
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
-  krux: "Krux"  
+  krux: "Krux"
+  passport: "Passport"
   passport_prime: "Passport Prime"
+  passport_core: "Passport Core"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"

@@ -274,7 +274,7 @@ wallet_add_scanner_screen:
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
   krux: "크럭스"
-  passport_prime: "패스포트 프라임"
+  passport: "패스포트"
   self: "직접 입력"
   self_description: "다른 앱에서 생성한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
@@ -330,8 +330,8 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR 코드"
     select: "선택"
-  guide_passport_prime:
-    step0: "패스포트 프라임에서 연동할 계정을 열어 주세요."
+  guide_passport:
+    step0: "패스포트에서 연동할 계정을 열어 주세요."
     step1: "1. "
     step1_em: "Connect Wallet"
     step2: "2. "
@@ -1115,7 +1115,9 @@ third_party:
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
   krux: "크럭스"
+  passport: "패스포트"
   passport_prime: "패스포트 프라임"
+  passport_core: "패스포트 코어"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"

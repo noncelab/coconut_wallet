@@ -1735,8 +1735,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           children: [
                             Expanded(
                               child: _buildWalletIconShrinkButton(
-                                () => _goToScannerScreen(WalletImportSource.passportPrime),
-                                WalletImportSource.passportPrime,
+                                () => _goToScannerScreen(WalletImportSource.passport),
+                                WalletImportSource.passport,
                               ),
                             ),
                             const Expanded(child: SizedBox()),

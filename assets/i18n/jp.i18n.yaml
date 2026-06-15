@@ -274,7 +274,7 @@ wallet_add_scanner_screen:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
-  passport_prime: "Passport Prime"
+  passport: "Passport"
   self: "ウォレット情報を入力"
   self_description: "他のアプリの情報でウォレットを追加できます。"
   select: "選択"
@@ -330,8 +330,8 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "選択"
-  guide_passport_prime:
-    step0: "Passport Primeで接続するアカウントを開いてください"
+  guide_passport:
+    step0: "Passportで接続するアカウントを開いてください"
     step1: "1. "
     step1_em: "Connect Wallet"
     step2: "2. "
@@ -1110,7 +1110,9 @@ third_party:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
+  passport: "Passport"
   passport_prime: "Passport Prime"
+  passport_core: "Passport Core"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"
