@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -10,6 +11,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
 import 'package:flutter/material.dart';
@@ -397,10 +399,14 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
       children: [
         Text(t.transaction_draft.fee_rate, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
         CoconutLayout.spacing_100w,
-        Text(feeRate.toString(), style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+        Text(_formatFeeRateForDisplay(feeRate), style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
         CoconutLayout.spacing_100w,
         Text(t.transaction_draft.sats_per_vbyte, style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
       ],
     );
+  }
+
+  String _formatFeeRateForDisplay(double feeRate) {
+    return feeRate.toString().replaceAll('.', NumberFormatConfig.instance.decimalSeparator);
   }
 }

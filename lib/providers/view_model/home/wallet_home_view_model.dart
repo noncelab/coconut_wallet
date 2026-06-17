@@ -723,6 +723,8 @@ class RecentTransactionAnalysis {
           ? t.wallet_home_screen.received
           : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
           ? t.wallet_home_screen.sent
+          : totalAmount == 0
+          ? t.wallet_home_screen.no_change_in_amount
           : totalAmount > 0
           ? t.wallet_home_screen.increase
           : t.wallet_home_screen.decrease;
@@ -744,6 +746,7 @@ class RecentTransactionAnalysis {
     return '${bitcoinUnit.displayBitcoinAmount(amount, withUnit: true)} ';
   }
 
+  bool get shouldShowTitleAmount => selectedAnalysisTransactionType != AnalysisTransactionType.all || totalAmount != 0;
   String get totalAmountResult => totalTransactionResult;
   String get subtitleString =>
       '$dateRange | ${t.wallet_home_screen.transaction_count(count: selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived

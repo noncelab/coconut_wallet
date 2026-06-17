@@ -124,19 +124,11 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       backgroundColor: colors.background,
       appBar: CoconutAppBar.build(
         context: context,
-        backgroundColor:
-            _isScrollOverTitleHeight
-                ? colors.background.withValues(alpha: 0.5)
-                : colors.background,
+        backgroundColor: _isScrollOverTitleHeight ? colors.background.withValues(alpha: 0.5) : colors.background,
         customTitle: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
           opacity: _appbarTitleVisible ? 1 : 0,
-          child: Text(
-            t.app_info,
-            style: CoconutTypography.body1_16_Bold.setColor(
-              CoconutColors.white,
-            ),
-          ),
+          child: Text(t.app_info, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
         ),
       ),
       body: Stack(
@@ -162,12 +154,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               color: colors.background,
               child: Column(
                 children: [
-                  SizedBox(
-                    height:
-                        kToolbarHeight +
-                        MediaQuery.of(context).padding.top +
-                        30,
-                  ),
+                  SizedBox(height: kToolbarHeight + MediaQuery.of(context).padding.top + 30),
                   headerWidget(_packageInfoFuture),
                   CoconutLayout.spacing_400h,
                   coconutCrewWidget(),
@@ -193,9 +180,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: CoconutColors.white),
-          );
+          return const Center(child: CircularProgressIndicator(color: CoconutColors.white));
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {
@@ -233,22 +218,11 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     children: [
                       Text(
                         packageInfo.appName,
-                        style: CoconutTypography.heading3_21_Bold.setColor(
-                          CoconutColors.white,
-                        ),
+                        style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
                       ),
                       Text(
                         'ver.${packageInfo.version}',
-                        style: CoconutTypography.body1_16_Bold.setColor(
-                          CoconutColors.white,
-                        ),
-                      ),
-                      CoconutLayout.spacing_100h,
-                      Text(
-                        t.app_info_screen.made_by_team_pow,
-                        style: CoconutTypography.body1_16_Bold.setColor(
-                          CoconutColors.gray400,
-                        ),
+                        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
                       ),
                     ],
                   ),
@@ -275,11 +249,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
-              Image.asset(
-                'assets/images/laurel-wreath.png',
-                width: 28,
-                height: 28,
-              ),
+              Image.asset('assets/images/laurel-wreath.png', width: 28, height: 28),
               CoconutLayout.spacing_300w,
               Expanded(
                 child: FittedBox(
@@ -287,9 +257,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     t.app_info_screen.coconut_crew_genesis_member,
-                    style: CoconutTypography.body2_14_Bold.setColor(
-                      context.coconutColors.primaryText,
-                    ),
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                   ),
                 ),
               ),
@@ -312,33 +280,11 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
             buttons: [
               SingleButton(
                 enableShrinkAnim: true,
-                buttonPosition: SingleButtonPosition.top,
-                title: t.app_info_screen.go_to_pow,
-                leftElement: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.asset(
-                    'assets/images/pow-full-logo.jpg',
-                    width: 24,
-                    height: 24,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                onPressed: () {
-                  launchURL(POW_URL);
-                },
-              ),
-              SingleButton(
-                enableShrinkAnim: true,
                 buttonPosition: SingleButtonPosition.middle,
                 title: t.app_info_screen.ask_to_discord,
                 leftElement: ClipRRect(
                   borderRadius: BorderRadius.circular(8.0),
-                  child: Image.asset(
-                    'assets/images/discord-full-logo.png',
-                    width: 24,
-                    height: 24,
-                    fit: BoxFit.cover,
-                  ),
+                  child: Image.asset('assets/images/discord-full-logo.png', width: 24, height: 24, fit: BoxFit.cover),
                 ),
                 onPressed: () {
                   launchURL(DISCORD_COCONUT);
@@ -350,12 +296,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 title: t.app_info_screen.ask_to_x,
                 leftElement: ClipRRect(
                   borderRadius: BorderRadius.circular(8.0),
-                  child: Image.asset(
-                    'assets/images/x-logo.jpg',
-                    width: 24,
-                    height: 24,
-                    fit: BoxFit.cover,
-                  ),
+                  child: Image.asset('assets/images/x-logo.jpg', width: 24, height: 24, fit: BoxFit.cover),
                 ),
                 onPressed: () {
                   launchURL(X_POW);
@@ -367,12 +308,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 title: t.app_info_screen.ask_to_email,
                 leftElement: ClipRRect(
                   borderRadius: BorderRadius.circular(8.0),
-                  child: Image.asset(
-                    'assets/images/mail-icon.png',
-                    width: 24,
-                    height: 24,
-                    fit: BoxFit.cover,
-                  ),
+                  child: Image.asset('assets/images/mail-icon.png', width: 24, height: 24, fit: BoxFit.cover),
                 ),
                 onPressed: () async {
                   String info = await _getDeviceInfo(_packageInfoFuture);
@@ -393,12 +329,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
   }
 
   Widget githubWidget() {
-    Widget githubLogo = SvgPicture.asset(
-      'assets/svg/github-logo-white.svg',
-      width: 24,
-      height: 24,
-      fit: BoxFit.cover,
-    );
+    Widget githubLogo = SvgPicture.asset('assets/svg/github-logo-white.svg', width: 24, height: 24, fit: BoxFit.cover);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(color: context.coconutColors.background),
@@ -508,9 +439,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: CoconutColors.white),
-          );
+          return const Center(child: CircularProgressIndicator(color: CoconutColors.white));
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {
@@ -529,13 +458,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    t.app_info_screen.version_and_date(
-                      version: packageInfo.version,
-                      releasedAt: RELEASE_DATE,
-                    ),
-                    style: CoconutTypography.body2_14.setColor(
-                      CoconutColors.gray300,
-                    ),
+                    t.app_info_screen.version_and_date(version: packageInfo.version, releasedAt: RELEASE_DATE),
+                    style: CoconutTypography.body2_14.setColor(CoconutColors.gray300),
                   ),
                 ),
               ),
@@ -549,9 +473,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     style: CoconutTypography.body2_14.merge(
                       TextStyle(
                         decoration: TextDecoration.underline,
-                        decorationColor: CoconutColors.white.withValues(
-                          alpha: 0.3,
-                        ),
+                        decorationColor: CoconutColors.white.withValues(alpha: 0.3),
                       ),
                     ),
                   ),
@@ -566,9 +488,6 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
 
   Widget _category(String label) => Container(
     padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
-    child: Text(
-      label,
-      style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray300),
-    ),
+    child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray300)),
   );
 }

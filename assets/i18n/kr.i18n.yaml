@@ -228,7 +228,7 @@ wallet_home_screen:
     fake_balance:
       fake_balance_setting: "가짜 잔액 설정"
       fake_balance_display: "가짜 잔액 표시"
-      fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요.(BTC 단위)"
+      fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요"
       fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
       fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
     hide_fiat_price: "법정 화폐 잔액 숨기기"
@@ -530,12 +530,10 @@ coconut_qr_scanner:
     
 # lib/screens/settings
 app_info_screen:
-  made_by_team_pow: "포우팀이 만듭니다."
   coconut_crew_genesis_member: "코코넛 크루: 제네시스 멤버"
   coconut_crew: "코코넛 크루"
   coconut_crew_thanks_msg: "베타 테스트부터 함께해주신\n셀프 커스터디 개척자들입니다.\n여러분이 없었다면 코코넛은 태어나지 못했을 거예요."
   category1_ask: "궁금한 점이 있으신가요?"
-  go_to_pow: "POW 커뮤니티 바로가기"
   ask_to_discord: "디스코드 채널로 문의하기"
   ask_to_x: "X로 문의하기"
   ask_to_email: "이메일로 문의하기"
@@ -600,7 +598,7 @@ settings_screen:
       connected: "주소가 확인되었습니다."
       failed: "주소를 확인할 수 없습니다!"
   log_viewer_screen:
-    log_description_1: "문제가 발생하면 [공유] 버튼을 눌러 이메일로 보내주시거나, 디스코드 또는 포우 커뮤니티로 문의해 주세요."
+    log_description_1: "문제가 발생하면 [공유] 버튼을 눌러 이메일로 보내주시거나, 디스코드로 문의해 주세요."
     log_description_2: "공유해주신 정보는 문제 해결을 위해서만 사용되며 문제 해결 즉시 폐기됩니다."
     log_target: "[로깅 대상]"
     log_target_description_1: "키스톤 3 프로 지갑 추가 시 일부 기기에서 문제가 발생함에 따라 증상 확인 및 문제 해결을 위해 정보를 로깅합니다."
@@ -609,10 +607,9 @@ settings_screen:
     clear_log_description: "로그를 지우시겠어요?"
     email_subject: "[코코넛 월렛] Debug Log"
     email_body: "상황: (여기에 어떤 상황에서 발생한 문제인지 간략히 적어주세요)"
-    email_error_msg: "이메일 앱을 열 수 없어요. 로그를 복사해서 디스코드 채널 또는 포우 커뮤니티에 올려주세요."
+    email_error_msg: "이메일 앱을 열 수 없어요. 로그를 복사해서 디스코드 채널에 올려주세요."
     buttons:
       discord: "디스코드 가기"
-      pow: "포우 가기"
       copy: "로그 복사"
       toast:
         copy_success: "로그가 복사되었어요."
@@ -913,7 +910,6 @@ tag_bottom_sheet:
   exit_deletion: "태그 삭제 종료"
   max_tag_count: "태그는 최대 5개 지정할 수 있어요"
 glossary_bottom_sheet:
-  ask_to_pow: "포우에 물어보기"
   ask_to_discord: "디스코드에 물어보기"
   synonym: "같은 용어"
   related: "관련 용어"

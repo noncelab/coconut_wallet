@@ -111,9 +111,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           // 편집모드에서 모든 지갑을 다 삭제했을 때 홈화면으로 자동 전환
           if (walletListItem.isEmpty) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.popUntil(context, (route) {
-                return route.settings.name == '/';
-              });
+              Navigator.popUntil(context, (route) => route.isFirst);
             });
           }
 
@@ -227,6 +225,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   Widget _buildEditModeHeader() {
     SvgPicture starIcon = SvgPicture.asset('assets/svg/star-small.svg', width: 16, height: 16);
     SvgPicture hamburgerIcon = SvgPicture.asset('assets/svg/hamburger.svg', width: 16, height: 16);
+    SvgPicture deleteIcon = SvgPicture.asset('assets/svg/delete.svg', width: 16, height: 16);
     return Container(
       width: MediaQuery.sizeOf(context).width,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -242,6 +241,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               TextSpan(text: '${t.select} '),
               WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
               const TextSpan(text: ' '),
+              TextSpan(text: t.wallet_list.edit.star_description),
             ] else ...[
               WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
               TextSpan(text: t.wallet_list.edit.star_description),
@@ -253,6 +253,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               TextSpan(text: '${t.tap} '),
               WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
               const TextSpan(text: ' '),
+              TextSpan(text: t.wallet_list.edit.order_description),
             ] else ...[
               WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
               TextSpan(text: t.wallet_list.edit.order_description),

@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/extensions/num_extensions.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -13,7 +15,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
@@ -24,6 +25,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
@@ -78,7 +80,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           Provider.of<NodeProvider>(context, listen: false),
           Provider.of<AddressRepository>(context, listen: false),
           Provider.of<ConnectivityProvider>(context, listen: false),
-          Provider.of<SendInfoProvider>(context, listen: false),
           Provider.of<BlockExplorerProvider>(context, listen: false),
         );
 
@@ -248,7 +249,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                       ),
                       CoconutLayout.spacing_200w,
                       Text(
-                        t.transaction_fee_bumping_screen.existing_fee_value(value: feeHistory.feeRate),
+                        t.transaction_fee_bumping_screen.existing_fee_value(
+                          value: _formatFeeRateForDisplay(feeHistory.feeRate),
+                        ),
                         style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
                         textScaler: const TextScaler.linear(1.0),
                       ),
@@ -328,7 +331,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         ),
                         CoconutLayout.spacing_200w,
                         Text(
-                          t.transaction_fee_bumping_screen.existing_fee_value(value: feeHistory.feeRate),
+                          t.transaction_fee_bumping_screen.existing_fee_value(
+                            value: _formatFeeRateForDisplay(feeHistory.feeRate),
+                          ),
                           style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
                           textScaler: const TextScaler.linear(1.0),
                         ),
@@ -469,7 +474,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         return;
                       }
 
-                      _viewModel.clearSendInfo();
                       Navigator.pushNamed(
                         context,
                         '/transaction-fee-bumping',
@@ -748,7 +752,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       onTapUnderlineButton: () {},
       child: Text(
         // 인풋을 조회할 수 없는 경우, 수수료 표시 안 함.
-        tx.inputAddressList.isNotEmpty ? '${tx.feeRate.toStringAsFixed(2)} sats/vB' : '-',
+        tx.inputAddressList.isNotEmpty ? '${tx.feeRate.toLocaleString(maxDecimalPlaces: 2)} sats/vB' : '-',
         style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
@@ -955,6 +959,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       }
     }
     return '';
+  }
+
+  String _formatFeeRateForDisplay(double value, {int? decimalPlaces}) {
+    final text =
+        decimalPlaces == null
+            ? (value % 1 == 0 ? value.toInt().toString() : value.toString())
+            : value.toStringAsFixed(decimalPlaces);
+    return text.replaceAll('.', NumberFormatConfig.instance.decimalSeparator);
   }
 
   void _showDialogListener() {

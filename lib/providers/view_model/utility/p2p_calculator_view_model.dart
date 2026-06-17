@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -8,11 +9,11 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 enum InputAssetType { fiat, btc } // 단위는 btc로 구분되지만 실제 vm에 저장되고 사용하는 단위는 satoshi 단위입니다.(int)
 
@@ -208,17 +209,17 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     if (_inputAssetType == InputAssetType.fiat) {
       switch (_fiatCode) {
         case FiatCode.KRW:
-          return '50,000';
+          return 50000.toThousandsSeparatedString();
         case FiatCode.USD:
           return '50';
         case FiatCode.JPY:
-          return '5,000';
+          return 5000.toThousandsSeparatedString();
       }
     } else {
       if (_currentUnit.isBasedOnSatoshi) {
-        return '50,000';
+        return 50000.toThousandsSeparatedString();
       } else {
-        return '0.0005';
+        return formatBtc(50000);
       }
     }
   }
@@ -258,7 +259,10 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   String formatBtc(int sats) {
     var result = BalanceFormatUtil.formatSatoshiToReadableBitcoin(sats);
-    if (result.endsWith('.')) result = result.substring(0, result.length - 1);
+    final decimalSeparator = NumberFormatConfig.instance.decimalSeparator;
+    if (result.endsWith(decimalSeparator)) {
+      result = result.substring(0, result.length - decimalSeparator.length);
+    }
     return result;
   }
 
@@ -334,7 +338,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     }
   }
 
-  String _generateTransactionBill(
+  String generateTransactionBill(
     String btcPriceStr,
     String fiatAmountStr,
     String btcAmountStr,
@@ -376,31 +380,5 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     vibrateExtraLight();
     _isOfflineMode = !_isOfflineMode;
     notifyListeners();
-  }
-
-  void copyAll(
-    String btcPriceStr,
-    String fiatAmountStr,
-    String btcAmountStr,
-    String referenceDateTime,
-    String feeRateStr,
-    String feeAmountStr,
-    String feeSatsStr,
-  ) {
-    if (inputAmount == null || inputAmount == 0) return;
-    final bill = _generateTransactionBill(
-      btcPriceStr,
-      fiatAmountStr,
-      btcAmountStr,
-      referenceDateTime,
-      feeRateStr,
-      feeAmountStr,
-      feeSatsStr,
-    );
-    copyText(bill);
-  }
-
-  void copyText(String text) {
-    Clipboard.setData(ClipboardData(text: text));
   }
 }

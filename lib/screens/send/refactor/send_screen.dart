@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
@@ -25,6 +26,8 @@ import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
+import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
@@ -39,7 +42,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -154,7 +156,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         final amountText =
             _viewModel.currentUnit.isBasedOnSatoshi
                 ? sats.toString()
-                : BalanceFormatUtil.formatSatoshiToReadableBitcoin(sats);
+                : UnitUtil.convertSatoshiToBitcoin(sats).toString();
         _amountController.text = amountText;
         _viewModel.setAmountText(sats, 0);
       });
@@ -332,7 +334,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   void _setDropdownMenuVisiblility(bool isVisible) {
     if (isVisible) {
-      _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+      _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
       _amountController.text = _removeTrailingDot(_amountController.text);
       FocusManager.instance.primaryFocus?.unfocus();
 
@@ -371,66 +373,74 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         MediaQuery.of(context).padding.bottom -
         kCoconutAppbarHeight;
 
-    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, SendViewModel>(
-      create: (_) => _viewModel,
-      update: (_, connectivityProvider, walletProvider, previous) {
-        if (connectivityProvider.isInternetOn != previous?.isNetworkOn) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            previous?.setIsNetworkOn(connectivityProvider.isInternetOn);
-          });
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          _viewModel.clearSendInfo();
         }
-        return previous ?? _viewModel;
       },
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        backgroundColor: Colors.black,
-        appBar: _buildAppBar(context),
-        body: GestureDetector(
-          onTap: _clearFocus,
-          behavior: HitTestBehavior.translucent,
-          child: SizedBox(
-            height: MediaQuery.sizeOf(context).height,
-            child: Stack(
-              children: [
-                SizedBox(
-                  height: usableHeight,
-                  child: Stack(
-                    children: [
-                      SingleChildScrollView(
-                        controller: _screenScrollController,
-                        child: Selector<SendViewModel, bool>(
-                          selector: (_, viewModel) => viewModel.showAddressBoard,
-                          builder: (context, data, child) {
-                            return SizedBox(height: _getScrollableHeight(usableHeight), child: child);
-                          },
-                          child: Stack(
-                            children: [
-                              _buildInvisibleAmountField(),
-                              _buildCounter(context),
-                              _buildPageView(context),
-                              _buildBoard(context),
-                              if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
-                                _buildKeyboardToolbar(context),
-                            ],
+      child: ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, SendViewModel>(
+        create: (_) => _viewModel,
+        update: (_, connectivityProvider, walletProvider, previous) {
+          if (connectivityProvider.isInternetOn != previous?.isNetworkOn) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              previous?.setIsNetworkOn(connectivityProvider.isInternetOn);
+            });
+          }
+          return previous ?? _viewModel;
+        },
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          backgroundColor: Colors.black,
+          appBar: _buildAppBar(context),
+          body: GestureDetector(
+            onTap: _clearFocus,
+            behavior: HitTestBehavior.translucent,
+            child: SizedBox(
+              height: MediaQuery.sizeOf(context).height,
+              child: Stack(
+                children: [
+                  SizedBox(
+                    height: usableHeight,
+                    child: Stack(
+                      children: [
+                        SingleChildScrollView(
+                          controller: _screenScrollController,
+                          child: Selector<SendViewModel, (bool, bool)>(
+                            selector:
+                                (_, viewModel) => (viewModel.showAddressBoard, viewModel.currentUnit.isBasedOnSatoshi),
+                            builder: (context, data, child) {
+                              return SizedBox(height: _getScrollableHeight(usableHeight), child: child);
+                            },
+                            child: Stack(
+                              children: [
+                                _buildInvisibleAmountField(),
+                                _buildCounter(context),
+                                _buildPageView(context),
+                                _buildBoard(context),
+                                if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
+                                  _buildKeyboardToolbar(context),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
-                        selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
-                        builder: (context, data, child) {
-                          return _buildDropdownMenu(
-                            isSaved: data.item1,
-                            hasDrafts: data.item2,
-                            canGoNext: data.item3,
-                            isUtxoSelectionAuto: data.item4,
-                          );
-                        },
-                      ),
-                    ],
+                        Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
+                          selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
+                          builder: (context, data, child) {
+                            return _buildDropdownMenu(
+                              isSaved: data.item1,
+                              hasDrafts: data.item2,
+                              canGoNext: data.item3,
+                              isUtxoSelectionAuto: data.item4,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                _buildFinalButton(context),
-              ],
+                  _buildFinalButton(context),
+                ],
+              ),
             ),
           ),
         ),
@@ -612,25 +622,30 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildInvisibleAmountField() {
-    final bool allowDecimal = !_viewModel.currentUnit.isBasedOnSatoshi;
-    return SizedBox(
-      width: 0,
-      height: 0,
-      child: TextField(
-        controller: _amountController,
-        focusNode: _amountFocusNode,
-        showCursor: false,
-        enableInteractiveSelection: false,
-        onEditingComplete: () {
-          _amountController.text = _removeTrailingDot(_amountController.text);
-          FocusScope.of(context).unfocus();
-        },
-        keyboardType: TextInputType.numberWithOptions(signed: false, decimal: allowDecimal),
-        inputFormatters:
-            allowDecimal
-                ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')), SingleDotInputFormatter()]
-                : [FilteringTextInputFormatter.digitsOnly],
-      ),
+    return Selector<SendViewModel, bool>(
+      selector: (_, vm) => vm.currentUnit.isBasedOnSatoshi,
+      builder: (context, isBasedOnSatoshi, child) {
+        final bool allowDecimal = !isBasedOnSatoshi;
+        Logger.log('--> allowDecimal: $allowDecimal');
+        return SizedBox(
+          width: 0,
+          height: 0,
+          child: TextField(
+            controller: _amountController,
+            focusNode: _amountFocusNode,
+            showCursor: false,
+            enableInteractiveSelection: false,
+            onEditingComplete: () {
+              _amountController.text = _removeTrailingDot(_amountController.text);
+              FocusScope.of(context).unfocus();
+            },
+            keyboardType: TextInputType.numberWithOptions(signed: false, decimal: allowDecimal),
+            // TODO: balance_format_util의 formatSatoshiToReadableBitcoin을 응용해서 Formatter를 하나 더 추가하기
+            inputFormatters:
+                allowDecimal ? [const BtcAmountInputFormatter()] : [FilteringTextInputFormatter.digitsOnly],
+          ),
+        );
+      },
     );
   }
 
@@ -706,6 +721,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeItem(String imagePath, double? sats, bool isFetching) {
+    final feeRateText = sats != null ? _formatDecimalTextForDisplay(sats.toStringAsFixed(1)) : "-";
     final child = MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
       child: Container(
@@ -727,7 +743,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerRight,
               child: Text(
-                "${sats != null ? sats.toStringAsFixed(1) : "-"} ${t.send_screen.fee_rate_suffix}",
+                "$feeRateText ${t.send_screen.fee_rate_suffix}",
                 style: CoconutTypography.body2_14.setColor(CoconutColors.white),
               ),
             ),
@@ -741,7 +757,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         borderRadius: 8,
         onTap: () {
           if (isFetching) return;
-          _feeRateController.text = sats != null ? sats.toStringAsFixed(1) : '';
+          final feeRateText = sats != null ? sats.toStringAsFixed(1) : '';
+          _feeRateController.text = _formatDecimalTextForDisplay(feeRateText);
+          _viewModel.setFeeRateText(feeRateText);
           _clearFocus();
         },
         child:
@@ -1030,48 +1048,55 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
             child: IntrinsicWidth(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: MediaQuery(
-                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                  child: CoconutTextField(
-                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                    textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                    enableInteractiveSelection: false,
-                    textAlign: TextAlign.end,
-                    controller: _feeRateController,
-                    focusNode: _feeRateFocusNode,
-                    backgroundColor: feeRateFieldGray,
-                    onEditingComplete: () {
-                      _feeRateController.text = _removeTrailingDot(_feeRateController.text);
-                      FocusScope.of(context).unfocus();
-                    },
-                    height: 30,
-                    padding: const EdgeInsets.only(left: 12, right: 2),
-                    onChanged: (text) {
-                      final isTooLow = _viewModel.handleFeeRateChanged(text, (formattedText) {
-                        _feeRateController.text = formattedText;
-                        _viewModel.setFeeRateText(formattedText);
-                      });
-                      if (isTooLow) {
-                        Fluttertoast.showToast(
-                          msg: t.send_screen.fee_rate_too_low,
-                          backgroundColor: CoconutColors.gray700,
-                          toastLength: Toast.LENGTH_SHORT,
-                        );
-                      }
-                    },
-                    maxLines: 1,
-                    fontFamily: 'SpaceGrotesk',
-                    fontSize: 14,
-                    activeColor: CoconutColors.white,
-                    fontWeight: FontWeight.bold,
-                    borderRadius: 8,
-                    suffix: Container(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Text(
-                        t.send_screen.fee_rate_suffix,
-                        style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 75),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                    child: CoconutTextField(
+                      textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                      textInputFormatter: const [RateInputFormatter()],
+                      enableInteractiveSelection: false,
+                      textAlign: TextAlign.end,
+                      controller: _feeRateController,
+                      focusNode: _feeRateFocusNode,
+                      backgroundColor: feeRateFieldGray,
+                      onEditingComplete: () {
+                        _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
+                        FocusScope.of(context).unfocus();
+                      },
+                      height: 30,
+                      padding: const EdgeInsets.only(left: 12, right: 2),
+                      onChanged: (text) {
+                        final normalizedText = normalizeNumTextForNumParsing(text);
+                        final isTooLow = _viewModel.handleFeeRateChanged(normalizedText, (formattedText) {
+                          final displayText = _formatDecimalTextForDisplay(formattedText);
+                          _feeRateController.text = displayText;
+                          _viewModel.setFeeRateText(formattedText);
+                        });
+                        if (isTooLow) {
+                          CoconutToast.showToast(
+                            context: context,
+                            isVisibleIcon: true,
+                            text: t.send_screen.fee_rate_too_low,
+                            seconds: 1,
+                            //backgroundColor: CoconutColors.gray700,
+                          );
+                        }
+                      },
+                      maxLines: 1,
+                      fontFamily: 'SpaceGrotesk',
+                      fontSize: 14,
+                      activeColor: CoconutColors.white,
+                      fontWeight: FontWeight.bold,
+                      borderRadius: 8,
+                      suffix: Container(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Text(
+                          t.send_screen.fee_rate_suffix,
+                          style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                        ),
                       ),
                     ),
                   ),
@@ -1285,7 +1310,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                           CoconutLayout.spacing_50w,
                                         ],
                                         Text(
-                                          '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()}',
+                                          '${amountText.isEmpty ? 0 : amountText.toBtcDisplayString()}',
                                           style: CoconutTypography.heading2_28_NumberBold.setColor(amountTextColor),
                                         ),
                                         if (!_viewModel.currentUnit.isPrefixSymbol) ...[
@@ -1898,7 +1923,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         final amountText =
             _viewModel.currentUnit.isBasedOnSatoshi
                 ? bip21Data.amount!.toString()
-                : BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!);
+                : UnitUtil.convertSatoshiToBitcoin(bip21Data.amount!).toString();
         _amountController.text = amountText;
         _viewModel.setAmountText(bip21Data.amount!, index);
       }
@@ -1936,7 +1961,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   void _onFeeRateTextUpdate(String text) {
-    _feeRateController.text = text;
+    _feeRateController.text = _formatDecimalTextForDisplay(text);
   }
 
   void _onAmountTextUpdate(String text) {
@@ -1954,7 +1979,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       return;
     }
 
-    // 문자가 입력된 경우와 삭제된 경우를 인식한다.
+    // 문자가 입력된 경우와 삭제된 경우를 인식한다. (문자열 중간에 입력/삭제 불가)
     String currentText = _amountController.text;
     if (currentText.length > _previousAmountText.length) {
       String lastInserted = currentText.substring(_previousAmountText.length);
@@ -1992,7 +2017,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     final focusNode = FocusNode();
     focusNode.addListener(
       () => setState(() {
-        _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+        _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
         _amountController.text = _removeTrailingDot(_amountController.text);
 
         final isOwn = controller.text.length >= 26 && _viewModel.isOwnAddress(controller.text);
@@ -2050,7 +2075,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   void _clearFocus() {
-    _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+    _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
     _amountController.text = _removeTrailingDot(_amountController.text);
     FocusManager.instance.primaryFocus?.unfocus();
 
@@ -2073,6 +2098,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       return text.substring(0, text.length - 1);
     }
     return text;
+  }
+
+  String _removeTrailingDecimalSeparator(String text) {
+    final decimalSeparator = NumberFormatConfig.instance.decimalSeparator;
+    if (text.endsWith(decimalSeparator) || text.endsWith('.')) {
+      return text.substring(0, text.length - 1);
+    }
+    return text;
+  }
+
+  String _formatDecimalTextForDisplay(String text) {
+    return text.replaceAll('.', NumberFormatConfig.instance.decimalSeparator);
   }
 
   /// recipientList와 _addressControllerList 동기화
@@ -2128,17 +2165,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     }
 
     setState(() {});
-  }
-}
-
-class SingleDotInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    final text = newValue.text;
-    // 소수점이 2개 이상이면 입력 취소
-    if ('.'.allMatches(text).length > 1) return oldValue;
-
-    return newValue;
   }
 }
 

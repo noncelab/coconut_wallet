@@ -5,6 +5,7 @@ import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -17,6 +18,7 @@ import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/bitcoin/transaction_util.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
@@ -64,6 +66,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   ) {
     _wallet = _walletProvider.getWalletById(walletId);
     _dustThreshold = _wallet.walletType.addressType.dustThreshold;
+    clearSendInfo();
     _initAddresses();
     refreshRecommendedFees();
   }
@@ -137,7 +140,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   bool get hasUnexpectedError => unexpectedErrorMessage.isNotEmpty;
 
   bool get isMergeButtonVisible => _mergeState == MergeState.ready || _mergeState == MergeState.notEnoughSelectedUtxo;
-  bool get isMergeButtonEnabled => _mergeState == MergeState.ready;
+  bool get isMergeButtonEnabled => _mergeState == MergeState.ready && (feeRate != null && feeRate != 0);
   bool get isDirectInputReceiveAddressWarning {
     return _customReceiveAddressText != null &&
         _selectedReceiveAddress == _customReceiveAddressText &&
@@ -420,25 +423,25 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
     notifyListeners();
   }
 
+  // TODO: 반환 값 의미 불명확
   bool onFeeRateChanged(String text) {
-    return handleFeeRateChanged(text, (formattedText) {
-      feeRateController.text = formattedText;
-    });
+    return handleFeeRateChanged(text, (_) {});
   }
 
   void removeTrailingDotInFeeRate() {
-    feeRateController.text = removeTrailingDotInFeeRateText(feeRateController.text);
+    feeRateController.text = removeTrailingDotInFeeRateText(feeRateInput);
   }
 
   void setFeeRateFromRecommendation(double sats) {
-    feeRateController.text = sats.toStringAsFixed(1);
+    feeRateController.text = sats.toStringAsFixed(1).replaceAll('.', NumberFormatConfig.instance.decimalSeparator);
     notifyListeners();
   }
 
   Future<bool> refreshRecommendedFees() async {
     return fetchRecommendedFees(
-      currentFeeRateText: feeRateController.text,
-      onDefaultFeeRateSet: (text) => feeRateController.text = text,
+      currentFeeRateText: feeRateInput,
+      onDefaultFeeRateSet:
+          (text) => feeRateController.text = text.replaceAll('.', NumberFormatConfig.instance.decimalSeparator),
     );
   }
 
@@ -478,6 +481,22 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   String get feeRateInput => feeRateController.text.trim();
+  double? get feeRate => feeRateInput.toDoubleSafe();
+  bool? get isFeeRateAtLeastMinimum {
+    final rate = feeRate;
+    final minimum = minimumFeeRate;
+    if (rate == null || minimum == null) return null;
+    return rate >= minimum;
+  }
+
+  List<String> get additionalWarnings {
+    final warnings = <String>[];
+    if (isFeeRateAtLeastMinimum == false) {
+      warnings.add(t.toast.min_fee(minimum: minimumFeeRate!));
+    }
+
+    return warnings;
+  }
 
   bool get canPrepareMergeTransaction {
     return _currentStep == UtxoMergeStep.selectReceiveAddress &&
@@ -605,6 +624,10 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
     );
   }
 
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
+  }
+
   Future<bool> saveForNext() async {
     await Future.delayed(Duration.zero);
 
@@ -613,7 +636,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
       return false;
     }
 
-    _sendInfoProvider.clear();
+    clearSendInfo();
     _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
     _sendInfoProvider.setWalletId(_wallet.id);
     _sendInfoProvider.setTransaction(txBuildResult.transaction!);
@@ -627,7 +650,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   MergeTransactionInputSnapshot? get mergeTransactionInputSnapshot {
     final selectedReceiveAddress = _selectedReceiveAddress;
     final selectedUtxos = selectedUtxosForCurrentMethod;
-    final inputFeeRate = double.tryParse(feeRateInput);
+    final inputFeeRate = double.tryParse(normalizeNumTextForNumParsing(feeRateInput));
 
     if (_currentStep != UtxoMergeStep.selectReceiveAddress ||
         selectedReceiveAddress.isEmpty ||

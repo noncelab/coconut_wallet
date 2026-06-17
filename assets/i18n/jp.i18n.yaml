@@ -228,7 +228,7 @@ wallet_home_screen:
     fake_balance:
       fake_balance_setting: "フェイク残高設定"
       fake_balance_display: "フェイク残高表示"
-      fake_balance_input_placeholder: "偽の総残高を設定してください（BTC単位）"
+      fake_balance_input_placeholder: "偽の総残高を設定してください"
       fake_balance_input_description: "複数のウォレットがある場合、各ウォレットの残高は自動的に計算されます。"
       fake_balance_input_exceeds_error: "最大2100万BTCまで設定できます。"
     hide_fiat_price: "フィアット残高を非表示"
@@ -531,12 +531,10 @@ coconut_qr_scanner:
 
 # lib/screens/settings
 app_info_screen:
-  made_by_team_pow: "Team POW.が制作"
   coconut_crew_genesis_member: "Coconut Crew: ジェネシスメンバー"
   coconut_crew: "Coconut Crew"
   coconut_crew_thanks_msg: "これらのセルフカストディパイオニアたちは\nベータ版から私たちと共にいます。\n彼らなしでは、Coconutは存在しませんでした。"
   category1_ask: "ご質問はありますか？"
-  go_to_pow: "POWコミュニティへ"
   ask_to_discord: "Discordチャンネルで質問"
   ask_to_x: "Xで質問"
   ask_to_email: "メールで質問"
@@ -597,7 +595,7 @@ settings_screen:
       connected: "アドレス確認済み"
       failed: "アドレスが見つかりません！"
   log_viewer_screen:
-    log_description_1: "問題が発生した場合は、[共有]ボタンを押してメールで送信するか、DiscordやPOWコミュニティでお問い合わせください。"
+    log_description_1: "問題が発生した場合は、[共有]ボタンを押してメールで送信するか、Discordでお問い合わせください。"
     log_description_2: "共有される情報は問題解決のためのみに使用され、問題解決後すぐに破棄されます。"
     log_target: "[ログ対象]"
     log_target_description_1: "症状確認と問題解決のため、Keystone 3 Proウォレット追加時に情報をログしています。一部のデバイスで問題が発生する可能性があるため、これを確認するためのログを取得中です。"
@@ -606,10 +604,9 @@ settings_screen:
     clear_log_description: "ログをクリアしてもよろしいですか？"
     email_subject: "[Coconut Wallet] デバッグログ"
     email_body: "状況: （問題が発生した状況を簡潔に説明してください）"
-    email_error_msg: "メールアプリを開けません。ログをコピーしてDiscordチャンネルやPOWコミュニティに投稿してください。"
+    email_error_msg: "メールアプリを開けません。ログをコピーしてDiscordチャンネルに投稿してください。"
     buttons:
       discord: "Discordへ"
-      pow: "POWへ"
       copy: "ログをコピー"
       toast:
         copy_success: "ログをコピーしました。"
@@ -908,7 +905,6 @@ tag_bottom_sheet:
   exit_deletion: "タグ削除を終了"
   max_tag_count: "最大5つのタグを指定できます"
 glossary_bottom_sheet:
-  ask_to_pow: "POWに質問"
   ask_to_discord: "Discordに質問"
   synonym: "同義語"
   related: "関連用語"

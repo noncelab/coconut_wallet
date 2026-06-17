@@ -27,7 +27,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final TransactionProvider _txProvider;
   final AddressRepository _addressRepository;
   final ConnectivityProvider _connectivityProvider;
-  final SendInfoProvider _sendInfoProvider;
   final BlockExplorerProvider _blockExplorerProvider;
 
   BlockTimestamp? _currentBlock;
@@ -70,7 +69,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
     this._nodeProvider,
     this._addressRepository,
     this._connectivityProvider,
-    this._sendInfoProvider,
     this._blockExplorerProvider,
   ) {
     setNeedsMfp();
@@ -124,10 +122,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
     final tx = _transactionList![index];
     return tx.contentKey;
-  }
-
-  void clearSendInfo() {
-    _sendInfoProvider.clear();
   }
 
   void clearTransationList() {

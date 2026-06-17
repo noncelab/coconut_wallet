@@ -68,7 +68,7 @@ class SendInfoProvider {
     _signedResult = signedPsbtBase64Encoded;
   }
 
-  void setFeeBumpfingType(FeeBumpingType? feeBumpingType) {
+  void setFeeBumpingType(FeeBumpingType? feeBumpingType) {
     _feeBumpingType = feeBumpingType;
   }
 
@@ -88,7 +88,8 @@ class SendInfoProvider {
                     _transaction =
                         _txWaitingForSign =
                             _signedResult =
-                                _sendEntryPoint = _feeBumpingType = _walletImportSource = _unsignedDraftId = null;
+                                _sendEntryPoint =
+                                    _feeBumpingType = _walletImportSource = _unsignedDraftId = _feeRate = null;
   }
 
   Map<String, int>? getRecipientMap() {

@@ -12,10 +12,13 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 
 typedef UsePreviewConfirmPrompt = Future<bool> Function(int outputCount);
 
@@ -103,10 +106,10 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   BitcoinUnit get currentUnit => _preferenceProvider.currentUnit;
 
   int get _selectedUtxoAmount => _selectedUtxoList.isNotEmpty ? _selectedUtxoList.first.amount : 0;
-  String get _splitAmountInput => amountController.text.replaceAll(',', '').trim();
+  String get _splitAmountInput => amountController.text.trim();
 
   int get splitCount {
-    final count = int.tryParse(splitCountController.text.trim()) ?? 0;
+    final count = splitCountController.text.trim().toIntSafe() ?? 0;
     return count;
   }
 
@@ -180,6 +183,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       addressRepository: _addressRepository,
     );
     addManualSplitItem();
+    clearSendInfo();
     refreshRecommendedFees();
   }
 
@@ -280,7 +284,10 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
   int get splitAmountSats {
     if (_splitAmountInput.isEmpty) return 0;
-    final splitAmountDouble = double.tryParse(_splitAmountInput) ?? 0.0;
+    print('-> ${_splitAmountInput}');
+    print('-> ${_splitAmountInput.toDoubleSafe()}');
+    print('-> ${currentUnit.toSatoshi(_splitAmountInput.toDoubleSafe() ?? 0.0)}');
+    final splitAmountDouble = _splitAmountInput.toDoubleSafe() ?? 0.0;
     return currentUnit.toSatoshi(splitAmountDouble);
   }
 
@@ -355,7 +362,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   double get feeRate {
-    final feeRateText = feeRateController.text;
+    final feeRateText = normalizeNumTextForNumParsing(feeRateController.text);
     return double.tryParse(feeRateText) ?? 0.0;
   }
 
@@ -396,8 +403,8 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     int total = 0;
     for (final item in manualSplitItems) {
       if (item.isInputValid) {
-        final amount = currentUnit.toSatoshi(double.tryParse(item.amountController.text) ?? 0.0);
-        final count = int.tryParse(item.countController.text) ?? 0;
+        final amount = currentUnit.toSatoshi(item.amountController.text.toDoubleSafe() ?? 0.0);
+        final count = item.countController.text.toIntSafe() ?? 0;
         total += amount * count;
       }
     }
@@ -424,8 +431,8 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     final Map<int, int> amountCountMap = {};
     for (var item in manualSplitItems) {
       if (item.isInputValid) {
-        final amount = currentUnit.toSatoshi(double.tryParse(item.amountController.text) ?? 0.0);
-        final count = int.tryParse(item.countController.text) ?? 0;
+        final amount = currentUnit.toSatoshi(item.amountController.text.toDoubleSafe() ?? 0.0);
+        final count = item.countController.text.toIntSafe() ?? 0;
         amountCountMap[amount] = (amountCountMap[amount] ?? 0) + count;
       }
     }
@@ -500,9 +507,9 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   // --- Network ---
   Future<bool> refreshRecommendedFees() async {
     return await fetchRecommendedFees(
-      currentFeeRateText: feeRateController.text,
+      currentFeeRateText: normalizeNumTextForNumParsing(feeRateController.text),
       onDefaultFeeRateSet: (text) {
-        feeRateController.text = text;
+        feeRateController.text = text.replaceAll('.', NumberFormatConfig.instance.decimalSeparator);
         _splitBuilder.feeRate = double.parse(text);
         _updateRecommendedSplitCountsIfNeeded();
       },
@@ -633,6 +640,10 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     return null;
   }
 
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
+  }
+
   Future<bool> buildTxAndSaveForNext() async {
     if (!isSplitValid || _isPreparingNextStep) return false;
 
@@ -644,7 +655,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       _splitResult ??= await _buildTransaction();
 
       if (_splitResult != null && _splitResult!.isSuccess) {
-        _sendInfoProvider.clear();
+        clearSendInfo();
         _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
         _sendInfoProvider.setWalletId(_wallet.id);
         _sendInfoProvider.setTransaction(_splitResult!.transaction!);
@@ -727,13 +738,13 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
   void incrementSplitCount() {
     splitCountFocusNode.unfocus();
-    final current = int.tryParse(splitCountController.text) ?? 0;
+    final current = splitCountController.text.toIntSafe() ?? 0;
     splitCountController.text = (current + 1).toString();
   }
 
   void decrementSplitCount() {
     splitCountFocusNode.unfocus();
-    final current = int.tryParse(splitCountController.text) ?? 0;
+    final current = splitCountController.text.toIntSafe() ?? 0;
     if (current > 1) {
       splitCountController.text = (current - 1).toString();
     }
@@ -761,13 +772,13 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
   void incrementManualSplitCount(int index) {
     manualSplitItems[index].countFocusNode.unfocus();
-    final current = int.tryParse(manualSplitItems[index].countController.text) ?? 0;
+    final current = manualSplitItems[index].countController.text.toIntSafe() ?? 0;
     manualSplitItems[index].countController.text = (current + 1).toString();
   }
 
   void decrementManualSplitCount(int index) {
     manualSplitItems[index].countFocusNode.unfocus();
-    final current = int.tryParse(manualSplitItems[index].countController.text) ?? 0;
+    final current = manualSplitItems[index].countController.text.toIntSafe() ?? 0;
     if (current > 1) {
       manualSplitItems[index].countController.text = (current - 1).toString();
     }
@@ -785,19 +796,23 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     if (currentUnit.isBasedOnSatoshi) {
       amountController.text = (btc * 1e8).toInt().toString();
     } else {
-      amountController.text = btc.toStringAsFixed(8).replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
+      amountController.text = btc
+          .toStringAsFixed(8)
+          .replaceAll(RegExp(r'0*$'), '')
+          .replaceAll(RegExp(r'\.$'), '')
+          .replaceAll('.', NumberFormatConfig.instance.decimalSeparator);
     }
   }
 
+  // TODO: 반환 값 의미 불명확
   bool onFeeRateChanged(String text) {
     String? updatedText;
     final isTooLow = handleFeeRateChanged(text, (formattedUpdatedText) {
       updatedText = formattedUpdatedText;
-      feeRateController.text = formattedUpdatedText;
     });
 
     if (!isTooLow && updatedText != null) {
-      final parsed = double.tryParse(updatedText!);
+      final parsed = double.tryParse(normalizeNumTextForNumParsing(updatedText!));
       if (parsed != null && parsed > 0 && parsed != _splitBuilder.feeRate) {
         _splitBuilder.feeRate = parsed;
         _updateRecommendedSplitCountsIfNeeded();
@@ -817,11 +832,14 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       return;
     }
 
-    feeRateController.text = _splitBuilder.feeRate.toString();
+    feeRateController.text = _splitBuilder.feeRate.toString().replaceAll(
+      '.',
+      NumberFormatConfig.instance.decimalSeparator,
+    );
   }
 
   void setFeeRateFromRecommendation(double sats) {
-    feeRateController.text = sats.toStringAsFixed(1);
+    feeRateController.text = sats.toStringAsFixed(1).replaceAll('.', NumberFormatConfig.instance.decimalSeparator);
   }
 
   void _updateRecommendedSplitCountsIfNeeded() {
@@ -876,8 +894,8 @@ class ManualSplitItem {
   VoidCallback? _countListener;
 
   bool get isInputValid {
-    final amount = num.tryParse(amountController.text);
-    final count = num.tryParse(countController.text);
+    final amount = amountController.text.toNumSafe();
+    final count = countController.text.toNumSafe();
 
     return amount != null && amount != 0 && count != null && count != 0;
   }

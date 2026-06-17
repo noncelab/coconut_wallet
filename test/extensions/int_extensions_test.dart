@@ -1,8 +1,11 @@
-import 'package:flutter_test/flutter_test.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('IntFormatting Extension Tests', () {
+  group('IntFormatting Extension Tests (en, groupingSeparator: ",")', () {
+    setUp(() => NumberFormatConfig.instance.update('en'));
+
     test('toThousandsSeparatedString formats zero correctly', () {
       expect(0.toThousandsSeparatedString(), '0');
     });
@@ -29,8 +32,16 @@ void main() {
     });
 
     test('toThousandsSeparatedString formats max/min int values correctly', () {
-      expect(2147483647.toThousandsSeparatedString(), '2,147,483,647'); // max 32-bit int
-      expect((-2147483648).toThousandsSeparatedString(), '-2,147,483,648'); // min 32-bit int
+      expect(2147483647.toThousandsSeparatedString(), '2,147,483,647');
+      expect((-2147483648).toThousandsSeparatedString(), '-2,147,483,648');
+    });
+  });
+
+  group('IntFormatting Extension Tests (de, groupingSeparator: ".")', () {
+    setUp(() => NumberFormatConfig.instance.update('es'));
+
+    test('toThousandsSeparatedString formats by locale', () {
+      expect(1234567.toThousandsSeparatedString(), '1.234.567');
     });
   });
 }

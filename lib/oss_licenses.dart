@@ -82,7 +82,6 @@ const allDependencies = <Package>[
   _flutter_secure_storage_web,
   _flutter_secure_storage_windows,
   _flutter_svg,
-  _fluttertoast,
   _frontend_server_client,
   _glob,
   _graphs,
@@ -244,7 +243,6 @@ const dependencies = <Package>[
   _flutter_dotenv,
   _flutter_secure_storage,
   _flutter_svg,
-  _fluttertoast,
   _http,
   _in_app_review,
   _intl,
@@ -1639,7 +1637,7 @@ const _clock = Package(
   dependencies: [],
 );
 
-/// coconut_design_system 0.9.16
+/// coconut_design_system 0.10.0
 const _coconut_design_system = Package(
   name: 'coconut_design_system',
   description:
@@ -1647,7 +1645,7 @@ const _coconut_design_system = Package(
   homepage: 'https://www.noncelab.com',
   repository: 'https://github.com/noncelab/coconut_design_system',
   authors: [],
-  version: '0.9.16',
+  version: '0.10.0',
   license: '''MIT License
 
 Copyright 2025 Nonce Lab
@@ -4913,39 +4911,6 @@ SOFTWARE.''',
     PackageRef('vector_graphics_codec'),
     PackageRef('vector_graphics_compiler'),
   ],
-);
-
-/// fluttertoast 8.2.14
-const _fluttertoast = Package(
-  name: 'fluttertoast',
-  description: 'Toast Library for Flutter, Easily create toast messages in single line of code',
-  homepage: 'https://github.com/PonnamKarthik/FlutterToast',
-  authors: [],
-  version: '8.2.14',
-  license: '''MIT License
-
-Copyright (c) 2020 Karthik Ponnam
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.''',
-  isMarkdown: false,
-  isSdk: false,
-  dependencies: [PackageRef('flutter'), PackageRef('web')],
 );
 
 /// frontend_server_client 4.0.0

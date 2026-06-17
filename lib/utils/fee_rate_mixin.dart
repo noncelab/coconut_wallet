@@ -1,7 +1,8 @@
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
-import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:flutter/foundation.dart';
 
 enum RecommendedFeeFetchStatus { fetching, succeed, failed }
@@ -39,7 +40,7 @@ mixin FeeRateMixin on ChangeNotifier {
     feeInfos[0].satsPerVb = recommendedFees.fastestFee;
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
     feeInfos[2].satsPerVb = recommendedFees.hourFee;
-    _minimumFeeRate = recommendedFees.halfHourFee;
+    _minimumFeeRate = recommendedFees.hourFee;
 
     if (currentFeeRateText.isEmpty && recommendedFees.halfHourFee != null) {
       onDefaultFeeRateSet(recommendedFees.halfHourFee.toString());
@@ -66,8 +67,10 @@ mixin FeeRateMixin on ChangeNotifier {
   }
 
   String removeTrailingDotInFeeRateText(String text) {
-    if (text.endsWith('.')) {
-      return text.substring(0, text.length - 1);
+    final decSep = NumberFormatConfig.instance.decimalSeparator;
+    if (text.endsWith(decSep)) {
+      // decSep은 항상 1글자이지만, 길이에 무관하게 정확히 제거하기 위해 decSep.length 사용
+      return text.substring(0, text.length - decSep.length);
     }
     return text;
   }

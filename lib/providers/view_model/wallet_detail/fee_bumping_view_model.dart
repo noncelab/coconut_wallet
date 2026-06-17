@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/core/exceptions/cpfp_creation/cpfp_creation_exception.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_builder.dart';
@@ -23,6 +24,8 @@ import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.da
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:flutter/foundation.dart';
@@ -84,6 +87,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._walletPreferencesRepository,
     this._isNetworkOn,
   ) {
+    clearSendInfo();
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
     _isUtxoSelectionAuto = !_walletPreferencesRepository.isManualUtxoSelection(_walletId);
     _availableUtxos = _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
@@ -430,7 +434,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setIsMultisig(_walletListItemBase.walletType == WalletType.multiSignature);
     final transaction = isRbf ? _rbfBuildResult!.transaction! : _cpfpBuildResult!.transaction!;
     _sendInfoProvider.setTransaction(transaction);
-    _sendInfoProvider.setFeeBumpfingType(_type);
+    _sendInfoProvider.setFeeBumpingType(_type);
     _sendInfoProvider.setWalletImportSource(_walletListItemBase.walletImportSource);
     return true;
   }
@@ -474,6 +478,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
+  }
+
   // 노드 프로바이더에서 추천 수수료 조회
   Future<void> _fetchRecommendedFees() async {
     final RecommendedFee? recommendedFees = await FeeService().getRecommendedFees();
@@ -512,7 +520,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       newTxSize: _formatNumber(baseline.estimatedVSize),
       recommendedFeeRate: _formatNumber(_feeInfos[2].satsPerVb!),
       originalTxSize: _formatNumber(_pendingTx.vSize),
-      originalFee: _pendingTx.fee,
+      originalFee: _pendingTx.fee.toThousandsSeparatedString(),
       totalRequiredFee: _formatNumber(totalRequiredFee),
       newTxFee: _formatNumber(requiredNewTxFee),
       newTxFeeRate: _formatNumber(baseline.minimumFeeRate),
@@ -521,6 +529,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   String _formatNumber(double value) {
-    return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
+    if (value % 1 == 0) {
+      return value.toInt().toThousandsSeparatedString();
+    }
+
+    final parts = value.toStringAsFixed(2).split('.');
+    final integerPart = int.parse(parts[0]).toThousandsSeparatedString();
+    return '$integerPart${NumberFormatConfig.instance.decimalSeparator}${parts[1]}';
   }
 }
