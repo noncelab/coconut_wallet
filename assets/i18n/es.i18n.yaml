@@ -229,7 +229,7 @@ wallet_home_screen:
     fake_balance:
       fake_balance_setting: "Configurar saldo falso"
       fake_balance_display: "Mostrar saldo falso"
-      fake_balance_input_placeholder: "Establece el saldo falso total (en BTC)"
+      fake_balance_input_placeholder: "Establece el saldo falso total"
       fake_balance_input_description: "Si tienes varias billeteras, el saldo de cada una se calculará automáticamente."
       fake_balance_input_exceeds_error: "Puedes establecer hasta 21 millones de BTC"
     hide_fiat_price: "Ocultar saldo en moneda fiduciaria"
@@ -534,12 +534,10 @@ coconut_qr_scanner:
    
 #lib/screens/settings
 app_info_screen:
-  made_by_team_pow: "Hecho por Team POW."
   coconut_crew_genesis_member: "Coconut Crew: Miembro Genesis"
   coconut_crew: "Coconut Crew"
   coconut_crew_thanks_msg: "Estos pioneros en custodia propia\nhan estado con nosotros desde beta.\nSin ellos, Coconut no existiría hoy."
   category1_ask: "¿Tienes alguna pregunta?"
-  go_to_pow: "Ir a la comunidad POW"
   ask_to_discord: "Preguntar vía canal de Discord"
   ask_to_x: "Preguntar vía X"
   ask_to_email: "Preguntar vía email"
@@ -600,7 +598,7 @@ settings_screen:
       connected: "Dirección verificada"
       failed: "¡Dirección no encontrada!"
   log_viewer_screen:
-    log_description_1: "Si encuentras algún problema, presiona el botón [Compartir] y envíalo vía email o contacta con nosotros en Discord o la comunidad POW."
+    log_description_1: "Si encuentras algún problema, presiona el botón [Compartir] y envíalo vía email o contacta con nosotros en Discord."
     log_description_2: "La información compartida solo se usará para la resolución de problemas y se descartará inmediatamente después de resolver el problema."
     log_target: "[Objetivo de registro]"
     log_target_description_1: "Para la verificación de síntomas y resolución de problemas, estamos registrando información cuando agregamos la billetera Keystone 3 Pro. Algunos dispositivos pueden enfrentar problemas, por lo que el registro está en progreso para verificar esto."  
@@ -609,10 +607,9 @@ settings_screen:
     clear_log_description: "¿Estás seguro de querer limpiar el registro?"
     email_subject: "[Coconut Wallet] Registro de depuración"
     email_body: "Situación: (Por favor, describe brevemente la situación en la que ocurrió el problema)"
-    email_error_msg: "No se puede abrir la aplicación de correo electrónico. Por favor, copie el registro y publíquelo en el canal de Discord o la comunidad POW."
+    email_error_msg: "No se puede abrir la aplicación de correo electrónico. Por favor, copie el registro y publíquelo en el canal de Discord."
     buttons:
       discord: "Ir a Discord"
-      pow: "Ir a POW"
       copy: "Copiar registro"
       toast:
         copy_success: "Registro copiado correctamente."
@@ -910,7 +907,6 @@ tag_bottom_sheet:
   exit_deletion: "Salir de la eliminación de etiqueta"
   max_tag_count: "Puedes especificar hasta 5 etiquetas"
 glossary_bottom_sheet:
-  ask_to_pow: "Preguntar a POW"
   ask_to_discord: "Preguntar a Discord"
   synonym: "Término similar"
   related: "Términos relacionados"

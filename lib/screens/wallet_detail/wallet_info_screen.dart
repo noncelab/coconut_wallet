@@ -20,11 +20,11 @@ import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
+import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -378,7 +378,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   void _showTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
-    final btcString = viewModel.targetSats != null ? _satsToBtcInputString(viewModel.targetSats!) : '';
+    final btcString =
+        viewModel.targetSats != null ? BalanceFormatUtil.formatSatoshiToBtcInputText(viewModel.targetSats!) : '';
     final parentContext = context;
 
     SingleTextFieldBottomSheet.show(
@@ -389,13 +390,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       placeholder: t.wallet_info_screen.target_set_placeholder,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       visibleTextLimit: false,
-      maxLength: 17,
+      maxLength: 20,
       collapsedHeight: 300,
-      textInputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-        _SingleDotInputFormatter(),
-        const BtcAmountInputFormatter(),
-      ],
+      textInputFormatters: [const BtcAmountInputFormatter()],
       completeEnabledWhen: (current, original) {
         final currentText = current.trim();
         return currentText.isNotEmpty && currentText != original.trim();
@@ -408,7 +405,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       cursorColor: CoconutColors.white,
       suffix: Text(BitcoinUnit.btc.symbol, style: CoconutTypography.body2_14_Bold),
       onComplete: (text) {
-        final btc = double.tryParse(text.replaceAll(',', ''));
+        final btc = text.toDoubleSafe();
         if (btc == null || btc <= 0) {
           if (text.isNotEmpty) {
             CoconutToast.showToast(
@@ -448,11 +445,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         );
       },
     );
-  }
-
-  static String _satsToBtcInputString(int sats) {
-    final btc = sats / 100000000.0;
-    return btc.toStringAsFixed(8).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
   }
 
   Future<void> _deleteWalletAndGoToEntryPoint(BuildContext context, WalletInfoViewModel viewModel) async {
@@ -799,13 +791,5 @@ class _TargetQuantityCard extends StatelessWidget {
     }
 
     return count;
-  }
-}
-
-class _SingleDotInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    if ('.'.allMatches(newValue.text).length > 1) return oldValue;
-    return newValue;
   }
 }

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -8,6 +9,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:dio/dio.dart';
@@ -207,17 +209,17 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     if (_inputAssetType == InputAssetType.fiat) {
       switch (_fiatCode) {
         case FiatCode.KRW:
-          return '50,000';
+          return 50000.toThousandsSeparatedString();
         case FiatCode.USD:
           return '50';
         case FiatCode.JPY:
-          return '5,000';
+          return 5000.toThousandsSeparatedString();
       }
     } else {
       if (_currentUnit.isBasedOnSatoshi) {
-        return '50,000';
+        return 50000.toThousandsSeparatedString();
       } else {
-        return '0.0005';
+        return formatBtc(50000);
       }
     }
   }
@@ -257,7 +259,10 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   String formatBtc(int sats) {
     var result = BalanceFormatUtil.formatSatoshiToReadableBitcoin(sats);
-    if (result.endsWith('.')) result = result.substring(0, result.length - 1);
+    final decimalSeparator = NumberFormatConfig.instance.decimalSeparator;
+    if (result.endsWith(decimalSeparator)) {
+      result = result.substring(0, result.length - decimalSeparator.length);
+    }
     return result;
   }
 

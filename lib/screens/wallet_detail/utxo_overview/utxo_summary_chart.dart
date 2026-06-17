@@ -329,7 +329,7 @@ class _BarChartState extends State<_BarChart> {
                 widget.buckets.asMap().entries.map((entry) {
                   final index = entry.key;
                   final bucket = entry.value;
-                  final count = bucket.utxos.length.toDouble();
+                  final count = bucket.utxos.length;
                   final heightRatio = count / maxCountClamped;
                   final barHeight = _barMaxHeight * heightRatio;
                   final isTapped = _tappedBucketIndex == index;

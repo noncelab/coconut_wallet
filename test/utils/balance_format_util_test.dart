@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -110,9 +111,23 @@ void main() {
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(-123456), '-0.0012 3456');
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(-12345678), '-0.1234 5678');
     });
+
+    test('satoshiToReadableBitcoin - locale에 맞는 구분자 사용', () {
+      NumberFormatConfig.instance.update('en');
+      expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(123456000), '1.2345 6000');
+      NumberFormatConfig.instance.update('es');
+
+      expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(123456000), '1,2345 6000');
+      expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(100000000000), '1.000');
+      expect(
+        BalanceFormatUtil.formatSatoshiToReadableBitcoin(100000000000, forceEightDecimals: true),
+        '1.000,0000 0000',
+      );
+    });
   });
 
   group('BalanceFormatUtil.satoshiToReadableBitcoin', () {
+    setUpAll(() => NumberFormatConfig.instance.update('en'));
     test('음수, btc 단위에서 정수 부분이 0', () {
       String result = BalanceFormatUtil.formatSatoshiToReadableBitcoin(-25800142);
       expect(result, '-0.2580 0142');
@@ -218,6 +233,42 @@ void main() {
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(-1000), '-0.0000 1000');
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(-123456), '-0.0012 3456');
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(-12345678), '-0.1234 5678');
+    });
+  });
+
+  group('BalanceFormatUtil.parseAmountTextToSats', () {
+    test('BTC 입력값을 앱 언어 별 소수/천단위 구분자 기준으로 파싱한다', () {
+      NumberFormatConfig.instance.update('en');
+      expect(
+        BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '1,234.56'),
+        123456000000,
+      );
+      NumberFormatConfig.instance.update('es');
+      expect(
+        BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '1.234,56'),
+        123456000000,
+      );
+      expect(BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '0,001'), 100000);
+      expect(BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '0,005'), 500000);
+    });
+  });
+
+  group('BalanceFormatUtil.formatSatsToBip21InputText', () {
+    test('BTC 초기 표시값에 앱 언어 별 소수/천단위 구분자를 사용한다', () {
+      NumberFormatConfig.instance.update('en');
+      expect(
+        BalanceFormatUtil.formatSatsToBip21InputText(currentUnit: BitcoinUnit.btc, initialAmountSats: 123456000),
+        '1.23456',
+      );
+      NumberFormatConfig.instance.update('es');
+      expect(
+        BalanceFormatUtil.formatSatsToBip21InputText(currentUnit: BitcoinUnit.btc, initialAmountSats: 123456000),
+        '1,23456',
+      );
+      expect(
+        BalanceFormatUtil.formatSatsToBip21InputText(currentUnit: BitcoinUnit.btc, initialAmountSats: 100000000000),
+        '1.000',
+      );
     });
   });
 

@@ -228,7 +228,7 @@ wallet_home_screen:
     fake_balance:
       fake_balance_setting: "Set Fake Balance"
       fake_balance_display: "Show Fake Balance"
-      fake_balance_input_placeholder: "Please set the total fake balance (in BTC units)"
+      fake_balance_input_placeholder: "Please set the total fake balance"
       fake_balance_input_description: "Fake balances are calculated automatically for each wallet."
       fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
     hide_fiat_price: "Hide Fiat Balance"
@@ -532,12 +532,10 @@ coconut_qr_scanner:
 
 # lib/screens/settings
 app_info_screen:
-  made_by_team_pow: "Made by Team POW."
   coconut_crew_genesis_member: "Coconut Crew: Genesis Member"
   coconut_crew: "Coconut Crew"
   coconut_crew_thanks_msg: "These self-custody pioneers\nhave been with us since beta.\nWithout them, Coconut wouldn't exist today."
   category1_ask: "Have any questions?"
-  go_to_pow: "Go to POW Community"
   ask_to_discord: "Ask via Discord Channel"
   ask_to_x: "Ask via X"
   ask_to_email: "Ask via Email"
@@ -597,7 +595,7 @@ settings_screen:
       connected: "Address verified"
       failed: "Address not found!"
   log_viewer_screen:
-    log_description_1: "If you encounter any problems, please press the [Share] button and send it via email or contact us on Discord or POW community."
+    log_description_1: "If you encounter any problems, please press the [Share] button and send it via email or contact us on Discord"
     log_description_2: "The information shared will only be used for problem resolution and will be discarded immediately after the problem is resolved."
     log_target: "[Logging Target]"
     log_target_description_1: "For symptom verification and problem resolution, we are logging information when adding the Keystone 3 Pro wallet. Some devices may encounter problems, so logging is in progress to verify this."
@@ -606,10 +604,9 @@ settings_screen:
     clear_log_description: "Are you sure to clear log?"
     email_subject: "[Coconut Wallet] Debug Log"
     email_body: "Situation: (Please briefly describe the situation where the problem occurred)"
-    email_error_msg: "Unable to open email app. Please copy the log and post it on the Discord channel or POW community."
+    email_error_msg: "Unable to open email app. Please copy the log and post it on the Discord channel."
     buttons:
       discord: "Go to Discord"
-      pow: "Go to POW"
       copy: "Copy Log"
       toast:
         copy_success: "Log copied successfully."
@@ -907,7 +904,6 @@ tag_bottom_sheet:
   exit_deletion: "Exit Tag Deletion"
   max_tag_count: "You can specify up to 5 tags"
 glossary_bottom_sheet:
-  ask_to_pow: "Ask POW"
   ask_to_discord: "Ask Discord"
   synonym: "Same Term"
   related: "Related Terms"

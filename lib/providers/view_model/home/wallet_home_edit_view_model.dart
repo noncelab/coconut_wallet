@@ -4,7 +4,6 @@ import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_edit_screen.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/material.dart';
 
 class WalletHomeEditViewModel extends ChangeNotifier {
@@ -16,12 +15,10 @@ class WalletHomeEditViewModel extends ChangeNotifier {
 
   late int minimumSatoshi;
   final int maximumAmount = 21000000;
-  final int maxInputLength = 17; // 21000000.00000000
+  final int maxInputLength = 19; // 21,000,000.00000000
 
   Map<int, dynamic> _fakeBalanceMap = {};
   int? _fakeBalanceTotalAmount;
-  double? _fakeBalanceTotalBtc;
-  String? _fakeBalanceText;
   FakeBalanceInputError _inputError = FakeBalanceInputError.none;
 
   // temp datas
@@ -29,7 +26,6 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   late bool _tempIsBalanceHidden;
   late bool _tempIsFiatBalanceHidden;
   late bool _tempIsFakeBalanceActive;
-  late double? _tempFakeBalanceTotalBtc;
   late int? _tempFakeBalanceTotalAmount;
 
   WalletHomeEditViewModel(this._walletProvider, this._preferenceProvider) {
@@ -43,23 +39,6 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
     _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
 
-    _fakeBalanceTotalBtc =
-        _preferenceProvider.fakeBalanceTotalAmount != null
-            ? UnitUtil.convertSatoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
-            : null;
-
-    if (_fakeBalanceTotalBtc != null) {
-      if (_fakeBalanceTotalBtc == 0) {
-        // 0일 때
-        _fakeBalanceText = '0';
-      } else if (_fakeBalanceTotalBtc! % 1 == 0) {
-        // 정수일 때
-        _fakeBalanceText = _fakeBalanceTotalBtc.toString().split('.')[0];
-      } else {
-        _fakeBalanceText = _fakeBalanceTotalBtc.toString();
-      }
-    }
-
     _tempHomeFeatures =
         _preferenceProvider.homeFeatures
             .map(
@@ -70,7 +49,6 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     _tempIsBalanceHidden = isBalanceHidden;
     _tempIsFiatBalanceHidden = isFiatBalanceHidden;
     _tempIsFakeBalanceActive = isFakeBalanceActive;
-    _tempFakeBalanceTotalBtc = fakeBalanceTotalBtc;
     _tempFakeBalanceTotalAmount = fakeBalanceTotalAmount;
   }
 
@@ -78,8 +56,6 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   bool get isFiatBalanceHidden => _isFiatBalanceHidden;
   bool get isFakeBalanceActive => _isFakeBalanceActive;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
-  double? get fakeBalanceTotalBtc => _fakeBalanceTotalBtc;
-  String? get fakeBalanceText => _fakeBalanceText;
   Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
   int get walletItemLength => _walletProvider.walletItemList.length;
   List<HomeFeature> get homeFeatures => _preferenceProvider.homeFeatures;
@@ -89,7 +65,6 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   bool get tempIsBalanceHidden => _tempIsBalanceHidden;
   bool get tempIsFiatBalanceHidden => _tempIsFiatBalanceHidden;
   bool get tempIsFakeBalanceActive => _tempIsFakeBalanceActive;
-  double? get tempFakeBalanceTotalBtc => _tempFakeBalanceTotalBtc;
   int? get tempFakeBalanceTotalAmount => _tempFakeBalanceTotalAmount;
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
@@ -176,16 +151,6 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setFakeBalanceTotalBtc(double? value) {
-    _fakeBalanceTotalBtc = value;
-    notifyListeners();
-  }
-
-  void setTempFakeBalanceTotalBtc(double? value) {
-    _tempFakeBalanceTotalBtc = value;
-    notifyListeners();
-  }
-
   void setInputError(FakeBalanceInputError error) {
     _inputError = error;
     notifyListeners();
@@ -226,9 +191,9 @@ class WalletHomeEditViewModel extends ChangeNotifier {
       return;
     }
 
-    if (_tempFakeBalanceTotalBtc == null || wallets.isEmpty) return;
+    if (_tempFakeBalanceTotalAmount == null || wallets.isEmpty) return;
 
-    if (_tempFakeBalanceTotalBtc == 0) {
+    if (_tempFakeBalanceTotalAmount == 0) {
       await _preferenceProvider.setFakeBalanceTotalAmount(0);
 
       final Map<int, dynamic> fakeBalanceMap = {};
@@ -244,7 +209,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     }
 
     final walletCount = wallets.length;
-    final int fakeSats = (_tempFakeBalanceTotalBtc! * 100000000).toInt();
+    final int fakeSats = _tempFakeBalanceTotalAmount!;
 
     if (fakeSats < walletCount) return; // 최소 1사토시씩 못 주면 리턴
 

@@ -1,5 +1,27 @@
 import 'dart:ui';
 
+import 'package:intl/intl.dart';
+import 'package:intl/number_symbols.dart';
+
+String getNumberFormatLocaleName() {
+  final locales = PlatformDispatcher.instance.locales;
+  final locale = locales.isNotEmpty ? locales.first : PlatformDispatcher.instance.locale;
+
+  return Intl.canonicalizedLocale(locale.toLanguageTag());
+}
+
+NumberSymbols getNumberFormatSymbols({String? localeName}) {
+  return NumberFormat.decimalPattern(localeName ?? getNumberFormatLocaleName()).symbols;
+}
+
+String getNumberDecimalSeparator({String? localeName}) {
+  return getNumberFormatSymbols(localeName: localeName).DECIMAL_SEP;
+}
+
+String getNumberGroupingSeparator({String? localeName}) {
+  return getNumberFormatSymbols(localeName: localeName).GROUP_SEP;
+}
+
 /// 시스템 언어를 감지하여 적절한 언어 코드를 반환합니다.
 String getSystemLanguageCode() {
   final Locale systemLocale = PlatformDispatcher.instance.locale;

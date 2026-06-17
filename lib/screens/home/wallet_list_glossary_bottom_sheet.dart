@@ -224,31 +224,6 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
         padding: EdgeInsets.only(left: GlossaryBottomSheet.gutter, right: GlossaryBottomSheet.gutter, top: 20),
         child: Column(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: AskCard(
-                    imagePath: 'assets/images/pow_logo.png',
-                    title: t.glossary_bottom_sheet.ask_to_pow,
-                    backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
-                    gutter: GlossaryBottomSheet.gutter,
-                    url: POW_URL,
-                    externalBrowser: true,
-                  ),
-                ),
-                SizedBox(width: GlossaryBottomSheet.gutter / 2),
-                Expanded(
-                  child: AskCard(
-                    imagePath: 'assets/images/discord-logo.png',
-                    title: t.glossary_bottom_sheet.ask_to_discord,
-                    backgroundColor: const Color.fromARGB(255, 240, 224, 251),
-                    gutter: GlossaryBottomSheet.gutter,
-                    url: DISCORD_COCONUT,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
             Expanded(
               child: ListView(
                 children:

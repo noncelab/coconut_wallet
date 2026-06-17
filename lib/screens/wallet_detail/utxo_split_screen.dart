@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -15,6 +16,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/estimated_fee_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
@@ -898,8 +900,13 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               onChanged: (_) {},
               onEditingComplete: () => viewModel.amountFocusNode.unfocus(),
               textInputAction: TextInputAction.done,
-              textInputType: const TextInputType.numberWithOptions(decimal: true),
-              textInputFormatter: [_DecimalTextInputFormatter(decimalRange: viewModel.currentUnit.isBtcUnit ? 8 : 0)],
+              textInputType:
+                  viewModel.currentUnit.isBtcUnit
+                      ? const TextInputType.numberWithOptions(decimal: true)
+                      : TextInputType.number,
+              textInputFormatter: [
+                viewModel.currentUnit.isBtcUnit ? const BtcAmountInputFormatter() : const SatoshiAmountInputFormatter(),
+              ],
               placeholderText: t.split_utxo_screen.placeholder_split_amount,
               maxLines: 1,
               unfocusOnTapOutside: true,
@@ -1862,13 +1869,19 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 onChanged: (_) {},
                                 onEditingComplete: () => widget.item.amountFocusNode.unfocus(),
                                 textInputAction: TextInputAction.done,
-                                textInputType: const TextInputType.numberWithOptions(decimal: true),
+                                textInputType:
+                                    widget.viewModel.currentUnit.isBtcUnit
+                                        ? const TextInputType.numberWithOptions(decimal: true)
+                                        : TextInputType.number,
                                 textInputFormatter: [
-                                  _DecimalTextInputFormatter(
-                                    decimalRange: widget.viewModel.currentUnit.isBtcUnit ? 8 : 0,
-                                  ),
+                                  widget.viewModel.currentUnit.isBtcUnit
+                                      ? const BtcAmountInputFormatter()
+                                      : const SatoshiAmountInputFormatter(),
                                 ],
-                                placeholderText: widget.viewModel.currentUnit.isBtcUnit ? '0.00' : '0',
+                                placeholderText:
+                                    widget.viewModel.currentUnit.isBtcUnit
+                                        ? "0${NumberFormatConfig.instance.decimalSeparator}00"
+                                        : '0',
                                 maxLines: 1,
                                 padding: const EdgeInsets.only(left: 4, right: 4, top: 4, bottom: 4),
                                 unfocusOnTapOutside: true,
@@ -2024,44 +2037,6 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
         ),
       ),
     );
-  }
-}
-
-class _DecimalTextInputFormatter extends TextInputFormatter {
-  final int decimalRange;
-
-  _DecimalTextInputFormatter({required this.decimalRange});
-
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    String text = newValue.text;
-
-    if (text.isEmpty) return newValue;
-
-    if (decimalRange == 0 && text.contains('.')) {
-      return oldValue;
-    }
-
-    if (text.startsWith('.')) {
-      text = '0$text';
-      return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: newValue.selection.end + 1));
-    }
-
-    if (text.length > 1 && text.startsWith('0') && !text.startsWith('0.')) {
-      return oldValue;
-    }
-
-    if (!RegExp(r'^\d*\.?\d*$').hasMatch(text)) {
-      return oldValue;
-    }
-
-    if (text.contains('.')) {
-      if (text.split('.')[1].length > decimalRange) {
-        return oldValue;
-      }
-    }
-
-    return newValue;
   }
 }
 

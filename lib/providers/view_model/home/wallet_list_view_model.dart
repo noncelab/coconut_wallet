@@ -33,6 +33,7 @@ class WalletListViewModel extends ChangeNotifier {
   late PreferenceProvider _preferenceProvider;
   late bool? _isNetworkOn;
   Map<int, AnimatedBalanceData> _walletBalance = {};
+  late List<WalletListItemBase> _walletItemListSnapshot;
 
   bool _isFirstLoaded = false;
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
@@ -80,6 +81,7 @@ class WalletListViewModel extends ChangeNotifier {
     _visibleFiats = _preferenceProvider.walletListVisibleFiats;
     _syncNodeStateStream = _nodeProvider.syncStateStream;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
+    _walletItemListSnapshot = List<WalletListItemBase>.from(_walletProvider.walletItemList);
     _walletBalance = _walletProvider.fetchWalletBalanceMap().map(
       (key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)),
     );
@@ -153,9 +155,12 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void onPreferenceProviderUpdated() {
+    var didChange = false;
+
     /// 지갑 순서 변경 체크
     if (!const ListEquality().equals(_walletOrder, _preferenceProvider.walletOrder)) {
       _walletOrder = _preferenceProvider.walletOrder;
+      didChange = true;
     }
 
     /// 총 잔액에서 제외할 지갑 목록 변경 체크
@@ -164,14 +169,18 @@ class WalletListViewModel extends ChangeNotifier {
       _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet(),
     )) {
       _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+      didChange = true;
     }
 
     /// 보여지는 통화 목록 변경 체크
     if (!const ListEquality().equals(_visibleFiats, _preferenceProvider.walletListVisibleFiats)) {
       _visibleFiats = _preferenceProvider.walletListVisibleFiats;
+      didChange = true;
     }
 
-    notifyListeners();
+    if (didChange) {
+      notifyListeners();
+    }
   }
 
   Future<void> updateWalletBalances() async {
@@ -188,8 +197,12 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
+    final didProviderChange = !identical(_walletProvider, walletProvider);
     _walletProvider = walletProvider;
-    notifyListeners();
+
+    if (_updateWalletItemListSnapshot() || didProviderChange) {
+      notifyListeners();
+    }
   }
 
   void onNodeProviderUpdated() {
@@ -352,6 +365,10 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void setVisibleFiats(List<FiatCode> fiats) {
+    if (const ListEquality().equals(_visibleFiats, fiats)) {
+      return;
+    }
+
     _preferenceProvider.setWalletListVisibleFiats(fiats);
     _visibleFiats = _preferenceProvider.walletListVisibleFiats;
     notifyListeners();
@@ -363,8 +380,36 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void setWalletListFiatHidden(bool isHidden) {
+    if (_preferenceProvider.isWalletListFiatHidden == isHidden) {
+      return;
+    }
+
     _preferenceProvider.setWalletListFiatHidden(isHidden);
     notifyListeners();
+  }
+
+  bool _updateWalletItemListSnapshot() {
+    final walletItemList = _walletProvider.walletItemList;
+    if (_isSameWalletItemList(_walletItemListSnapshot, walletItemList)) {
+      return false;
+    }
+
+    _walletItemListSnapshot = List<WalletListItemBase>.from(walletItemList);
+    return true;
+  }
+
+  bool _isSameWalletItemList(List<WalletListItemBase> previous, List<WalletListItemBase> current) {
+    if (previous.length != current.length) {
+      return false;
+    }
+
+    for (var i = 0; i < previous.length; i++) {
+      if (previous[i].toString() != current[i].toString()) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   @override

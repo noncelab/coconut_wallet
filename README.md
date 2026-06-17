@@ -187,7 +187,7 @@ All third-party libraries used in this project are licensed under MIT, BSD, or A
 
 | | |
 |---|---|
-| **Website** | [coconut.onl](https://coconut.onl) / [powbitcoiner.com](https://https://powbitcoiner.com)|
+| **Website** | [coconut.onl](https://coconut.onl)|
 | **X (Twitter)** | [@CoconutWallet 🌐](https://x.com/CoconutWallet) / [@Coconut 🇰🇷](https://x.com/Coconut_BTC) |
 | **Discord** | [Join our Discord](https://discord.gg/VjZxYaQCRj) |
 | **Documentation** | [Tutorials & Docs](https://tutorial.coconut.onl) |

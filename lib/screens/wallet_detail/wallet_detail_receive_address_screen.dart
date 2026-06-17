@@ -126,10 +126,10 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                 child: InputAndShareOverlay(
                   shareButtonKey: _shareButtonKey,
                   onEnterAmountTap: () async {
-                    final currentUnit = context.read<PreferenceProvider>().currentUnit;
+                    final preferenceProvider = context.read<PreferenceProvider>();
                     final result = await Bip21AmountBottomSheet.show(
                       context: context,
-                      currentUnit: currentUnit,
+                      currentUnit: preferenceProvider.currentUnit,
                       initialAmountSats: _enteredReceiveAmountSats,
                     );
                     if (!mounted || result == null || !result.didEdit) return;

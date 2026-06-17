@@ -199,10 +199,6 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
           launchURL(DISCORD_COCONUT);
         }),
         CoconutLayout.spacing_100w,
-        _buildButton(t.settings_screen.log_viewer_screen.buttons.pow, () {
-          launchURL(POW_URL);
-        }),
-        CoconutLayout.spacing_100w,
         _buildButton(t.settings_screen.log_viewer_screen.buttons.copy, () {
           Clipboard.setData(ClipboardData(text: _logContent));
           CoconutToast.showToast(

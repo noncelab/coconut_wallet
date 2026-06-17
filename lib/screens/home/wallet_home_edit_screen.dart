@@ -7,14 +7,13 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/fixed_text_scale.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
@@ -32,14 +31,14 @@ class WalletHomeEditScreen extends StatefulWidget {
 }
 
 class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with TickerProviderStateMixin {
-  final TextEditingController _textEditingController = TextEditingController();
+  final TextEditingController _fakeBalanceController = TextEditingController();
   late WalletHomeEditViewModel _viewModel;
   late final ScrollController _scrollController;
 
   GlobalKey fixedBottomButtonKey = GlobalKey();
   Size _fixedBottomButtonSize = const Size(0, 0);
 
-  final FocusNode _textFieldFocusNode = FocusNode();
+  final FocusNode _fakeBalanceFocusNode = FocusNode();
   bool _isRenderComplete = false;
   Timer? _debounceTimer;
   @override
@@ -56,23 +55,14 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
         });
       }
 
-      if (_viewModel.tempFakeBalanceTotalBtc != null) {
-        if (_viewModel.tempFakeBalanceTotalBtc == 0) {
-          // 0일 때
-          _textEditingController.text = '0';
-        } else if (_viewModel.tempFakeBalanceTotalBtc! % 1 == 0) {
-          // 정수일 때
-          _textEditingController.text = _viewModel.tempFakeBalanceTotalBtc.toString().split('.')[0];
-        } else {
-          // 아주 작은 소수일 때 e-8로 표시되는 경우가 있음 -> toStringAsFixed(8)로 8자리까지 표시 후 뒤에 0이 있으면 제거
-          _textEditingController.text = _viewModel.tempFakeBalanceTotalBtc!
-              .toStringAsFixed(8)
-              .replaceFirst(RegExp(r'\.?0+$'), '');
-        }
+      if (_viewModel.tempFakeBalanceTotalAmount != null) {
+        _fakeBalanceController.text = BalanceFormatUtil.formatSatoshiToBtcInputText(
+          _viewModel.tempFakeBalanceTotalAmount!,
+        );
       }
 
-      _textFieldFocusNode.addListener(() {
-        if (_textFieldFocusNode.hasFocus) {
+      _fakeBalanceFocusNode.addListener(() {
+        if (_fakeBalanceFocusNode.hasFocus) {
           if (_scrollController.hasClients) {
             debugPrint('animateTo: ${_fixedBottomButtonSize.height}');
 
@@ -85,20 +75,20 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
         }
       });
 
-      _textEditingController.addListener(() {
+      _fakeBalanceController.addListener(() {
         _debounceTimer?.cancel();
         _debounceTimer = Timer(const Duration(milliseconds: 300), () {
           if (!mounted) return;
 
-          final text = _textEditingController.text.replaceAll(',', '');
-          final input = text.isEmpty ? null : double.tryParse(text);
+          final text = normalizeNumTextForNumParsing(_fakeBalanceController.text);
+          final inputSats = text.isEmpty ? null : UnitUtil.convertBitcoinStringToSatoshi(text);
           final error =
-              (input != null && input > _viewModel.maximumAmount)
+              (inputSats != null && inputSats > _viewModel.maximumAmount * 100000000)
                   ? FakeBalanceInputError.exceedsTotalSupply
                   : FakeBalanceInputError.none;
 
           // ViewModel 상태 먼저 변경 (notifyListeners는 setState 밖에서)
-          _viewModel.setTempFakeBalanceTotalBtc(input);
+          _viewModel.setTempFakeBalanceTotalAmount(inputSats);
           _viewModel.setInputError(error);
 
           setState(() {});
@@ -115,8 +105,8 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
   void dispose() {
     _debounceTimer?.cancel();
     _scrollController.dispose();
-    _textEditingController.dispose();
-    _textFieldFocusNode.dispose();
+    _fakeBalanceController.dispose();
+    _fakeBalanceFocusNode.dispose();
     super.dispose();
   }
 
@@ -211,7 +201,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                       subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                                       customPadding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
                                       onPressed: () async {
-                                        if (_textFieldFocusNode.hasFocus) {
+                                        if (_fakeBalanceFocusNode.hasFocus) {
                                           FocusScope.of(context).unfocus();
                                           return;
                                         }
@@ -236,7 +226,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                       subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                                       customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
                                       onPressed: () async {
-                                        if (_textFieldFocusNode.hasFocus) {
+                                        if (_fakeBalanceFocusNode.hasFocus) {
                                           FocusScope.of(context).unfocus();
                                           return;
                                         }
@@ -263,7 +253,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                       subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                                       customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
                                       onPressed: () async {
-                                        if (_textFieldFocusNode.hasFocus) {
+                                        if (_fakeBalanceFocusNode.hasFocus) {
                                           FocusScope.of(context).unfocus();
                                           return;
                                         }
@@ -308,7 +298,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                           isActive: _shouldEnableCompleteButton(),
                           onButtonClicked: () async {
                             FocusScope.of(context).unfocus();
-                            if (viewModel.tempIsFakeBalanceActive && _textEditingController.text.isEmpty) {
+                            if (viewModel.tempIsFakeBalanceActive && _fakeBalanceController.text.isEmpty) {
                               // 가짜 잔액을 활성화 했지만 금액을 입력하지 않았을 때 -> 0으로 설정할지 다시입력할지 물어봄
                               showDialog(
                                 context: context,
@@ -320,7 +310,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                     leftButtonText: t.wallet_home_screen.edit.alert.enter_again,
                                     rightButtonText: t.wallet_home_screen.edit.alert.set_to_0,
                                     onTapRight: () async {
-                                      viewModel.setTempFakeBalanceTotalBtc(0);
+                                      viewModel.setTempFakeBalanceTotalAmount(0);
 
                                       _onComplete();
                                       if (mounted) {
@@ -357,8 +347,6 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
   }
 
   bool _shouldEnableCompleteButton() {
-    final text = _textEditingController.text;
-
     final isToggleChanged =
         _viewModel.tempIsFakeBalanceActive != _viewModel.isFakeBalanceActive || // 가짜잔액표시 변동
         _viewModel.tempIsBalanceHidden != _viewModel.isBalanceHidden || // 잔액숨기기 변동
@@ -373,15 +361,11 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
         });
     if (_viewModel.tempIsFakeBalanceActive) {
       if (_viewModel.fakeBalanceTotalAmount == null) return true;
-      final expectedText = UnitUtil.convertSatoshiToBitcoin(
-        _viewModel.fakeBalanceTotalAmount!,
-      ).toStringAsFixed(8).replaceFirst(RegExp(r'\.?0*$'), '');
-      final isTextChanged = text != expectedText;
+      final isTextChanged = _viewModel.tempFakeBalanceTotalAmount != _viewModel.fakeBalanceTotalAmount;
       // 가짜 잔액 표시가 활성화 되더라도 입력값이 없으면 변동되지 않음
       if (!isTextChanged) return isToggleChanged;
 
-      final parsed = double.tryParse(text);
-      if (parsed != 0 && _viewModel.inputError != FakeBalanceInputError.none) {
+      if (_viewModel.tempFakeBalanceTotalAmount != 0 && _viewModel.inputError != FakeBalanceInputError.none) {
         return false;
       }
       return true;
@@ -390,7 +374,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
   }
 
   void _onComplete() async {
-    if (_textEditingController.text.isEmpty) {}
+    if (_fakeBalanceController.text.isEmpty) {}
     await _viewModel.onComplete();
   }
 
@@ -583,17 +567,11 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: CoconutTextField(
                   textInputType: const TextInputType.numberWithOptions(decimal: true),
-                  textInputFormatter: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                    const BtcAmountInputFormatter(),
-                  ],
-                  placeholderText:
-                      viewModel.tempFakeBalanceTotalBtc != null
-                          ? ''
-                          : t.wallet_home_screen.edit.fake_balance.fake_balance_input_placeholder,
+                  textInputFormatter: const [BtcAmountInputFormatter()],
+                  placeholderText: t.wallet_home_screen.edit.fake_balance.fake_balance_input_placeholder,
                   isLengthVisible: false,
-                  controller: _textEditingController,
-                  focusNode: _textFieldFocusNode,
+                  controller: _fakeBalanceController,
+                  focusNode: _fakeBalanceFocusNode,
                   onChanged: (text) {},
                   backgroundColor: CoconutColors.black,
                   errorColor: CoconutColors.hotPink,
@@ -601,6 +579,10 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                   activeColor: CoconutColors.white,
                   cursorColor: CoconutColors.white,
                   maxLength: viewModel.maxInputLength,
+                  suffix: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(t.btc, style: CoconutTypography.body2_14_Bold),
+                  ),
                   errorText:
                       _viewModel.inputError == FakeBalanceInputError.exceedsTotalSupply
                           ? '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_exceeds_error}'

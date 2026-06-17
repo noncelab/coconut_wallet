@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/core/exceptions/cpfp_creation/cpfp_creation_exception.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_builder.dart';
@@ -23,6 +24,8 @@ import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.da
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:flutter/foundation.dart';
@@ -517,7 +520,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       newTxSize: _formatNumber(baseline.estimatedVSize),
       recommendedFeeRate: _formatNumber(_feeInfos[2].satsPerVb!),
       originalTxSize: _formatNumber(_pendingTx.vSize),
-      originalFee: _pendingTx.fee,
+      originalFee: _pendingTx.fee.toThousandsSeparatedString(),
       totalRequiredFee: _formatNumber(totalRequiredFee),
       newTxFee: _formatNumber(requiredNewTxFee),
       newTxFeeRate: _formatNumber(baseline.minimumFeeRate),
@@ -526,6 +529,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   String _formatNumber(double value) {
-    return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
+    if (value % 1 == 0) {
+      return value.toInt().toThousandsSeparatedString();
+    }
+
+    final parts = value.toStringAsFixed(2).split('.');
+    final integerPart = int.parse(parts[0]).toThousandsSeparatedString();
+    return '$integerPart${NumberFormatConfig.instance.decimalSeparator}${parts[1]}';
   }
 }

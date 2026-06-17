@@ -13,6 +13,7 @@ import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.da
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
@@ -215,6 +216,8 @@ class PreferenceProvider extends ChangeNotifier {
         Logger.log('Spanish locale applied successfully');
       }
 
+      NumberFormatConfig.instance.update(_language);
+
       // 언어 설정 후 상태 업데이트를 위해 notifyListeners 호출
       notifyListeners();
     } catch (e) {
@@ -238,6 +241,7 @@ class PreferenceProvider extends ChangeNotifier {
         // 기본값은 영어로 설정
         await LocaleSettings.setLocale(AppLocale.en);
       }
+      NumberFormatConfig.instance.update(_language);
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
       Logger.log('Language initialization failed: $e');
