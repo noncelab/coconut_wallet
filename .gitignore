@@ -176,3 +176,6 @@ GoogleService-Info.plist
 google-services.json
 firebase.json
 coconut-fastlane-supply.json
+
+# CCOS
+docs/*
