@@ -33,6 +33,10 @@ class BlockExplorerProvider extends ChangeNotifier {
       return BLOCK_EXPLORER_URL_REGTEST;
     }
 
+    if (NetworkType.currentNetworkType == NetworkType.testnet) {
+      return BLOCK_EXPLORER_URL_TESTNET;
+    }
+
     if (useDefaultExplorer) {
       return _getDefaultMempoolUrl();
     } else {

@@ -453,8 +453,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   }
 
   List<ElectrumServer> _getDefaultServerList() {
-    final isRegtestFlavor = NetworkType.currentNetworkType == NetworkType.regtest;
-    return isRegtestFlavor ? DefaultElectrumServer.regtestServers : DefaultElectrumServer.mainnetServers;
+    final networkType = NetworkType.currentNetworkType;
+    if (networkType == NetworkType.mainnet) return DefaultElectrumServer.mainnetServers;
+    if (networkType == NetworkType.regtest) return DefaultElectrumServer.regtestServers;
+    return DefaultElectrumServer.testnetServers;
   }
 
   Widget _buildServerAddressTextField() {

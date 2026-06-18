@@ -276,13 +276,14 @@ flutter:
     - assets/svg/kebab.svg
     - assets/svg/coconut-vault-mainnet.svg
     - assets/svg/coconut-vault-regtest.svg
-    - assets/svg/seed-signer.svg
-    - assets/svg/jade.svg
-    - assets/svg/keystone.svg
-    - assets/svg/cold-card.svg
-    - assets/svg/krux.svg
-    - assets/svg/passport.svg
-    - assets/svg/zpub.svg
+    # wallet type icons
+    - assets/svg/wallet-type/seed-signer.svg
+    - assets/svg/wallet-type/jade.svg
+    - assets/svg/wallet-type/keystone.svg
+    - assets/svg/wallet-type/cold-card.svg
+    - assets/svg/wallet-type/krux.svg
+    - assets/svg/wallet-type/passport.svg
+    - assets/svg/wallet-type/zpub.svg
     - assets/svg/copy.svg
     - assets/svg/lock.svg
     - assets/svg/lock_simple.svg

@@ -333,9 +333,13 @@ wallet_add_scanner_screen:
   guide_passport:
     step0: "패스포트에서 연동할 계정을 열어 주세요."
     step1: "1. "
-    step1_em: "Connect Wallet"
+    step1_em: "Account Details"
     step2: "2. "
-    step2_em: "Coconut Wallet"
+    step2_em: "… 아이콘 누른 후 Connect Wallet"
+    step3: "3. "
+    step3_em: "Sparrow"
+    step4: "4. "
+    step4_em: "Connect as Single Sig"
     select: "선택"
   paste:
     paste_button: "붙여넣기로 가져오기"

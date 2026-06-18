@@ -303,6 +303,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
               _em(t.wallet_add_scanner_screen.guide_passport.step2_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
+              _em(t.wallet_add_scanner_screen.guide_passport.step3_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step4),
+              _em(t.wallet_add_scanner_screen.guide_passport.step4_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
             ];
           } else {
@@ -313,7 +319,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               _em(' ${t.wallet_add_scanner_screen.guide_passport.step1_em}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              _em(' ${t.wallet_add_scanner_screen.guide_passport.step2_em}'),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step2_em}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step3_em}'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step4),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step4_em}'),
             ];
           }
         }

@@ -334,9 +334,13 @@ wallet_add_scanner_screen:
   guide_passport:
     step0: "En Passport, abre la cuenta que deseas conectar"
     step1: "1. "
-    step1_em: "Connect Wallet"
+    step1_em: "Account Details"
     step2: "2. "
-    step2_em: "Coconut Wallet"
+    step2_em: "Coconut Wallet del menú …"
+    step3: "3. "
+    step3_em: "Sparrow"
+    step4: "4. "
+    step4_em: "Connect as Single Sig"
     select: "Seleccionar"
   paste:
     paste_button: "Importar mediante pegado"

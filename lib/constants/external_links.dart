@@ -30,7 +30,9 @@ const TUTORIAL_URL = 'https://tutorial.coconut.onl';
 
 /// Block explorer
 const BLOCK_EXPLORER_URL_REGTEST = 'https://regtest-mempool.coconut.onl';
+const BLOCK_EXPLORER_URL_TESTNET = 'https://mempool.space/testnet4';
 
 /// Fee Service
 const FEE_SERVICE_URL_MAINNET = 'https://mempool.space/api/v1/fees/precise';
+const FEE_SERVICE_URL_TESTNET = 'https://mempool.space/testnet4/api/v1/fees/precise';
 const FEE_SERVICE_URL_REGTEST = 'https://regtest-mempool.coconut.onl/api/v1/fees/recommended';

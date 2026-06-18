@@ -6,8 +6,11 @@ import 'package:dio/dio.dart';
 
 class FeeService {
   final Dio _dio = Dio();
-  final String path =
-      NetworkType.currentNetworkType == NetworkType.mainnet ? FEE_SERVICE_URL_MAINNET : FEE_SERVICE_URL_REGTEST;
+  final String path = NetworkType.currentNetworkType == NetworkType.mainnet
+      ? FEE_SERVICE_URL_MAINNET
+      : NetworkType.currentNetworkType == NetworkType.testnet
+          ? FEE_SERVICE_URL_TESTNET
+          : FEE_SERVICE_URL_REGTEST;
 
   /// 멤풀 및 블록스트림 API에서 수수료 정보 수집
   Future<RecommendedFee?> getRecommendedFees() async {
