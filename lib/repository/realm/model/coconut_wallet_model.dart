@@ -14,6 +14,7 @@ final realmAllSchemas = [
   RealmWalletBase.schema,
   RealmMultisigWallet.schema,
   RealmExternalWallet.schema,
+  RealmTaprootWallet.schema,
   RealmTransaction.schema,
   RealmIntegerId.schema,
   RealmUtxoTag.schema,
@@ -60,6 +61,21 @@ class _RealmExternalWallet {
   late int id;
   late String walletImportSource;
   late _RealmWalletBase? walletBase;
+}
+
+@RealmModel()
+class _RealmTaprootWallet {
+  @PrimaryKey()
+  late int id;
+  late _RealmWalletBase? walletBase;
+  late String keyPathSeedInfosInJsonSerialization;
+  late String scriptPathSeedInfosInJsonSerialization;
+  late DateTime? createdAtInVault;
+
+  /// 사용자가 사전 선택한 spend 경로(TaprootSpendType.name). null = 미선택.
+  /// 키 패스/스크립트 패스 한쪽만 가능한 wallet 에서는 사용되지 않으며,
+  /// 둘 다 가능한 wallet 에 한해 의미를 가진다.
+  late String? defaultSpendTypeName;
 }
 
 @RealmModel()

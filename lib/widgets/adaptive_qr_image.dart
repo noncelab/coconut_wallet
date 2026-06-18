@@ -15,6 +15,7 @@ class AdaptiveQrImage extends StatelessWidget {
     this.qrViewDataHandler,
     this.embedImage,
     this.showFrame = true,
+    this.qrInternalPadding,
   });
 
   final String? qrData;
@@ -22,6 +23,7 @@ class AdaptiveQrImage extends StatelessWidget {
   final IQrViewDataHandler? qrViewDataHandler;
   final ImageProvider? embedImage;
   final bool showFrame;
+  final double? qrInternalPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -29,37 +31,51 @@ class AdaptiveQrImage extends StatelessWidget {
 
     final qrContent = LayoutBuilder(
       builder: (context, constraints) {
-        final qrSize = _getQrSize(constraints);
+        final containerSize = _getQrSize(constraints);
+        final qrSize = containerSize - (qrInternalPadding ?? 0);
+
         if (qrData != null) {
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              QrImageView(
-                data: qrData!,
-                size: qrSize,
-                backgroundColor: CoconutColors.white,
-                errorCorrectionLevel: QrErrorCorrectLevel.H,
+          return SizedBox(
+            width: containerSize,
+            height: containerSize,
+            child: Center(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  QrImageView(
+                    data: qrData!,
+                    size: qrSize,
+                    backgroundColor: CoconutColors.white,
+                    errorCorrectionLevel: QrErrorCorrectLevel.H,
+                  ),
+                  if (embedImage != null) ...[
+                    Container(width: 72, height: 72, color: CoconutColors.white),
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(color: CoconutColors.black, borderRadius: BorderRadius.circular(4)),
+                      padding: const EdgeInsets.all(6),
+                      child: Image(image: embedImage!, width: 20, height: 20),
+                    ),
+                  ],
+                ],
               ),
-              if (embedImage != null) ...[
-                Container(width: 72, height: 72, color: CoconutColors.white),
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(color: CoconutColors.black, borderRadius: BorderRadius.circular(4)),
-                  padding: const EdgeInsets.all(6),
-                  child: Image(image: embedImage!, width: 20, height: 20),
-                ),
-              ],
-            ],
+            ),
           );
         }
 
         if (qrViewDataHandler != null) {
-          return AnimatedQrView(
-            key: ValueKey(qrDensity ?? QrScanDensity.normal),
-            qrViewDataHandler: qrViewDataHandler!,
-            qrScanDensity: qrDensity ?? QrScanDensity.normal,
-            qrSize: qrSize,
+          return SizedBox(
+            width: containerSize,
+            height: containerSize,
+            child: Center(
+              child: AnimatedQrView(
+                key: ValueKey(qrDensity ?? QrScanDensity.normal),
+                qrViewDataHandler: qrViewDataHandler!,
+                qrScanDensity: qrDensity ?? QrScanDensity.normal,
+                qrSize: qrSize,
+              ),
+            ),
           );
         }
 

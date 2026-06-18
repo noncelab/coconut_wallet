@@ -3,8 +3,6 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
 import 'package:flutter/material.dart';
@@ -21,11 +19,11 @@ class WalletItemCard extends StatelessWidget {
   final bool isLastItem;
   final bool isBalanceHidden;
   final int? fakeBalance;
-  final List<MultisigSigner>? signers;
   final WalletImportSource walletImportSource;
   final BitcoinUnit currentUnit;
   final Color? backgroundColor;
   final Color? pressedColor;
+  final List<Color>? iconGradientColors;
   final bool? isPrimaryWallet;
   final bool? isExcludeFromTotalBalance;
   final bool isEditMode;
@@ -48,10 +46,10 @@ class WalletItemCard extends StatelessWidget {
     required this.isLastItem,
     this.isBalanceHidden = false,
     this.fakeBalance,
-    this.signers,
     this.walletImportSource = WalletImportSource.coconutVault,
     this.backgroundColor,
     this.pressedColor,
+    this.iconGradientColors,
     this.isPrimaryWallet,
     this.isExcludeFromTotalBalance,
     this.isEditMode = false,
@@ -87,13 +85,6 @@ class WalletItemCard extends StatelessWidget {
       onLongPress: () {
         onLongPressed?.call();
       },
-      // ** gradient 사용안할수도 있음**
-      // Coconut Vault에서 가져온 멀티시그 지갑 => 테두리 그라디언트 적용
-      // External Wallet에서 가져온 싱글시그 지갑 => 테두리 CoconutColors.gray800
-      // Coconut Vault에서 가져온 싱글시그 지갑 => 테두리 없음(배경색과 동일)
-      // borderGradientColors: signers?.isNotEmpty == true
-      //     ? ColorUtil.getGradientColors(signers!)
-      //     : [CoconutColors.gray800, CoconutColors.gray800],
       child: _buildWalletItemContent(displayedFakeBalance),
     );
 
@@ -139,7 +130,7 @@ class WalletItemCard extends StatelessWidget {
             walletImportSource: walletImportSource,
             iconIndex: iconIndex,
             colorIndex: colorIndex,
-            gradientColors: signers != null ? ColorUtil.getGradientColors(signers!) : null,
+            gradientColors: iconGradientColors,
           ),
           CoconutLayout.spacing_200w,
           Expanded(

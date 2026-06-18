@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -223,7 +224,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               '/wallet-info',
               arguments: {
                 'id': walletId,
-                'isMultisig': false,
+                'walletType': _viewModel.selectedWalletItem?.walletType ?? WalletType.singleSignature,
                 'entryPoint': kEntryPointWalletHome,
                 'showMfpInput': true,
               },
@@ -240,7 +241,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               '/wallet-info',
               arguments: {
                 'id': walletId,
-                'isMultisig': false,
+                'walletType': _viewModel.selectedWalletItem?.walletType ?? WalletType.singleSignature,
                 'entryPoint': kEntryPointWalletHome,
                 'showMfpInput': true,
               },
@@ -977,6 +978,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     ],
                   ),
                   if (!_viewModel.isMaxMode) _buildFeeSubtractedFromSendAmount(),
+                  _buildTaprootSignPath(),
                 ],
               ),
             );
@@ -1024,6 +1026,43 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildTaprootSignPath() {
+    return Selector<SendViewModel, TaprootSpendType?>(
+      selector: (_, viewModel) => viewModel.taprootSpendType,
+      builder: (context, taprootSpendType, child) {
+        if (taprootSpendType == null) return const SizedBox();
+
+        return Column(
+          children: [
+            CoconutLayout.spacing_400h,
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFeeRowLabel(t.send_screen.taproot.sign_path),
+                      FittedBox(
+                        child: Text(
+                          taprootSpendType == TaprootSpendType.keyPath
+                              ? t.send_screen.taproot.sign_by_parent
+                              : t.send_screen.taproot.sign_by_child,
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                          maxLines: 2, // en - right overflow 방지
+                          softWrap: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 

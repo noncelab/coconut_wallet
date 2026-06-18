@@ -245,12 +245,6 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                     MediaQuery(
                       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                       child: CoconutSegmentedControl(
-                        labels: [
-                          t.wallet_home_screen.analysis_period_bottom_sheet.days_30,
-                          t.wallet_home_screen.analysis_period_bottom_sheet.days_60,
-                          t.wallet_home_screen.analysis_period_bottom_sheet.days_90,
-                          t.wallet_home_screen.analysis_period_bottom_sheet.custom,
-                        ],
                         isSelected: _selectedPeriodIndices,
                         onPressed: (index) {
                           if (index == 3) {
@@ -261,6 +255,12 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                             _selectedPeriodIndices = [index == 0, index == 1, index == 2, index == 3];
                           });
                         },
+                        children: [
+                          Text(t.wallet_home_screen.analysis_period_bottom_sheet.days_30),
+                          Text(t.wallet_home_screen.analysis_period_bottom_sheet.days_60),
+                          Text(t.wallet_home_screen.analysis_period_bottom_sheet.days_90),
+                          Text(t.wallet_home_screen.analysis_period_bottom_sheet.custom),
+                        ],
                       ),
                     ),
                     CoconutLayout.spacing_500h,
@@ -318,7 +318,6 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                     MediaQuery(
                       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                       child: CoconutSegmentedControl(
-                        labels: [t.all, t.send, t.receive],
                         isSelected: transactionTypes.map((type) => type == _selectedAnalysisTransactionType).toList(),
                         onPressed: (index) {
                           setState(() {
@@ -326,6 +325,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                           });
                           // 외부 콜백 호출 제거: 확인 버튼에서만 적용
                         },
+                        children: [Text(t.all), Text(t.send), Text(t.receive)],
                       ),
                     ),
                   ],

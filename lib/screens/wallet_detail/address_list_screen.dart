@@ -222,7 +222,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return Padding(
       padding: EdgeInsets.only(top: _appBarSize.height),
       child: CoconutSegmentedControl(
-        labels: [t.address_list_screen.receiving, t.address_list_screen.change],
         isSelected: [_isReceivingSelected, !_isReceivingSelected],
         onPressed: (index) async {
           if (index == 0) {
@@ -243,6 +242,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           await scrollToTop();
           await _initializeAddressList();
         },
+        children: [Text(t.address_list_screen.receiving), Text(t.address_list_screen.change)],
       ),
     );
   }

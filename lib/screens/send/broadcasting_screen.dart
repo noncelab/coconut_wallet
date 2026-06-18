@@ -65,12 +65,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
       if (result.isFailure) {
         vibrateMedium();
+        String message = t.alert.error_send.broadcasting_failed(error: result.error.message);
+        if (_viewModel.isTaprootScriptPathWallet && result.error.message.contains('non-final')) {
+          message = t.alert.error_send.non_final_taproot_child;
+        }
         if (!mounted) return;
-        showAlertDialog(
-          context: context,
-          title: t.broadcasting_screen.error_popup_title,
-          content: t.alert.error_send.broadcasting_failed(error: result.error.message),
-        );
+        showAlertDialog(context: context, title: t.broadcasting_screen.error_popup_title, content: message);
         return;
       }
 
@@ -306,7 +306,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         }
       } catch (e) {
         vibrateMedium();
-        showAlertDialog(context: context, content: t.alert.error_tx.not_parsed(error: e));
+        showAlertDialog(
+          context: context,
+          content: t.alert.error_tx.not_parsed(error: e),
+          onClosed: () => Navigator.pop(context),
+        );
       }
 
       _setOverlayLoading(false);

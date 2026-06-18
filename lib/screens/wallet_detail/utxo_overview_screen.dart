@@ -239,7 +239,6 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
       customTitle: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 260),
         child: CoconutSegmentedControl(
-          labels: [t.utxo_overview_screen.by_amount, t.utxo_overview_screen.by_tag],
           isSelected: [_isByAmount, !_isByAmount],
           onPressed: (index) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -254,6 +253,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             });
           },
           labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          children: [Text(t.utxo_overview_screen.by_amount), Text(t.utxo_overview_screen.by_tag)],
         ),
       ),
       titlePadding: const EdgeInsets.symmetric(horizontal: 16),

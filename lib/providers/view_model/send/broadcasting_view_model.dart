@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -91,6 +93,17 @@ class BroadcastingViewModel extends ChangeNotifier {
   Transaction? get signedTx => _signedTx;
   bool get isFromSignedDraft => _signedDraftId != null;
   bool get isAlreadySaved => isFromSignedDraft || _savedDraftId != null;
+
+  bool get isTaprootScriptPathWallet {
+    final walletId = _sendInfoProvider.walletId;
+    if (walletId == null) return false;
+    try {
+      final wallet = _walletProvider.getWalletById(walletId);
+      return wallet is TaprootWalletListItem && wallet.defaultSpendType == TaprootSpendType.scriptPath;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Electrum 브로드캐스트 실패 시 [Result]의 `error` getter(`AppError`)에 담기는 에러 코드
   /// - `1004` [ErrorCodes.nodeConnectionError]: `IsolateManager`에서 명령 전 소켓 상태 선검사 실패·종료

@@ -443,6 +443,10 @@ send_screen:
   toast:
     draft_utxo_used: "以前に選択したビットコインはすでに使用されています。UTXOを再選択してください。"
     draft_utxo_locked: "以前に選択したビットコインがロックされています。UTXOを再選択してください。"
+  taproot:
+    sign_path: "署名経路"
+    sign_by_parent: "親キーで署名します"
+    sign_by_child: "子キーで署名します"
 
 utxo_selection_screen:
   title: "UTXO選択"
@@ -709,6 +713,8 @@ wallet_info_screen:
   tooltip:
     mfp_placeholder_description: "これは拡張公開鍵で追加されたウォレットで\nマスターフィンガープリントが入力されていないため\n00000000として表示されています。"
     wallet_backup_data: "これはこのウォレットのBSMS(BIP-129)バックアップ情報です。デバイスの紛失や交換の場合に、このデータを使用してマルチシグウォレットを再構築できます。外部で共有する際は注意して保管してください。"
+    taproot_wallet_backup_data: "これはこのウォレットのバックアップ情報です。端末の紛失や交換の際、このデータを使用して相続ウォレットを再構成できます。安全に保管し、外部への共有には十分ご注意ください。"
+    taproot_created_at: "ココナッツボルトでこのウォレットを作成した日時です。"
     confirm_backup_data:
       step1_em: "ココナッツボルトで$nameウォレットの詳細画面に移動した後"
       step2_preposition: ""
@@ -719,6 +725,14 @@ wallet_info_screen:
       select: "選択"
   error:
     delete: "ウォレットの削除に失敗しました"
+wallet_signer_section:
+  title: "署名方式"
+  segmented_control:
+    parent_key: "親キーで"
+    child_key: "子キーで"
+    currently_using: "現在使用中"
+    default_path: "デフォルトのパス"
+    inheritance_path: "継承パス"
 
 transaction_fee_bumping_screen:
   rbf: "RBF"
@@ -1033,6 +1047,7 @@ alert:
     insufficient_balance: "残高が不足しています。"
     minimum_amount: "$amountから送信できます。"
     insufficient_fee: "[送信失敗]\n手数料を増やして\n再度お試しください。"
+    non_final_taproot_child: "[送信失敗]\n子ウォレットの相続日時を確認してください。"
   signed_psbt:
     wrong_send_info: "送信情報が異なります。\n最初からやり直してください。"
     need_more_sign: "$count個の署名が必要です。"
@@ -1130,3 +1145,22 @@ long_pressed_menu:
   go_to_home_screen_settings: "ホーム画面設定に移動"
   hide_home_widget_title: "ホーム画面から '${widgetName}' ウィジェットを非表示にしますか？"
   hide_home_widget_description: "後で右上のメニューボタン > 'ホーム画面設定' メニューから再表示できます。"
+
+taproot:
+  parent: "親ウォレット"
+  role_description_card:
+    signer: "署名者"
+    co_signer: "共同署名者"
+    heir: "継承人"
+    single_parent_description: "私はこのウォレットの署名者です。\n普段からこのウォレットを使用できます。"
+    multi_parent_description: "私はこのウォレットの共同署名者です。\n他の共同署名者と一緒に署名することで資産を使用できます。"
+    child_description: "私はこのウォレットの継承人です。\n決められた時間が経過すると資産を使用できるようになります。"
+  participant_card:
+    me: "自分"
+    co_signer: "共同署名者"
+    beneficiary: "条件付き署名者"
+    signer: "署名者"
+    locktime_after: "${dateTime} 以降"
+  setup_summary_card:
+    signer_configuration: "署名構成"
+    inheritance_condition: "相続条件"

@@ -6,7 +6,7 @@ class ConfirmBackupDataViewModel extends ChangeNotifier {
   late final IQrScanDataHandler _qrDataHandler;
 
   ConfirmBackupDataViewModel() {
-    _qrDataHandler = CoconutQrScanDataHandler();
+    _qrDataHandler = CoconutWalletAddQrScanDataHandler();
   }
 
   IQrScanDataHandler get qrDataHandler => _qrDataHandler;

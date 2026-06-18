@@ -443,6 +443,10 @@ send_screen:
   toast:
     draft_utxo_used: "Previously selected bitcoin has already been spent. Please select UTXOs again."
     draft_utxo_locked: "Previously selected bitcoin has been locked. Please select UTXOs again."
+  taproot:
+    sign_path: "Signing Path"
+    sign_by_parent: "Sign with parent key"
+    sign_by_child: "Sign with child key"
 
 utxo_selection_screen:
   title: "Select UTXOs"
@@ -708,6 +712,8 @@ wallet_info_screen:
   tooltip:
     mfp_placeholder_description: "This is a wallet added with extended public key\nand the master fingerprint was not entered\nso it is displayed as 00000000."
     wallet_backup_data: "This is the BSMS(BIP-129) backup information for this wallet. You can use this data to reconstruct the multisig wallet in case of device loss or replacement. Please keep it safe and be careful when sharing externally."
+    taproot_wallet_backup_data: "This is the backup information for this wallet. You can use this data to reconstruct the inheritance wallet in case of device loss or replacement. Please keep it safe and be careful when sharing externally."
+    taproot_created_at: "This is the date this wallet was created in Coconut Vault"
     confirm_backup_data:
       step1_em: "Go to $name wallet detail screen"
       step2_preposition: "1. "
@@ -718,6 +724,14 @@ wallet_info_screen:
       select: "Select"
   error:
     delete: "Failed to delete wallet"
+wallet_signer_section:
+  title: "Signing Method"
+  segmented_control:
+    parent_key: "With Parent Key"
+    child_key: "With Child Key"
+    currently_using: "Currently using"
+    default_path: "Default path"
+    inheritance_path: "Inheritance path"
 
 transaction_fee_bumping_screen:
   rbf: "RBF"
@@ -1032,6 +1046,7 @@ alert:
     insufficient_balance: "Insufficient balance"
     minimum_amount: "You can send at least $amount"
     insufficient_fee: "[Send Failed]\nPlease try again by\nincreasing the fee rate."
+    non_final_taproot_child: "[Send Failed]\nPlease check the child wallet's inheritance date and time."
   signed_psbt:
     wrong_send_info: "Send information is different.\nPlease try again from the beginning."
     need_more_sign: "Need $count more signatures"
@@ -1129,3 +1144,22 @@ long_pressed_menu:
   go_to_home_screen_settings: "Go to Home Screen Settings"
   hide_home_widget_title: "Hide '${widgetName}' widget on the home screen?"
   hide_home_widget_description: "You can show it again later by going to the 'Home Screen Settings' menu in the top right menu button."
+
+taproot:
+  parent: "Parent Wallet"
+  role_description_card:
+    signer: "signer"
+    co_signer: "co-signer"
+    heir: "heir"
+    single_parent_description: "I am the signer of this wallet.\nI can use this wallet normally."
+    multi_parent_description: "I am a co-signer of this wallet.\nAssets can be used by signing with other co-signers."
+    child_description: "I am an heir of this wallet.\nAssets can be used after a set point in time."
+  participant_card:
+    me: "Me"
+    co_signer: "Co-signer"
+    beneficiary: "Conditional Signer"
+    signer: "Signer"
+    locktime_after: "After ${dateTime}"
+  setup_summary_card:
+    signer_configuration: "Signer Configuration"
+    inheritance_condition: "Inheritance Condition"

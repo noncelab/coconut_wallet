@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
+import 'package:coconut_wallet/model/taproot_script_path_config.dart';
 import 'package:coconut_wallet/model/wallet/multisig_config.dart';
 
 abstract class WalletListItemBase {
@@ -15,7 +16,6 @@ abstract class WalletListItemBase {
   WalletImportSource walletImportSource;
   int receiveUsedIndex;
   int changeUsedIndex;
-  // bool isFavorite = false;
 
   late WalletBase walletBase;
 
@@ -31,7 +31,6 @@ abstract class WalletListItemBase {
     required this.walletImportSource,
     this.receiveUsedIndex = -1,
     this.changeUsedIndex = -1,
-    // this.isFavorite = false,
   });
 
   @override

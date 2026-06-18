@@ -16,13 +16,13 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 3.12.3+1
+version: 3.13.0+1
 app_versions:
-  ios_regtest: 3.12.3+1
-  ios_mainnet: 0.12.3+3
-  aos_regtest: 3.12.3+80
-  aos_mainnet: 0.12.3+76
-
+  ios_regtest: 3.13.0+0
+  ios_mainnet: 0.13.0+1
+  aos_regtest: 3.13.0+80
+  aos_mainnet: 0.13.0+77
+  
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -84,13 +84,16 @@ dependencies:
   ur:
     path: lib/packages/bc-ur-dart
   shimmer: ^3.0.0
-  coconut_lib: 1.0.4
   base32: ^2.1.3
   share_plus: ^11.1.0
   mobile_scanner: 7.0.1
   #firebase_core: ^3.15.2
   #firebase_analytics: ^11.6.0
   vpn_detector: ^1.2.0
+  coconut_lib:
+    git:
+      url: https://github.com/noncelab/coconut_lib
+      ref: feat/p2tr
   coconut_design_system: 0.10.0
   
 dev_dependencies:
@@ -316,6 +319,8 @@ flutter:
     - assets/svg/merge-utxos.svg
     - assets/svg/split-utxo.svg
     - assets/svg/dust.svg
+    - assets/svg/parent.svg
+    - assets/svg/child.svg
 
   fonts:
     - family: SpaceGrotesk

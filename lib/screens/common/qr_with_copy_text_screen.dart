@@ -42,6 +42,7 @@ class QrWithCopyTextScreen extends StatefulWidget {
   final ScrollController? scrollController;
   final bool showBottomActions;
   final bool showQrEmbedImage;
+  final double? qrInternalPadding;
 
   const QrWithCopyTextScreen({
     super.key,
@@ -61,6 +62,7 @@ class QrWithCopyTextScreen extends StatefulWidget {
     this.scrollController,
     this.showBottomActions = false,
     this.showQrEmbedImage = false,
+    this.qrInternalPadding,
   });
 
   @override
@@ -303,6 +305,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                   qrData: displayQrData,
                   displayText: displayTextData,
                   isAddress: widget.isAddress,
+                  qrInternalPadding: widget.qrInternalPadding,
                 ),
               ),
               if (widget.footer != null) widget.footer!,

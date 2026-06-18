@@ -54,6 +54,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_scree
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
@@ -293,6 +294,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       context,
                       (args) => WalletBackupDataScreen(id: args['id'], walletName: args['walletName']),
                     ),
+                '/taproot-wallet-backup-data':
+                    (context) => buildScreenWithArgs(
+                      context,
+                      (args) => TaprootWalletBackupDataScreen(id: args['id'], walletName: args['walletName']),
+                    ),
                 '/address-search':
                     (context) => buildScreenWithArgs(context, (args) => AddressSearchScreen(id: args['id'])),
                 '/transaction-detail':
@@ -344,7 +350,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       context,
                       (args) => WalletInfoScreen(
                         id: args['id'],
-                        isMultisig: args['isMultisig'],
+                        walletType: args['walletType'],
                         entryPoint: args['entryPoint'],
                         showMfpInput: args['showMfpInput'] ?? false,
                       ),

@@ -4,7 +4,8 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 
 enum WalletType {
   singleSignature,
-  multiSignature;
+  multiSignature,
+  taproot;
 
   AddressType get addressType {
     switch (this) {
@@ -12,9 +13,15 @@ enum WalletType {
         return AddressType.p2wpkh;
       case WalletType.multiSignature:
         return AddressType.p2wsh;
+      case WalletType.taproot:
+        return AddressType.p2tr;
     }
   }
 }
+
+/// Taproot 트랜잭션의 spend 경로.
+/// 기본값 선택 규칙은 `TaprootWalletListItem.defaultSpendType` 참고.
+enum TaprootSpendType { keyPath, scriptPath }
 
 enum WalletSyncResult {
   newWalletAdded,

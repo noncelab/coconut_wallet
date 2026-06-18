@@ -284,9 +284,6 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
   int get splitAmountSats {
     if (_splitAmountInput.isEmpty) return 0;
-    print('-> ${_splitAmountInput}');
-    print('-> ${_splitAmountInput.toDoubleSafe()}');
-    print('-> ${currentUnit.toSatoshi(_splitAmountInput.toDoubleSafe() ?? 0.0)}');
     final splitAmountDouble = _splitAmountInput.toDoubleSafe() ?? 0.0;
     return currentUnit.toSatoshi(splitAmountDouble);
   }
@@ -470,6 +467,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       _isAmountInsufficientAfterFee = true;
       _errorEstimatedFee = e.estimatedFee;
     } catch (e) {
+      Logger.error(e);
       _unexpectedErrorMessage = e.toString();
     }
 

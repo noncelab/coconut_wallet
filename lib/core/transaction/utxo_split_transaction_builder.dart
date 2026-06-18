@@ -8,6 +8,7 @@ import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -63,6 +64,7 @@ class UtxoSplitTransactionBuilder {
   double? _outputVBytes;
   double? _oneOutputTxVBytes;
   List<int>? _cachedNiceSplitCounts;
+  late final Policy? _scriptPathPolicy;
 
   static const int _outputCountVarIntThreshold = 253;
   static const List<int> niceAmounts = [
@@ -109,6 +111,12 @@ class UtxoSplitTransactionBuilder {
        assert(feeRate > 0, 'feeRate must be greater than 0'),
        _utxo = utxo,
        _feeRate = feeRate {
+    _scriptPathPolicy =
+        walletListItemBase is TaprootWalletListItem
+            ? ((walletListItemBase as TaprootWalletListItem).defaultSpendType == TaprootSpendType.scriptPath
+                ? (walletListItemBase as TaprootWalletListItem).defaultPolicy
+                : null)
+            : null;
     /** output 개수가 253 이상일 때 tx 크기가 2 증가
      * Segwit tx에서 witness가 아닌 base 영역이 2bytes 증가하므로 수수료도 2 * feeRate 증가
      * output length: if (0 ~ 252) → 1 byte, if (253 ~ 65535) → 3 bytes, if (65536 ~ 4294967295) → 5 bytes
@@ -142,16 +150,26 @@ class UtxoSplitTransactionBuilder {
     }
   }
 
+  double _getOneOutputTxVBytesOfInheritancePolicy() {
+    assert(_scriptPathPolicy != null);
+    assert(_scriptPathPolicy is InheritancePolicy);
+    return 131;
+  }
+
   Future<void> _initOutputVBytes() async {
     if (_outputVBytes != null) return;
 
-    if (walletListItemBase.walletType == WalletType.singleSignature) {
-      _oneOutputTxVBytes = 110;
-      _outputVBytes = 31;
-    } else {
-      final wallet = walletListItemBase as MultisigWalletListItem;
-      _oneOutputTxVBytes = 132 + (wallet.signers.length - 2) * 8 + (wallet.requiredSignatureCount - 1) * 18;
-      _outputVBytes = 43;
+    switch (walletListItemBase.walletType) {
+      case WalletType.singleSignature:
+        _oneOutputTxVBytes = 110;
+        _outputVBytes = 31;
+      case WalletType.multiSignature:
+        final wallet = walletListItemBase as MultisigWalletListItem;
+        _oneOutputTxVBytes = 132 + (wallet.signers.length - 2) * 8 + (wallet.requiredSignatureCount - 1) * 18;
+        _outputVBytes = 43;
+      case WalletType.taproot:
+        _oneOutputTxVBytes = _scriptPathPolicy == null ? 111 : _getOneOutputTxVBytesOfInheritancePolicy();
+        _outputVBytes = 43;
     }
     assert(_outputVBytes != null && _oneOutputTxVBytes != null);
   }
@@ -640,6 +658,7 @@ class UtxoSplitTransactionBuilder {
             feeRate: feeRate,
             changeDerivationPath: changeDerivationPath,
             walletListItemBase: walletListItemBase,
+            scriptPathPolicy: _scriptPathPolicy,
           ),
         );
 
@@ -701,6 +720,7 @@ class UtxoSplitTransactionBuilder {
             walletListItemBase: request.walletListItemBase,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
+            scriptPathPolicy: request.scriptPathPolicy,
           ).build();
       request.sendPort.send(['result', result]);
     } catch (e) {
@@ -756,6 +776,7 @@ class _SplitBuildIsolateRequest {
   final double feeRate;
   final String changeDerivationPath;
   final WalletListItemBase walletListItemBase;
+  final Policy? scriptPathPolicy;
 
   const _SplitBuildIsolateRequest({
     required this.sendPort,
@@ -764,5 +785,6 @@ class _SplitBuildIsolateRequest {
     required this.feeRate,
     required this.changeDerivationPath,
     required this.walletListItemBase,
+    required this.scriptPathPolicy,
   });
 }

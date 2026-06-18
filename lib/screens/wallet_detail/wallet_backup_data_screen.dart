@@ -31,6 +31,7 @@ class WalletBackupDataScreen extends StatelessWidget {
             qrDataMap: qrDataMap,
             textDataMap: textDataMap,
             showPulldownMenu: true,
+            qrInternalPadding: 24,
 
             tooltipDescription: Container(
               margin: const EdgeInsets.only(top: 4, bottom: 16),
