@@ -587,9 +587,10 @@ class PreferenceProvider extends ChangeNotifier {
   List<FiatCode> get orderedFiats => _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
 
   static const Map<FiatCode, List<FiatCode>> _fiatOrder = {
-    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY],
-    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
-    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW],
+    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY, FiatCode.EUR],
+    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY, FiatCode.EUR],
+    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW, FiatCode.EUR],
+    FiatCode.EUR: [FiatCode.EUR, FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
   };
 
   List<FiatCode> _loadWalletListVisibleFiats() {
