@@ -14,6 +14,7 @@ import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_toggle_row.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
@@ -321,9 +322,9 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: CoconutSwitch(
         isOn: isOn,
-        activeColor: CoconutColors.gray100,
-        trackColor: CoconutColors.gray600,
-        thumbColor: CoconutColors.gray800,
+        activeColor: context.coconutColors.switchActiveTrack,
+        trackColor: context.coconutColors.switchInactiveTrack,
+        thumbColor: context.coconutColors.switchThumb,
         onChanged: onChanged,
         scale: 0.75,
       ),

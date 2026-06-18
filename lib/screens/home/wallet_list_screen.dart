@@ -745,11 +745,11 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
             child: Column(
               children: [
                 SingleButton(
-                  customPadding: const EdgeInsets.fromLTRB(2, 0, 2, 16),
+                  customPadding: const EdgeInsets.fromLTRB(2, 8, 2, 8),
                   title: t.wallet_list.bottom_sheet.hide_fiat_price,
                   subtitle: t.wallet_list.bottom_sheet.hide_fiat_price_description,
                   isVerticalSubtitle: true,
-                  backgroundColor: context.coconutColors.background,
+                  backgroundColor: context.coconutColors.surfaceBottomSheet,
                   onPressed: () {
                     viewModel.toggleWalletListFiatHidden();
                     vibrateExtraLight();
@@ -757,9 +757,9 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                   rightElement: CoconutSwitch(
                     isOn: viewModel.isWalletListFiatHidden,
                     scale: 0.7,
-                    activeColor: CoconutColors.gray100,
-                    trackColor: CoconutColors.gray600,
-                    thumbColor: CoconutColors.gray800,
+                    activeColor: context.coconutColors.switchActiveTrack,
+                    trackColor: context.coconutColors.switchInactiveTrack,
+                    thumbColor: context.coconutColors.switchThumb,
                     onChanged: (value) {
                       viewModel.setWalletListFiatHidden(value);
                       vibrateExtraLight();
@@ -816,7 +816,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: CoconutColors.gray800,
+                color: context.coconutColors.surfaceCard,
                 borderRadius: BorderRadius.circular(CoconutStyles.radius_50),
               ),
               width: 18,
@@ -841,14 +841,14 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
               duration: const Duration(milliseconds: 300),
               child: Text(
                 t.wallet_list.bottom_sheet.visible,
-                style: CoconutTypography.caption_10.copyWith(height: 1.4, color: CoconutColors.cyan),
+                style: CoconutTypography.caption_10.copyWith(height: 1.4, color: context.coconutColors.primary),
               ),
             ),
           ],
         ),
         ShrinkAnimationButton(
-          defaultColor: CoconutColors.gray700,
-          pressedColor: CoconutColors.gray800,
+          defaultColor: context.coconutColors.surface,
+          pressedColor: context.coconutColors.surfacePressed,
           borderRadius: 8,
           child: Container(
             constraints: const BoxConstraints(minWidth: 52),

@@ -1026,9 +1026,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             CoconutSwitch(
               scale: 0.7,
               isOn: _viewModel.isFeeSubtractedFromSendAmount,
-              activeColor: CoconutColors.gray100,
-              trackColor: CoconutColors.gray600,
-              thumbColor: CoconutColors.gray800,
+              activeColor: context.coconutColors.switchActiveTrack,
+              trackColor: context.coconutColors.switchInactiveTrack,
+              thumbColor: context.coconutColors.switchThumb,
               onChanged: (isOn) => _viewModel.setIsFeeSubtractedFromSendAmount(isOn),
             ),
           ],

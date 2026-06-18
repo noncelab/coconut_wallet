@@ -130,6 +130,11 @@ class CoconutColors {
   final Color divider;
   final Color txFlowLine;
   final Color feeBumpingHistoryLine;
+  final Color switchActiveTrack;
+  final Color switchInactiveTrack;
+  final Color switchThumb;
+  final Color switchTrackDisabled;
+  final Color switchThumbDisabled;
 
   const CoconutColors({
     required this.background,
@@ -181,6 +186,11 @@ class CoconutColors {
     required this.divider,
     required this.txFlowLine,
     required this.feeBumpingHistoryLine,
+    required this.switchActiveTrack,
+    required this.switchInactiveTrack,
+    required this.switchThumb,
+    required this.switchTrackDisabled,
+    required this.switchThumbDisabled,
   });
 
   factory CoconutColors.dark() {
@@ -234,6 +244,11 @@ class CoconutColors {
       divider: ds.CoconutColors.gray800,
       txFlowLine: ds.CoconutColors.gray600,
       feeBumpingHistoryLine: ds.CoconutColors.gray700,
+      switchActiveTrack: ds.CoconutColors.gray100,
+      switchInactiveTrack: ds.CoconutColors.gray600,
+      switchThumb: ds.CoconutColors.gray800,
+      switchTrackDisabled: ds.CoconutColors.gray700,
+      switchThumbDisabled: ds.CoconutColors.gray600,
     );
   }
 
@@ -288,6 +303,11 @@ class CoconutColors {
       divider: Color(0xFFE8E0F2),
       txFlowLine: Color.fromARGB(255, 180, 188, 209),
       feeBumpingHistoryLine: Color.fromARGB(255, 180, 188, 209),
+      switchActiveTrack: Color.fromARGB(255, 100, 140, 199),
+      switchInactiveTrack: Color.fromARGB(255, 196, 209, 235),
+      switchThumb: Color.fromARGB(255, 41, 79, 176),
+      switchTrackDisabled: Color(0xFFE2D9DE),
+      switchThumbDisabled: Color(0xFF727987),
     );
   }
 }
