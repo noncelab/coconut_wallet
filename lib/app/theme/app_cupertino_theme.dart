@@ -3,11 +3,14 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:flutter/cupertino.dart';
 
 CupertinoThemeData buildAppCupertinoTheme({CoconutThemeVariant? variant}) {
-  CoconutTheme.setTheme(Brightness.dark);
-  final tokens = resolveCoconutThemeExtension(variant: variant);
+  final resolvedVariant = variant ?? CoconutThemeController.currentVariant;
+  final brightness = CoconutThemeController.brightnessOf(resolvedVariant);
+  final tokens = resolveCoconutThemeExtension(variant: resolvedVariant);
+
+  CoconutTheme.setTheme(brightness);
 
   return CupertinoThemeData(
-    brightness: Brightness.dark,
+    brightness: brightness,
     primaryColor: tokens.colors.primary,
     scaffoldBackgroundColor: tokens.colors.background,
     textTheme: CupertinoTextThemeData(
