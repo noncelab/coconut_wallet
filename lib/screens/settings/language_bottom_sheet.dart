@@ -1,6 +1,5 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/selection_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +16,6 @@ class LanguageBottomSheet extends StatelessWidget {
   ];
 
   Future<void> _onLanguageSelected(BuildContext context, String code) async {
-    vibrateExtraLight();
     await context.read<PreferenceProvider>().changeLanguage(code);
     if (context.mounted) {
       Navigator.of(context).pop();
