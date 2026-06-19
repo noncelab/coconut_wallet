@@ -137,4 +137,12 @@ void _setupPluralResolvers() {
       return other ?? '';
     },
   );
+
+  LocaleSettings.setPluralResolverSync(
+    language: 'de',
+    cardinalResolver: (n, {zero, one, two, few, many, other}) {
+      if (n == 1 && one != null) return one;
+      return other ?? '';
+    },
+  );
 }

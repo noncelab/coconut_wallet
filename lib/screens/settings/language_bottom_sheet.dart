@@ -13,6 +13,7 @@ class LanguageBottomSheet extends StatelessWidget {
     _LanguageOption(code: 'en', title: t.language_bottom_sheet.english),
     _LanguageOption(code: 'jp', title: t.language_bottom_sheet.japanese),
     _LanguageOption(code: 'es', title: t.language_bottom_sheet.spanish),
+    _LanguageOption(code: 'de', title: t.language_bottom_sheet.german),
   ];
 
   Future<void> _onLanguageSelected(BuildContext context, String code) async {

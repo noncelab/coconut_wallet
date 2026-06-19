@@ -572,6 +572,7 @@ settings_screen:
     english: "English"
     japanese: "日本語"
     spanish: "Español"
+    german: "Deutsch"
   electrum_server: 
     server_address: "서버 주소"
     port: "포트"
@@ -1138,6 +1139,7 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+  german: "Deutsch"
 
 estimated_fee_bottom_sheet:
     title: "예상 수수료"

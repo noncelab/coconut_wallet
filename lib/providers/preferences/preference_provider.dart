@@ -79,6 +79,7 @@ class PreferenceProvider extends ChangeNotifier {
   bool get isEnglish => _language == "en";
   bool get isJapanese => _language == "jp";
   bool get isSpanish => _language == "es";
+  bool get isGerman => _language == "de";
 
   /// 선택된 통화
   late FiatCode _selectedFiat;
@@ -214,6 +215,9 @@ class PreferenceProvider extends ChangeNotifier {
       } else if (isSpanish) {
         LocaleSettings.setLocaleSync(AppLocale.es);
         Logger.log('Spanish locale applied successfully');
+      } else if (isGerman) {
+        LocaleSettings.setLocaleSync(AppLocale.de);
+        Logger.log('German locale applied successfully');
       }
 
       NumberFormatConfig.instance.update(_language);
@@ -237,6 +241,8 @@ class PreferenceProvider extends ChangeNotifier {
         await LocaleSettings.setLocale(AppLocale.en);
       } else if (isSpanish) {
         await LocaleSettings.setLocale(AppLocale.es);
+      } else if (isGerman) {
+        await LocaleSettings.setLocale(AppLocale.de);
       } else {
         // 기본값은 영어로 설정
         await LocaleSettings.setLocale(AppLocale.en);

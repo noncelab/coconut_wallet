@@ -356,6 +356,9 @@ class _SettingsScreen extends State<SettingsScreen> {
       case 'es':
         return t.settings_screen.locales.spanish;
       case 'en':
+        return t.settings_screen.locales.english;
+      case 'de':
+        return t.settings_screen.locales.german;
       default:
         return t.settings_screen.locales.english;
     }

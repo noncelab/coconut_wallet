@@ -19,7 +19,7 @@ class NumberFormatConfig {
 }
 
 /// 앱 언어 코드를 intl 로케일 코드로 매핑
-const Map<String, String> _appLanguageToIntlLocale = {'kr': 'ko', 'en': 'en', 'jp': 'ja', 'es': 'es'};
+const Map<String, String> _appLanguageToIntlLocale = {'kr': 'ko', 'en': 'en', 'jp': 'ja', 'es': 'es', 'de': 'de'};
 
 /// 앱 설정 언어 기반 소수점 구분자 반환 (기본값: '.')
 String getDecimalSeparatorForAppLanguage(String appLanguageCode) {
