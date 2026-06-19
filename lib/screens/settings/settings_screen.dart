@@ -168,6 +168,11 @@ class _SettingsScreen extends State<SettingsScreen> {
                               fiatDisplayName = FiatCode.JPY.code;
                               break;
                             case 'USD':
+                              fiatDisplayName = FiatCode.USD.code;
+                              break;
+                            case 'EUR':
+                              fiatDisplayName = FiatCode.EUR.code;
+                              break;
                             default:
                               fiatDisplayName = FiatCode.USD.code;
                               break;

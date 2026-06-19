@@ -1126,6 +1126,7 @@ fiat_bottom_sheet:
   krw_price: "Upbit 基準"
   usd_price: "Binance 基準"
   jpy_price: "Bitflyer 基準"
+  eur_price: "Binance 基準"
 
 language_bottom_sheet:
   title: "言語設定"

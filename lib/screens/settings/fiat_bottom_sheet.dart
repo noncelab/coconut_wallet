@@ -36,6 +36,12 @@ class FiatBottomSheet extends StatelessWidget {
               value: FiatCode.JPY,
               onTap: () => _onFiatSelected(context, FiatCode.JPY),
             ),
+            SelectionItem<FiatCode>(
+              title: FiatCode.EUR.code,
+              subtitle: t.fiat_bottom_sheet.eur_price,
+              value: FiatCode.EUR,
+              onTap: () => _onFiatSelected(context, FiatCode.EUR),
+            ),
           ],
         );
       },
