@@ -109,10 +109,14 @@ class WalletAddScannerViewModel extends ChangeNotifier {
 
   Future<ResultOfSyncFromVault> _addDescriptorWallet(String descriptor) async {
     final name = getNextThirdPartyWalletName(
-      WalletImportSource.descriptor,
+      _walletImportSource,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
     );
-    final wallet = _walletAddService.createWalletFromDescriptor(descriptor: descriptor, name: name);
+    final wallet = _walletAddService.createWalletFromDescriptor(
+      descriptor: descriptor,
+      name: name,
+      walletImportSource: _walletImportSource,
+    );
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 

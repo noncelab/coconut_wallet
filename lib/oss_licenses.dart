@@ -129,7 +129,6 @@ const allDependencies = <Package>[
   _plugin_platform_interface,
   _pointycastle,
   _pool,
-  _posix,
   _process,
   _provider,
   _pub_semver,
@@ -421,14 +420,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// archive 4.0.7
+/// archive 3.6.1
 const _archive = Package(
   name: 'archive',
   description:
       'Provides encoders and decoders for various archive and compression formats such as zip, tar, bzip2, gzip, and zlib.',
   repository: 'https://github.com/brendan-duncan/archive',
   authors: [],
-  version: '4.0.7',
+  version: '3.6.1',
   license: '''The MIT License
 
 Copyright (c) 2013-2021 Brendan Duncan.
@@ -453,7 +452,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.''',
   isMarkdown: false,
   isSdk: false,
-  dependencies: [PackageRef('crypto'), PackageRef('path'), PackageRef('posix')],
+  dependencies: [PackageRef('crypto'), PackageRef('path')],
 );
 
 /// args 2.7.0
@@ -746,13 +745,13 @@ SOFTWARE.''',
   dependencies: [PackageRef('args'), PackageRef('meta')],
 );
 
-/// build_config 1.1.2
+/// build_config 1.1.1
 const _build_config = Package(
   name: 'build_config',
   description: 'Format definition and support for parsing `build.yaml` configuration.',
   repository: 'https://github.com/dart-lang/build/tree/master/build_config',
   authors: [],
-  version: '1.1.2',
+  version: '1.1.1',
   license: '''Copyright 2017, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -791,13 +790,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// build_daemon 4.0.4
+/// build_daemon 4.0.2
 const _build_daemon = Package(
   name: 'build_daemon',
   description: 'A daemon for running Dart builds.',
   repository: 'https://github.com/dart-lang/build/tree/master/build_daemon',
   authors: [],
-  version: '4.0.4',
+  version: '4.0.2',
   license: '''Copyright 2019, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -897,13 +896,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// build_runner 2.4.14
+/// build_runner 2.4.15
 const _build_runner = Package(
   name: 'build_runner',
   description: 'A build system for Dart code generation and modular compilation.',
   repository: 'https://github.com/dart-lang/build/tree/master/build_runner',
   authors: [],
-  version: '2.4.14',
+  version: '2.4.15',
   license: '''Copyright 2016, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -949,6 +948,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('frontend_server_client'),
     PackageRef('glob'),
     PackageRef('graphs'),
+    PackageRef('http'),
     PackageRef('http_multi_server'),
     PackageRef('io'),
     PackageRef('js'),
@@ -966,6 +966,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('stream_transform'),
     PackageRef('timing'),
     PackageRef('watcher'),
+    PackageRef('web'),
     PackageRef('web_socket_channel'),
     PackageRef('yaml'),
   ],
@@ -1071,7 +1072,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [],
 );
 
-/// built_value 8.12.0
+/// built_value 8.10.1
 const _built_value = Package(
   name: 'built_value',
   description:
@@ -1079,7 +1080,7 @@ const _built_value = Package(
 ''',
   repository: 'https://github.com/google/built_value.dart/tree/master/built_value',
   authors: [],
-  version: '8.12.0',
+  version: '8.10.1',
   license: '''Copyright 2015, Google Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -1177,14 +1178,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('meta'), PackageRef('collection')],
 );
 
-/// carousel_slider 5.1.2
+/// carousel_slider 5.1.1
 const _carousel_slider = Package(
   name: 'carousel_slider',
   description: 'A carousel slider widget, support infinite scroll and custom child widget.',
   homepage: 'https://github.com/serenader2014/flutter_carousel_slider',
   repository: 'https://github.com/serenader2014/flutter_carousel_slider',
   authors: [],
-  version: '5.1.2',
+  version: '5.1.1',
   license: '''MIT License
 
 Copyright (c) 2017 serenader
@@ -1211,14 +1212,14 @@ SOFTWARE.''',
   dependencies: [PackageRef('flutter')],
 );
 
-/// cbor 6.3.7
+/// cbor 6.3.5
 const _cbor = Package(
   name: 'cbor',
   description: 'A CBOR library for Dart. An RFC8949 compliant encoding/decoding CBOR implementation.',
   homepage: 'https://github.com/shamblett/cbor',
   repository: 'https://github.com/shamblett/cbor',
   authors: [],
-  version: '6.3.7',
+  version: '6.3.5',
   license: '''The MIT License (MIT)
 
 Copyright (c) 2016 Steve Hamblett
@@ -1249,7 +1250,6 @@ SOFTWARE.''',
     PackageRef('convert'),
     PackageRef('ieee754'),
     PackageRef('meta'),
-    PackageRef('characters'),
   ],
 );
 
@@ -1673,13 +1673,13 @@ Licensor: Nonce Lab''',
   ],
 );
 
-/// code_builder 4.11.0
+/// code_builder 4.10.1
 const _code_builder = Package(
   name: 'code_builder',
   description: 'A fluent, builder-based library for generating valid Dart code.',
   repository: 'https://github.com/dart-lang/tools/tree/main/pkgs/code_builder',
   authors: [],
-  version: '4.11.0',
+  version: '4.10.1',
   license: '''Copyright 2016, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -1757,7 +1757,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [],
 );
 
-/// connectivity_plus 6.1.5
+/// connectivity_plus 6.1.4
 const _connectivity_plus = Package(
   name: 'connectivity_plus',
   description:
@@ -1765,7 +1765,7 @@ const _connectivity_plus = Package(
   homepage: 'https://github.com/fluttercommunity/plus_plugins',
   repository: 'https://github.com/fluttercommunity/plus_plugins/tree/main/packages/connectivity_plus/connectivity_plus',
   authors: [],
-  version: '6.1.5',
+  version: '6.1.4',
   license: '''Copyright 2017 The Chromium Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -1885,13 +1885,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('typed_data')],
 );
 
-/// coverage 1.15.0
+/// coverage 1.13.1
 const _coverage = Package(
   name: 'coverage',
   description: 'Coverage data manipulation and formatting',
   repository: 'https://github.com/dart-lang/tools/tree/main/pkgs/coverage',
   authors: [],
-  version: '1.15.0',
+  version: '1.13.1',
   license: '''Copyright 2014, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -1932,7 +1932,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('source_maps'),
     PackageRef('stack_trace'),
     PackageRef('vm_service'),
-    PackageRef('yaml'),
   ],
 );
 
@@ -3007,14 +3006,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// device_info_plus_platform_interface 7.0.3
+/// device_info_plus_platform_interface 7.0.2
 const _device_info_plus_platform_interface = Package(
   name: 'device_info_plus_platform_interface',
   description: 'A common platform interface for the device_info_plus plugin.',
   homepage: 'https://github.com/fluttercommunity/plus_plugins',
   repository: 'https://github.com/fluttercommunity/plus_plugins/tree/main/packages/',
   authors: [],
-  version: '7.0.3',
+  version: '7.0.2',
   license: '''Copyright 2017 The Chromium Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -3047,7 +3046,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('flutter'), PackageRef('meta'), PackageRef('plugin_platform_interface')],
 );
 
-/// dio 5.9.0
+/// dio 5.8.0+1
 const _dio = Package(
   name: 'dio',
   description: '''A powerful HTTP networking package,
@@ -3058,7 +3057,7 @@ Custom adapters, Transformers, etc.
   homepage: 'https://github.com/cfug/dio',
   repository: 'https://github.com/cfug/dio/blob/main/dio',
   authors: [],
-  version: '5.9.0',
+  version: '5.8.0+1',
   license: '''MIT License
 
 Copyright (c) 2018 Wen Du (wendux)
@@ -3088,7 +3087,6 @@ SOFTWARE.''',
     PackageRef('collection'),
     PackageRef('http_parser'),
     PackageRef('meta'),
-    PackageRef('mime'),
     PackageRef('path'),
     PackageRef('dio_web_adapter'),
   ],
@@ -3761,13 +3759,13 @@ const _fake_async = Package(
   dependencies: [],
 );
 
-/// ffi 2.1.4
+/// ffi 2.1.3
 const _ffi = Package(
   name: 'ffi',
   description: 'Utilities for working with Foreign Function Interface (FFI) code.',
   repository: 'https://github.com/dart-lang/native/tree/main/pkgs/ffi',
   authors: [],
-  version: '2.1.4',
+  version: '2.1.3',
   license: '''Copyright 2019, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -4246,13 +4244,13 @@ SOFTWARE.''',
   ],
 );
 
-/// flutter_plugin_android_lifecycle 2.0.30
+/// flutter_plugin_android_lifecycle 2.0.26
 const _flutter_plugin_android_lifecycle = Package(
   name: 'flutter_plugin_android_lifecycle',
   description: 'Flutter plugin for accessing an Android Lifecycle within other plugins.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/flutter_plugin_android_lifecycle',
   authors: [],
-  version: '2.0.30',
+  version: '2.0.26',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -4546,14 +4544,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// flutter_svg 2.2.1
+/// flutter_svg 2.1.0
 const _flutter_svg = Package(
   name: 'flutter_svg',
   description:
       'An SVG rendering and widget library for Flutter, which allows painting and displaying Scalable Vector Graphics 1.1 files.',
   repository: 'https://github.com/flutter/packages/tree/main/third_party/packages/flutter_svg',
   authors: [],
-  version: '2.2.1',
+  version: '2.1.0',
   license: '''Copyright (c) 2018 Dan Field
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -4740,13 +4738,13 @@ SOFTWARE.''',
   dependencies: [],
 );
 
-/// http 1.5.0
+/// http 1.4.0
 const _http = Package(
   name: 'http',
   description: 'A composable, multi-platform, Future-based API for HTTP requests.',
   repository: 'https://github.com/dart-lang/http/tree/master/pkgs/http',
   authors: [],
-  version: '1.5.0',
+  version: '1.4.0',
   license: '''Copyright 2014, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -4818,13 +4816,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('async')],
 );
 
-/// http_parser 4.1.2
+/// http_parser 4.0.2
 const _http_parser = Package(
   name: 'http_parser',
   description: 'A platform-independent package for parsing and serializing HTTP formats.',
-  repository: 'https://github.com/dart-lang/http/tree/master/pkgs/http_parser',
+  repository: 'https://github.com/dart-lang/http_parser',
   authors: [],
-  version: '4.1.2',
+  version: '4.0.2',
   license: '''Copyright 2014, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -5399,13 +5397,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// local_auth_android 1.0.52
+/// local_auth_android 1.0.47
 const _local_auth_android = Package(
   name: 'local_auth_android',
   description: 'Android implementation of the local_auth plugin.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/local_auth/local_auth_android',
   authors: [],
-  version: '1.0.52',
+  version: '1.0.47',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -5441,13 +5439,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// local_auth_darwin 1.6.0
+/// local_auth_darwin 1.4.3
 const _local_auth_darwin = Package(
   name: 'local_auth_darwin',
   description: 'iOS implementation of the local_auth plugin.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/local_auth/local_auth_darwin',
   authors: [],
-  version: '1.6.0',
+  version: '1.4.3',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -5592,14 +5590,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [],
 );
 
-/// lottie 3.3.1
+/// lottie 3.2.0
 const _lottie = Package(
   name: 'lottie',
   description:
       'Render After Effects animations natively on Flutter. This package is a pure Dart implementation of a Lottie player.',
   repository: 'https://github.com/xvrh/lottie-flutter',
   authors: [],
-  version: '3.3.1',
+  version: '3.2.0',
   license: '''MIT License
 
 Copyright (c) [year] [fullname]
@@ -5932,14 +5930,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [],
 );
 
-/// mime 2.0.0
+/// mime 1.0.6
 const _mime = Package(
   name: 'mime',
   description:
       'Utilities for handling media (MIME) types, including determining a type from a file extension and file contents.',
   repository: 'https://github.com/dart-lang/tools/tree/main/pkgs/mime',
   authors: [],
-  version: '2.0.0',
+  version: '1.0.6',
   license: '''Copyright 2015, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -6829,7 +6827,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('path')],
 );
 
-/// package_info_plus 8.3.1
+/// package_info_plus 8.3.0
 const _package_info_plus = Package(
   name: 'package_info_plus',
   description:
@@ -6837,7 +6835,7 @@ const _package_info_plus = Package(
   homepage: 'https://github.com/fluttercommunity/plus_plugins',
   repository: 'https://github.com/fluttercommunity/plus_plugins/tree/main/packages/package_info_plus/package_info_plus',
   authors: [],
-  version: '8.3.1',
+  version: '8.3.0',
   license: '''Copyright 2017 The Chromium Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -6880,14 +6878,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// package_info_plus_platform_interface 3.2.1
+/// package_info_plus_platform_interface 3.2.0
 const _package_info_plus_platform_interface = Package(
   name: 'package_info_plus_platform_interface',
   description: 'A common platform interface for the package_info_plus plugin.',
   homepage: 'https://github.com/fluttercommunity/plus_plugins',
   repository: 'https://github.com/fluttercommunity/plus_plugins/tree/main/packages/',
   authors: [],
-  version: '3.2.1',
+  version: '3.2.0',
   license: '''Copyright 2017 The Chromium Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -7037,13 +7035,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// path_provider_android 2.2.18
+/// path_provider_android 2.2.15
 const _path_provider_android = Package(
   name: 'path_provider_android',
   description: 'Android implementation of the path_provider plugin.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/path_provider/path_provider_android',
   authors: [],
-  version: '2.2.18',
+  version: '2.2.15',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -7074,13 +7072,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('flutter'), PackageRef('path_provider_platform_interface')],
 );
 
-/// path_provider_foundation 2.4.2
+/// path_provider_foundation 2.4.1
 const _path_provider_foundation = Package(
   name: 'path_provider_foundation',
   description: 'iOS and macOS implementation of the path_provider plugin',
   repository: 'https://github.com/flutter/packages/tree/main/packages/path_provider/path_provider_foundation',
   authors: [],
-  version: '2.4.2',
+  version: '2.4.1',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -7233,17 +7231,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// petitparser 6.1.0
+/// petitparser 6.0.2
 const _petitparser = Package(
   name: 'petitparser',
   description: 'A dynamic parser framework to build efficient grammars and parsers quickly.',
   homepage: 'https://petitparser.github.io',
   repository: 'https://github.com/petitparser/dart-petitparser',
   authors: [],
-  version: '6.1.0',
+  version: '6.0.2',
   license: '''The MIT License
 
-Copyright (c) 2006-2025 Lukas Renggli.
+Copyright (c) 2006-2023 Lukas Renggli.
 All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -7265,7 +7263,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.''',
   isMarkdown: false,
   isSdk: false,
-  dependencies: [PackageRef('meta'), PackageRef('collection')],
+  dependencies: [PackageRef('meta')],
 );
 
 /// platform 3.1.6
@@ -7375,13 +7373,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.''',
   dependencies: [PackageRef('collection'), PackageRef('convert'), PackageRef('js')],
 );
 
-/// pool 1.5.2
+/// pool 1.5.1
 const _pool = Package(
   name: 'pool',
   description: 'Manage a finite pool of resources. Useful for controlling concurrent file system or network requests.',
-  repository: 'https://github.com/dart-lang/tools/tree/main/pkgs/pool',
+  repository: 'https://github.com/dart-lang/pool',
   authors: [],
-  version: '1.5.2',
+  version: '1.5.1',
   license: '''Copyright 2014, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -7412,39 +7410,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   isMarkdown: false,
   isSdk: false,
   dependencies: [PackageRef('async'), PackageRef('stack_trace')],
-);
-
-/// posix 6.0.3
-const _posix = Package(
-  name: 'posix',
-  description: 'Exposes the POSIX api on OSx and Linux',
-  homepage: 'https://github.com/onepub-dev/dart_posix',
-  authors: [],
-  version: '6.0.3',
-  license: '''MIT License
-
-Copyright (c) 2020 Brett Sutton
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.''',
-  isMarkdown: false,
-  isSdk: false,
-  dependencies: [PackageRef('ffi'), PackageRef('meta'), PackageRef('path')],
 );
 
 /// process 5.0.3
@@ -7484,13 +7449,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [],
 );
 
-/// provider 6.1.5+1
+/// provider 6.1.5
 const _provider = Package(
   name: 'provider',
   description: 'A wrapper around InheritedWidget to make them easier to use and more reusable.',
   repository: 'https://github.com/rrousselGit/provider',
   authors: [],
-  version: '6.1.5+1',
+  version: '6.1.5',
   license: '''MIT License
 
 Copyright (c) 2019 Remi Rousselet
@@ -7557,13 +7522,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('collection')],
 );
 
-/// pubspec_parse 1.5.0
+/// pubspec_parse 1.4.0
 const _pubspec_parse = Package(
   name: 'pubspec_parse',
   description: 'Simple package for parsing pubspec.yaml files with a type-safe API and rich error reporting.',
   repository: 'https://github.com/dart-lang/tools/tree/main/pkgs/pubspec_parse',
   authors: [],
-  version: '1.5.0',
+  version: '1.4.0',
   license: '''Copyright 2018, the Dart project authors.
 
 Redistribution and use in source and binary forms, with or without
@@ -8688,14 +8653,14 @@ const _realm_generator = Package(
   ],
 );
 
-/// retrofit 4.6.0
+/// retrofit 4.4.2
 const _retrofit = Package(
   name: 'retrofit',
   description: 'retrofit.dart is an dio client generator using source_gen and inspired by Chopper and Retrofit.',
   homepage: 'https://mings.in/retrofit.dart/',
   repository: 'https://github.com/trevorwang/retrofit.dart/',
   authors: [],
-  version: '4.6.0',
+  version: '4.4.2',
   license: '''MIT License
 
 Copyright (c) 2019 Trevor Wang
@@ -8978,13 +8943,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// shared_preferences_android 2.4.13
+/// shared_preferences_android 2.4.7
 const _shared_preferences_android = Package(
   name: 'shared_preferences_android',
   description: 'Android implementation of the shared_preferences plugin',
   repository: 'https://github.com/flutter/packages/tree/main/packages/shared_preferences/shared_preferences_android',
   authors: [],
-  version: '2.4.13',
+  version: '2.4.7',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -9215,14 +9180,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// shelf 1.4.2
+/// shelf 1.4.1
 const _shelf = Package(
   name: 'shelf',
   description: '''A model for web server middleware that encourages composition and easy reuse.
 ''',
   repository: 'https://github.com/dart-lang/shelf/tree/master/pkgs/shelf',
   authors: [],
-  version: '1.4.2',
+  version: '1.4.1',
   license: '''Copyright 2014, the Dart project authors.
 
 Redistribution and use in source and binary forms, with or without
@@ -9424,14 +9389,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('flutter')],
 );
 
-/// slang 4.8.1
+/// slang 4.7.2
 const _slang = Package(
   name: 'slang',
   description:
       'Localization / Internationalization (i18n) solution. Use JSON, YAML, CSV, or ARB files to create typesafe translations via source generation.',
   repository: 'https://github.com/slang-i18n/slang',
   authors: [],
-  version: '4.8.1',
+  version: '4.7.2',
   license: '''MIT License
 
 Copyright (c) 2020-2025 Tien Do Nam
@@ -9464,13 +9429,13 @@ SOFTWARE.''',
   ],
 );
 
-/// slang_flutter 4.8.0
+/// slang_flutter 4.7.0
 const _slang_flutter = Package(
   name: 'slang_flutter',
   description: 'Flutter support for slang. This library provides helpful Flutter API.',
   repository: 'https://github.com/slang-i18n/slang',
   authors: [],
-  version: '4.8.0',
+  version: '4.7.0',
   license: '''MIT License
 
 Copyright (c) 2020-2025 Tien Do Nam
@@ -10533,13 +10498,13 @@ SOFTWARE.''',
   dependencies: [PackageRef('collection')],
 );
 
-/// url_launcher 6.3.2
+/// url_launcher 6.3.1
 const _url_launcher = Package(
   name: 'url_launcher',
   description: 'Flutter plugin for launching a URL. Supports web, phone, SMS, and email schemes.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/url_launcher/url_launcher',
   authors: [],
-  version: '6.3.2',
+  version: '6.3.1',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -10579,13 +10544,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// url_launcher_android 6.3.20
+/// url_launcher_android 6.3.14
 const _url_launcher_android = Package(
   name: 'url_launcher_android',
   description: 'Android implementation of the url_launcher plugin.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/url_launcher/url_launcher_android',
   authors: [],
-  version: '6.3.20',
+  version: '6.3.14',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -10616,13 +10581,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('flutter'), PackageRef('url_launcher_platform_interface')],
 );
 
-/// url_launcher_ios 6.3.4
+/// url_launcher_ios 6.3.3
 const _url_launcher_ios = Package(
   name: 'url_launcher_ios',
   description: 'iOS implementation of the url_launcher plugin.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/url_launcher/url_launcher_ios',
   authors: [],
-  version: '6.3.4',
+  version: '6.3.3',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -10690,13 +10655,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('flutter'), PackageRef('url_launcher_platform_interface')],
 );
 
-/// url_launcher_macos 3.2.3
+/// url_launcher_macos 3.2.2
 const _url_launcher_macos = Package(
   name: 'url_launcher_macos',
   description: 'macOS implementation of the url_launcher plugin.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/url_launcher/url_launcher_macos',
   authors: [],
-  version: '3.2.3',
+  version: '3.2.2',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -10764,13 +10729,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('flutter'), PackageRef('plugin_platform_interface')],
 );
 
-/// url_launcher_web 2.4.1
+/// url_launcher_web 2.3.3
 const _url_launcher_web = Package(
   name: 'url_launcher_web',
   description: 'Web platform implementation of url_launcher',
   repository: 'https://github.com/flutter/packages/tree/main/packages/url_launcher/url_launcher_web',
   authors: [],
-  version: '2.4.1',
+  version: '2.3.3',
   license: '''url_launcher_web
 
 Copyright 2013 The Flutter Authors. All rights reserved.
@@ -11064,13 +11029,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   dependencies: [PackageRef('crypto'), PackageRef('sprintf'), PackageRef('meta'), PackageRef('fixnum')],
 );
 
-/// vector_graphics 1.1.19
+/// vector_graphics 1.1.18
 const _vector_graphics = Package(
   name: 'vector_graphics',
   description: 'A vector graphics rendering package for Flutter using a binary encoding.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/vector_graphics',
   authors: [],
-  version: '1.1.19',
+  version: '1.1.18',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -11138,13 +11103,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [],
 );
 
-/// vector_graphics_compiler 1.1.19
+/// vector_graphics_compiler 1.1.16
 const _vector_graphics_compiler = Package(
   name: 'vector_graphics_compiler',
   description: 'A compiler to convert SVGs to the binary format used by `package:vector_graphics`.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/vector_graphics_compiler',
   authors: [],
-  version: '1.1.19',
+  version: '1.1.16',
   license: '''Copyright 2013 The Flutter Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -11240,13 +11205,13 @@ freely, subject to the following restrictions:
   dependencies: [],
 );
 
-/// vibration 3.1.5
+/// vibration 3.1.4
 const _vibration = Package(
   name: 'vibration',
   description: 'A plugin for handling Vibration API on iOS, Android, web and OpenHarmony.',
   homepage: 'https://github.com/benjamindean/flutter_vibration',
   authors: [],
-  version: '3.1.5',
+  version: '3.1.4',
   license: '''BSD 2-Clause License
 
 Copyright (c) 2018, Benjamin Dean
@@ -11396,14 +11361,14 @@ SOFTWARE.''',
   ],
 );
 
-/// watcher 1.1.3
+/// watcher 1.1.1
 const _watcher = Package(
   name: 'watcher',
   description:
       'A file system watcher. It monitors changes to contents of directories and sends notifications when files have been added, removed, or modified.',
   repository: 'https://github.com/dart-lang/tools/tree/main/pkgs/watcher',
   authors: [],
-  version: '1.1.3',
+  version: '1.1.1',
   license: '''Copyright 2014, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -11814,7 +11779,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('logging')],
 );
 
-/// win32 5.13.0
+/// win32 5.10.1
 const _win32 = Package(
   name: 'win32',
   description: '''Access common Win32 APIs directly from Dart using FFI — no C required!
@@ -11822,7 +11787,7 @@ const _win32 = Package(
   homepage: 'https://win32.pub',
   repository: 'https://github.com/halildurmus/win32',
   authors: [],
-  version: '5.13.0',
+  version: '5.10.1',
   license: '''BSD 3-Clause License
 
 Copyright (c) 2024, Halil Durmus
