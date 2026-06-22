@@ -75,7 +75,7 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
                         child: SvgPicture.asset(
                           _isExpanded ? 'assets/svg/circle-warning.svg' : 'assets/svg/circle-help.svg',
                           width: 20,
-                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                         ),
                       ),
                       CoconutLayout.spacing_100w,
@@ -144,8 +144,8 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
                       text: addressText.substring(0, 4),
                       style:
                           addressText.startsWith("zpub")
-                              ? CoconutTypography.body3_12_NumberBold
-                              : CoconutTypography.body3_12_Number,
+                              ? CoconutTypography.body3_12_NumberBold.setColor(context.coconutColors.primaryText)
+                              : CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
                       children: [
                         TextSpan(
                           text: addressText.substring(4),

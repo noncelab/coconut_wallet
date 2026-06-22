@@ -314,7 +314,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         title: _getAppBarTitle(),
         context: context,
         isBottom: true,
-        backgroundColor: CoconutColors.black.withValues(alpha: 0.95),
+        backgroundColor: context.coconutColors.background,
         actionButtonList: [
           IconButton(
             onPressed: () {
@@ -322,8 +322,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
                 controller!.switchCamera();
               }
             },
-            icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
-            color: CoconutColors.white,
+            icon: SvgPicture.asset(
+              'assets/svg/arrow-reload.svg',
+              width: 20,
+              height: 20,
+              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            ),
+            color: context.coconutColors.iconDefault,
           ),
         ],
       ),
@@ -353,8 +358,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               onButtonClicked: _handleClipboardImport,
               text: t.wallet_add_scanner_screen.paste.paste_button,
               showGradient: false,
-              backgroundColor: CoconutColors.white,
-              textColor: CoconutColors.black,
+              backgroundColor: context.coconutColors.primaryButtonBackground,
+              textColor: context.coconutColors.primaryButtonText,
             ),
         ],
       ),
@@ -457,12 +462,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     if (_getGuideTextSpan().isEmpty) return const SizedBox.shrink();
 
     return CoconutToolTip(
-      backgroundColor: CoconutColors.gray900,
-      borderColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surface,
+      borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
         'assets/svg/circle-info.svg',
         width: 20,
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
       tooltipType: CoconutTooltipType.fixed,
       richText: RichText(

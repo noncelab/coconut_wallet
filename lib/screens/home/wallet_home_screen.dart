@@ -2061,7 +2061,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 child: Row(
                   children: [
-                    SvgPicture.asset(scanType.externalWalletIconPath),
+                    SvgPicture.asset(
+                      scanType.externalWalletIconPath,
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    ),
                     CoconutLayout.spacing_400w,
                     Expanded(
                       child: Column(
@@ -2091,7 +2094,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 child: Column(
                   children: [
-                    SvgPicture.asset(scanType.externalWalletIconPath),
+                    SvgPicture.asset(
+                      scanType.externalWalletIconPath,
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    ),
                     CoconutLayout.spacing_100h,
                     Text(
                       scanType.displayName,
