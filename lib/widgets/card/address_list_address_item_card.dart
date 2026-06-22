@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
@@ -31,7 +32,7 @@ class AddressItemCard extends StatelessWidget {
       onPressed: onPressed,
       padding: EdgeInsets.zero,
       child: Container(
-        decoration: BoxDecoration(borderRadius: MyBorder.defaultRadius, color: MyColors.transparentWhite_15),
+        decoration: BoxDecoration(borderRadius: MyBorder.defaultRadius, color: context.coconutColors.surfaceDeep),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         margin: const EdgeInsets.only(bottom: 8),
         child: Row(
@@ -40,8 +41,8 @@ class AddressItemCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               margin: const EdgeInsets.only(right: 6),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: MyColors.transparentBlack_50),
-              child: Text(index, style: Styles.caption),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.coconutColors.surface),
+              child: Text(index, style: Styles.caption.setColor(context.coconutColors.primaryText)),
             ),
             Expanded(
               child: FittedBox(
@@ -52,7 +53,7 @@ class AddressItemCard extends StatelessWidget {
                   children: [
                     Text(
                       '${address.substring(0, 10)}...${address.substring(address.length - 10, address.length)}',
-                      style: Styles.body1Number,
+                      style: Styles.body1Number.setColor(context.coconutColors.primaryText),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -61,7 +62,7 @@ class AddressItemCard extends StatelessWidget {
                         TextStyle(
                           fontFamily: CustomFonts.number.getFontFamily,
                           fontWeight: FontWeight.normal,
-                          color: MyColors.transparentWhite_50,
+                          color: context.coconutColors.mutedText,
                         ),
                       ),
                     ),
@@ -72,7 +73,10 @@ class AddressItemCard extends StatelessWidget {
             CoconutLayout.spacing_200w,
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: MyColors.transparentWhite_15),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: context.coconutColors.iconSubDefault,
+              ),
               child: Text(
                 isUsed ? t.status_used : t.status_unused,
                 style: TextStyle(

@@ -48,7 +48,10 @@ class CommonBottomSheets {
                     child: Container(
                       width: 55,
                       height: 4,
-                      decoration: BoxDecoration(color: CoconutColors.gray400, borderRadius: BorderRadius.circular(4)),
+                      decoration: BoxDecoration(
+                        color: context.coconutColors.iconSubDefault,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   ),
                 ),
@@ -63,7 +66,7 @@ class CommonBottomSheets {
                         child: Center(
                           child: Text(
                             title,
-                            style: titleTextStyle,
+                            style: titleTextStyle.setColor(context.coconutColors.primaryText),
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -81,7 +84,7 @@ class CommonBottomSheets {
                                   : null,
                           child:
                               showCloseButton
-                                  ? const Icon(Icons.close_rounded, size: 24, color: CoconutColors.white)
+                                  ? Icon(Icons.close_rounded, size: 24, color: context.coconutColors.iconDefault)
                                   : const SizedBox(width: 24, height: 24),
                         ),
                       ),

@@ -84,6 +84,7 @@ class CoconutColors {
   final Color background;
   final Color backgroundSubtle;
   final Color surface;
+  final Color surfaceDeep;
   final Color surfaceCard;
   final Color surfaceButton;
   final Color surfaceMuted;
@@ -140,8 +141,9 @@ class CoconutColors {
 
   const CoconutColors({
     required this.background,
-    required this.surface,
     required this.backgroundSubtle,
+    required this.surface,
+    required this.surfaceDeep,
     required this.surfaceCard,
     required this.surfaceButton,
     required this.surfaceMuted,
@@ -202,6 +204,7 @@ class CoconutColors {
       background: ds.CoconutColors.black,
       backgroundSubtle: ds.CoconutColors.gray850,
       surface: ds.CoconutColors.gray850,
+      surfaceDeep: ds.CoconutColors.gray700,
       surfaceCard: ds.CoconutColors.gray850,
       surfaceButton: ds.CoconutColors.gray850,
       surfaceMuted: ds.CoconutColors.gray850,
@@ -263,6 +266,7 @@ class CoconutColors {
       background: Color(0xFFF6F3EA),
       backgroundSubtle: Color(0xFFE5EEF7),
       surface: Color(0xFFE5EEF7),
+      surfaceDeep: Color.fromARGB(255, 196, 224, 250),
       surfaceCard: Color(0xFFD9E8F5),
       surfaceButton: Color(0xFFD9E8F5),
       surfaceMuted: Color(0xFFEDE3CF),
@@ -273,7 +277,7 @@ class CoconutColors {
       surfaceFilterChipSelected: Color(0xFF181A1F),
       surfaceSkeletonBase: Color(0xFFD7D1E6),
       surfaceSkeletonHighlight: Color(0xFFF0EBFA),
-      surfacePressed: Color(0xFFCBB8D8),
+      surfacePressed: Color.fromARGB(255, 202, 223, 242),
       inputSurface: Color(0xFFE6DCCB),
       primary: Color.fromARGB(255, 87, 65, 232),
       primaryText: Color(0xFF181A1F),

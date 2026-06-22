@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/single_field_fixed_bottom_sheet_body.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -277,7 +278,7 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
       onPressed: _clearField,
       icon: SvgPicture.asset(
         'assets/svg/text-field-clear.svg',
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
       ),
     );
 
