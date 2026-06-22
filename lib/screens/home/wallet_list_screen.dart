@@ -223,15 +223,30 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildEditModeHeader() {
-    SvgPicture starIcon = SvgPicture.asset('assets/svg/star-small.svg', width: 16, height: 16);
-    SvgPicture hamburgerIcon = SvgPicture.asset('assets/svg/hamburger.svg', width: 16, height: 16);
-    SvgPicture deleteIcon = SvgPicture.asset('assets/svg/delete.svg', width: 16, height: 16);
+    SvgPicture starIcon = SvgPicture.asset(
+      'assets/svg/star-small.svg',
+      width: 16,
+      height: 16,
+      colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+    );
+    SvgPicture hamburgerIcon = SvgPicture.asset(
+      'assets/svg/hamburger.svg',
+      width: 16,
+      height: 16,
+      colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+    );
+    SvgPicture deleteIcon = SvgPicture.asset(
+      'assets/svg/delete.svg',
+      width: 16,
+      height: 16,
+      colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+    );
     return Container(
       width: MediaQuery.sizeOf(context).width,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        color: CoconutColors.gray800,
+        color: context.coconutColors.surfaceCard,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       child: Column(
@@ -278,7 +293,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         ),
         Expanded(
           child: RichText(
-            text: TextSpan(style: CoconutTypography.body2_14.setColor(CoconutColors.gray400), children: inlineSpan),
+            text: TextSpan(
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+              children: inlineSpan,
+            ),
             overflow: TextOverflow.visible,
             softWrap: true,
           ),
@@ -298,7 +316,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               Container(
                 width: MediaQuery.sizeOf(context).width,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: context.coconutColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Selector<PreferenceProvider, Tuple3<BitcoinUnit, List<int>, List<int>>>(
                   selector:
                       (_, viewModel) => Tuple3(
@@ -420,7 +441,12 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                       ),
                     );
                   },
-                  icon: SvgPicture.asset('assets/svg/settings.svg', width: 16, height: 16),
+                  icon: SvgPicture.asset(
+                    'assets/svg/settings.svg',
+                    width: 16,
+                    height: 16,
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                  ),
                 ),
               ),
             ],
