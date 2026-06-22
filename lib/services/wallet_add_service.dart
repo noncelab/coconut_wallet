@@ -32,15 +32,7 @@ class WalletAddService {
       extendedPublicKey,
       masterFingerPrint ?? masterFingerprintPlaceholder,
     );
-    return WatchOnlyWallet(
-      name,
-      0,
-      0,
-      singleSigWallet.descriptor,
-      null,
-      null,
-      walletImportSource.name,
-    );
+    return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
   }
 
   WatchOnlyWallet createWalletFromDescriptor({required String descriptor, required String name}) {
@@ -51,13 +43,13 @@ class WalletAddService {
     return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, WalletImportSource.descriptor.name);
   }
 
-  WatchOnlyWallet createWalletFromUR({
+  WatchOnlyWallet createWalletFromUrCryptoAccount({
     required UR ur,
     required String name,
     required WalletImportSource walletImportSource,
   }) {
     const className = 'WalletAddService';
-    const methodName = 'createWalletFromUR';
+    const methodName = 'createWalletFromUrCryptoAccount';
 
     try {
       final cborBytes = ur.cbor;
@@ -106,21 +98,6 @@ class WalletAddService {
     } catch (e, stackTrace) {
       FileLogger.error(className, methodName, 'failed: $e', stackTrace);
       rethrow;
-    }
-  }
-
-  /// UR bytes 페이로드에서 선택적 "model" 필드(예: "passport-prime", "passport-core")를 읽는다.
-  /// 가져온 지갑의 이름을 정하는 데 사용하며, 파싱에 실패하거나 필드가 없으면 null을 반환한다.
-  String? extractModelFromUrBytes(UR ur) {
-    try {
-      final decodedCbor = cbor.decode(ur.cbor);
-      if (decodedCbor is! List<int>) return null;
-      final json = jsonDecode(utf8.decode(decodedCbor));
-      if (json is! Map<String, dynamic>) return null;
-      final model = json['model'];
-      return model is String ? model : null;
-    } catch (_) {
-      return null;
     }
   }
 

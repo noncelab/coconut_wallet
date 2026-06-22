@@ -110,18 +110,24 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       walletImportSource,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
     );
-    final wallet = _walletAddService.createWalletFromUR(walletImportSource: walletImportSource, ur: ur, name: name);
+    final wallet = _walletAddService.createWalletFromUrCryptoAccount(
+      walletImportSource: walletImportSource,
+      ur: ur,
+      name: name,
+    );
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   Future<ResultOfSyncFromVault> _addUrBytesWallet(WalletImportSource walletImportSource, UR ur) async {
-    final passportModel = _walletAddService.extractModelFromUrBytes(ur);
     final name = getNextThirdPartyWalletName(
       walletImportSource,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
-      passportModel: passportModel,
     );
-    final wallet = _walletAddService.createWalletFromUrBytes(walletImportSource: walletImportSource, ur: ur, name: name);
+    final wallet = _walletAddService.createWalletFromUrBytes(
+      walletImportSource: walletImportSource,
+      ur: ur,
+      name: name,
+    );
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 

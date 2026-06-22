@@ -15,7 +15,6 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -438,11 +437,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
     try {
       ResultOfSyncFromVault? addResult;
-      if (descriptor != null) {
+      if (descriptor != null && mounted) {
         context.loaderOverlay.show();
         addResult = await _viewModel.addWallet(descriptor);
       } else {
         String? mfp = await _showMfpInputBottomSheet();
+        if (!mounted) return;
         context.loaderOverlay.show();
         addResult = await _viewModel.addWallet(extendedPublicKey!, isExtendedPublicKey: true, masterFingerPrint: mfp);
       }
