@@ -84,16 +84,16 @@ dependencies:
   ur:
     path: lib/packages/bc-ur-dart
   shimmer: ^3.0.0
+  coconut_lib: 
+    git:
+      url: https://github.com/noncelab/coconut_lib.git
+      ref: develop
   base32: ^2.1.3
   share_plus: ^11.1.0
   mobile_scanner: 7.0.1
   firebase_core: ^3.15.2
   firebase_analytics: ^11.6.0
   vpn_detector: ^1.2.0
-  coconut_lib:
-    git:
-      url: https://github.com/noncelab/coconut_lib
-      ref: develop
   coconut_design_system: 0.10.0
   
 dev_dependencies:
@@ -274,12 +274,14 @@ flutter:
     - assets/svg/kebab.svg
     - assets/svg/coconut-vault-mainnet.svg
     - assets/svg/coconut-vault-regtest.svg
-    - assets/svg/seed-signer.svg
-    - assets/svg/jade.svg
-    - assets/svg/keystone.svg
-    - assets/svg/cold-card.svg
-    - assets/svg/krux.svg
-    - assets/svg/zpub.svg
+    # wallet type icons
+    - assets/svg/wallet-type/seed-signer.svg
+    - assets/svg/wallet-type/jade.svg
+    - assets/svg/wallet-type/keystone.svg
+    - assets/svg/wallet-type/cold-card.svg
+    - assets/svg/wallet-type/krux.svg
+    - assets/svg/wallet-type/passport.svg
+    - assets/svg/wallet-type/zpub.svg
     - assets/svg/copy.svg
     - assets/svg/lock.svg
     - assets/svg/lock_simple.svg

@@ -81,7 +81,8 @@ class UnsignedTransactionQrViewModel extends ChangeNotifier {
     switch (walletImportSource) {
       case WalletImportSource.coconutVault:
       case WalletImportSource.keystone:
-        // 볼트와 키스톤은 스캔 성능이 우수하기 때문에 일반/좁은 화면 모두 _qrScanDensity: fast, padding: 16으로 설정
+      case WalletImportSource.passport:
+        // 볼트와 키스톤, 패스포트는 스캔 성능이 우수하기 때문에 일반/좁은 화면 모두 _qrScanDensity: fast, padding: 16으로 설정
         _qrScanDensity = QrScanDensity.fast;
         break;
       case WalletImportSource.seedSigner:

@@ -1733,6 +1733,18 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             ),
                           ],
                         ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToScannerScreen(WalletImportSource.passport),
+                                WalletImportSource.passport,
+                              ),
+                            ),
+                            const Expanded(child: SizedBox()),
+                            const Expanded(child: SizedBox()),
+                          ],
+                        ),
                         CoconutLayout.spacing_400h,
                         SizedBox(
                           width: MediaQuery.sizeOf(context).width,

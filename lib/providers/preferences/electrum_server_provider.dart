@@ -38,8 +38,10 @@ class ElectrumServerProvider extends ChangeNotifier {
     if (serverName.isEmpty) {
       if (NetworkType.currentNetworkType == NetworkType.mainnet) {
         return DefaultElectrumServer.coconut.server;
-      } else {
+      } else if (NetworkType.currentNetworkType == NetworkType.regtest) {
         return DefaultElectrumServer.regtest.server;
+      } else {
+        return DefaultElectrumServer.blockstreamTestnet.server;
       }
     }
 

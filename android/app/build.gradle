@@ -28,6 +28,8 @@ def getFlavor() {
         return "regtest"
     } else if (taskNames.any { it.toLowerCase().contains("mainnet")}) {
         return "mainnet"
+    }else if (taskNames.any { it.toLowerCase().contains("tnet")}) {
+        return "testnet"
     }
     throw new GradleException("❌ build flavor를 추론할 수 없습니다. taskNames: ${taskNames}")
 }
@@ -100,6 +102,12 @@ android {
             dimension "network"
             applicationIdSuffix ""
             versionNameSuffix ""
+        }
+        tnet {
+            dimension "network"
+            applicationIdSuffix ".testnet"
+            versionNameSuffix "-testnet"
+            resValue "string", "network", "testnet"
         }
     }
 

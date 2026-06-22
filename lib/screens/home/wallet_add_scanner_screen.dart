@@ -15,7 +15,6 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -293,6 +292,42 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             ];
           }
         }
+      case WalletImportSource.passport:
+        {
+          if (!isEnglishOrSpanish) {
+            return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
+              _em(t.wallet_add_scanner_screen.guide_passport.step1_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
+              _em(t.wallet_add_scanner_screen.guide_passport.step2_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
+              _em(t.wallet_add_scanner_screen.guide_passport.step3_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step4),
+              _em(t.wallet_add_scanner_screen.guide_passport.step4_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+            ];
+          } else {
+            return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step1_em}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step2_em}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step3_em}'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step4),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step4_em}'),
+            ];
+          }
+        }
       default:
         return [];
     }
@@ -402,11 +437,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
     try {
       ResultOfSyncFromVault? addResult;
-      if (descriptor != null) {
+      if (descriptor != null && mounted) {
         context.loaderOverlay.show();
         addResult = await _viewModel.addWallet(descriptor);
       } else {
         String? mfp = await _showMfpInputBottomSheet();
+        if (!mounted) return;
         context.loaderOverlay.show();
         addResult = await _viewModel.addWallet(extendedPublicKey!, isExtendedPublicKey: true, masterFingerPrint: mfp);
       }
@@ -654,6 +690,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     WalletImportSource.seedSigner => t.wallet_add_scanner_screen.seed_signer,
     WalletImportSource.coldCard => t.wallet_add_scanner_screen.cold_card,
     WalletImportSource.krux => t.wallet_add_scanner_screen.krux,
+    WalletImportSource.passport => t.wallet_add_scanner_screen.passport,
     WalletImportSource.extendedPublicKey => t.wallet_add_scanner_screen.self,
     _ => '',
   };
