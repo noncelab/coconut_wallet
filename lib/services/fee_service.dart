@@ -6,9 +6,10 @@ import 'package:dio/dio.dart';
 
 class FeeService {
   final Dio _dio = Dio();
-  final String path = NetworkType.currentNetworkType == NetworkType.mainnet
-      ? FEE_SERVICE_URL_MAINNET
-      : NetworkType.currentNetworkType == NetworkType.testnet
+  final String path =
+      NetworkType.currentNetworkType == NetworkType.mainnet
+          ? FEE_SERVICE_URL_MAINNET
+          : NetworkType.currentNetworkType == NetworkType.testnet
           ? FEE_SERVICE_URL_TESTNET
           : FEE_SERVICE_URL_REGTEST;
 

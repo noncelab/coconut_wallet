@@ -526,10 +526,11 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     }
 
     final feeRate = double.parse(_feeRateText);
-    final isScriptPathPolicyRequired =
-        _taprootSpendType == TaprootSpendType.scriptPath || (_selectedWalletItem is TaprootWalletListItem);
     _txBuilder = TransactionBuilder(
-      availableUtxos: _isUtxoSelectionAuto ? _allUtxos : _selectedUtxoList,
+      availableUtxos:
+          _isUtxoSelectionAuto
+              ? _allUtxos.where((utxo) => utxo.status == UtxoStatus.unspent).toList()
+              : _selectedUtxoList,
       recipients: _getRecipientMapForTx(recipientMap),
       feeRate: feeRate,
       changeDerivationPath: _changeAddressDerivationPath,

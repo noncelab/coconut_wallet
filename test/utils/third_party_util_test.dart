@@ -56,29 +56,19 @@ void main() {
     });
 
     test('패스포트 프라임 모델이면 "패스포트 프라임"을 반환', () {
-      final result = getNextThirdPartyWalletName(
-        WalletImportSource.passport,
-        [],
-        passportModel: 'passport-prime',
-      );
+      final result = getNextThirdPartyWalletName(WalletImportSource.passport, [], passportModel: 'passport-prime');
       expect(result, '패스포트 프라임');
     });
 
     test('패스포트 코어 모델이면 "패스포트 코어"를 반환', () {
-      final result = getNextThirdPartyWalletName(
-        WalletImportSource.passport,
-        [],
-        passportModel: 'passport-core',
-      );
+      final result = getNextThirdPartyWalletName(WalletImportSource.passport, [], passportModel: 'passport-core');
       expect(result, '패스포트 코어');
     });
 
     test('패스포트 프라임 지갑이 하나 있을 때는 "패스포트 프라임 2"를 반환', () {
-      final result = getNextThirdPartyWalletName(
-        WalletImportSource.passport,
-        ['패스포트 프라임'],
-        passportModel: 'passport-prime',
-      );
+      final result = getNextThirdPartyWalletName(WalletImportSource.passport, [
+        '패스포트 프라임',
+      ], passportModel: 'passport-prime');
       expect(result, '패스포트 프라임 2');
     });
 

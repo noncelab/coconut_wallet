@@ -33,7 +33,17 @@ enum WalletSyncResult {
 
 enum WalletLoadState { never, loadingFromDB, loadCompleted }
 
-enum WalletImportSource { coconutVault, keystone, jade, seedSigner, coldCard, krux, passport, extendedPublicKey, descriptor }
+enum WalletImportSource {
+  coconutVault,
+  keystone,
+  jade,
+  seedSigner,
+  coldCard,
+  krux,
+  passport,
+  extendedPublicKey,
+  descriptor,
+}
 
 extension WalletImportSourceExtension on WalletImportSource {
   String get displayName {
