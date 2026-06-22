@@ -6,6 +6,8 @@ import 'package:coconut_wallet/providers/node_provider/network_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/floresta_rpc_client.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
@@ -15,13 +17,15 @@ class IsolateController {
   final IsolateStateManager _isolateStateManager;
   final ElectrumService _electrumService;
   final TransactionRecordService _transactionRecordService;
+  final FlorestaRpcClient? _florestaClient;
   IsolateController(
     this._subscriptionService,
     this._networkManager,
     this._isolateStateManager,
     this._electrumService,
-    this._transactionRecordService,
-  );
+    this._transactionRecordService, {
+    FlorestaRpcClient? florestaClient,
+  }) : _florestaClient = florestaClient;
 
   Future<void> executeNetworkCommand(
     IsolateControllerCommand messageType,
@@ -80,6 +84,45 @@ class IsolateController {
           final txHash = params[1] as String;
           Logger.log('IsolateController: getTransactionRecord executing in isolate (txHash: $txHash)');
           isolateToMainSendPort.send(await _transactionRecordService.getTransactionRecord(params[0], params[1]));
+          break;
+        case IsolateControllerCommand.florestaRegisterDescriptors:
+          if (_florestaClient == null) {
+            isolateToMainSendPort.send(Result.failure(ErrorCodes.withMessage(ErrorCodes.nodeUnknown, 'Floresta client not initialized')));
+            return;
+          }
+          try {
+            final walletItems = params[0] as List<dynamic>;
+            Logger.log('IsolateController: florestaRegisterDescriptors started, wallets=${walletItems.length}');
+            for (final walletItem in walletItems) {
+              final descriptor = walletItem.descriptor as String?;
+              final walletId = walletItem.id;
+              Logger.log('IsolateController: registering walletId=$walletId descriptor=${descriptor != null && descriptor.isNotEmpty ? 'present' : 'missing'}');
+              if (descriptor != null && descriptor.isNotEmpty) {
+                await _florestaClient.loadDescriptor(descriptor);
+              } else {
+                Logger.log('IsolateController: skipping walletId=$walletId, descriptor is null or empty');
+              }
+            }
+            Logger.log('IsolateController: florestaRegisterDescriptors completed');
+            isolateToMainSendPort.send(Result.success(true));
+          } catch (e) {
+            Logger.error('IsolateController: florestaRegisterDescriptors failed: $e');
+            isolateToMainSendPort.send(Result.failure(ErrorCodes.withMessage(ErrorCodes.nodeUnknown, 'florestaRegisterDescriptors: $e')));
+          }
+          break;
+        case IsolateControllerCommand.florestaRescan:
+          if (_florestaClient == null) {
+            isolateToMainSendPort.send(Result.failure(ErrorCodes.withMessage(ErrorCodes.nodeUnknown, 'Floresta client not initialized')));
+            return;
+          }
+          try {
+            final startHeight = params.isNotEmpty ? params[0] as int? : null;
+            await _florestaClient.rescan(startHeight: startHeight);
+            isolateToMainSendPort.send(Result.success(true));
+          } catch (e) {
+            Logger.error('IsolateController: florestaRescan failed: $e');
+            isolateToMainSendPort.send(Result.failure(ErrorCodes.withMessage(ErrorCodes.nodeUnknown, 'florestaRescan: $e')));
+          }
           break;
       }
     } catch (e, stack) {

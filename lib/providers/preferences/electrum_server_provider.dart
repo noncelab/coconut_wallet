@@ -22,12 +22,14 @@ class ElectrumServerProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> setCustomElectrumServer(String host, int port, bool ssl) async {
+  Future<void> setCustomElectrumServer(String host, int port, bool ssl, {bool isFloresta = false, int rpcPort = 0}) async {
     _validateCustomElectrumServerParams(host, port, ssl);
     await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, _customServerLabel);
     await _sharedPrefs.setString(SharedPrefKeys.kCustomElectrumHost, host);
     await _sharedPrefs.setInt(SharedPrefKeys.kCustomElectrumPort, port);
     await _sharedPrefs.setBool(SharedPrefKeys.kCustomElectrumIsSsl, ssl);
+    await _sharedPrefs.setBool(SharedPrefKeys.kCustomElectrumIsFloresta, isFloresta);
+    await _sharedPrefs.setInt(SharedPrefKeys.kCustomElectrumRpcPort, rpcPort);
     notifyListeners();
   }
 
@@ -48,6 +50,8 @@ class ElectrumServerProvider extends ChangeNotifier {
         _sharedPrefs.getString(SharedPrefKeys.kCustomElectrumHost),
         _sharedPrefs.getInt(SharedPrefKeys.kCustomElectrumPort),
         _sharedPrefs.getBool(SharedPrefKeys.kCustomElectrumIsSsl),
+        isFloresta: _sharedPrefs.getBool(SharedPrefKeys.kCustomElectrumIsFloresta),
+        rpcPort: _sharedPrefs.getInt(SharedPrefKeys.kCustomElectrumRpcPort),
       );
     }
 
@@ -58,8 +62,8 @@ class ElectrumServerProvider extends ChangeNotifier {
     return (await _sharedPrefs.getUserServers()) ?? [];
   }
 
-  Future<void> addUserServer(String host, int port, bool ssl) async {
-    await _sharedPrefs.addUserServer(ElectrumServer.custom(host, port, ssl));
+  Future<void> addUserServer(String host, int port, bool ssl, {bool isFloresta = false, int rpcPort = 0}) async {
+    await _sharedPrefs.addUserServer(ElectrumServer.custom(host, port, ssl, isFloresta: isFloresta, rpcPort: rpcPort));
     notifyListeners();
   }
 

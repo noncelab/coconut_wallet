@@ -24,15 +24,19 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
   NodeConnectionStatus _nodeConnectionStatus = NodeConnectionStatus.waiting;
   final Map<ElectrumServer, NodeConnectionStatus> _connectionStatusMap = {};
-  bool _isServerAddressFormatError = false; // 서버 주소 형식
-  bool _isPortOutOfRangeError = false; // 1 ~ 65535 포트 범위
-  bool _isDefaultServerMenuVisible = false; // 기본 서버 메뉴 visibility
+  bool _isServerAddressFormatError = false;
+  bool _isPortOutOfRangeError = false;
+  bool _isDefaultServerMenuVisible = false;
+  bool _isFloresta = false;
+  int _rpcPort = 0;
 
   NodeConnectionStatus get nodeConnectionStatus => _nodeConnectionStatus;
   Map<ElectrumServer, NodeConnectionStatus> get connectionStatusMap => _connectionStatusMap;
   bool get isServerAddressFormatError => _isServerAddressFormatError;
   bool get isPortOutOfRangeError => _isPortOutOfRangeError;
   bool get isDefaultServerMenuVisible => _isDefaultServerMenuVisible;
+  bool get isFloresta => _isFloresta;
+  int get rpcPort => _rpcPort;
 
   ElectrumServerViewModel(this._nodeProvider, this._electrumServerProvider) {
     // 현재 설정된 서버 정보 가져오기
@@ -112,6 +116,16 @@ class ElectrumServerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setFloresta(bool value) {
+    _isFloresta = value;
+    notifyListeners();
+  }
+
+  void setRpcPort(int value) {
+    _rpcPort = value;
+    notifyListeners();
+  }
+
   void _setCurrentServer(ElectrumServer server) {
     _currentServer = server;
     notifyListeners();
@@ -183,17 +197,27 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     final result = await _nodeProvider.changeServer(newServer);
 
-    // 서버 연결 상태 상관없이 서버 정보 업데이트
     _setCurrentServer(newServer);
-    _electrumServerProvider.setCustomElectrumServer(newServer.host, newServer.port, newServer.ssl);
+    _electrumServerProvider.setCustomElectrumServer(
+      newServer.host,
+      newServer.port,
+      newServer.ssl,
+      isFloresta: newServer.isFloresta,
+      rpcPort: newServer.rpcPort,
+    );
 
-    // 연결된 서버가 default 서버에도 없고, 사용자 서버에도 없으면 사용자 서버 추가
     if (!_isDefaultServer(newServer) && !_isUserServer(newServer)) {
-      await _electrumServerProvider.addUserServer(newServer.host, newServer.port, newServer.ssl);
+      await _electrumServerProvider.addUserServer(
+        newServer.host,
+        newServer.port,
+        newServer.ssl,
+        isFloresta: newServer.isFloresta,
+        rpcPort: newServer.rpcPort,
+      );
       await _loadUserServers();
     }
 
-    debugPrint('서버 정보 업데이트: ${newServer.host} ${newServer.port} ${newServer.ssl}');
+    debugPrint('서버 정보 업데이트: ${newServer.host} ${newServer.port} ${newServer.ssl} isFloresta=${newServer.isFloresta}');
 
     if (result.isFailure) {
       setNodeConnectionStatus(NodeConnectionStatus.failed);

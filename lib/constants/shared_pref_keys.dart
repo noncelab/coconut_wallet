@@ -61,6 +61,8 @@ class SharedPrefKeys {
   static const String kCustomElectrumHost = 'CUSTOM_ELECTRUM_HOST';
   static const String kCustomElectrumPort = 'CUSTOM_ELECTRUM_PORT';
   static const String kCustomElectrumIsSsl = 'CUSTOM_ELECTRUM_IS_SSL';
+  static const String kCustomElectrumIsFloresta = 'CUSTOM_ELECTRUM_IS_FLORESTA';
+  static const String kCustomElectrumRpcPort = 'CUSTOM_ELECTRUM_RPC_PORT';
   static const String kUserServers = 'USER_SERVERS';
 
   /// kHasLaunchedBefore 절대 초기화 금지

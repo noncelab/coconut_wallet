@@ -24,6 +24,12 @@ enum DefaultElectrumServer {
     'REGTEST',
     99,
     true, // isRegtest
+  ),
+  florestaRegtest(
+    ElectrumServer('localhost', 50001, false, isFloresta: true, rpcPort: 50001),
+    'FLORESTA_REGTEST',
+    100,
+    true, // isRegtest
   );
 
   const DefaultElectrumServer(this.server, this.serverName, this.order, this.isRegtest);

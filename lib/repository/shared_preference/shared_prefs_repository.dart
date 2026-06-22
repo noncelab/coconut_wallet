@@ -170,11 +170,14 @@ class SharedPrefsRepository {
         final serverData = jsonDecode(serverJson) as Map<String, dynamic>;
         final servers = <ElectrumServer>[];
         for (final server in serverData.entries) {
+          final value = server.value as Map<String, dynamic>;
           servers.add(
             ElectrumServer.custom(
-              server.value['host'] as String,
-              server.value['port'] as int,
-              server.value['ssl'] as bool,
+              value['host'] as String,
+              value['port'] as int,
+              value['ssl'] as bool,
+              isFloresta: value['isFloresta'] as bool? ?? false,
+              rpcPort: value['rpcPort'] as int? ?? 0,
             ),
           );
         }
@@ -212,7 +215,13 @@ class SharedPrefsRepository {
 
     for (final server in servers) {
       final key = '${server.host}:${server.port}';
-      serversMap[key] = {'host': server.host, 'port': server.port, 'ssl': server.ssl};
+      serversMap[key] = {
+        'host': server.host,
+        'port': server.port,
+        'ssl': server.ssl,
+        'isFloresta': server.isFloresta,
+        'rpcPort': server.rpcPort,
+      };
     }
 
     await prefs.setString(SharedPrefKeys.kUserServers, jsonEncode(serversMap));

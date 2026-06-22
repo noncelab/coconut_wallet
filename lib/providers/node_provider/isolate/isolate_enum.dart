@@ -9,6 +9,8 @@ enum IsolateControllerCommand {
   getRecommendedFees,
   getSocketConnectionStatus,
   getTransactionRecord,
+  florestaRegisterDescriptors,
+  florestaRescan,
 }
 
 enum IsolateStateMethod {

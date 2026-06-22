@@ -18,9 +18,10 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/floresta_rpc_client.dart';
 
 class IsolateInitializer {
-  static IsolateController entryInitialize(SendPort sendPort, ElectrumService electrumService) {
+  static IsolateController entryInitialize(SendPort sendPort, ElectrumService electrumService, {FlorestaRpcClient? florestaClient}) {
     // TODO: isSetPin, 핀 설정/해제할 때 isolate에서도 인지할 수 있는 로직 추가
     final realmManager = RealmManager();
     final addressRepository = AddressRepository(realmManager);
@@ -78,6 +79,7 @@ class IsolateInitializer {
       isolateStateManager,
       electrumService,
       transactionRecordService,
+      florestaClient: florestaClient,
     );
 
     // 소켓 연결 종료 시 상태 콜백

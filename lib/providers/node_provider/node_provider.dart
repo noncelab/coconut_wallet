@@ -19,6 +19,7 @@ import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.d
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/floresta_rpc_client.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -224,49 +225,86 @@ class NodeProvider extends ChangeNotifier {
 
   void _subscribeInitialWallets() {
     _isFirstInitialization = false;
-    subscribeWallets().then((result) async {
-      if (result.isFailure) {
-        Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
-        _stateManager?.setNodeSyncStateToFailed();
-      } else {
-        _setConnectionError(false);
 
-        await Future.delayed(const Duration(seconds: 1));
-        await _startBlockUpdates();
-      }
+    // Floresta: 먼저 descriptor 등록 후 구독
+    _registerFlorestaDescriptorsIfNeeded().then((_) {
+      subscribeWallets().then((result) async {
+        if (result.isFailure) {
+          Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
+          _stateManager?.setNodeSyncStateToFailed();
+        } else {
+          _setConnectionError(false);
+
+          await Future.delayed(const Duration(seconds: 1));
+          await _startBlockUpdates();
+        }
+      });
     });
+  }
+
+  Future<void> _registerFlorestaDescriptorsIfNeeded() async {
+    if (!_electrumServer.isFloresta) {
+      Logger.log('NodeProvider: skip Floresta descriptor registration, server is not floresta ($_electrumServer)');
+      return;
+    }
+
+    final walletItems = _walletItemListNotifier.value;
+    if (walletItems.isEmpty) {
+      Logger.log('NodeProvider: skip Floresta descriptor registration, no wallets');
+      return;
+    }
+
+    Logger.log('NodeProvider: Registering Floresta descriptors for ${walletItems.length} wallets');
+    final registerResult = await _isolateManager.florestaRegisterDescriptors(walletItems);
+    if (registerResult.isFailure) {
+      Logger.error('NodeProvider: Floresta descriptor registration failed: ${registerResult.error}');
+      return;
+    }
+
+    Logger.log('NodeProvider: Triggering Floresta rescan');
+    final rescanResult = await _isolateManager.florestaRescan();
+    if (rescanResult.isFailure) {
+      Logger.error('NodeProvider: Floresta rescan failed: ${rescanResult.error}');
+    }
   }
 
   /// WalletItemList 변경 감지 및 처리
   void _onWalletItemListChanged() {
     if (_isFirstInitialization) {
-      // 최초 실행 시에는 _subscribeInitialWallets에서 처리
       return;
     }
 
     final currentWallets = _walletItemListNotifier.value;
     final registeredWallets = state.registeredWallets.keys.toList();
 
-    // 삭제된 지갑 찾기
     for (final walletId in registeredWallets) {
       if (!currentWallets.any((wallet) => wallet.id == walletId)) {
         _stateManager?.unregisterWalletUpdateState(walletId);
       }
     }
 
-    // 새로 추가된 지갑 찾기
     for (final wallet in currentWallets) {
       if (!registeredWallets.contains(wallet.id)) {
-        // 새로운 지갑 발견
-        subscribeWallet(wallet).then((result) {
-          if (result.isFailure) {
-            Logger.error('NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}');
-            _stateManager?.setNodeSyncStateToFailed();
-          } else {
-            _analyticsService?.logEvent(eventName: AnalyticsEventNames.walletAddSyncCompleted);
-          }
+        _registerFlorestaDescriptorsIfNeededSingle(wallet).then((_) {
+          subscribeWallet(wallet).then((result) {
+            if (result.isFailure) {
+              Logger.error('NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}');
+              _stateManager?.setNodeSyncStateToFailed();
+            } else {
+              _analyticsService?.logEvent(eventName: AnalyticsEventNames.walletAddSyncCompleted);
+            }
+          });
         });
       }
+    }
+  }
+
+  Future<void> _registerFlorestaDescriptorsIfNeededSingle(WalletListItemBase wallet) async {
+    if (!_electrumServer.isFloresta) return;
+    Logger.log('NodeProvider: Registering Floresta descriptor for new wallet ${wallet.id}');
+    final result = await _isolateManager.florestaRegisterDescriptors([wallet]);
+    if (result.isFailure) {
+      Logger.error('NodeProvider: Floresta descriptor registration failed for wallet ${wallet.id}: ${result.error}');
     }
   }
 
@@ -323,7 +361,7 @@ class NodeProvider extends ChangeNotifier {
     try {
       _createNewCompleter();
       _createStateManager();
-      await _isolateManager.initialize(host, port, ssl, _networkType);
+      await _isolateManager.initialize(host, port, ssl, _networkType, isFloresta: _electrumServer.isFloresta, rpcPort: _electrumServer.rpcPort);
 
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
         _initCompleter!.complete();
@@ -476,6 +514,7 @@ class NodeProvider extends ChangeNotifier {
 
       if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isNotEmpty) {
         Logger.log('NodeProvider: Wallet Loaded & Wallet Items is Not Empty, start subscribing');
+        await _registerFlorestaDescriptorsIfNeeded();
         final result = await subscribeWallets();
         notifyListeners();
 
@@ -558,6 +597,20 @@ class NodeProvider extends ChangeNotifier {
     try {
       await _establishSocketConnection(electrumService, electrumServer);
       await _verifyProtocolCommunication(electrumService);
+
+      if (electrumServer.isFloresta) {
+        final florestaClient = FlorestaRpcClient(
+          electrumServer.host,
+          electrumServer.rpcPort,
+          electrumServer.ssl,
+        );
+        final isFlorestaConnected = await florestaClient.checkConnection();
+        florestaClient.close();
+        if (!isFlorestaConnected) {
+          Logger.error('NodeProvider: Floresta RPC connection failed');
+          return Result.failure(ErrorCodes.networkError);
+        }
+      }
 
       Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
       return Result.success(true);

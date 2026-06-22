@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_initializer.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/floresta_rpc_client.dart';
 import 'package:coconut_wallet/model/node/spawn_isolate_dto.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -62,7 +63,7 @@ class IsolateManager {
     _isolateReady = Completer<void>();
   }
 
-  Future<void> initialize(String host, int port, bool ssl, NetworkType networkType) async {
+  Future<void> initialize(String host, int port, bool ssl, NetworkType networkType, {bool isFloresta = false, int rpcPort = 0}) async {
     // 이미 초기화 중인 경우 기존 작업 완료 대기
     if (_isInitializing) {
       Logger.log('IsolateManager: Already initializing, waiting for completion');
@@ -83,7 +84,15 @@ class IsolateManager {
       _createIsolateCompleter();
 
       final isolateToMainSendPort = _mainFromIsolateReceivePort!.sendPort;
-      final data = SpawnIsolateDto(isolateToMainSendPort, host, port, ssl, networkType);
+      final data = SpawnIsolateDto(
+        isolateToMainSendPort,
+        host,
+        port,
+        ssl,
+        networkType,
+        isFloresta: isFloresta,
+        rpcPort: rpcPort,
+      );
 
       _isolate = await Isolate.spawn<SpawnIsolateDto>(_isolateEntry, data);
       _setUpReceivePortListener();
@@ -267,16 +276,26 @@ class IsolateManager {
     final isolateFromMainReceivePort = ReceivePort('isolateFromMainReceivePort');
     final electrumService = ElectrumService();
 
+    FlorestaRpcClient? florestaClient;
+    if (data.isFloresta) {
+      florestaClient = FlorestaRpcClient(data.host, data.rpcPort, data.ssl);
+    }
+
     try {
       final isConnected = await electrumService.connect(data.host, data.port, ssl: data.ssl);
-
-      final isolateController = IsolateInitializer.entryInitialize(data.isolateToMainSendPort, electrumService);
 
       if (!isConnected) {
         Logger.error("Isolate: Failed to connect to Electrum server");
         data.isolateToMainSendPort.send([IsolateManagerCommand.initializationFailed]);
-        return; // throw 대신 return으로 변경
+        florestaClient?.close();
+        return;
       }
+
+      final isolateController = IsolateInitializer.entryInitialize(
+        data.isolateToMainSendPort,
+        electrumService,
+        florestaClient: florestaClient,
+      );
 
       // 모든 초기화 완료 후 메시지 전송
       data.isolateToMainSendPort.send([
@@ -300,6 +319,7 @@ class IsolateManager {
       );
     } catch (e) {
       Logger.error("Isolate: ERROR during initialization: $e");
+      florestaClient?.close();
       try {
         data.isolateToMainSendPort.send([IsolateManagerCommand.initializationFailed]);
       } catch (sendError) {
@@ -321,6 +341,8 @@ class IsolateManager {
       case IsolateControllerCommand.subscribeWallet:
       case IsolateControllerCommand.unsubscribeWallet:
       case IsolateControllerCommand.getTransactionRecord:
+      case IsolateControllerCommand.florestaRegisterDescriptors:
+      case IsolateControllerCommand.florestaRescan:
         return kIsolateResponseTimeout;
 
       // 간단한 작업: .onion인 경우 kIsolateSimpleResponseTimeoutForOnion, 그 외 kIsolateSimpleResponseTimeout
@@ -544,6 +566,14 @@ class IsolateManager {
       'IsolateManager: getTransactionRecord called (txHash: $txHash, timeout: ${timeout?.inSeconds ?? "default"}s)',
     );
     return _send(IsolateControllerCommand.getTransactionRecord, [walletItem, txHash], commandTimeoutOverride: timeout);
+  }
+
+  Future<Result<bool>> florestaRegisterDescriptors(List<WalletListItemBase> walletItems) async {
+    return _send(IsolateControllerCommand.florestaRegisterDescriptors, [walletItems]);
+  }
+
+  Future<Result<bool>> florestaRescan({int? startHeight}) async {
+    return _send(IsolateControllerCommand.florestaRescan, startHeight != null ? [startHeight] : []);
   }
 
   /// isolate 연결만 종료하는 메서드

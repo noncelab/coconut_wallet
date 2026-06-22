@@ -8,6 +8,16 @@ class SpawnIsolateDto {
   final int port;
   final bool ssl;
   final NetworkType networkType;
+  final bool isFloresta;
+  final int rpcPort;
 
-  SpawnIsolateDto(this.isolateToMainSendPort, this.host, this.port, this.ssl, this.networkType);
+  SpawnIsolateDto(
+    this.isolateToMainSendPort,
+    this.host,
+    this.port,
+    this.ssl,
+    this.networkType, {
+    this.isFloresta = false,
+    this.rpcPort = 0,
+  });
 }

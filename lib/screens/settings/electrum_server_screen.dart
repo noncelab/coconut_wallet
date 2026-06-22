@@ -27,12 +27,15 @@ class ElectrumServerScreen extends StatefulWidget {
 class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   final TextEditingController _serverAddressController = TextEditingController();
   final TextEditingController _portController = TextEditingController();
+  final TextEditingController _rpcPortController = TextEditingController();
   bool _currentSslState = false;
+  bool _currentFlorestaState = false;
   ServerTab _selectedTab = ServerTab.defaultServer;
 
   final ScrollController _defaultServerScrollController = ScrollController();
   FocusNode serverAddressFocusNode = FocusNode();
   FocusNode portFocusNode = FocusNode();
+  FocusNode rpcPortFocusNode = FocusNode();
 
   final GlobalKey _defaultServerButtonKey = GlobalKey();
   final GlobalKey _serverAddressFieldKey = GlobalKey();
@@ -52,12 +55,14 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       }
     };
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        _serverAddressController.text = _viewModel.initialServer.host;
-        _portController.text = _viewModel.initialServer.port.toString();
-        _currentSslState = _viewModel.initialServer.ssl;
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _serverAddressController.text = _viewModel.initialServer.host;
+          _portController.text = _viewModel.initialServer.port.toString();
+          _currentSslState = _viewModel.initialServer.ssl;
+          _currentFlorestaState = _viewModel.initialServer.isFloresta;
+          _rpcPortController.text = _viewModel.initialServer.rpcPort > 0 ? _viewModel.initialServer.rpcPort.toString() : _viewModel.initialServer.port.toString();
+        });
 
       serverAddressFocusNode.addListener(() {
         if (serverAddressFocusNode.hasFocus) {
@@ -71,8 +76,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   void dispose() {
     _serverAddressController.dispose();
     _portController.dispose();
+    _rpcPortController.dispose();
     serverAddressFocusNode.dispose();
     portFocusNode.dispose();
+    rpcPortFocusNode.dispose();
     super.dispose();
   }
 
@@ -93,10 +100,13 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   }
 
   void _onSave() async {
+    final rpcPort = int.tryParse(_rpcPortController.text) ?? int.parse(_portController.text);
     final newServer = ElectrumServer.custom(
       _serverAddressController.text,
       int.parse(_portController.text),
       _currentSslState,
+      isFloresta: _currentFlorestaState,
+      rpcPort: rpcPort,
     );
 
     final success = await _viewModel.changeServerAndUpdateState(newServer);
@@ -113,13 +123,14 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   void _onReset() async {
     final initialServer = _viewModel.initialServer;
 
-    _onServerInputChanged(); // 상태 변경 감지
+    _onServerInputChanged();
 
     setState(() {
-      // 화면 진입 시의 초기 서버 정보로 초기화
       _serverAddressController.text = initialServer.host;
       _portController.text = initialServer.port.toString();
       _currentSslState = initialServer.ssl;
+      _currentFlorestaState = initialServer.isFloresta;
+      _rpcPortController.text = initialServer.rpcPort > 0 ? initialServer.rpcPort.toString() : initialServer.port.toString();
     });
 
     final success = await _viewModel.changeServerAndUpdateState(initialServer);
@@ -141,10 +152,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   /// 초기화 버튼 활성화 조건: 현재 입력된 서버 정보가 초기 서버 정보와 다른지 확인
   bool _isDifferentFromInitialServer() {
     return _viewModel.isDifferentFromInitialServer(
-      _serverAddressController.text,
-      _portController.text,
-      _currentSslState,
-    );
+          _serverAddressController.text,
+          _portController.text,
+          _currentSslState,
+        ) ||
+        _currentFlorestaState != _viewModel.initialServer.isFloresta ||
+        _rpcPortController.text != (_viewModel.initialServer.rpcPort > 0 ? _viewModel.initialServer.rpcPort.toString() : _viewModel.initialServer.port.toString());
   }
 
   /// 저장 버튼 활성화 조건: 현재 입력된 서버 정보가 현재 연결된 서버와 다른지 확인
@@ -155,7 +168,9 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
         !_viewModel.isValidPort(_portController.text))
       return false;
 
-    return !_viewModel.isSameWithCurrentServer(_serverAddressController.text, _portController.text, _currentSslState);
+    return !_viewModel.isSameWithCurrentServer(_serverAddressController.text, _portController.text, _currentSslState) ||
+        _currentFlorestaState != (_viewModel.currentServer?.isFloresta ?? false) ||
+        _rpcPortController.text != ((_viewModel.currentServer?.rpcPort ?? 0) > 0 ? (_viewModel.currentServer?.rpcPort.toString() ?? '') : (_viewModel.currentServer?.port.toString() ?? ''));
   }
 
   @override
@@ -210,11 +225,13 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                               return isDefaultServerMenuVisible
                                   ? Container()
                                   : Column(
-                                    children: [
-                                      _buildPortTextField(),
-                                      _buildSslToggle(),
-                                      _buildAlertBox(nodeConnectionStatus),
-                                    ],
+                    children: [
+                      _buildPortTextField(),
+                      _buildSslToggle(),
+                      _buildFlorestaToggle(),
+                      if (_currentFlorestaState) _buildRpcPortTextField(),
+                      _buildAlertBox(nodeConnectionStatus),
+                    ],
                                   );
                             },
                           ),
@@ -347,6 +364,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                   _portController.text = serverList[i].port.toString();
                   setState(() {
                     _currentSslState = serverList[i].ssl;
+                    _currentFlorestaState = serverList[i].isFloresta;
+                    _rpcPortController.text = serverList[i].rpcPort > 0 ? serverList[i].rpcPort.toString() : serverList[i].port.toString();
                   });
                   _onServerInputChanged();
                   _unFocus();
@@ -657,6 +676,112 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFlorestaToggle() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 36),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Floresta Server',
+            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+          ),
+          Selector<ElectrumServerViewModel, NodeConnectionStatus>(
+            selector: (_, viewModel) => viewModel.nodeConnectionStatus,
+            builder: (context, nodeConnectionStatus, child) {
+              final isNodeConnecting = nodeConnectionStatus == NodeConnectionStatus.connecting;
+              return IgnorePointer(
+                ignoring: isNodeConnecting,
+                child: CoconutSwitch(
+                  isOn: _currentFlorestaState,
+                  onChanged: (value) {
+                    if (_currentFlorestaState != value) {
+                      vibrateLight();
+                      setState(() {
+                        _currentFlorestaState = value;
+                      });
+                      _onServerInputChanged();
+                    }
+                  },
+                  activeColor: isNodeConnecting ? CoconutColors.gray500 : null,
+                  trackColor: isNodeConnecting ? CoconutColors.gray750 : null,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRpcPortTextField() {
+    return Selector<ElectrumServerViewModel, NodeConnectionStatus>(
+      selector: (_, viewModel) => viewModel.nodeConnectionStatus,
+      builder: (context, nodeConnectionStatus, child) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('RPC Port',
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                ),
+              ),
+              CoconutLayout.spacing_100h,
+              nodeConnectionStatus == NodeConnectionStatus.connecting
+                  ? Container(
+                    width: MediaQuery.sizeOf(context).width,
+                    height: 54,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    margin: const EdgeInsets.only(bottom: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: CoconutColors.gray600),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.transparent,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(_rpcPortController.text, style: CoconutTypography.body2_14.setColor(CoconutColors.gray600)),
+                      ],
+                    ),
+                  )
+                  : CoconutTextField(
+                    controller: _rpcPortController,
+                    focusNode: rpcPortFocusNode,
+                    textInputAction: TextInputAction.done,
+                    onEditingComplete: _unFocus,
+                    height: 54,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
+                    textInputType: TextInputType.number,
+                    suffix:
+                        _rpcPortController.text.isNotEmpty
+                            ? IconButton(
+                              iconSize: 14,
+                              padding: EdgeInsets.zero,
+                              onPressed: () {
+                                setState(() {
+                                  _rpcPortController.text = '';
+                                });
+                              },
+                              icon: SvgPicture.asset(
+                                'assets/svg/text-field-clear.svg',
+                                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                              ),
+                            )
+                            : null,
+                    onChanged: (text) {
+                      _onServerInputChanged();
+                    },
+                  ),
+            ],
+          ),
+        );
+      },
     );
   }
 
