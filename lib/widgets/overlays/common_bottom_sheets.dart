@@ -668,7 +668,8 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                       isActive:
                           _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
                       text: widget.confirmText,
-                      backgroundColor: CoconutColors.white,
+                      backgroundColor: context.coconutColors.primaryButtonBackground,
+                      textColor: context.coconutColors.primaryButtonText,
                     ),
                   ),
                 ),

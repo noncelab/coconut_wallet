@@ -190,7 +190,8 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                               isActive: _viewModel.hasSelectionChanged,
                                               showGradient: true,
                                               horizontalPadding: 16,
-                                              backgroundColor: CoconutColors.white,
+                                              backgroundColor: context.coconutColors.primaryButtonBackground,
+                                              textColor: context.coconutColors.primaryButtonText,
                                             ),
                                           ],
                                         )

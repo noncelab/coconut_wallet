@@ -98,6 +98,8 @@ class CoconutColors {
   final Color inputSurface;
   final Color primary;
   final Color primaryText;
+  final Color primaryButtonBackground;
+  final Color primaryButtonText;
   final Color secondaryText;
   final Color tertiaryText;
   final Color mutedText;
@@ -154,6 +156,8 @@ class CoconutColors {
     required this.inputSurface,
     required this.primary,
     required this.primaryText,
+    required this.primaryButtonBackground,
+    required this.primaryButtonText,
     required this.secondaryText,
     required this.tertiaryText,
     required this.mutedText,
@@ -212,6 +216,8 @@ class CoconutColors {
       inputSurface: ds.CoconutColors.gray800,
       primary: ds.CoconutColors.primary,
       primaryText: ds.CoconutColors.white,
+      primaryButtonBackground: ds.CoconutColors.white,
+      primaryButtonText: ds.CoconutColors.black,
       secondaryText: ds.CoconutColors.gray400,
       tertiaryText: ds.CoconutColors.gray600,
       mutedText: ds.CoconutColors.gray500,
@@ -271,6 +277,8 @@ class CoconutColors {
       inputSurface: Color(0xFFE6DCCB),
       primary: Color.fromARGB(255, 87, 65, 232),
       primaryText: Color(0xFF181A1F),
+      primaryButtonBackground: Color(0xFFD9E8F5),
+      primaryButtonText: Color(0xFF181A1F),
       secondaryText: Color(0xFF454B57),
       tertiaryText: Color(0xFF727987),
       mutedText: Color(0xFF5E6675),

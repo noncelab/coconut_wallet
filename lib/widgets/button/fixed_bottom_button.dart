@@ -55,7 +55,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final resolvedBackgroundColor = widget.backgroundColor ?? colors.primary;
-    final resolvedTextColor = widget.textColor ?? colors.iconHighlight;
+    final resolvedTextColor = widget.textColor ?? colors.primaryButtonText;
     final resolvedGradientColor = widget.gradientColor ?? colors.background;
     final mediaQuery = MediaQuery.of(context);
     final keyboardHeight = widget.isVisibleAboveKeyboard ? mediaQuery.viewInsets.bottom : 0.0;

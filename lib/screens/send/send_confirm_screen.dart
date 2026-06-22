@@ -93,8 +93,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                       }
                     },
                     text: t.next,
-                    backgroundColor: CoconutColors.gray100,
-                    pressedBackgroundColor: CoconutColors.gray500,
+                    backgroundColor: context.coconutColors.primaryButtonBackground,
+                    textColor: context.coconutColors.primaryButtonText,
                   ),
                 ],
               ),

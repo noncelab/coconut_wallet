@@ -346,7 +346,8 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                   widget.onTransactionTypeSelected(_selectedAnalysisTransactionType);
                   Navigator.pop(context);
                 },
-                backgroundColor: CoconutColors.white,
+                backgroundColor: context.coconutColors.primaryButtonBackground,
+                textColor: context.coconutColors.primaryButtonText,
                 isActive:
                     (() {
                       final selectedIndex =

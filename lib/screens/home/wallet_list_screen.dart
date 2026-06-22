@@ -143,7 +143,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                     await viewModel.applyTempDatasToWallets();
                                   },
                                   isActive: viewModel.hasFavoriteChanged || viewModel.hasWalletOrderChanged,
-                                  backgroundColor: CoconutColors.white,
+                                  backgroundColor: context.coconutColors.primaryButtonBackground,
+                                  textColor: context.coconutColors.primaryButtonText,
                                   text: t.done,
                                 ),
                               ],

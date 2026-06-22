@@ -102,7 +102,8 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
                   await _viewModel.saveChanges();
                 },
                 text: t.settings_screen.block_explorer.save,
-                backgroundColor: CoconutColors.white,
+                backgroundColor: context.coconutColors.primaryButtonBackground,
+                textColor: context.coconutColors.primaryButtonText,
               ),
             ],
           ),
