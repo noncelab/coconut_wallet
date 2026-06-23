@@ -90,10 +90,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       backgroundColor: context.coconutColors.background,
                       customTitle: Text(
                         titleText,
-                        style:
-                            widget.isSplitMode
-                                ? CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)
-                                : CoconutTypography.body2_14.setColor(CoconutColors.white),
+                        style: widget.isSplitMode ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
@@ -180,7 +177,10 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                     viewModel.isInitialized
                                         ? Stack(
                                           children: [
-                                            Container(color: CoconutColors.black, child: _buildUtxoList(viewModel)),
+                                            Container(
+                                              color: context.coconutColors.background,
+                                              child: _buildUtxoList(viewModel),
+                                            ),
                                             FixedBottomButton(
                                               onButtonClicked: () {
                                                 vibrateLight();

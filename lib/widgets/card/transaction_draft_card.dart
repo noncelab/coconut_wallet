@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -209,9 +210,9 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
               if (widget.onDelete != null)
                 Positioned.fill(
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: CoconutColors.hotPink,
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    decoration: BoxDecoration(
+                      color: context.coconutColors.danger,
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                 ),
