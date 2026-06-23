@@ -656,7 +656,7 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                   right: 0,
                   bottom: 0,
                   child: SizedBox(
-                    height: buttonAreaHeight,
+                    height: buttonAreaHeight + 5,
                     child: FixedBottomButton(
                       showGradient: widget.showGradient,
                       isVisibleAboveKeyboard: false,
@@ -672,6 +672,7 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                           _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
                       text: widget.confirmText,
                       backgroundColor: context.coconutColors.primaryButtonBackground,
+                      gradientColor: Colors.transparent,
                       textColor: context.coconutColors.primaryButtonText,
                     ),
                   ),

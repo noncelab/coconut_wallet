@@ -102,7 +102,10 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       context: context,
-      backgroundColor: _isScrollOverTitleHeight ? CoconutColors.black.withValues(alpha: 0.5) : CoconutColors.black,
+      backgroundColor:
+          _isScrollOverTitleHeight
+              ? context.coconutColors.background.withValues(alpha: 0.5)
+              : context.coconutColors.background,
       title: t.transaction_draft.title,
       isBottom: true,
     );
@@ -112,7 +115,9 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     return Padding(
       padding: const EdgeInsets.only(top: 14, bottom: 14, left: 16, right: 16),
       child: CoconutSegmentedControl(
-        labels: [t.transaction_draft.signed, t.transaction_draft.unsigned],
+        selectedColor: context.coconutColors.surfacePressed,
+        segmentedControlContainerColor: context.coconutColors.surface,
+        selectedTextColor: context.coconutColors.primaryText,
         isSelected: [_isSignedTransactionSelected ?? true, !(_isSignedTransactionSelected ?? true)],
         onPressed: (index) async {
           final wasSignedSelected = _isSignedTransactionSelected ?? true;
@@ -136,6 +141,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
 
           await scrollToTop();
         },
+        children: [Text(t.transaction_draft.signed), Text(t.transaction_draft.unsigned)],
       ),
     );
   }
@@ -240,7 +246,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
           description: t.transaction_draft.dialog.transaction_draft_delete_description,
           leftButtonText: t.cancel,
           rightButtonText: t.confirm,
-          rightButtonColor: CoconutColors.white,
+          rightButtonColor: context.coconutColors.primaryText,
           onTapRight: () async {
             Navigator.pop(dialogContext);
             await _deleteDraft(transactionDraft, cardId, viewModel);
@@ -277,7 +283,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
             title: t.transaction_draft.dialog.transaction_draft_delete_failed,
             description: result.error.message,
             rightButtonText: t.confirm,
-            rightButtonColor: CoconutColors.white,
+            rightButtonColor: context.coconutColors.primaryText,
             onTapRight: () {
               Navigator.pop(dialogContext);
             },
