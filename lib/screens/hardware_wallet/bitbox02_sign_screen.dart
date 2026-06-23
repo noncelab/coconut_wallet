@@ -1,0 +1,316 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/providers/view_model/hardware_wallet/bitbox02_sign_viewmodel.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+Color _darker(Color color) {
+  final hsl = HSLColor.fromColor(color);
+  return hsl.withLightness((hsl.lightness - 0.15).clamp(0.0, 1.0)).toColor();
+}
+
+class BitBox02SignScreen extends StatefulWidget {
+  final String psbtBase64;
+  final String walletName;
+
+  const BitBox02SignScreen({
+    super.key,
+    required this.psbtBase64,
+    required this.walletName,
+  });
+
+  @override
+  State<BitBox02SignScreen> createState() => _BitBox02SignScreenState();
+}
+
+class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
+  late BitBox02SignViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = BitBox02SignViewModel(
+      psbtBase64: widget.psbtBase64,
+      walletName: widget.walletName,
+    );
+  }
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
+      child: Scaffold(
+        backgroundColor: CoconutColors.black,
+        appBar: AppBar(
+          title: Text(widget.walletName),
+          backgroundColor: CoconutColors.black,
+          foregroundColor: CoconutColors.white,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Consumer<BitBox02SignViewModel>(
+                builder: (context, vm, _) => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Mock', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                    CoconutLayout.spacing_100w,
+                    SizedBox(
+                      height: 24,
+                      child: Switch(
+                        value: vm.mockMode,
+                        onChanged: (v) => vm.setMockMode(v),
+                        activeColor: CoconutColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        body: Consumer<BitBox02SignViewModel>(
+          builder: (context, vm, _) {
+            return SafeArea(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+                      child: Column(
+                        children: [
+                          _buildTransactionSummaryCard(),
+                          CoconutLayout.spacing_600h,
+                          _buildStatusSection(vm),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (vm.step != BitBox02SignStep.signing)
+                    Positioned(
+                      left: 24,
+                      right: 24,
+                      bottom: 16,
+                      child: _buildBottomButton(vm),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionSummaryCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: CoconutColors.gray900,
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.swap_horiz, color: CoconutColors.primary, size: 20),
+              CoconutLayout.spacing_200w,
+              Text('Transaction', style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.primary)),
+            ],
+          ),
+          CoconutLayout.spacing_500h,
+          _buildDetailRow('Send', '0.001 BTC'),
+          CoconutLayout.spacing_300h,
+          _buildDetailRow('To', 'bc1q...xj2k'),
+          CoconutLayout.spacing_300h,
+          _buildDetailRow('Fee', '0.00000225 BTC (2.25 sat/vB)'),
+          CoconutLayout.spacing_300h,
+          _buildDetailRow('Total Cost', '0.00100225 BTC'),
+          CoconutLayout.spacing_500h,
+          Container(
+            width: double.infinity,
+            height: 1,
+            color: CoconutColors.gray700,
+          ),
+          CoconutLayout.spacing_300h,
+          Row(
+            children: [
+              const Icon(Icons.usb_rounded, color: CoconutColors.gray400, size: 16),
+              CoconutLayout.spacing_100w,
+              Text(
+                'BitBox02 will verify these details on its screen',
+                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(label, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+        ),
+        Expanded(
+          child: Text(value, style: CoconutTypography.body3_12_Bold, textAlign: TextAlign.right),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusSection(BitBox02SignViewModel vm) {
+    switch (vm.step) {
+      case BitBox02SignStep.connecting:
+        return _buildProgressCard('Connecting to BitBox02...');
+      case BitBox02SignStep.signing:
+        return _buildProgressCard(vm.statusMessage);
+      case BitBox02SignStep.done:
+        return _buildSuccessCard();
+      case BitBox02SignStep.error:
+        return _buildErrorCard(vm);
+    }
+  }
+
+  Widget _buildProgressCard(String message) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: CoconutColors.gray900,
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(
+            width: 40, height: 40,
+            child: CircularProgressIndicator(color: CoconutColors.primary, strokeWidth: 3),
+          ),
+          CoconutLayout.spacing_400h,
+          Text(message, style: CoconutTypography.body2_14, textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccessCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: CoconutColors.gray900,
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+        border: Border.all(color: CoconutColors.green.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.check_circle_outline, color: CoconutColors.green, size: 48),
+          CoconutLayout.spacing_300h,
+          Text('Signed', style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.green)),
+          CoconutLayout.spacing_200h,
+          Text('Transaction has been signed by BitBox02.', style: CoconutTypography.body2_14, textAlign: TextAlign.center),
+          CoconutLayout.spacing_200h,
+          Text('Ready to broadcast.', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400), textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorCard(BitBox02SignViewModel vm) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: CoconutColors.gray900,
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+        border: Border.all(color: CoconutColors.red.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline, color: CoconutColors.red, size: 48),
+          CoconutLayout.spacing_300h,
+          Text('Signing Failed', style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.red)),
+          CoconutLayout.spacing_200h,
+          Text(vm.errorMessage ?? 'Unknown error', style: CoconutTypography.body2_14, textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomButton(BitBox02SignViewModel vm) {
+    final bool isDone = vm.step == BitBox02SignStep.done;
+    final bool isError = vm.step == BitBox02SignStep.error;
+
+    String buttonText;
+    VoidCallback onPressed;
+
+    if (isDone) {
+      buttonText = 'Continue';
+      onPressed = () {
+        Navigator.pop(context, {'signedPsbt': vm.signedPsbt});
+      };
+    } else if (isError) {
+      buttonText = 'Retry';
+      onPressed = () {
+        vm.reset();
+        vm.signTransaction();
+      };
+    } else {
+      buttonText = 'Sign with BitBox02';
+      onPressed = () => vm.signTransaction();
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ShrinkAnimationButton(
+          onPressed: onPressed,
+          defaultColor: isDone ? CoconutColors.primary : CoconutColors.primary,
+          pressedColor: _darker(CoconutColors.primary),
+          child: Container(
+            height: 50,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(
+                buttonText,
+                style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
+              ),
+            ),
+          ),
+        ),
+        if (isError) ...[
+          CoconutLayout.spacing_200h,
+          ShrinkAnimationButton(
+            onPressed: () {
+              vm.disconnect();
+              Navigator.pop(context);
+            },
+            defaultColor: CoconutColors.gray900,
+            pressedColor: CoconutColors.gray800,
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  'Cancel',
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}

@@ -19,7 +19,12 @@ class WalletAddService {
     return createWalletFromJson(json: json, name: name, walletImportSource: walletImportSource);
   }
 
-  WatchOnlyWallet createExtendedPublicKeyWallet(String extendedPublicKey, String name, String? masterFingerPrint) {
+  WatchOnlyWallet createExtendedPublicKeyWallet(
+    String extendedPublicKey,
+    String name,
+    String? masterFingerPrint, {
+    WalletImportSource importSource = WalletImportSource.extendedPublicKey,
+  }) {
     final singleSigWallet = SingleSignatureWallet.fromExtendedPublicKey(
       AddressType.p2wpkh,
       extendedPublicKey,
@@ -32,7 +37,7 @@ class WalletAddService {
       singleSigWallet.descriptor,
       null,
       null,
-      WalletImportSource.extendedPublicKey.name,
+      importSource.name,
     );
   }
 

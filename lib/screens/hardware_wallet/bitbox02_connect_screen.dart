@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/view_model/hardware_wallet/bitbox02_connect_viewmodel.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -108,6 +109,8 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
         return _buildProgressCard('Connecting to BitBox02...');
       case BitBox02ConnectStep.pairing:
         return _buildProgressCard('Initializing...\nCheck your BitBox02 screen.');
+      case BitBox02ConnectStep.retrievingXPub:
+        return _buildProgressCard('Retrieving extended public key...');
       case BitBox02ConnectStep.paired:
         return _buildSuccessCard(vm);
       case BitBox02ConnectStep.error:
@@ -168,6 +171,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
   }
 
   Widget _buildSuccessCard(BitBox02ConnectViewModel vm) {
+    final hasXpub = vm.xpub.isNotEmpty;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -185,6 +189,41 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
           if (vm.device != null) ...[
             CoconutLayout.spacing_400h,
             Text('Device ID: ${vm.device!.id}', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+          ],
+          if (hasXpub) ...[
+            CoconutLayout.spacing_600h,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: CoconutColors.black,
+                borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Master Fingerprint', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                  CoconutLayout.spacing_100h,
+                  Text(vm.fingerprint, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyan)),
+                  CoconutLayout.spacing_300h,
+                  Text('Derivation Path', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                  CoconutLayout.spacing_100h,
+                  Text(
+                    NetworkType.currentNetworkType.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'",
+                    style: CoconutTypography.body2_14_Bold,
+                  ),
+                  CoconutLayout.spacing_300h,
+                  Text('Extended Public Key', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                  CoconutLayout.spacing_100h,
+                  Text(
+                    vm.xpub,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray300),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
           ],
         ],
       ),
@@ -212,25 +251,39 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
   }
 
   Widget _buildMainButton(BitBox02ConnectViewModel vm) {
-    final isRetry = vm.step == BitBox02ConnectStep.error;
-    final text = vm.step == BitBox02ConnectStep.paired
-        ? 'Continue'
-        : isRetry
-            ? 'Retry'
-            : 'Connect via USB';
+    final bool isRetry = vm.step == BitBox02ConnectStep.error;
+    final bool hasXpub = vm.xpub.isNotEmpty;
+    final bool isPaired = vm.step == BitBox02ConnectStep.paired;
+
+    String buttonText;
+    VoidCallback onPressed;
+
+    if (isPaired && !hasXpub) {
+      buttonText = 'Continue';
+      onPressed = () => vm.retrieveXPub();
+    } else if (isPaired && hasXpub) {
+      buttonText = 'Import Wallet';
+      onPressed = () {
+        Navigator.pop(context, {
+          'xpub': vm.xpub,
+          'fingerprint': vm.fingerprint,
+          'device': vm.device,
+        });
+      };
+    } else if (isRetry) {
+      buttonText = 'Retry';
+      onPressed = () => vm.connect(transport: 'usb');
+    } else {
+      buttonText = 'Connect via USB';
+      onPressed = () => vm.connect(transport: 'usb');
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         ShrinkAnimationButton(
-          onPressed: () {
-            if (vm.step == BitBox02ConnectStep.paired) {
-              Navigator.pop(context, true);
-            } else {
-              vm.connect(transport: 'usb');
-            }
-          },
-          defaultColor: CoconutColors.primary,
+          onPressed: onPressed,
+          defaultColor: (isPaired && hasXpub) ? CoconutColors.primary : CoconutColors.primary,
           pressedColor: _darker(CoconutColors.primary),
           child: Container(
             height: 50,
@@ -239,7 +292,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
             ),
             child: Center(
               child: Text(
-                text,
+                buttonText,
                 style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
               ),
             ),
@@ -261,6 +314,57 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
               child: Center(
                 child: Text(
                   'Connect via Simulator (TCP)',
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                ),
+              ),
+            ),
+          ),
+        ],
+        if (isRetry) ...[
+          CoconutLayout.spacing_200h,
+          ShrinkAnimationButton(
+            onPressed: () {
+              vm.reset();
+            },
+            defaultColor: CoconutColors.gray900,
+            pressedColor: CoconutColors.gray800,
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  'Cancel',
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                ),
+              ),
+            ),
+          ),
+        ],
+        if (isPaired && hasXpub) ...[
+          CoconutLayout.spacing_200h,
+          ShrinkAnimationButton(
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                '/bitbox02-sign',
+                arguments: {
+                  'psbtBase64': 'cHNidP8BAP1aAQI...',
+                  'walletName': 'BitBox02 Test',
+                },
+              );
+            },
+            defaultColor: CoconutColors.gray800,
+            pressedColor: CoconutColors.gray700,
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  'Sign Test Transaction',
                   style: CoconutTypography.body3_12.setColor(CoconutColors.white),
                 ),
               ),

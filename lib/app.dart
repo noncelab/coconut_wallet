@@ -54,6 +54,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_scree
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/hardware_wallet/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/screens/hardware_wallet/bitbox02_sign_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
@@ -348,6 +349,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     (context) => buildScreenWithArgs(
                       context,
                       (args) => BitBox02ConnectScreen(importSource: args['walletImportSource']),
+                    ),
+                '/bitbox02-sign':
+                    (context) => buildScreenWithArgs(
+                      context,
+                      (args) => BitBox02SignScreen(
+                        psbtBase64: args['psbtBase64'],
+                        walletName: args['walletName'],
+                      ),
                     ),
 
                 '/wallet-info':

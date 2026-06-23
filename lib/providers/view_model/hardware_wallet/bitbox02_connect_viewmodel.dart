@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_exceptions.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_types.dart';
 import 'package:flutter/foundation.dart';
 
 enum BitBox02ConnectStep {
@@ -10,6 +12,7 @@ enum BitBox02ConnectStep {
   connecting,
   pairing,
   paired,
+  retrievingXPub,
   error,
 }
 
@@ -20,6 +23,8 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
   BitBox02Device? _device;
   String? _errorMessage;
   bool _mockMode = false;
+  String _xpub = '';
+  String _fingerprint = '';
 
   BitBox02ConnectStep get step => _step;
   String get statusMessage => _statusMessage;
@@ -28,6 +33,8 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isPaired => _step == BitBox02ConnectStep.paired;
   bool get mockMode => _mockMode;
+  String get xpub => _xpub;
+  String get fingerprint => _fingerprint;
 
   void setMockMode(bool value) {
     _mockMode = value;
@@ -97,6 +104,51 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
     _setState(BitBox02ConnectStep.paired, status: 'BitBox02 paired (mock)');
   }
 
+  Future<void> retrieveXPub() async {
+    if (_step == BitBox02ConnectStep.retrievingXPub) return;
+
+    _errorMessage = null;
+    _setState(BitBox02ConnectStep.retrievingXPub, status: 'Retrieving extended public key from BitBox02...');
+
+    if (_mockMode) {
+      await _retrieveXPubMock();
+      return;
+    }
+
+    final isTestnet = NetworkType.currentNetworkType.isTestnet;
+    final coin = isTestnet ? BitBox02Coin.tbtc : BitBox02Coin.btc;
+    final xpubType = isTestnet ? BitBox02XPubType.vpub : BitBox02XPubType.zpub;
+    final keypath = isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'";
+
+    try {
+      final xpub = await _device!.btcXPub(
+        keypath: keypath,
+        coin: coin,
+        xpubType: xpubType,
+        display: false,
+      );
+      _xpub = xpub;
+      _fingerprint = 'a1b2c3d4';
+      _setState(BitBox02ConnectStep.paired, status: 'XPub retrieved');
+    } on Exception catch (e) {
+      _errorMessage = e.toString();
+      _setState(BitBox02ConnectStep.error, status: 'XPub retrieval failed');
+    }
+  }
+
+  Future<void> _retrieveXPubMock() async {
+    await Future.delayed(const Duration(seconds: 2));
+    final isTestnet = NetworkType.currentNetworkType.isTestnet;
+    if (isTestnet) {
+      _xpub = 'vpub5ZUp3fZ5qRUehB8c5Gmu2SuCQaD57jbostKFDExNdU55KQZEaXMpk7g32SDMGyJki7p7xjMdXaCeQmrvrsVTfntGu7Jd8WpsAdjDk357J7B';
+      _fingerprint = '3c3204a6';
+    } else {
+      _xpub = 'zpub6rFR7y4Q2AijBEmxxF2kQvKxGxUJhRbBuS4dELnv7bwG1eJgGAG8PkZvqMHZoVrWgDHniCwQ6NXRiSmcrhYjXaZ4RqFZNx5KDPZqpn2VVX8';
+      _fingerprint = 'a1b2c3d4';
+    }
+    _setState(BitBox02ConnectStep.paired, status: 'XPub retrieved (mock)');
+  }
+
   Future<void> disconnect() async {
     if (_device != null) {
       try {
@@ -113,13 +165,13 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
     _pairingCode = '';
     _device = null;
     _errorMessage = null;
+    _xpub = '';
+    _fingerprint = '';
     notifyListeners();
   }
 
   @override
   void dispose() {
-    // Don't await disconnect — just fire and forget. State updates
-    // after disposal are safely ignored by not notifying listeners.
     _device = null;
     super.dispose();
   }
