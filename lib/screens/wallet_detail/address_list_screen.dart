@@ -252,7 +252,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
         selectedColor: context.coconutColors.surfacePressed,
         segmentedControlContainerColor: context.coconutColors.surface,
         selectedTextColor: context.coconutColors.primaryText,
-        unselectedTextColor: context.coconutColors.primaryButtonText,
         children: [Text(t.address_list_screen.receiving), Text(t.address_list_screen.change)],
       ),
     );

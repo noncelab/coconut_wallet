@@ -1994,6 +1994,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               backgroundColor: context.coconutColors.pulldownMenuBackground,
               shadowColor: context.coconutColors.shadowDefault.withValues(alpha: 0.06),
               dividerColor: context.coconutColors.pulldownMenuDividerColor,
+              splashColor: context.coconutColors.pulldownMenuPressedColor,
               entries: [
                 CoconutPulldownMenuGroup(
                   groupTitle: t.tool,

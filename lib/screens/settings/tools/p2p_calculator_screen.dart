@@ -46,7 +46,6 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   static const int _maxSats = 2100000000000000; // 21M BTC
   static const double _offlineBottomCardSwapThreshold = 0.4;
   final GlobalKey _shareButtonKey = GlobalKey();
-  final Color _keyboardToolbarColor = const Color(0xFF2E2E2E);
 
   late P2PCalculatorViewModel _viewModel;
 
@@ -896,6 +895,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                   width: 24,
                   height: 24,
                   controller: _lottieController,
+                  delegates: LottieDelegates(
+                    values: [
+                      ValueDelegate.colorFilter([
+                        '**',
+                      ], value: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcATop)),
+                    ],
+                  ),
                   onLoaded: (composition) {
                     _lottieController.duration = composition.duration;
                   },
@@ -907,7 +913,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                   'assets/svg/hand-shake.svg',
                   width: 24,
                   height: 24,
-                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                 ),
               ),
             ],
@@ -967,21 +973,23 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         _buildCurrentPriceWidget(isVisible),
         if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
-            pressedColor:
-                _viewModel.isOfflineMode ? CoconutColors.gray850 : context.coconutColors.surfacePressed,
+            pressedColor: context.coconutColors.surfacePressed,
             onPressed: () async {
               await _viewModel.onFiatUnitChange();
               _resetCalculator();
               _inputFocusNode.unfocus();
             },
-            defaultColor: _viewModel.isOfflineMode ? CoconutColors.gray900 : CoconutColors.gray800,
+            defaultColor: context.coconutColors.surface,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               constraints: const BoxConstraints(minWidth: 60),
               child: Center(
                 child: Text(
                   _viewModel.fiatCode.name,
-                  style: CoconutTypography.body2_14_Bold.copyWith(color: CoconutColors.white, height: 1.0),
+                  style: CoconutTypography.body2_14_Bold.copyWith(
+                    color: context.coconutColors.primaryText,
+                    height: 1.0,
+                  ),
                 ),
               ),
             ),
@@ -1004,11 +1012,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               children: [
                 Text(
                   '${t.utility.p2p_calculator.one_btc} = ',
-                  style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
+                  style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
                 ),
                 Text(
                   _viewModel.formattedOneBtcPrice,
-                  style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
+                  style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
                 ),
               ],
             ),
@@ -1043,12 +1051,12 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               ? Text(
                 _getExchangeLabel(_viewModel.fiatCode),
                 key: ValueKey('exchange_${_viewModel.fiatCode.name}'),
-                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
               )
               : Text(
                 t.utility.p2p_calculator.offline_price_unavailable,
                 key: const ValueKey('offline'),
-                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
               ),
     );
   }
@@ -1193,8 +1201,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     if (_viewModel.isOfflineMode) {
       return ShrinkAnimationButton(
         onPressed: _changeInputAsset,
-        defaultColor: CoconutColors.gray900,
-        pressedColor: CoconutColors.gray850,
+        defaultColor: context.coconutColors.surfaceButton,
+        pressedColor: context.coconutColors.surfacePressed,
         borderRadius: 8,
         child: SizedBox(
           width: 28,
@@ -1204,7 +1212,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               'assets/svg/arrow-top-down.svg',
               width: 18,
               height: 18,
-              colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
             ),
           ),
         ),
@@ -1212,8 +1220,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     }
     return ShrinkAnimationButton(
       onPressed: _changeInputAsset,
-      defaultColor: CoconutColors.gray900,
-      pressedColor: CoconutColors.gray850,
+      defaultColor: context.coconutColors.surfaceButton,
+      pressedColor: context.coconutColors.surfacePressed,
       child: SizedBox(
         width: 52,
         height: 52,
@@ -1222,7 +1230,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             'assets/svg/arrow-top-down.svg',
             width: 32,
             height: 32,
-            colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
           ),
         ),
       ),
@@ -1242,7 +1250,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     bool hidePlaceholderOnFocus = true,
   }) {
     final hasInput = _viewModel.inputAmount != null;
-    final textColor = hasInput ? CoconutColors.white : CoconutColors.gray600;
+    final textColor = hasInput ? context.coconutColors.primaryText : context.coconutColors.tertiaryText;
     // focus가 있고 입력값이 비어있으면 placeholder 숨김 (단, controller.text가 있으면 표시)
     final shouldHidePlaceholder = hidePlaceholderOnFocus && focusNode.hasFocus && controller.text.isEmpty;
     final effectivePlaceholder = shouldHidePlaceholder ? '' : placeholderText;
@@ -1259,7 +1267,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               curve: Curves.easeInOut,
               constraints: BoxConstraints(minHeight: fixedHeight ?? 175),
               height: fixedHeight,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: context.coconutColors.inputSurface,
+              ),
               child: Center(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -1276,6 +1287,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                         child: IntrinsicWidth(
                           child: CoconutTextField(
                             key: ValueKey('input_textfield_$placeholderText'),
+                            placeholderColor: context.coconutColors.tertiaryText,
                             enabled: _viewModel.isNetworkOn,
                             maxLines: 1,
                             controller: controller,
@@ -1344,35 +1356,41 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: CoconutColors.gray900),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: context.coconutColors.surfaceSectionBreak,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               '${t.utility.p2p_calculator.premium} ',
-              style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             ),
             IntrinsicWidth(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minWidth: 10),
-                child: CoconutTextField(
-                  enabled: _viewModel.isNetworkOn,
-                  controller: premiumController,
-                  focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
-                  padding: EdgeInsets.zero,
-                  maxLines: 1,
-                  height: 22,
-                  textInputAction: TextInputAction.done,
-                  textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                  textInputFormatter: const [RateInputFormatter(integerPlaces: 2, decimalPlaces: 1)],
-                  onChanged: _handlePremiumInputChanged,
-                  textAlign: TextAlign.end,
-                  isVisibleBorder: false,
+                child: Transform.translate(
+                  offset: const Offset(0, -1.5),
+                  child: CoconutTextField(
+                    enabled: _viewModel.isNetworkOn,
+                    controller: premiumController,
+                    focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
+                    padding: EdgeInsets.zero,
+                    maxLines: 1,
+                    height: 22,
+                    textInputAction: TextInputAction.done,
+                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                    textInputFormatter: const [RateInputFormatter(integerPlaces: 2, decimalPlaces: 1)],
+                    onChanged: _handlePremiumInputChanged,
+                    textAlign: TextAlign.end,
+                    isVisibleBorder: false,
+                  ),
                 ),
               ),
             ),
-            Text('%', style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
+            Text('%', style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
           ],
         ),
       ),
@@ -1392,7 +1410,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           constraints: BoxConstraints(minHeight: fixedHeight),
           height: fixedHeight,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.inputSurface),
           child: child,
         ),
       ),
@@ -1406,7 +1424,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     String? postfix,
     VoidCallback? onTap,
   }) {
-    final textColor = isActive ? CoconutColors.white : CoconutColors.gray500;
+    final textColor = isActive ? context.coconutColors.primaryText : context.coconutColors.tertiaryText;
 
     return Center(
       child: FittedBox(
@@ -1517,7 +1535,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         child: Container(
           width: MediaQuery.of(context).size.width,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          color: _keyboardToolbarColor,
+          color: context.coconutColors.surfaceCard,
           child: Row(
             children: [
               for (int i = 0; i < buttonData.length; i++) ...[
@@ -1531,7 +1549,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: CoconutColors.gray600, width: 1.2),
+                        border: Border.all(color: context.coconutColors.borderSubtle, width: 1.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
 
@@ -1539,7 +1557,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: Text(
                           buttonData[i]['label']!,
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                           textAlign: TextAlign.center,
                         ),
                       ),

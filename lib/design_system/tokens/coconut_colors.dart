@@ -117,6 +117,7 @@ class CoconutColors {
   final Color danger;
   final Color success;
   final Color pulldownMenuBackground;
+  final Color pulldownMenuPressedColor;
   final Color pulldownMenuDividerColor;
   final Color pulldownMenuTextColor;
   final Color shadowDefault;
@@ -176,6 +177,7 @@ class CoconutColors {
     required this.danger,
     required this.success,
     required this.pulldownMenuBackground,
+    required this.pulldownMenuPressedColor,
     required this.pulldownMenuDividerColor,
     required this.pulldownMenuTextColor,
     required this.shadowDefault,
@@ -237,6 +239,7 @@ class CoconutColors {
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
       pulldownMenuBackground: ds.CoconutColors.gray900,
+      pulldownMenuPressedColor: ds.CoconutColors.gray700,
       pulldownMenuDividerColor: ds.CoconutColors.black,
       pulldownMenuTextColor: ds.CoconutColors.white,
       shadowDefault: ds.CoconutColors.white,
@@ -299,6 +302,7 @@ class CoconutColors {
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
       pulldownMenuBackground: Color.fromARGB(255, 176, 169, 224),
+      pulldownMenuPressedColor: Color.fromARGB(255, 187, 181, 225),
       pulldownMenuDividerColor: Color.fromARGB(255, 199, 194, 232),
       pulldownMenuTextColor: Color(0xFF181A1F),
       shadowDefault: Color(0xFF181A1F),
