@@ -610,7 +610,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               width: MediaQuery.of(context).size.width,
               padding: const EdgeInsets.all(8),
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(
+                color: context.coconutColors.popupBackground,
+                borderRadius: BorderRadius.circular(20),
+              ),
               child: Stack(
                 children: [
                   Column(
@@ -619,7 +622,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       RepaintBoundary(
                         key: _billCaptureKey,
                         child: Container(
-                          color: CoconutColors.gray900,
+                          color: context.coconutColors.popupBackground,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -654,9 +657,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                                 canCopy: true,
                               ),
                               const SizedBox(height: 24),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 15),
-                                child: Divider(color: CoconutColors.gray700, height: 1),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 15),
+                                child: Divider(color: context.coconutColors.primaryText.withAlpha(50), height: 1),
                               ),
                               const SizedBox(height: 24),
                               _buildBillRow(
@@ -683,7 +686,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                                   children: [
                                     Text(
                                       '${_viewModel.fiatCode.symbol} $premiumAmountStr ($premiumSatsStr sats)',
-                                      style: CoconutTypography.body3_12_Number.copyWith(color: CoconutColors.gray500),
+                                      style: CoconutTypography.body3_12_Number.copyWith(
+                                        color: context.coconutColors.mutedText,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -714,7 +719,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       color: CoconutColors.white,
                       icon: SvgPicture.asset(
                         'assets/svg/close.svg',
-                        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                       ),
                     ),
                   ),
@@ -739,7 +744,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               height: 1.0,
               letterSpacing: -0.12,
               fontWeight: FontWeight.w500,
-              color: CoconutColors.gray400,
+              color: context.coconutColors.secondaryText,
             ),
           ),
           if (canCopy)
@@ -748,7 +753,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             Text(
               value,
               style: CoconutTypography.body2_14_Number.copyWith(
-                color: CoconutColors.white,
+                color: context.coconutColors.primaryText,
                 height: valueLineHeight,
                 letterSpacing: -0.28,
               ),
@@ -774,7 +779,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         children: [
           CoconutUnderlinedButton(
             text: t.utility.p2p_calculator.copy_all,
-            textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+            textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
             onTap: () async {
               final textToCopy = _viewModel.generateTransactionBill(
                 btcPriceStr,
@@ -795,7 +800,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               Expanded(
                 child: ShrinkAnimationButton(
                   borderRadius: 8,
-                  pressedColor: CoconutColors.gray850,
+                  pressedColor: context.coconutColors.surfacePressed,
                   onPressed: () {
                     _onSendButtonPressed(satsAmount);
                   },
@@ -806,14 +811,14 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       children: [
                         SvgPicture.asset(
                           'assets/svg/send-plane.svg',
-                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                           width: 14,
                           height: 14,
                         ),
                         CoconutLayout.spacing_200w,
                         Text(
                           t.utility.p2p_calculator.send,
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                         ),
                       ],
                     ),
@@ -824,7 +829,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               Expanded(
                 child: ShrinkAnimationButton(
                   borderRadius: 8,
-                  pressedColor: CoconutColors.gray850,
+                  pressedColor: context.coconutColors.surfacePressed,
                   onPressed: () {
                     _captureAndShareBill();
                   },
@@ -835,14 +840,14 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       children: [
                         SvgPicture.asset(
                           'assets/svg/export.svg',
-                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                           width: 14,
                           height: 14,
                         ),
                         CoconutLayout.spacing_200w,
                         Text(
                           t.utility.p2p_calculator.share,
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                         ),
                       ],
                     ),
@@ -1703,7 +1708,7 @@ class _CopyableTextState extends State<_CopyableText> {
             Text(
               widget.value,
               style: CoconutTypography.body1_16_Number.copyWith(
-                color: _isPressed ? CoconutColors.gray400 : CoconutColors.white,
+                color: _isPressed ? context.coconutColors.secondaryText : context.coconutColors.primaryText,
                 height: 1.4,
                 letterSpacing: -0.32,
               ),
@@ -1712,7 +1717,7 @@ class _CopyableTextState extends State<_CopyableText> {
             SvgPicture.asset(
               'assets/svg/copy.svg',
               colorFilter: ColorFilter.mode(
-                _isPressed ? CoconutColors.gray800 : CoconutColors.gray600,
+                _isPressed ? context.coconutColors.secondaryText : context.coconutColors.primaryText,
                 BlendMode.srcIn,
               ),
               width: 16,
