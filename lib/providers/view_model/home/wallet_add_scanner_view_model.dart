@@ -51,6 +51,9 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       case WalletImportSource.descriptor:
         _qrDataHandler = ComposedScanDataHandler2();
         break;
+      case WalletImportSource.bitbox02:
+        _qrDataHandler = ComposedScanDataHandler2();
+        break;
     }
   }
 

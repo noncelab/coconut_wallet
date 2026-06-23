@@ -26,6 +26,15 @@ aos-regtest:
 pre-deploy: 
 	fastlane pre_deploy
 
+# gomobile bind targets
+gomobile-android:
+	cd go && gomobile bind -target=android -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
+
+gomobile-ios:
+	cd go && gomobile bind -target=ios -o ../ios/Runner/bitboxbridge.xcframework .
+
+gomobile-bind: gomobile-android gomobile-ios
+
 fastlane-mainnet:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_mainnet && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_prep:true
 

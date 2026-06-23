@@ -50,7 +50,8 @@ String _getThirdPartyDefaultName(WalletImportSource walletImportSource) {
       return NetworkType.currentNetworkType == NetworkType.mainnet
           ? t.third_party.extended_public_keys.zpub
           : t.third_party.extended_public_keys.vpub;
+    case WalletImportSource.bitbox02:
     case WalletImportSource.coconutVault:
-      throw 'Coconut Vault is not third party';
+      throw 'Coconut Vault / BitBox02 is not third party';
   }
 }

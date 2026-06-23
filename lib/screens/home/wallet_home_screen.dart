@@ -1659,6 +1659,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     if (_resultOfSyncFromVault == null) return;
   }
 
+  void _goToBitBox02Screen() async {
+    print('=== _goToBitBox02Screen called ===');
+    Navigator.pop(context);
+    await Navigator.pushNamed(
+      context,
+      '/bitbox02-connect',
+      arguments: {'walletImportSource': WalletImportSource.bitbox02},
+    );
+  }
+
   void _onAddWalletPressed() {
     showGeneralDialog(
       context: context,
@@ -1734,13 +1744,21 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           ],
                         ),
                         CoconutLayout.spacing_400h,
-                        SizedBox(
-                          width: MediaQuery.sizeOf(context).width,
-                          child: _buildWalletIconShrinkButton(
-                            // () => _goToManualInputScreen(),
-                            () => _goToScannerScreen(WalletImportSource.extendedPublicKey),
-                            WalletImportSource.extendedPublicKey,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToScannerScreen(WalletImportSource.extendedPublicKey),
+                                WalletImportSource.extendedPublicKey,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToBitBox02Screen(),
+                                WalletImportSource.bitbox02,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
