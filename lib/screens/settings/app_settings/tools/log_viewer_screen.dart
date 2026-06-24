@@ -73,7 +73,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
         backgroundColor: colors.background.withValues(alpha: 0.95),
         actionButtonList: [
           IconButton(
-            icon: const Icon(Icons.share, color: CoconutColors.white),
+            icon: Icon(Icons.share, color: colors.iconDefault),
             onPressed: () async {
               try {
                 final logContent = await FileLogger.getLogContent();
@@ -103,7 +103,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
             icon: SvgPicture.asset(
               'assets/svg/trash.svg',
               width: 20,
-              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
             ),
             onPressed: _clearLog,
           ),
@@ -119,21 +119,18 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                     // 로그 설명 표시 영역
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: CoconutColors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                      decoration: BoxDecoration(color: colors.surfaceCard, borderRadius: BorderRadius.circular(10)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           RichText(
                             text: TextSpan(
                               text: t.settings_screen.log_viewer_screen.log_description_1,
-                              style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                              style: CoconutTypography.body2_14.setColor(colors.primaryText),
                               children: [
                                 TextSpan(
                                   text: ' ${t.settings_screen.log_viewer_screen.log_description_2}',
-                                  style: CoconutTypography.body2_14_Bold,
+                                  style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
                                 ),
                               ],
                             ),
@@ -141,7 +138,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                           CoconutLayout.spacing_200h,
                           Text(
                             t.settings_screen.log_viewer_screen.log_target,
-                            style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                            style: CoconutTypography.body2_14.setColor(colors.primaryText),
                           ),
                           CoconutLayout.spacing_100h,
                           // 로깅 대상 추가 시 여기에 추가
@@ -160,13 +157,10 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                       width: MediaQuery.of(context).size.width,
                       child: Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: CoconutColors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                        decoration: BoxDecoration(color: colors.surfaceCard, borderRadius: BorderRadius.circular(10)),
                         child: SelectableText(
                           _logContent,
-                          style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: CoconutColors.white),
+                          style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: colors.primaryText),
                         ),
                       ),
                     ),
@@ -177,14 +171,16 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
   }
 
   Widget _buildLogDescription(String index, String description) {
+    final colors = context.coconutColors;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$index. ', style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
+        Text('$index. ', style: CoconutTypography.body2_14.setColor(colors.primaryText)),
         Flexible(
           child: Text(
             description,
-            style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+            style: CoconutTypography.body2_14.setColor(colors.primaryText),
             textAlign: TextAlign.start,
             softWrap: true,
             maxLines: 10,
@@ -215,10 +211,12 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
   }
 
   Widget _buildButton(String text, VoidCallback onPressed) {
+    final colors = context.coconutColors;
+
     return Flexible(
       child: CoconutButton(
-        backgroundColor: CoconutColors.gray800,
-        foregroundColor: CoconutColors.white,
+        backgroundColor: colors.surfaceButton,
+        foregroundColor: colors.primaryText,
         text: text,
         onPressed: onPressed,
       ),

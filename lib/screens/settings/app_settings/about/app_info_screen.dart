@@ -2,21 +2,21 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/screens/settings/app_info_license_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/uri_launcher.dart';
+import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:coconut_wallet/constants/app_info.dart';
-import 'package:coconut_wallet/screens/settings/app_info_license_bottom_sheet.dart';
-import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/button/button_group.dart';
 
 class AppInfoScreen extends StatefulWidget {
   const AppInfoScreen({super.key});
@@ -128,7 +128,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
         customTitle: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
           opacity: _appbarTitleVisible ? 1 : 0,
-          child: Text(t.app_info, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+          child: Text(t.app_info, style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText)),
         ),
       ),
       body: Stack(
@@ -143,7 +143,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               Container(
                 width: MediaQuery.sizeOf(context).width,
                 height: MediaQuery.sizeOf(context).height / 2,
-                color: CoconutColors.gray800,
+                color: colors.surface,
               ),
             ],
           ),
@@ -188,6 +188,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
         }
 
         PackageInfo packageInfo = snapshot.data!;
+        final colors = context.coconutColors;
 
         return Container(
           padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
@@ -216,13 +217,10 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        packageInfo.appName,
-                        style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
-                      ),
+                      Text(packageInfo.appName, style: CoconutTypography.heading3_21_Bold.setColor(colors.primaryText)),
                       Text(
                         'ver.${packageInfo.version}',
-                        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                        style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
                       ),
                     ],
                   ),
@@ -439,7 +437,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: CoconutColors.white));
+          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault));
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {
@@ -447,9 +445,10 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
         }
 
         PackageInfo packageInfo = snapshot.data!;
+        final colors = context.coconutColors;
         return Container(
           padding: const EdgeInsets.only(top: 20, bottom: 40),
-          color: CoconutColors.gray800,
+          color: colors.surface,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -459,7 +458,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     t.app_info_screen.version_and_date(version: packageInfo.version, releasedAt: RELEASE_DATE),
-                    style: CoconutTypography.body2_14.setColor(CoconutColors.gray300),
+                    style: CoconutTypography.body2_14.setColor(colors.secondaryText),
                   ),
                 ),
               ),
@@ -473,7 +472,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     style: CoconutTypography.body2_14.merge(
                       TextStyle(
                         decoration: TextDecoration.underline,
-                        decorationColor: CoconutColors.white.withValues(alpha: 0.3),
+                        decorationColor: colors.primaryText.withValues(alpha: 0.3),
                       ),
                     ),
                   ),
@@ -488,6 +487,6 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
 
   Widget _category(String label) => Container(
     padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
-    child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray300)),
+    child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.secondaryText)),
   );
 }

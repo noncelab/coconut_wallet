@@ -14,7 +14,6 @@ import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
-import 'package:coconut_wallet/ui/coconut/coconut_toggle_row.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';

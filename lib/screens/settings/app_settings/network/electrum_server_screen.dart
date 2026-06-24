@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -243,10 +244,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
               isDefaultServerMenuVisible
                   ? Container(
                     width: MediaQuery.sizeOf(context).width,
-                    padding: const EdgeInsets.only(bottom: 14, top: 6, right: 6),
+                    padding: const EdgeInsets.only(bottom: 14, top: 6, right: 6, left: 6),
+                    margin: const EdgeInsets.only(top: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(width: 1, color: CoconutColors.gray600),
+                      color: context.coconutColors.background,
+                      border: Border.all(width: 1, color: context.coconutColors.borderStrong),
                     ),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
@@ -276,7 +279,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.only(left: 2),
               child: _buildHeaderTabButton(
                 title: t.settings_screen.electrum_server.default_server,
                 isSelected: _selectedTab == ServerTab.defaultServer,
@@ -314,8 +317,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           title,
           style:
               isSelected
-                  ? CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)
-                  : CoconutTypography.body2_14.setColor(CoconutColors.gray600),
+                  ? CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)
+                  : CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
         ),
       ),
     );
@@ -342,8 +345,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
             for (int i = 0; i < serverList.length; i++) ...[
               ShrinkAnimationButton(
                 key: i == 0 ? _defaultServerButtonKey : null,
-                defaultColor: CoconutColors.black,
-                pressedColor: CoconutColors.gray850,
+                defaultColor: context.coconutColors.background,
+                pressedColor: context.coconutColors.primaryText.withValues(alpha: 0.08),
                 borderRadius: 12,
                 onPressed: () {
                   _serverAddressController.text = serverList[i].host;
@@ -417,7 +420,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                             children: [
                               Text(
                                 t.settings_screen.electrum_server.ssl_port(port: serverList[i].port),
-                                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                               ),
                               if (serverConnectionStatus == NodeConnectionStatus.connecting) ...[
                                 CoconutLayout.spacing_100w,
@@ -481,7 +484,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   t.settings_screen.electrum_server.server_address,
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                 ),
               ),
               CoconutLayout.spacing_100h,
@@ -492,7 +495,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     margin: const EdgeInsets.only(bottom: 4),
                     decoration: BoxDecoration(
-                      border: Border.all(color: CoconutColors.gray600),
+                      border: Border.all(color: context.coconutColors.tertiaryText),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                     ),
@@ -500,7 +503,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       children: [
                         Text(
                           _serverAddressController.text,
-                          style: CoconutTypography.body2_14.setColor(CoconutColors.gray600),
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
                         ),
                       ],
                     ),
@@ -523,6 +526,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     errorText: t.settings_screen.electrum_server.error_msg.invalid_domain_format,
                     textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
                     textInputType: TextInputType.text,
+                    backgroundColor: context.coconutColors.background,
                     maxLines: 1,
                     suffix:
                         _serverAddressController.text.isNotEmpty
@@ -536,7 +540,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                               },
                               icon: SvgPicture.asset(
                                 'assets/svg/text-field-clear.svg',
-                                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                               ),
                             )
                             : null,
@@ -568,7 +572,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   t.settings_screen.electrum_server.port,
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                 ),
               ),
               CoconutLayout.spacing_100h,
@@ -579,13 +583,16 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     margin: const EdgeInsets.only(bottom: 4),
                     decoration: BoxDecoration(
-                      border: Border.all(color: CoconutColors.gray600),
+                      border: Border.all(color: context.coconutColors.tertiaryText),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                     ),
                     child: Row(
                       children: [
-                        Text(_portController.text, style: CoconutTypography.body2_14.setColor(CoconutColors.gray600)),
+                        Text(
+                          _portController.text,
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                        ),
                       ],
                     ),
                   )
@@ -602,6 +609,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     errorText: t.settings_screen.electrum_server.error_msg.port_out_of_range,
                     textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                     textInputType: TextInputType.number,
+                    backgroundColor: context.coconutColors.background,
                     suffix:
                         _portController.text.isNotEmpty
                             ? IconButton(
@@ -614,7 +622,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                               },
                               icon: SvgPicture.asset(
                                 'assets/svg/text-field-clear.svg',
-                                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                               ),
                             )
                             : null,
@@ -642,7 +650,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
         children: [
           Text(
             t.settings_screen.electrum_server.use_ssl,
-            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+            style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
           ),
           Selector<ElectrumServerViewModel, NodeConnectionStatus>(
             selector: (_, viewModel) => viewModel.nodeConnectionStatus,
@@ -687,7 +695,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 34),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
       child: Row(
         children: [
           _buildAlertIcon(status),
@@ -710,7 +718,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           return SvgPicture.asset(
             CustomIcons.triangleWarning,
             height: 20,
-            colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           );
         }
       case NodeConnectionStatus.connecting:
@@ -783,8 +791,9 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       width: MediaQuery.sizeOf(context).width,
                       child: ShrinkAnimationButton(
                         isActive: nodeConnectionStatus != NodeConnectionStatus.connecting && isDifferentFromInitial,
-                        defaultColor: CoconutColors.white,
-                        pressedColor: CoconutColors.gray350,
+                        defaultColor: context.coconutColors.primaryButtonBackground,
+                        pressedColor: getDarkerColor(context.coconutColors.primaryButtonBackground),
+                        disabledColor: context.coconutColors.surfaceDisabled,
                         onPressed: _onReset,
                         borderRadius: CoconutStyles.radius_200,
                         child: Padding(
@@ -792,7 +801,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                           child: Text(
                             t.settings_screen.electrum_server.reset,
                             textAlign: TextAlign.center,
-                            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
+                            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryButtonText),
                           ),
                         ),
                       ),
@@ -805,8 +814,9 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       width: MediaQuery.sizeOf(context).width,
                       child: ShrinkAnimationButton(
                         isActive: hasActualChanges && nodeConnectionStatus != NodeConnectionStatus.connecting,
-                        defaultColor: CoconutColors.white,
-                        pressedColor: CoconutColors.gray350,
+                        defaultColor: context.coconutColors.primaryButtonBackground,
+                        pressedColor: getDarkerColor(context.coconutColors.primaryButtonBackground),
+                        disabledColor: context.coconutColors.surfaceDisabled,
                         onPressed: () {
                           _unFocus();
                           _onSave();
@@ -817,7 +827,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                           child: Text(
                             t.settings_screen.electrum_server.save,
                             textAlign: TextAlign.center,
-                            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
+                            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryButtonText),
                           ),
                         ),
                       ),

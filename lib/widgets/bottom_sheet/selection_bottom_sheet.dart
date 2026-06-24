@@ -10,12 +10,7 @@ class SelectionItem<T> {
   final T value;
   final VoidCallback onTap;
 
-  SelectionItem({
-    required this.title,
-    this.subtitle,
-    required this.value,
-    required this.onTap,
-  });
+  SelectionItem({required this.title, this.subtitle, required this.value, required this.onTap});
 }
 
 class SelectionBottomSheet<T> extends StatelessWidget {
@@ -37,12 +32,7 @@ class SelectionBottomSheet<T> extends StatelessWidget {
     final colors = context.coconutColors;
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: CoconutAppBar.build(
-        title: title,
-        context: context,
-        onBackPressed: null,
-        isBottom: true,
-      ),
+      appBar: CoconutAppBar.build(title: title, context: context, onBackPressed: null, isBottom: true),
       body: Padding(
         padding: const EdgeInsets.only(left: Sizes.size16, right: Sizes.size16),
         child: Column(
@@ -52,44 +42,34 @@ class SelectionBottomSheet<T> extends StatelessWidget {
                 alignment: Alignment.topRight,
                 child: Padding(
                   padding: const EdgeInsets.only(right: Sizes.size8),
-                  child: Text(
-                    headerText!,
-                    style: CoconutTypography.body3_12_Number.setColor(
-                      CoconutColors.white,
-                    ),
-                  ),
+                  child: Text(headerText!, style: CoconutTypography.body3_12_Number.setColor(colors.primaryText)),
                 ),
               ),
-            ..._buildItemsWithDividers(),
+            ..._buildItemsWithDividers(context),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildItemsWithDividers() {
+  List<Widget> _buildItemsWithDividers(BuildContext context) {
     List<Widget> widgets = [];
 
     for (int i = 0; i < items.length; i++) {
       final item = items[i];
       final isSelected = item.value == selectedValue;
 
-      widgets.add(_buildItem(item, isSelected));
+      widgets.add(_buildItem(context, item, isSelected));
 
       if (i < items.length - 1) {
-        widgets.add(
-          Divider(
-            color: CoconutColors.white.withValues(alpha: 0.12),
-            height: 1,
-          ),
-        );
+        widgets.add(Divider(color: context.coconutColors.primaryText.withValues(alpha: 0.12), height: 1));
       }
     }
 
     return widgets;
   }
 
-  Widget _buildItem(SelectionItem<T> item, bool isSelected) {
+  Widget _buildItem(BuildContext context, SelectionItem<T> item, bool isSelected) {
     return GestureDetector(
       onTap: () {
         vibrateExtraLight();
@@ -104,18 +84,11 @@ class SelectionBottomSheet<T> extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.title,
-                    style: CoconutTypography.body2_14_Bold.setColor(
-                      CoconutColors.white,
-                    ),
-                  ),
+                  Text(item.title, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)),
                   if (item.subtitle != null)
                     Text(
                       item.subtitle!,
-                      style: CoconutTypography.body3_12_Number.setColor(
-                        CoconutColors.white,
-                      ),
+                      style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
                     ),
                 ],
               ),
@@ -123,7 +96,10 @@ class SelectionBottomSheet<T> extends StatelessWidget {
             if (isSelected)
               Padding(
                 padding: const EdgeInsets.only(right: Sizes.size8),
-                child: SvgPicture.asset('assets/svg/check.svg'),
+                child: SvgPicture.asset(
+                  'assets/svg/check.svg',
+                  colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                ),
               ),
           ],
         ),
