@@ -5,19 +5,18 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// 공통 스타일
-const _defaultTextStyle = TextStyle(color: CoconutColors.white);
-final _indexTextStyle = CoconutTypography.body1_16_Number.setColor(CoconutColors.gray500);
-
 /// 하이라이트 처리 함수
 List<TextSpan> highlightOccurrences(
+  BuildContext context,
   String source,
   String query, {
-  String? type,
   bool isIndex = false,
-  Color highlightColor = CoconutColors.cyanBlue,
+  Color? highlightColor,
 }) {
-  final normalStyle = isIndex ? _indexTextStyle : _defaultTextStyle;
+  final colors = context.coconutColors;
+  final normalStyle =
+      isIndex ? CoconutTypography.body1_16_Number.setColor(colors.mutedText) : TextStyle(color: colors.primaryText);
+  final resolvedHighlightColor = highlightColor ?? colors.success;
 
   if (query.isEmpty) {
     return [TextSpan(text: source, style: normalStyle)];
@@ -39,7 +38,7 @@ List<TextSpan> highlightOccurrences(
     spans.add(
       TextSpan(
         text: source.substring(match.start, match.end),
-        style: normalStyle.copyWith(fontWeight: FontWeight.bold, color: highlightColor),
+        style: normalStyle.copyWith(fontWeight: FontWeight.bold, color: resolvedHighlightColor),
       ),
     );
 
@@ -210,7 +209,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeOut,
-            decoration: BoxDecoration(color: colors.borderSubtle, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: colors.inputSurface, borderRadius: BorderRadius.circular(12)),
             child: TextField(
               keyboardType: TextInputType.text,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
@@ -283,7 +282,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         ListTile(
           title: RichText(
             text: TextSpan(
-              children: highlightOccurrences(item, query, type: type),
+              children: highlightOccurrences(context, item, query),
               style: typography.title.copyWith(fontWeight: FontWeight.w600, color: colors.primaryText),
             ),
           ),
@@ -293,15 +292,16 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
               children: [
                 const TextSpan(text: 'Binary: '),
                 ...highlightOccurrences(
+                  context,
                   binaryStr,
                   type == 'numeric' ? binaryStr : (type == 'binary' ? query : ''),
-                  type: 'binary',
+                  isIndex: true,
                 ),
               ],
             ),
           ),
         ),
-        if (index != _filteredItems.length - 1) Divider(color: colors.borderSubtle),
+        if (index != _filteredItems.length - 1) Divider(color: colors.divider),
       ],
     );
   }
