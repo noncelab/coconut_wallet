@@ -356,6 +356,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       (args) => BitBox02SignScreen(
                         psbtBase64: args['psbtBase64'],
                         walletName: args['walletName'],
+                        isFromSendFlow: args['isFromSendFlow'] ?? false,
+                        transport: args['transport'] ?? 'usb',
                       ),
                     ),
 

@@ -1,5 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/hardware_wallet/bitbox02_sign_viewmodel.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -12,11 +15,15 @@ Color _darker(Color color) {
 class BitBox02SignScreen extends StatefulWidget {
   final String psbtBase64;
   final String walletName;
+  final bool isFromSendFlow;
+  final String transport;
 
   const BitBox02SignScreen({
     super.key,
     required this.psbtBase64,
     required this.walletName,
+    this.isFromSendFlow = false,
+    this.transport = 'usb',
   });
 
   @override
@@ -32,6 +39,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
     _viewModel = BitBox02SignViewModel(
       psbtBase64: widget.psbtBase64,
       walletName: widget.walletName,
+      transport: widget.transport,
     );
   }
 
@@ -52,26 +60,27 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
           backgroundColor: CoconutColors.black,
           foregroundColor: CoconutColors.white,
           actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Consumer<BitBox02SignViewModel>(
-                builder: (context, vm, _) => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Mock', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-                    CoconutLayout.spacing_100w,
-                    SizedBox(
-                      height: 24,
-                      child: Switch(
-                        value: vm.mockMode,
-                        onChanged: (v) => vm.setMockMode(v),
-                        activeColor: CoconutColors.primary,
+            if (!widget.isFromSendFlow)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Consumer<BitBox02SignViewModel>(
+                  builder: (context, vm, _) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Mock', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                      CoconutLayout.spacing_100w,
+                      SizedBox(
+                        height: 24,
+                        child: Switch(
+                          value: vm.mockMode,
+                          onChanged: (v) => vm.setMockMode(v),
+                          activeColor: CoconutColors.primary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         body: Consumer<BitBox02SignViewModel>(
@@ -108,6 +117,8 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
   }
 
   Widget _buildTransactionSummaryCard() {
+    final summary = _parsePsbtSummary();
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -125,13 +136,19 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
             ],
           ),
           CoconutLayout.spacing_500h,
-          _buildDetailRow('Send', '0.001 BTC'),
-          CoconutLayout.spacing_300h,
-          _buildDetailRow('To', 'bc1q...xj2k'),
-          CoconutLayout.spacing_300h,
-          _buildDetailRow('Fee', '0.00000225 BTC (2.25 sat/vB)'),
-          CoconutLayout.spacing_300h,
-          _buildDetailRow('Total Cost', '0.00100225 BTC'),
+          if (summary != null) ...[
+            _buildDetailRow('Send', '${UnitUtil.convertSatoshiToBitcoin(summary.amount)} BTC'),
+            CoconutLayout.spacing_300h,
+            if (summary.address.isNotEmpty)
+              _buildDetailRow('To', _truncateAddress(summary.address)),
+            CoconutLayout.spacing_300h,
+            _buildDetailRow('Fee', '${UnitUtil.convertSatoshiToBitcoin(summary.fee)} BTC'),
+            CoconutLayout.spacing_300h,
+            _buildDetailRow('Total Cost', '${UnitUtil.convertSatoshiToBitcoin(summary.amount + summary.fee)} BTC'),
+          ] else ...[
+            _buildDetailRow('Send', '-- BTC'),
+            _buildDetailRow('Fee', '-- BTC'),
+          ],
           CoconutLayout.spacing_500h,
           Container(
             width: double.infinity,
@@ -154,6 +171,36 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
     );
   }
 
+  _PsbtSummary? _parsePsbtSummary() {
+    try {
+      final psbt = Psbt.parse(widget.psbtBase64);
+
+      int amount = (psbt.outputs)
+          .where((o) => o.isChange != true)
+          .fold<int>(0, (sum, o) => sum + (o.outAmount ?? 0));
+      int fee = psbt.fee;
+
+      String address = '';
+      final outputs = psbt.outputs;
+      if (outputs.isNotEmpty) {
+        final firstNonChange = outputs.firstWhere(
+          (o) => o.isChange != true,
+          orElse: () => outputs.first,
+        );
+        address = firstNonChange.outAddress;
+      }
+
+      return _PsbtSummary(amount: amount, fee: fee, address: address);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _truncateAddress(String addr) {
+    if (addr.length <= 10) return addr;
+    return '${addr.substring(0, 8)}...${addr.substring(addr.length - 4)}';
+  }
+
   Widget _buildDetailRow(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,8 +218,10 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
 
   Widget _buildStatusSection(BitBox02SignViewModel vm) {
     switch (vm.step) {
+      case BitBox02SignStep.idle:
+        return _buildIdleCard(vm);
       case BitBox02SignStep.connecting:
-        return _buildProgressCard('Connecting to BitBox02...');
+        return _buildProgressCard(vm.statusMessage);
       case BitBox02SignStep.signing:
         return _buildProgressCard(vm.statusMessage);
       case BitBox02SignStep.done:
@@ -180,6 +229,26 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
       case BitBox02SignStep.error:
         return _buildErrorCard(vm);
     }
+  }
+
+  Widget _buildIdleCard(BitBox02SignViewModel vm) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: CoconutColors.gray900,
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+        border: Border.all(color: CoconutColors.gray700),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.usb_rounded, color: CoconutColors.gray400, size: 40),
+          CoconutLayout.spacing_300h,
+          Text('BitBox02', style: CoconutTypography.heading3_21_Bold),
+          CoconutLayout.spacing_100h,
+          Text('Tap the button below to start signing', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+        ],
+      ),
+    );
   }
 
   Widget _buildProgressCard(String message) {
@@ -197,6 +266,22 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
           ),
           CoconutLayout.spacing_400h,
           Text(message, style: CoconutTypography.body2_14, textAlign: TextAlign.center),
+          Consumer<BitBox02SignViewModel>(
+            builder: (ctx, vm, _) {
+              if (vm.fingerprint == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.fingerprint, size: 14, color: CoconutColors.gray400),
+                    CoconutLayout.spacing_100w,
+                    Text(vm.fingerprint!, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -216,7 +301,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
           CoconutLayout.spacing_300h,
           Text('Signed', style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.green)),
           CoconutLayout.spacing_200h,
-          Text('Transaction has been signed by BitBox02.', style: CoconutTypography.body2_14, textAlign: TextAlign.center),
+          const Text('Transaction has been signed by BitBox02.', style: CoconutTypography.body2_14, textAlign: TextAlign.center),
           CoconutLayout.spacing_200h,
           Text('Ready to broadcast.', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400), textAlign: TextAlign.center),
         ],
@@ -247,6 +332,8 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
   Widget _buildBottomButton(BitBox02SignViewModel vm) {
     final bool isDone = vm.step == BitBox02SignStep.done;
     final bool isError = vm.step == BitBox02SignStep.error;
+    final bool isBusy = vm.step == BitBox02SignStep.connecting ||
+        vm.step == BitBox02SignStep.signing;
 
     String buttonText;
     VoidCallback onPressed;
@@ -254,7 +341,13 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
     if (isDone) {
       buttonText = 'Continue';
       onPressed = () {
-        Navigator.pop(context, {'signedPsbt': vm.signedPsbt});
+        if (widget.isFromSendFlow) {
+          final sendInfoProvider = context.read<SendInfoProvider>();
+          sendInfoProvider.setSignedResult(vm.signedPsbt);
+          Navigator.pushReplacementNamed(context, '/broadcasting');
+        } else {
+          Navigator.pop(context, {'signedPsbt': vm.signedPsbt});
+        }
       };
     } else if (isError) {
       buttonText = 'Retry';
@@ -262,6 +355,11 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
         vm.reset();
         vm.signTransaction();
       };
+    } else if (isBusy) {
+      buttonText = vm.statusMessage.length > 30
+          ? '${vm.statusMessage.substring(0, 30)}...'
+          : vm.statusMessage;
+      onPressed = () {}; // no-op while busy
     } else {
       buttonText = 'Sign with BitBox02';
       onPressed = () => vm.signTransaction();
@@ -272,18 +370,37 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
       children: [
         ShrinkAnimationButton(
           onPressed: onPressed,
-          defaultColor: isDone ? CoconutColors.primary : CoconutColors.primary,
-          pressedColor: _darker(CoconutColors.primary),
+          defaultColor: isBusy
+              ? CoconutColors.gray700
+              : (isDone ? CoconutColors.primary : CoconutColors.primary),
+          pressedColor: isBusy
+              ? CoconutColors.gray700
+              : _darker(CoconutColors.primary),
           child: Container(
             height: 50,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Text(
-                buttonText,
-                style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
-              ),
+              child: isBusy
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 16, height: 16,
+                          child: CircularProgressIndicator(color: CoconutColors.gray400, strokeWidth: 2),
+                        ),
+                        CoconutLayout.spacing_200w,
+                        Text(
+                          buttonText,
+                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      buttonText,
+                      style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
+                    ),
             ),
           ),
         ),
@@ -313,4 +430,11 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
       ],
     );
   }
+}
+
+class _PsbtSummary {
+  final int amount;
+  final int fee;
+  final String address;
+  const _PsbtSummary({required this.amount, required this.fee, required this.address});
 }

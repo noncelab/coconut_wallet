@@ -272,15 +272,51 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       };
     } else if (isRetry) {
       buttonText = 'Retry';
-      onPressed = () => vm.connect(transport: 'usb');
+      onPressed = () => vm.connect(transport: vm.transport);
     } else {
       buttonText = 'Connect via USB';
       onPressed = () => vm.connect(transport: 'usb');
     }
 
+    final bool showSeedButtons = isPaired && !hasXpub;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (showSeedButtons) ...[
+          ShrinkAnimationButton(
+            onPressed: () => vm.restoreWallet(),
+            defaultColor: CoconutColors.gray700,
+            pressedColor: CoconutColors.gray600,
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+              child: Center(
+                child: Text(
+                  'Restore from Mnemonic',
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                ),
+              ),
+            ),
+          ),
+          CoconutLayout.spacing_200h,
+          ShrinkAnimationButton(
+            onPressed: () => vm.createWallet(),
+            defaultColor: CoconutColors.gray700,
+            pressedColor: CoconutColors.gray600,
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+              child: Center(
+                child: Text(
+                  'Create New Wallet',
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                ),
+              ),
+            ),
+          ),
+          CoconutLayout.spacing_200h,
+        ],
         ShrinkAnimationButton(
           onPressed: onPressed,
           defaultColor: (isPaired && hasXpub) ? CoconutColors.primary : CoconutColors.primary,
@@ -352,6 +388,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
                 arguments: {
                   'psbtBase64': 'cHNidP8BAP1aAQI...',
                   'walletName': 'BitBox02 Test',
+                  'transport': vm.device?.transport ?? 'usb',
                 },
               );
             },

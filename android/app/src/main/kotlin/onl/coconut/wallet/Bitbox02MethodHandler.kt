@@ -33,9 +33,15 @@ class Bitbox02MethodHandler(
         when (call.method) {
             "connect" -> connect(call, result)
             "init" -> init(call, result)
+            "rootFingerprint" -> rootFingerprint(call, result)
+            "restoreFromMnemonic" -> restoreFromMnemonic(call, result)
+            "setPassword" -> setPassword(call, result)
+            "channelHashVerify" -> channelHashVerify(call, result)
+            "deviceInitialized" -> deviceInitialized(call, result)
             "btcXPub" -> btcXPub(call, result)
             "btcAddress" -> btcAddress(call, result)
             "btcSignPSBT" -> btcSignPSBT(call, result)
+            "setPrevTxHex" -> setPrevTxHex(call, result)
             "btcSignMessage" -> btcSignMessage(call, result)
             "saveConfig" -> saveConfig(call, result)
             "loadConfig" -> loadConfig(call, result)
@@ -133,13 +139,79 @@ class Bitbox02MethodHandler(
         }
     }
 
+    private fun rootFingerprint(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        runOnExecutor(result) { Bridge.rootFingerprint(deviceId) }
+    }
+
+    private fun restoreFromMnemonic(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        executor.execute {
+            try {
+                Bridge.restoreFromMnemonic(deviceId)
+                mainHandler.post { result.success(null) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("RESTORE_FAILED", e.message, null) }
+            }
+        }
+    }
+
+    private fun setPassword(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        val seedLen = (call.argument<Int>("seedLen") ?: 32).toLong()
+        executor.execute {
+            try {
+                Bridge.setPassword(deviceId, seedLen)
+                mainHandler.post { result.success(null) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("SET_PASSWORD_FAILED", e.message, null) }
+            }
+        }
+    }
+
+    private fun channelHashVerify(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        val ok = call.argument<Boolean>("ok") ?: true
+        executor.execute {
+            try {
+                Bridge.channelHashVerify(deviceId, ok)
+                mainHandler.post { result.success(null) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("CHANNEL_HASH_VERIFY_FAILED", e.message, null) }
+            }
+        }
+    }
+
+    private fun deviceInitialized(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        runOnExecutor(result) { Bridge.deviceInitialized(deviceId) }
+    }
+
     private fun btcXPub(call: MethodCall, result: MethodChannel.Result) {
         val deviceId = call.argument<String>("id") ?: run {
             result.error("INVALID_ARG", "id is required", null)
             return
         }
+        val coin = (call.argument<Int>("coin") ?: 0).toLong()
         val keypath = call.argument<String>("keypath") ?: "m/84'/0'/0'/0/0"
-        runOnExecutor(result) { Bridge.btcxPub(deviceId, keypath) }
+        val xpubType = (call.argument<Int>("xpubType") ?: 3).toLong()
+        val display = call.argument<Boolean>("display") ?: false
+        runOnExecutor(result) { Bridge.btcxPub(deviceId, coin, keypath, xpubType, display) }
     }
 
     private fun btcAddress(call: MethodCall, result: MethodChannel.Result) {
@@ -147,10 +219,11 @@ class Bitbox02MethodHandler(
             result.error("INVALID_ARG", "id is required", null)
             return
         }
+        val coin = (call.argument<Int>("coin") ?: 0).toLong()
         val keypath = call.argument<String>("keypath") ?: "m/84'/0'/0'/0/0"
         val scriptType = call.argument<String>("scriptType") ?: "p2wpkh"
         val display = call.argument<Boolean>("display") ?: false
-        runOnExecutor(result) { Bridge.btcAddress(deviceId, keypath, scriptType, display) }
+        runOnExecutor(result) { Bridge.btcAddress(deviceId, coin, keypath, scriptType, display) }
     }
 
     private fun btcSignPSBT(call: MethodCall, result: MethodChannel.Result) {
@@ -158,14 +231,15 @@ class Bitbox02MethodHandler(
             result.error("INVALID_ARG", "id is required", null)
             return
         }
+        val coin = (call.argument<Int>("coin") ?: 0).toLong()
         val psbtBytes = call.argument<ByteArray>("psbtBytes") ?: run {
             result.error("INVALID_ARG", "psbtBytes is required", null)
             return
         }
-        val formatUnit = call.argument<String>("formatUnit") ?: "default"
+        val formatUnit = (call.argument<Int>("formatUnit") ?: 0).toLong()
         executor.execute {
             try {
-                val signed = Bridge.btcSignPSBT(deviceId, psbtBytes, formatUnit)
+                val signed = Bridge.btcSignPSBT(deviceId, coin, psbtBytes, formatUnit)
                 mainHandler.post { result.success(signed) }
             } catch (e: Exception) {
                 mainHandler.post { result.error("BTC_SIGN_PSBT_FAILED", e.message, null) }
@@ -173,20 +247,38 @@ class Bitbox02MethodHandler(
         }
     }
 
+    private fun setPrevTxHex(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        val inputIndex = call.argument<Int>("inputIndex") ?: run {
+            result.error("INVALID_ARG", "inputIndex is required", null)
+            return
+        }
+        val rawTxHex = call.argument<String>("rawTxHex") ?: run {
+            result.error("INVALID_ARG", "rawTxHex is required", null)
+            return
+        }
+        Bridge.setPrevTxHex(deviceId, inputIndex.toLong(), rawTxHex)
+        result.success(null)
+    }
+
     private fun btcSignMessage(call: MethodCall, result: MethodChannel.Result) {
         val deviceId = call.argument<String>("id") ?: run {
             result.error("INVALID_ARG", "id is required", null)
             return
         }
+        val coin = (call.argument<Int>("coin") ?: 0).toLong()
         val keypath = call.argument<String>("keypath") ?: "m/84'/0'/0'/0/0"
         val scriptType = call.argument<String>("scriptType") ?: "p2wpkh"
-        val message = call.argument<String>("message") ?: run {
+        val message = call.argument<ByteArray>("message") ?: run {
             result.error("INVALID_ARG", "message is required", null)
             return
         }
         executor.execute {
             try {
-                val sigJson = Bridge.btcSignMessage(deviceId, keypath, scriptType, message)
+                val sigJson = Bridge.btcSignMessage(deviceId, coin, keypath, scriptType, message)
                 mainHandler.post { result.success(sigJson) }
             } catch (e: Exception) {
                 mainHandler.post { result.error("BTC_SIGN_MESSAGE_FAILED", e.message, null) }

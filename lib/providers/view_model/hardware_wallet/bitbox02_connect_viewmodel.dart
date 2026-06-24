@@ -25,6 +25,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
   bool _mockMode = false;
   String _xpub = '';
   String _fingerprint = '';
+  String _transport = 'usb';
 
   BitBox02ConnectStep get step => _step;
   String get statusMessage => _statusMessage;
@@ -35,6 +36,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
   bool get mockMode => _mockMode;
   String get xpub => _xpub;
   String get fingerprint => _fingerprint;
+  String get transport => _transport;
 
   void setMockMode(bool value) {
     _mockMode = value;
@@ -62,6 +64,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
     }
 
     _setState(BitBox02ConnectStep.connecting, status: 'Connecting to BitBox02...');
+    _transport = transport;
 
     try {
       _device = await BitBox02Device.connect(
@@ -77,8 +80,10 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
 
       _setState(BitBox02ConnectStep.pairing, status: 'Initializing...');
       await _device!.init();
+      await _device!.channelHashVerify(ok: true);
 
       _setState(BitBox02ConnectStep.paired, status: 'BitBox02 connected');
+      BitBox02Device.lastConnected = _device;
     } on BitBox02ConnectException catch (e) {
       _errorMessage = e.message;
       _setState(BitBox02ConnectStep.error, status: 'Connection failed');
@@ -88,6 +93,44 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString();
       _setState(BitBox02ConnectStep.error, status: 'Unexpected error');
+    }
+  }
+
+  Future<void> restoreWallet() async {
+    if (_device == null || _step != BitBox02ConnectStep.paired) {
+      _errorMessage = 'Device not paired. Connect first.';
+      notifyListeners();
+      return;
+    }
+
+    _errorMessage = null;
+    _setState(BitBox02ConnectStep.retrievingXPub, status: 'Restoring mnemonic...');
+
+    try {
+      await _device!.restoreFromMnemonic();
+      _setState(BitBox02ConnectStep.paired, status: 'Wallet restored');
+    } on Exception catch (e) {
+      _errorMessage = e.toString();
+      _setState(BitBox02ConnectStep.error, status: 'Restore failed');
+    }
+  }
+
+  Future<void> createWallet({int seedLen = 32}) async {
+    if (_device == null || _step != BitBox02ConnectStep.paired) {
+      _errorMessage = 'Device not paired. Connect first.';
+      notifyListeners();
+      return;
+    }
+
+    _errorMessage = null;
+    _setState(BitBox02ConnectStep.retrievingXPub, status: 'Creating wallet...');
+
+    try {
+      await _device!.setPassword(seedLen: seedLen);
+      _setState(BitBox02ConnectStep.paired, status: 'Wallet created');
+    } on Exception catch (e) {
+      _errorMessage = e.toString();
+      _setState(BitBox02ConnectStep.error, status: 'Create failed');
     }
   }
 
@@ -115,7 +158,8 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
       return;
     }
 
-    final isTestnet = NetworkType.currentNetworkType.isTestnet;
+    final nt = NetworkType.currentNetworkType;
+    final isTestnet = nt.isTestnet;
     final coin = isTestnet ? BitBox02Coin.tbtc : BitBox02Coin.btc;
     final xpubType = isTestnet ? BitBox02XPubType.vpub : BitBox02XPubType.zpub;
     final keypath = isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'";
@@ -128,7 +172,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
         display: false,
       );
       _xpub = xpub;
-      _fingerprint = 'a1b2c3d4';
+      _fingerprint = await _device!.rootFingerprint();
       _setState(BitBox02ConnectStep.paired, status: 'XPub retrieved');
     } on Exception catch (e) {
       _errorMessage = e.toString();

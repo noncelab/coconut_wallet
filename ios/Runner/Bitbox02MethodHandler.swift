@@ -19,12 +19,16 @@ class Bitbox02MethodHandler: NSObject {
             connect(call, result: result)
         case "init":
             initDevice(call, result: result)
+        case "rootFingerprint":
+            rootFingerprint(call, result: result)
         case "btcXPub":
             btcXPub(call, result: result)
         case "btcAddress":
             btcAddress(call, result: result)
         case "btcSignPSBT":
             btcSignPSBT(call, result: result)
+        case "setPrevTxHex":
+            setPrevTxHex(call, result: result)
         case "btcSignMessage":
             btcSignMessage(call, result: result)
         case "saveConfig":
@@ -91,6 +95,23 @@ class Bitbox02MethodHandler: NSObject {
         }
     }
 
+    private func rootFingerprint(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        do {
+            var err: NSError?
+            let fingerprint = BitboxbridgeRootFingerprint(deviceId, &err)
+            if let err = err {
+                result(FlutterError(code: "ROOT_FINGERPRINT_FAILED", message: err.localizedDescription, details: nil))
+                return
+            }
+            result(fingerprint)
+        }
+    }
+
     private func btcXPub(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         let args = call.arguments as? [String: Any] ?? [:]
         guard let deviceId = args["id"] as? String else {
@@ -154,6 +175,21 @@ class Bitbox02MethodHandler: NSObject {
             }
             result(FlutterStandardTypedData(bytes: signed))
         }
+    }
+
+    private func setPrevTxHex(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        let inputIndex = args["inputIndex"] as? Int ?? 0
+        guard let rawTxHex = args["rawTxHex"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "rawTxHex required", details: nil))
+            return
+        }
+        BitboxbridgeSetPrevTxHex(deviceId, Int64(inputIndex), rawTxHex)
+        result(nil)
     }
 
     private func btcSignMessage(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

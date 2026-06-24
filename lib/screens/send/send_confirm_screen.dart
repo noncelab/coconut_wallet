@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -84,11 +85,24 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                       viewModel.setTxWaitingForSign();
                       if (context.mounted) {
                         context.loaderOverlay.hide();
-                        Navigator.pushNamed(
-                          context,
-                          '/unsigned-transaction-qr',
-                          arguments: {'walletName': viewModel.walletName},
-                        );
+                        if (viewModel.walletImportSource == WalletImportSource.bitbox02) {
+                          Navigator.pushNamed(
+                            context,
+                            '/bitbox02-sign',
+                            arguments: {
+                              'psbtBase64': viewModel.txWaitingForSign,
+                              'walletName': viewModel.walletName,
+                              'isFromSendFlow': true,
+                              'transport': 'tcp',
+                            },
+                          );
+                        } else {
+                          Navigator.pushNamed(
+                            context,
+                            '/unsigned-transaction-qr',
+                            arguments: {'walletName': viewModel.walletName},
+                          );
+                        }
                       }
                     },
                     text: t.next,

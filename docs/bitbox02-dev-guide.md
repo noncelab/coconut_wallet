@@ -245,6 +245,60 @@ For real USB testing, a **physical Android device with USB OTG** is required.
 8. (Future) Send → Sign via BitBox02 → broadcast
 ```
 
+### 5.7 Android Emulator Startup
+
+```bash
+# List available AVDs
+$HOME/Library/Android/sdk/emulator/emulator -list-avds
+
+# Start emulator (launch before flutter run)
+$HOME/Library/Android/sdk/emulator/emulator -avd <avd_name> &
+
+# Common flags
+$HOME/Library/Android/sdk/emulator/emulator -avd <avd_name> \
+  -no-audio \        # mute emulator audio
+  -gpu host \        # hardware-accelerated GPU
+  -writable-system \ # allow adb remount
+  &
+```
+
+**Note:** The emulator must be running **before** `flutter run --flavor regtest`. Flutter auto-detects the running emulator and deploys to it.
+
+### 5.8 ADB Debugging
+
+```bash
+# Pinned PATH
+export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"
+
+# List connected devices (emulator shows as "emulator-5554")
+adb devices
+
+# Flutter logs (same as adb logcat filtered)
+flutter logs
+
+# adb logcat filtering
+adb logcat -s flutter       # Flutter engine logs
+adb logcat -s bitbox02       # BitBox02 tag logs (from Kotlin handler)
+adb logcat | grep -i bitbox  # all logs mentioning bitbox
+
+# Clear logcat buffer before a test run
+adb logcat -c
+
+# Port forward — physical device → host Docker simulator
+# (emulator uses 10.0.2.2, physical devices need reverse tunnel)
+adb reverse tcp:15423 tcp:15423
+
+# Shell into emulator
+adb shell
+
+# Uninstall app (useful after key store corruption)
+adb uninstall com.coconut.wallet.regtest
+
+# Install APK directly (bypasses flutter run)
+flutter build apk --flavor regtest
+adb install build/app/outputs/flutter-apk/app-regtest-release.apk
+```
+
 ---
 
 ## 6. gomobile Bugs & Workarounds
@@ -560,6 +614,17 @@ docker stop bitbox02-sim && docker rm bitbox02-sim
 
 # Static analysis
 $HOME/.fvm/flutter_sdk/bin/dart analyze lib/
+
+# Android emulator
+$HOME/Library/Android/sdk/emulator/emulator -list-avds
+$HOME/Library/Android/sdk/emulator/emulator -avd <avd_name> -no-audio -gpu host &
+
+# ADB debugging
+adb devices
+adb logcat -s flutter
+adb logcat -c                                  # clear log buffer
+adb reverse tcp:15423 tcp:15423                # port forward (physical device)
+flutter logs
 
 # Emulator with USB passthrough (blocked)
 ~/Library/Android/sdk/emulator/emulator -avd <name> \
