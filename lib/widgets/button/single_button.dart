@@ -111,7 +111,7 @@ class SingleButton extends StatelessWidget {
             : subtitle != null && subtitle!.containsCJK
             ? CoconutTypography.body3_12.copyWith(height: 1.3)
             : CoconutTypography.body3_12_Number;
-    return baseStyle.setColor(context.coconutColors.tertiaryText);
+    return baseStyle.setColor(subtitleStyle?.color ?? context.coconutColors.tertiaryText);
   }
 
   Widget _buildButtonContent(BuildContext context) {

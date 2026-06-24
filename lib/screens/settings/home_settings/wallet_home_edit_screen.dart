@@ -193,7 +193,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                               ),
                             ),
                           ),
-                          const Divider(height: 1, color: CoconutColors.gray700),
+                          Divider(height: 1, color: context.coconutColors.divider),
                           if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
                             Consumer<WalletHomeEditViewModel>(
                               builder: (context, viewModel, child) {
@@ -203,7 +203,9 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                       isVerticalSubtitle: true,
                                       title: t.wallet_home_screen.edit.hide_balance,
                                       subtitle: t.wallet_home_screen.edit.hide_balance_on_home,
-                                      subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                                      subtitleStyle: CoconutTypography.body3_12.setColor(
+                                        context.coconutColors.secondaryText,
+                                      ),
                                       customPadding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
                                       onPressed: () async {
                                         if (_fakeBalanceFocusNode.hasFocus) {
@@ -228,7 +230,9 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                       isVerticalSubtitle: true,
                                       title: t.wallet_home_screen.edit.fake_balance.fake_balance_display,
                                       subtitle: t.wallet_home_screen.edit.fake_balance.fake_balance_input_description,
-                                      subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                                      subtitleStyle: CoconutTypography.body3_12.setColor(
+                                        context.coconutColors.secondaryText,
+                                      ),
                                       customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
                                       onPressed: () async {
                                         if (_fakeBalanceFocusNode.hasFocus) {
@@ -280,7 +284,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                 );
                               },
                             ),
-                            const Divider(height: 1, color: CoconutColors.gray700),
+                            Divider(height: 1, color: context.coconutColors.divider),
                           ],
                           CoconutLayout.spacing_500h,
                           _buildHomeWidgetSelector(),
@@ -455,7 +459,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                   // homeFeatureTypeString을 통해 토글
                                   _viewModel.toggleTempHomeFeatureEnabled(widget['homeFeatureTypeString'].toString());
                                 },
-                                defaultColor: CoconutColors.gray800,
+                                defaultColor: context.coconutColors.surfaceCard,
                                 pressedColor: context.coconutColors.surfacePressed,
                                 child: FixedTextScale(
                                   child: Container(
@@ -478,7 +482,9 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                                     child: Text(
                                                       _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
                                                       maxLines: 2,
-                                                      style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                                                      style: CoconutTypography.body2_14.setColor(
+                                                        context.coconutColors.primaryText,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
@@ -494,10 +500,10 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                                     color:
                                                         (widget['isEnabled'] as bool)
                                                             ? CoconutColors.white
-                                                            : CoconutColors.gray800,
+                                                            : context.coconutColors.surfacePressed,
                                                     border: Border.all(
                                                       width: (widget['isEnabled'] as bool) ? 0 : 1.5,
-                                                      color: CoconutColors.gray600,
+                                                      color: context.coconutColors.switchInactiveTrack,
                                                     ),
                                                   ),
                                                   child: Center(
@@ -580,10 +586,10 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                   focusNode: _fakeBalanceFocusNode,
                   onChanged: (text) {},
                   backgroundColor: context.coconutColors.background,
-                  errorColor: CoconutColors.hotPink,
-                  placeholderColor: CoconutColors.gray700,
-                  activeColor: CoconutColors.white,
-                  cursorColor: CoconutColors.white,
+                  errorColor: context.coconutColors.danger,
+                  placeholderColor: context.coconutColors.tertiaryText,
+                  activeColor: context.coconutColors.primaryText,
+                  cursorColor: context.coconutColors.primaryText,
                   maxLength: viewModel.maxInputLength,
                   suffix: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
