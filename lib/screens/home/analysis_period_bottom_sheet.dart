@@ -71,13 +71,13 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
             data: CupertinoThemeData(
               primaryColor: CupertinoColors.white, // 선택 포커스/악센트
               textTheme: CupertinoTextThemeData(
-                dateTimePickerTextStyle: CoconutTypography.heading3_21.setColor(CoconutColors.white),
+                dateTimePickerTextStyle: CoconutTypography.heading3_21.setColor(context.coconutColors.primaryText),
               ),
             ),
             child: SafeArea(
               bottom: false,
               child: Container(
-                color: CoconutColors.black,
+                color: context.coconutColors.surfaceBottomSheet,
                 height: 300 + MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -122,8 +122,8 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                   child: SizedBox(
                                     width: MediaQuery.sizeOf(context).width,
                                     child: ShrinkAnimationButton(
-                                      defaultColor: CoconutColors.white,
-                                      pressedColor: CoconutColors.gray350,
+                                      defaultColor: context.coconutColors.primaryButtonBackground,
+                                      pressedColor: context.coconutColors.surfacePressed,
                                       onPressed: () => Navigator.pop(context),
                                       borderRadius: CoconutStyles.radius_200,
                                       child: Padding(
@@ -131,7 +131,9 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                         child: Text(
                                           t.cancel,
                                           textAlign: TextAlign.center,
-                                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
+                                          style: CoconutTypography.body2_14_Bold.setColor(
+                                            context.coconutColors.primaryButtonText,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -143,8 +145,8 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                   child: SizedBox(
                                     width: MediaQuery.sizeOf(context).width,
                                     child: ShrinkAnimationButton(
-                                      defaultColor: CoconutColors.white,
-                                      pressedColor: CoconutColors.gray350,
+                                      defaultColor: context.coconutColors.primaryButtonBackground,
+                                      pressedColor: context.coconutColors.surfacePressed,
                                       onPressed: () {
                                         if (onDateChanged != null) {
                                           onDateChanged(temp);
@@ -157,7 +159,9 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                         child: Text(
                                           t.confirm,
                                           textAlign: TextAlign.center,
-                                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
+                                          style: CoconutTypography.body2_14_Bold.setColor(
+                                            context.coconutColors.primaryButtonText,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -246,12 +250,9 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                     MediaQuery(
                       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                       child: CoconutSegmentedControl(
-                        labels: [
-                          t.wallet_home_screen.analysis_period_bottom_sheet.days_30,
-                          t.wallet_home_screen.analysis_period_bottom_sheet.days_60,
-                          t.wallet_home_screen.analysis_period_bottom_sheet.days_90,
-                          t.wallet_home_screen.analysis_period_bottom_sheet.custom,
-                        ],
+                        selectedColor: context.coconutColors.surfacePressed,
+                        segmentedControlContainerColor: context.coconutColors.surface,
+                        selectedTextColor: context.coconutColors.primaryText,
                         isSelected: _selectedPeriodIndices,
                         onPressed: (index) {
                           if (index == 3) {
@@ -262,6 +263,12 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                             _selectedPeriodIndices = [index == 0, index == 1, index == 2, index == 3];
                           });
                         },
+                        children: [
+                          Text(t.wallet_home_screen.analysis_period_bottom_sheet.days_30),
+                          Text(t.wallet_home_screen.analysis_period_bottom_sheet.days_60),
+                          Text(t.wallet_home_screen.analysis_period_bottom_sheet.days_90),
+                          Text(t.wallet_home_screen.analysis_period_bottom_sheet.custom),
+                        ],
                       ),
                     ),
                     CoconutLayout.spacing_500h,
@@ -279,7 +286,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                             isStart: true,
                                             onDateChanged: (d) => setState(() => _startDate = d),
                                           ),
-                                      backgroundColor: CoconutColors.gray700,
+                                      backgroundColor: context.coconutColors.inputSurface,
                                       borderWidth: 1,
                                       buttonType: CoconutButtonType.outlined,
                                       foregroundColor: CoconutColors.black,
@@ -298,7 +305,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                             isStart: false,
                                             onDateChanged: (d) => setState(() => _endDate = d),
                                           ),
-                                      backgroundColor: CoconutColors.gray700,
+                                      backgroundColor: context.coconutColors.inputSurface,
                                       borderWidth: 1,
                                       buttonType: CoconutButtonType.outlined,
                                       foregroundColor: CoconutColors.black,
@@ -319,14 +326,17 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                     MediaQuery(
                       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                       child: CoconutSegmentedControl(
-                        labels: [t.all, t.send, t.receive],
                         isSelected: transactionTypes.map((type) => type == _selectedAnalysisTransactionType).toList(),
+                        selectedColor: context.coconutColors.surfacePressed,
+                        segmentedControlContainerColor: context.coconutColors.surface,
+                        selectedTextColor: context.coconutColors.primaryText,
                         onPressed: (index) {
                           setState(() {
                             _selectedAnalysisTransactionType = transactionTypes[index];
                           });
                           // 외부 콜백 호출 제거: 확인 버튼에서만 적용
                         },
+                        children: [Text(t.all), Text(t.send), Text(t.receive)],
                       ),
                     ),
                   ],
