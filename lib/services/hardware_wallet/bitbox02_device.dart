@@ -14,6 +14,9 @@ class BitBox02Device {
   /// Last successfully paired device, reused for signing to avoid re-seeding.
   static BitBox02Device? lastConnected;
 
+  /// Fingerprint cached from [rootFingerprint], may be set by callers.
+  String? cachedFingerprint;
+
   BitBox02Device._({required this.id, required this.transport});
 
   static Future<BitBox02Device> connect({

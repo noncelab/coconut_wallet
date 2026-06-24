@@ -41,6 +41,20 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
       walletName: widget.walletName,
       transport: widget.transport,
     );
+    _viewModel.addListener(_onStateChanged);
+  }
+
+  void _onStateChanged() {
+    if (_viewModel.step == BitBox02SignStep.done) {
+      _viewModel.removeListener(_onStateChanged);
+      if (widget.isFromSendFlow) {
+        final sendInfoProvider = context.read<SendInfoProvider>();
+        sendInfoProvider.setSignedResult(_viewModel.signedPsbt);
+        Navigator.pushReplacementNamed(context, '/broadcasting');
+      } else {
+        Navigator.pop(context, {'signedPsbt': _viewModel.signedPsbt});
+      }
+    }
   }
 
   @override
@@ -100,7 +114,8 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
                       ),
                     ),
                   ),
-                  if (vm.step != BitBox02SignStep.signing)
+                  if (vm.step != BitBox02SignStep.signing &&
+                      vm.step != BitBox02SignStep.done)
                     Positioned(
                       left: 24,
                       right: 24,
@@ -232,20 +247,64 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
   }
 
   Widget _buildIdleCard(BitBox02SignViewModel vm) {
+    final status = vm.deviceStatus;
+    final IconData statusIcon;
+    final Color statusColor;
+    final String statusText;
+    final String? subText;
+
+    switch (status) {
+      case BitBox02DeviceStatus.disconnected:
+        statusIcon = Icons.usb_off_rounded;
+        statusColor = CoconutColors.gray500;
+        statusText = 'Not connected';
+        subText = 'Tap Sign to connect';
+      case BitBox02DeviceStatus.locked:
+        statusIcon = Icons.lock_outline;
+        statusColor = CoconutColors.orange;
+        statusText = 'Locked';
+        subText = vm.fingerprint != null
+            ? 'Device found: ${vm.fingerprint}'
+            : 'Device found — PIN required';
+      case BitBox02DeviceStatus.ready:
+        statusIcon = Icons.check_circle_outline;
+        statusColor = CoconutColors.green;
+        statusText = 'Ready';
+        subText = vm.fingerprint;
+    }
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: CoconutColors.gray900,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-        border: Border.all(color: CoconutColors.gray700),
+        border: Border.all(color: statusColor.withValues(alpha: 0.25)),
       ),
-      child: Column(
+      child: Row(
         children: [
-          const Icon(Icons.usb_rounded, color: CoconutColors.gray400, size: 40),
-          CoconutLayout.spacing_300h,
-          Text('BitBox02', style: CoconutTypography.heading3_21_Bold),
-          CoconutLayout.spacing_100h,
-          Text('Tap the button below to start signing', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+          Icon(statusIcon, color: statusColor, size: 20),
+          CoconutLayout.spacing_200w,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('BitBox02', style: CoconutTypography.body3_12_Bold),
+                Text(statusText, style: CoconutTypography.body3_12.setColor(statusColor)),
+              ],
+            ),
+          ),
+          if (subText != null) ...[
+            CoconutLayout.spacing_200w,
+            Flexible(
+              child: Text(
+                subText,
+                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -330,7 +389,6 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
   }
 
   Widget _buildBottomButton(BitBox02SignViewModel vm) {
-    final bool isDone = vm.step == BitBox02SignStep.done;
     final bool isError = vm.step == BitBox02SignStep.error;
     final bool isBusy = vm.step == BitBox02SignStep.connecting ||
         vm.step == BitBox02SignStep.signing;
@@ -338,18 +396,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
     String buttonText;
     VoidCallback onPressed;
 
-    if (isDone) {
-      buttonText = 'Continue';
-      onPressed = () {
-        if (widget.isFromSendFlow) {
-          final sendInfoProvider = context.read<SendInfoProvider>();
-          sendInfoProvider.setSignedResult(vm.signedPsbt);
-          Navigator.pushReplacementNamed(context, '/broadcasting');
-        } else {
-          Navigator.pop(context, {'signedPsbt': vm.signedPsbt});
-        }
-      };
-    } else if (isError) {
+    if (isError) {
       buttonText = 'Retry';
       onPressed = () {
         vm.reset();
@@ -372,7 +419,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
           onPressed: onPressed,
           defaultColor: isBusy
               ? CoconutColors.gray700
-              : (isDone ? CoconutColors.primary : CoconutColors.primary),
+              : CoconutColors.primary,
           pressedColor: isBusy
               ? CoconutColors.gray700
               : _darker(CoconutColors.primary),

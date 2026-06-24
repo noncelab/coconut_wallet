@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_exceptions.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_types.dart';
 import 'package:flutter/foundation.dart';
 
@@ -58,17 +59,19 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
       return; // Already connected
     }
 
+    final resolvedTransport = BitBox02Transport.resolve(preferred: transport);
+
     if (_mockMode) {
       await _connectMock();
       return;
     }
 
     _setState(BitBox02ConnectStep.connecting, status: 'Connecting to BitBox02...');
-    _transport = transport;
+    _transport = resolvedTransport;
 
     try {
       _device = await BitBox02Device.connect(
-        transport: transport,
+        transport: resolvedTransport,
         configJson: configJson,
         host: host,
         port: port,
@@ -173,6 +176,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
       );
       _xpub = xpub;
       _fingerprint = await _device!.rootFingerprint();
+      _device!.cachedFingerprint = _fingerprint;
       _setState(BitBox02ConnectStep.paired, status: 'XPub retrieved');
     } on Exception catch (e) {
       _errorMessage = e.toString();

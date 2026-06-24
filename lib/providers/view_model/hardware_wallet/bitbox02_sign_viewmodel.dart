@@ -9,6 +9,7 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_exceptions.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_types.dart';
 import 'package:flutter/foundation.dart';
 
@@ -69,6 +70,19 @@ class BitBox02SignViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _probeDeviceStatus() {
+    if (BitBox02Device.lastConnected != null) {
+      _deviceStatus = BitBox02DeviceStatus.locked;
+      _device = BitBox02Device.lastConnected;
+      final fp = _device!.cachedFingerprint;
+      if (fp != null) {
+        _fingerprint = fp;
+      }
+    } else {
+      _deviceStatus = BitBox02DeviceStatus.disconnected;
+    }
+  }
+
   Future<void> signTransaction({BitBox02Device? existingDevice}) async {
     if (_isSigning) return;
 
@@ -92,7 +106,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
         _device = existingDevice;
       } else {
         _device = await BitBox02Device.connect(
-          transport: transport,
+          transport: BitBox02Transport.resolve(preferred: transport),
         );
 
         _setState(BitBox02SignStep.connecting,
@@ -113,6 +127,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
         try {
           final fp = await _device!.rootFingerprint();
           _fingerprint = fp;
+          _device!.cachedFingerprint = fp;
           debugPrint('BB02_SIGN rootFingerprint ok: $fp');
         } catch (e) {
           _fingerprint = null;
@@ -121,6 +136,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
         _setState(BitBox02SignStep.connecting,
             status: 'Device ready — preparing transaction data...');
+        _deviceStatus = BitBox02DeviceStatus.ready;
       }
 
       final nt = NetworkType.currentNetworkType;
@@ -267,6 +283,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
     _isSigning = false;
     _signedPsbt = '';
     _fingerprint = null;
+    _probeDeviceStatus();
     notifyListeners();
   }
 

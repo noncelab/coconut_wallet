@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/view_model/hardware_wallet/bitbox02_connect_viewmodel.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -336,7 +337,8 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
         ),
         if (vm.step == BitBox02ConnectStep.idle) ...[
           CoconutLayout.spacing_200h,
-          ShrinkAnimationButton(
+          if (BitBox02Transport.canUseTcp)
+            ShrinkAnimationButton(
             onPressed: () {
               vm.connect(transport: 'tcp', host: '10.0.2.2', port: 15423);
             },
