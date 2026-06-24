@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -100,31 +101,37 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
         value: _viewModel,
         child: Consumer<UtxoTagCrudViewModel>(
           builder: (context, model, child) {
-            return CoconutBottomSheet(
-              useIntrinsicHeight: true,
-              appBar: CoconutAppBar.buildWithNext(
-                isBottom: true,
-                context: context,
-                onBackPressed: _handlePop,
-                onNextPressed: () {
-                  Navigator.pop(
-                    context,
-                    TagApplyResult(mode: UtxoTagApplyEditMode.changeAppliedTags, tagStates: _tagStates),
-                  );
-                },
-                title: t.tag_bottom_sheet.title_apply_tag,
-                isActive: !_isDeletionMode,
-                nextButtonTitle: t.done,
-              ),
-              body: Consumer<UtxoTagCrudViewModel>(
-                builder: (context, viewModel, child) {
-                  return SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: SizedBox(width: double.infinity, child: _buildUpdateView()),
-                    ),
-                  );
-                },
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: CoconutBottomSheet(
+                useIntrinsicHeight: true,
+                backgroundColor: context.coconutColors.surfaceBottomSheet,
+                appBar: CoconutAppBar.buildWithNext(
+                  isBottom: true,
+                  context: context,
+                  onBackPressed: _handlePop,
+                  onNextPressed: () {
+                    Navigator.pop(
+                      context,
+                      TagApplyResult(mode: UtxoTagApplyEditMode.changeAppliedTags, tagStates: _tagStates),
+                    );
+                  },
+                  title: t.tag_bottom_sheet.title_apply_tag,
+                  isActive: !_isDeletionMode,
+                  nextButtonTitle: t.done,
+                  backgroundColor: context.coconutColors.surfaceBottomSheet,
+                ),
+                body: Consumer<UtxoTagCrudViewModel>(
+                  builder: (context, viewModel, child) {
+                    return SafeArea(
+                      child: Container(
+                        color: context.coconutColors.surfaceBottomSheet,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: SizedBox(width: double.infinity, child: _buildUpdateView()),
+                      ),
+                    );
+                  },
+                ),
               ),
             );
           },
@@ -181,7 +188,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
             ),
           ),
           CoconutLayout.spacing_500h,
-          Divider(color: CoconutColors.white.withValues(alpha: 0.12), height: 1),
+          Divider(color: context.coconutColors.divider.withValues(alpha: 0.12), height: 1),
         ],
       ),
     );
@@ -287,7 +294,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       builder:
           (context) => TagEditBottomSheet(
             walletId: widget.walletId,
@@ -312,7 +319,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Divider(color: CoconutColors.white.withValues(alpha: 0.12), height: 1),
+          Divider(color: context.coconutColors.divider.withValues(alpha: 0.12), height: 1),
           _buildMenuItem(_isDeletionMode ? t.tag_bottom_sheet.exit_deletion : t.tag_bottom_sheet.delete_tag, () {
             _toggleDeletionMode();
           }),
@@ -333,7 +340,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
         width: double.infinity,
         color: Colors.transparent,
         padding: padding,
-        child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+        child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)),
       ),
     );
   }
@@ -359,8 +366,7 @@ class TagChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final foregroundColor = tagColorPalette[tag.colorIndex];
     final backgroundColor = foregroundColor.withValues(alpha: 0.18);
-
-    final style = _getStyle(foregroundColor);
+    final style = _getStyle(context, foregroundColor);
 
     Widget innerContent = Row(
       mainAxisSize: MainAxisSize.min,
@@ -407,12 +413,12 @@ class TagChip extends StatelessWidget {
     );
   }
 
-  _ChipStyle _getStyle(Color foregroundColor) {
+  _ChipStyle _getStyle(BuildContext context, Color foregroundColor) {
     if (isDeletionMode) {
       return _ChipStyle(
         borderColor: foregroundColor,
         textColor: foregroundColor,
-        icon: const Icon(Icons.close, key: ValueKey('delete'), size: 16, color: CoconutColors.white),
+        icon: Icon(Icons.close, key: const ValueKey('delete'), size: 16, color: context.coconutColors.iconDefault),
       );
     }
 

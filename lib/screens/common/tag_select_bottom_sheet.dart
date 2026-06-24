@@ -167,7 +167,7 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
                     ? null
                     : Text(
                       '${t.merge_utxos_screen.count(n: _selectedTagUtxoCountValue!, count: _selectedTagUtxoCountValue!)} ➔ ${t.merge_utxos_screen.count(n: 1, count: 1)}',
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray300),
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                     ),
             onButtonClicked: _confirm,
             backgroundColor: context.coconutColors.primaryButtonBackground,

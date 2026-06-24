@@ -95,6 +95,7 @@ class CoconutColors {
   final Color surfaceFilterChipSelected;
   final Color surfaceSkeletonBase;
   final Color surfaceSkeletonHighlight;
+  final Color surfaceSelected;
   final Color surfacePressed;
   final Color inputSurface;
   final Color primary;
@@ -155,6 +156,7 @@ class CoconutColors {
     required this.surfaceFilterChipSelected,
     required this.surfaceSkeletonBase,
     required this.surfaceSkeletonHighlight,
+    required this.surfaceSelected,
     required this.surfacePressed,
     required this.inputSurface,
     required this.primary,
@@ -217,6 +219,7 @@ class CoconutColors {
       surfaceFilterChipSelected: ds.CoconutColors.white,
       surfaceSkeletonBase: ds.CoconutColors.gray850,
       surfaceSkeletonHighlight: ds.CoconutColors.gray750,
+      surfaceSelected: ds.CoconutColors.gray800,
       surfacePressed: ds.CoconutColors.gray900,
       inputSurface: ds.CoconutColors.gray800,
       primary: ds.CoconutColors.primary,
@@ -280,6 +283,7 @@ class CoconutColors {
       surfaceFilterChipSelected: Color(0xFF181A1F),
       surfaceSkeletonBase: Color(0xFFD7D1E6),
       surfaceSkeletonHighlight: Color(0xFFF0EBFA),
+      surfaceSelected: Color(0xFFEDE3CF),
       surfacePressed: Color.fromARGB(255, 202, 223, 242),
       inputSurface: Color(0xFFE6DCCB),
       primary: Color.fromARGB(255, 87, 65, 232),

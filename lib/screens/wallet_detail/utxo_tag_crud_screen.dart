@@ -17,11 +17,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoTagCrudViewModel>(
-      create:
-          (context) => UtxoTagCrudViewModel(
-            Provider.of<UtxoTagProvider>(context, listen: false),
-            id,
-          ),
+      create: (context) => UtxoTagCrudViewModel(Provider.of<UtxoTagProvider>(context, listen: false), id),
       child: Consumer<UtxoTagCrudViewModel>(
         builder: (context, model, child) {
           return Scaffold(
@@ -38,7 +34,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                     _handleAddTagPressed(context, model);
                   },
                   icon: const Icon(Icons.add_rounded),
-                  color: CoconutColors.white,
+                  color: context.coconutColors.iconDefault,
                 ),
               ],
             ),
@@ -51,9 +47,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                     _buildEditButtons(context, model),
                     Expanded(
                       child: CustomTagVerticalSelector(
-                        key: ValueKey(
-                          model.utxoTagList.map((e) => e.name).join(':'),
-                        ),
+                        key: ValueKey(model.utxoTagList.map((e) => e.name).join(':')),
                         tags: model.utxoTagList,
                         externalUpdatedTagName: model.updatedTagName,
                         onSelectedTag: model.toggleUtxoTag,
@@ -76,16 +70,12 @@ class UtxoTagCrudScreen extends StatelessWidget {
         const SizedBox(height: 56),
         Text(
           t.utxo_tag_screen.onboarding_title,
-          style: CoconutTypography.body1_16_Bold.setColor(
-            context.coconutColors.primaryText,
-          ),
+          style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
         ),
         CoconutLayout.spacing_200h,
         Text(
           t.utxo_tag_screen.add_tag,
-          style: CoconutTypography.body2_14.copyWith(
-            color: CoconutColors.gray350,
-          ),
+          style: CoconutTypography.body2_14.copyWith(color: context.coconutColors.secondaryText),
         ),
       ],
     );
@@ -125,10 +115,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
     );
   }
 
-  void _handeDeleteTagPressed(
-    BuildContext context,
-    UtxoTagCrudViewModel model,
-  ) {
+  void _handeDeleteTagPressed(BuildContext context, UtxoTagCrudViewModel model) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -141,9 +128,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                     name: model.selectedUtxoTag!.name,
                     count: model.selectedUtxoTag?.utxoIdList!.length ?? 0,
                   )
-                  : t.alert.tag_delete.description(
-                    name: model.selectedUtxoTag!.name,
-                  ),
+                  : t.alert.tag_delete.description(name: model.selectedUtxoTag!.name),
           onTapRight: () {
             if (model.deleteUtxoTag()) {
               Navigator.of(context).pop();
@@ -161,7 +146,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
             Navigator.of(context).pop();
           },
           rightButtonText: t.delete,
-          rightButtonColor: CoconutColors.hotPink,
+          rightButtonColor: context.coconutColors.danger,
           leftButtonText: t.cancel,
         );
       },

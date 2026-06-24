@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_limit_text_field.dart';
 import 'package:flutter/material.dart';
 
@@ -10,7 +11,7 @@ class CustomLimitTextField extends StatelessWidget {
   final Function(String) onChanged;
   final VoidCallback onClear;
   final int maxLength;
-  final Color cursorColor;
+  final Color? cursorColor;
   final Widget? prefix;
   final TextInputType keyboardType;
   final String placeholder;
@@ -24,7 +25,7 @@ class CustomLimitTextField extends StatelessWidget {
     required this.onChanged,
     required this.onClear,
     this.maxLength = 30,
-    this.cursorColor = Colors.white,
+    this.cursorColor,
     this.prefix,
     this.keyboardType = TextInputType.text,
     this.placeholder = '',
@@ -40,7 +41,7 @@ class CustomLimitTextField extends StatelessWidget {
       onChanged: onChanged,
       onClear: onClear,
       maxLength: maxLength,
-      cursorColor: cursorColor,
+      cursorColor: cursorColor ?? context.coconutColors.primaryText,
       prefix: prefix,
       keyboardType: keyboardType,
       placeholder: placeholder,
