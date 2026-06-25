@@ -114,7 +114,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
             child: Lottie.asset(animationPath, width: 12, height: 12),
           ),
           CoconutLayout.spacing_200w,
-          Text(text, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray200)),
+          Text(text, style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText)),
         ],
       ),
     );

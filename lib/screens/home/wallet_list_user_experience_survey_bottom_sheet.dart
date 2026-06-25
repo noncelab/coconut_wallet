@@ -47,19 +47,21 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                 children: [
                   Image.asset(
                     'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
+                    color: context.coconutColors.primaryText,
+                    colorBlendMode: BlendMode.srcIn,
                   ),
                   const SizedBox(height: 30),
                   if (isFirst)
                     FittedBox(
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text1,
-                        style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
+                        style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
                         textAlign: TextAlign.center,
                       ),
                     ),
                   Text(
                     t.user_experience_survey_bottom_sheet.text2,
-                    style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
+                    style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
                   ),
                   const SizedBox(height: 80),
                   GestureDetector(
@@ -70,7 +72,7 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                       decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: CoconutColors.primary),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text3,
-                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray700),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -85,11 +87,11 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: CoconutColors.white.withValues(alpha: 0.5),
+                        color: context.coconutColors.primaryButtonBackground.withValues(alpha: 0.5),
                       ),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text4,
-                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                         textAlign: TextAlign.center,
                       ),
                     ),

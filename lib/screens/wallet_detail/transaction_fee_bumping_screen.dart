@@ -95,7 +95,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                 _feeTextFieldFocusNode.unfocus();
               },
               child: ColoredBox(
-                color: CoconutColors.black,
+                color: context.coconutColors.background,
                 child: SafeArea(
                   child: Stack(
                     children: [
@@ -141,9 +141,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                       children: [
                                         _buildPendingTxFeeWidget(),
                                         CoconutLayout.spacing_200h,
-                                        const Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: 3),
-                                          child: Divider(color: CoconutColors.gray800, height: 1),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                                          child: Divider(color: context.coconutColors.divider, height: 1),
                                         ),
                                         CoconutLayout.spacing_500h,
                                         _buildBumpingFeeTextFieldWidget(),
@@ -514,12 +514,12 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                   child: CoconutTextField(
                     controller: _textEditingController,
                     focusNode: _feeTextFieldFocusNode,
-                    cursorColor: CoconutColors.white,
+                    cursorColor: context.coconutColors.primaryText,
                     textInputType: const TextInputType.numberWithOptions(decimal: true),
                     textInputFormatter: const [RateInputFormatter()],
-                    errorColor: CoconutColors.hotPink,
-                    activeColor: CoconutColors.white,
-                    backgroundColor: CoconutColors.white.withValues(alpha: 0.15),
+                    errorColor: context.coconutColors.danger,
+                    activeColor: context.coconutColors.primaryText,
+                    backgroundColor: context.coconutColors.inputSurface.withValues(alpha: 0.15),
                     prefix: null,
                     fontFamily: 'SpaceGrotesk',
                     maxLines: 1,
@@ -594,7 +594,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             AnimatedRotation(
               turns: _isRecommendFeePannelExpanded ? -0.5 : 0,
               duration: const Duration(milliseconds: 200),
-              child: SvgPicture.asset('assets/svg/caret-down.svg'),
+              child: SvgPicture.asset(
+                'assets/svg/caret-down.svg',
+                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              ),
             ),
           ],
         ),
@@ -616,7 +619,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             });
           },
           child: Container(
-            color: _isRecommendFeePannelPressed ? CoconutColors.gray900 : CoconutColors.gray800,
+            color: _isRecommendFeePannelPressed ? context.coconutColors.surfacePressed : context.coconutColors.surface,
             padding: const EdgeInsets.only(
               left: CoconutLayout.defaultPadding,
               right: CoconutLayout.defaultPadding,
@@ -626,7 +629,13 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(padding: const EdgeInsets.all(1.5), child: SvgPicture.asset('assets/svg/circle-info.svg')),
+                Padding(
+                  padding: const EdgeInsets.all(1.5),
+                  child: SvgPicture.asset(
+                    'assets/svg/circle-info.svg',
+                    colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                  ),
+                ),
                 CoconutLayout.spacing_100w,
                 if (_viewModel.isInitializedSuccess != null)
                   Expanded(
@@ -658,7 +667,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       padding: const EdgeInsets.all(CoconutLayout.defaultPadding),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-        color: CoconutColors.gray800,
+        color: context.coconutColors.surface,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -687,7 +696,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             CoconutLayout.spacing_200w,
                             Text(
                               TransactionFeeLevel.fastest.expectedTime,
-                              style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
+                              style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
                               textScaler: const TextScaler.linear(1.0),
                             ),
                           ],
@@ -727,7 +736,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             CoconutLayout.spacing_200w,
                             Text(
                               TransactionFeeLevel.halfhour.expectedTime,
-                              style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
+                              style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
                               textScaler: const TextScaler.linear(1.0),
                             ),
                           ],
@@ -762,7 +771,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             CoconutLayout.spacing_200w,
                             Text(
                               TransactionFeeLevel.hour.expectedTime,
-                              style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
+                              style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
                               textScaler: const TextScaler.linear(1.0),
                             ),
                           ],

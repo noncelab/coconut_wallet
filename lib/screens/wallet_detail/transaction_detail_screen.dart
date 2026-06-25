@@ -25,7 +25,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
@@ -233,7 +232,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         color:
                             _viewModel.selectedTransactionIndex == index
                                 ? context.coconutColors.sendingColor
-                                : CoconutColors.gray800,
+                                : context.coconutColors.surface,
                         label:
                             !isLast
                                 ? t.transaction_fee_bumping_screen.new_fee
@@ -322,7 +321,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                     Row(
                       children: [
                         CoconutChip(
-                          color: CoconutColors.gray800,
+                          color: context.coconutColors.surface,
                           label:
                               index == 0
                                   ? t.transaction_fee_bumping_screen.existing_fee
