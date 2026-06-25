@@ -117,6 +117,7 @@ class CommonBottomSheets {
     Widget? child,
     Widget Function(ScrollController scrollController)? childBuilder,
     required double heightRatio,
+    Color? backgroundColor,
   }) async {
     assert(heightRatio >= 0.4 && heightRatio <= 1.0);
     assert(child != null || childBuilder != null);
@@ -126,69 +127,69 @@ class CommonBottomSheets {
     return showModalBottomSheet<T>(
       context: context,
       builder: (context) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-            child:
-                childBuilder == null
-                    ? SizedBox(
-                      height: MediaQuery.of(context).size.height * heightRatio,
-                      width: MediaQuery.of(context).size.width,
-                      child: child,
-                    )
-                    : DraggableScrollableSheet(
-                      controller: draggableController,
-                      expand: false,
-                      initialChildSize: heightRatio,
-                      minChildSize: 0.01,
-                      maxChildSize: heightRatio,
-                      shouldCloseOnMinExtent: true,
-                      builder: (context, scrollController) {
-                        void handleDragEnd() {
-                          if (isAnimating || !draggableController.isAttached) return;
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child:
+              childBuilder == null
+                  ? SizedBox(
+                    height: MediaQuery.of(context).size.height * heightRatio,
+                    width: MediaQuery.of(context).size.width,
+                    child: child,
+                  )
+                  : DraggableScrollableSheet(
+                    controller: draggableController,
+                    expand: false,
+                    initialChildSize: heightRatio,
+                    minChildSize: 0.01,
+                    maxChildSize: heightRatio,
+                    shouldCloseOnMinExtent: true,
+                    builder: (context, scrollController) {
+                      void handleDragEnd() {
+                        if (isAnimating || !draggableController.isAttached) return;
 
-                          final extent = draggableController.size;
-                          final closeThreshold = heightRatio * 0.7;
-                          if ((extent - heightRatio).abs() < 0.001) return;
+                        final extent = draggableController.size;
+                        final closeThreshold = heightRatio * 0.7;
+                        if ((extent - heightRatio).abs() < 0.001) return;
 
-                          isAnimating = true;
-                          final animation =
-                              extent <= closeThreshold
-                                  ? draggableController.animateTo(
-                                    0.01,
-                                    duration: const Duration(milliseconds: 180),
-                                    curve: Curves.easeOut,
-                                  )
-                                  : draggableController.animateTo(
-                                    heightRatio,
-                                    duration: const Duration(milliseconds: 180),
-                                    curve: Curves.easeOut,
-                                  );
+                        isAnimating = true;
+                        final animation =
+                            extent <= closeThreshold
+                                ? draggableController.animateTo(
+                                  0.01,
+                                  duration: const Duration(milliseconds: 180),
+                                  curve: Curves.easeOut,
+                                )
+                                : draggableController.animateTo(
+                                  heightRatio,
+                                  duration: const Duration(milliseconds: 180),
+                                  curve: Curves.easeOut,
+                                );
 
-                          animation.whenComplete(() {
-                            if (extent <= closeThreshold && context.mounted) {
-                              // Navigator.of(context).pop();
-                            }
-                            isAnimating = false;
-                          });
-                        }
+                        animation.whenComplete(() {
+                          if (extent <= closeThreshold && context.mounted) {
+                            // Navigator.of(context).pop();
+                          }
+                          isAnimating = false;
+                        });
+                      }
 
-                        return NotificationListener<ScrollNotification>(
-                          onNotification: (notification) {
-                            if (notification is ScrollEndNotification) {
-                              handleDragEnd();
-                            }
-                            return false;
-                          },
-                          child: childBuilder(scrollController),
-                        );
-                      },
-                    ),
-          ),
+                      return NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          if (notification is ScrollEndNotification) {
+                            handleDragEnd();
+                          }
+                          return false;
+                        },
+                        child: childBuilder(scrollController),
+                      );
+                    },
+                  ),
         );
       },
-      backgroundColor: context.coconutColors.surfaceBottomSheet,
+      backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
+      elevation: 0,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      clipBehavior: Clip.antiAlias,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +40,7 @@ class UtxoBucketScrollRail extends StatelessWidget {
                   right: 0,
                   top: 0,
                   bottom: 0,
-                  child: Center(child: Container(width: 1, color: CoconutColors.gray800)),
+                  child: Center(child: Container(width: 1, color: context.coconutColors.divider)),
                 ),
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 150),
@@ -51,7 +52,10 @@ class UtxoBucketScrollRail extends StatelessWidget {
                     child: Container(
                       width: 8,
                       height: _indicatorHeight,
-                      decoration: BoxDecoration(color: CoconutColors.gray500, borderRadius: BorderRadius.circular(4)),
+                      decoration: BoxDecoration(
+                        color: context.coconutColors.mutedText,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   ),
                 ),

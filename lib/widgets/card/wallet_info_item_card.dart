@@ -174,7 +174,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                     Expanded(
                       child: Text(
                         nameText,
-                        style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -201,7 +201,9 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerRight,
                               child: TooltipButton(
-                                textStyle: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
+                                textStyle: CoconutTypography.heading4_18_NumberBold.setColor(
+                                  context.coconutColors.primaryText,
+                                ),
                                 isSelected: false,
                                 text: rightText.replaceAllMapped(
                                   RegExp(r'[a-z]+'),
@@ -215,7 +217,9 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                                     _isWithoutMfp() || _isExtendedPublicKey() ? _onMfpEditTap : widget.onTooltipClicked,
                                 pressedTextStyle:
                                     _isWithoutMfp() || _isExtendedPublicKey()
-                                        ? CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.gray500)
+                                        ? CoconutTypography.heading4_18_NumberBold.setColor(
+                                          context.coconutColors.mutedText,
+                                        )
                                         : null,
                                 defaultIconBuilder:
                                     _isWithoutMfp() || _isExtendedPublicKey()

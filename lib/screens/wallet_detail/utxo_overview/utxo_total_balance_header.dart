@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
@@ -26,13 +27,16 @@ class UtxoTotalBalanceHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(t.utxo_list_screen.total_balance, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400)),
+        Text(
+          t.utxo_list_screen.total_balance,
+          style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+        ),
         GestureDetector(
           onTap: onBalanceTap,
           behavior: HitTestBehavior.opaque,
           child: Text(
             '$coinCount coins • ${formatUtxoAmountForDisplay(totalSats, currentUnit, dustThreshold: dustThreshold)}',
-            style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
+            style: CoconutTypography.heading4_18_NumberBold.setColor(context.coconutColors.primaryText),
           ),
         ),
       ],

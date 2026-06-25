@@ -18,7 +18,7 @@ class UtxoTierThemeBottomSheet extends StatelessWidget {
       builder: (context, currentTheme, child) {
         final colors = context.coconutColors;
         return Scaffold(
-          backgroundColor: colors.background,
+          backgroundColor: colors.surfaceBottomSheet,
           appBar: CoconutAppBar.build(
             title: t.settings_screen.utxo_tier_theme,
             context: context,
@@ -42,7 +42,7 @@ class UtxoTierThemeBottomSheet extends StatelessWidget {
     for (var i = 0; i < themes.length; i++) {
       widgets.add(_buildItem(context, themes[i], currentTheme));
       if (i < themes.length - 1) {
-        widgets.add(Divider(color: CoconutColors.white.withValues(alpha: 0.12), height: 1));
+        widgets.add(Divider(color: context.coconutColors.primaryText.withValues(alpha: 0.12), height: 1));
       }
     }
     return widgets;
@@ -63,11 +63,19 @@ class UtxoTierThemeBottomSheet extends StatelessWidget {
           children: [
             _ThemeSwatchStrip(theme: theme),
             const SizedBox(width: 16),
-            Expanded(child: Text(theme.name, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white))),
+            Expanded(
+              child: Text(
+                theme.name,
+                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+              ),
+            ),
             if (isSelected)
               Padding(
                 padding: const EdgeInsets.only(right: Sizes.size8),
-                child: SvgPicture.asset('assets/svg/check.svg'),
+                child: SvgPicture.asset(
+                  'assets/svg/check.svg',
+                  colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                ),
               ),
           ],
         ),

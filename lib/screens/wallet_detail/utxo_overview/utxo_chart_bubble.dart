@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 /// 금액별/태그별 차트 공통 말풍선 위젯
@@ -40,7 +41,7 @@ class UtxoChartBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = textStyle ?? CoconutTypography.caption_10_Bold.setColor(CoconutColors.white);
+    final style = textStyle ?? CoconutTypography.caption_10_Bold.setColor(context.coconutColors.primaryText);
     final maxW = maxWidth ?? 180;
     return ConstrainedBox(
       constraints: BoxConstraints(minWidth: 60, maxWidth: maxW, minHeight: height + arrowHeight),
@@ -52,7 +53,7 @@ class UtxoChartBubble extends StatelessWidget {
             filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
             child: Container(
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 4 + arrowHeight),
-              decoration: BoxDecoration(color: CoconutColors.white.withValues(alpha: 0.08)),
+              decoration: BoxDecoration(color: context.coconutColors.primaryText.withValues(alpha: 0.08)),
               alignment: Alignment.center,
               child: Text(
                 text,

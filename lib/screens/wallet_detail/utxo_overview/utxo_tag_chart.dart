@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -17,15 +18,15 @@ String _truncateTagName(String name, int maxLen) {
   return '${name.substring(0, maxLen)}...';
 }
 
-Color _pastelForTag(UtxoTag tag, [double blend = 0.20]) {
+Color _pastelForTag(UtxoTag tag, Color blendColor, [double blend = 0.20]) {
   final idx = tag.colorIndex.clamp(0, tagColorPalette.length - 1);
   final base = tagColorPalette[idx];
-  return Color.lerp(base, CoconutColors.gray400, blend)!;
+  return Color.lerp(base, blendColor, blend)!;
 }
 
-Color _colorForSegment(_TagSegment seg) {
-  if (seg.isUntagged) return CoconutColors.gray800;
-  return _pastelForTag(seg.tag!);
+Color _colorForSegment(_TagSegment seg, Color untaggedColor, Color blendColor) {
+  if (seg.isUntagged) return untaggedColor;
+  return _pastelForTag(seg.tag!, blendColor);
 }
 
 /// 도넛 차트 비선택 시 적용할 overlay 불투명도 (0=없음, 1=완전 덮음)
@@ -133,6 +134,7 @@ class UtxoTagChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     final result = _computeTagSegmentsForDonut(utxoList, utxoTagList);
     final segments = result.segments;
     final segmentTotalCount = segments.fold<int>(0, (s, seg) => s + seg.count);
@@ -145,13 +147,13 @@ class UtxoTagChart extends StatelessWidget {
     }
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [CoconutColors.black, Color(0xFF1D1D1D)],
+          colors: [colors.background, colors.surfaceSectionBreak],
         ),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24)),
+        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -182,30 +184,31 @@ class UtxoTagChart extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final colors = context.coconutColors;
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [CoconutColors.black, Color(0xFF1D1D1D)],
+          colors: [colors.background, colors.surfaceSectionBreak],
         ),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24)),
+        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.label_off_outlined, size: 48, color: CoconutColors.gray600),
+          Icon(Icons.label_off_outlined, size: 48, color: colors.iconDisabled),
           const SizedBox(height: 16),
           Text(
             t.utxo_overview_screen.no_tag_applied,
-            style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray400),
+            style: CoconutTypography.body1_16_Bold.setColor(colors.secondaryText),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             t.utxo_overview_screen.no_tag_applied_desc,
-            style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+            style: CoconutTypography.body3_12.setColor(colors.mutedText),
             textAlign: TextAlign.center,
           ),
         ],
@@ -343,6 +346,7 @@ class _DonutChartState extends State<_DonutChart> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     final segments = widget.segments;
     if (segments.isEmpty) return const SizedBox.shrink();
 
@@ -414,6 +418,10 @@ class _DonutChartState extends State<_DonutChart> {
                         gap: _gap,
                         selectedIndex: _selectedIndex,
                         overlayOpacity: _overlayOpacity,
+                        untaggedColor: colors.chartSurface,
+                        overlayBlendColor: colors.surfaceSectionBreak,
+                        multiTagFallbackColor: colors.tertiaryText,
+                        tagBlendColor: colors.secondaryText,
                       ),
                     ),
                     IgnorePointer(
@@ -422,12 +430,12 @@ class _DonutChartState extends State<_DonutChart> {
                         children: [
                           Text(
                             t.utxo_overview_screen.tagged,
-                            style: CoconutTypography.caption_10.setColor(CoconutColors.gray500),
+                            style: CoconutTypography.caption_10.setColor(colors.mutedText),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${widget.uniqueTaggedCount} / ${widget.totalCount}',
-                            style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white),
+                            style: CoconutTypography.body1_16_NumberBold.setColor(colors.primaryText),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -485,17 +493,12 @@ class _LabelPosition {
   });
 }
 
-/// 도넛 차트의 미분류 세그먼트를 색상
-const Color _untaggedInvisibleColor = Color(0xFF323232);
-
 /// Painter와 라벨 위치 계산: 미적용 먼저 → 다중 태그 → 단일 태그
 List<_TagSegment> _orderedSegmentsForDrawing(List<_TagSegment> segments) => [
   ...segments.where((s) => s.isUntagged),
   ...segments.where((s) => s.isMultiTag),
   ...segments.where((s) => !s.isUntagged && !s.isMultiTag),
 ];
-
-const Color _overlayBlendColor = Color(0xFF1D1D1D);
 
 class _DonutChartPainter extends CustomPainter {
   final List<_TagSegment> segments;
@@ -504,6 +507,10 @@ class _DonutChartPainter extends CustomPainter {
   final double gap;
   final int? selectedIndex;
   final double overlayOpacity;
+  final Color untaggedColor;
+  final Color overlayBlendColor;
+  final Color multiTagFallbackColor;
+  final Color tagBlendColor;
 
   _DonutChartPainter({
     required this.segments,
@@ -512,6 +519,10 @@ class _DonutChartPainter extends CustomPainter {
     required this.gap,
     this.selectedIndex,
     this.overlayOpacity = 0.0,
+    required this.untaggedColor,
+    required this.overlayBlendColor,
+    required this.multiTagFallbackColor,
+    required this.tagBlendColor,
   });
 
   @override
@@ -538,14 +549,17 @@ class _DonutChartPainter extends CustomPainter {
             ..strokeCap = StrokeCap.round;
 
       if (seg.isUntagged) {
-        paint.color = _untaggedInvisibleColor;
+        paint.color = untaggedColor;
       } else if (seg.isMultiTag) {
         final multiTags = seg.multiTags ?? [];
-        var colors = multiTags.isEmpty ? [CoconutColors.gray600] : multiTags.map((t) => _pastelForTag(t)).toList();
+        var colors =
+            multiTags.isEmpty
+                ? [multiTagFallbackColor]
+                : multiTags.map((t) => _pastelForTag(t, tagBlendColor)).toList();
         if (overlayOpacity > 0 && selectedIndex != i) {
-          colors = colors.map((c) => Color.lerp(c, _overlayBlendColor, overlayOpacity)!).toList();
+          colors = colors.map((c) => Color.lerp(c, overlayBlendColor, overlayOpacity)!).toList();
         } else if (overlayOpacity > 0 && selectedIndex == i && multiTags.isNotEmpty) {
-          colors = multiTags.map((t) => _pastelForTag(t, 0.0)).toList();
+          colors = multiTags.map((t) => _pastelForTag(t, tagBlendColor, 0.0)).toList();
         }
         if (colors.length == 1) {
           paint.color = colors.first;
@@ -558,10 +572,13 @@ class _DonutChartPainter extends CustomPainter {
           ).createShader(rect);
         }
       } else {
-        var color = _colorForSegment(seg);
+        var color = _colorForSegment(seg, untaggedColor, tagBlendColor);
         if (overlayOpacity > 0) {
           final isSelected = selectedIndex == i;
-          color = isSelected ? _pastelForTag(seg.tag!, 0.0) : Color.lerp(color, _overlayBlendColor, overlayOpacity)!;
+          color =
+              isSelected
+                  ? _pastelForTag(seg.tag!, tagBlendColor, 0.0)
+                  : Color.lerp(color, overlayBlendColor, overlayOpacity)!;
         }
         paint.color = color;
       }
@@ -576,7 +593,11 @@ class _DonutChartPainter extends CustomPainter {
       segments != oldDelegate.segments ||
       totalCount != oldDelegate.totalCount ||
       selectedIndex != oldDelegate.selectedIndex ||
-      overlayOpacity != oldDelegate.overlayOpacity;
+      overlayOpacity != oldDelegate.overlayOpacity ||
+      untaggedColor != oldDelegate.untaggedColor ||
+      overlayBlendColor != oldDelegate.overlayBlendColor ||
+      multiTagFallbackColor != oldDelegate.multiTagFallbackColor ||
+      tagBlendColor != oldDelegate.tagBlendColor;
 }
 
 class _TagSectionChip extends StatelessWidget {
@@ -587,13 +608,14 @@ class _TagSectionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     if (tag != null) {
       final colorIndex = tag!.colorIndex.clamp(0, tagColorPalette.length - 1);
       final foregroundColor = tagColorPalette[colorIndex];
       return IntrinsicWidth(
         child: CoconutChip(
           minWidth: 44,
-          color: CoconutColors.backgroundColorPaletteDark[colorIndex],
+          color: foregroundColor.withValues(alpha: 0.18),
           borderColor: foregroundColor,
           label: '#$name',
           labelSize: 11,
@@ -605,11 +627,11 @@ class _TagSectionChip extends StatelessWidget {
     return IntrinsicWidth(
       child: CoconutChip(
         minWidth: 44,
-        color: CoconutColors.gray800,
-        borderColor: CoconutColors.gray800,
+        color: colors.surfaceFilterChip,
+        borderColor: colors.surfaceFilterChip,
         label: name,
         labelSize: 11,
-        labelColor: CoconutColors.white,
+        labelColor: colors.textFilterChip,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
     );
@@ -799,6 +821,7 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     final groups = _groupUtxosByTag();
     if (groups.isEmpty) return const SizedBox.shrink();
 
@@ -841,7 +864,7 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                           const SizedBox(width: 8),
                           Text(
                             '${g.utxos.length} coins',
-                            style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                            style: CoconutTypography.body3_12_Number.setColor(colors.mutedText),
                           ),
                           const Spacer(),
                           AnimatedSwitcher(
@@ -850,123 +873,130 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                               key: ValueKey(isExpanded),
                               isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
                               size: 24,
-                              color: CoconutColors.gray500,
+                              color: colors.iconSubDefault,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    AnimatedCrossFade(
-                      firstChild: const SizedBox.shrink(),
-                      secondChild: Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Builder(
-                          builder: (context) {
-                            final width = MediaQuery.of(context).size.width - 2 * _padding;
-                            final crossAxisCount = (width / (_gridMaxCoinExtent + _crossAxisSpacing)).floor().clamp(
-                              1,
-                              10,
-                            );
-                            final cellSize = (width - (crossAxisCount - 1) * _crossAxisSpacing) / crossAxisCount;
-                            final coinSize = cellSize * 0.9;
-
-                            if (g.isMultiTag && (g.subGroups?.isNotEmpty ?? false)) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children:
-                                    g.subGroups!.map((sg) {
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 16),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.only(bottom: 8),
-                                              child: Wrap(
-                                                spacing: 6,
-                                                runSpacing: 6,
-                                                children:
-                                                    sg.tags
-                                                        .map((tag) => _TagSectionChip(name: tag.name, tag: tag))
-                                                        .toList(),
-                                              ),
-                                            ),
-                                            Wrap(
-                                              spacing: _crossAxisSpacing,
-                                              runSpacing: _mainAxisSpacing,
-                                              children:
-                                                  sg.utxos.map((utxo) {
-                                                    final isSelected = widget.selectedUtxoIds.contains(utxo.utxoId);
-                                                    return SizedBox(
-                                                      width: cellSize,
-                                                      height: cellSize / 0.95,
-                                                      child: Center(
-                                                        child: UtxoCoinCard(
-                                                          utxo: utxo,
-                                                          size: coinSize,
-                                                          compact: true,
-                                                          isFocused: true,
-                                                          isSelected: isSelected,
-                                                          isSelectionMode: widget.isSelectionMode,
-                                                          currentUnit: widget.currentUnit,
-                                                          dustThreshold: widget.dustThreshold,
-                                                          isAddressReused: widget.reusedAddresses.contains(utxo.to),
-                                                          isSuspiciousDust: widget.suspiciousUtxoIds.contains(
-                                                            utxo.utxoId,
-                                                          ),
-                                                          onTap: () => widget.onUtxoTap(utxo),
-                                                          onLongPress:
-                                                              widget.onUtxoLongPress != null
-                                                                  ? () => widget.onUtxoLongPress!(utxo)
-                                                                  : null,
-                                                        ),
-                                                      ),
-                                                    );
-                                                  }).toList(),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
-                              );
-                            }
-
-                            return Wrap(
-                              spacing: _crossAxisSpacing,
-                              runSpacing: _mainAxisSpacing,
-                              children:
-                                  g.utxos.map((utxo) {
-                                    final isSelected = widget.selectedUtxoIds.contains(utxo.utxoId);
-                                    return SizedBox(
-                                      width: cellSize,
-                                      height: cellSize / 0.95,
-                                      child: Center(
-                                        child: UtxoCoinCard(
-                                          utxo: utxo,
-                                          size: coinSize,
-                                          compact: true,
-                                          isFocused: true,
-                                          isSelected: isSelected,
-                                          isSelectionMode: widget.isSelectionMode,
-                                          currentUnit: widget.currentUnit,
-                                          dustThreshold: widget.dustThreshold,
-                                          isAddressReused: widget.reusedAddresses.contains(utxo.to),
-                                          isSuspiciousDust: widget.suspiciousUtxoIds.contains(utxo.utxoId),
-                                          onTap: () => widget.onUtxoTap(utxo),
-                                          onLongPress:
-                                              widget.onUtxoLongPress != null
-                                                  ? () => widget.onUtxoLongPress!(utxo)
-                                                  : null,
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                            );
-                          },
-                        ),
-                      ),
-                      crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                    AnimatedSize(
                       duration: const Duration(milliseconds: 200),
+                      alignment: Alignment.topCenter,
+                      clipBehavior: Clip.none,
+                      child:
+                          isExpanded
+                              ? Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: Builder(
+                                  builder: (context) {
+                                    final width = MediaQuery.of(context).size.width - 2 * _padding;
+                                    final crossAxisCount = (width / (_gridMaxCoinExtent + _crossAxisSpacing))
+                                        .floor()
+                                        .clamp(1, 10);
+                                    final cellSize =
+                                        (width - (crossAxisCount - 1) * _crossAxisSpacing) / crossAxisCount;
+                                    final coinSize = cellSize * 0.9;
+
+                                    if (g.isMultiTag && (g.subGroups?.isNotEmpty ?? false)) {
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children:
+                                            g.subGroups!.map((sg) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(bottom: 16),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Padding(
+                                                      padding: const EdgeInsets.only(bottom: 8),
+                                                      child: Wrap(
+                                                        spacing: 6,
+                                                        runSpacing: 6,
+                                                        children:
+                                                            sg.tags
+                                                                .map((tag) => _TagSectionChip(name: tag.name, tag: tag))
+                                                                .toList(),
+                                                      ),
+                                                    ),
+                                                    Wrap(
+                                                      spacing: _crossAxisSpacing,
+                                                      runSpacing: _mainAxisSpacing,
+                                                      children:
+                                                          sg.utxos.map((utxo) {
+                                                            final isSelected = widget.selectedUtxoIds.contains(
+                                                              utxo.utxoId,
+                                                            );
+                                                            return SizedBox(
+                                                              width: cellSize,
+                                                              height: cellSize / 0.95,
+                                                              child: Center(
+                                                                child: UtxoCoinCard(
+                                                                  utxo: utxo,
+                                                                  size: coinSize,
+                                                                  compact: true,
+                                                                  isFocused: true,
+                                                                  isSelected: isSelected,
+                                                                  isSelectionMode: widget.isSelectionMode,
+                                                                  currentUnit: widget.currentUnit,
+                                                                  dustThreshold: widget.dustThreshold,
+                                                                  isAddressReused: widget.reusedAddresses.contains(
+                                                                    utxo.to,
+                                                                  ),
+                                                                  isSuspiciousDust: widget.suspiciousUtxoIds.contains(
+                                                                    utxo.utxoId,
+                                                                  ),
+                                                                  onTap: () => widget.onUtxoTap(utxo),
+                                                                  onLongPress:
+                                                                      widget.onUtxoLongPress != null
+                                                                          ? () => widget.onUtxoLongPress!(utxo)
+                                                                          : null,
+                                                                ),
+                                                              ),
+                                                            );
+                                                          }).toList(),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }).toList(),
+                                      );
+                                    }
+
+                                    return Wrap(
+                                      spacing: _crossAxisSpacing,
+                                      runSpacing: _mainAxisSpacing,
+                                      children:
+                                          g.utxos.map((utxo) {
+                                            final isSelected = widget.selectedUtxoIds.contains(utxo.utxoId);
+                                            return SizedBox(
+                                              width: cellSize,
+                                              height: cellSize / 0.95,
+                                              child: Center(
+                                                child: UtxoCoinCard(
+                                                  utxo: utxo,
+                                                  size: coinSize,
+                                                  compact: true,
+                                                  isFocused: true,
+                                                  isSelected: isSelected,
+                                                  isSelectionMode: widget.isSelectionMode,
+                                                  currentUnit: widget.currentUnit,
+                                                  dustThreshold: widget.dustThreshold,
+                                                  isAddressReused: widget.reusedAddresses.contains(utxo.to),
+                                                  isSuspiciousDust: widget.suspiciousUtxoIds.contains(utxo.utxoId),
+                                                  onTap: () => widget.onUtxoTap(utxo),
+                                                  onLongPress:
+                                                      widget.onUtxoLongPress != null
+                                                          ? () => widget.onUtxoLongPress!(utxo)
+                                                          : null,
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                    );
+                                  },
+                                ),
+                              )
+                              : const SizedBox.shrink(),
                     ),
                   ],
                 ),

@@ -240,7 +240,9 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
       customTitle: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 260),
         child: CoconutSegmentedControl(
-          labels: [t.utxo_overview_screen.by_amount, t.utxo_overview_screen.by_tag],
+          selectedColor: context.coconutColors.surfacePressed,
+          segmentedControlContainerColor: context.coconutColors.surface,
+          selectedTextColor: context.coconutColors.primaryText,
           isSelected: [_isByAmount, !_isByAmount],
           onPressed: (index) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -255,6 +257,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             });
           },
           labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          children: [Text(t.utxo_overview_screen.by_amount), Text(t.utxo_overview_screen.by_tag)],
         ),
       ),
       titlePadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -442,6 +445,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
 
   Widget _buildTagView(List<UtxoTag> utxoTagList) {
     return CustomScrollView(
+      clipBehavior: Clip.none,
       slivers: [
         SliverToBoxAdapter(
           child: UtxoTagChart(
@@ -527,7 +531,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                     label: t.utxo_list_screen.utxo_unlocked_button,
                     onTap: () => _updateSelectedUtxosLock(lock: false),
                     buttonLayout: BottomActionButtonLayout.horizontal,
-                    textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                    textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconDefault),
                   )
                   : Builder(
                     builder: (context) {
@@ -543,7 +547,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                               onTap: _onSendPressed,
                               enabled: !hasLockedUtxo,
                               buttonLayout: BottomActionButtonLayout.horizontal,
-                              textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                              textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -553,7 +557,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                               label: t.utxo_list_screen.utxo_locked_button,
                               onTap: () => _updateSelectedUtxosLock(lock: true),
                               buttonLayout: BottomActionButtonLayout.horizontal,
-                              textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                              textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconDefault),
                             ),
                           ),
                         ],
@@ -587,7 +591,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             },
             enabled: !hasLockedUtxo,
             buttonLayout: BottomActionButtonLayout.horizontal,
-            textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+            textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
           ),
         ),
         const SizedBox(width: 8),
@@ -597,7 +601,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             label: t.utxo_list_screen.tag_apply,
             onTap: _showTagApplyBottomSheet,
             buttonLayout: BottomActionButtonLayout.horizontal,
-            textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+            textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
           ),
         ),
       ],

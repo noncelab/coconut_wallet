@@ -95,14 +95,21 @@ class CoconutColors {
   final Color surfaceFilterChipSelected;
   final Color surfaceSkeletonBase;
   final Color surfaceSkeletonHighlight;
+  final Color chartSurface;
+  final Color coinSurface;
+  final Color billSurface;
+  final Color selectionOverlay;
   final Color surfaceSelected;
   final Color surfacePressed;
   final Color inputSurface;
+  final Color inputPlaceholder;
   final Color primary;
   final Color primaryText;
   final Color primaryButtonBackground;
   final Color primaryButtonText;
   final Color secondaryText;
+  final Color secondaryButtonBackground;
+  final Color secondaryButtonText;
   final Color tertiaryText;
   final Color mutedText;
   final Color textFilterChip;
@@ -156,14 +163,21 @@ class CoconutColors {
     required this.surfaceFilterChipSelected,
     required this.surfaceSkeletonBase,
     required this.surfaceSkeletonHighlight,
+    required this.chartSurface,
+    required this.coinSurface,
+    required this.billSurface,
+    required this.selectionOverlay,
     required this.surfaceSelected,
     required this.surfacePressed,
     required this.inputSurface,
+    required this.inputPlaceholder,
     required this.primary,
     required this.primaryText,
     required this.primaryButtonBackground,
     required this.primaryButtonText,
     required this.secondaryText,
+    required this.secondaryButtonBackground,
+    required this.secondaryButtonText,
     required this.tertiaryText,
     required this.mutedText,
     required this.textFilterChip,
@@ -219,14 +233,21 @@ class CoconutColors {
       surfaceFilterChipSelected: ds.CoconutColors.white,
       surfaceSkeletonBase: ds.CoconutColors.gray850,
       surfaceSkeletonHighlight: ds.CoconutColors.gray750,
+      chartSurface: ds.CoconutColors.gray800,
+      coinSurface: ds.CoconutColors.gray900,
+      billSurface: ds.CoconutColors.gray900,
+      selectionOverlay: ds.CoconutColors.black,
       surfaceSelected: ds.CoconutColors.gray800,
       surfacePressed: ds.CoconutColors.gray900,
       inputSurface: ds.CoconutColors.gray800,
+      inputPlaceholder: ds.CoconutColors.gray700,
       primary: ds.CoconutColors.primary,
       primaryText: ds.CoconutColors.white,
       primaryButtonBackground: ds.CoconutColors.white,
       primaryButtonText: ds.CoconutColors.black,
       secondaryText: ds.CoconutColors.gray400,
+      secondaryButtonBackground: ds.CoconutColors.gray350,
+      secondaryButtonText: ds.CoconutColors.black,
       tertiaryText: ds.CoconutColors.gray600,
       mutedText: ds.CoconutColors.gray500,
       textFilterChip: ds.CoconutColors.white,
@@ -283,14 +304,21 @@ class CoconutColors {
       surfaceFilterChipSelected: Color(0xFF181A1F),
       surfaceSkeletonBase: Color(0xFFD7D1E6),
       surfaceSkeletonHighlight: Color(0xFFF0EBFA),
+      chartSurface: Color(0xFFD9E8F5),
+      coinSurface: Color.fromARGB(255, 240, 229, 193),
+      billSurface: Color.fromARGB(255, 240, 229, 193),
+      selectionOverlay: Color(0xFF181A1F),
       surfaceSelected: Color(0xFFEDE3CF),
       surfacePressed: Color.fromARGB(255, 202, 223, 242),
       inputSurface: Color(0xFFE6DCCB),
+      inputPlaceholder: Color.fromARGB(255, 187, 179, 165),
       primary: Color.fromARGB(255, 87, 65, 232),
       primaryText: Color(0xFF181A1F),
       primaryButtonBackground: Color(0xFFD9E8F5),
       primaryButtonText: Color(0xFF181A1F),
       secondaryText: Color(0xFF454B57),
+      secondaryButtonBackground: Color(0xFFEDE3CF),
+      secondaryButtonText: Color(0xFF181A1F),
       tertiaryText: Color(0xFF727987),
       mutedText: Color(0xFF5E6675),
       textFilterChip: Color(0xFF181A1F),
