@@ -1868,12 +1868,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             ignoring: true,
             child: Container(
               height: 30,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [CoconutColors.black, Colors.transparent],
-                  stops: [0.0, 1.0],
+                  colors: [context.coconutColors.surface, context.coconutColors.surface.withValues(alpha: 0)],
+                  stops: const [0.0, 1.0],
                 ),
               ),
             ),
@@ -1887,12 +1887,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             ignoring: true,
             child: Container(
               height: 30,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, CoconutColors.black],
-                  stops: [0.0, 1.0],
+                  colors: [context.coconutColors.surface.withValues(alpha: 0), context.coconutColors.surface],
+                  stops: const [0.0, 1.0],
                 ),
               ),
             ),

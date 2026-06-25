@@ -189,12 +189,12 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
   Widget _buildToolTip() {
     return CoconutToolTip(
-      backgroundColor: CoconutColors.gray900,
-      borderColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surface,
+      borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
         'assets/svg/circle-info.svg',
         width: 20,
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
       tooltipType: CoconutTooltipType.fixed,
       richText: RichText(

@@ -63,7 +63,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                 CoconutLayout.spacing_400h,
                 Text(
                   t.broadcasting_complete_screen.complete,
-                  style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                  style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
                 ),
                 CoconutLayout.spacing_400h,
                 _buildMemoInputField(),
@@ -178,14 +178,17 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
       child: IntrinsicWidth(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size4),
-          decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(Sizes.size24)),
+          decoration: BoxDecoration(
+            color: context.coconutColors.inputSurface,
+            borderRadius: BorderRadius.circular(Sizes.size24),
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
                 'assets/svg/pen.svg',
-                colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
               CoconutLayout.spacing_100w,
@@ -193,7 +196,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                 fit: FlexFit.loose,
                 child: Text(
                   TextUtils.ellipsisIfLonger(_memoController.text, maxLength: 8),
-                  style: CoconutTypography.body1_16.setColor(CoconutColors.gray100),
+                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
@@ -214,14 +217,17 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
       child: IntrinsicWidth(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size4),
-          decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(Sizes.size24)),
+          decoration: BoxDecoration(
+            color: context.coconutColors.inputSurface,
+            borderRadius: BorderRadius.circular(Sizes.size24),
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
                 'assets/svg/pen.svg',
-                colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
               CoconutLayout.spacing_100w,
@@ -234,14 +240,14 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                     focusNode: _memoFocusNode,
                     maxLines: 1,
                     textAlignVertical: TextAlignVertical.center,
-                    style: CoconutTypography.body1_16.setColor(CoconutColors.gray100),
-                    cursorColor: CoconutColors.white,
+                    style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                    cursorColor: context.coconutColors.primaryText,
                     decoration: InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                       hintText: t.broadcasting_complete_screen.memo_placeholder,
-                      hintStyle: CoconutTypography.body1_16.setColor(CoconutColors.gray350),
+                      hintStyle: CoconutTypography.body1_16.setColor(context.coconutColors.inputPlaceholder),
                     ),
                   ),
                 ),
@@ -265,9 +271,9 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
           padding: const EdgeInsets.symmetric(horizontal: Sizes.size8, vertical: Sizes.size4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Sizes.size14),
-            border: Border.all(width: 1, color: CoconutColors.gray600),
+            border: Border.all(width: 1, color: context.coconutColors.tertiaryText),
           ),
-          child: Text(text, style: CoconutTypography.body2_14.setColor(CoconutColors.gray300)),
+          child: Text(text, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText)),
         ),
       ),
     );

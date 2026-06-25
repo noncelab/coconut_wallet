@@ -25,6 +25,7 @@ class FixedBottomTweenButton extends StatefulWidget {
     this.horizontalPadding = CoconutLayout.defaultPadding,
     this.bottomPadding = FixedBottomTweenButton.fixedBottomButtonDefaultBottomPadding,
     this.gradientPadding,
+    this.gradientColor,
     this.subWidget,
     this.leftButtonBackgroundColor = CoconutColors.gray200,
     this.rightButtonBackgroundColor = CoconutColors.primary,
@@ -51,6 +52,7 @@ class FixedBottomTweenButton extends StatefulWidget {
   final Color rightButtonBackgroundColor;
   final Color leftButtonTextColor;
   final Color rightButtonTextColor;
+  final Color? gradientColor;
   final double buttonSpacing;
 
   @override
@@ -68,6 +70,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
     final totalWidth = MediaQuery.sizeOf(context).width - (widget.horizontalPadding * 2) - widget.buttonSpacing;
     final leftButtonWidth = totalWidth * widget.leftButtonRatio;
     final rightButtonWidth = totalWidth * (1 - widget.leftButtonRatio);
+    final resolvedGradientColor = widget.gradientColor ?? colors.background;
 
     double buttonHeight =
         widget.buttonHeight ??
@@ -100,12 +103,12 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.transparent,
-                        CoconutColors.black.withValues(alpha: 0.1),
-                        CoconutColors.black.withValues(alpha: 0.4),
-                        CoconutColors.black.withValues(alpha: 0.8),
-                        CoconutColors.black,
-                        CoconutColors.black,
+                        resolvedGradientColor.withValues(alpha: 0.0),
+                        resolvedGradientColor.withValues(alpha: 0.1),
+                        resolvedGradientColor.withValues(alpha: 0.4),
+                        resolvedGradientColor.withValues(alpha: 0.8),
+                        resolvedGradientColor,
+                        resolvedGradientColor,
                       ],
                       stops: const [0.0, 0.1, 0.2, 0.35, 0.5, 1.0],
                     ),

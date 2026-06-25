@@ -48,11 +48,11 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         appBar: CoconutAppBar.build(
           title: t.signed_psbt_scanner_screen.title,
           context: context,
-          backgroundColor: CoconutColors.black.withValues(alpha: 0.95),
+          backgroundColor: context.coconutColors.background.withValues(alpha: 0.95),
           actionButtonList: [
             IconButton(
               icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
-              color: CoconutColors.white,
+              color: context.coconutColors.primaryText,
               onPressed: () {
                 controller?.switchCamera();
               },
@@ -287,12 +287,12 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
   Widget _buildToolTip() {
     return CoconutToolTip(
-      backgroundColor: CoconutColors.gray900,
-      borderColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surface,
+      borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
         'assets/svg/circle-info.svg',
         width: 20,
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
       tooltipType: CoconutTooltipType.fixed,
       richText: RichText(

@@ -1,7 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 import 'package:coconut_wallet/widgets/send_output_detail_row.dart';
 import 'package:flutter/material.dart';
 
@@ -51,7 +51,7 @@ class _SendOutputDetailCardState extends State<SendOutputDetailCard> {
     }
 
     return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: MyColors.transparentWhite_06),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: context.coconutColors.surfaceCard),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       child: Column(
         children: [
@@ -60,7 +60,7 @@ class _SendOutputDetailCardState extends State<SendOutputDetailCard> {
               Expanded(
                 child: Text(
                   t.send_confirm_screen.output_detail_title,
-                  style: CoconutTypography.body3_12_Bold.copyWith(color: CoconutColors.white),
+                  style: CoconutTypography.body3_12_Bold.copyWith(color: context.coconutColors.primaryText),
                 ),
               ),
               GestureDetector(
@@ -83,7 +83,7 @@ class _SendOutputDetailCardState extends State<SendOutputDetailCard> {
                     child: Icon(
                       _isExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
                       key: ValueKey(_isExpanded),
-                      color: CoconutColors.white,
+                      color: context.coconutColors.iconDefault,
                       size: 28,
                     ),
                   ),
@@ -107,7 +107,7 @@ class _SendOutputDetailCardState extends State<SendOutputDetailCard> {
                   ),
                   if (!isLast) ...[
                     const SizedBox(height: 16),
-                    const Divider(color: CoconutColors.gray700, height: 1),
+                    Divider(color: context.coconutColors.divider, height: 1),
                     const SizedBox(height: 16),
                   ],
                 ],
