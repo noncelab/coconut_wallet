@@ -129,6 +129,7 @@ class CoconutColors {
   final Color pulldownMenuDividerColor;
   final Color pulldownMenuTextColor;
   final Color shadowDefault;
+  final Color shadowSubtle;
   final Color popupBackground;
   final Color dimOverlay;
   final Color pageIndicatorActive;
@@ -197,6 +198,7 @@ class CoconutColors {
     required this.pulldownMenuDividerColor,
     required this.pulldownMenuTextColor,
     required this.shadowDefault,
+    required this.shadowSubtle,
     required this.popupBackground,
     required this.dimOverlay,
     required this.pageIndicatorActive,
@@ -267,6 +269,7 @@ class CoconutColors {
       pulldownMenuDividerColor: ds.CoconutColors.black,
       pulldownMenuTextColor: ds.CoconutColors.white,
       shadowDefault: ds.CoconutColors.white,
+      shadowSubtle: ds.CoconutColors.gray900,
       popupBackground: ds.CoconutColors.gray900,
       dimOverlay: ds.CoconutColors.black,
       pageIndicatorActive: ds.CoconutColors.gray400,
@@ -338,6 +341,7 @@ class CoconutColors {
       pulldownMenuDividerColor: Color.fromARGB(255, 199, 194, 232),
       pulldownMenuTextColor: Color(0xFF181A1F),
       shadowDefault: Color(0xFF181A1F),
+      shadowSubtle: Color(0x33181A1F),
       popupBackground: Color(0xFFE8E0F2),
       dimOverlay: Color(0xFFEEEEEE),
       pageIndicatorActive: Color(0xFF454B57),

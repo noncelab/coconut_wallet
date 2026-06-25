@@ -22,21 +22,34 @@ class CommonBottomSheets {
     bool showCloseButton = false,
     bool showDragHandle = false,
     bool adjustForKeyboardInset = true,
+    double keyboardBottomPadding = 20,
     Color? backgroundColor,
-    EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+    EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(
+      vertical: 20,
+      horizontal: 20,
+    ),
   }) {
-    final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
+    final resolvedBackgroundColor =
+        backgroundColor ?? context.coconutColors.surfaceBottomSheet;
     return showModalBottomSheet<T>(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(24.0), topRight: Radius.circular(24.0)),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24.0),
+          topRight: Radius.circular(24.0),
+        ),
       ),
       builder: (context) {
         final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
         return AnimatedPadding(
           duration: const Duration(milliseconds: 280),
           curve: Curves.easeOutCubic,
-          padding: EdgeInsets.only(bottom: adjustForKeyboardInset ? keyboardInset + 20 : 0),
+          padding: EdgeInsets.only(
+            bottom:
+                adjustForKeyboardInset
+                    ? keyboardInset + keyboardBottomPadding
+                    : 0,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -66,7 +79,9 @@ class CommonBottomSheets {
                         child: Center(
                           child: Text(
                             title,
-                            style: titleTextStyle.setColor(context.coconutColors.primaryText),
+                            style: titleTextStyle.setColor(
+                              context.coconutColors.primaryText,
+                            ),
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -84,7 +99,11 @@ class CommonBottomSheets {
                                   : null,
                           child:
                               showCloseButton
-                                  ? Icon(Icons.close_rounded, size: 24, color: context.coconutColors.iconDefault)
+                                  ? Icon(
+                                    Icons.close_rounded,
+                                    size: 24,
+                                    color: context.coconutColors.iconDefault,
+                                  )
                                   : const SizedBox(width: 24, height: 24),
                         ),
                       ),
@@ -92,7 +111,10 @@ class CommonBottomSheets {
                         alignment: Alignment.centerRight,
                         child:
                             actionList != null
-                                ? Row(mainAxisSize: MainAxisSize.min, children: actionList)
+                                ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: actionList,
+                                )
                                 : const SizedBox(width: 28, height: 24),
                       ),
                     ],
@@ -128,7 +150,9 @@ class CommonBottomSheets {
       context: context,
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child:
               childBuilder == null
                   ? SizedBox(
@@ -145,7 +169,8 @@ class CommonBottomSheets {
                     shouldCloseOnMinExtent: true,
                     builder: (context, scrollController) {
                       void handleDragEnd() {
-                        if (isAnimating || !draggableController.isAttached) return;
+                        if (isAnimating || !draggableController.isAttached)
+                          return;
 
                         final extent = draggableController.size;
                         final closeThreshold = heightRatio * 0.7;
@@ -186,9 +211,12 @@ class CommonBottomSheets {
                   ),
         );
       },
-      backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
+      backgroundColor:
+          backgroundColor ?? context.coconutColors.surfaceBottomSheet,
       elevation: 0,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       clipBehavior: Clip.antiAlias,
       isScrollControlled: true,
       enableDrag: true,
@@ -212,12 +240,15 @@ class CommonBottomSheets {
         return child; // child screen에서 type <T>를 반환하면 반환됩니다.
       },
       transitionAnimationController: animationController,
-      backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
+      backgroundColor:
+          backgroundColor ?? context.coconutColors.surfaceBottomSheet,
       isDismissible: isDismissible,
       isScrollControlled: isScrollControlled,
       enableDrag: enableDrag,
       useSafeArea: useSafeArea,
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height,
+      ),
     );
   }
 
@@ -238,27 +269,39 @@ class CommonBottomSheets {
     bool adjustForKeyboardInset = true,
     ValueChanged<DraggableScrollableController>? onControllerReady,
   }) async {
-    final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
+    final resolvedBackgroundColor =
+        backgroundColor ?? context.coconutColors.surfaceBottomSheet;
     final draggableController = DraggableScrollableController();
     onControllerReady?.call(draggableController);
     bool isAnimating = false;
 
     // initialChildSize가 지정되지 않은 경우에만 자동 계산
-    final calculatedInitialSize = initialChildSize ?? (minChildSize <= 0.95 ? minChildSize + 0.05 : minChildSize);
+    final calculatedInitialSize =
+        initialChildSize ??
+        (minChildSize <= 0.95 ? minChildSize + 0.05 : minChildSize);
 
     // initialChildSize가 maxChildSize를 초과하지 않도록 보장
-    final finalInitialSize = calculatedInitialSize > maxChildSize ? maxChildSize : calculatedInitialSize;
+    final finalInitialSize =
+        calculatedInitialSize > maxChildSize
+            ? maxChildSize
+            : calculatedInitialSize;
 
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
       ),
       builder: (context) {
         return ClipRRect(
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
           child: DraggableScrollableSheet(
             controller: draggableController,
             initialChildSize: finalInitialSize,
@@ -270,11 +313,18 @@ class CommonBottomSheets {
                 if (isAnimating || !draggableController.isAttached) return;
                 final extent = draggableController.size;
                 final targetExtent =
-                    (extent - minChildSize).abs() < (extent - maxChildSize).abs() ? minChildSize + 0.01 : maxChildSize;
+                    (extent - minChildSize).abs() <
+                            (extent - maxChildSize).abs()
+                        ? minChildSize + 0.01
+                        : maxChildSize;
 
                 isAnimating = true;
                 draggableController
-                    .animateTo(targetExtent, duration: const Duration(milliseconds: 50), curve: Curves.easeOut)
+                    .animateTo(
+                      targetExtent,
+                      duration: const Duration(milliseconds: 50),
+                      curve: Curves.easeOut,
+                    )
                     .whenComplete(() {
                       isAnimating = false;
                     });
@@ -297,8 +347,12 @@ class CommonBottomSheets {
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: (details) {
                             if (!draggableController.isAttached) return;
-                            final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                            draggableController.jumpTo(draggableController.size + delta);
+                            final delta =
+                                -details.primaryDelta! /
+                                MediaQuery.of(context).size.height;
+                            draggableController.jumpTo(
+                              draggableController.size + delta,
+                            );
                           },
                           onVerticalDragEnd: (details) {
                             handleDrag();
@@ -326,8 +380,12 @@ class CommonBottomSheets {
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: (details) {
                             if (!draggableController.isAttached) return;
-                            final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                            draggableController.jumpTo(draggableController.size + delta);
+                            final delta =
+                                -details.primaryDelta! /
+                                MediaQuery.of(context).size.height;
+                            draggableController.jumpTo(
+                              draggableController.size + delta,
+                            );
                           },
                           onVerticalDragEnd: (details) {
                             handleDrag();
@@ -340,14 +398,20 @@ class CommonBottomSheets {
                             onBackPressed: null,
                             customTitle: Text(
                               title,
-                              style: titleTextStyle ?? CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                              style:
+                                  titleTextStyle ??
+                                  CoconutTypography.body2_14_Bold.setColor(
+                                    CoconutColors.white,
+                                  ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
                             ),
                             subLabel: Text(
                               subLabel ?? '',
-                              style: CoconutTypography.body3_12.setColor(CoconutColors.black),
+                              style: CoconutTypography.body3_12.setColor(
+                                CoconutColors.black,
+                              ),
                             ),
                             backgroundColor: resolvedBackgroundColor,
                             showSubLabel: subLabel != null,
@@ -358,7 +422,10 @@ class CommonBottomSheets {
                       Expanded(
                         child: Padding(
                           padding: EdgeInsets.only(
-                            bottom: adjustForKeyboardInset ? MediaQuery.of(context).viewInsets.bottom : 0,
+                            bottom:
+                                adjustForKeyboardInset
+                                    ? MediaQuery.of(context).viewInsets.bottom
+                                    : 0,
                           ),
                           child: childBuilder(scrollController),
                         ),
@@ -397,7 +464,8 @@ class CommonBottomSheets {
     ValueChanged<DraggableScrollableController>? onControllerReady,
   }) async {
     assert(
-      childBuilder != null || (items != null && getItemId != null && itemBuilder != null),
+      childBuilder != null ||
+          (items != null && getItemId != null && itemBuilder != null),
       'Either childBuilder or items/getItemId/itemBuilder must be provided.',
     );
 
@@ -421,9 +489,11 @@ class CommonBottomSheets {
               itemBuilder: itemBuilder!,
               initiallySelectedId: initiallySelectedId,
               confirmText: confirmText ?? t.select,
-              backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
+              backgroundColor:
+                  backgroundColor ?? context.coconutColors.surfaceBottomSheet,
               showGradient: showGradient,
-              allowConfirmWhenSelectionUnchanged: allowConfirmWhenSelectionUnchanged,
+              allowConfirmWhenSelectionUnchanged:
+                  allowConfirmWhenSelectionUnchanged,
             );
           },
     );
@@ -445,7 +515,8 @@ class CommonBottomSheets {
     double maxHeight = 0.9,
   }) async {
     var adjustedMinChildSize = minChildSize;
-    if (maxHeight >= adjustedMinChildSize) adjustedMinChildSize = maxHeight + 0.0001;
+    if (maxHeight >= adjustedMinChildSize)
+      adjustedMinChildSize = maxHeight + 0.0001;
     return showModalBottomSheet<T>(
       context: context,
       builder: (context) {
@@ -464,12 +535,15 @@ class CommonBottomSheets {
           },
         );
       },
-      backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
+      backgroundColor:
+          backgroundColor ?? context.coconutColors.surfaceBottomSheet,
       isDismissible: isDismissible,
       isScrollControlled: isScrollControlled,
       enableDrag: enableDrag,
       useSafeArea: useSafeArea,
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
     );
   }
 }
@@ -491,10 +565,12 @@ class SelectableBottomSheetTextItem extends StatefulWidget {
   });
 
   @override
-  State<SelectableBottomSheetTextItem> createState() => _SelectableBottomSheetTextItemState();
+  State<SelectableBottomSheetTextItem> createState() =>
+      _SelectableBottomSheetTextItemState();
 }
 
-class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTextItem> {
+class _SelectableBottomSheetTextItemState
+    extends State<SelectableBottomSheetTextItem> {
   bool _isPressed = false;
 
   @override
@@ -537,8 +613,13 @@ class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTex
                               'assets/svg/check.svg',
                               width: 16,
                               height: 16,
-                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                            ).scaleInAnimation(duration: const Duration(milliseconds: 300))
+                              colorFilter: const ColorFilter.mode(
+                                CoconutColors.white,
+                                BlendMode.srcIn,
+                              ),
+                            ).scaleInAnimation(
+                              duration: const Duration(milliseconds: 300),
+                            )
                             : null,
                   ),
               ],
@@ -579,10 +660,12 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
   });
 
   @override
-  State<SelectableBottomSheetBody<T>> createState() => _SelectableBottomSheetBodyState<T>();
+  State<SelectableBottomSheetBody<T>> createState() =>
+      _SelectableBottomSheetBodyState<T>();
 }
 
-class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody<T>> {
+class _SelectableBottomSheetBodyState<T>
+    extends State<SelectableBottomSheetBody<T>> {
   Object? _selectedId;
 
   bool get _hasSelectionChanged => _selectedId != widget.initiallySelectedId;
@@ -607,11 +690,15 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
     const platformButtonHeightAdjustment = 3.0;
     final buttonAreaHeight =
         widget.showConfirmButton
-            ? FixedBottomButton.fixedBottomButtonDefaultHeight + platformButtonHeightAdjustment + buttonSpacingHeight
+            ? FixedBottomButton.fixedBottomButtonDefaultHeight +
+                platformButtonHeightAdjustment +
+                buttonSpacingHeight
             : 0.0;
 
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: const TextScaler.linear(1.0)),
       child: Container(
         color: widget.backgroundColor,
         child: SafeArea(
@@ -642,11 +729,19 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                         widget.onSelectionChanged?.call(
                           _selectedId == null
                               ? null
-                              : widget.items.firstWhere((candidate) => widget.getItemId(candidate) == _selectedId),
+                              : widget.items.firstWhere(
+                                (candidate) =>
+                                    widget.getItemId(candidate) == _selectedId,
+                              ),
                         );
                       }
 
-                      return widget.itemBuilder(context, item, isSelected, handleTap);
+                      return widget.itemBuilder(
+                        context,
+                        item,
+                        isSelected,
+                        handleTap,
+                      );
                     },
                   ),
                 ),
@@ -666,13 +761,19 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                         final selectedItem =
                             _selectedId == null
                                 ? null
-                                : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
+                                : widget.items.firstWhere(
+                                  (item) =>
+                                      widget.getItemId(item) == _selectedId,
+                                );
                         Navigator.pop(context, selectedItem);
                       },
                       isActive:
-                          _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
+                          _selectedId != null &&
+                          (widget.allowConfirmWhenSelectionUnchanged ||
+                              _hasSelectionChanged),
                       text: widget.confirmText,
-                      backgroundColor: context.coconutColors.primaryButtonBackground,
+                      backgroundColor:
+                          context.coconutColors.primaryButtonBackground,
                       gradientColor: Colors.transparent,
                       textColor: context.coconutColors.primaryButtonText,
                     ),

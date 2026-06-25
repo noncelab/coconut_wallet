@@ -121,7 +121,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
-        border: isMultisig ? null : Border.all(color: CoconutColors.gray700, width: 1),
+        border: isMultisig ? null : Border.all(color: context.coconutColors.borderSubtle, width: 1),
         gradient:
             isMultisig
                 ? LinearGradient(
@@ -138,7 +138,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
         decoration:
             isMultisig
                 ? BoxDecoration(
-                  color: CoconutColors.black,
+                  color: context.coconutColors.surfaceCard,
                   borderRadius: BorderRadius.circular(22), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
                 )
                 : null,
@@ -227,7 +227,9 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                                           'assets/svg/edit-outlined.svg',
                                           width: 14,
                                           colorFilter: ColorFilter.mode(
-                                            isPressed ? CoconutColors.gray700 : CoconutColors.gray500,
+                                            isPressed
+                                                ? context.coconutColors.tertiaryText
+                                                : context.coconutColors.mutedText,
                                             BlendMode.srcIn,
                                           ),
                                         )
@@ -237,9 +239,9 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                                         ? [
                                           TooltipIconAction(
                                             key: widget.tooltipKey,
-                                            icon: const Icon(
+                                            icon: Icon(
                                               Icons.info_outline_rounded,
-                                              color: CoconutColors.gray500,
+                                              color: context.coconutColors.iconSubDefault,
                                               size: 18,
                                             ),
                                             onTap: widget.onTooltipClicked,
@@ -261,7 +263,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerRight,
-                        child: Text(rightSubText, style: CoconutTypography.body2_14.setColor(CoconutColors.gray400)),
+                        child: Text(
+                          rightSubText,
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                        ),
                       ),
                     );
                   },
@@ -326,22 +331,22 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             child: Container(
               padding: const EdgeInsets.all(4.3),
               decoration: BoxDecoration(
-                color: isItemTapped ? colors.surfacePressed : CoconutColors.gray800,
+                color: isItemTapped ? colors.surfacePressed : colors.iconBackground,
                 shape: BoxShape.circle,
-                boxShadow: const [
-                  BoxShadow(color: CoconutColors.gray900, offset: Offset(2, 2), blurRadius: 10, spreadRadius: 0),
+                boxShadow: [
+                  BoxShadow(color: colors.shadowSubtle, offset: const Offset(2, 2), blurRadius: 10, spreadRadius: 0),
                 ],
               ),
               child: Container(
                 padding: const EdgeInsets.all(1),
                 decoration: BoxDecoration(
-                  color: isItemTapped ? colors.surfacePressed : CoconutColors.gray800,
+                  color: isItemTapped ? colors.surfacePressed : colors.iconBackground,
                   shape: BoxShape.circle,
                 ),
                 child: SvgPicture.asset(
                   'assets/svg/edit-outlined.svg',
                   width: 10,
-                  colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(colors.iconSubDefault, BlendMode.srcIn),
                 ),
               ),
             ),
