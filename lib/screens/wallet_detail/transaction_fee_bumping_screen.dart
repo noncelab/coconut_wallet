@@ -347,7 +347,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   Widget buildErrorText(String message) {
     return Text(
       message,
-      style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+      style: CoconutTypography.body2_14.setColor(context.coconutColors.danger),
       textScaler: const TextScaler.linear(1.0),
     );
   }
@@ -810,12 +810,12 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         children: [
           SvgPicture.asset(
             'assets/svg/triangle-warning.svg',
-            colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
           Text(
             t.transaction_fee_bumping_screen.recommended_fees_fetch_error,
-            style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.danger),
           ),
         ],
       ),
@@ -841,7 +841,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         }
       }
 
-      Color textColor = viewModel.selectedUtxoList.isNotEmpty ? CoconutColors.primary : CoconutColors.hotPink;
+      Color textColor = viewModel.selectedUtxoList.isNotEmpty ? CoconutColors.primary : context.coconutColors.danger;
 
       child = Container(
         key: const ValueKey('content'),
@@ -929,7 +929,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   }
 
   Widget buildDivider() {
-    return Container(color: CoconutColors.gray700, height: 1);
+    return Container(color: context.coconutColors.divider, height: 1);
   }
 
   Widget buildUtxoOption(FeeBumpingViewModel viewModel) {
@@ -981,7 +981,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
   Color _getNewFeeTextColor({bool isError = false}) {
     if (isError) {
-      return CoconutColors.hotPink;
+      return context.coconutColors.danger;
     }
     return _isRbf ? CoconutColors.primary : CoconutColors.cyan;
   }

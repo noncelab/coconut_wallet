@@ -83,7 +83,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
           actionButtonList: [
             IconButton(
               icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
-              color: CoconutColors.white,
+              color: context.coconutColors.primaryText,
               onPressed: () {
                 _qrViewController?.switchCamera();
               },
@@ -169,7 +169,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                   leading: IconButton(
                     icon: SvgPicture.asset(
                       'assets/svg/arrow-back.svg',
-                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                       width: 24,
                       height: 24,
                     ),
@@ -186,11 +186,11 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                       maxLines: 1,
                       padding: const EdgeInsets.only(),
                       height: Sizes.size40,
-                      prefix: const IgnorePointer(
+                      prefix: IgnorePointer(
                         ignoring: true,
                         child: IconButton(
                           onPressed: null,
-                          icon: Icon(Icons.search_rounded, color: CoconutColors.gray600),
+                          icon: Icon(Icons.search_rounded, color: context.coconutColors.tertiaryText),
                           iconSize: Sizes.size22,
                         ),
                       ),
@@ -212,14 +212,14 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                                 ? SvgPicture.asset('assets/svg/scan.svg')
                                 : SvgPicture.asset(
                                   'assets/svg/text-field-clear.svg',
-                                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                                 ),
                       ),
                       placeholderText: t.address_search_screen.address_placeholder,
-                      activeColor: CoconutColors.gray100,
-                      cursorColor: CoconutColors.gray100,
-                      placeholderColor: CoconutColors.gray600,
-                      backgroundColor: CoconutColors.gray800,
+                      activeColor: context.coconutColors.primaryText,
+                      cursorColor: context.coconutColors.primaryText,
+                      placeholderColor: context.coconutColors.inputPlaceholder,
+                      backgroundColor: context.coconutColors.inputSurface,
                     ),
                   ),
                   titleSpacing: 0,
@@ -234,7 +234,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                               CoconutLayout.spacing_200h,
                               Text(
                                 "'${_addressController.text}' ${t.address_search_screen.search_result} ${viewModel.searchedAddressLength > 0 ? t.address_search_screen.address_n_found(n: viewModel.searchedAddressLength) : ""}",
-                                style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                                style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                               ),
                               CoconutLayout.spacing_200h,
                               Expanded(
@@ -248,7 +248,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                                           if (viewModel.receivingAddressList.isNotEmpty) ...[
                                             Text(
                                               t.address_search_screen.receiving_address,
-                                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                                              style: CoconutTypography.body2_14_Bold.setColor(
+                                                context.coconutColors.primaryText,
+                                              ),
                                             ),
                                             CoconutLayout.spacing_300h,
                                             _buildWalletAddressList(viewModel.receivingAddressList),
@@ -257,7 +259,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                                           if (viewModel.changeAddressList.isNotEmpty) ...[
                                             Text(
                                               t.address_search_screen.change_address,
-                                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                                              style: CoconutTypography.body2_14_Bold.setColor(
+                                                context.coconutColors.primaryText,
+                                              ),
                                             ),
                                             CoconutLayout.spacing_300h,
                                             _buildWalletAddressList(viewModel.changeAddressList),
@@ -283,16 +287,16 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
 
   Widget _buildNotFoundView() {
     return Container(
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.all(Radius.circular(Sizes.size12)),
-        color: CoconutColors.gray800,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(Radius.circular(Sizes.size12)),
+        color: context.coconutColors.surfaceCard,
       ),
       padding: const EdgeInsets.only(top: Sizes.size20, bottom: Sizes.size28),
       child: Column(
         children: [
           Text(
             t.address_search_screen.address_not_found,
-            style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+            style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: Sizes.size12),
@@ -301,23 +305,23 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
               children: [
                 SvgPicture.asset(
                   'assets/svg/circle-info.svg',
-                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                 ),
                 CoconutLayout.spacing_100w,
                 Text(
                   t.address_search_screen.search_range,
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                 ),
               ],
             ),
           ),
           Text(
             t.address_search_screen.receiving_address_index(start: 0, end: viewModel.generatedReceiveIndex),
-            style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+            style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
           ),
           Text(
             t.address_search_screen.change_address_index(start: 0, end: viewModel.generatedChangeIndex),
-            style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+            style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
           ),
         ],
       ),
@@ -346,7 +350,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                   qrcodeTopWidget: Text(
                     addressList[index].derivationPath,
                     style: CoconutTypography.body2_14.merge(
-                      TextStyle(color: CoconutColors.white.withValues(alpha: 0.7)),
+                      TextStyle(color: context.coconutColors.primaryText.withValues(alpha: 0.7)),
                     ),
                   ),
                   qrData: addressList[index].address,
