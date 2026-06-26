@@ -27,6 +27,7 @@ class UtxoSelectionScreen extends StatefulWidget {
   final ScrollController? scrollController;
   final bool showSkipButton;
   final bool isSplitMode;
+  final Color? backgroundColor;
 
   const UtxoSelectionScreen({
     super.key,
@@ -36,6 +37,7 @@ class UtxoSelectionScreen extends StatefulWidget {
     this.scrollController,
     this.showSkipButton = false,
     this.isSplitMode = false,
+    this.backgroundColor,
   });
 
   @override
@@ -64,6 +66,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Color resolvedBackgroundColor = widget.backgroundColor ?? context.coconutColors.background;
     String titleText = widget.isSplitMode ? t.select_utxo : t.utxo_selection_screen.title;
     return ChangeNotifierProxyProvider<ConnectivityProvider, UtxoSelectionViewModel>(
       create: (_) => _viewModel,
@@ -85,9 +88,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                 GestureDetector(
                   onTap: () => _removeUtxoOrderDropdown(),
                   child: Scaffold(
-                    backgroundColor: context.coconutColors.background,
+                    backgroundColor: resolvedBackgroundColor,
                     appBar: CoconutAppBar.build(
-                      backgroundColor: context.coconutColors.background,
+                      backgroundColor: resolvedBackgroundColor,
                       customTitle: Text(
                         titleText,
                         style: widget.isSplitMode ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14,
@@ -177,10 +180,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                     viewModel.isInitialized
                                         ? Stack(
                                           children: [
-                                            Container(
-                                              color: context.coconutColors.background,
-                                              child: _buildUtxoList(viewModel),
-                                            ),
+                                            Container(color: resolvedBackgroundColor, child: _buildUtxoList(viewModel)),
                                             FixedBottomButton(
                                               onButtonClicked: () {
                                                 vibrateLight();
@@ -192,6 +192,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                               horizontalPadding: 16,
                                               backgroundColor: context.coconutColors.primaryButtonBackground,
                                               textColor: context.coconutColors.primaryButtonText,
+                                              gradientColor: context.coconutColors.surfaceBottomSheet,
                                             ),
                                           ],
                                         )

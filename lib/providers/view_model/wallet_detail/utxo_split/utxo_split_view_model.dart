@@ -18,7 +18,6 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 
 typedef UsePreviewConfirmPrompt = Future<bool> Function(int outputCount);
 
@@ -284,9 +283,6 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
   int get splitAmountSats {
     if (_splitAmountInput.isEmpty) return 0;
-    print('-> ${_splitAmountInput}');
-    print('-> ${_splitAmountInput.toDoubleSafe()}');
-    print('-> ${currentUnit.toSatoshi(_splitAmountInput.toDoubleSafe() ?? 0.0)}');
     final splitAmountDouble = _splitAmountInput.toDoubleSafe() ?? 0.0;
     return currentUnit.toSatoshi(splitAmountDouble);
   }
@@ -492,7 +488,9 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     if (_selectedMethod == null || _selectedUtxoList.isEmpty) return false;
     if (hasSelectedUtxoAmountError) return false;
 
-    if (_isDustError || _isAmountInsufficientAfterFee || _isFeeExceedsUtxoAmount || isOutputSumOverInput) return false;
+    if (_isDustError || _isAmountInsufficientAfterFee || _isFeeExceedsUtxoAmount || isOutputSumOverInput) {
+      return false;
+    }
     if (_splitPreview == null) return false;
     if (_selectedMethod == SplitMethod.byAmount) {
       if (splitAmountSats <= 0) return false;
@@ -556,7 +554,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     _lastSplitCountText = '1';
     amountController.text = '';
     splitCountController.text = '1';
-    _resetManualSplitItems();
+    _resetManualSplitInput();
     _isDustError = false;
     _isAmountInsufficientAfterFee = false;
     _isFeeExceedsUtxoAmount = false;
@@ -571,12 +569,16 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     //refreshRecommendedFees();
   }
 
-  void _resetManualSplitItems() {
-    for (var item in manualSplitItems) {
-      item.dispose();
+  void _resetManualSplitInput() {
+    if (manualSplitItems.isEmpty) {
+      addManualSplitItem();
+      return;
     }
-    manualSplitItems.clear();
-    addManualSplitItem();
+
+    for (var item in manualSplitItems) {
+      item.amountController.text = '';
+      item.countController.text = '1';
+    }
   }
 
   Future<void> _cancelActiveBuild() async {

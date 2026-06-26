@@ -74,7 +74,6 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   bool _isMethodBottomSheetOpen = false;
 
   /// manual input 삭제 버튼은 딱 1개만 노출되어야 함
-  final Map<ManualSplitItem, GlobalKey<_ManualSplitListItemState>> _manualSplitItemKeys = {};
   ManualSplitItem? _visibleDeleteButtonItem;
 
   @override
@@ -84,32 +83,26 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
     super.dispose();
   }
 
-  /// -------------------------------------------------
-  /// manual input delete button 단일 노출 관리
-  /// -------------------------------------------------
-  GlobalKey<_ManualSplitListItemState> _getManualSplitItemKey(ManualSplitItem item) {
-    return _manualSplitItemKeys.putIfAbsent(item, () => GlobalKey<_ManualSplitListItemState>());
-  }
-
   void _syncManualSplitItemKeys(List<ManualSplitItem> manualSplitItems) {
-    _manualSplitItemKeys.removeWhere((item, _) => !manualSplitItems.contains(item));
-
     if (_visibleDeleteButtonItem != null && !manualSplitItems.contains(_visibleDeleteButtonItem)) {
       _visibleDeleteButtonItem = null;
     }
   }
 
   void _onManualSplitDeleteButtonVisibilityChanged(ManualSplitItem item, bool isVisible) {
+    if (!mounted) return;
+
     if (isVisible) {
-      if (_visibleDeleteButtonItem != null && _visibleDeleteButtonItem != item) {
-        _manualSplitItemKeys[_visibleDeleteButtonItem]?.currentState?.setDeleteButtonVisible(false);
-      }
-      _visibleDeleteButtonItem = item;
+      setState(() {
+        _visibleDeleteButtonItem = item;
+      });
       return;
     }
 
     if (_visibleDeleteButtonItem == item) {
-      _visibleDeleteButtonItem = null;
+      setState(() {
+        _visibleDeleteButtonItem = null;
+      });
     }
   }
 
@@ -180,7 +173,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   }
 
   void _scheduleHeaderAnimation(String nextTitle, SplitMethod? nextMethod) {
-    if (_lastObservedHeaderTitle == nextTitle && _lastObservedMethod == nextMethod) return;
+    if (_lastObservedHeaderTitle == nextTitle && _lastObservedMethod == nextMethod) {
+      return;
+    }
     _lastObservedHeaderTitle = nextTitle;
     _lastObservedMethod = nextMethod;
 
@@ -204,7 +199,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
       return;
     }
 
-    if (_displayedHeaderTitle == nextTitle && _displayedMethod == nextMethod && !_isHeaderFadingOut) return;
+    if (_displayedHeaderTitle == nextTitle && _displayedMethod == nextMethod && !_isHeaderFadingOut) {
+      return;
+    }
     if (_isHeaderFadingOut) return;
 
     final token = _headerAnimationNonce + 1;
@@ -446,14 +443,14 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
         if (_isHeaderFadingOut) {
           titleWidget = titleToDisplay.characterFadeOutAnimation(
             key: ValueKey('split-header-out-$_headerAnimationNonce'),
-            textStyle: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+            textStyle: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
             duration: const Duration(milliseconds: 100),
             slideDirection: CoconutCharacterFadeSlideDirection.slideUp,
           );
         } else {
           titleWidget = titleToDisplay.characterFadeInAnimation(
             key: ValueKey('split-header-in-$_headerAnimationNonce'),
-            textStyle: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+            textStyle: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
             duration: _headerAnimationDuration,
             delay: const Duration(milliseconds: 300),
             slideDirection: CoconutCharacterFadeSlideDirection.slideDown,
@@ -578,7 +575,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                   feeRatio != null && feeRatio >= 10
                       ? Text(
                         t.merge_utxos_screen.merge_cta_high_fee_ratio(ratio: feeRatio),
-                        style: CoconutTypography.caption_10.setColor(CoconutColors.yellow),
+                        style: CoconutTypography.caption_10.setColor(context.coconutColors.warning),
                       )
                       : null,
               onButtonClicked: () async {
@@ -618,7 +615,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             CoconutOptionPicker(
               label: method != null ? t.split_utxo_screen.label_split_method : null,
               text: method?.getLabel(t) ?? t.split_utxo_screen.method_bottom_sheet.split_by_amount,
-              textColor: CoconutColors.white,
+              textColor: context.coconutColors.primaryText,
               onTap: () => _showSplitMethodBottomSheet(context, viewModel),
             ),
             CoconutLayout.spacing_1000h,
@@ -674,7 +671,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               inlineWidgets.add(
                 Text(
                   t.split_utxo_screen.and_more_tags(count: additionalTagCount),
-                  style: CoconutTypography.caption_10.setColor(CoconutColors.gray500),
+                  style: CoconutTypography.caption_10.setColor(context.coconutColors.mutedText),
                 ),
               );
             }
@@ -689,7 +686,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               label: isSelected ? t.split_utxo_screen.label_selected_utxo : null,
               text: viewModel.getSelectedUtxoAmountText(t),
               guideText: guideText,
-              textColor: isSelected ? CoconutColors.white : CoconutColors.gray500,
+              textColor: isSelected ? context.coconutColors.primaryText : context.coconutColors.mutedText,
               inlineWidgets: inlineWidgets,
               coconutOptionStateEnum: optionState,
               onTap: () => _showUtxoSelectionBottomSheet(context, viewModel),
@@ -794,7 +791,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             CoconutOptionPicker(
               label: t.split_utxo_screen.label_estimated_fee,
               text: _getFeePickerText(t, hasFeeRate, previewFeeText),
-              textColor: hasFeeRate ? CoconutColors.white : CoconutColors.gray500,
+              textColor: hasFeeRate ? context.coconutColors.primaryText : context.coconutColors.mutedText,
               coconutOptionStateEnum: viewModel.feeOptionState,
               guideText: feeExceedsAmountErrorText,
               onTap:
@@ -894,9 +891,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               style: CoconutTextFieldStyle.underline,
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              activeColor: CoconutColors.white,
-              placeholderColor: CoconutColors.gray500,
-              errorColor: CoconutColors.hotPink,
+              activeColor: context.coconutColors.primaryText,
+              placeholderColor: context.coconutColors.inputPlaceholder,
+              errorColor: context.coconutColors.danger,
               isError: data.splitAmountErrorText != null,
               errorText: data.splitAmountErrorText ?? '',
               onChanged: (_) {},
@@ -915,7 +912,10 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               padding: const EdgeInsets.only(left: 4, right: 4, top: 6, bottom: 6),
               suffix: Padding(
                 padding: const EdgeInsets.only(right: 4),
-                child: Text(data.unitSymbol, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
+                child: Text(
+                  data.unitSymbol,
+                  style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+                ),
               ),
             );
           },
@@ -957,13 +957,13 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                             constraints: const BoxConstraints(minWidth: 47),
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              border: Border.all(color: CoconutColors.gray700),
+                              border: Border.all(color: context.coconutColors.borderSubtle),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             height: 24,
                             child: Text(
                               currentUnit.displayBitcoinAmount(sats, withUnit: false),
-                              style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                              style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -993,7 +993,8 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             final splitCount = data.splitCount;
             final isDustError = data.isDustError;
             final hasFocus = data.hasFocus;
-            final textColor = splitCount >= 2 && isDustError ? CoconutColors.hotPink : CoconutColors.white;
+            final textColor =
+                splitCount >= 2 && isDustError ? context.coconutColors.danger : context.coconutColors.primaryText;
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1020,12 +1021,12 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                             height: 40,
                             fontHeight: 1,
                             borderRadius: 8,
-                            backgroundColor: hasFocus ? CoconutColors.gray800 : Colors.transparent,
+                            backgroundColor: hasFocus ? context.coconutColors.inputSurface : Colors.transparent,
                             controller: viewModel.splitCountController,
                             focusNode: viewModel.splitCountFocusNode,
                             textAlign: TextAlign.center,
                             activeColor: textColor,
-                            placeholderColor: CoconutColors.gray500,
+                            placeholderColor: context.coconutColors.inputPlaceholder,
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
                             isVisibleBorder: false,
@@ -1044,7 +1045,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                               child: Text(
                                 '1',
                                 style: CoconutTypography.heading3_21_NumberBold.copyWith(
-                                  color: CoconutColors.gray500,
+                                  color: context.coconutColors.inputPlaceholder,
                                   fontSize: 24,
                                 ),
                                 textAlign: TextAlign.center,
@@ -1080,10 +1081,11 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
           children: [
             ...manualSplitItems.asMap().entries.map((entry) {
               return _ManualSplitListItem(
-                key: _getManualSplitItemKey(entry.value),
+                key: ValueKey(entry.value),
                 index: entry.key,
                 item: entry.value,
                 viewModel: viewModel,
+                visibleDeleteButtonItem: _visibleDeleteButtonItem,
                 onDeleteButtonVisibilityChanged: (isVisible) {
                   _onManualSplitDeleteButtonVisibilityChanged(entry.value, isVisible);
                 },
@@ -1095,7 +1097,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               borderRadius: 12,
               child: CustomPaint(
                 foregroundPainter: DashedBorderPainter(
-                  color: CoconutColors.gray400,
+                  color: context.coconutColors.borderSubtle,
                   radius: 12,
                   dashWidth: 2,
                   dashSpace: 2,
@@ -1103,7 +1105,10 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: context.coconutColors.surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   alignment: Alignment.center,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1112,12 +1117,12 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                         'assets/svg/plus.svg',
                         width: 12,
                         height: 12,
-                        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                       ),
                       const SizedBox(width: 5),
                       Text(
                         t.split_utxo_screen.add_new_amount,
-                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                       ),
                     ],
                   ),
@@ -1150,11 +1155,14 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                       constraints: const BoxConstraints(minWidth: 47),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
-                        border: Border.all(color: CoconutColors.gray700),
+                        border: Border.all(color: context.coconutColors.borderSubtle),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       height: 24,
-                      child: Text('$count', style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                      child: Text(
+                        '$count',
+                        style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
+                      ),
                     ),
                   );
                 }).toList(),
@@ -1176,6 +1184,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
         minChildSize: 0.6,
         maxChildSize: 0.9,
         initialChildSize: 0.6,
+        backgroundColor: context.coconutColors.surfaceBottomSheet,
         childBuilder:
             (scrollController) => FixedTextScale(
               child: UtxoSelectionScreen(
@@ -1184,6 +1193,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                 currentUnit: viewModel.currentUnit,
                 scrollController: scrollController,
                 isSplitMode: true,
+                backgroundColor: context.coconutColors.surfaceBottomSheet,
               ),
             ),
       );
@@ -1213,7 +1223,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
       confirmText: t.done,
       minChildSize: 0.49,
       maxChildSize: 0.9,
-      backgroundColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       showGradient: false,
       itemBuilder: (context, item, isSelected, onTap) {
         return SelectableBottomSheetTextItem(
@@ -1316,7 +1326,7 @@ class _HeaderTitleErrorText extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   headerTitleErrorMessage,
-                  style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink).copyWith(height: 1.0),
+                  style: CoconutTypography.caption_10.setColor(context.coconutColors.danger).copyWith(height: 1.0),
                 ),
               ),
             );
@@ -1439,7 +1449,7 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
                   alignment: Alignment.centerRight,
                   child: Text(
                     t.split_utxo_screen.expected_result.above_is_expected,
-                    style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                    style: CoconutTypography.caption_10.setColor(context.coconutColors.secondaryText),
                   ),
                 ),
               ],
@@ -1474,7 +1484,7 @@ class _SplitResultReadyContent extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(splitSummaryTitle, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+            Text(splitSummaryTitle, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText)),
             CoconutLayout.spacing_200h,
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1482,12 +1492,12 @@ class _SplitResultReadyContent extends StatelessWidget {
               children: [
                 Text(
                   t.split_utxo_screen.expected_result.new_utxos,
-                  style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
+                  style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                 ),
                 Expanded(
                   child: Text(
                     splitOutputText ?? '-',
-                    style: CoconutTypography.body1_16.setColor(CoconutColors.white),
+                    style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
                     textAlign: TextAlign.right,
                   ),
                 ),
@@ -1499,9 +1509,9 @@ class _SplitResultReadyContent extends StatelessWidget {
               children: [
                 Text(
                   t.split_utxo_screen.expected_result.fee,
-                  style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
+                  style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                 ),
-                Text(previewFeeText, style: CoconutTypography.body1_16.setColor(CoconutColors.white)),
+                Text(previewFeeText, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
               ],
             ),
           ],
@@ -1527,8 +1537,8 @@ class _SplitResultSkeletonContent extends StatelessWidget {
     final dummyOutput = List.generate(displayLineCount, (index) => '0').join('\n');
 
     return Shimmer.fromColors(
-      baseColor: CoconutColors.gray700,
-      highlightColor: CoconutColors.gray600,
+      baseColor: context.coconutColors.surfaceSkeletonBase,
+      highlightColor: context.coconutColors.surfaceSkeletonHighlight,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1556,7 +1566,10 @@ class _SplitResultSkeletonContent extends StatelessWidget {
                           width:
                               index == titleLines - 1 && titleLines > 1 ? constraints.maxWidth * 0.6 : double.infinity,
                           height: 18,
-                          decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+                          decoration: BoxDecoration(
+                            color: context.coconutColors.surfaceSkeletonHighlight,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                         );
                       }),
                     );
@@ -1582,7 +1595,10 @@ class _SplitResultSkeletonContent extends StatelessWidget {
                       child: Container(
                         width: double.infinity,
                         height: 16,
-                        decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(
+                          color: context.coconutColors.surfaceSkeletonHighlight,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
                     ),
                   ),
@@ -1609,7 +1625,7 @@ class _SplitResultSkeletonContent extends StatelessWidget {
                             width: MediaQuery.sizeOf(context).width / 2,
                             height: 18,
                             decoration: BoxDecoration(
-                              color: CoconutColors.white,
+                              color: context.coconutColors.surfaceSkeletonHighlight,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           );
@@ -1637,7 +1653,10 @@ class _SplitResultSkeletonContent extends StatelessWidget {
                       child: Container(
                         width: double.infinity,
                         height: 16,
-                        decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(
+                          color: context.coconutColors.surfaceSkeletonHighlight,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
                     ),
                   ),
@@ -1653,7 +1672,10 @@ class _SplitResultSkeletonContent extends StatelessWidget {
                       child: Container(
                         width: 92,
                         height: 18,
-                        decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(
+                          color: context.coconutColors.surfaceSkeletonHighlight,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
                     ),
                   ),
@@ -1713,6 +1735,7 @@ class _ManualSplitListItem extends StatefulWidget {
   final int index;
   final ManualSplitItem item;
   final UtxoSplitViewModel viewModel;
+  final ManualSplitItem? visibleDeleteButtonItem;
   final ValueChanged<bool> onDeleteButtonVisibilityChanged;
 
   const _ManualSplitListItem({
@@ -1720,6 +1743,7 @@ class _ManualSplitListItem extends StatefulWidget {
     required this.index,
     required this.item,
     required this.viewModel,
+    required this.visibleDeleteButtonItem,
     required this.onDeleteButtonVisibilityChanged,
   });
 
@@ -1771,9 +1795,24 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
     _swipeController.forward();
   }
 
+  void _hideDeleteButtonLocally() {
+    if (!_isDeleteButtonVisible) return;
+
+    setState(() {
+      _isDeleteButtonVisible = false;
+    });
+    widget.item.amountFocusNode.unfocus();
+    widget.item.countFocusNode.unfocus();
+    _swipeController.reverse();
+  }
+
   @override
   void didUpdateWidget(covariant _ManualSplitListItem oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    if (widget.visibleDeleteButtonItem != widget.item) {
+      _hideDeleteButtonLocally();
+    }
 
     if (widget.viewModel.manualSplitItems.length <= 1 && _swipeController.value > 0) {
       if (_isDeleteButtonVisible) {
@@ -1859,7 +1898,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                         );
                       },
                       child: Container(
-                        color: CoconutColors.black,
+                        color: context.coconutColors.background,
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -1873,9 +1912,9 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 focusNode: widget.item.amountFocusNode,
                                 style: CoconutTextFieldStyle.underline,
                                 fontSize: 18,
-                                activeColor: CoconutColors.white,
-                                placeholderColor: CoconutColors.gray500,
-                                errorColor: CoconutColors.hotPink,
+                                activeColor: context.coconutColors.primaryText,
+                                placeholderColor: context.coconutColors.inputPlaceholder,
+                                errorColor: context.coconutColors.danger,
                                 onChanged: (_) {},
                                 onEditingComplete: () => widget.item.amountFocusNode.unfocus(),
                                 textInputAction: TextInputAction.done,
@@ -1899,7 +1938,9 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                   padding: const EdgeInsets.only(right: 4),
                                   child: Text(
                                     widget.viewModel.currentUnit.symbol,
-                                    style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                                    style: CoconutTypography.heading4_18_Bold.setColor(
+                                      context.coconutColors.primaryText,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1938,9 +1979,10 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                         controller: widget.item.countController,
                                         focusNode: widget.item.countFocusNode,
                                         textAlign: TextAlign.center,
-                                        backgroundColor: hasFocus ? CoconutColors.gray800 : Colors.transparent,
-                                        activeColor: CoconutColors.white,
-                                        placeholderColor: CoconutColors.gray500,
+                                        backgroundColor:
+                                            hasFocus ? context.coconutColors.inputSurface : Colors.transparent,
+                                        activeColor: context.coconutColors.primaryText,
+                                        placeholderColor: context.coconutColors.inputPlaceholder,
                                         fontSize: 24,
                                         isVisibleBorder: false,
                                         onChanged: (_) {},
@@ -1958,7 +2000,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                           child: Text(
                                             '1',
                                             style: CoconutTypography.heading3_21_NumberBold.copyWith(
-                                              color: CoconutColors.gray500,
+                                              color: context.coconutColors.inputPlaceholder,
                                               fontSize: 24,
                                             ),
                                             textAlign: TextAlign.center,
@@ -1998,7 +2040,9 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                               CoconutLayout.spacing_300w,
                               TapRegion(
                                 onTapOutside: (_) {
-                                  if (!_isDeleteButtonVisible || _isDeleting) return;
+                                  if (!_isDeleteButtonVisible || _isDeleting) {
+                                    return;
+                                  }
                                   setDeleteButtonVisible(false);
                                 },
                                 child: RippleEffect(
@@ -2022,7 +2066,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                     width: 44,
                                     height: 44,
                                     decoration: BoxDecoration(
-                                      color: CoconutColors.hotPink,
+                                      color: context.coconutColors.danger,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     alignment: Alignment.center,
@@ -2030,7 +2074,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                       'assets/svg/trash.svg',
                                       width: 20,
                                       height: 20,
-                                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                      colorFilter: ColorFilter.mode(context.coconutColors.background, BlendMode.srcIn),
                                     ),
                                   ),
                                 ),
@@ -2066,11 +2110,11 @@ class _SplitCountStepButton extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: isActive ? CoconutColors.gray800 : CoconutColors.gray850,
+          color: isActive ? context.coconutColors.surfaceButton : context.coconutColors.surfaceDisabled,
           shape: BoxShape.circle,
-          border: Border.all(color: isActive ? CoconutColors.gray300 : CoconutColors.gray700),
+          border: Border.all(color: isActive ? context.coconutColors.borderStrong : context.coconutColors.borderSubtle),
         ),
-        child: Icon(icon, color: isActive ? CoconutColors.white : CoconutColors.gray500),
+        child: Icon(icon, color: isActive ? context.coconutColors.primaryText : context.coconutColors.iconDisabled),
       ),
     );
   }
