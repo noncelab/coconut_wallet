@@ -516,7 +516,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       context: context,
       heightRatio: 0.9,
       backgroundColor: context.coconutColors.background,
-      child: QrWithCopyTextScreen(qrData: extendedPublicKey, title: t.extended_public_key, showPulldownMenu: false),
+      child: QrWithCopyTextScreen(
+        qrData: extendedPublicKey,
+        title: t.extended_public_key,
+        showPulldownMenu: false,
+        backgroundColor: context.coconutColors.background,
+      ),
     );
   }
 }

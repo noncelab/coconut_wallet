@@ -146,6 +146,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                       _isOrderDropdownVisible = !_isOrderDropdownVisible;
                                     });
                                   },
+                                  backgroundColor: resolvedBackgroundColor,
                                 )
                               else
                                 Padding(

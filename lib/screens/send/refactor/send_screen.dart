@@ -581,6 +581,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             walletId: _viewModel.selectedWalletItem!.id,
             currentUnit: _viewModel.currentUnit,
             scrollController: scrollController,
+            backgroundColor: context.coconutColors.surfaceBottomSheet,
             showSkipButton: false,
           ),
     );
@@ -1951,7 +1952,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: AddressListScreen(id: walletId, isFullScreen: false),
+      child: AddressListScreen(
+        id: walletId,
+        isFullScreen: false,
+        backgroundColor: context.coconutColors.surfaceBottomSheet,
+      ),
     );
   }
 

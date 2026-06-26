@@ -23,8 +23,15 @@ class AddressListScreen extends StatefulWidget {
   final int id;
   final bool isFullScreen;
   final double paddingTop;
+  final Color? backgroundColor;
 
-  const AddressListScreen({super.key, required this.id, this.isFullScreen = true, this.paddingTop = 0});
+  const AddressListScreen({
+    super.key,
+    required this.id,
+    this.isFullScreen = true,
+    this.paddingTop = 0,
+    this.backgroundColor,
+  });
 
   @override
   State<AddressListScreen> createState() => _AddressListScreenState();
@@ -59,10 +66,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
         builder: (context, viewModel, child) {
           List<WalletAddress> addressList =
               _isReceivingSelected ? viewModel.receivingAddressList : viewModel.changeAddressList;
+          final backgroundColor = _backgroundColor(context);
           return Scaffold(
             extendBodyBehindAppBar: true,
-            backgroundColor: context.coconutColors.background,
-            appBar: _buildAppBar(context),
+            backgroundColor: backgroundColor,
+            appBar: _buildAppBar(context, backgroundColor),
             body: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Column(
@@ -144,21 +152,22 @@ class _AddressListScreenState extends State<AddressListScreen> {
     _isScrollingToTop = false;
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
+  Color _backgroundColor(BuildContext context) {
+    return widget.backgroundColor ?? context.coconutColors.background;
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context, Color backgroundColor) {
     return CoconutAppBar.build(
       context: context,
       entireWidgetKey: _appBarKey,
-      backgroundColor:
-          _isScrollOverTitleHeight
-              ? context.coconutColors.background.withValues(alpha: 0.5)
-              : context.coconutColors.background,
+      backgroundColor: _isScrollOverTitleHeight ? backgroundColor.withValues(alpha: 0.5) : backgroundColor,
       title: t.address_list_screen.wallet_name(name: viewModel.walletBaseItem!.name),
       actionButtonList: [
         IconButton(
           onPressed: () {
             Navigator.pushNamed(context, '/address-search', arguments: {'id': widget.id});
           },
-          icon: const Icon(Icons.search_rounded, color: CoconutColors.white),
+          icon: Icon(Icons.search_rounded, color: context.coconutColors.iconDefault),
         ),
       ],
     );
@@ -379,7 +388,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
               SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
                   return Container(
-                    color: context.coconutColors.background,
+                    color: _backgroundColor(context),
                     child: Column(
                       children: [
                         AddressItemCard(
@@ -391,11 +400,12 @@ class _AddressListScreenState extends State<AddressListScreen> {
                               childBuilder:
                                   (scrollController) => QrWithCopyTextScreen(
                                     scrollController: scrollController,
+                                    backgroundColor: context.coconutColors.surfaceBottomSheet,
                                     showBottomActions: true,
                                     qrcodeTopWidget: Text(
                                       addressList[index].derivationPath,
                                       style: CoconutTypography.body2_14.merge(
-                                        TextStyle(color: CoconutColors.white.withValues(alpha: 0.7)),
+                                        TextStyle(color: context.coconutColors.primaryText.withValues(alpha: 0.7)),
                                       ),
                                     ),
                                     qrData: addressList[index].address,

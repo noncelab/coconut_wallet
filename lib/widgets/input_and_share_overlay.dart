@@ -123,6 +123,10 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final bottomButtonPadding = widget.bottomButtonPadding.copyWith(
+      bottom: widget.bottomButtonPadding.bottom + MediaQuery.paddingOf(context).bottom,
+    );
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return Stack(
@@ -155,7 +159,7 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
                       child: IgnorePointer(
                         ignoring: true,
                         child: Container(
-                          padding: widget.bottomButtonPadding,
+                          padding: bottomButtonPadding,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
@@ -172,7 +176,7 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
                       right: 0,
                       top: 0,
                       child: Container(
-                        padding: widget.bottomButtonPadding,
+                        padding: bottomButtonPadding,
                         child: Column(
                           children: [
                             AnimatedOpacity(

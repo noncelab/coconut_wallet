@@ -43,6 +43,7 @@ class QrWithCopyTextScreen extends StatefulWidget {
   final ScrollController? scrollController;
   final bool showBottomActions;
   final bool showQrEmbedImage;
+  final Color? backgroundColor;
 
   const QrWithCopyTextScreen({
     super.key,
@@ -62,6 +63,7 @@ class QrWithCopyTextScreen extends StatefulWidget {
     this.scrollController,
     this.showBottomActions = false,
     this.showQrEmbedImage = false,
+    this.backgroundColor,
   });
 
   @override
@@ -205,67 +207,66 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
     final displayQrData = _currentQrData;
     final displayTextData = _currentTextData;
     final currentUnit = context.read<PreferenceProvider>().currentUnit;
+    final backgroundColor = widget.backgroundColor ?? context.coconutColors.background;
 
     return Scaffold(
-      backgroundColor: context.coconutColors.background,
+      backgroundColor: backgroundColor,
       resizeToAvoidBottomInset: false,
       appBar: CoconutAppBar.build(
         title: widget.title,
         context: context,
-
+        backgroundColor: widget.backgroundColor,
         isBottom: widget.isBottom,
         onBackPressed: () {
           Navigator.pop(context);
         },
         actionButtonList: widget.actionButton != null ? [widget.actionButton!] : [],
       ),
-      body: SafeArea(
-        child: InputAndShareOverlay(
-          scrollController: widget.scrollController,
-          showBottomActions: widget.showBottomActions,
-          shareButtonKey: _shareButtonKey,
-          onEnterAmountTap: () async {
-            final result = await Bip21AmountBottomSheet.show(
-              context: context,
-              currentUnit: currentUnit,
-              initialAmountSats: _amountInSats,
+      body: InputAndShareOverlay(
+        scrollController: widget.scrollController,
+        showBottomActions: widget.showBottomActions,
+        shareButtonKey: _shareButtonKey,
+        onEnterAmountTap: () async {
+          final result = await Bip21AmountBottomSheet.show(
+            context: context,
+            currentUnit: currentUnit,
+            initialAmountSats: _amountInSats,
+          );
+          if (!mounted || result == null || !result.didEdit) return;
+          setState(() {
+            _amountInSats = result.amountInSats;
+          });
+        },
+        onShareTap: () async {
+          try {
+            final RenderRepaintBoundary boundary =
+                _qrCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+            final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+            final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+            final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+            final directory = await getTemporaryDirectory();
+            final file = File('${directory.path}/share_qr_address.png');
+            await file.writeAsBytes(pngBytes);
+
+            // 버튼 위치 계산
+            final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+            final Rect sharePositionOrigin =
+                box != null ? box.localToGlobal(Offset.zero) & box.size : const Rect.fromLTWH(0, 400, 300, 50);
+
+            AppGuard.disablePrivacyScreen();
+            await SharePlus.instance.share(
+              ShareParams(files: [XFile(file.path)], text: displayTextData, sharePositionOrigin: sharePositionOrigin),
             );
-            if (!mounted || result == null || !result.didEdit) return;
-            setState(() {
-              _amountInSats = result.amountInSats;
-            });
-          },
-          onShareTap: () async {
-            try {
-              final RenderRepaintBoundary boundary =
-                  _qrCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-
-              final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-              final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-              final Uint8List pngBytes = byteData!.buffer.asUint8List();
-
-              final directory = await getTemporaryDirectory();
-              final file = File('${directory.path}/share_qr_address.png');
-              await file.writeAsBytes(pngBytes);
-
-              // 버튼 위치 계산
-              final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
-              final Rect sharePositionOrigin =
-                  box != null
-                      ? box.localToGlobal(Offset.zero) & box.size
-                      : const Rect.fromLTWH(0, 400, 300, 50); // fallback
-
-              AppGuard.disablePrivacyScreen();
-              await SharePlus.instance.share(
-                ShareParams(files: [XFile(file.path)], text: displayTextData, sharePositionOrigin: sharePositionOrigin),
-              );
-            } catch (e, stack) {
-              debugPrint('Failed to capture and share: $e');
-              debugPrint('Stack: $stack');
-            } finally {
-              AppGuard.enablePrivacyScreen();
-            }
-          },
+          } catch (e, stack) {
+            debugPrint('Failed to capture and share: $e');
+            debugPrint('Stack: $stack');
+          } finally {
+            AppGuard.enablePrivacyScreen();
+          }
+        },
+        child: SafeArea(
           child: Column(
             children: [
               if (widget.tooltipDescription != null) ...[

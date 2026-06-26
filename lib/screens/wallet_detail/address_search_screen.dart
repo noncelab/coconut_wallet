@@ -342,6 +342,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                 context: context,
                 heightRatio: 0.9,
                 child: QrWithCopyTextScreen(
+                  backgroundColor: context.coconutColors.surfaceBottomSheet,
                   qrcodeTopWidget: Text(
                     addressList[index].derivationPath,
                     style: CoconutTypography.body2_14.merge(
