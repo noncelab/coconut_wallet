@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
@@ -25,32 +26,41 @@ Future<String?> showAddressScannerBottomSheet(BuildContext context, {required St
     context: context,
     child: Builder(
       builder:
-          (sheetContext) => Scaffold(
-            backgroundColor: CoconutColors.black,
-            appBar: CoconutAppBar.build(
-              title: title,
-              context: sheetContext,
-              actionButtonList: [
-                IconButton(
-                  icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
-                  color: CoconutColors.white,
-                  onPressed: () {
-                    qrViewController?.switchCamera();
-                  },
-                ),
-              ],
-              onBackPressed: () {
-                qrViewController = null;
-                isQrDataHandling = false;
-                Navigator.of(sheetContext).pop<String?>(null);
-              },
-            ),
-            body: AddressQrScannerBody(
-              qrKey: qrKey,
-              onDetect: onDetect,
-              setMobileScannerController: (controller) {
-                qrViewController = controller;
-              },
+          (sheetContext) => ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: Scaffold(
+              backgroundColor: context.coconutColors.surfaceBottomSheet,
+              appBar: CoconutAppBar.build(
+                title: title,
+                context: sheetContext,
+                backgroundColor: context.coconutColors.surfaceBottomSheet,
+                actionButtonList: [
+                  IconButton(
+                    icon: SvgPicture.asset(
+                      'assets/svg/arrow-reload.svg',
+                      width: 20,
+                      height: 20,
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    ),
+                    color: context.coconutColors.iconDefault,
+                    onPressed: () {
+                      qrViewController?.switchCamera();
+                    },
+                  ),
+                ],
+                onBackPressed: () {
+                  qrViewController = null;
+                  isQrDataHandling = false;
+                  Navigator.of(sheetContext).pop<String?>(null);
+                },
+              ),
+              body: AddressQrScannerBody(
+                qrKey: qrKey,
+                onDetect: onDetect,
+                setMobileScannerController: (controller) {
+                  qrViewController = controller;
+                },
+              ),
             ),
           ),
     ),

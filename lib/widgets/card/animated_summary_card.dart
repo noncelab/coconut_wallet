@@ -1,4 +1,4 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -36,8 +36,8 @@ class AnimatedSummaryCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: CoconutColors.gray800,
-          border: Border.all(color: CoconutColors.gray600, width: 1),
+          color: context.coconutColors.surfaceCard,
+          border: Border.all(color: context.coconutColors.borderStrong, width: 1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -53,6 +53,13 @@ class AnimatedSummaryCard extends StatelessWidget {
                 height: 24,
                 fit: BoxFit.contain,
                 repeat: false,
+                delegates: LottieDelegates(
+                  values: [
+                    ValueDelegate.colorFilter([
+                      '**',
+                    ], value: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcATop)),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 6),

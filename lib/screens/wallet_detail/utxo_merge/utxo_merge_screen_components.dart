@@ -50,9 +50,12 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                     child: CoconutSegmentedControl(
-                      labels: tabs.map((tab) => tab.label).toList(),
+                      selectedColor: context.coconutColors.surfacePressed,
+                      segmentedControlContainerColor: context.coconutColors.surface,
+                      selectedTextColor: context.coconutColors.primaryText,
                       isSelected: List.generate(tabs.length, (index) => selectedTabIndex == index),
                       onPressed: onTabSelected,
+                      children: tabs.map((tab) => Text(tab.label)).toList(),
                     ),
                   ),
                   CoconutLayout.spacing_400h,
@@ -224,18 +227,17 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
       total: widget.utxos.length,
       used: _selectedUtxoIds.length,
     );
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18.0),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: CoconutColors.gray800,
+          color: context.coconutColors.surfaceCard,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: CoconutColors.gray700, width: 1),
+          border: Border.all(color: context.coconutColors.borderSubtle, width: 1),
         ),
-        child: Text(usedCountText, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+        child: Text(usedCountText, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)),
       ),
     );
   }
@@ -315,8 +317,8 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
             utxoCount: section.utxos.length,
             leading: _buildHighlightedSegwitAddressText(
               address: section.address,
-              baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-              highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
+              baseStyle: CoconutTypography.body3_12_Number.setColor(context.coconutColors.mutedText),
+              highlightedStyle: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
             ),
             countTopPadding: 1,
           ),
@@ -442,11 +444,14 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
                           child: IgnorePointer(
                             child: Container(
                               height: 32,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
-                                  colors: [CoconutColors.gray900, Color(0x001F1F1F)],
+                                  colors: [
+                                    context.coconutColors.surfaceBottomSheet,
+                                    context.coconutColors.surfaceBottomSheet.withValues(alpha: 0),
+                                  ],
                                 ),
                               ),
                             ),
@@ -577,9 +582,11 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
                     width: cardWidth,
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                      decoration: const BoxDecoration(
-                        color: CoconutColors.black,
-                        border: Border.symmetric(horizontal: BorderSide(color: CoconutColors.gray800, width: 1)),
+                      decoration: BoxDecoration(
+                        color: context.coconutColors.bottomSheetExtensionFieldBackground,
+                        border: Border.symmetric(
+                          horizontal: BorderSide(color: context.coconutColors.borderSubtle, width: 1),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -587,16 +594,19 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
                         children: [
                           Text(
                             '${timestamp[0]} | ${timestamp[1]}',
-                            style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                            style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.mutedText),
                           ),
                           const SizedBox(height: 2),
                           _buildHighlightedSegwitAddressText(
                             address: utxo.to,
-                            baseStyle: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
-                            highlightedStyle: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                            baseStyle: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
+                            highlightedStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                           ),
                           const SizedBox(height: 2),
-                          Text(utxo.derivationPath, style: CoconutTypography.body2_14.setColor(CoconutColors.gray500)),
+                          Text(
+                            utxo.derivationPath,
+                            style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
+                          ),
                         ],
                       ),
                     ),
@@ -610,11 +620,11 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
                     child: Container(
                       width: 20,
                       height: 20,
-                      decoration: const BoxDecoration(
-                        color: CoconutColors.black,
+                      decoration: BoxDecoration(
+                        color: context.coconutColors.bottomSheetExtensionFieldBackground,
                         border: Border(
-                          top: BorderSide(color: CoconutColors.gray800),
-                          left: BorderSide(color: CoconutColors.gray800),
+                          top: BorderSide(color: context.coconutColors.borderSubtle),
+                          left: BorderSide(color: context.coconutColors.borderSubtle),
                         ),
                       ),
                     ),
@@ -646,6 +656,8 @@ class _SectionSummaryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor = context.coconutColors.divider;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Container(
@@ -656,7 +668,7 @@ class _SectionSummaryHeader extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [showGradient ? Colors.transparent : CoconutColors.gray800, CoconutColors.gray800],
+            colors: [showGradient ? backgroundColor.withValues(alpha: 0) : backgroundColor, backgroundColor],
           ),
         ),
         child: FixedTextScale(
@@ -669,7 +681,7 @@ class _SectionSummaryHeader extends StatelessWidget {
                 padding: EdgeInsets.only(top: countTopPadding),
                 child: Text(
                   t.merge_utxos_screen.count(n: utxoCount, count: utxoCount),
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                 ),
               ),
             ],

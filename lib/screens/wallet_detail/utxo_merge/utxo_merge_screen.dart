@@ -153,7 +153,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       child: ChangeNotifierProvider<UtxoMergeViewModel>.value(
         value: _viewModel,
         child: Scaffold(
-          backgroundColor: CoconutColors.black,
+          backgroundColor: context.coconutColors.background,
           appBar: _buildAppBar(context),
           body: SafeArea(child: _buildBody(context)),
         ),
@@ -739,7 +739,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     return RichText(
       key: const ValueKey('receive-address-summary-single-selection-text'),
       text: TextSpan(
-        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
         children: [
           _buildSelectableSummaryHeadlineSpan(_getSummaryCardHeadlineText(method, selectedUtxoCount)),
           const TextSpan(text: ','),
@@ -758,7 +758,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     return RichText(
       key: const ValueKey('receive-address-summary-text'),
       text: TextSpan(
-        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
         children: [
           _buildSelectableSummaryHeadlineSpan(_getSummaryCardHeadlineText(method, selectedUtxoCount)),
           const TextSpan(text: ','),
@@ -774,7 +774,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       text: text,
       style: TextStyle(
         decoration: TextDecoration.underline,
-        color: _isAmountTextHighlighted ? CoconutColors.gray350 : CoconutColors.white,
+        color: _isAmountTextHighlighted ? context.coconutColors.secondaryText : context.coconutColors.primaryText,
       ),
       recognizer:
           TapGestureRecognizer()
@@ -913,6 +913,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     final method = _viewModel.currentMethod;
 
     try {
+      debugPrint('sjkdjkansjdknasndkjnajksdnjaksn');
       await CommonBottomSheets.showDraggableBottomSheet<void>(
         minChildSize: 0.6,
         maxChildSize: 0.9,
@@ -960,7 +961,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                 ),
           ),
         ],
-        backgroundColor: CoconutColors.gray900,
+        backgroundColor: context.coconutColors.surfaceBottomSheet,
       );
     } finally {
       isEditingNotifier.dispose();
@@ -1101,8 +1102,8 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
 
   Widget _buildReceiveAddressOptionText() {
     final address = _viewModel.selectedReceiveAddress ?? '';
-    final baseStyle = CoconutTypography.body1_16_Number.setColor(CoconutColors.white);
-    final boldStyle = CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white);
+    final baseStyle = CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText);
+    final boldStyle = CoconutTypography.body1_16_NumberBold.setColor(context.coconutColors.primaryText);
 
     return _buildHighlightedSegwitAddressText(address: address, baseStyle: baseStyle, highlightedStyle: boldStyle);
   }
@@ -1130,7 +1131,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                   ? t.merge_utxos_screen.fee_rate_input_placeholder
                   : selector.estimatedFeeText,
           label: t.estimated_fee,
-          textColor: shouldShowFeeRatePlaceholder ? CoconutColors.gray500 : CoconutColors.white,
+          textColor: shouldShowFeeRatePlaceholder ? context.coconutColors.mutedText : context.coconutColors.primaryText,
           onTap: _showEstimatedFeeBottomSheet,
           coconutOptionStateEnum:
               isFeeTooHigh || selector.feeRate == 0 ? CoconutOptionStateEnum.error : CoconutOptionStateEnum.normal,

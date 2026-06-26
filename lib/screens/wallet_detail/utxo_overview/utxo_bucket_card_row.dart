@@ -481,8 +481,8 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
         widget.isSuspiciousDust
             ? null
             : widget.isAddressReused
-            ? Border.all(color: CoconutColors.hotPink, width: 2)
-            : (widget.isSelected ? Border.all(color: CoconutColors.gray150, width: 2) : null);
+            ? Border.all(color: context.coconutColors.danger, width: 2)
+            : (widget.isSelected ? Border.all(color: context.coconutColors.selectedCoinBorder, width: 2) : null);
 
     final coin = GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),

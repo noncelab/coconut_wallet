@@ -97,6 +97,7 @@ class CoconutColors {
   final Color surfaceSkeletonHighlight;
   final Color chartSurface;
   final Color coinSurface;
+  final Color selectedCoinBorder;
   final Color billSurface;
   final Color selectionOverlay;
   final Color surfaceSelected;
@@ -137,6 +138,8 @@ class CoconutColors {
   final Color sendingColor;
   final Color receivingColor;
   final Color bottomActionBarBackground;
+  final Color bottomSheetKeyboardToolbar;
+  final Color bottomSheetExtensionFieldBackground;
   final Color loadingIndicatorColor;
   final Color glossaryKeywordBackground;
   final Color glossaryKeywordText;
@@ -166,6 +169,7 @@ class CoconutColors {
     required this.surfaceSkeletonHighlight,
     required this.chartSurface,
     required this.coinSurface,
+    required this.selectedCoinBorder,
     required this.billSurface,
     required this.selectionOverlay,
     required this.surfaceSelected,
@@ -206,6 +210,8 @@ class CoconutColors {
     required this.sendingColor,
     required this.receivingColor,
     required this.bottomActionBarBackground,
+    required this.bottomSheetKeyboardToolbar,
+    required this.bottomSheetExtensionFieldBackground,
     required this.loadingIndicatorColor,
     required this.glossaryKeywordBackground,
     required this.glossaryKeywordText,
@@ -237,6 +243,7 @@ class CoconutColors {
       surfaceSkeletonHighlight: ds.CoconutColors.gray750,
       chartSurface: ds.CoconutColors.gray800,
       coinSurface: ds.CoconutColors.gray900,
+      selectedCoinBorder: ds.CoconutColors.gray150,
       billSurface: ds.CoconutColors.gray900,
       selectionOverlay: ds.CoconutColors.black,
       surfaceSelected: ds.CoconutColors.gray800,
@@ -277,6 +284,8 @@ class CoconutColors {
       sendingColor: ds.CoconutColors.primary,
       receivingColor: ds.CoconutColors.cyanBlue,
       bottomActionBarBackground: ds.CoconutColors.gray900,
+      bottomSheetKeyboardToolbar: Color(0xFF2E2E2E),
+      bottomSheetExtensionFieldBackground: ds.CoconutColors.black,
       loadingIndicatorColor: ds.CoconutColors.white,
       glossaryKeywordBackground: Color(0xFFA6E1E7),
       glossaryKeywordText: ds.CoconutColors.black,
@@ -309,6 +318,7 @@ class CoconutColors {
       surfaceSkeletonHighlight: Color(0xFFF0EBFA),
       chartSurface: Color(0xFFD9E8F5),
       coinSurface: Color.fromARGB(255, 240, 229, 193),
+      selectedCoinBorder: Color.fromARGB(255, 87, 65, 232),
       billSurface: Color.fromARGB(255, 240, 229, 193),
       selectionOverlay: Color(0xFF181A1F),
       surfaceSelected: Color(0xFFEDE3CF),
@@ -349,6 +359,8 @@ class CoconutColors {
       sendingColor: Color.fromARGB(255, 163, 124, 189),
       receivingColor: Color.fromARGB(255, 102, 136, 136),
       bottomActionBarBackground: Color(0xFFE8E0F2),
+      bottomSheetKeyboardToolbar: Color.fromARGB(255, 234, 227, 242),
+      bottomSheetExtensionFieldBackground: Color.fromARGB(255, 237, 232, 243),
       loadingIndicatorColor: Color.fromARGB(255, 69, 126, 211),
       glossaryKeywordBackground: Color(0xFFE8E0F2),
       glossaryKeywordText: Color(0xFF181A1F),

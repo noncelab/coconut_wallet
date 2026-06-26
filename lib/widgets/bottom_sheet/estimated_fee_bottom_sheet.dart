@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -67,7 +68,7 @@ class EstimatedFeeBottomSheet extends StatefulWidget {
     return CommonBottomSheets.showDraggableBottomSheet<T>(
       context: context,
       title: t.estimated_fee_bottom_sheet.title,
-      backgroundColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       initialChildSize: 0.75,
       minChildSize: 0.74,
       maxChildSize: 0.9,
@@ -145,7 +146,7 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
           children: [
             Text(
               t.estimated_fee_bottom_sheet.estimated_fee,
-              style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+              style: CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
             ),
             CoconutLayout.spacing_200w,
             Expanded(
@@ -154,7 +155,7 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
                 fit: BoxFit.scaleDown,
                 child: Text(
                   estimatedFeeTextGetter(),
-                  style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                  style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                 ),
               ),
             ),
@@ -167,7 +168,10 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
   Widget _buildFeeRateInputRow(BuildContext context) {
     return Row(
       children: [
-        Text(t.estimated_fee_bottom_sheet.fee_rate, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
+        Text(
+          t.estimated_fee_bottom_sheet.fee_rate,
+          style: CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
+        ),
         Expanded(
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -187,7 +191,7 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
                       textAlign: TextAlign.end,
                       controller: feeRateController,
                       focusNode: feeRateFocusNode,
-                      backgroundColor: CoconutColors.gray700,
+                      backgroundColor: context.coconutColors.inputSurface,
                       onEditingComplete: onEditingComplete,
                       height: 30,
                       padding: const EdgeInsets.only(left: 12, right: 2),
@@ -204,14 +208,14 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
                       maxLines: 1,
                       fontFamily: 'SpaceGrotesk',
                       fontSize: 14,
-                      activeColor: CoconutColors.white,
+                      activeColor: context.coconutColors.primaryText,
                       fontWeight: FontWeight.bold,
                       borderRadius: 8,
                       suffix: Container(
                         padding: const EdgeInsets.only(right: 12),
                         child: Text(
                           t.send_screen.fee_rate_suffix,
-                          style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                          style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
                         ),
                       ),
                     ),
@@ -247,13 +251,13 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
             return Container(
               width: MediaQuery.of(context).size.width,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-              color: const Color(0xFF2E2E2E), // keyboardToolbarGray
+              color: context.coconutColors.bottomSheetKeyboardToolbar, // keyboardToolbarGray
               child: Row(
                 children: [
                   if (isFailed) ...[
                     SvgPicture.asset(
                       'assets/svg/triangle-warning.svg',
-                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                       width: 20,
                     ),
                     CoconutLayout.spacing_200w,
@@ -263,11 +267,11 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
                       children: [
                         Text(
                           t.send_screen.recommended_fee_unavailable,
-                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                          style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                         ),
                         Text(
                           t.send_screen.recommended_fee_unavailable_description,
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray300),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                         ),
                       ],
                     ),
@@ -293,7 +297,7 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(width: 1, color: CoconutColors.gray700),
+          border: Border.all(width: 1, color: context.coconutColors.borderSubtle),
           borderRadius: const BorderRadius.all(Radius.circular(8)),
         ),
         child: Row(
@@ -302,12 +306,12 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
             SvgPicture.asset(
               imagePath,
               height: 12,
-              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
             ),
             CoconutLayout.spacing_100w,
             Text(
               "${sats != null ? _formatFeeRateTextForDisplay(sats.toStringAsFixed(1)) : "-"} ${t.send_screen.fee_rate_suffix}",
-              style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             ),
           ],
         ),
@@ -327,8 +331,8 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
             !isFetching
                 ? child
                 : Shimmer.fromColors(
-                  baseColor: CoconutColors.white.withValues(alpha: 0.2),
-                  highlightColor: CoconutColors.white.withValues(alpha: 0.6),
+                  baseColor: context.coconutColors.primaryText.withValues(alpha: 0.2),
+                  highlightColor: context.coconutColors.primaryText.withValues(alpha: 0.6),
                   child: child,
                 ),
       ),

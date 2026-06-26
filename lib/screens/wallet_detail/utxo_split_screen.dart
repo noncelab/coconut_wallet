@@ -1221,7 +1221,12 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
           onTap: onTap,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [Text(item.getLabel(t), style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white))],
+            children: [
+              Text(
+                item.getLabel(t),
+                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+              ),
+            ],
           ),
         );
       },
