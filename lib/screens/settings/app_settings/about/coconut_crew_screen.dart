@@ -31,9 +31,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
   // void _scrollListener() {}
 
   Future<void> _loadData() async {
-    final String detailsContent = await rootBundle.loadString(
-      'assets/files/coconut_crew.json',
-    );
+    final String detailsContent = await rootBundle.loadString('assets/files/coconut_crew.json');
     final List<dynamic> jsonList = jsonDecode(detailsContent);
     _testers = jsonList.map((json) => BetaTester.fromJson(json)).toList();
     _testers.sort((a, b) {
@@ -70,8 +68,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
           // }
           return 1;
         }
-        if ((first >= 0x41 && first <= 0x5A) ||
-            (first >= 0x61 && first <= 0x7A)) {
+        if ((first >= 0x41 && first <= 0x5A) || (first >= 0x61 && first <= 0x7A)) {
           // 영어
           final upperChar = s[0].toUpperCase();
           // if (_scrollbarList.where((w) => w.str == upperChar).isEmpty) {
@@ -168,10 +165,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
     final colors = context.coconutColors;
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: CoconutAppBar.build(
-        context: context,
-        title: t.app_info_screen.coconut_crew,
-      ),
+      appBar: CoconutAppBar.build(context: context, title: t.app_info_screen.coconut_crew),
       body: Stack(
         children: [
           Container(
@@ -188,9 +182,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                     child: Center(
                       child: Text(
                         t.app_info_screen.coconut_crew_thanks_msg,
-                        style: CoconutTypography.body2_14.setColor(
-                          context.coconutColors.primaryText,
-                        ),
+                        style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -198,8 +190,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                 }
 
                 String nickname = _testers[index - 1].nickname;
-                String profileImageSrc =
-                    _testers[index - 1].profileImage; // TODO: 실제 CDN 링크로 파일 구성
+                String profileImageSrc = _testers[index - 1].profileImage; // TODO: 실제 CDN 링크로 파일 구성
                 String message = _testers[index - 1].message;
                 String? sns = _testers[index - 1].sns;
                 String? link = _testers[index - 1].link;
@@ -221,12 +212,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                         }
                       },
                       child: Container(
-                        padding: const EdgeInsets.only(
-                          top: 20,
-                          bottom: 20,
-                          left: 20,
-                          right: 12,
-                        ),
+                        padding: const EdgeInsets.only(top: 20, bottom: 20, left: 20, right: 12),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -242,10 +228,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                 children: [
                                   Text(
                                     nickname,
-                                    style: CoconutTypography.body1_16_Bold
-                                        .setColor(
-                                          context.coconutColors.primaryText,
-                                        ),
+                                    style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                                   ),
                                   Row(
                                     children: [
@@ -272,8 +255,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                       ],
                                       Text(
                                         snsId ?? ' ',
-                                        style: CoconutTypography.body3_12
-                                            .setColor(CoconutColors.gray400),
+                                        style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                                       ),
                                       if (link != null) ...[
                                         CoconutLayout.spacing_100w,
@@ -281,6 +263,10 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                           'assets/svg/clip.svg',
                                           width: 12,
                                           height: 12,
+                                          colorFilter: ColorFilter.mode(
+                                            context.coconutColors.secondaryText,
+                                            BlendMode.srcIn,
+                                          ),
                                         ),
                                       ],
                                     ],
@@ -291,7 +277,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                       message,
                                       overflow: TextOverflow.ellipsis,
                                       style: CoconutTypography.body2_14
-                                          .setColor(CoconutColors.gray200)
+                                          .setColor(context.coconutColors.secondaryTextStrong)
                                           .copyWith(height: 1.2),
                                       maxLines: 2,
                                     ),
@@ -359,13 +345,7 @@ class BetaTester {
   final String? sns;
   final String? link;
 
-  BetaTester({
-    required this.nickname,
-    required this.message,
-    required this.profileImage,
-    this.sns,
-    this.link,
-  });
+  BetaTester({required this.nickname, required this.message, required this.profileImage, this.sns, this.link});
 
   factory BetaTester.fromJson(Map<String, dynamic> json) {
     return BetaTester(

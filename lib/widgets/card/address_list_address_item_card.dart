@@ -80,7 +80,7 @@ class AddressItemCard extends StatelessWidget {
               child: Text(
                 isUsed ? t.status_used : t.status_unused,
                 style: TextStyle(
-                  color: isUsed ? CoconutColors.primary : MyColors.transparentWhite_70,
+                  color: isUsed ? context.coconutColors.primary : MyColors.transparentWhite_70,
                   fontSize: 10,
                   fontFamily: CustomFonts.text.getFontFamily,
                 ),

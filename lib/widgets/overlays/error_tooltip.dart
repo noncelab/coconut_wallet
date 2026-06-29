@@ -7,11 +7,7 @@ class ErrorTooltip extends StatelessWidget {
   final bool isShown;
   final String errorMessage;
 
-  const ErrorTooltip({
-    super.key,
-    required this.isShown,
-    required this.errorMessage,
-  });
+  const ErrorTooltip({super.key, required this.isShown, required this.errorMessage});
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +22,7 @@ class ErrorTooltip extends StatelessWidget {
           richText: RichText(
             text: TextSpan(
               text: errorMessage,
-              style: CoconutTypography.body3_12.setColor(
-                context.coconutColors.primaryText,
-              ),
+              style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
             ),
           ),
           showIcon: true,
@@ -36,10 +30,7 @@ class ErrorTooltip extends StatelessWidget {
           tooltipState: CoconutTooltipState.error,
           icon: SvgPicture.asset(
             'assets/svg/triangle-warning.svg',
-            colorFilter: const ColorFilter.mode(
-              CoconutColors.hotPink,
-              BlendMode.srcIn,
-            ),
+            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           ),
         ),
       ),

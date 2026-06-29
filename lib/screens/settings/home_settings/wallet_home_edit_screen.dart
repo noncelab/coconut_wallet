@@ -259,7 +259,9 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                       isVerticalSubtitle: true,
                                       title: t.wallet_home_screen.edit.hide_fiat_price,
                                       subtitle: t.wallet_home_screen.edit.hide_fiat_price_on_home,
-                                      subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                                      subtitleStyle: CoconutTypography.body3_12.setColor(
+                                        context.coconutColors.secondaryText,
+                                      ),
                                       customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
                                       onPressed: () async {
                                         if (_fakeBalanceFocusNode.hasFocus) {

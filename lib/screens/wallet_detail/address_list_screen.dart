@@ -209,7 +209,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 SvgPicture.asset(
                   'assets/svg/check.svg',
                   colorFilter: ColorFilter.mode(
-                    showOnlyUnusedAddresses ? CoconutColors.white : CoconutColors.gray700,
+                    showOnlyUnusedAddresses ? context.coconutColors.primaryText : context.coconutColors.iconSubDefault,
                     BlendMode.srcIn,
                   ),
                   width: 10,
@@ -429,10 +429,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 }, childCount: addressList.length),
               ),
               if (_isLoadMoreRunning)
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.only(bottom: 40, top: 20),
-                    child: Center(child: CircularProgressIndicator(color: CoconutColors.white)),
+                    padding: const EdgeInsets.only(bottom: 40, top: 20),
+                    child: Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault)),
                   ),
                 ),
             ],

@@ -71,7 +71,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.close, color: CoconutColors.white),
+                      icon: Icon(Icons.close, color: context.coconutColors.iconDefault),
                       onPressed: () {
                         Navigator.pop(context);
                       },
@@ -88,7 +88,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       maintainSemantics: false,
                       maintainInteractivity: false,
                       child: IconButton(
-                        icon: const Icon(Icons.close, color: CoconutColors.white),
+                        icon: Icon(Icons.close, color: context.coconutColors.iconDefault),
                         onPressed: () {
                           Navigator.pop(context);
                         },

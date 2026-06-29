@@ -45,7 +45,9 @@ class SendOutputDetailRow extends StatelessWidget {
                       TextSpan(text: address),
                       TextSpan(
                         text: ' | ',
-                        style: CoconutTypography.body3_12_NumberBold.copyWith(color: CoconutColors.gray700),
+                        style: CoconutTypography.body3_12_NumberBold.copyWith(
+                          color: context.coconutColors.tertiaryText,
+                        ),
                       ),
                       TextSpan(text: amountText),
                     ],

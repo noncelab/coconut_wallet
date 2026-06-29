@@ -33,7 +33,7 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                   toolbarHeight: Platform.isAndroid ? 100 : 120,
                   leading: IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: CoconutColors.white, size: 22),
+                    icon: Icon(Icons.close, color: context.coconutColors.iconDefault, size: 22),
                   ),
                 ),
         backgroundColor: context.coconutColors.background,
@@ -69,7 +69,10 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: CoconutColors.primary),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color: context.coconutColors.primary,
+                      ),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text3,
                         style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),

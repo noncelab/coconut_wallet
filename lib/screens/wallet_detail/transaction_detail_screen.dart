@@ -529,13 +529,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
   Widget _buildTransactionFlowCardSkeleton() {
     return Shimmer.fromColors(
-      baseColor: CoconutColors.gray850,
-      highlightColor: CoconutColors.gray800,
+      baseColor: context.coconutColors.surfaceSkeletonBase,
+      highlightColor: context.coconutColors.surfaceSkeletonHighlight,
       child: Container(
         width: double.infinity,
         height: 180,
         decoration: BoxDecoration(
-          color: CoconutColors.gray850,
+          color: context.coconutColors.surfaceSkeletonBase,
           borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
         ),
       ),
@@ -632,7 +632,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           CoconutLayout.spacing_100h,
           FiatPrice(
             satoshiAmount: tx.amount.abs(),
-            textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.secondaryText),
+            textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
           ),
         ],
       ),

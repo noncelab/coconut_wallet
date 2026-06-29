@@ -59,7 +59,7 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
             },
           ),
           CoconutLayout.spacing_400h,
-          const Divider(color: CoconutColors.gray700, height: 1),
+          Divider(color: context.coconutColors.divider, height: 1),
           CoconutLayout.spacing_400h,
           _buildToggleWidget(
             t.wallet_list.settings.exclude_from_total_amount,
@@ -100,7 +100,7 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
               Text(title, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
               Text(
                 description,
-                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                 maxLines: 2,
                 softWrap: true,
               ),

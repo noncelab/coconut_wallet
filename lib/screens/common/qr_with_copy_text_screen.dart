@@ -182,8 +182,10 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                           });
                           Navigator.pop(context);
                         },
-
-                        backgroundColor: CoconutColors.gray800,
+                        backgroundColor: context.coconutColors.pulldownMenuBackground,
+                        shadowColor: context.coconutColors.shadowDefault.withValues(alpha: 0.06),
+                        dividerColor: context.coconutColors.pulldownMenuDividerColor,
+                        splashColor: context.coconutColors.pulldownMenuPressedColor,
                         borderRadius: 8,
                         isSelectedItemBold: true,
                         buttonPadding: const EdgeInsets.only(right: 16, left: 16),
@@ -280,7 +282,10 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                     child: Container(
                       key: _pulldownKey,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(
+                        color: context.coconutColors.pulldownMenuBackground,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: MediaQuery(
                         data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                         child: CoconutPulldown(

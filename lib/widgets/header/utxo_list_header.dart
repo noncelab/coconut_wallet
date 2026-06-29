@@ -125,7 +125,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                   margin: const EdgeInsets.only(right: 4),
                   width: 12,
                   height: 12,
-                  child: const CircularProgressIndicator(color: CoconutColors.gray400, strokeWidth: 2),
+                  child: CircularProgressIndicator(color: context.coconutColors.secondaryText, strokeWidth: 2),
                 ),
               CupertinoButton(
                 key: widget.dropdownGlobalKey,

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -170,7 +171,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
             Navigator.of(context).pop();
           },
           rightButtonText: t.alert.forgot_password.btn_reset,
-          rightButtonColor: CoconutColors.hotPink,
+          rightButtonColor: context.coconutColors.danger,
           leftButtonText: t.cancel,
         );
       },

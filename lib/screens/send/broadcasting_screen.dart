@@ -348,7 +348,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               totalCostAmountText: totalCostText,
               onTap: _toggleUnit,
               topMargin: 0,
-              fiatTextStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
+              fiatTextStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
             ),
             CoconutLayout.spacing_300h,
             _buildTransactionFlowCard(viewModel),

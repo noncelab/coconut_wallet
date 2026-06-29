@@ -123,9 +123,9 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
             children: [
               Text(
                 t.settings_screen.block_explorer.default_explorer,
-                style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray300),
+                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryTextStrong),
               ),
-              Text('Mempool.space', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+              Text('Mempool.space', style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
             ],
           ),
           CoconutSwitch(
@@ -169,7 +169,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           t.settings_screen.block_explorer.custom_explorer,
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                         ),
                       ),
                       CoconutLayout.spacing_100h,
@@ -194,7 +194,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
                                   },
                                   icon: SvgPicture.asset(
                                     'assets/svg/text-field-clear.svg',
-                                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                                   ),
                                 )
                                 : null,
@@ -220,16 +220,16 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 34),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
       child: Row(
         children: [
           if (_viewModel.isConnecting)
-            const SizedBox(
+            SizedBox(
               height: 20,
               width: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(CoconutColors.white),
+                valueColor: AlwaysStoppedAnimation<Color>(context.coconutColors.iconDefault),
               ),
             )
           else if (_viewModel.isConnectionSuccessful)
@@ -242,7 +242,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
             SvgPicture.asset(
               CustomIcons.triangleWarning,
               height: 24,
-              colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
             ),
           CoconutLayout.spacing_300w,
           Expanded(
@@ -268,7 +268,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

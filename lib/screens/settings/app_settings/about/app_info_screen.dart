@@ -180,7 +180,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: CoconutColors.white));
+          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault));
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {

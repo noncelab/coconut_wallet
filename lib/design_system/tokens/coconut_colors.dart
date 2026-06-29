@@ -88,6 +88,7 @@ class CoconutColors {
   final Color surfaceCard;
   final Color surfaceButton;
   final Color surfaceMuted;
+  final Color surfaceRaised;
   final Color surfaceDisabled;
   final Color surfaceBottomSheet;
   final Color surfaceSectionBreak;
@@ -109,6 +110,7 @@ class CoconutColors {
   final Color primaryButtonBackground;
   final Color primaryButtonText;
   final Color secondaryText;
+  final Color secondaryTextStrong;
   final Color secondaryButtonBackground;
   final Color secondaryButtonText;
   final Color tertiaryText;
@@ -160,6 +162,7 @@ class CoconutColors {
     required this.surfaceCard,
     required this.surfaceButton,
     required this.surfaceMuted,
+    required this.surfaceRaised,
     required this.surfaceDisabled,
     required this.surfaceBottomSheet,
     required this.surfaceSectionBreak,
@@ -181,6 +184,7 @@ class CoconutColors {
     required this.primaryButtonBackground,
     required this.primaryButtonText,
     required this.secondaryText,
+    required this.secondaryTextStrong,
     required this.secondaryButtonBackground,
     required this.secondaryButtonText,
     required this.tertiaryText,
@@ -234,6 +238,7 @@ class CoconutColors {
       surfaceCard: ds.CoconutColors.gray850,
       surfaceButton: ds.CoconutColors.gray850,
       surfaceMuted: ds.CoconutColors.gray850,
+      surfaceRaised: ds.CoconutColors.gray900,
       surfaceDisabled: ds.CoconutColors.gray850,
       surfaceBottomSheet: ds.CoconutColors.gray900,
       surfaceSectionBreak: ds.CoconutColors.gray900,
@@ -255,6 +260,7 @@ class CoconutColors {
       primaryButtonBackground: ds.CoconutColors.white,
       primaryButtonText: ds.CoconutColors.black,
       secondaryText: ds.CoconutColors.gray400,
+      secondaryTextStrong: ds.CoconutColors.gray300,
       secondaryButtonBackground: ds.CoconutColors.gray350,
       secondaryButtonText: ds.CoconutColors.black,
       tertiaryText: ds.CoconutColors.gray600,
@@ -309,6 +315,7 @@ class CoconutColors {
       surfaceCard: Color(0xFFD9E8F5),
       surfaceButton: Color(0xFFD9E8F5),
       surfaceMuted: Color(0xFFEDE3CF),
+      surfaceRaised: Color(0xFFEDE3CF),
       surfaceDisabled: Color(0xFFE2D9DE),
       surfaceBottomSheet: Color(0xFFE8E0F2),
       surfaceSectionBreak: Color(0xFFD8CCE9),
@@ -330,6 +337,7 @@ class CoconutColors {
       primaryButtonBackground: Color(0xFFD9E8F5),
       primaryButtonText: Color(0xFF181A1F),
       secondaryText: Color(0xFF454B57),
+      secondaryTextStrong: Color(0xFF303642),
       secondaryButtonBackground: Color(0xFFEDE3CF),
       secondaryButtonText: Color(0xFF181A1F),
       tertiaryText: Color(0xFF727987),
@@ -364,7 +372,7 @@ class CoconutColors {
       loadingIndicatorColor: Color.fromARGB(255, 69, 126, 211),
       glossaryKeywordBackground: Color(0xFFE8E0F2),
       glossaryKeywordText: Color(0xFF181A1F),
-      divider: Color(0xFFE8E0F2),
+      divider: Color.fromARGB(255, 201, 194, 210),
       txFlowLine: Color.fromARGB(255, 180, 188, 209),
       feeBumpingHistoryLine: Color.fromARGB(255, 180, 188, 209),
       switchActiveTrack: Color.fromARGB(255, 100, 140, 199),

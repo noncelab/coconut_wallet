@@ -5,6 +5,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app/bootstrap/splash_theme.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
@@ -31,7 +32,7 @@ class _StartScreenState extends State<StartScreen> {
     return ColoredBox(
       color:
           Platform.isIOS
-              ? CoconutColors.black
+              ? context.coconutColors.background
               : (NetworkType.currentNetworkType.isTestnet
                   ? splashBackgroundColorRegtest
                   : splashBackgroundColorMainnet),
@@ -87,7 +88,7 @@ class _StartScreenState extends State<StartScreen> {
                 title: t.alert.update.title,
                 description: t.alert.update.description,
                 rightButtonText: t.alert.update.btn_update,
-                rightButtonColor: CoconutColors.primary,
+                rightButtonColor: context.coconutColors.primary,
                 leftButtonText: t.alert.update.btn_do_later,
                 onTapRight: () async {
                   await _viewModel.launchUpdate();

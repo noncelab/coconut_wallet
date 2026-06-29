@@ -643,14 +643,14 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
           title: title,
-          backgroundColor: CoconutColors.black.withValues(alpha: 0.7),
+          backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
           description: description,
           descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
           insetPadding: const EdgeInsets.symmetric(horizontal: 50),
           leftButtonText: t.cancel,
-          leftButtonColor: CoconutColors.black.withValues(alpha: 0.7),
+          leftButtonColor: context.coconutColors.primaryButtonBackground.withValues(alpha: 0.7),
           rightButtonText: t.confirm,
-          rightButtonColor: CoconutColors.white,
+          rightButtonColor: context.coconutColors.primaryText,
           onTapRight: () {
             _isProcessing = false;
             Navigator.pop(context);

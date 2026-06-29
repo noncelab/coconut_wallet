@@ -320,8 +320,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             decoration: BoxDecoration(
               color:
                   status == UtxoStatus.incoming
-                      ? CoconutColors.cyan.withValues(alpha: 0.2)
-                      : CoconutColors.primary.withValues(alpha: 0.2),
+                      ? context.coconutColors.receivingColor.withValues(alpha: 0.2)
+                      : context.coconutColors.sendingColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(100),
             ),
             child: Lottie.asset(

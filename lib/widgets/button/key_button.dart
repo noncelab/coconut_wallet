@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -89,26 +90,24 @@ class _KeyButtonState extends State<KeyButton> {
         child: Center(
           child:
               widget.keyValue == '<'
-                  ? const Icon(Icons.backspace, color: CoconutColors.white, size: 20)
+                  ? Icon(Icons.backspace, color: context.coconutColors.primaryText, size: 20)
                   : widget.keyValue == 'bio'
                   ? _isFaceRecognition
                       ? SvgPicture.asset(
                         'assets/svg/face-id.svg',
                         width: 20,
-                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                       )
                       : SvgPicture.asset(
                         'assets/svg/fingerprint.svg',
                         width: 20,
-                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                       )
                   : Text(
                     widget.keyValue,
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: CoconutTypography.heading3_21_Number.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: CoconutColors.white,
-                      fontFamily: 'SpaceGrotesk',
+                      color: context.coconutColors.primaryText,
                     ),
                   ),
         ),

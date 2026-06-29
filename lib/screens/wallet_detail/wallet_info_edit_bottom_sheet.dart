@@ -140,16 +140,16 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Padding(
-                              padding: EdgeInsets.only(top: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
                               child: Center(
                                 child: SizedBox(
                                   width: 55,
                                   height: 4,
                                   child: DecoratedBox(
                                     decoration: BoxDecoration(
-                                      color: CoconutColors.gray400,
-                                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                                      color: context.coconutColors.secondaryText,
+                                      borderRadius: const BorderRadius.all(Radius.circular(4)),
                                     ),
                                   ),
                                 ),
@@ -223,7 +223,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                         if (isProcessing)
                           Positioned.fill(
                             child: Container(
-                              color: CoconutColors.black.withValues(alpha: 0.6),
+                              color: context.coconutColors.iconDefault.withValues(alpha: 0.6),
                               alignment: Alignment.center,
                               child: const CoconutCircularIndicator(size: 160),
                             ),
@@ -319,8 +319,10 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
   }
 
   Widget _buildIcon() {
-    final iconColor = _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).backgroundColor : CoconutColors.gray700;
-    final iconColorFilter = _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).color : Colors.black;
+    final iconColor =
+        _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).backgroundColor : context.coconutColors.tertiaryText;
+    final iconColorFilter =
+        _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).color : context.coconutColors.background;
     final svgPath =
         _canEditPalette
             ? CustomIcons.getPathByIndex(_selectedIconIndex)
@@ -398,7 +400,10 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
         margin: const EdgeInsets.all(11.5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(40.0),
-          border: Border.all(color: isSelected ? CoconutColors.white : CoconutColors.black, width: 1.8),
+          border: Border.all(
+            color: isSelected ? context.coconutColors.primaryText : context.coconutColors.borderSubtle,
+            width: 1.8,
+          ),
         ),
       ),
     );

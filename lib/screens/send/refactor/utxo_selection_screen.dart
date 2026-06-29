@@ -166,10 +166,16 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                         children: [
                                           Text(
                                             _viewModel.utxoOrder.text,
-                                            style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                                            style: CoconutTypography.caption_10.setColor(
+                                              context.coconutColors.secondaryText,
+                                            ),
                                           ),
                                           const SizedBox(width: 4),
-                                          const Icon(Icons.keyboard_arrow_down, color: CoconutColors.gray400, size: 16),
+                                          Icon(
+                                            Icons.keyboard_arrow_down,
+                                            color: context.coconutColors.secondaryText,
+                                            size: 16,
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -324,7 +330,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       borderRadius: BorderRadius.circular(16),
       child: CoconutPulldownMenu(
         entries: _utxoOrderOptions.map((order) => CoconutPulldownMenuItem(title: order.text)).toList(),
-        dividerColor: CoconutColors.black,
+        dividerColor: context.coconutColors.divider,
         onSelected: (index, selectedText) async {
           bool isChanged = _viewModel.utxoOrder != _utxoOrderOptions[index];
           setState(() {

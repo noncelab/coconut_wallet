@@ -26,7 +26,7 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
         pressedColor: colors.surfacePressed,
         onPressed: widget.onPressed,
         child: CustomPaint(
-          painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0),
+          painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: context.coconutColors.primaryText),
           child: Container(
             width: MediaQuery.sizeOf(context).width,
             padding: const EdgeInsets.symmetric(vertical: 42),

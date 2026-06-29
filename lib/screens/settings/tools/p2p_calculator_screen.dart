@@ -716,7 +716,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                     left: 0,
                     child: IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      color: CoconutColors.white,
+                      color: context.coconutColors.primaryText,
                       icon: SvgPicture.asset(
                         'assets/svg/close.svg',
                         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),

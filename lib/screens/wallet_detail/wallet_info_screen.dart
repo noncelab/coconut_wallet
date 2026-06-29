@@ -211,7 +211,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             margin: const EdgeInsets.symmetric(vertical: 20),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(1),
-                              color: CoconutColors.white,
+                              color: context.coconutColors.divider,
                             ),
                           ),
                         ),
@@ -223,7 +223,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             rightElement: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: CoconutColors.white.withValues(alpha: 0.1),
+                                color: context.coconutColors.primaryText.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: SvgPicture.asset(
@@ -662,7 +662,7 @@ class _TargetQuantityCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: transparentBackground ? Colors.transparent : CoconutColors.gray800,
+            color: transparentBackground ? Colors.transparent : context.coconutColors.tertiaryText,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
@@ -672,14 +672,14 @@ class _TargetQuantityCard extends StatelessWidget {
                 children: [
                   Text(
                     t.wallet_info_screen.target_quantity,
-                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500),
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.mutedText),
                   ),
                   const SizedBox(width: 4),
                   SvgPicture.asset(
                     'assets/svg/edit-outlined.svg',
                     width: 12,
                     height: 12,
-                    colorFilter: const ColorFilter.mode(CoconutColors.gray500, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.mutedText, BlendMode.srcIn),
                   ),
                 ],
               ),
@@ -712,8 +712,8 @@ class _TargetQuantityCard extends StatelessWidget {
                   width: double.infinity,
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: CoconutColors.white,
-                      inactiveTrackColor: CoconutColors.gray600,
+                      activeTrackColor: context.coconutColors.pageIndicatorActive,
+                      inactiveTrackColor: context.coconutColors.pageIndicatorInactive,
                       overlayShape: SliderComponentShape.noOverlay,
                       trackHeight: 6,
                       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 0),

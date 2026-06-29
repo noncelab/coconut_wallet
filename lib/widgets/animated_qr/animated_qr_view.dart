@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/view_model/send/unsigned_transaction_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/i_qr_view_data_handler.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
@@ -82,7 +83,7 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
               child: Container(
                 width: 100,
                 height: 100,
-                decoration: const BoxDecoration(color: CoconutColors.gray300),
+                decoration: BoxDecoration(color: context.coconutColors.secondaryTextStrong),
                 child: const CoconutLoadingOverlay(applyFullScreen: true),
               ),
             ),

@@ -290,7 +290,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           margin: const EdgeInsets.symmetric(vertical: 8.5, horizontal: 6),
           height: 3,
           width: 3,
-          decoration: const BoxDecoration(color: CoconutColors.gray400, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: context.coconutColors.secondaryText, shape: BoxShape.circle),
         ),
         Expanded(
           child: RichText(
@@ -384,7 +384,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                       for (var fiat in _viewModel.visibleFiats) ...[
                                         Text(
                                           _viewModel.getBitcoinPrice(totalBalance, fiat),
-                                          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
+                                          style: CoconutTypography.body2_14_Number.setColor(
+                                            context.coconutColors.mutedText,
+                                          ),
                                         ),
                                       ],
                                       // 홈 화면 총액 (애니메이션)
@@ -462,15 +464,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       children: [
         Row(
           children: [
-            Text(label, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+            Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
             const Spacer(),
             BitcoinAmountUnit(
               currentUnit: currentUnit,
-              unitStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+              unitStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryTextStrong),
               spacing: CoconutLayout.spacing_100w,
               child: Text(
                 currentUnit.displayBitcoinAmount(amount),
-                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryTextStrong),
               ),
             ),
           ],
@@ -485,7 +487,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 for (var fiat in _viewModel.visibleFiats) ...[
                   Text(
                     _viewModel.getBitcoinPrice(amount, fiat),
-                    style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                    style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.mutedText),
                   ),
                 ],
               ],
@@ -528,9 +530,16 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         // 드래그 중인 항목의 외관 변경
         return Container(
           decoration: BoxDecoration(
-            color: CoconutColors.gray900,
+            color: context.coconutColors.surfaceRaised,
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-            boxShadow: const [BoxShadow(color: CoconutColors.black, blurRadius: 8, spreadRadius: 0.5)],
+            boxShadow: [
+              BoxShadow(
+                color: context.coconutColors.shadowSubtle.withValues(alpha: 0.24),
+                blurRadius: 10,
+                spreadRadius: 0,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: child,
         );
@@ -549,11 +558,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           background: Container(
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            color: CoconutColors.hotPink,
+            color: context.coconutColors.danger,
             child: SvgPicture.asset(
               'assets/svg/trash.svg',
               width: 16,
-              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
             ),
           ),
           onDismissed: (direction) {
@@ -804,7 +813,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                           : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Divider(color: CoconutColors.gray800, height: 1),
+                              Divider(color: context.coconutColors.primaryText, height: 1),
                               CoconutLayout.spacing_400h,
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 2),

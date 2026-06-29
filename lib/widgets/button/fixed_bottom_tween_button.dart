@@ -71,7 +71,6 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
     final leftButtonWidth = totalWidth * widget.leftButtonRatio;
     final rightButtonWidth = totalWidth * (1 - widget.leftButtonRatio);
     final resolvedGradientColor = widget.gradientColor ?? colors.background;
-
     double buttonHeight =
         widget.buttonHeight ??
         (Platform.isAndroid
@@ -133,6 +132,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                         onPressed: () {
                           widget.leftButtonClicked();
                         },
+                        isActive: widget.isLeftButtonActive,
                         defaultColor: widget.leftButtonBackgroundColor,
                         pressedColor: getDarkerColor(widget.leftButtonBackgroundColor),
                         disabledColor: colors.surfaceDisabled,
@@ -146,7 +146,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                               child: Text(
                                 widget.leftText,
                                 style: CoconutTypography.body1_16_Bold.setColor(
-                                  widget.isLeftButtonActive ? widget.leftButtonTextColor : CoconutColors.gray700,
+                                  widget.isLeftButtonActive ? widget.leftButtonTextColor : colors.tertiaryText,
                                 ),
                               ),
                             ),
@@ -162,6 +162,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                         onPressed: () {
                           widget.rightButtonClicked();
                         },
+                        isActive: widget.isRightButtonActive,
                         defaultColor: widget.rightButtonBackgroundColor,
                         pressedColor: getDarkerColor(widget.rightButtonBackgroundColor),
                         disabledColor: colors.surfaceDisabled,
@@ -173,7 +174,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                             child: Text(
                               widget.rightText,
                               style: CoconutTypography.body1_16_Bold.setColor(
-                                widget.isRightButtonActive ? widget.rightButtonTextColor : CoconutColors.gray700,
+                                widget.isRightButtonActive ? widget.rightButtonTextColor : colors.tertiaryText,
                               ),
                             ),
                           ),

@@ -299,7 +299,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: CoconutColors.gray350, width: 1),
+                      border: Border.all(color: context.coconutColors.secondaryText, width: 1),
                     ),
                   ),
                 ),

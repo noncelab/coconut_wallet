@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
@@ -19,7 +20,7 @@ class WalletIcon extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: isExternalWallet ? CoconutColors.gray700 : ColorUtil.getColor(colorIndex).backgroundColor,
+        color: isExternalWallet ? context.coconutColors.tertiaryText : ColorUtil.getColor(colorIndex).backgroundColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child:

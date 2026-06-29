@@ -396,6 +396,7 @@ class UtxoCoinCard extends StatefulWidget {
     bool isFocused,
     Color iconColor,
     Color amountTextColor,
+    Color timestampTextColor,
     UtxoState utxo,
     BitcoinUnit currentUnit,
     int dustThreshold, {
@@ -444,7 +445,7 @@ class UtxoCoinCard extends StatefulWidget {
                   DateTimeUtil.formatTimestamp(utxo.timestamp).join(' '),
                   textAlign: TextAlign.center,
                   style: CoconutTypography.caption_10.setColor(
-                    CoconutColors.gray500.withValues(alpha: isFocused ? 1 : 0.4),
+                    timestampTextColor.withValues(alpha: isFocused ? 1 : 0.4),
                   ),
                 ),
               ],
@@ -472,7 +473,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
     final cardHeight = isBill ? widget.size * 0.85 : widget.size;
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
     final bucketCol = tierTheme.colorForSats(widget.utxo.amount, dustThreshold: widget.dustThreshold);
-    final bgColor = widget.isFocused ? bucketCol : Color.lerp(CoconutColors.black, bucketCol, 0.68)!;
+    final bgColor = widget.isFocused ? bucketCol : Color.lerp(context.coconutColors.background, bucketCol, 0.68)!;
     final iconColor = bgColor;
     final shadowBlur = widget.isFocused ? 16.0 : 6.0;
     final innerStrokeColor =
@@ -526,6 +527,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                               widget.isFocused,
                               iconColor,
                               context.coconutColors.primaryText,
+                              context.coconutColors.mutedText,
                               widget.utxo,
                               widget.currentUnit,
                               widget.dustThreshold,
@@ -555,6 +557,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                               widget.isFocused,
                               iconColor,
                               context.coconutColors.primaryText,
+                              context.coconutColors.mutedText,
                               widget.utxo,
                               widget.currentUnit,
                               widget.dustThreshold,
@@ -645,7 +648,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: CoconutColors.gray700.withValues(alpha: 0.5),
+                    color: context.coconutColors.tertiaryText.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
                   ),
                   child: Lottie.asset(

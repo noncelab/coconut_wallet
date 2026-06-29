@@ -20,6 +20,7 @@ class CoconutQrScanner extends StatefulWidget {
   final Function(String, String?) onFailed;
   final Color borderColor;
   final IQrScanDataHandler qrDataHandler;
+  final ValueChanged<String>? onScanData;
 
   const CoconutQrScanner({
     super.key,
@@ -28,6 +29,7 @@ class CoconutQrScanner extends StatefulWidget {
     required this.onFailed,
     required this.qrDataHandler,
     this.borderColor = CoconutColors.gray400,
+    this.onScanData,
   });
 
   @override
@@ -72,6 +74,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
     if (barcode.rawValue == null) return;
 
     final scanData = barcode.rawValue!;
+    widget.onScanData?.call(scanData);
     var handler = widget.qrDataHandler;
 
     try {
@@ -157,7 +160,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
                   WidgetsBinding.instance.addPostFrameCallback((_) async {
                     if (!mounted) return;
                     await _showCameraPermissionDialog();
-                    if (!context.mounted) return;
+                    if (!mounted) return;
                     Navigator.pop(context);
                   });
                 }

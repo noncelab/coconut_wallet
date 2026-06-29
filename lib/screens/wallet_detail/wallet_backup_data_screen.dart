@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/coordinator_bsms_qr_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -35,15 +36,20 @@ class WalletBackupDataScreen extends StatelessWidget {
             tooltipDescription: Container(
               margin: const EdgeInsets.only(top: 4, bottom: 16),
               child: CoconutToolTip(
-                backgroundColor: CoconutColors.gray800,
-                borderColor: CoconutColors.gray800,
+                backgroundColor: context.coconutColors.surface,
+                borderColor: context.coconutColors.surface,
                 icon: SvgPicture.asset(
                   'assets/svg/circle-info.svg',
                   width: 20,
-                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                 ),
                 tooltipType: CoconutTooltipType.fixed,
-                richText: RichText(text: TextSpan(text: t.wallet_info_screen.tooltip.wallet_backup_data)),
+                richText: RichText(
+                  text: TextSpan(
+                    text: t.wallet_info_screen.tooltip.wallet_backup_data,
+                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                  ),
+                ),
               ),
             ),
           );

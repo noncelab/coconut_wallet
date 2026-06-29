@@ -970,7 +970,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             return Container(
               padding: const EdgeInsets.only(left: 16, right: 14, top: 12, bottom: 20),
               decoration: BoxDecoration(
-                border: Border.all(color: CoconutColors.gray700, width: 1),
+                border: Border.all(color: context.coconutColors.borderStrong, width: 1),
                 borderRadius: const BorderRadius.all(Radius.circular(12)),
               ),
               child: Column(
@@ -1226,7 +1226,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           _setDropdownMenuVisiblility(false);
         },
         child: CustomPaint(
-          painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: CoconutColors.gray600),
+          painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: context.coconutColors.tertiaryText),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1561,7 +1561,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               _viewModel.deleteRecipient();
                               _setDropdownMenuVisiblility(false);
                             },
-                            textStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                            textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                             padding: EdgeInsets.zero,
                           ),
                         );
@@ -1708,7 +1708,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               child: Container(
                 decoration: BoxDecoration(
                   color: context.coconutColors.surface,
-                  border: Border.all(color: CoconutColors.gray700, width: 1),
+                  border: Border.all(color: context.coconutColors.borderStrong, width: 1),
                   borderRadius: const BorderRadius.all(Radius.circular(14)),
                 ),
                 child: Column(

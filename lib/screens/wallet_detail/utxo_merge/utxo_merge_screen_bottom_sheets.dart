@@ -490,7 +490,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     if (!_viewModel.isCustomReceiveAddressValidFormat) {
       return Text(
         t.errors.address_error.invalid,
-        style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+        style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
         textAlign: TextAlign.center,
       );
     }
@@ -498,7 +498,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     if (!_viewModel.isCustomReceiveAddressOwnedByAnyWallet) {
       return Text(
         t.merge_utxos_screen.receive_address_bottomsheet.not_your_owned_wallet,
-        style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+        style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
         textAlign: TextAlign.center,
       );
     }

@@ -99,7 +99,7 @@ class UtxoItemCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (utxo.isPending) ...[
-                          _buildPendingStatus(utxo.status),
+                          _buildPendingStatus(context, utxo.status),
                           const SizedBox(width: 4),
                         ] else if (utxo.status == UtxoStatus.locked) ...[
                           SvgPicture.asset(
@@ -186,7 +186,7 @@ class UtxoItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPendingStatus(UtxoStatus status) {
+  Widget _buildPendingStatus(BuildContext context, UtxoStatus status) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -194,8 +194,8 @@ class UtxoItemCard extends StatelessWidget {
           decoration: BoxDecoration(
             color:
                 status == UtxoStatus.incoming
-                    ? CoconutColors.cyan.withValues(alpha: 0.2)
-                    : CoconutColors.primary.withValues(alpha: 0.2),
+                    ? context.coconutColors.receivingColor.withValues(alpha: 0.2)
+                    : context.coconutColors.sendingColor.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(100),
           ),
           child: Lottie.asset(

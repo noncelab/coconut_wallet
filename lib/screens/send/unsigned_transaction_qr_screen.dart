@@ -149,11 +149,11 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                 Expanded(
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: CoconutColors.gray700,
-                      inactiveTrackColor: CoconutColors.gray700,
+                      activeTrackColor: context.coconutColors.switchTrackDisabled,
+                      inactiveTrackColor: context.coconutColors.switchTrackDisabled,
                       trackHeight: 8,
-                      thumbColor: CoconutColors.gray400,
-                      overlayColor: CoconutColors.gray700.withValues(alpha: 0.2),
+                      thumbColor: context.coconutColors.secondaryText,
+                      overlayColor: context.coconutColors.switchTrackDisabled.withValues(alpha: 0.2),
                       trackShape: const RoundedRectSliderTrackShape(),
                     ),
                     child: Slider(
