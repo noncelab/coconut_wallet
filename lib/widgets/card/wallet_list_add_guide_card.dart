@@ -35,7 +35,10 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SvgPicture.asset('assets/svg/wallet-eyes.svg'),
+                  SvgPicture.asset(
+                    'assets/svg/wallet-eyes.svg',
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                  ),
                   CoconutLayout.spacing_100w,
                   Text(
                     t.wallet_list_add_guide_card.add_watch_only,

@@ -278,10 +278,34 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                       valueListenable: CoconutThemeController.variantNotifier,
                       builder: (context, variant, _) {
                         final isPreviewEnabled = variant == CoconutThemeVariant.ccosPreview;
+                        final isLightEnabled = variant == CoconutThemeVariant.ccosLight;
                         return _buildAnimatedButton(
                           title: isPreviewEnabled ? 'CCOS Theme Preview 끄기' : 'CCOS Theme Preview 켜기',
-                          subtitle: isPreviewEnabled ? 'Preview' : 'Default dark',
+                          subtitle:
+                              isPreviewEnabled
+                                  ? 'Preview'
+                                  : isLightEnabled
+                                  ? 'CCOS Light'
+                                  : 'Default dark',
                           onPressed: CoconutThemeController.togglePreview,
+                        );
+                      },
+                    ),
+                    CoconutLayout.spacing_200h,
+                    ValueListenableBuilder<CoconutThemeVariant>(
+                      valueListenable: CoconutThemeController.variantNotifier,
+                      builder: (context, variant, _) {
+                        final isPreviewEnabled = variant == CoconutThemeVariant.ccosPreview;
+                        final isLightEnabled = variant == CoconutThemeVariant.ccosLight;
+                        return _buildAnimatedButton(
+                          title: isLightEnabled ? 'CCOS Light 끄기' : 'CCOS Light 켜기',
+                          subtitle:
+                              isLightEnabled
+                                  ? 'Light'
+                                  : isPreviewEnabled
+                                  ? 'CCOS Preview'
+                                  : 'Default dark',
+                          onPressed: CoconutThemeController.toggleLight,
                         );
                       },
                     ),
