@@ -203,7 +203,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                             onPressed: () async {
                               CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
-                                heightRatio: 0.5,
+                                heightRatio: 0.6,
                                 child: LanguageBottomSheet(),
                               );
                             },
