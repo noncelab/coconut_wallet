@@ -76,12 +76,6 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _isManualUtxoSelectionMode;
   bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
 
-  bool get isKorean => _language == AppLanguage.ko.code;
-  bool get isEnglish => _language == AppLanguage.en.code;
-  bool get isJapanese => _language == AppLanguage.ja.code;
-  bool get isSpanish => _language == AppLanguage.es.code;
-  bool get isGerman => _language == AppLanguage.de.code;
-
   /// 선택된 통화
   late FiatCode _selectedFiat;
   FiatCode get selectedFiat => _selectedFiat;
@@ -167,9 +161,6 @@ class PreferenceProvider extends ChangeNotifier {
 
     _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
     _walletListVisibleFiats = _loadWalletListVisibleFiats();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _applyLanguageSettingSync();
-    });
   }
 
   /// 통화 설정 초기화
@@ -196,7 +187,7 @@ class PreferenceProvider extends ChangeNotifier {
       changed = true;
     }
 
-    _applyLanguageSettingSync();
+    _applyLanguageSetting();
     if (changed) {
       notifyListeners();
     }
@@ -213,59 +204,28 @@ class PreferenceProvider extends ChangeNotifier {
     }
   }
 
+  /// v0.13.1까지 사용하던 앱 언어코드('kr', 'jp')를 ISO 639-1 언어 코드('ko', 'ja')로 마이그레이션
   String _migrateLanguageCode(String languageCode) {
     const Map<String, String> migrationMap = {'kr': 'ko', 'jp': 'ja'};
     return migrationMap[languageCode] ?? languageCode;
   }
 
-  /// 언어 설정 적용 (동기 버전)
-  void _applyLanguageSettingSync() {
-    try {
-      Logger.log('Applying language setting: $_language');
-      if (isKorean) {
-        LocaleSettings.setLocaleSync(AppLocale.ko);
-        Logger.log('Korean locale applied successfully');
-      } else if (isJapanese) {
-        LocaleSettings.setLocaleSync(AppLocale.ja);
-        Logger.log('Japanese locale applied successfully');
-      } else if (isEnglish) {
-        LocaleSettings.setLocaleSync(AppLocale.en);
-        Logger.log('English locale applied successfully');
-      } else if (isSpanish) {
-        LocaleSettings.setLocaleSync(AppLocale.es);
-        Logger.log('Spanish locale applied successfully');
-      } else if (isGerman) {
-        LocaleSettings.setLocaleSync(AppLocale.de);
-        Logger.log('German locale applied successfully');
-      }
-
-      NumberFormatConfig.instance.update(_language);
-
-      // 언어 설정 후 상태 업데이트를 위해 notifyListeners 호출
-      notifyListeners();
-    } catch (e) {
-      // 언어 초기화 실패 시 로그 출력 (선택사항)
-      Logger.log('Language initialization failed: $e');
-    }
+  /// 현재 설정된 언어에 해당하는 AppLocale 반환
+  AppLocale _resolveAppLocale() {
+    return switch (AppLanguage.fromCode(_language)) {
+      AppLanguage.ko => AppLocale.ko,
+      AppLanguage.en => AppLocale.en,
+      AppLanguage.ja => AppLocale.ja,
+      AppLanguage.es => AppLocale.es,
+      AppLanguage.de => AppLocale.de,
+    };
   }
 
   /// 언어 설정 적용
-  Future<void> _applyLanguageSetting() async {
+  void _applyLanguageSetting() {
     try {
-      if (isKorean) {
-        await LocaleSettings.setLocale(AppLocale.ko);
-      } else if (isJapanese) {
-        await LocaleSettings.setLocale(AppLocale.ja);
-      } else if (isEnglish) {
-        await LocaleSettings.setLocale(AppLocale.en);
-      } else if (isSpanish) {
-        await LocaleSettings.setLocale(AppLocale.es);
-      } else if (isGerman) {
-        await LocaleSettings.setLocale(AppLocale.de);
-      } else {
-        // 기본값은 영어로 설정
-        await LocaleSettings.setLocale(AppLocale.en);
-      }
+      Logger.log('Applying language setting: $_language');
+      LocaleSettings.setLocaleSync(_resolveAppLocale());
       NumberFormatConfig.instance.update(_language);
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
@@ -363,7 +323,7 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setString(SharedPrefKeys.kLanguage, languageCode);
 
     // 언어 설정 적용
-    await _applyLanguageSetting();
+    _applyLanguageSetting();
 
     // 언어 설정 후 상태 업데이트
     notifyListeners();

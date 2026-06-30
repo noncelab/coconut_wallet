@@ -529,7 +529,7 @@ unsigned_tx_qr_screen:
     step1: "Bitte scannen Sie den QR-Code unten mit Ihrer Hardware-Wallet, um den Signiervorgang zu starten."
 
 coconut_qr_scanner:
-  reading_extra_data: "Lese zusätzliche Daten zum Sammeln\nBitte scannen Sie weiter"
+  reading_extra_data: "Zusätzliche Daten werden gesammelt\nBitte scannen Sie weiter"
   camera_error:
     title: "Kamerazugriff nicht verfügbar"
     need_camera_permission: "Bitte erlauben Sie den Kamerazugriff in den Einstellungen."
@@ -622,7 +622,7 @@ settings_screen:
         copy_success: "Protokoll erfolgreich kopiert."
 
 address_list_screen:
-  wallet_name: "$name's Adresse"
+  wallet_name: "Adresse von $name"
   address_index: "Adresse - $index"
   receiving: "Empfangen"
   change: "Wechselgeld"

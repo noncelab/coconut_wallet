@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -1915,8 +1916,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildDropdownMenu() {
-    final bool showGlossary =
-        context.read<PreferenceProvider>().isKorean || context.read<PreferenceProvider>().isJapanese;
+    final bool showGlossary = AppLanguage.fromCode(context.read<PreferenceProvider>().language).supportsGlossary;
     return Positioned(
       top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
       right: 20,
