@@ -46,7 +46,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
     final firstDate = isStart ? DateTime(2009, 1, 3) : (_startDate ?? DateTime(2009, 1, 3));
     final today = DateTime(now.year, now.month, now.day);
     final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
-    final isKorean = currentLanguage == AppLanguage.kr.code;
+    final isKorean = currentLanguage == AppLanguage.ko.code;
     final isEnglish = currentLanguage == AppLanguage.en.code;
     debugPrint('DEBUG11 - _showDateSpinner: $isStart');
     await showCupertinoModalPopup(

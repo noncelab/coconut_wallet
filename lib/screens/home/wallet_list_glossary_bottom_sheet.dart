@@ -40,10 +40,10 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
       termDetails = json.decode(detailsContent);
       termList = termDetails.keys.toList();
       termList.sort();
-      if (_language == AppLanguage.kr.code) {
-        groupedTermList = groupByInitialsKr(termList);
-      } else if (_language == AppLanguage.jp.code) {
-        groupedTermList = groupByInitialsJp(termList);
+      if (_language == AppLanguage.ko.code) {
+        groupedTermList = groupByInitialsKo(termList);
+      } else if (_language == AppLanguage.ja.code) {
+        groupedTermList = groupByInitialsJa(termList);
       }
     });
   }
@@ -93,7 +93,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
     }
   }
 
-  Map<String, List<String>> groupByInitialsKr(List<String> terms) {
+  Map<String, List<String>> groupByInitialsKo(List<String> terms) {
     Map<String, List<String>> groupedTerms = {};
 
     for (String term in terms) {
@@ -144,7 +144,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
     return 'その他';
   }
 
-  Map<String, List<String>> groupByInitialsJp(List<String> terms) {
+  Map<String, List<String>> groupByInitialsJa(List<String> terms) {
     final Map<String, List<String>> grouped = {};
     for (final term in terms) {
       final initial = getInitialJp(term);

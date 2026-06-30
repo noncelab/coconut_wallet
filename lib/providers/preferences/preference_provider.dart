@@ -58,11 +58,11 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 전체 주소 보기 화면 [입금] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
   late bool _isReceivingTooltipDisabled;
-  bool get isReceivingTooltipDisabled => language == AppLanguage.kr.code ? _isReceivingTooltipDisabled : true;
+  bool get isReceivingTooltipDisabled => language == AppLanguage.ko.code ? _isReceivingTooltipDisabled : true;
 
   /// 전체 주소 보기 화면 [잔돈] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
   late bool _isChangeTooltipDisabled;
-  bool get isChangeTooltipDisabled => language == AppLanguage.kr.code ? _isChangeTooltipDisabled : true;
+  bool get isChangeTooltipDisabled => language == AppLanguage.ko.code ? _isChangeTooltipDisabled : true;
 
   /// 보내기 화면 [수신자 추가하기 카드] 확인 여부
   late bool _hasSeenAddRecipientCard;
@@ -76,9 +76,9 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _isManualUtxoSelectionMode;
   bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
 
-  bool get isKorean => _language == AppLanguage.kr.code;
+  bool get isKorean => _language == AppLanguage.ko.code;
   bool get isEnglish => _language == AppLanguage.en.code;
-  bool get isJapanese => _language == AppLanguage.jp.code;
+  bool get isJapanese => _language == AppLanguage.ja.code;
   bool get isSpanish => _language == AppLanguage.es.code;
   bool get isGerman => _language == AppLanguage.de.code;
 
@@ -185,6 +185,8 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// OS 설정에 따라 언어 설정 초기화
   void _initializeLanguageFromSystem() {
+    _migrateLanguageCodeIfNeeded();
+
     bool changed = false;
     if (_sharedPrefs.isContainsKey(SharedPrefKeys.kLanguage)) {
       _language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
@@ -200,15 +202,31 @@ class PreferenceProvider extends ChangeNotifier {
     }
   }
 
+  /// 이전 국가 코드 기반 언어 코드(kr, jp)를 ISO 639-1 언어 코드(ko, ja)로 마이그레이션
+  void _migrateLanguageCodeIfNeeded() {
+    if (_sharedPrefs.isContainsKey(SharedPrefKeys.kLanguage)) {
+      final storedLanguage = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
+      final migratedLanguage = _migrateLanguageCode(storedLanguage);
+      if (migratedLanguage != storedLanguage) {
+        _sharedPrefs.setString(SharedPrefKeys.kLanguage, migratedLanguage);
+      }
+    }
+  }
+
+  String _migrateLanguageCode(String languageCode) {
+    const Map<String, String> migrationMap = {'kr': 'ko', 'jp': 'ja'};
+    return migrationMap[languageCode] ?? languageCode;
+  }
+
   /// 언어 설정 적용 (동기 버전)
   void _applyLanguageSettingSync() {
     try {
       Logger.log('Applying language setting: $_language');
       if (isKorean) {
-        LocaleSettings.setLocaleSync(AppLocale.kr);
+        LocaleSettings.setLocaleSync(AppLocale.ko);
         Logger.log('Korean locale applied successfully');
       } else if (isJapanese) {
-        LocaleSettings.setLocaleSync(AppLocale.jp);
+        LocaleSettings.setLocaleSync(AppLocale.ja);
         Logger.log('Japanese locale applied successfully');
       } else if (isEnglish) {
         LocaleSettings.setLocaleSync(AppLocale.en);
@@ -235,9 +253,9 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> _applyLanguageSetting() async {
     try {
       if (isKorean) {
-        await LocaleSettings.setLocale(AppLocale.kr);
+        await LocaleSettings.setLocale(AppLocale.ko);
       } else if (isJapanese) {
-        await LocaleSettings.setLocale(AppLocale.jp);
+        await LocaleSettings.setLocale(AppLocale.ja);
       } else if (isEnglish) {
         await LocaleSettings.setLocale(AppLocale.en);
       } else if (isSpanish) {

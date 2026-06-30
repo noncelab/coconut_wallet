@@ -9,9 +9,9 @@ class LanguageBottomSheet extends StatelessWidget {
   LanguageBottomSheet({super.key});
 
   final List<_LanguageOption> _languages = <_LanguageOption>[
-    _LanguageOption(code: AppLanguage.kr.code, title: t.language_bottom_sheet.korean),
+    _LanguageOption(code: AppLanguage.ko.code, title: t.language_bottom_sheet.korean),
     _LanguageOption(code: AppLanguage.en.code, title: t.language_bottom_sheet.english),
-    _LanguageOption(code: AppLanguage.jp.code, title: t.language_bottom_sheet.japanese),
+    _LanguageOption(code: AppLanguage.ja.code, title: t.language_bottom_sheet.japanese),
     _LanguageOption(code: AppLanguage.es.code, title: t.language_bottom_sheet.spanish),
     _LanguageOption(code: AppLanguage.de.code, title: t.language_bottom_sheet.german),
   ];

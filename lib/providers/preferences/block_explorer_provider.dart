@@ -43,9 +43,9 @@ class BlockExplorerProvider extends ChangeNotifier {
     final effectiveLanguage = language.isNotEmpty ? language : getSystemLanguageCode();
 
     switch (AppLanguage.fromCode(effectiveLanguage)) {
-      case AppLanguage.kr:
+      case AppLanguage.ko:
         return _mempoolUrlKr;
-      case AppLanguage.jp:
+      case AppLanguage.ja:
         return _mempoolUrlJp;
       case AppLanguage.en:
       default:

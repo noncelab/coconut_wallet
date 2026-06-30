@@ -57,7 +57,7 @@ class WalletListViewModel extends ChangeNotifier {
   bool _isEditMode = false;
   bool get isEditMode => _isEditMode;
 
-  bool get isKorean => _preferenceProvider.language == AppLanguage.kr.code;
+  bool get isKorean => _preferenceProvider.language == AppLanguage.ko.code;
   bool get isEnglishOrSpanish =>
       _preferenceProvider.language == AppLanguage.en.code || _preferenceProvider.language == AppLanguage.es.code;
 

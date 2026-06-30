@@ -350,9 +350,9 @@ class _SettingsScreen extends State<SettingsScreen> {
 
   String _getCurrentLanguageDisplayName(String language) {
     switch (AppLanguage.fromCode(language)) {
-      case AppLanguage.kr:
+      case AppLanguage.ko:
         return t.settings_screen.locales.korean;
-      case AppLanguage.jp:
+      case AppLanguage.ja:
         return t.settings_screen.locales.japanese;
       case AppLanguage.es:
         return t.settings_screen.locales.spanish;

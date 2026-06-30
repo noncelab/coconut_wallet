@@ -113,12 +113,12 @@ void main() {
 
 void _setupPluralResolvers() {
   LocaleSettings.setPluralResolverSync(
-    language: AppLanguage.kr.code,
+    language: AppLanguage.ko.code,
     cardinalResolver: (n, {zero, one, two, few, many, other}) => other ?? '',
   );
 
   LocaleSettings.setPluralResolverSync(
-    language: AppLanguage.jp.code,
+    language: AppLanguage.ja.code,
     cardinalResolver: (n, {zero, one, two, few, many, other}) => other ?? '',
   );
 
