@@ -4,7 +4,8 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 
 enum WalletType {
   singleSignature,
-  multiSignature;
+  multiSignature,
+  taproot;
 
   AddressType get addressType {
     switch (this) {
@@ -12,9 +13,15 @@ enum WalletType {
         return AddressType.p2wpkh;
       case WalletType.multiSignature:
         return AddressType.p2wsh;
+      case WalletType.taproot:
+        return AddressType.p2tr;
     }
   }
 }
+
+/// Taproot 트랜잭션의 spend 경로.
+/// 기본값 선택 규칙은 `TaprootWalletListItem.defaultSpendType` 참고.
+enum TaprootSpendType { keyPath, scriptPath }
 
 enum WalletSyncResult {
   newWalletAdded,
@@ -26,7 +33,17 @@ enum WalletSyncResult {
 
 enum WalletLoadState { never, loadingFromDB, loadCompleted }
 
-enum WalletImportSource { coconutVault, keystone, jade, seedSigner, coldCard, krux, extendedPublicKey, descriptor }
+enum WalletImportSource {
+  coconutVault,
+  keystone,
+  jade,
+  seedSigner,
+  coldCard,
+  krux,
+  passport,
+  extendedPublicKey,
+  descriptor,
+}
 
 extension WalletImportSourceExtension on WalletImportSource {
   String get displayName {
@@ -43,6 +60,8 @@ extension WalletImportSourceExtension on WalletImportSource {
         return t.wallet_add_scanner_screen.cold_card;
       case WalletImportSource.krux:
         return t.wallet_add_scanner_screen.krux;
+      case WalletImportSource.passport:
+        return t.wallet_add_scanner_screen.passport;
       case WalletImportSource.extendedPublicKey:
       case WalletImportSource.descriptor:
         return t.wallet_add_scanner_screen.self;
@@ -78,6 +97,8 @@ extension WalletImportSourceExtension on WalletImportSource {
         return kColdCardIconPath;
       case WalletImportSource.krux:
         return kKruxIconPath;
+      case WalletImportSource.passport:
+        return kPassportIconPath;
       case WalletImportSource.extendedPublicKey:
       case WalletImportSource.descriptor:
         return kZpubIconPath;

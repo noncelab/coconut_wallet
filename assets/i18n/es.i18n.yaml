@@ -275,6 +275,7 @@ wallet_add_scanner_screen:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
+  passport: "Passport"
   self: "Ingresar datos de wallet"
   self_description: "Agrega una wallet watch-only desde otra app."
   select: "Seleccionar"
@@ -329,6 +330,17 @@ wallet_add_scanner_screen:
     step1_em: "XPUB Export"
     step2: "2. "
     step2_em: "XPUB - QR Code"
+    select: "Seleccionar"
+  guide_passport:
+    step0: "En Passport, abre la cuenta que deseas conectar"
+    step1: "1. "
+    step1_em: "Account Details"
+    step2: "2. "
+    step2_em: "Coconut Wallet del menú …"
+    step3: "3. "
+    step3_em: "Sparrow"
+    step4: "4. "
+    step4_em: "Connect as Single Sig"
     select: "Seleccionar"
   paste:
     paste_button: "Importar mediante pegado"
@@ -444,6 +456,10 @@ send_screen:
   toast:
     draft_utxo_used: "El bitcoin seleccionado anteriormente ya fue utilizado. Seleccione los UTXOs nuevamente."
     draft_utxo_locked: "El bitcoin seleccionado anteriormente ha sido bloqueado. Seleccione los UTXOs nuevamente."
+  taproot:
+    sign_path: "Ruta de firma"
+    sign_by_parent: "Firmar con la clave padre"
+    sign_by_child: "Firmar con la clave hija"
 
 utxo_selection_screen:
   title: "Seleccionar UTXOs"
@@ -711,6 +727,8 @@ wallet_info_screen:
   tooltip:
     mfp_placeholder_description: "Esta es una billetera agregada con clave pública extendida\n y la huella digital maestra no se ingresó\n por lo que se muestra como 00000000." 
     wallet_backup_data: "Esta es la información de respaldo BSMS(BIP-129) para esta billetera. Puedes usar estos datos para reconstruir la billetera multifirma en caso de pérdida o reemplazo de dispositivo. Por favor, manténgalo seguro y ten cuidado al compartir externamente." 
+    taproot_wallet_backup_data: "Esta es la información de respaldo para esta billetera. Puedes usar estos datos para reconstruir la billetera de herencia en caso de pérdida o reemplazo de dispositivo. Por favor, manténgalo seguro y ten cuidado al compartir externamente." 
+    taproot_created_at: "Esta es la fecha en que se creó esta billetera en Coconut Vault"
     confirm_backup_data:
       step1_em: "Ir a la pantalla de detalle de billetera $name" 
       step2_preposition: "1. "
@@ -721,6 +739,14 @@ wallet_info_screen:
       select: "Seleccionar"
   error:
     delete: "No se pudo eliminar la billetera"
+wallet_signer_section:
+  title: "Método de firma"
+  segmented_control:
+    parent_key: "Con clave padre"
+    child_key: "Con clave hijo"
+    currently_using: "En uso"
+    default_path: "Ruta predeterminada"
+    inheritance_path: "Ruta de herencia"
 
 transaction_fee_bumping_screen:
   rbf: "RBF"
@@ -1034,7 +1060,8 @@ alert:
     broadcasting_failed: "[Envío fallido]\n$error"
     insufficient_balance: "Saldo insuficiente"
     minimum_amount: "Puedes enviar al menos $amount"
-    insufficient_fee: "[Envío fallido]\nPor favor, intenta nuevamente aumentando la comisión." 
+    insufficient_fee: "[Envío fallido]\nPor favor, intenta nuevamente aumentando la comisión."
+    non_final_taproot_child: "[Envío fallido]\nPor favor, verifica la fecha y hora de herencia de la billetera secundaria."
   signed_psbt:
     wrong_send_info: "La información de envío es diferente.\nPor favor, intenta nuevamente desde el principio."
     need_more_sign: "Necesitas $count firmas más"
@@ -1099,7 +1126,10 @@ third_party:
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
-  krux: "Krux"  
+  krux: "Krux"
+  passport: "Passport"
+  passport_prime: "Passport Prime"
+  passport_core: "Passport Core"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"
@@ -1132,3 +1162,22 @@ long_pressed_menu:
   go_to_home_screen_settings: "Ir a la configuración de inicio"
   hide_home_widget_title: "¿Ocultar widget '${widgetName}' en la pantalla de inicio?"
   hide_home_widget_description: "Puedes mostrarlo nuevamente más tarde al ir al menú 'Configuración de inicio' en el botón de menú superior derecho."
+
+taproot:
+  parent: "Billetera padre"
+  role_description_card:
+    signer: "firmante"
+    co_signer: "cosignatario"
+    heir: "heredero"
+    single_parent_description: "Soy el firmante de esta billetera.\nPuedo usar esta billetera normalmente."
+    multi_parent_description: "Soy cosignatario de esta billetera.\nLos activos se pueden usar firmando con otros cosignatarios."
+    child_description: "Soy heredero de esta billetera.\nLos activos se pueden usar después de un momento determinado."
+  participant_card:
+    me: "Yo"
+    co_signer: "Co-firmante"
+    beneficiary: "Firmante condicional"
+    signer: "Firmante"
+    locktime_after: "Después de ${dateTime}"
+  setup_summary_card:
+    signer_configuration: "Configuración de firmantes"
+    inheritance_condition: "Condición de herencia"

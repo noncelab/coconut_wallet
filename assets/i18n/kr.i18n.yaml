@@ -274,6 +274,7 @@ wallet_add_scanner_screen:
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
   krux: "크럭스"
+  passport: "패스포트"
   self: "직접 입력"
   self_description: "다른 앱에서 생성한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
@@ -328,6 +329,17 @@ wallet_add_scanner_screen:
     step1_em: "XPUB 내보내기"
     step2: "2. "
     step2_em: "XPUB - QR 코드"
+    select: "선택"
+  guide_passport:
+    step0: "패스포트에서 연동할 계정을 열어 주세요."
+    step1: "1. "
+    step1_em: "Account Details"
+    step2: "2. "
+    step2_em: "… 아이콘 누른 후 Connect Wallet"
+    step3: "3. "
+    step3_em: "Sparrow"
+    step4: "4. "
+    step4_em: "Connect as Single Sig"
     select: "선택"
   paste:
     paste_button: "붙여넣기로 가져오기"
@@ -442,6 +454,10 @@ send_screen:
   toast:
     draft_utxo_used: "이전에 선택한 비트코인이 이미 사용되었어요. UTXO를 다시 골라주세요."
     draft_utxo_locked: "이전에 선택한 비트코인이 사용 잠금 되었어요. UTXO를 다시 골라주세요."
+  taproot:
+    sign_path: "서명 경로"
+    sign_by_parent: "부모 키로 서명해요"
+    sign_by_child: "자식 키로 서명해요"
     
 utxo_selection_screen:
   title: "UTXO 고르기"
@@ -712,6 +728,8 @@ wallet_info_screen:
   tooltip:
     mfp_placeholder_description: "확장공개키로 추가한 지갑이며\n마스터 핑거프린트를 입력하지 않아\n00000000으로 표기돼요."
     wallet_backup_data: "이 지갑의 BSMS(BIP-129) 백업 정보입니다. 기기 분실 또는 교체 시, 이 데이터를 사용해 다중 서명 지갑을 재구성할 수 있습니다. 안전하게 보관하시고, 외부 공유 시 주의해 주세요."
+    taproot_wallet_backup_data: "이 지갑의 백업 정보입니다. 기기 분실 또는 교체 시, 이 데이터를 사용해 상속 지갑을 재구성할 수 있습니다. 안전하게 보관하시고, 외부 공유 시 주의해 주세요."
+    taproot_created_at: "코코넛 볼트에서 이 지갑을 생성한 날짜에요"
     confirm_backup_data:
       step1_em: "코코넛 볼트에서 $name 지갑 상세 화면으로 이동한 후"
       step2_preposition: ""
@@ -722,6 +740,14 @@ wallet_info_screen:
       select: "선택"
   error:
     delete: "지갑 삭제 실패"
+wallet_signer_section:
+  title: "서명 방식"
+  segmented_control:
+    parent_key: "부모 키로"
+    child_key: "자식 키로"
+    currently_using: "현재 사용 중"
+    default_path: "기본 경로"
+    inheritance_path: "상속 경로"
 
 transaction_fee_bumping_screen:
   rbf: "RBF"
@@ -1038,6 +1064,7 @@ alert:
     insufficient_balance: "잔액이 부족해요"
     minimum_amount: "$amount부터 전송할 수 있어요"
     insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
+    non_final_taproot_child: "[전송 실패]\n자식 지갑의 상속 일시를 확인하세요."
   signed_psbt:
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
     need_more_sign: "$count개 서명이 더 필요해요"
@@ -1103,6 +1130,9 @@ third_party:
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
   krux: "크럭스"
+  passport: "패스포트"
+  passport_prime: "패스포트 프라임"
+  passport_core: "패스포트 코어"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"
@@ -1135,3 +1165,22 @@ long_pressed_menu:
   go_to_home_screen_settings: "홈 화면 설정으로 이동"
   hide_home_widget_title: "홈 화면에서 '${widgetName}' 위젯을 숨기시겠어요?"
   hide_home_widget_description: "나중에 우측 상단 메뉴 버튼 > '홈 화면 설정' 메뉴에서 다시 표시할 수 있어요."
+
+taproot:
+  parent: "부모 지갑"
+  role_description_card:
+    signer: "서명자"
+    co_signer: "공동 서명자"
+    heir: "상속자"
+    single_parent_description: "나는 이 지갑의 서명자예요.\n평소에 이 지갑을 사용할 수 있어요."
+    multi_parent_description: "나는 이 지갑의 공동 서명자예요.\n다른 공동 서명자와 함께 서명해야 자산을 사용할 수 있어요."
+    child_description: "나는 이 지갑의 상속자예요.\n정해진 시점이 지나면 자산을 사용할 수 있어요."
+  participant_card:
+    me: "나"
+    co_signer: "공동 서명자"
+    beneficiary: "조건부 서명자"
+    signer: "서명자"
+    locktime_after: "${dateTime} 이후"
+  setup_summary_card:
+    signer_configuration: "서명자 구성"
+    inheritance_condition: "상속 조건"

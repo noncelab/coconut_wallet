@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cbor/simple.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -19,38 +21,39 @@ class WalletAddService {
     return createWalletFromJson(json: json, name: name, walletImportSource: walletImportSource);
   }
 
-  WatchOnlyWallet createExtendedPublicKeyWallet(String extendedPublicKey, String name, String? masterFingerPrint) {
+  WatchOnlyWallet createExtendedPublicKeyWallet(
+    String extendedPublicKey,
+    String name,
+    String? masterFingerPrint, {
+    WalletImportSource walletImportSource = WalletImportSource.extendedPublicKey,
+  }) {
     final singleSigWallet = SingleSignatureWallet.fromExtendedPublicKey(
       AddressType.p2wpkh,
       extendedPublicKey,
       masterFingerPrint ?? masterFingerprintPlaceholder,
     );
-    return WatchOnlyWallet(
-      name,
-      0,
-      0,
-      singleSigWallet.descriptor,
-      null,
-      null,
-      WalletImportSource.extendedPublicKey.name,
-    );
+    return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
   }
 
-  WatchOnlyWallet createWalletFromDescriptor({required String descriptor, required String name}) {
+  WatchOnlyWallet createWalletFromDescriptor({
+    required String descriptor,
+    required String name,
+    WalletImportSource walletImportSource = WalletImportSource.descriptor,
+  }) {
     final singleSigWallet = SingleSignatureWallet.fromDescriptor(
       descriptor,
       ignoreChecksum: !DescriptorUtil.hasDescriptorChecksum(descriptor),
     );
-    return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, WalletImportSource.descriptor.name);
+    return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
   }
 
-  WatchOnlyWallet createWalletFromUR({
+  WatchOnlyWallet createWalletFromUrCryptoAccount({
     required UR ur,
     required String name,
     required WalletImportSource walletImportSource,
   }) {
     const className = 'WalletAddService';
-    const methodName = 'createWalletFromUR';
+    const methodName = 'createWalletFromUrCryptoAccount';
 
     try {
       final cborBytes = ur.cbor;
@@ -69,6 +72,33 @@ class WalletAddService {
       final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
       FileLogger.log(className, methodName, 'SingleSignatureWallet.fromCryptoAccountPayload');
       return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
+    } catch (e, stackTrace) {
+      FileLogger.error(className, methodName, 'failed: $e', stackTrace);
+      rethrow;
+    }
+  }
+
+  /// 패스포트는 지갑 정보(JSON)를 UR bytes 타입으로 인코딩하여 전달한다.
+  WatchOnlyWallet createWalletFromUrBytes({
+    required UR ur,
+    required String name,
+    required WalletImportSource walletImportSource,
+  }) {
+    const className = 'WalletAddService';
+    const methodName = 'createWalletFromUrBytes';
+
+    try {
+      final decodedCbor = cbor.decode(ur.cbor);
+      if (decodedCbor is! List<int>) {
+        throw 'Unexpected UR bytes payload type: ${decodedCbor.runtimeType}';
+      }
+      FileLogger.log(className, methodName, 'cbor.decode completed');
+      final json = jsonDecode(utf8.decode(decodedCbor));
+      if (json is! Map<String, dynamic>) {
+        throw 'Unexpected UR bytes json type: ${json.runtimeType}';
+      }
+      FileLogger.log(className, methodName, 'jsonDecode completed');
+      return createWalletFromJson(json: json, name: name, walletImportSource: walletImportSource);
     } catch (e, stackTrace) {
       FileLogger.error(className, methodName, 'failed: $e', stackTrace);
       rethrow;
@@ -110,6 +140,6 @@ class WalletAddService {
     }
 
     // xpub으로 지갑 생성 (fallback)
-    return createExtendedPublicKeyWallet(xpub, name, fingerprint);
+    return createExtendedPublicKeyWallet(xpub, name, fingerprint, walletImportSource: walletImportSource);
   }
 }

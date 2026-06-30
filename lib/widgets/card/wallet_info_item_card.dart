@@ -4,6 +4,8 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
@@ -40,7 +42,6 @@ class WalletInfoItemCard extends StatefulWidget {
 
 class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   List<MultisigSigner>? signers;
-  bool isMultisig = false;
   late int colorIndex;
   late int iconIndex;
   late String rightText;
@@ -52,14 +53,11 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   bool isItemTapped = false; // ui (edit 아이콘)
   bool isCustomAccount = false;
 
-  bool _isWithoutMfp() {
-    if (isMultisig) {
-      return false;
-    }
-    return isWalletWithoutMfp(walletItem) ||
-        (walletItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
-            WalletAddService.masterFingerprintPlaceholder;
-  }
+  bool _isWithoutMfp() =>
+      walletItem is SinglesigWalletListItem &&
+      (isWalletWithoutMfp(walletItem) ||
+          (walletItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
+              WalletAddService.masterFingerprintPlaceholder);
 
   bool _isExtendedPublicKey() {
     return walletImportSource == WalletImportSource.extendedPublicKey;
@@ -93,6 +91,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
 
   void _updateFromWalletItem() {
     walletItem = widget.walletItem;
+    signers = null;
     if (walletItem is MultisigWalletListItem) {
       /// 멀티 시그
       MultisigWalletListItem multiWallet = walletItem as MultisigWalletListItem;
@@ -101,7 +100,18 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
       iconIndex = multiWallet.iconIndex;
       rightText = '';
       rightSubText = '${multiWallet.requiredSignatureCount}/${multiWallet.signers.length}';
-      isMultisig = true;
+      walletImportSource = widget.walletItem.walletImportSource;
+      isCustomAccount = false;
+    } else if (walletItem is TaprootWalletListItem) {
+      /// 탭루트
+      final taprootWallet = walletItem.walletBase as TaprootWallet;
+      colorIndex = widget.walletItem.colorIndex;
+      iconIndex = widget.walletItem.iconIndex;
+      // TODO: UI createdAtInVault
+      rightText = _formatCreatedAtInVault((widget.walletItem as TaprootWalletListItem).createdAtInVault);
+      rightSubText = taprootWallet.derivationPath; // TODO:
+      walletImportSource = widget.walletItem.walletImportSource;
+      isCustomAccount = _getAccountIndex(taprootWallet.derivationPath) != 0;
     } else {
       /// 싱글 시그
       final singlesigWallet = walletItem.walletBase as SingleSignatureWallet;
@@ -116,16 +126,36 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     nameText = walletItem.name;
   }
 
+  String _formatCreatedAtInVault(DateTime? createdAtInVault) {
+    if (createdAtInVault == null) {
+      return '';
+    }
+
+    final localDateTime = createdAtInVault.toLocal();
+    final year = localDateTime.year.toString().padLeft(4, '0');
+    final month = localDateTime.month.toString().padLeft(2, '0');
+    final day = localDateTime.day.toString().padLeft(2, '0');
+    final hour = localDateTime.hour.toString().padLeft(2, '0');
+    final minute = localDateTime.minute.toString().padLeft(2, '0');
+
+    return '$year.$month.$day $hour:$minute';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final taprootStyle = TaprootCardStyle.from(widget.walletItem);
+    final List<Color>? gradientColors =
+        signers != null ? ColorUtil.getGradientColors(signers!) : taprootStyle?.iconGradientColors;
+    final bool hasGradient = gradientColors != null;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
-        border: isMultisig ? null : Border.all(color: context.coconutColors.borderSubtle, width: 1),
+        border: hasGradient ? null : Border.all(color: context.coconutColors.borderSubtle, width: 1),
         gradient:
-            isMultisig
+            hasGradient
                 ? LinearGradient(
-                  colors: ColorUtil.getGradientColors(signers!),
+                  colors: gradientColors,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   transform: const GradientRotation(math.pi / 10),
@@ -133,10 +163,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                 : null,
       ),
       child: Container(
-        margin: isMultisig ? const EdgeInsets.all(2) : null, // 멀티시그의 경우 border 대신
+        margin: hasGradient ? const EdgeInsets.all(2) : null,
         padding: const EdgeInsets.all(20),
         decoration:
-            isMultisig
+            hasGradient
                 ? BoxDecoration(
                   color: context.coconutColors.surfaceCard,
                   borderRadius: BorderRadius.circular(22), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음

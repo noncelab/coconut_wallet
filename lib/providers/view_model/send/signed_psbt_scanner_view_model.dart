@@ -11,6 +11,7 @@ class SignedPsbtScannerViewModel {
 
   bool get isMultisig => _sendInfoProvider.isMultisig!;
   WalletImportSource get walletImportSource => _sendInfoProvider.walletImportSource!;
+  String? get unsignedPsbtString => _sendInfoProvider.txWaitingForSign;
 
   int getMissingSignaturesCount(Psbt psbt) {
     if (!isMultisig) return 0;
@@ -38,9 +39,10 @@ class SignedPsbtScannerViewModel {
         return defaultCheckResult;
       }
 
-      /// single signature인 경우, 시드사이너로 서명한 경우를 커버하기 위해 아래 검증을 추가합니다.
-      /// 시드사이너로 서명한 경우는 defaultCheckResult가 항상 false입니다.
-      /// 왜냐하면 bip32_deriv 정보를 모두 제외한 채 서명 결과만 주기 때문입니다.
+      /// p2wpkh, 시드사이너/패스포트로 서명한 경우 defaultCheckResult 항상 false
+      /// 아래 코드는 defaultCheckResult가 false인 경우, 서명 전후 트랜잭션이 동일함을 추가 검사함
+      /// seedSigner: bip32_deriv 정보를 모두 제외한 채 서명 결과만 줌
+      /// passport: signature를 제외하고 finalScriptWitness 결과를 줌
       Transaction tx = signedPsbt.getSignedTransaction(AddressType.p2wpkh);
       for (int inputIndex = 0; inputIndex < tx.inputs.length; inputIndex++) {
         // 1. 서명 검증
@@ -48,8 +50,12 @@ class SignedPsbtScannerViewModel {
           return false;
         }
         // 2. 공개키 검증
-        if (unsignedPsbt.inputs[inputIndex].bip32Derivation![0].publicKey !=
-            signedPsbt.inputs[inputIndex].signatureList[0].publicKey) {
+        if (signedPsbt.inputs[inputIndex].signatureList.isNotEmpty &&
+                unsignedPsbt.inputs[inputIndex].bip32Derivation![0].publicKey !=
+                    signedPsbt.inputs[inputIndex].signatureList[0].publicKey ||
+            signedPsbt.inputs[inputIndex].finalScriptWitness != null &&
+                unsignedPsbt.inputs[inputIndex].bip32Derivation![0].publicKey !=
+                    signedPsbt.inputs[inputIndex].finalScriptWitness![1]) {
           return false;
         }
       }

@@ -32,7 +32,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
 
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
-        _qrDataHandler = CoconutQrScanDataHandler();
+        _qrDataHandler = CoconutWalletAddQrScanDataHandler();
         break;
       case WalletImportSource.keystone:
       case WalletImportSource.jade:
@@ -43,6 +43,10 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         break;
       case WalletImportSource.krux:
         _qrDataHandler = DescriptorQrScanDataHandler();
+        break;
+      case WalletImportSource.passport:
+        // 패스포트는 지갑 정보(JSON)를 UR bytes 타입으로 인코딩하여 전달한다.
+        _qrDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.bytes]);
         break;
       case WalletImportSource.coldCard:
         _qrDataHandler = BbQrScanDataHandler();
@@ -78,6 +82,9 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       if (additionInfo is WatchOnlyWallet) {
         return _addCoconutVaultWallet(additionInfo);
       } else if (additionInfo is UR) {
+        if (_walletImportSource == WalletImportSource.passport) {
+          return _addUrBytesWallet(_walletImportSource, additionInfo);
+        }
         return _addBcUrWallet(_walletImportSource, additionInfo);
       } else if (additionInfo is String) {
         if (isExtendedPublicKey == true) {
@@ -103,16 +110,37 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       walletImportSource,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
     );
-    final wallet = _walletAddService.createWalletFromUR(walletImportSource: walletImportSource, ur: ur, name: name);
+    final wallet = _walletAddService.createWalletFromUrCryptoAccount(
+      walletImportSource: walletImportSource,
+      ur: ur,
+      name: name,
+    );
+    return await _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  Future<ResultOfSyncFromVault> _addUrBytesWallet(WalletImportSource walletImportSource, UR ur) async {
+    final name = getNextThirdPartyWalletName(
+      walletImportSource,
+      _walletProvider.walletItemList.map((e) => e.name).toList(),
+    );
+    final wallet = _walletAddService.createWalletFromUrBytes(
+      walletImportSource: walletImportSource,
+      ur: ur,
+      name: name,
+    );
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   Future<ResultOfSyncFromVault> _addDescriptorWallet(String descriptor) async {
     final name = getNextThirdPartyWalletName(
-      WalletImportSource.descriptor,
+      _walletImportSource,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
     );
-    final wallet = _walletAddService.createWalletFromDescriptor(descriptor: descriptor, name: name);
+    final wallet = _walletAddService.createWalletFromDescriptor(
+      descriptor: descriptor,
+      name: name,
+      walletImportSource: _walletImportSource,
+    );
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 

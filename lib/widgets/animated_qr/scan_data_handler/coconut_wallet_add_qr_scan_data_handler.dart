@@ -5,7 +5,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
 /// 코코넛 볼트 - 지갑 내보내기 스캔용
-class CoconutQrScanDataHandler implements IQrScanDataHandler {
+class CoconutWalletAddQrScanDataHandler implements IQrScanDataHandler {
   WatchOnlyWallet? _result;
 
   @override
@@ -17,10 +17,16 @@ class CoconutQrScanDataHandler implements IQrScanDataHandler {
   bool joinData(String data) {
     try {
       Map<String, dynamic> jsonData = jsonDecode(data);
-      _result = WatchOnlyWallet.fromJson(jsonData);
+      final wallet = WatchOnlyWallet.fromJson(jsonData);
+      if (wallet.isTaproot && !wallet.isSupportedTaprootConfiguration) {
+        Logger.error('Unsupported Taproot configuration');
+        return false;
+      }
+      _result = wallet;
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       Logger.error(e.toString());
+      Logger.error(stackTrace);
       return false;
     }
   }

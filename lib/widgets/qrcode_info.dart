@@ -11,6 +11,7 @@ class QrCodeInfo extends StatefulWidget {
   final ImageProvider? embedImage;
   final GlobalKey? qrCaptureKey;
   final TextStyle? textStyle;
+  final double? qrInternalPadding;
 
   const QrCodeInfo({
     super.key,
@@ -21,6 +22,7 @@ class QrCodeInfo extends StatefulWidget {
     this.embedImage,
     this.qrCaptureKey,
     this.textStyle,
+    this.qrInternalPadding,
   });
 
   @override
@@ -36,7 +38,11 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
         if (widget.qrcodeTopWidget != null) ...[widget.qrcodeTopWidget!, CoconutLayout.spacing_400h],
         RepaintBoundary(
           key: widget.qrCaptureKey,
-          child: AdaptiveQrImage(qrData: widget.qrData, embedImage: widget.embedImage),
+          child: AdaptiveQrImage(
+            qrData: widget.qrData,
+            embedImage: widget.embedImage,
+            qrInternalPadding: widget.qrInternalPadding,
+          ),
         ),
         const SizedBox(height: 32),
         Padding(

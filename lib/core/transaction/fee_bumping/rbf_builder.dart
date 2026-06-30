@@ -10,8 +10,9 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/utils/bitcoin/transaction_util.dart';
+import 'package:coconut_wallet/extensions/wallet_list_item_extension.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart'
     as tx_creation_exception;
@@ -116,11 +117,7 @@ class RbfBuilder {
     _outputAnalysis = preparer.outputAnalysis;
     _inputUtxos = preparer.inputUtxos;
 
-    _vSizeIncreasePerInput = estimateVSizePerInput(
-      isMultisig: walletListItemBase.walletType != WalletType.singleSignature,
-      requiredSignatureCount: walletListItemBase.multisigConfig?.requiredSignature,
-      totalSignerCount: walletListItemBase.multisigConfig?.totalSigner,
-    );
+    _vSizeIncreasePerInput = walletListItemBase.inputVSize;
     _vSizeChangeOutput = walletListItemBase.walletType == WalletType.singleSignature ? 31 : 43;
     _assertAllUnspent(additionalSpendable);
     _additionalSpendable = [...additionalSpendable]..sort((a, b) => b.amount.compareTo(a.amount));
@@ -642,6 +639,12 @@ class RbfBuilder {
           walletListItemBase: walletListItemBase,
           isFeeSubtractedFromAmount: isSweep,
           isUtxoFixed: true,
+          scriptPathPolicy:
+              walletListItemBase is TaprootWalletListItem
+                  ? ((walletListItemBase as TaprootWalletListItem).defaultSpendType == TaprootSpendType.scriptPath
+                      ? (walletListItemBase as TaprootWalletListItem).defaultPolicy
+                      : null)
+                  : null,
         ).build();
     if (!result.isSuccess) {
       Logger.log('[_buildTx] TransactionBuilder.build 실패: exception=${result.exception}');

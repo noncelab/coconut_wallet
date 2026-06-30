@@ -8,7 +8,8 @@ enum UrType {
   cryptoAccount('crypto-account'),
   cryptoPsbt('crypto-psbt'),
   psbt('psbt'),
-  accountDescriptor('account-descriptor');
+  accountDescriptor('account-descriptor'),
+  bytes('bytes');
 
   final String value;
   const UrType(this.value);
