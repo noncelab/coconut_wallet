@@ -29,6 +29,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_scree
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_split_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
@@ -66,6 +67,11 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         (context) => _buildScreenWithArgs(
           context,
           (args) => WalletBackupDataScreen(id: args['id'], walletName: args['walletName']),
+        ),
+    '/taproot-wallet-backup-data':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => TaprootWalletBackupDataScreen(id: args['id'], walletName: args['walletName']),
         ),
     '/address-search': (context) => _buildScreenWithArgs(context, (args) => AddressSearchScreen(id: args['id'])),
     '/transaction-detail':

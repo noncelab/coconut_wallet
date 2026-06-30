@@ -120,6 +120,7 @@ class CoconutColors {
   final Color borderSubtle;
   final Color borderStrong;
   final Color iconBackground;
+  final Color iconBackgroundSubtle;
   final Color iconDefault;
   final Color iconSubDefault;
   final Color iconHighlight;
@@ -127,6 +128,9 @@ class CoconutColors {
   final Color warning;
   final Color danger;
   final Color success;
+  final Color taprootParent;
+  final Color taprootChild;
+  final Color taprootRoleText;
   final Color pulldownMenuBackground;
   final Color pulldownMenuPressedColor;
   final Color pulldownMenuDividerColor;
@@ -194,6 +198,7 @@ class CoconutColors {
     required this.borderSubtle,
     required this.borderStrong,
     required this.iconBackground,
+    required this.iconBackgroundSubtle,
     required this.iconDefault,
     required this.iconSubDefault,
     required this.iconHighlight,
@@ -201,6 +206,9 @@ class CoconutColors {
     required this.warning,
     required this.danger,
     required this.success,
+    required this.taprootParent,
+    required this.taprootChild,
+    required this.taprootRoleText,
     required this.pulldownMenuBackground,
     required this.pulldownMenuPressedColor,
     required this.pulldownMenuDividerColor,
@@ -270,6 +278,7 @@ class CoconutColors {
       borderSubtle: ds.CoconutColors.gray700,
       borderStrong: ds.CoconutColors.white,
       iconBackground: ds.CoconutColors.gray750,
+      iconBackgroundSubtle: Color(0x1FFCFCFC),
       iconDefault: ds.CoconutColors.white,
       iconSubDefault: ds.CoconutColors.gray400,
       iconHighlight: ds.CoconutColors.black,
@@ -277,6 +286,9 @@ class CoconutColors {
       warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
+      taprootParent: ds.CoconutColors.purple,
+      taprootChild: ds.CoconutColors.sky,
+      taprootRoleText: ds.CoconutColors.white,
       pulldownMenuBackground: ds.CoconutColors.gray900,
       pulldownMenuPressedColor: ds.CoconutColors.gray700,
       pulldownMenuDividerColor: ds.CoconutColors.black,
@@ -347,6 +359,7 @@ class CoconutColors {
       borderSubtle: Color.fromARGB(255, 69, 126, 211),
       borderStrong: Color(0xFF181A1F),
       iconBackground: Color.fromARGB(255, 213, 228, 243),
+      iconBackgroundSubtle: Color(0x1F181A1F),
       iconDefault: Color(0xFF181A1F),
       iconSubDefault: Color(0xFF727987),
       iconHighlight: Color.fromARGB(255, 60, 73, 86),
@@ -354,6 +367,9 @@ class CoconutColors {
       warning: Color(0xFFD08A00),
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
+      taprootParent: ds.CoconutColors.purple,
+      taprootChild: ds.CoconutColors.sky,
+      taprootRoleText: ds.CoconutColors.white,
       pulldownMenuBackground: Color.fromARGB(255, 176, 169, 224),
       pulldownMenuPressedColor: Color.fromARGB(255, 187, 181, 225),
       pulldownMenuDividerColor: Color.fromARGB(255, 199, 194, 232),
@@ -424,6 +440,7 @@ class CoconutColors {
       borderSubtle: ds.CoconutColors.borderLightGray,
       borderStrong: ds.CoconutColors.black,
       iconBackground: ds.CoconutColors.gray350,
+      iconBackgroundSubtle: const Color(0x1F000000),
       iconDefault: ds.CoconutColors.black,
       iconSubDefault: ds.CoconutColors.gray600,
       iconHighlight: ds.CoconutColors.gray600,
@@ -431,6 +448,9 @@ class CoconutColors {
       warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
+      taprootParent: ds.CoconutColors.purple,
+      taprootChild: ds.CoconutColors.sky,
+      taprootRoleText: ds.CoconutColors.white,
       pulldownMenuBackground: ds.CoconutColors.white,
       pulldownMenuPressedColor: ds.CoconutColors.gray200,
       pulldownMenuDividerColor: ds.CoconutColors.gray200,

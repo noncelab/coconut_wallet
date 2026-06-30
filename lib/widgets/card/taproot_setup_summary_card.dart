@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/card/taproot_participant_card.dart';
 import 'package:flutter/material.dart';
@@ -28,25 +29,29 @@ class TaprootSetupSummaryCard extends StatelessWidget {
     final inheritanceItems = processedList.where((item) => item.locktime != null).toList();
 
     if (taprootSetupSummaryCardType == TaprootSetupSummaryCardType.card) {
-      return _buildCardTypeLayout(signerItems, inheritanceItems);
+      return _buildCardTypeLayout(context, signerItems, inheritanceItems);
     }
     if (taprootSetupSummaryCardType == TaprootSetupSummaryCardType.tree) {
       return _buildTreeTypeLayout(signerItems, inheritanceItems);
     }
-    return _buildColumnTypeLayout(signerItems, inheritanceItems);
+    return _buildColumnTypeLayout(context, signerItems, inheritanceItems);
   }
 
-  Widget _buildCardTypeLayout(List<TaprootParticipantCard> signerItems, List<TaprootParticipantCard> inheritanceItems) {
+  Widget _buildCardTypeLayout(
+    BuildContext context,
+    List<TaprootParticipantCard> signerItems,
+    List<TaprootParticipantCard> inheritanceItems,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(6),
       child: Container(
         decoration: BoxDecoration(
-          color: CoconutColors.gray850,
-          border: Border.all(color: CoconutColors.gray850, width: 1),
+          color: context.coconutColors.surfaceCard,
+          border: Border.all(color: context.coconutColors.surfaceCard, width: 1),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: CoconutColors.black.withValues(alpha: 0.02),
+              color: context.coconutColors.shadowSubtle.withValues(alpha: 0.02),
               offset: const Offset(2, 2),
               blurRadius: 4,
               spreadRadius: 6,
@@ -54,7 +59,7 @@ class TaprootSetupSummaryCard extends StatelessWidget {
           ],
         ),
         padding: const EdgeInsets.all(20),
-        child: _buildColumnTypeLayout(signerItems, inheritanceItems),
+        child: _buildColumnTypeLayout(context, signerItems, inheritanceItems),
       ),
     );
   }
@@ -84,6 +89,7 @@ class TaprootSetupSummaryCard extends StatelessWidget {
   }
 
   Widget _buildColumnTypeLayout(
+    BuildContext context,
     List<TaprootParticipantCard> signerItems,
     List<TaprootParticipantCard> inheritanceItems,
   ) {
@@ -95,7 +101,7 @@ class TaprootSetupSummaryCard extends StatelessWidget {
           children: signerItems,
         ),
         CoconutLayout.spacing_400h,
-        const Divider(height: 1, color: CoconutColors.gray800),
+        Divider(height: 1, color: context.coconutColors.divider),
         if (inheritanceItems.isNotEmpty) ...[
           CoconutLayout.spacing_400h,
           _SummarySection(
@@ -133,6 +139,7 @@ class _GuideContentRow extends StatelessWidget {
               width: TaprootSetupSummaryCard._sectionIndent,
               child: CustomPaint(
                 painter: _GuideRailPainter(
+                  color: context.coconutColors.borderSubtle,
                   showGuideLine: showGuideLine,
                   showBranch: showBranch,
                   drawBottom: !isLastGuideRow,
@@ -167,7 +174,7 @@ class _SummarySection extends StatelessWidget {
       children: [
         _GuideContentRow(
           showGuideLine: showGuideLine,
-          child: Text(title, style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white)),
+          child: Text(title, style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText)),
         ),
         _GuideSpacer(height: TaprootSetupSummaryCard._sectionTitleSpacing, showGuideLine: showGuideLine),
         for (int index = 0; index < children.length; index++) ...[
@@ -199,7 +206,9 @@ class _GuideSpacer extends StatelessWidget {
         children: [
           SizedBox(
             width: TaprootSetupSummaryCard._sectionIndent,
-            child: CustomPaint(painter: _GuideRailPainter(showGuideLine: showGuideLine)),
+            child: CustomPaint(
+              painter: _GuideRailPainter(color: context.coconutColors.borderSubtle, showGuideLine: showGuideLine),
+            ),
           ),
           const Expanded(child: SizedBox()),
         ],
@@ -215,8 +224,10 @@ class _GuideRailPainter extends CustomPainter {
   final bool showBranch;
   final bool drawBottom;
   final bool isRoundedEnd;
+  final Color color;
 
   const _GuideRailPainter({
+    required this.color,
     this.showGuideLine = false,
     this.showBranch = false,
     this.drawBottom = true,
@@ -231,7 +242,7 @@ class _GuideRailPainter extends CustomPainter {
 
     final paint =
         Paint()
-          ..color = CoconutColors.gray200
+          ..color = color
           ..strokeWidth = 1
           ..style = PaintingStyle.stroke;
 
@@ -265,7 +276,8 @@ class _GuideRailPainter extends CustomPainter {
     return oldDelegate.showGuideLine != showGuideLine ||
         oldDelegate.showBranch != showBranch ||
         oldDelegate.drawBottom != drawBottom ||
-        oldDelegate.isRoundedEnd != isRoundedEnd;
+        oldDelegate.isRoundedEnd != isRoundedEnd ||
+        oldDelegate.color != color;
   }
 }
 
