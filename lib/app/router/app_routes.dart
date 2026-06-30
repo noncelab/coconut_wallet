@@ -109,7 +109,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => WalletInfoScreen(
             id: args['id'],
-            isMultisig: args['isMultisig'],
+            walletType: args['walletType'],
             entryPoint: args['entryPoint'],
             showMfpInput: args['showMfpInput'] ?? false,
           ),

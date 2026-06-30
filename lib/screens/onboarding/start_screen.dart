@@ -6,6 +6,7 @@ import 'package:coconut_wallet/app/bootstrap/splash_theme.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
@@ -29,13 +30,16 @@ class _StartScreenState extends State<StartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDefaultTheme =
+        CoconutThemeController.currentVariant == CoconutThemeVariant.dark;
+
     return ColoredBox(
       color:
-          Platform.isIOS
-              ? context.coconutColors.background
-              : (NetworkType.currentNetworkType.isTestnet
+          isDefaultTheme
+              ? (NetworkType.currentNetworkType.isTestnet
                   ? splashBackgroundColorRegtest
-                  : splashBackgroundColorMainnet),
+                  : splashBackgroundColorMainnet)
+              : context.coconutColors.background,
       child: Center(
         child: Image.asset(
           'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
