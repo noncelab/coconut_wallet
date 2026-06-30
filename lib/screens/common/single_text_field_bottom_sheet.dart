@@ -299,7 +299,6 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
       isLengthVisible: widget.visibleTextLimit,
       maxLength: widget.maxLength ?? 30,
       maxLines: 1,
-      autocorrect: true,
       enableSuggestions: true,
       backgroundColor: widget.fieldBackgroundColor,
       errorColor: widget.errorColor,
