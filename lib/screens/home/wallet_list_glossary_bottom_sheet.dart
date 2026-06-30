@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -39,9 +40,9 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
       termDetails = json.decode(detailsContent);
       termList = termDetails.keys.toList();
       termList.sort();
-      if (_language == 'kr') {
+      if (_language == AppLanguage.kr.code) {
         groupedTermList = groupByInitialsKr(termList);
-      } else if (_language == 'jp') {
+      } else if (_language == AppLanguage.jp.code) {
         groupedTermList = groupByInitialsJp(termList);
       }
     });

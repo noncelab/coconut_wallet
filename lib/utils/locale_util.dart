@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/number_symbols.dart';
 
@@ -29,23 +30,23 @@ String getSystemLanguageCode() {
 
   switch (languageCode) {
     case 'ko':
-      return 'kr';
+      return AppLanguage.kr.code;
     case 'ja':
     case 'jp':
-      return 'jp';
+      return AppLanguage.jp.code;
     case 'es':
-      return 'es';
+      return AppLanguage.es.code;
     default:
-      return 'en';
+      return AppLanguage.en.code;
   }
 }
 
 /// 시스템 언어가 한국어인지 확인합니다.
 bool isSystemLanguageKorean() {
-  return getSystemLanguageCode() == 'kr';
+  return getSystemLanguageCode() == AppLanguage.kr.code;
 }
 
 /// 시스템 언어가 일본어인지 확인합니다.
 bool isSystemLanguageJapanese() {
-  return getSystemLanguageCode() == 'jp';
+  return getSystemLanguageCode() == AppLanguage.jp.code;
 }

@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -36,7 +37,7 @@ void main() {
       // 이 테스트는 실제 window.locale을 사용하므로
       // 시스템 언어에 따라 결과가 달라집니다.
       final String result = getSystemLanguageCode();
-      expect(result == 'kr' || result == 'en', isTrue);
+      expect(result == AppLanguage.kr.code || result == AppLanguage.en.code, isTrue);
     });
 
     // 시스템 언어가 한국어인지 확인하는 로직 테스트
@@ -48,44 +49,44 @@ void main() {
     // 앱 언어 코드 기반 BigInt 포맷팅 테스트
     group('formatBigIntWithAppLanguageLocale', () {
       test('should format with dot decimal separator for kr (Korean)', () {
-        NumberFormatConfig.instance.update('kr');
+        NumberFormatConfig.instance.update(AppLanguage.kr.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(100000000001), 8), '1,000.00000001');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(10000000000), 8), '100');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(123412345678), 8), '1,234.12345678');
       });
 
       test('should format with dot decimal separator for en (English)', () {
-        NumberFormatConfig.instance.update('en');
+        NumberFormatConfig.instance.update(AppLanguage.en.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(100000000001), 8), '1,000.00000001');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(10000000), 8), '0.1');
       });
 
       test('should format with dot decimal separator for jp (Japanese)', () {
-        NumberFormatConfig.instance.update('jp');
+        NumberFormatConfig.instance.update(AppLanguage.jp.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(100000000001), 8), '1,000.00000001');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(10000000), 8), '0.1');
       });
 
       test('should format with comma decimal separator for es (Spanish)', () {
-        NumberFormatConfig.instance.update('es');
+        NumberFormatConfig.instance.update(AppLanguage.es.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(100000000001), 8), '1.000,00000001');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(10000000), 8), '0,1');
       });
 
       test('should format with comma decimal separator for de (German)', () {
-        NumberFormatConfig.instance.update('de');
+        NumberFormatConfig.instance.update(AppLanguage.de.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(100000000001), 8), '1.000,00000001');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(10000000), 8), '0,1');
       });
 
       test('should format with 8 decimalPlaces', () {
-        NumberFormatConfig.instance.update('kr');
+        NumberFormatConfig.instance.update(AppLanguage.kr.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(110000000), 8), '1.1');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(112345679), 8), '1.12345679');
       });
 
       test('should accept custom decimalPlaces', () {
-        NumberFormatConfig.instance.update('kr');
+        NumberFormatConfig.instance.update(AppLanguage.kr.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(1000000001), 4), '100,000.0001');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(1235), 4), '0.1235');
       });
@@ -99,37 +100,37 @@ void main() {
       });
 
       test('should strip trailing zeros from decimal part', () {
-        NumberFormatConfig.instance.update('kr');
+        NumberFormatConfig.instance.update(AppLanguage.kr.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(110000000), 8), '1.1');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(100000000), 8), '1');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(10000), 8), '0.0001');
       });
 
       test('should strip trailing zeros for Spanish locale with comma separator', () {
-        NumberFormatConfig.instance.update('es');
+        NumberFormatConfig.instance.update(AppLanguage.es.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(110000000), 8), '1,1');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(100000000), 8), '1');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(10000), 8), '0,0001');
       });
 
       test('should handle zero value', () {
-        NumberFormatConfig.instance.update('kr');
+        NumberFormatConfig.instance.update(AppLanguage.kr.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.zero, 8), '0');
-        NumberFormatConfig.instance.update('es');
+        NumberFormatConfig.instance.update(AppLanguage.es.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.zero, 8), '0');
       });
 
       test('should handle very large values', () {
-        NumberFormatConfig.instance.update('kr');
+        NumberFormatConfig.instance.update(AppLanguage.kr.code);
         // Bitcoin max supply in sats: 2,100,000,000,000,000
         final maxSats = BigInt.parse('2100000000000000');
         expect(formatBigIntWithAppLanguageLocale(maxSats, 8), '21,000,000');
-        NumberFormatConfig.instance.update('es');
+        NumberFormatConfig.instance.update(AppLanguage.es.code);
         expect(formatBigIntWithAppLanguageLocale(maxSats, 8), '21.000.000');
       });
 
       test('should handle negative values', () {
-        NumberFormatConfig.instance.update('kr');
+        NumberFormatConfig.instance.update(AppLanguage.kr.code);
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(-110000000), 8), '-1.1');
         expect(formatBigIntWithAppLanguageLocale(BigInt.from(-10000000), 8), '-0.1');
       });

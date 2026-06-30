@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 
@@ -56,8 +57,9 @@ class WalletListViewModel extends ChangeNotifier {
   bool _isEditMode = false;
   bool get isEditMode => _isEditMode;
 
-  bool get isKorean => _preferenceProvider.language == 'kr';
-  bool get isEnglishOrSpanish => _preferenceProvider.language == 'en' || _preferenceProvider.language == 'es';
+  bool get isKorean => _preferenceProvider.language == AppLanguage.kr.code;
+  bool get isEnglishOrSpanish =>
+      _preferenceProvider.language == AppLanguage.en.code || _preferenceProvider.language == AppLanguage.es.code;
 
   bool get isWalletListFiatHidden => _preferenceProvider.isWalletListFiatHidden;
 

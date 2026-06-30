@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 
 /// 앱 전역 숫자 포맷 설정 (싱글톤)
@@ -18,18 +19,15 @@ class NumberFormatConfig {
   }
 }
 
-/// 앱 언어 코드를 intl 로케일 코드로 매핑
-const Map<String, String> _appLanguageToIntlLocale = {'kr': 'ko', 'en': 'en', 'jp': 'ja', 'es': 'es', 'de': 'de'};
-
 /// 앱 설정 언어 기반 소수점 구분자 반환 (기본값: '.')
 String getDecimalSeparatorForAppLanguage(String appLanguageCode) {
-  final intlLocale = _appLanguageToIntlLocale[appLanguageCode] ?? 'en';
+  final intlLocale = AppLanguage.fromCode(appLanguageCode).intlLocale;
   return getNumberDecimalSeparator(localeName: intlLocale);
 }
 
 /// 앱 설정 언어 기반 천 단위 구분자 반환 (기본값: ',')
 String getGroupingSeparatorForAppLanguage(String appLanguageCode) {
-  final intlLocale = _appLanguageToIntlLocale[appLanguageCode] ?? 'en';
+  final intlLocale = AppLanguage.fromCode(appLanguageCode).intlLocale;
   return getNumberGroupingSeparator(localeName: intlLocale);
 }
 

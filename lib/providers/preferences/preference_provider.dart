@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
@@ -57,11 +58,11 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 전체 주소 보기 화면 [입금] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
   late bool _isReceivingTooltipDisabled;
-  bool get isReceivingTooltipDisabled => language == 'kr' ? _isReceivingTooltipDisabled : true;
+  bool get isReceivingTooltipDisabled => language == AppLanguage.kr.code ? _isReceivingTooltipDisabled : true;
 
   /// 전체 주소 보기 화면 [잔돈] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
   late bool _isChangeTooltipDisabled;
-  bool get isChangeTooltipDisabled => language == 'kr' ? _isChangeTooltipDisabled : true;
+  bool get isChangeTooltipDisabled => language == AppLanguage.kr.code ? _isChangeTooltipDisabled : true;
 
   /// 보내기 화면 [수신자 추가하기 카드] 확인 여부
   late bool _hasSeenAddRecipientCard;
@@ -75,11 +76,11 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _isManualUtxoSelectionMode;
   bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
 
-  bool get isKorean => _language == "kr";
-  bool get isEnglish => _language == "en";
-  bool get isJapanese => _language == "jp";
-  bool get isSpanish => _language == "es";
-  bool get isGerman => _language == "de";
+  bool get isKorean => _language == AppLanguage.kr.code;
+  bool get isEnglish => _language == AppLanguage.en.code;
+  bool get isJapanese => _language == AppLanguage.jp.code;
+  bool get isSpanish => _language == AppLanguage.es.code;
+  bool get isGerman => _language == AppLanguage.de.code;
 
   /// 선택된 통화
   late FiatCode _selectedFiat;

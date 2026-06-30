@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/selection_bottom_sheet.dart';
@@ -8,11 +9,11 @@ class LanguageBottomSheet extends StatelessWidget {
   LanguageBottomSheet({super.key});
 
   final List<_LanguageOption> _languages = <_LanguageOption>[
-    _LanguageOption(code: 'kr', title: t.language_bottom_sheet.korean),
-    _LanguageOption(code: 'en', title: t.language_bottom_sheet.english),
-    _LanguageOption(code: 'jp', title: t.language_bottom_sheet.japanese),
-    _LanguageOption(code: 'es', title: t.language_bottom_sheet.spanish),
-    _LanguageOption(code: 'de', title: t.language_bottom_sheet.german),
+    _LanguageOption(code: AppLanguage.kr.code, title: t.language_bottom_sheet.korean),
+    _LanguageOption(code: AppLanguage.en.code, title: t.language_bottom_sheet.english),
+    _LanguageOption(code: AppLanguage.jp.code, title: t.language_bottom_sheet.japanese),
+    _LanguageOption(code: AppLanguage.es.code, title: t.language_bottom_sheet.spanish),
+    _LanguageOption(code: AppLanguage.de.code, title: t.language_bottom_sheet.german),
   ];
 
   Future<void> _onLanguageSelected(BuildContext context, String code) async {

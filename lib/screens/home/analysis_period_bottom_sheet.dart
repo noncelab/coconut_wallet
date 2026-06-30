@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
@@ -45,8 +46,8 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
     final firstDate = isStart ? DateTime(2009, 1, 3) : (_startDate ?? DateTime(2009, 1, 3));
     final today = DateTime(now.year, now.month, now.day);
     final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
-    final isKorean = currentLanguage == 'kr';
-    final isEnglish = currentLanguage == 'en';
+    final isKorean = currentLanguage == AppLanguage.kr.code;
+    final isEnglish = currentLanguage == AppLanguage.en.code;
     debugPrint('DEBUG11 - _showDateSpinner: $isStart');
     await showCupertinoModalPopup(
       context: context,

@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -348,19 +349,17 @@ class _SettingsScreen extends State<SettingsScreen> {
   }
 
   String _getCurrentLanguageDisplayName(String language) {
-    switch (language) {
-      case 'kr':
+    switch (AppLanguage.fromCode(language)) {
+      case AppLanguage.kr:
         return t.settings_screen.locales.korean;
-      case 'jp':
+      case AppLanguage.jp:
         return t.settings_screen.locales.japanese;
-      case 'es':
+      case AppLanguage.es:
         return t.settings_screen.locales.spanish;
-      case 'en':
+      case AppLanguage.en:
         return t.settings_screen.locales.english;
-      case 'de':
+      case AppLanguage.de:
         return t.settings_screen.locales.german;
-      default:
-        return t.settings_screen.locales.english;
     }
   }
 }
