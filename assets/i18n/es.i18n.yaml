@@ -1143,6 +1143,7 @@ fiat_bottom_sheet:
   krw_price: "Precio Upbit"
   usd_price: "Precio Binance"
   jpy_price: "Precio Bitflyer"
+  eur_price: "Precio Binance"
 
 language_bottom_sheet:
   title: "Configuración de idioma"

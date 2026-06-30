@@ -10,6 +10,7 @@ enum ExchangeType { upbit, binance, bitflyer }
 
 class WebSocketService {
   final ExchangeType _exchangeType;
+  final String? _symbol;
   final Uuid _uuid = const Uuid();
   WebSocketChannel? _channel;
   int _reconnectAttempts = 0;
@@ -19,7 +20,9 @@ class WebSocketService {
   final StreamController<PriceResponse?> _tickerController = StreamController.broadcast();
   Stream<PriceResponse?> get tickerStream => _tickerController.stream;
 
-  WebSocketService({required ExchangeType exchangeType}) : _exchangeType = exchangeType {
+  WebSocketService({required ExchangeType exchangeType, String? symbol})
+    : _exchangeType = exchangeType,
+      _symbol = symbol {
     _connect();
   }
 
@@ -28,7 +31,8 @@ class WebSocketService {
       case ExchangeType.upbit:
         return 'wss://api.upbit.com/websocket/v1';
       case ExchangeType.binance:
-        return 'wss://stream.binance.com:9443/ws/btcusdt@ticker';
+        final symbol = _symbol?.toLowerCase() ?? 'btcusdt';
+        return 'wss://stream.binance.com:9443/ws/$symbol@ticker';
       case ExchangeType.bitflyer:
         return 'wss://ws.lightstream.bitflyer.com/json-rpc';
     }
@@ -122,17 +126,17 @@ class WebSocketService {
 
       switch (_exchangeType) {
         case ExchangeType.upbit:
-          if (decodedData is Map<String, dynamic> && decodedData['trade_price'] != null) {
+          if (decodedData['trade_price'] != null) {
             priceResponse = UpbitResponse.fromJson(decodedData);
           }
           break;
         case ExchangeType.binance:
-          if (decodedData is Map<String, dynamic> && decodedData['c'] != null) {
+          if (decodedData['c'] != null) {
             priceResponse = BinanceResponse.fromJson(decodedData);
           }
           break;
         case ExchangeType.bitflyer:
-          if (decodedData is Map<String, dynamic> && decodedData['method'] == 'channelMessage') {
+          if (decodedData['method'] == 'channelMessage') {
             final message = decodedData['params']['message'];
             if (message != null) {
               priceResponse = BitflyerResponse.fromJson(message);
@@ -274,12 +278,11 @@ class WebSocketServiceFactory {
       case FiatCode.KRW:
         return WebSocketService(exchangeType: ExchangeType.upbit);
       case FiatCode.USD:
-        return WebSocketService(exchangeType: ExchangeType.binance);
+        return WebSocketService(exchangeType: ExchangeType.binance, symbol: 'btcusdt');
       case FiatCode.JPY:
         return WebSocketService(exchangeType: ExchangeType.bitflyer);
-      default:
-        // 기본값은 KRW
-        return WebSocketService(exchangeType: ExchangeType.upbit);
+      case FiatCode.EUR:
+        return WebSocketService(exchangeType: ExchangeType.binance, symbol: 'btceur');
     }
   }
 }

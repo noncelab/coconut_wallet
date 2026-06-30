@@ -1146,6 +1146,7 @@ fiat_bottom_sheet:
   krw_price: "업비트 기준"
   usd_price: "바이낸스 기준"
   jpy_price: "비트플라이어 기준"
+  eur_price: "바이낸스 기준"
 
 language_bottom_sheet:
   title: "언어 설정"   
