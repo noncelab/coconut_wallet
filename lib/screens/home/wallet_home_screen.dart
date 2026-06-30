@@ -45,8 +45,6 @@ import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
-import 'package:coconut_wallet/services/wallet_add_service.dart';
-import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_glossary_bottom_sheet.dart';
@@ -1662,71 +1660,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   void _goToBitBox02Screen() async {
-    print('=== _goToBitBox02Screen called ===');
     Navigator.pop(context);
-    final result = await Navigator.pushNamed(
-      context,
-      '/bitbox02-connect',
-      arguments: {'walletImportSource': WalletImportSource.bitbox02},
-    );
-    if (result != null && result is Map<String, dynamic>) {
-      final xpub = result['xpub'] as String?;
-      final fingerprint = result['fingerprint'] as String?;
-      if (xpub == null || !mounted) return;
-
-      final walletProvider = context.read<WalletProvider>();
-      final name = getNextThirdPartyWalletName(
-        WalletImportSource.bitbox02,
-        walletProvider.walletItemList.map((e) => e.name).toList(),
-      );
-
-      final walletAddService = WalletAddService();
-      final wallet = walletAddService.createExtendedPublicKeyWallet(
-        xpub,
-        name,
-        fingerprint,
-        importSource: WalletImportSource.bitbox02,
-      );
-
-      final syncResult = await walletProvider.syncFromThirdParty(wallet);
-
-      if (!mounted) return;
-
-      if (syncResult.result == WalletSyncResult.newWalletAdded && syncResult.walletId != null) {
-        Navigator.pushNamed(
-          context,
-          '/wallet-detail',
-          arguments: {'id': syncResult.walletId, 'entryPoint': kEntryPointWalletHome},
-        );
-        return;
-      }
-
-      final languageCode = context.read<PreferenceProvider>().language;
-      if (!mounted) return;
-
-      String message;
-      switch (syncResult.result) {
-        case WalletSyncResult.existingWalletUpdateImpossible:
-          message = 'This wallet is already added.';
-          break;
-        case WalletSyncResult.existingName:
-          message = 'A wallet with the same name already exists.';
-          break;
-        default:
-          message = 'Failed to import wallet.';
-      }
-
-      showDialog(
-        context: context,
-        builder: (context) => CoconutPopup(
-          languageCode: languageCode,
-          title: 'Import Failed',
-          description: message,
-          onTapRight: () => Navigator.pop(context),
-          rightButtonText: 'OK',
-        ),
-      );
-    }
+    Navigator.pushNamed(context, '/bitbox02-connect', arguments: {'walletImportSource': WalletImportSource.bitbox02});
   }
 
   void _onAddWalletPressed() {
@@ -1803,6 +1738,18 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             ),
                           ],
                         ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToBitBox02Screen(),
+                                WalletImportSource.bitbox02,
+                              ),
+                            ),
+                            const Expanded(child: SizedBox()),
+                            const Expanded(child: SizedBox()),
+                          ],
+                        ),
                         CoconutLayout.spacing_400h,
                         Row(
                           children: [
@@ -1810,12 +1757,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               child: _buildWalletIconShrinkButton(
                                 () => _goToScannerScreen(WalletImportSource.extendedPublicKey),
                                 WalletImportSource.extendedPublicKey,
-                              ),
-                            ),
-                            Expanded(
-                              child: _buildWalletIconShrinkButton(
-                                () => _goToBitBox02Screen(),
-                                WalletImportSource.bitbox02,
                               ),
                             ),
                           ],

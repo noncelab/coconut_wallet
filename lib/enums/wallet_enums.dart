@@ -33,7 +33,17 @@ enum WalletSyncResult {
 
 enum WalletLoadState { never, loadingFromDB, loadCompleted }
 
-enum WalletImportSource { coconutVault, keystone, jade, seedSigner, coldCard, krux, extendedPublicKey, descriptor, bitbox02 }
+enum WalletImportSource {
+  coconutVault,
+  keystone,
+  jade,
+  seedSigner,
+  coldCard,
+  krux,
+  extendedPublicKey,
+  descriptor,
+  bitbox02,
+}
 
 extension WalletImportSourceExtension on WalletImportSource {
   String get displayName {
@@ -50,11 +60,11 @@ extension WalletImportSourceExtension on WalletImportSource {
         return t.wallet_add_scanner_screen.cold_card;
       case WalletImportSource.krux:
         return t.wallet_add_scanner_screen.krux;
+      case WalletImportSource.bitbox02:
+        return t.wallet_add_scanner_screen.bitbox02;
       case WalletImportSource.extendedPublicKey:
       case WalletImportSource.descriptor:
         return t.wallet_add_scanner_screen.self;
-      case WalletImportSource.bitbox02:
-        return 'BitBox02';
     }
   }
 

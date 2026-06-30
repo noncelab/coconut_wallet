@@ -274,6 +274,7 @@ wallet_add_scanner_screen:
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
   krux: "크럭스"
+  bitbox02: "비트박스02"
   self: "직접 입력"
   self_description: "다른 앱에서 생성한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
@@ -358,6 +359,29 @@ wallet_add_scanner_screen:
     mfp_input_placeholder: "마스터 핑거프린트 예시: f75f7ab5"
     mfp_skip: "건너뛰기"
     back_scan: "QR 스캔으로 돌아가기"
+
+wallet_connect_screen:  
+  guide_bitbox02:
+    btn:
+      connect_via_usb: "USB로 연결하기"
+      add_wallet: "지갑 추가"
+      retry: "재시도"
+    init: 
+      step1: "BitBox02 Nova를 USB로 연결해주세요."
+      step2: "기기 화면에 'Tap this side'가 보이면 기기의 양면을 탭해주세요."
+      step3: "기기 화면에 가져올 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
+    connecting: 
+      title: "기기 연결 중"
+      step1: "기기의 잠금을 해제해 주세요."
+      step2: "기기 화면에 Pairing code가 표시되면 확인(✓)을 눌러주세요."
+    paired:
+      title: "BitBox02 연결이 완료되었습니다."
+      master_fingerprint: "마스터 핑거프린트"
+      derivation_path: "파생 경로"
+      xpub: "확장 공개키"
+    error:
+      title: "연결 실패"
+      description: "BitBox02 Nova를 찾을 수 없어요. 기기를 다시 연결한 후 시도해 주세요."
 
 # lib/screens/wallet_list
 wallet_list:
@@ -1118,6 +1142,7 @@ third_party:
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
   krux: "크럭스"
+  bitbox02: "비트박스"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"

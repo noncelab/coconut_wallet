@@ -176,3 +176,8 @@ GoogleService-Info.plist
 google-services.json
 firebase.json
 coconut-fastlane-supply.json
+
+# BitBox bridge generated artifacts
+**/android/app/libs/bitboxbridge.aar
+**/android/app/libs/bitboxbridge-sources.jar
+**/ios/Runner/bitboxbridge.xcframework

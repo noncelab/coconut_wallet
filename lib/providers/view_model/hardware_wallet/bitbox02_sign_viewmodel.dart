@@ -13,19 +13,9 @@ import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart'
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_types.dart';
 import 'package:flutter/foundation.dart';
 
-enum BitBox02SignStep {
-  idle,
-  connecting,
-  signing,
-  done,
-  error,
-}
+enum BitBox02SignStep { idle, connecting, signing, done, error }
 
-enum BitBox02DeviceStatus {
-  disconnected,
-  locked,
-  ready,
-}
+enum BitBox02DeviceStatus { disconnected, locked, ready }
 
 class BitBox02SignViewModel extends ChangeNotifier {
   static const Duration _connectTimeout = Duration(seconds: 30);
@@ -105,12 +95,9 @@ class BitBox02SignViewModel extends ChangeNotifier {
       if (existingDevice != null) {
         _device = existingDevice;
       } else {
-        _device = await BitBox02Device.connect(
-          transport: BitBox02Transport.resolve(preferred: transport),
-        );
+        _device = await BitBox02Device.connect(transport: BitBox02Transport.resolve(preferred: transport));
 
-        _setState(BitBox02SignStep.connecting,
-            status: 'Check your BitBox02 — enter PIN to unlock if prompted');
+        _setState(BitBox02SignStep.connecting, status: 'Check your BitBox02 — enter PIN to unlock if prompted');
 
         await _device!.init();
         await _device!.channelHashVerify(ok: true);
@@ -134,8 +121,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
           debugPrint('BB02_SIGN rootFingerprint FAILED: $e');
         }
 
-        _setState(BitBox02SignStep.connecting,
-            status: 'Device ready — preparing transaction data...');
+        _setState(BitBox02SignStep.connecting, status: 'Device ready — preparing transaction data...');
         _deviceStatus = BitBox02DeviceStatus.ready;
       }
 
@@ -169,9 +155,8 @@ class BitBox02SignViewModel extends ChangeNotifier {
             electrumSsl = defServer.server.ssl;
           } else {
             final net = NetworkType.currentNetworkType;
-            final defServer = net == NetworkType.mainnet
-                ? DefaultElectrumServer.coconut
-                : DefaultElectrumServer.regtest;
+            final defServer =
+                net == NetworkType.mainnet ? DefaultElectrumServer.coconut : DefaultElectrumServer.regtest;
             electrumHost = defServer.server.host;
             electrumPort = defServer.server.port;
             electrumSsl = defServer.server.ssl;
@@ -206,13 +191,14 @@ class BitBox02SignViewModel extends ChangeNotifier {
       }
 
       _cancelTimeout();
-      _setState(BitBox02SignStep.signing,
-          status: 'Check amount, address, and fee on the device screen');
+      _setState(BitBox02SignStep.signing, status: 'Check amount, address, and fee on the device screen');
       _startTimeout(_signTimeout, 'Signing timed out');
 
       final psbtBytes = base64Decode(psbtBase64);
       final cleanPsbt = _cleanPsbt(psbtBytes);
-      debugPrint('BB02_SIGN clean hex (first 120): ${cleanPsbt.sublist(0, cleanPsbt.length < 120 ? cleanPsbt.length : 120).map((b) => b.toRadixString(16).padLeft(2, '0')).join()}');
+      debugPrint(
+        'BB02_SIGN clean hex (first 120): ${cleanPsbt.sublist(0, cleanPsbt.length < 120 ? cleanPsbt.length : 120).map((b) => b.toRadixString(16).padLeft(2, '0')).join()}',
+      );
       debugPrint('BB02_SIGN coin: ${coin.name} (${coin.value})');
 
       final signed = await _device!.btcSignPSBT(psbtBytes: cleanPsbt, coin: coin);
@@ -245,8 +231,10 @@ class BitBox02SignViewModel extends ChangeNotifier {
     _setState(BitBox02SignStep.connecting, status: 'Connecting to BitBox02 (mock)...');
     await Future.delayed(const Duration(seconds: 1));
 
-    _setState(BitBox02SignStep.signing,
-        status: 'Please verify the transaction on your BitBox02...\nCheck amount, address, and fee on the device screen.');
+    _setState(
+      BitBox02SignStep.signing,
+      status: 'Please verify the transaction on your BitBox02...\nCheck amount, address, and fee on the device screen.',
+    );
     await Future.delayed(const Duration(seconds: 3));
 
     _signedPsbt = base64Encode(utf8.encode('signed_transaction_mock'));

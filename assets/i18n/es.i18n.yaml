@@ -275,6 +275,7 @@ wallet_add_scanner_screen:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
+  bitbox02: "BitBox02"
   self: "Ingresar datos de wallet"
   self_description: "Agrega una wallet watch-only desde otra app."
   select: "Seleccionar"
@@ -359,7 +360,30 @@ wallet_add_scanner_screen:
     mfp_input_placeholder: "Huella digital maestra ej: f75f7ab5"
     mfp_skip: "Omitir"
     back_scan: "Volver al escaneo de QR"
-  
+
+wallet_connect_screen:
+  guide_bitbox02:
+    btn:
+      connect_via_usb: "Conectar por USB"
+      add_wallet: "Añadir billetera"
+      retry: "Reintentar"
+    init:
+      step1: "Conecta tu BitBox02 Nova mediante USB."
+      step2: "Desbloquea tu dispositivo."
+      step3: "Cuando aparezca en el dispositivo la billetera que deseas importar, pulsa el botón '$btn' de abajo."
+    connecting:
+      title: "Conectando el dispositivo"
+      step1: "Desbloquea el dispositivo."
+      step2: "Cuando aparezca el código de emparejamiento en el dispositivo, pulsa la marca de verificación (✓) para confirmar." 
+    paired:
+      title: "BitBox02 está emparejado y listo."
+      master_fingerprint: "Huella digital maestra"
+      derivation_path: "Ruta de derivación"
+      xpub: "Clave pública extendida"
+    error:
+      title: "Error de conexión"
+      description: "No se encontró BitBox02 Nova. Vuelve a conectar el dispositivo e inténtalo de nuevo."
+      
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elementos"

@@ -45,13 +45,13 @@ String _getThirdPartyDefaultName(WalletImportSource walletImportSource) {
       return t.third_party.cold_card;
     case WalletImportSource.krux:
       return t.third_party.krux;
+    case WalletImportSource.bitbox02:
+      return t.third_party.bitbox02;
     case WalletImportSource.extendedPublicKey:
     case WalletImportSource.descriptor:
       return NetworkType.currentNetworkType == NetworkType.mainnet
           ? t.third_party.extended_public_keys.zpub
           : t.third_party.extended_public_keys.vpub;
-    case WalletImportSource.bitbox02:
-      return 'BitBox02';
     case WalletImportSource.coconutVault:
       throw 'Coconut Vault is not third party';
   }

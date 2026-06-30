@@ -274,6 +274,7 @@ wallet_add_scanner_screen:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
+  bitbox02: "BitBox02"
   self: "ウォレット情報を入力"
   self_description: "他のアプリの情報でウォレットを追加できます。"
   select: "選択"
@@ -384,6 +385,29 @@ wallet_list:
     hide_fiat_price: "法定通貨残高を非表示"
     hide_fiat_price_description: "この画面に法定通貨残高を表示しません。"
     visible: "表示中"
+
+wallet_connect_screen:
+  guide_bitbox02:
+    btn:
+      connect_via_usb: "USBで接続"
+      add_wallet: "ウォレットを追加"
+      retry: "再試行"
+    init:
+      step1: "BitBox02 NovaをUSBで接続してください。"
+      step2: "デバイスのロックを解除してください。"
+      step3: "デバイス画面にインポートするウォレットが表示されたら、下の「$btn」ボタンを押してください。"
+    connecting:
+      title: "デバイスを接続中"
+      step1: "デバイスのロックを解除してください。"
+      step2: "デバイスにペアリングコードが表示されたら、チェックマーク（✓）を押してください。"
+    paired:
+      title: "BitBox02のペアリングが完了しました。"
+      master_fingerprint: "マスターフィンガープリント"
+      derivation_path: "導出パス"
+      xpub: "拡張公開鍵"
+    error:
+      title: "接続に失敗しました"
+      description: "BitBox02 Novaが見つかりませんでした。デバイスを再接続して、もう一度お試しください。"
 
 # lib/screens/review
 negative_feedback_screen:

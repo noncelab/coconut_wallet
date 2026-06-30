@@ -11,9 +11,10 @@ Coconut Wallet ↔ BitBox02 Nova (BTC-only) hardware wallet via gomobile bridge.
 | Tool | Version | Notes |
 |---|---|---|
 | Go | 1.22+ | `brew install go` |
-| gomobile | latest | `go install golang.org/x/mobile/cmd/gomobile@latest` |
+| gomobile | latest | `go install golang.org/x/mobile/cmd/gomobile@latest`, then `gomobile init` |
+| **bitbox02-api-go fork** | branch `fix/nil-guard-psbt` | `git clone https://github.com/4xvgal/bitbox02-api-go.git ../bitbox02-api-go && cd ../bitbox02-api-go && git checkout fix/nil-guard-psbt` (clone as a **sibling of this repo**, i.e. at `../bitbox02-api-go` relative to `coconut_wallet/`). Required by the `replace` directive in `go/go.mod` — gomobile bind fails without it. Has nil-guard patches for externally-built PSBTs (see §6.6 / `bitbox02-psbt-signing-fix.md`); plain upstream `BitBoxSwiss/bitbox02-api-go` will panic on `BTCSignPSBT`. |
 | ANDROID_NDK_HOME | 26+ | Required for gomobile CGo cross-compile |
-| Java | **17** | `build.gradle` requires Java 17 |
+| Java | 17 (21 also verified working) | `build.gradle` targets Java 17 bytecode (`sourceCompatibility`/`jvmTarget`); a JDK 21 host can still build it via Gradle's toolchain support |
 | Flutter | stable | installed via FVM at `$HOME/.fvm/flutter_sdk/` |
 | Docker | any | for simulator |
 | Android SDK | 34+ | emulator API 34+ |
@@ -88,6 +89,18 @@ coconut_wallet/
 ---
 
 ## 3. Build Instructions
+
+### 3.0 Which `make` target do I need?
+
+`make ready` (Dart codegen: `build_runner`, `realm generate`, `slang`) **never touches the Go bridge**. None of the existing platform build targets (`aos-regtest`, `aos-mainnet`, `ios-regtest`, `ios-mainnet`, …) depend on the `gomobile-*` targets either — rebuilding the native bridge is a fully manual, separate step that you must remember to run yourself whenever `go/*.go` changes (including the first time you set up this repo, since `bitboxbridge.aar`/`bitboxbridge.xcframework` are build artifacts, not committed sources of truth for the current API surface).
+
+| Platform | Required before building | What it does |
+|---|---|---|
+| Android | `make gomobile-android` | Regenerates `android/app/libs/bitboxbridge.aar` + `-sources.jar` from `go/*.go`. Needs Go/gomobile + the `bitbox02-api-go` fork cloned (see Prerequisites). Gradle/Kotlin will fail to compile `Bitbox02MethodHandler.kt` against a stale AAR with confusing "too many arguments" / "unresolved reference" errors if you skip this after changing `go/bridge.go`. |
+| iOS | `make gomobile-ios` **+ manual Xcode wiring** | Generates `ios/Runner/bitboxbridge.xcframework`. As of this writing, **nothing in `ios/Podfile` or `Runner.xcodeproj` references this framework** — it must be added manually to the Runner target's "Frameworks, Libraries, and Embedded Content" (embed & sign) before `Bitbox02MethodHandler.swift`'s `Bitboxbridge*` calls will link. This matches §5.5 status: iOS BitBox02 support is not yet built/wired up. |
+| Both | `make gomobile-bind` | Convenience target that runs both of the above gomobile steps (still excludes the manual Xcode step for iOS). |
+
+Recommended order for a clean machine: clone the `bitbox02-api-go` fork → `gomobile init` → `make gomobile-android` (and/or `gomobile-ios`) → `make ready` → platform build/run command.
 
 ### 3.1 Go Bridge → AAR
 

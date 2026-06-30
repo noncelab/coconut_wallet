@@ -274,6 +274,7 @@ wallet_add_scanner_screen:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
+  bitbox02: "BitBox02"
   self: "Enter Wallet Info"
   self_description: "Add a watch-only wallet using information from another app."
   select: "Select"
@@ -383,6 +384,30 @@ wallet_list:
     hide_fiat_price: "Hide Fiat Balance"
     hide_fiat_price_description: "This screen will not display the fiat balance."
     visible: "Visible"
+
+wallet_connect_screen:
+  guide_bitbox02:
+    btn:
+      connect_via_usb: "Connect via USB"
+      add_wallet: "Add Wallet"
+      retry: "Retry"
+    init: 
+      step1: "Connect your BitBox02 Nova via USB."
+      step2: "Unlock your device."
+      step3: "When the wallet to import appears on your device, tap the '$btn' button below."
+    connecting:
+      title: "Connecting Device"
+      step1: "Unlock your device."
+      step2: "When the pairing code appears on your device, tap the check mark (✓) to confirm."
+    paired:
+      title: "BitBox02 is paired and ready."
+      master_fingerprint: "Master Fingerprint"
+      derivation_path: "Derivation Path"
+      xpub: "Extended Public Key"
+    error:
+      title: "Connection Failed"
+      description: "BitBox02 Nova was not found. Reconnect the device and try again."
+
 
 # lib/screens/review
 negative_feedback_screen:

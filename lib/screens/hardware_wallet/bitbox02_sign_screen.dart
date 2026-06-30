@@ -78,21 +78,22 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: Consumer<BitBox02SignViewModel>(
-                  builder: (context, vm, _) => Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Mock', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-                      CoconutLayout.spacing_100w,
-                      SizedBox(
-                        height: 24,
-                        child: Switch(
-                          value: vm.mockMode,
-                          onChanged: (v) => vm.setMockMode(v),
-                          activeColor: CoconutColors.primary,
-                        ),
+                  builder:
+                      (context, vm, _) => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Mock', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                          CoconutLayout.spacing_100w,
+                          SizedBox(
+                            height: 24,
+                            child: Switch(
+                              value: vm.mockMode,
+                              onChanged: (v) => vm.setMockMode(v),
+                              activeColor: CoconutColors.primary,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
                 ),
               ),
           ],
@@ -106,22 +107,12 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
                       child: Column(
-                        children: [
-                          _buildTransactionSummaryCard(),
-                          CoconutLayout.spacing_600h,
-                          _buildStatusSection(vm),
-                        ],
+                        children: [_buildTransactionSummaryCard(), CoconutLayout.spacing_600h, _buildStatusSection(vm)],
                       ),
                     ),
                   ),
-                  if (vm.step != BitBox02SignStep.signing &&
-                      vm.step != BitBox02SignStep.done)
-                    Positioned(
-                      left: 24,
-                      right: 24,
-                      bottom: 16,
-                      child: _buildBottomButton(vm),
-                    ),
+                  if (vm.step != BitBox02SignStep.signing && vm.step != BitBox02SignStep.done)
+                    Positioned(left: 24, right: 24, bottom: 16, child: _buildBottomButton(vm)),
                 ],
               ),
             );
@@ -154,8 +145,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
           if (summary != null) ...[
             _buildDetailRow('Send', '${UnitUtil.convertSatoshiToBitcoin(summary.amount)} BTC'),
             CoconutLayout.spacing_300h,
-            if (summary.address.isNotEmpty)
-              _buildDetailRow('To', _truncateAddress(summary.address)),
+            if (summary.address.isNotEmpty) _buildDetailRow('To', _truncateAddress(summary.address)),
             CoconutLayout.spacing_300h,
             _buildDetailRow('Fee', '${UnitUtil.convertSatoshiToBitcoin(summary.fee)} BTC'),
             CoconutLayout.spacing_300h,
@@ -165,11 +155,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
             _buildDetailRow('Fee', '-- BTC'),
           ],
           CoconutLayout.spacing_500h,
-          Container(
-            width: double.infinity,
-            height: 1,
-            color: CoconutColors.gray700,
-          ),
+          Container(width: double.infinity, height: 1, color: CoconutColors.gray700),
           CoconutLayout.spacing_300h,
           Row(
             children: [
@@ -190,18 +176,13 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
     try {
       final psbt = Psbt.parse(widget.psbtBase64);
 
-      int amount = (psbt.outputs)
-          .where((o) => o.isChange != true)
-          .fold<int>(0, (sum, o) => sum + (o.outAmount ?? 0));
+      int amount = (psbt.outputs).where((o) => o.isChange != true).fold<int>(0, (sum, o) => sum + (o.outAmount ?? 0));
       int fee = psbt.fee;
 
       String address = '';
       final outputs = psbt.outputs;
       if (outputs.isNotEmpty) {
-        final firstNonChange = outputs.firstWhere(
-          (o) => o.isChange != true,
-          orElse: () => outputs.first,
-        );
+        final firstNonChange = outputs.firstWhere((o) => o.isChange != true, orElse: () => outputs.first);
         address = firstNonChange.outAddress;
       }
 
@@ -220,13 +201,8 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 80,
-          child: Text(label, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-        ),
-        Expanded(
-          child: Text(value, style: CoconutTypography.body3_12_Bold, textAlign: TextAlign.right),
-        ),
+        SizedBox(width: 80, child: Text(label, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400))),
+        Expanded(child: Text(value, style: CoconutTypography.body3_12_Bold, textAlign: TextAlign.right)),
       ],
     );
   }
@@ -263,9 +239,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
         statusIcon = Icons.lock_outline;
         statusColor = CoconutColors.orange;
         statusText = 'Locked';
-        subText = vm.fingerprint != null
-            ? 'Device found: ${vm.fingerprint}'
-            : 'Device found — PIN required';
+        subText = vm.fingerprint != null ? 'Device found: ${vm.fingerprint}' : 'Device found — PIN required';
       case BitBox02DeviceStatus.ready:
         statusIcon = Icons.check_circle_outline;
         statusColor = CoconutColors.green;
@@ -320,7 +294,8 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
       child: Column(
         children: [
           const SizedBox(
-            width: 40, height: 40,
+            width: 40,
+            height: 40,
             child: CircularProgressIndicator(color: CoconutColors.primary, strokeWidth: 3),
           ),
           CoconutLayout.spacing_400h,
@@ -360,9 +335,17 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
           CoconutLayout.spacing_300h,
           Text('Signed', style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.green)),
           CoconutLayout.spacing_200h,
-          const Text('Transaction has been signed by BitBox02.', style: CoconutTypography.body2_14, textAlign: TextAlign.center),
+          const Text(
+            'Transaction has been signed by BitBox02.',
+            style: CoconutTypography.body2_14,
+            textAlign: TextAlign.center,
+          ),
           CoconutLayout.spacing_200h,
-          Text('Ready to broadcast.', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400), textAlign: TextAlign.center),
+          Text(
+            'Ready to broadcast.',
+            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -390,8 +373,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
 
   Widget _buildBottomButton(BitBox02SignViewModel vm) {
     final bool isError = vm.step == BitBox02SignStep.error;
-    final bool isBusy = vm.step == BitBox02SignStep.connecting ||
-        vm.step == BitBox02SignStep.signing;
+    final bool isBusy = vm.step == BitBox02SignStep.connecting || vm.step == BitBox02SignStep.signing;
 
     String buttonText;
     VoidCallback onPressed;
@@ -403,9 +385,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
         vm.signTransaction();
       };
     } else if (isBusy) {
-      buttonText = vm.statusMessage.length > 30
-          ? '${vm.statusMessage.substring(0, 30)}...'
-          : vm.statusMessage;
+      buttonText = vm.statusMessage.length > 30 ? '${vm.statusMessage.substring(0, 30)}...' : vm.statusMessage;
       onPressed = () {}; // no-op while busy
     } else {
       buttonText = 'Sign with BitBox02';
@@ -417,37 +397,27 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
       children: [
         ShrinkAnimationButton(
           onPressed: onPressed,
-          defaultColor: isBusy
-              ? CoconutColors.gray700
-              : CoconutColors.primary,
-          pressedColor: isBusy
-              ? CoconutColors.gray700
-              : _darker(CoconutColors.primary),
+          defaultColor: isBusy ? CoconutColors.gray700 : CoconutColors.primary,
+          pressedColor: isBusy ? CoconutColors.gray700 : _darker(CoconutColors.primary),
           child: Container(
             height: 50,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
             child: Center(
-              child: isBusy
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(
-                          width: 16, height: 16,
-                          child: CircularProgressIndicator(color: CoconutColors.gray400, strokeWidth: 2),
-                        ),
-                        CoconutLayout.spacing_200w,
-                        Text(
-                          buttonText,
-                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400),
-                        ),
-                      ],
-                    )
-                  : Text(
-                      buttonText,
-                      style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
-                    ),
+              child:
+                  isBusy
+                      ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(color: CoconutColors.gray400, strokeWidth: 2),
+                          ),
+                          CoconutLayout.spacing_200w,
+                          Text(buttonText, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400)),
+                        ],
+                      )
+                      : Text(buttonText, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black)),
             ),
           ),
         ),
@@ -462,15 +432,8 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> {
             pressedColor: CoconutColors.gray800,
             child: Container(
               height: 40,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  'Cancel',
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                ),
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+              child: Center(child: Text('Cancel', style: CoconutTypography.body3_12.setColor(CoconutColors.white))),
             ),
           ),
         ],
