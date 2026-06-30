@@ -42,7 +42,7 @@ String normalizeNumTextForNumParsing(String text) {
 
 /// 앱 설정 언어 기반 천 단위/소수점 구분자를 사용하여 BigInt 포맷팅
 /// 예: value=BigInt.parse('10000000001'), decimalPlaces=8 → '1,000.00000001' (trailing zeros 제거)
-String formatBigIntWithAppLanguageLocale(BigInt value, int decimalPlaces, String appLanguageCode) {
+String formatBigIntWithAppLanguageLocale(BigInt value, int decimalPlaces) {
   final decimalSep = NumberFormatConfig.instance.decimalSeparator;
   final groupSep = NumberFormatConfig.instance.groupingSeparator;
 
