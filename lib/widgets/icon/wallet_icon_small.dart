@@ -44,7 +44,7 @@ class WalletIconSmall extends StatelessWidget {
       ),
       child: Container(
         margin: EdgeInsets.all(gradientColors != null ? 1.5 : 0),
-        decoration: BoxDecoration(color: context.coconutColors.iconBackground, borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
         child: Stack(
           children: [
             Container(
