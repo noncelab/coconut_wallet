@@ -191,6 +191,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                           ],
                         ),
                       ),
+                      if (_isTooltipVisible) _buildTooltip(context),
                     ],
                   ),
                 ),
@@ -412,7 +413,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     );
   }
 
-  Widget buildTooltip(BuildContext context) {
+  Widget _buildTooltip(BuildContext context) {
     return Positioned(
       top: _tooltipIconPosition.dy + _tooltipIconSize.height - MediaQuery.of(context).padding.top - 10,
       right: 18,
