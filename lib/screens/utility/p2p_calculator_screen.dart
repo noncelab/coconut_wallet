@@ -15,7 +15,7 @@ import 'package:coconut_wallet/providers/view_model/utility/p2p_calculator_view_
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
-import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';

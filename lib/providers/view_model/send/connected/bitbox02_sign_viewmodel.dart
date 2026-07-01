@@ -13,9 +13,11 @@ import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart'
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_types.dart';
 import 'package:flutter/foundation.dart';
 
-enum BitBox02SignStep { idle, connecting, signing, done, error }
+enum BitBox02SignStep { idle, signing, done, error }
 
 enum BitBox02DeviceStatus { disconnected, locked, ready }
+
+enum BitBox02SignSubStatus { waiting, connectingDevice, checkPairing, preparingData, confirmOnDevice }
 
 class BitBox02SignViewModel extends ChangeNotifier {
   static const Duration _connectTimeout = Duration(seconds: 30);
@@ -23,9 +25,8 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
   BitBox02SignStep _step = BitBox02SignStep.idle;
   BitBox02DeviceStatus _deviceStatus = BitBox02DeviceStatus.disconnected;
-  String _statusMessage = 'Ready to sign';
+  BitBox02SignSubStatus _subStatus = BitBox02SignSubStatus.waiting;
   String? _errorMessage;
-  bool _mockMode = false;
   BitBox02Device? _device;
   String _signedPsbt = '';
   bool _isSigning = false;
@@ -36,29 +37,17 @@ class BitBox02SignViewModel extends ChangeNotifier {
   final String walletName;
   final String transport;
 
-  BitBox02SignViewModel({
-    required this.psbtBase64,
-    required this.walletName,
-    this.transport = 'usb',
-    bool mockMode = false,
-  }) {
-    _mockMode = mockMode;
+  BitBox02SignViewModel({required this.psbtBase64, required this.walletName, this.transport = 'usb'}) {
     _probeDeviceStatus();
   }
 
   BitBox02SignStep get step => _step;
   BitBox02DeviceStatus get deviceStatus => _deviceStatus;
-  String get statusMessage => _statusMessage;
+  BitBox02SignSubStatus get subStatus => _subStatus;
   String? get errorMessage => _errorMessage;
-  bool get mockMode => _mockMode;
   String get signedPsbt => _signedPsbt;
   bool get isSigning => _isSigning;
   String? get fingerprint => _fingerprint;
-
-  void setMockMode(bool value) {
-    _mockMode = value;
-    notifyListeners();
-  }
 
   void _probeDeviceStatus() {
     if (BitBox02Device.lastConnected != null) {
@@ -80,14 +69,8 @@ class BitBox02SignViewModel extends ChangeNotifier {
     _errorMessage = null;
     _cancelTimeout();
 
-    if (_mockMode) {
-      await _signMock();
-      _isSigning = false;
-      return;
-    }
-
     try {
-      _setState(BitBox02SignStep.connecting, status: 'Connecting to BitBox02...');
+      _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.connectingDevice);
       _startTimeout(_connectTimeout, 'Connection timed out');
 
       await BitBox02Device.setLoggerEnabled(true);
@@ -97,7 +80,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
       } else {
         _device = await BitBox02Device.connect(transport: BitBox02Transport.resolve(preferred: transport));
 
-        _setState(BitBox02SignStep.connecting, status: 'Check your BitBox02 — enter PIN to unlock if prompted');
+        _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.checkPairing);
 
         await _device!.init();
         await _device!.channelHashVerify(ok: true);
@@ -121,7 +104,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
           debugPrint('BB02_SIGN rootFingerprint FAILED: $e');
         }
 
-        _setState(BitBox02SignStep.connecting, status: 'Device ready — preparing transaction data...');
+        _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.preparingData);
         _deviceStatus = BitBox02DeviceStatus.ready;
       }
 
@@ -191,7 +174,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
       }
 
       _cancelTimeout();
-      _setState(BitBox02SignStep.signing, status: 'Check amount, address, and fee on the device screen');
+      _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.confirmOnDevice);
       _startTimeout(_signTimeout, 'Signing timed out');
 
       final psbtBytes = base64Decode(psbtBase64);
@@ -205,45 +188,31 @@ class BitBox02SignViewModel extends ChangeNotifier {
       _signedPsbt = base64Encode(signed);
 
       _cancelTimeout();
-      _setState(BitBox02SignStep.done, status: 'Transaction signed');
+      _setState(BitBox02SignStep.done);
     } on BitBox02ConnectException catch (e) {
       _cancelTimeout();
       _errorMessage = e.message;
-      _setState(BitBox02SignStep.error, status: 'Connection failed');
+      _setState(BitBox02SignStep.error);
     } on BitBox02SignException catch (e) {
       _cancelTimeout();
       _errorMessage = e.message;
-      _setState(BitBox02SignStep.error, status: 'Signing failed');
+      _setState(BitBox02SignStep.error);
     } on BitBox02InitException catch (e) {
       _cancelTimeout();
       _errorMessage = e.message;
-      _setState(BitBox02SignStep.error, status: 'Initialization failed');
+      _setState(BitBox02SignStep.error);
     } catch (e) {
       _cancelTimeout();
       _errorMessage = e.toString();
-      _setState(BitBox02SignStep.error, status: 'Unexpected error');
+      _setState(BitBox02SignStep.error);
     }
 
     _isSigning = false;
   }
 
-  Future<void> _signMock() async {
-    _setState(BitBox02SignStep.connecting, status: 'Connecting to BitBox02 (mock)...');
-    await Future.delayed(const Duration(seconds: 1));
-
-    _setState(
-      BitBox02SignStep.signing,
-      status: 'Please verify the transaction on your BitBox02...\nCheck amount, address, and fee on the device screen.',
-    );
-    await Future.delayed(const Duration(seconds: 3));
-
-    _signedPsbt = base64Encode(utf8.encode('signed_transaction_mock'));
-    _setState(BitBox02SignStep.done, status: 'Transaction signed (mock)');
-  }
-
-  void _setState(BitBox02SignStep step, {required String status}) {
+  void _setState(BitBox02SignStep step, {BitBox02SignSubStatus subStatus = BitBox02SignSubStatus.waiting}) {
     _step = step;
-    _statusMessage = status;
+    _subStatus = subStatus;
     notifyListeners();
   }
 
@@ -253,7 +222,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
       if (!_isSigning) return;
       debugPrint('BB02_SIGN timeout: $message');
       _errorMessage = message;
-      _setState(BitBox02SignStep.error, status: message);
+      _setState(BitBox02SignStep.error);
       _isSigning = false;
     });
   }
@@ -266,7 +235,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
   void reset() {
     _cancelTimeout();
     _step = BitBox02SignStep.idle;
-    _statusMessage = 'Ready to sign';
+    _subStatus = BitBox02SignSubStatus.waiting;
     _errorMessage = null;
     _isSigning = false;
     _signedPsbt = '';

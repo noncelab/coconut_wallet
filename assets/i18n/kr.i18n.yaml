@@ -366,10 +366,11 @@ wallet_connect_screen:
       connect_via_usb: "USB로 연결하기"
       add_wallet: "지갑 추가"
       retry: "재시도"
+      start_signing: "서명 시작"
     init: 
       step1: "BitBox02 Nova를 USB로 연결해주세요."
       step2: "기기 화면에 'Tap this side'가 보이면 기기의 양면을 탭해주세요."
-      step3: "기기 화면에 가져올 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
+      step3: "기기 화면에 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
     connecting: 
       title: "기기 연결 중"
       step1: "기기의 잠금을 해제해 주세요."
@@ -507,6 +508,39 @@ send_confirm_screen:
   output_detail_title: "출력 상세 보기"
   flow_input_title: "입력 #$index"
   flow_output_title: "출력 #$index"
+bitbox02_sign_screen:
+  tx_card:
+    title: "거래 요약"
+    send: "보낼 금액"
+    to: "받는 주소"
+    fee: "수수료"
+    total_cost: "총 비용"
+  device_status:
+    title: "기기 상태"
+  idle:
+    waiting: "서명 대기 중"
+    not_connected: "연결 안 됨"
+    tap_sign_to_connect: "서명 버튼을 눌러 연결하세요"
+    locked: "잠금 상태"
+    device_found_pin: "기기 발견 — PIN 입력 필요"
+    device_found: "기기 발견: $fingerprint"
+    ready: "준비 완료"
+  status:
+    connecting_device: "BitBox02 연결 중..."
+    check_pairing: "기기 화면에서 Pairing code를 확인해 주세요"
+    preparing_data: "서명 데이터를 준비하고 있어요"
+    confirm_on_device: "기기 화면에서 금액, 주소, 수수료를 확인해 주세요"
+  done:
+    title: "서명 완료"
+    description: "BitBox02가 트랜잭션에 서명했습니다."
+    ready_to_broadcast: "전송할 준비가 되었어요."
+  error_title: "서명 실패"
+  btn:
+    sign: "BitBox02로 서명하기"
+  state_label:
+    idle: "서명 대기"
+    signing: "서명 중"
+
 signed_psbt_scanner_screen:
   title: "서명 트랜잭션 읽기"
   bbqr_mode_switching: "BBQR 모드로 전환 중이에요.\n잠시만 기다려주세요."

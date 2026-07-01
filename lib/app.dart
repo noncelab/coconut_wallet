@@ -26,8 +26,8 @@ import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
-import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
-import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
+import 'package:coconut_wallet/screens/send/send_screen.dart';
+import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/settings/block_explorer_screen.dart';
 import 'package:coconut_wallet/screens/settings/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
@@ -42,11 +42,11 @@ import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
 import 'package:coconut_wallet/screens/send/send_confirm_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_info_screen.dart';
 import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
-import 'package:coconut_wallet/screens/send/signed_psbt_scanner_screen.dart';
+import 'package:coconut_wallet/screens/send/air-gapped/signed_psbt_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_search_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_split_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
-import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart';
+import 'package:coconut_wallet/screens/send/air-gapped/unsigned_transaction_qr_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
@@ -54,7 +54,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_scree
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/air-gapped/airgap_wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
-import 'package:coconut_wallet/screens/hardware_wallet/bitbox02_sign_screen.dart';
+import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
@@ -348,7 +348,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/bitbox02-connect':
                     (context) => buildScreenWithArgs(
                       context,
-                      (args) => BitBox02ConnectScreen(importSource: args['walletImportSource']),
+                      (args) => BitBox02ConnectScreen(
+                        importSource: args['walletImportSource'],
+                        psbtBase64: args['psbtBase64'],
+                        walletName: args['walletName'],
+                      ),
                     ),
                 '/bitbox02-sign':
                     (context) => buildScreenWithArgs(

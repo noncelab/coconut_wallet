@@ -6,10 +6,13 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
@@ -87,16 +90,28 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                       if (context.mounted) {
                         context.loaderOverlay.hide();
                         if (viewModel.walletImportSource == WalletImportSource.bitbox02) {
-                          Navigator.pushNamed(
-                            context,
-                            '/bitbox02-sign',
-                            arguments: {
-                              'psbtBase64': viewModel.txWaitingForSign,
-                              'walletName': viewModel.walletName,
-                              'isFromSendFlow': true,
-                              'transport': BitBox02Transport.resolveForSign(),
-                            },
-                          );
+                          if (BitBox02Device.lastConnected != null) {
+                            Navigator.pushNamed(
+                              context,
+                              '/bitbox02-sign',
+                              arguments: {
+                                'psbtBase64': viewModel.txWaitingForSign,
+                                'walletName': viewModel.walletName,
+                                'isFromSendFlow': true,
+                                'transport': BitBox02Transport.resolveForSign(),
+                              },
+                            );
+                          } else {
+                            CommonBottomSheets.showCustomHeightBottomSheet(
+                              context: context,
+                              child: BitBox02ConnectScreen(
+                                importSource: WalletImportSource.bitbox02,
+                                psbtBase64: viewModel.txWaitingForSign,
+                                walletName: viewModel.walletName,
+                              ),
+                              heightRatio: 0.9,
+                            );
+                          }
                         } else {
                           Navigator.pushNamed(
                             context,

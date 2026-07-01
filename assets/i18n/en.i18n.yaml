@@ -391,7 +391,8 @@ wallet_connect_screen:
       connect_via_usb: "Connect via USB"
       add_wallet: "Add Wallet"
       retry: "Retry"
-    init: 
+      start_signing: "Start Signing"
+    init:
       step1: "Connect your BitBox02 Nova via USB."
       step2: "Unlock your device."
       step3: "When the wallet to import appears on your device, tap the '$btn' button below."
@@ -510,6 +511,39 @@ send_confirm_screen:
   output_detail_title: "Output Details"
   flow_input_title: "Input #$index"
   flow_output_title: "Output #$index"
+bitbox02_sign_screen:
+  tx_card:
+    title: "Transaction"
+    send: "Send"
+    to: "To"
+    fee: "Fee"
+    total_cost: "Total Cost"
+  device_status:
+    title: "Device Status"
+  idle:
+    waiting: "Waiting to sign"
+    not_connected: "Not connected"
+    tap_sign_to_connect: "Tap Sign to connect"
+    locked: "Locked"
+    device_found_pin: "Device found — PIN required"
+    device_found: "Device found: $fingerprint"
+    ready: "Ready"
+  status:
+    connecting_device: "Connecting to BitBox02..."
+    check_pairing: "Check the Pairing code on your device"
+    preparing_data: "Preparing transaction data..."
+    confirm_on_device: "Confirm amount, address, and fee on your device"
+  done:
+    title: "Signed"
+    description: "Transaction has been signed by BitBox02."
+    ready_to_broadcast: "Ready to broadcast."
+  error_title: "Signing Failed"
+  btn:
+    sign: "Sign with BitBox02"
+  state_label:
+    idle: "Waiting to Sign"
+    signing: "Signing"
+
 signed_psbt_scanner_screen:
   title: "Scan Signed Tx"
   bbqr_mode_switching: "Switching to BBQR mode.\nPlease wait a moment."

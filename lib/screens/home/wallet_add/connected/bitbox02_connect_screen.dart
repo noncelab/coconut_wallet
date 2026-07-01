@@ -3,9 +3,10 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/view_model/hardware_wallet/bitbox02_connect_viewmodel.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_add/connected/bitbox02_connect_viewmodel.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +17,12 @@ import 'package:shimmer/shimmer.dart';
 class BitBox02ConnectScreen extends StatefulWidget {
   final WalletImportSource importSource;
 
-  const BitBox02ConnectScreen({super.key, required this.importSource});
+  /// When non-null, the screen is in "sign flow" mode:
+  /// after pairing, the button navigates to /bitbox02-sign instead of adding the wallet.
+  final String? psbtBase64;
+  final String? walletName;
+
+  const BitBox02ConnectScreen({super.key, required this.importSource, this.psbtBase64, this.walletName});
 
   @override
   State<BitBox02ConnectScreen> createState() => _BitBox02ConnectScreenState();
@@ -98,29 +104,6 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
           context: context,
           isBottom: true,
           backgroundColor: CoconutColors.black,
-          // actionButtonList: [
-          //   Padding(
-          //     padding: const EdgeInsets.only(right: 8),
-          //     child: Consumer<BitBox02ConnectViewModel>(
-          //       builder:
-          //           (context, vm, _) => Row(
-          //             mainAxisSize: MainAxisSize.min,
-          //             children: [
-          //               Text('Mock', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-          //               CoconutLayout.spacing_100w,
-          //               SizedBox(
-          //                 height: 24,
-          //                 child: Switch(
-          //                   value: vm.mockMode,
-          //                   onChanged: (v) => vm.setMockMode(v),
-          //                   activeColor: CoconutColors.primary,
-          //                 ),
-          //               ),
-          //             ],
-          //           ),
-          //     ),
-          //   ),
-          // ],
         ),
         body: Consumer<BitBox02ConnectViewModel>(
           builder: (context, vm, _) {
@@ -389,11 +372,28 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     final bool isRetry = vm.step == BitBox02ConnectStep.error;
     final bool hasXpub = vm.xpub.isNotEmpty;
     final bool isPaired = vm.step == BitBox02ConnectStep.paired;
+    final bool isSignFlow = widget.psbtBase64 != null;
 
     String buttonText;
     VoidCallback onPressed;
 
-    if (isPaired && hasXpub) {
+    if (isSignFlow && isPaired) {
+      buttonText = t.wallet_connect_screen.guide_bitbox02.btn.start_signing;
+      onPressed = () {
+        // Dismiss the bottom sheet first, then push the sign screen on the main navigator.
+        Navigator.pop(context);
+        Navigator.pushNamed(
+          context,
+          '/bitbox02-sign',
+          arguments: {
+            'psbtBase64': widget.psbtBase64,
+            'walletName': widget.walletName ?? '',
+            'isFromSendFlow': true,
+            'transport': BitBox02Transport.resolveForSign(),
+          },
+        );
+      };
+    } else if (!isSignFlow && isPaired && hasXpub) {
       buttonText = t.wallet_connect_screen.guide_bitbox02.btn.add_wallet;
       onPressed = () => _onAddWalletPressed(vm);
     } else if (isRetry) {

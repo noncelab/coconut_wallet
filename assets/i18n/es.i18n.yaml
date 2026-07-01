@@ -367,6 +367,7 @@ wallet_connect_screen:
       connect_via_usb: "Conectar por USB"
       add_wallet: "Añadir billetera"
       retry: "Reintentar"
+      start_signing: "Empezar a firmar"
     init:
       step1: "Conecta tu BitBox02 Nova mediante USB."
       step2: "Desbloquea tu dispositivo."
@@ -510,6 +511,39 @@ send_confirm_screen:
   output_detail_title: "Detalles de salida"
   flow_input_title: "Entrada #$index"
   flow_output_title: "Salida #$index"
+bitbox02_sign_screen:
+  tx_card:
+    title: "Transacción"
+    send: "Enviar"
+    to: "Para"
+    fee: "Comisión"
+    total_cost: "Coste total"
+  device_status:
+    title: "Estado del dispositivo"
+  idle:
+    waiting: "Esperando para firmar"
+    not_connected: "Sin conexión"
+    tap_sign_to_connect: "Pulsa Firmar para conectar"
+    locked: "Bloqueado"
+    device_found_pin: "Dispositivo encontrado — PIN requerido"
+    device_found: "Dispositivo encontrado: $fingerprint"
+    ready: "Listo"
+  status:
+    connecting_device: "Conectando con BitBox02..."
+    check_pairing: "Comprueba el código de emparejamiento en tu dispositivo"
+    preparing_data: "Preparando datos de la transacción..."
+    confirm_on_device: "Confirma el importe, la dirección y la comisión en el dispositivo"
+  done:
+    title: "Firmado"
+    description: "La transacción ha sido firmada por BitBox02."
+    ready_to_broadcast: "Listo para transmitir."
+  error_title: "Error al firmar"
+  btn:
+    sign: "Firmar con BitBox02"
+  state_label:
+    idle: "Esperando para firmar"
+    signing: "Firmando"
+
 signed_psbt_scanner_screen:
   title: "Escanear transacción firmada"
   bbqr_mode_switching: "Cambiando a modo BBQR.\nPor favor, espere un momento."
