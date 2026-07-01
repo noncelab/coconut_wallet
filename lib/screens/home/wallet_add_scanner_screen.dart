@@ -294,7 +294,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.passport:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
