@@ -881,7 +881,7 @@ split_utxo_screen:
 
 # lib/widgets/card
 wallet_list_add_guide_card:
-  add_watch_only: "Versuchen Sie, eine Watch-Only-Wallet hinzuzufügen!"
+  add_watch_only: "Füge eine Watch-only-Wallet hinzu!"
 wallet_list_glossary_shortcut_card:
   any_word_you_dont_know: "Kennen Sie irgendwelche Begriffe nicht?"
   top_right: "Oben rechts "
