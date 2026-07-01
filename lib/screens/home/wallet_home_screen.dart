@@ -7,6 +7,7 @@ import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
@@ -31,6 +32,7 @@ import 'package:coconut_wallet/widgets/animated_dots_text.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
+import 'package:coconut_wallet/widgets/icon/transaction_status_gradient_mask.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/long_pressed_menu_widget.dart';
 import 'package:flutter/cupertino.dart';
@@ -1209,6 +1211,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       final String iconSource = TransactionUtil.getStatusIconAsset(status);
       final datetimeTextColor = context.coconutColors.tertiaryText;
       final walletNameTextColor = context.coconutColors.secondaryText;
+      final iconColor = switch (status) {
+        TransactionStatus.sent || TransactionStatus.sending => context.coconutColors.sendingColor,
+        TransactionStatus.received || TransactionStatus.receiving => context.coconutColors.receivingColor,
+        _ => context.coconutColors.iconDefault,
+      };
 
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1222,7 +1229,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SvgPicture.asset(iconSource, fit: BoxFit.fill, width: 28, height: 28),
+                  TransactionStatusGradientMask(
+                    enabled: status == TransactionStatus.self || status == TransactionStatus.selfsending,
+                    child: SvgPicture.asset(
+                      iconSource,
+                      fit: BoxFit.fill,
+                      width: 28,
+                      height: 28,
+                      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                    ),
+                  ),
                   CoconutLayout.spacing_300w,
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1602,13 +1618,27 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     final bool isReceived = type == TransactionType.received;
     final String formattedAmount = currentUnit.formatAmountWithSign(amount, isPositive: isReceived);
+    final iconColor = switch (type) {
+      TransactionType.sent => context.coconutColors.sendingColor,
+      TransactionType.received => context.coconutColors.receivingColor,
+      _ => context.coconutColors.iconDefault,
+    };
 
     return Column(
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SvgPicture.asset(getIconPath(), fit: BoxFit.fill, width: 24, height: 24),
+            TransactionStatusGradientMask(
+              enabled: type == TransactionType.self,
+              child: SvgPicture.asset(
+                getIconPath(),
+                fit: BoxFit.fill,
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+              ),
+            ),
             CoconutLayout.spacing_200w,
             Text(
               t.wallet_home_screen.count(count: count.toString()),

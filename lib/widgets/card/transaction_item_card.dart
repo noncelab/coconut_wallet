@@ -8,6 +8,7 @@ import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/icon/transaction_status_gradient_mask.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -27,22 +28,6 @@ class TransactionItemCard extends StatelessWidget {
     required this.onPressed,
   }) {
     status = TransactionUtil.getStatus(tx);
-  }
-
-  LinearGradient _buildSelfStatusGradient(BuildContext context) {
-    return LinearGradient(
-      colors: [context.coconutColors.sendingColor, context.coconutColors.receivingColor],
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-    );
-  }
-
-  Widget _buildGradientMasked({required BuildContext context, required Widget child}) {
-    return ShaderMask(
-      blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => _buildSelfStatusGradient(context).createShader(bounds),
-      child: child,
-    );
   }
 
   Widget _buildStatus(BuildContext context) {
@@ -81,8 +66,7 @@ class TransactionItemCard extends StatelessWidget {
   Widget _buildIconStatus(BuildContext context, String assetPath, Color? iconColor, String statusString) {
     final icon =
         iconColor == null
-            ? _buildGradientMasked(
-              context: context,
+            ? TransactionStatusGradientMask(
               child: SvgPicture.asset(
                 assetPath,
                 width: 24,
