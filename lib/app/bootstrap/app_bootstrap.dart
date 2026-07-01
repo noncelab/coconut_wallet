@@ -45,7 +45,12 @@ class AppBootstrap {
     Logger.log('👉 Firebase 사용 여부: ${CoconutWalletApp.kIsFirebaseAnalyticsUsed}');
 
     if (CoconutWalletApp.kIsFirebaseAnalyticsUsed) {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      try {
+        await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      } catch (e) {
+        Logger.error('Firebase initialization failed: $e');
+        CoconutWalletApp.kIsFirebaseAnalyticsUsed = false;
+      }
     }
   }
 
