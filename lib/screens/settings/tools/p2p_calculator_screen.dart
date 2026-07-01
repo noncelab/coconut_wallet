@@ -1074,6 +1074,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         return t.utility.p2p_calculator.binance_price;
       case FiatCode.JPY:
         return t.utility.p2p_calculator.bitflyer_price;
+      case FiatCode.EUR:
+        return t.utility.p2p_calculator.binance_price;
     }
   }
 
@@ -1324,7 +1326,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 ),
               ),
             ),
-            if (premiumController != null && premiumFocusNode != null)
+            if (premiumController != null && premiumFocusNode != null && _viewModel.isNetworkOn)
               Positioned(
                 bottom: 20,
                 left: 0,
@@ -1352,6 +1354,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       onTap:
           isInteractive
               ? () {
+                if (!_viewModel.isNetworkOn) return;
                 premiumFocusNode.requestFocus();
                 final text = premiumController.text;
                 if (text.isNotEmpty) {
@@ -1481,25 +1484,30 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      enablePremiumInput
-                          ? Row(
-                            children: [
-                              _buildChangeInputAssetButton(),
-                              CoconutLayout.spacing_100w,
+                      if (enablePremiumInput)
+                        Row(
+                          children: [
+                            _buildChangeInputAssetButton(),
+                            CoconutLayout.spacing_100w,
+                            if (_viewModel.isNetworkOn)
                               _buildPremiumInputWidget(
                                 premiumFocusNode: _premiumFocusNode,
                                 premiumController: _premiumController,
                               ),
-                            ],
-                          )
-                          : IgnorePointer(
-                            ignoring: true,
-                            child: _buildPremiumInputWidget(
-                              premiumFocusNode: _premiumFocusNode,
-                              premiumController: _premiumController,
-                              isInteractive: false,
-                            ),
-                          ),
+                          ],
+                        )
+                      else
+                        IgnorePointer(
+                          ignoring: true,
+                          child:
+                              _viewModel.isNetworkOn
+                                  ? _buildPremiumInputWidget(
+                                    premiumFocusNode: _premiumFocusNode,
+                                    premiumController: _premiumController,
+                                    isInteractive: false,
+                                  )
+                                  : const SizedBox.shrink(),
+                        ),
                     ],
                   ),
                   Padding(
@@ -1645,6 +1653,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             {'label': '+${5000.toThousandsSeparatedString()}', 'value': '5000'},
             {'label': '+${10000.toThousandsSeparatedString()}', 'value': '10000'},
             {'label': '+${50000.toThousandsSeparatedString()}', 'value': '50000'},
+          ];
+        case FiatCode.EUR:
+          return [
+            {'label': '+10', 'value': '10'},
+            {'label': '+50', 'value': '50'},
+            {'label': '+100', 'value': '100'},
+            {'label': '+500', 'value': '500'},
           ];
       }
     } else {

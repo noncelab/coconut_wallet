@@ -16,6 +16,7 @@ class PriceProvider extends ChangeNotifier {
   WebSocketService? _webSocketServiceKrw;
   WebSocketService? _webSocketServiceUsd;
   WebSocketService? _webSocketServiceJpy;
+  WebSocketService? _webSocketServiceEur;
 
   late final VoidCallback _connectivityListener;
   late final VoidCallback _preferenceListener;
@@ -25,10 +26,12 @@ class PriceProvider extends ChangeNotifier {
   int? _bitcoinPriceKrw;
   int? _bitcoinPriceUsd;
   int? _bitcoinPriceJpy;
+  int? _bitcoinPriceEur;
 
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int? get bitcoinPriceUsd => _bitcoinPriceUsd;
   int? get bitcoinPriceJpy => _bitcoinPriceJpy;
+  int? get bitcoinPriceEur => _bitcoinPriceEur;
 
   /// 특정 통화의 BTC 가격 조회
   int? getBitcoinPriceForFiat(FiatCode fiatCode) {
@@ -39,6 +42,8 @@ class PriceProvider extends ChangeNotifier {
         return _bitcoinPriceUsd;
       case FiatCode.JPY:
         return _bitcoinPriceJpy;
+      case FiatCode.EUR:
+        return _bitcoinPriceEur;
     }
   }
 
@@ -69,7 +74,10 @@ class PriceProvider extends ChangeNotifier {
 
     if (isNetworkOn == true) {
       final hasAnyService =
-          _webSocketServiceKrw != null || _webSocketServiceUsd != null || _webSocketServiceJpy != null;
+          _webSocketServiceKrw != null ||
+          _webSocketServiceUsd != null ||
+          _webSocketServiceJpy != null ||
+          _webSocketServiceEur != null;
       if (_isPendingConnection || !hasAnyService) {
         Logger.log('PriceProvider: Network connected');
         _isPendingConnection = false;
@@ -105,7 +113,10 @@ class PriceProvider extends ChangeNotifier {
     }
 
     // 이미 모든 WebSocket이 연결되어 있으면 스킵
-    if (_webSocketServiceKrw != null && _webSocketServiceUsd != null && _webSocketServiceJpy != null) {
+    if (_webSocketServiceKrw != null &&
+        _webSocketServiceUsd != null &&
+        _webSocketServiceJpy != null &&
+        _webSocketServiceEur != null) {
       Logger.log('PriceProvider: 모든 WebSocket이 이미 연결되어 있습니다.');
       return;
     }
@@ -144,6 +155,16 @@ class PriceProvider extends ChangeNotifier {
         Logger.log('[JPY WebSocket] Bitflyer 연결 완료');
       }
 
+      // EUR 웹소켓 (Binance)
+      if (_webSocketServiceEur == null) {
+        _webSocketServiceEur = WebSocketServiceFactory.create(FiatCode.EUR);
+        _webSocketServiceEur?.tickerStream.listen(
+          (ticker) => updatePriceForFiat(FiatCode.EUR, ticker),
+          onError: (error) => Logger.error('[EUR WebSocket] 스트림 오류: $error'),
+        );
+        Logger.log('[EUR WebSocket] Binance 연결 완료');
+      }
+
       final selectedFiat = _preferenceProvider.selectedFiat;
       if (selectedFiat != _fiatCode) {
         _fiatCode = selectedFiat;
@@ -167,6 +188,9 @@ class PriceProvider extends ChangeNotifier {
         break;
       case FiatCode.JPY:
         _bitcoinPriceJpy = ticker.tradePrice;
+        break;
+      case FiatCode.EUR:
+        _bitcoinPriceEur = ticker.tradePrice;
         break;
     }
 
@@ -207,6 +231,18 @@ class PriceProvider extends ChangeNotifier {
         Logger.error('[JPY WebSocket] 정리 중 오류: $e');
       } finally {
         _webSocketServiceJpy = null;
+      }
+    }
+
+    // EUR WebSocket 정리
+    if (_webSocketServiceEur != null) {
+      try {
+        _webSocketServiceEur?.dispose();
+        Logger.log('[EUR WebSocket] 정리 완료');
+      } catch (e) {
+        Logger.error('[EUR WebSocket] 정리 중 오류: $e');
+      } finally {
+        _webSocketServiceEur = null;
       }
     }
   }
@@ -272,6 +308,8 @@ class PriceProvider extends ChangeNotifier {
         return _bitcoinPriceUsd;
       case FiatCode.JPY:
         return _bitcoinPriceJpy;
+      case FiatCode.EUR:
+        return _bitcoinPriceEur;
     }
   }
 }

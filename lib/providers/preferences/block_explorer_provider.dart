@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -9,13 +10,7 @@ import 'package:flutter/widgets.dart';
 class BlockExplorerProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
-  static const String _langKr = 'kr';
-  static const String _langJp = 'jp';
-  static const String _langEn = 'en';
-
   static const String _mempoolUrlMain = 'https://mempool.space';
-  static const String _mempoolUrlKr = 'https://mempool.space/ko';
-  static const String _mempoolUrlJp = 'https://mempool.space/ja';
 
   BlockExplorerProvider();
 
@@ -49,15 +44,7 @@ class BlockExplorerProvider extends ChangeNotifier {
     final language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
     final effectiveLanguage = language.isNotEmpty ? language : getSystemLanguageCode();
 
-    switch (effectiveLanguage) {
-      case _langKr:
-        return _mempoolUrlKr;
-      case _langJp:
-        return _mempoolUrlJp;
-      case _langEn:
-      default:
-        return _mempoolUrlMain;
-    }
+    return '$_mempoolUrlMain/${AppLanguage.fromCode(effectiveLanguage).code}';
   }
 
   Future<void> setUseDefaultExplorer(bool useDefault) async {

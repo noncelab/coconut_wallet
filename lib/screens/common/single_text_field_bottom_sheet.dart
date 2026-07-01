@@ -54,8 +54,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
   final List<TextInputFormatter>? textInputFormatters;
 
   /// 완료 버튼 활성 조건. null이면 `입력값 != originalText`.
-  final bool Function(String currentText, String originalText)?
-  completeEnabledWhen;
+  final bool Function(String currentText, String originalText)? completeEnabledWhen;
 
   /// true면 초기 문자열이 비어 있지 않을 때만 포커스
   final bool focusOnlyWhenOriginalNotEmpty;
@@ -80,11 +79,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
   final Object? Function(String currentText)? resultBuilder;
 
   /// 커스텀 child를 그대로 감싸 시트 띄우기(필요 시).
-  static Future<T?> showBottomSheet<T>({
-    required BuildContext context,
-    required String title,
-    required Widget child,
-  }) {
+  static Future<T?> showBottomSheet<T>({required BuildContext context, required String title, required Widget child}) {
     return CommonBottomSheets.showBottomSheet<T>(
       context: context,
       title: title,
@@ -213,12 +208,10 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
   }
 
   @override
-  State<SingleTextFieldBottomSheet> createState() =>
-      _SingleTextFieldBottomSheetState();
+  State<SingleTextFieldBottomSheet> createState() => _SingleTextFieldBottomSheetState();
 }
 
-class _SingleTextFieldBottomSheetState
-    extends State<SingleTextFieldBottomSheet> {
+class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
@@ -233,10 +226,7 @@ class _SingleTextFieldBottomSheetState
   }
 
   List<TextInputFormatter> _buildFormatters() {
-    return [
-      if (widget.formatInput != null)
-        _CallbackTextInputFormatter(widget.formatInput!),
-    ];
+    return [if (widget.formatInput != null) _CallbackTextInputFormatter(widget.formatInput!)];
   }
 
   void _clearField() {
@@ -253,9 +243,7 @@ class _SingleTextFieldBottomSheetState
     _controller.text = _updateText;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _controller.selection = TextSelection.fromPosition(
-        TextPosition(offset: _controller.text.length),
-      );
+      _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
       if (widget.focusOnlyWhenOriginalNotEmpty) {
         if (_controller.text.trim().isNotEmpty) {
           _focusNode.requestFocus();
@@ -295,9 +283,7 @@ class _SingleTextFieldBottomSheetState
       icon: SvgPicture.asset(
         'assets/svg/text-field-clear.svg',
         colorFilter: ColorFilter.mode(
-          _controller.text.isNotEmpty
-              ? colors.primaryText
-              : colors.inputPlaceholder,
+          _controller.text.isNotEmpty ? colors.primaryText : colors.inputPlaceholder,
           BlendMode.srcIn,
         ),
       ),
@@ -307,20 +293,13 @@ class _SingleTextFieldBottomSheetState
     if (widget.suffix == null) {
       composedSuffix = clearIcon;
     } else {
-      composedSuffix = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [widget.suffix!, clearIcon],
-      );
+      composedSuffix = Row(mainAxisSize: MainAxisSize.min, children: [widget.suffix!, clearIcon]);
     }
 
     final field = CoconutTextField(
       controller: _controller,
       focusNode: _focusNode,
-      padding: EdgeInsets.only(
-        left: widget.prefix != null ? 8 : 16,
-        top: 16,
-        bottom: 16,
-      ),
+      padding: EdgeInsets.only(left: widget.prefix != null ? 8 : 16, top: 16, bottom: 16),
       onChanged: (_) => setState(() => _updateText = _controller.text),
       textInputType: widget.keyboardType,
       textInputFormatter: formatters,
@@ -360,16 +339,11 @@ class _CallbackTextInputFormatter extends TextInputFormatter {
   final String Function(String) format;
 
   @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     final formatted = format(newValue.text);
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(
-        offset: formatted.length.clamp(0, formatted.length),
-      ),
+      selection: TextSelection.collapsed(offset: formatted.length.clamp(0, formatted.length)),
     );
   }
 }

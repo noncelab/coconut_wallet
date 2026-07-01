@@ -1,7 +1,6 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/selection_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -36,6 +35,12 @@ class FiatBottomSheet extends StatelessWidget {
               value: FiatCode.JPY,
               onTap: () => _onFiatSelected(context, FiatCode.JPY),
             ),
+            SelectionItem<FiatCode>(
+              title: FiatCode.EUR.code,
+              subtitle: t.fiat_bottom_sheet.eur_price,
+              value: FiatCode.EUR,
+              onTap: () => _onFiatSelected(context, FiatCode.EUR),
+            ),
           ],
         );
       },
@@ -43,7 +48,6 @@ class FiatBottomSheet extends StatelessWidget {
   }
 
   Future<void> _onFiatSelected(BuildContext context, FiatCode fiatCode) async {
-    vibrateExtraLight();
     await context.read<PreferenceProvider>().changeFiat(fiatCode);
 
     if (context.mounted) {

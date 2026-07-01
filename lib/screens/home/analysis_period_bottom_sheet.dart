@@ -46,9 +46,6 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
     final firstDate = isStart ? DateTime(2009, 1, 3) : (_startDate ?? DateTime(2009, 1, 3));
     final today = DateTime(now.year, now.month, now.day);
     final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
-    final isKorean = currentLanguage == 'kr';
-    final isEnglish = currentLanguage == 'en';
-    debugPrint('DEBUG11 - _showDateSpinner: $isStart');
     await showCupertinoModalPopup(
       context: context,
       builder: (context) {
@@ -56,12 +53,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
         final DateTime maxDate = isStart ? _endDate ?? today : today; // 종료는 무조건 오늘까지
         return Localizations.override(
           context: context,
-          locale:
-              isKorean
-                  ? const Locale('ko', 'KR')
-                  : isEnglish
-                  ? const Locale('en', 'US')
-                  : const Locale('ja', 'JP'),
+          locale: Locale(currentLanguage),
           delegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,

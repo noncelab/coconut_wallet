@@ -784,7 +784,13 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
                     ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(node.title, style: titleStyle),
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(node.title, style: titleStyle, softWrap: false, overflow: TextOverflow.visible),
+                          ),
+                        ),
                         const SizedBox(width: 4),
                         SvgPicture.asset(
                           'assets/svg/arrow-right.svg',
@@ -794,12 +800,18 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
                         ),
                       ],
                     )
-                    : Text(
-                      node.title,
-                      style:
-                          isEllipsis
-                              ? CoconutTypography.body1_16.copyWith(color: context.coconutColors.secondaryText)
-                              : titleStyle,
+                    : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        node.title,
+                        style:
+                            isEllipsis
+                                ? CoconutTypography.body1_16.copyWith(color: context.coconutColors.secondaryText)
+                                : titleStyle,
+                        softWrap: false,
+                        overflow: TextOverflow.visible,
+                      ),
                     ),
           ),
           if (!isEllipsis) ...[
