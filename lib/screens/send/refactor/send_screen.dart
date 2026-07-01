@@ -1473,8 +1473,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                                       _viewModel.setIsUtxoSelectionAuto(true);
                                                       _clearFocus();
                                                     },
-                                                    defaultColor: MyColors.grey,
-                                                    pressedColor: MyColors.grey.withValues(alpha: 0.8),
+                                                    defaultColor: context.coconutColors.surfaceCard,
+                                                    pressedColor: context.coconutColors.surfaceCard.withValues(
+                                                      alpha: 0.8,
+                                                    ),
                                                     borderRadius: 4.0,
                                                     child: Container(
                                                       padding: const EdgeInsets.symmetric(
