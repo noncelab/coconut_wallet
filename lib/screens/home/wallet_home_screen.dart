@@ -433,12 +433,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       final now = DateTime.now();
       if (_lastPressedAt == null || now.difference(_lastPressedAt!) > const Duration(seconds: 3)) {
         _lastPressedAt = now;
-        CoconutToast.showBottomToast(
-          context: context,
-          text: t.toast.back_exit,
-          seconds: 1,
-          backgroundColor: context.coconutColors.popupBackground,
-        );
+        CoconutToast.showBottomToast(context: context, text: t.toast.back_exit, seconds: 1);
       } else {
         SystemNavigator.pop();
       }
