@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/app_icon_util.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:provider/provider.dart';
 
@@ -117,17 +118,17 @@ void main() {
 
 void _setupPluralResolvers() {
   LocaleSettings.setPluralResolverSync(
-    language: 'kr',
+    language: AppLanguage.ko.code,
     cardinalResolver: (n, {zero, one, two, few, many, other}) => other ?? '',
   );
 
   LocaleSettings.setPluralResolverSync(
-    language: 'jp',
+    language: AppLanguage.ja.code,
     cardinalResolver: (n, {zero, one, two, few, many, other}) => other ?? '',
   );
 
   LocaleSettings.setPluralResolverSync(
-    language: 'en',
+    language: AppLanguage.en.code,
     cardinalResolver: (n, {zero, one, two, few, many, other}) {
       if (n == 0 && zero != null) return zero;
       if (n == 1 && one != null) return one;
@@ -136,7 +137,15 @@ void _setupPluralResolvers() {
   );
 
   LocaleSettings.setPluralResolverSync(
-    language: 'es',
+    language: AppLanguage.es.code,
+    cardinalResolver: (n, {zero, one, two, few, many, other}) {
+      if (n == 1 && one != null) return one;
+      return other ?? '';
+    },
+  );
+
+  LocaleSettings.setPluralResolverSync(
+    language: AppLanguage.de.code,
     cardinalResolver: (n, {zero, one, two, few, many, other}) {
       if (n == 1 && one != null) return one;
       return other ?? '';

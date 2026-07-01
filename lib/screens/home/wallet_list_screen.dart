@@ -237,7 +237,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       child: Column(
         children: [
           _buildEditModeHeaderLine([
-            if (_viewModel.isEnglishOrSpanish) ...[
+            if (_viewModel.hasEnglishWordOrder) ...[
               TextSpan(text: '${t.select} '),
               WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
               const TextSpan(text: ' '),
@@ -249,7 +249,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           ]),
           CoconutLayout.spacing_100h,
           _buildEditModeHeaderLine([
-            if (_viewModel.isEnglishOrSpanish) ...[
+            if (_viewModel.hasEnglishWordOrder) ...[
               TextSpan(text: '${t.tap} '),
               WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
               const TextSpan(text: ' '),

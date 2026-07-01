@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
@@ -1301,12 +1302,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     amountTextColor = CoconutColors.white;
                   }
 
-                  final isEnglishOrSpanish =
-                      context.read<PreferenceProvider>().isEnglish || context.read<PreferenceProvider>().isSpanish;
+                  final hasEnglishWordOrder =
+                      AppLanguage.fromCode(context.read<PreferenceProvider>().language).hasEnglishWordOrder;
                   final maxButtonBaseText = t.send_screen.input_maximum_amount;
                   final maxButtonText =
                       _viewModel.isMaxMode
-                          ? (!isEnglishOrSpanish ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
+                          ? (!hasEnglishWordOrder ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
                           : maxButtonBaseText;
 
                   return Column(

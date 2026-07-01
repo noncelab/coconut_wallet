@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -39,10 +40,10 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
       termDetails = json.decode(detailsContent);
       termList = termDetails.keys.toList();
       termList.sort();
-      if (_language == 'kr') {
-        groupedTermList = groupByInitialsKr(termList);
-      } else if (_language == 'jp') {
-        groupedTermList = groupByInitialsJp(termList);
+      if (_language == AppLanguage.ko.code) {
+        groupedTermList = groupByInitialsKo(termList);
+      } else if (_language == AppLanguage.ja.code) {
+        groupedTermList = groupByInitialsJa(termList);
       }
     });
   }
@@ -92,7 +93,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
     }
   }
 
-  Map<String, List<String>> groupByInitialsKr(List<String> terms) {
+  Map<String, List<String>> groupByInitialsKo(List<String> terms) {
     Map<String, List<String>> groupedTerms = {};
 
     for (String term in terms) {
@@ -143,7 +144,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
     return 'その他';
   }
 
-  Map<String, List<String>> groupByInitialsJp(List<String> terms) {
+  Map<String, List<String>> groupByInitialsJa(List<String> terms) {
     final Map<String, List<String>> grouped = {};
     for (final term in terms) {
       final initial = getInitialJp(term);
