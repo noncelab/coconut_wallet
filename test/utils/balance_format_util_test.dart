@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -113,9 +114,9 @@ void main() {
     });
 
     test('satoshiToReadableBitcoin - locale에 맞는 구분자 사용', () {
-      NumberFormatConfig.instance.update('en');
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(123456000), '1.2345 6000');
-      NumberFormatConfig.instance.update('es');
+      NumberFormatConfig.instance.update(AppLanguage.es.code);
 
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(123456000), '1,2345 6000');
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(100000000000), '1.000');
@@ -127,7 +128,7 @@ void main() {
   });
 
   group('BalanceFormatUtil.satoshiToReadableBitcoin', () {
-    setUpAll(() => NumberFormatConfig.instance.update('en'));
+    setUpAll(() => NumberFormatConfig.instance.update(AppLanguage.en.code));
     test('음수, btc 단위에서 정수 부분이 0', () {
       String result = BalanceFormatUtil.formatSatoshiToReadableBitcoin(-25800142);
       expect(result, '-0.2580 0142');
@@ -238,12 +239,12 @@ void main() {
 
   group('BalanceFormatUtil.parseAmountTextToSats', () {
     test('BTC 입력값을 앱 언어 별 소수/천단위 구분자 기준으로 파싱한다', () {
-      NumberFormatConfig.instance.update('en');
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
       expect(
         BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '1,234.56'),
         123456000000,
       );
-      NumberFormatConfig.instance.update('es');
+      NumberFormatConfig.instance.update(AppLanguage.es.code);
       expect(
         BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '1.234,56'),
         123456000000,
@@ -255,12 +256,12 @@ void main() {
 
   group('BalanceFormatUtil.formatSatsToBip21InputText', () {
     test('BTC 초기 표시값에 앱 언어 별 소수/천단위 구분자를 사용한다', () {
-      NumberFormatConfig.instance.update('en');
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
       expect(
         BalanceFormatUtil.formatSatsToBip21InputText(currentUnit: BitcoinUnit.btc, initialAmountSats: 123456000),
         '1.23456',
       );
-      NumberFormatConfig.instance.update('es');
+      NumberFormatConfig.instance.update(AppLanguage.es.code);
       expect(
         BalanceFormatUtil.formatSatsToBip21InputText(currentUnit: BitcoinUnit.btc, initialAmountSats: 123456000),
         '1,23456',

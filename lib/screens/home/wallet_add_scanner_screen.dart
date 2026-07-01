@@ -6,6 +6,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -88,9 +89,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final isEnglishOrSpanish =
-        Provider.of<PreferenceProvider>(context, listen: false).isEnglish ||
-        Provider.of<PreferenceProvider>(context, listen: false).isSpanish;
+    final hasEnglishWordOrder =
+        AppLanguage.fromCode(Provider.of<PreferenceProvider>(context, listen: false).language).hasEnglishWordOrder;
 
     switch (widget.importSource) {
       case WalletImportSource.coconutVault:
@@ -99,7 +99,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.seedSigner:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
@@ -158,7 +158,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.keystone:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               // 키스톤 3 프로 외 에센셜, 이전 프로 기기 호환되지 않음에 따른 임시 조치
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
@@ -191,7 +191,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.jade:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
@@ -230,7 +230,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.coldCard:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step1),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step1_em),
@@ -271,7 +271,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.krux:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),
@@ -295,7 +295,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.passport:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),

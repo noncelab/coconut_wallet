@@ -584,6 +584,7 @@ settings_screen:
     english: "English"
     japanese: "日本語"
     spanish: "Español"
+    german: "Deutsch"
   electrum_server: 
     server_address: "서버 주소"
     port: "포트"
@@ -1146,6 +1147,7 @@ fiat_bottom_sheet:
   krw_price: "업비트 기준"
   usd_price: "바이낸스 기준"
   jpy_price: "비트플라이어 기준"
+  eur_price: "바이낸스 기준"
 
 language_bottom_sheet:
   title: "언어 설정"   
@@ -1153,6 +1155,7 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+  german: "Deutsch"
 
 estimated_fee_bottom_sheet:
     title: "예상 수수료"

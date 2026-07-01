@@ -3,6 +3,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -171,6 +172,11 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                               fiatDisplayName = FiatCode.JPY.code;
                               break;
                             case 'USD':
+                              fiatDisplayName = FiatCode.USD.code;
+                              break;
+                            case 'EUR':
+                              fiatDisplayName = FiatCode.EUR.code;
+                              break;
                             default:
                               fiatDisplayName = FiatCode.USD.code;
                               break;
@@ -205,7 +211,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             onPressed: () async {
                               CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
-                                heightRatio: 0.5,
+                                heightRatio: 0.6,
                                 child: LanguageBottomSheet(),
                               );
                             },
@@ -387,16 +393,17 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
   }
 
   String _getCurrentLanguageDisplayName(String language) {
-    switch (language) {
-      case 'kr':
+    switch (AppLanguage.fromCode(language)) {
+      case AppLanguage.ko:
         return t.settings_screen.locales.korean;
-      case 'jp':
+      case AppLanguage.ja:
         return t.settings_screen.locales.japanese;
-      case 'es':
+      case AppLanguage.es:
         return t.settings_screen.locales.spanish;
-      case 'en':
-      default:
+      case AppLanguage.en:
         return t.settings_screen.locales.english;
+      case AppLanguage.de:
+        return t.settings_screen.locales.german;
     }
   }
 }
