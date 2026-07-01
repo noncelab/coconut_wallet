@@ -296,7 +296,7 @@ class CoconutColors {
       pulldownMenuPressedColor: ds.CoconutColors.gray700,
       pulldownMenuDividerColor: ds.CoconutColors.black,
       pulldownMenuTextColor: ds.CoconutColors.white,
-      shadowDefault: ds.CoconutColors.white,
+      shadowDefault: ds.CoconutColors.black,
       shadowSubtle: ds.CoconutColors.gray900,
       popupBackground: ds.CoconutColors.gray900,
       dimOverlay: ds.CoconutColors.black,
