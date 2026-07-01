@@ -266,7 +266,7 @@ class _ViewModeChip extends StatelessWidget {
     final colors = context.coconutColors;
     final bgColor = isSelected ? colors.surfaceFilterChipSelected : Colors.transparent;
     final iconColor = isSelected ? colors.textFilterChipSelected : colors.tertiaryText;
-    final borderColor = isSelected ? colors.surfaceFilterChipSelected : colors.borderStrong;
+    final borderColor = isSelected ? colors.surfaceFilterChipSelected : colors.tertiaryText;
     final borderRadius = BorderRadius.only(
       topLeft: isRightChunk ? Radius.zero : const Radius.circular(8),
       topRight: isLeftChunk ? Radius.zero : const Radius.circular(8),
@@ -320,7 +320,7 @@ class _FilterChipState extends State<_FilterChip> {
     final bgColor = widget.isSelected ? colors.surfaceFilterChipSelected : Colors.transparent;
     final textColor = widget.isSelected ? colors.textFilterChipSelected : colors.tertiaryText;
     final iconColor = widget.isSelected ? colors.textFilterChipSelected : colors.tertiaryText;
-    final border = widget.isSelected ? null : Border.all(color: colors.borderStrong, width: 1);
+    final border = widget.isSelected ? null : Border.all(color: colors.tertiaryText, width: 1);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
