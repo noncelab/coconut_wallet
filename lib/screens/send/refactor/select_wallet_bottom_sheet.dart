@@ -190,6 +190,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                 isActive: _selectedWalletId != widget.walletId,
                 backgroundColor: context.coconutColors.primaryButtonBackground,
                 foregroundColor: context.coconutColors.primaryButtonText,
+                pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
                 pressedTextColor: context.coconutColors.primaryButtonText,
                 text: t.select,
               ),

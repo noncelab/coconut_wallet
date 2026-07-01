@@ -197,6 +197,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                                   ),
                                   FixedBottomButton(
                                     backgroundColor: context.coconutColors.primaryButtonBackground,
+                                    pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
                                     textColor: context.coconutColors.primaryButtonText,
                                     isVisibleAboveKeyboard: _canEditPalette,
                                     isActive: isCompleteEnabled,

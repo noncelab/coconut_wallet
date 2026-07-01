@@ -306,6 +306,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                         return FixedBottomButton(
                           gradientKey: fixedBottomButtonKey,
                           backgroundColor: context.coconutColors.primaryButtonBackground,
+                          pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
                           textColor: context.coconutColors.primaryButtonText,
                           isActive: _shouldEnableCompleteButton(),
                           onButtonClicked: () async {

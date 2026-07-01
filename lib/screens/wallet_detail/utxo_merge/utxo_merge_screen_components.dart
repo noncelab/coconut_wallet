@@ -97,6 +97,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
                   isActive: isConfirmEnabled,
                   text: confirmText,
                   backgroundColor: context.coconutColors.primaryButtonBackground,
+                  pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
                   textColor: context.coconutColors.primaryButtonText,
                 ),
               ),

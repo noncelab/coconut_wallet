@@ -198,6 +198,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                               showGradient: true,
                                               horizontalPadding: 16,
                                               backgroundColor: context.coconutColors.primaryButtonBackground,
+                                              pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
                                               textColor: context.coconutColors.primaryButtonText,
                                               gradientColor: context.coconutColors.surfaceBottomSheet,
                                             ),

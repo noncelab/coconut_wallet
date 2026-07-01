@@ -40,6 +40,7 @@ class SingleFieldFixedBottomSheetBody extends StatelessWidget {
           Padding(padding: EdgeInsets.symmetric(horizontal: fieldHorizontalPadding), child: textField),
           FixedBottomButton(
             backgroundColor: context.coconutColors.primaryButtonBackground,
+            pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
             textColor: context.coconutColors.primaryButtonText,
             isVisibleAboveKeyboard: false,
             isActive: isCompleteEnabled,

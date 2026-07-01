@@ -108,6 +108,7 @@ class CoconutColors {
   final Color primary;
   final Color primaryText;
   final Color primaryButtonBackground;
+  final Color primaryButtonPressed;
   final Color primaryButtonText;
   final Color secondaryText;
   final Color secondaryTextStrong;
@@ -186,6 +187,7 @@ class CoconutColors {
     required this.primary,
     required this.primaryText,
     required this.primaryButtonBackground,
+    required this.primaryButtonPressed,
     required this.primaryButtonText,
     required this.secondaryText,
     required this.secondaryTextStrong,
@@ -266,6 +268,7 @@ class CoconutColors {
       primary: ds.CoconutColors.primary,
       primaryText: ds.CoconutColors.white,
       primaryButtonBackground: ds.CoconutColors.white,
+      primaryButtonPressed: ds.CoconutColors.gray300,
       primaryButtonText: ds.CoconutColors.black,
       secondaryText: ds.CoconutColors.gray400,
       secondaryTextStrong: ds.CoconutColors.gray300,
@@ -346,8 +349,9 @@ class CoconutColors {
       inputPlaceholder: Color.fromARGB(255, 187, 179, 165),
       primary: Color.fromARGB(255, 87, 65, 232),
       primaryText: Color(0xFF181A1F),
-      primaryButtonBackground: Color(0xFFD9E8F5),
-      primaryButtonText: Color(0xFF181A1F),
+      primaryButtonBackground: Color(0xFF181A1F),
+      primaryButtonPressed: Color(0xFF303642),
+      primaryButtonText: Color(0xFFD9E8F5),
       secondaryText: Color(0xFF454B57),
       secondaryTextStrong: Color(0xFF303642),
       secondaryButtonBackground: Color(0xFFEDE3CF),
@@ -428,6 +432,7 @@ class CoconutColors {
       primary: ds.CoconutColors.green,
       primaryText: ds.CoconutColors.black,
       primaryButtonBackground: ds.CoconutColors.black,
+      primaryButtonPressed: ds.CoconutColors.gray800,
       primaryButtonText: ds.CoconutColors.white,
       secondaryText: ds.CoconutColors.gray700,
       secondaryTextStrong: ds.CoconutColors.gray800,

@@ -103,6 +103,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
                 },
                 text: t.settings_screen.block_explorer.save,
                 backgroundColor: context.coconutColors.primaryButtonBackground,
+                pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
                 textColor: context.coconutColors.primaryButtonText,
               ),
             ],

@@ -209,7 +209,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 SvgPicture.asset(
                   'assets/svg/check.svg',
                   colorFilter: ColorFilter.mode(
-                    showOnlyUnusedAddresses ? context.coconutColors.primaryText : context.coconutColors.iconSubDefault,
+                    showOnlyUnusedAddresses ? context.coconutColors.primaryText : context.coconutColors.iconDisabled,
                     BlendMode.srcIn,
                   ),
                   width: 10,

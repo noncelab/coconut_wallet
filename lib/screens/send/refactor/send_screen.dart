@@ -717,6 +717,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   !isWalletWithoutMfp(_viewModel.selectedWalletItem) && isReadyToSend && finalErrorMessage.isEmpty,
               text: t.done,
               backgroundColor: context.coconutColors.primaryButtonBackground,
+              pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
               textColor: context.coconutColors.primaryButtonText,
             ),
           ],

@@ -220,6 +220,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                     widget.onRequest.call(_walletAddress, _requestAmount);
                     FocusScope.of(context).unfocus();
                   },
+                  pressedOpacity: 0.8,
                   borderRadius: BorderRadius.circular(8.0),
                   padding: EdgeInsets.zero,
                   color:

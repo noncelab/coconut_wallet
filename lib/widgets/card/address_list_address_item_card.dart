@@ -31,6 +31,7 @@ class AddressItemCard extends StatelessWidget {
     return CupertinoButton(
       onPressed: onPressed,
       padding: EdgeInsets.zero,
+      pressedOpacity: 0.8,
       child: Container(
         decoration: BoxDecoration(borderRadius: MyBorder.defaultRadius, color: context.coconutColors.surfaceDeep),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -80,7 +81,7 @@ class AddressItemCard extends StatelessWidget {
               child: Text(
                 isUsed ? t.status_used : t.status_unused,
                 style: TextStyle(
-                  color: isUsed ? context.coconutColors.primary : MyColors.transparentWhite_70,
+                  color: isUsed ? context.coconutColors.primary : context.coconutColors.primaryButtonText,
                   fontSize: 10,
                   fontFamily: CustomFonts.text.getFontFamily,
                 ),

@@ -115,7 +115,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                     width: MediaQuery.sizeOf(context).width,
                                     child: ShrinkAnimationButton(
                                       defaultColor: context.coconutColors.primaryButtonBackground,
-                                      pressedColor: context.coconutColors.surfacePressed,
+                                      pressedColor: context.coconutColors.primaryButtonPressed,
                                       onPressed: () => Navigator.pop(context),
                                       borderRadius: CoconutStyles.radius_200,
                                       child: Padding(
@@ -138,7 +138,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                                     width: MediaQuery.sizeOf(context).width,
                                     child: ShrinkAnimationButton(
                                       defaultColor: context.coconutColors.primaryButtonBackground,
-                                      pressedColor: context.coconutColors.surfacePressed,
+                                      pressedColor: context.coconutColors.primaryButtonPressed,
                                       onPressed: () {
                                         if (onDateChanged != null) {
                                           onDateChanged(temp);

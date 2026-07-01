@@ -117,6 +117,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
         CupertinoButton(
           key: orderDropdownButtonKey,
           onPressed: onToggleOrderDropdown,
+          pressedOpacity: 0.8,
           minSize: 0,
           padding: const EdgeInsets.all(8),
           child: Row(

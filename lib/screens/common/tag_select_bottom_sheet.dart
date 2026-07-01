@@ -171,6 +171,7 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
                     ),
             onButtonClicked: _confirm,
             backgroundColor: context.coconutColors.primaryButtonBackground,
+            pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
             textColor: context.coconutColors.primaryButtonText,
           ),
         ),

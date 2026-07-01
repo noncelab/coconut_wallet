@@ -716,7 +716,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                     child: ShrinkAnimationButton(
                       onPressed: onLessThanToggle,
                       defaultColor: context.coconutColors.primaryButtonBackground,
-                      pressedColor: context.coconutColors.surfacePressed,
+                      pressedColor: context.coconutColors.primaryButtonPressed,
                       borderRadius: 8,
                       borderWidth: 0,
                       child: Container(

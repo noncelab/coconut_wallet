@@ -117,6 +117,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                         ),
                         text: t.next,
                         backgroundColor: context.coconutColors.primaryButtonBackground,
+                        pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
                         textColor: context.coconutColors.primaryButtonText,
                       ),
                     ],

@@ -129,7 +129,7 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
               isActive: _isButtonActive,
               backgroundColor: context.coconutColors.primaryButtonBackground,
               foregroundColor: context.coconutColors.primaryButtonText,
-              pressedBackgroundColor: context.coconutColors.surfacePressed,
+              pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
               pressedTextColor: context.coconutColors.primaryButtonText,
               disabledBackgroundColor: context.coconutColors.surfaceDisabled,
               disabledForegroundColor: context.coconutColors.tertiaryText,

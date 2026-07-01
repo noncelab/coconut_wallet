@@ -794,7 +794,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       child: ShrinkAnimationButton(
                         isActive: nodeConnectionStatus != NodeConnectionStatus.connecting && isDifferentFromInitial,
                         defaultColor: context.coconutColors.primaryButtonBackground,
-                        pressedColor: getDarkerColor(context.coconutColors.primaryButtonBackground),
+                        pressedColor: context.coconutColors.primaryButtonPressed,
                         disabledColor: context.coconutColors.surfaceDisabled,
                         onPressed: _onReset,
                         borderRadius: CoconutStyles.radius_200,
@@ -817,7 +817,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       child: ShrinkAnimationButton(
                         isActive: hasActualChanges && nodeConnectionStatus != NodeConnectionStatus.connecting,
                         defaultColor: context.coconutColors.primaryButtonBackground,
-                        pressedColor: getDarkerColor(context.coconutColors.primaryButtonBackground),
+                        pressedColor: context.coconutColors.primaryButtonPressed,
                         disabledColor: context.coconutColors.surfaceDisabled,
                         onPressed: () {
                           _unFocus();

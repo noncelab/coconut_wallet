@@ -592,6 +592,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               },
               isActive: isSplitValid && !isPreparingNextStep && finalErrorMessage.isEmpty && !showSkeletonResultBox,
               backgroundColor: context.coconutColors.primaryButtonBackground,
+              pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
               textColor: context.coconutColors.primaryButtonText,
             ),
           ),
