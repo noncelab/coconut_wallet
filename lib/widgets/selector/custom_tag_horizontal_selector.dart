@@ -22,12 +22,10 @@ class CustomTagHorizontalSelector extends StatefulWidget {
   });
 
   @override
-  State<CustomTagHorizontalSelector> createState() =>
-      _CustomTagHorizontalSelectorState();
+  State<CustomTagHorizontalSelector> createState() => _CustomTagHorizontalSelectorState();
 }
 
-class _CustomTagHorizontalSelectorState
-    extends State<CustomTagHorizontalSelector> {
+class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelector> {
   late final List<String> _tags;
 
   @override
@@ -70,11 +68,7 @@ class _CustomTagHorizontalSelectorState
                 onTap: () {
                   widget.onSelectedTag.call(name);
                 },
-                child: _tagSelectorChip(
-                  displayName,
-                  widget.selectedName == name,
-                  isFixedTag,
-                ),
+                child: _tagSelectorChip(displayName, widget.selectedName == name, isFixedTag),
               ),
               if (index == _tags.length) CoconutLayout.spacing_400w,
             ],
@@ -86,21 +80,14 @@ class _CustomTagHorizontalSelectorState
 
   Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag) {
     final colors = context.coconutColors;
-    final bgColor =
-        isSelected
-            ? colors.surfaceFilterChipSelected
-            : colors.surfaceFilterChip;
-    final textColor =
-        isSelected ? colors.textFilterChipSelected : colors.textFilterChip;
+    final bgColor = isSelected ? colors.surfaceFilterChipSelected : colors.surfaceFilterChip;
+    final textColor = isSelected ? colors.textFilterChipSelected : colors.textFilterChip;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       margin: const EdgeInsets.only(right: 4),
       height: 32,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(16)),
       child: FittedBox(
         child: Text(
           name,

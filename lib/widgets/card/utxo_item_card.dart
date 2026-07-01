@@ -151,7 +151,7 @@ class UtxoItemCard extends StatelessWidget {
                               return IntrinsicWidth(
                                 child: CoconutChip(
                                   minWidth: 40,
-                                  color: colors.surfaceCard,
+                                  color: colors.surfaceFilterChip,
                                   borderColor: colors.surfaceCard,
                                   label: t.change,
                                   labelSize: 12,
