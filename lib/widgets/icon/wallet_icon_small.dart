@@ -21,7 +21,6 @@ class WalletIconSmall extends StatelessWidget {
     this.iconIndex = 0,
     this.gradientColors,
   });
-
   @override
   Widget build(BuildContext context) {
     var isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
@@ -44,7 +43,7 @@ class WalletIconSmall extends StatelessWidget {
       ),
       child: Container(
         margin: EdgeInsets.all(gradientColors != null ? 1.5 : 0),
-        decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(color: context.coconutColors.iconBackground, borderRadius: BorderRadius.circular(8)),
         child: Stack(
           children: [
             Container(
@@ -53,7 +52,7 @@ class WalletIconSmall extends StatelessWidget {
               decoration: BoxDecoration(
                 color:
                     isExternalWallet
-                        ? context.coconutColors.iconBackground
+                        ? context.coconutColors.iconBackgroundSubtle
                         : CoconutColors.backgroundColorPaletteLight[colorIndex],
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -67,7 +66,7 @@ class WalletIconSmall extends StatelessWidget {
                   isExternalWallet
                       ? SvgPicture.asset(
                         walletImportSource.externalWalletIconPath,
-                        colorFilter: ColorFilter.mode(context.coconutColors.iconHighlight, BlendMode.srcIn),
+                        colorFilter: const ColorFilter.mode(CoconutColors.black, BlendMode.srcIn),
                       )
                       : SvgPicture.asset(
                         CustomIcons.getPathByIndex(iconIndex),

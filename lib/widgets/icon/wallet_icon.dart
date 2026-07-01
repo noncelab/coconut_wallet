@@ -20,7 +20,10 @@ class WalletIcon extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: isExternalWallet ? context.coconutColors.tertiaryText : ColorUtil.getColor(colorIndex).backgroundColor,
+        color:
+            isExternalWallet
+                ? context.coconutColors.iconBackgroundSubtle
+                : ColorUtil.getColor(colorIndex).backgroundColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child:
