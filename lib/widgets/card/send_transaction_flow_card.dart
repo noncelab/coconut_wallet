@@ -806,7 +806,9 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
                       child: Text(
                         node.title,
                         style:
-                            isEllipsis ? CoconutTypography.body1_16.copyWith(color: context.coconutColors.secondaryText) : titleStyle,
+                            isEllipsis
+                                ? CoconutTypography.body1_16.copyWith(color: context.coconutColors.secondaryText)
+                                : titleStyle,
                         softWrap: false,
                         overflow: TextOverflow.visible,
                       ),

@@ -316,18 +316,8 @@ class CoconutTypography {
 
   factory CoconutTypography.dark() {
     return const CoconutTypography(
-      title: TextStyle(
-        fontFamily: 'Pretendard',
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: Color(0xffffffff),
-      ),
-      body: TextStyle(
-        fontFamily: 'Pretendard',
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: Color(0xffffffff),
-      ),
+      title: TextStyle(fontFamily: 'Pretendard', fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xffffffff)),
+      body: TextStyle(fontFamily: 'Pretendard', fontSize: 16, fontWeight: FontWeight.w400, color: Color(0xffffffff)),
       bodyBold: TextStyle(
         fontFamily: 'Pretendard',
         fontSize: 14,
@@ -346,12 +336,7 @@ class CoconutTypography {
         fontWeight: FontWeight.w400,
         color: ds.CoconutColors.gray400,
       ),
-      action: TextStyle(
-        fontFamily: 'Pretendard',
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: Color(0xffffffff),
-      ),
+      action: TextStyle(fontFamily: 'Pretendard', fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xffffffff)),
     );
   }
 }

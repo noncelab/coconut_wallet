@@ -30,15 +30,12 @@ class _StartScreenState extends State<StartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDefaultTheme =
-        CoconutThemeController.currentVariant == CoconutThemeVariant.dark;
+    final isDefaultTheme = CoconutThemeController.currentVariant == CoconutThemeVariant.dark;
 
     return ColoredBox(
       color:
           isDefaultTheme
-              ? (NetworkType.currentNetworkType.isTestnet
-                  ? splashBackgroundColorRegtest
-                  : splashBackgroundColorMainnet)
+              ? (NetworkType.currentNetworkType.isTestnet ? splashBackgroundColorRegtest : splashBackgroundColorMainnet)
               : context.coconutColors.background,
       child: Center(
         child: Image.asset(

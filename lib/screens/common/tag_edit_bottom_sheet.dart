@@ -109,7 +109,7 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
                       padding: const EdgeInsets.only(left: 16),
                       child: Text("#", style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText)),
                     ),
-                    
+
                     onChanged: _onTextChanged,
                     onClear: () {
                       setState(() {
