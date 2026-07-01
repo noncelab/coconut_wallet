@@ -11,8 +11,6 @@ class BlockExplorerProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   static const String _mempoolUrlMain = 'https://mempool.space';
-  static const String _mempoolUrlKr = 'https://mempool.space/ko';
-  static const String _mempoolUrlJp = 'https://mempool.space/ja';
 
   BlockExplorerProvider();
 
@@ -42,15 +40,7 @@ class BlockExplorerProvider extends ChangeNotifier {
     final language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
     final effectiveLanguage = language.isNotEmpty ? language : getSystemLanguageCode();
 
-    switch (AppLanguage.fromCode(effectiveLanguage)) {
-      case AppLanguage.ko:
-        return _mempoolUrlKr;
-      case AppLanguage.ja:
-        return _mempoolUrlJp;
-      case AppLanguage.en:
-      default:
-        return _mempoolUrlMain;
-    }
+    return '$_mempoolUrlMain/${AppLanguage.fromCode(effectiveLanguage).code}';
   }
 
   Future<void> setUseDefaultExplorer(bool useDefault) async {
