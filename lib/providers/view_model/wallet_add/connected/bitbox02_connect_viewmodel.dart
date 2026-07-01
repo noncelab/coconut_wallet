@@ -226,6 +226,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
       } catch (_) {}
       _device = null;
     }
+    BitBox02Device.lastConnected = null;
     _setState(BitBox02ConnectStep.idle, status: '');
   }
 
@@ -237,6 +238,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
     _errorMessage = null;
     _xpub = '';
     _fingerprint = '';
+    BitBox02Device.lastConnected = null;
     notifyListeners();
   }
 

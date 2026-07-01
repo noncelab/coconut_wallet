@@ -192,6 +192,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
     } on BitBox02ConnectException catch (e) {
       _cancelTimeout();
       _errorMessage = e.message;
+      BitBox02Device.lastConnected = null; // 연결 실패 → 기기가 분리된 것으로 간주
       _setState(BitBox02SignStep.error);
     } on BitBox02SignException catch (e) {
       _cancelTimeout();
@@ -200,10 +201,12 @@ class BitBox02SignViewModel extends ChangeNotifier {
     } on BitBox02InitException catch (e) {
       _cancelTimeout();
       _errorMessage = e.message;
+      BitBox02Device.lastConnected = null; // 초기화 실패 → 재연결 필요
       _setState(BitBox02SignStep.error);
     } catch (e) {
       _cancelTimeout();
       _errorMessage = e.toString();
+      BitBox02Device.lastConnected = null;
       _setState(BitBox02SignStep.error);
     }
 
@@ -222,6 +225,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
       if (!_isSigning) return;
       debugPrint('BB02_SIGN timeout: $message');
       _errorMessage = message;
+      BitBox02Device.lastConnected = null; // 타임아웃 → 기기가 응답하지 않음
       _setState(BitBox02SignStep.error);
       _isSigning = false;
     });
