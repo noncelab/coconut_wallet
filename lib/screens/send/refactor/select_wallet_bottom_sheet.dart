@@ -100,7 +100,6 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                       ),
                       isLastItem: index == _walletList.length - 1,
                       currentUnit: widget.currentUnit,
-                      entryPoint: '',
                       backgroundColor: CoconutColors.black,
                       rightWidget: isChecked ? SvgPicture.asset('assets/svg/check.svg') : Container(),
                       onPressed: () => setState(() => _selectedWalletId = walletId),
@@ -242,14 +241,8 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
                       ),
                       isLastItem: index == _walletList.length - 1,
                       currentUnit: widget.currentUnit,
-                      entryPoint: '',
                       backgroundColor: CoconutColors.black,
-                      rightWidget: SvgPicture.asset(
-                        'assets/svg/arrow-right.svg',
-                        width: 6,
-                        height: 10,
-                        colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
-                      ),
+                      rightWidget: Container(),
                       onPressed: () => widget.onWalletSelected(walletId),
                     );
                   }),

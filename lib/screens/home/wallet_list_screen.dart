@@ -585,7 +585,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       selector: (_, viewModel) => Tuple2(viewModel.currentUnit, viewModel.excludedFromTotalBalanceWalletIds),
       builder: (context, data, child) {
         final currentUnit = data.item1;
-        bool isExludedFromTotalBalance = data.item2.contains(walletItem.id);
+        bool isExcludedFromTotalBalance = data.item2.contains(walletItem.id);
 
         return WalletItemCard(
           key: key,
@@ -596,19 +596,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           currentUnit: currentUnit,
           backgroundColor: CoconutColors.black,
           isPrimaryWallet: isFirstItem,
-          isExcludeFromTotalBalance: isExludedFromTotalBalance,
+          isExcludeFromTotalBalance: isExcludedFromTotalBalance,
           isEditMode: isEditMode,
           isFavorite: isFavorite,
           isStarVisible: isFavorite || _viewModel.tempFavoriteWalletIds.length < kMaxStarLenght,
           onTapStar: (pair) {
             vibrateExtraLight();
-            if (isEditMode) {
-              return;
-            }
             _viewModel.toggleTempFavorite(pair.$2);
           },
           index: index,
-          entryPoint: kEntryPointWalletList,
           onLongPressed: () {
             vibrateExtraLight();
             CommonBottomSheets.showBottomSheet(

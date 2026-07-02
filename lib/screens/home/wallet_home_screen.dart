@@ -995,7 +995,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           isBalanceHidden: isBalanceHidden,
           fakeBalance: fakeBalance,
           currentUnit: currentUnit,
-          entryPoint: kEntryPointWalletHome,
           onPressed: () {
             Navigator.pushNamed(
               context,

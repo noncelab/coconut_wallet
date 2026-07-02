@@ -28,7 +28,6 @@ class WalletItemCard extends StatelessWidget {
   final bool isStarVisible;
   final ValueChanged<(bool, int)>? onTapStar;
   final int? index;
-  final String entryPoint;
   final VoidCallback? onLongPressed;
   final Widget rightWidget;
   final VoidCallback onPressed;
@@ -38,7 +37,6 @@ class WalletItemCard extends StatelessWidget {
     required this.walletItem,
     required this.animatedBalanceData,
     required this.currentUnit,
-    required this.entryPoint,
     required this.isLastItem,
     this.isBalanceHidden = false,
     this.fakeBalance,
