@@ -4,7 +4,6 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
@@ -102,14 +101,20 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                   CoconutLayout.spacing_200h,
                   Row(
                     children: [
-                      Text(dateString[0], style: CoconutTypography.body3_12_Number),
+                      Text(
+                        dateString[0],
+                        style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                      ),
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
                         color: context.coconutColors.secondaryText,
                         width: 1,
                         height: 10,
                       ),
-                      Text(dateString[1], style: CoconutTypography.body3_12_Number),
+                      Text(
+                        dateString[1],
+                        style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                      ),
                     ],
                   ),
                   Visibility(

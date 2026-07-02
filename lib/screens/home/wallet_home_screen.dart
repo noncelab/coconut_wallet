@@ -202,7 +202,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             canPop: false,
             onPopInvokedWithResult: onPopInvoked,
             child: Scaffold(
-              backgroundColor: context.coconutColors.background,
+              backgroundColor: context.coconutColors.homeBackground,
               extendBodyBehindAppBar: true,
               body: SafeArea(
                 top: false,
@@ -530,7 +530,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         children: [
           Container(
             padding: const EdgeInsets.only(top: 5, bottom: 20, left: 20, right: 20),
-            color: context.coconutColors.background,
+            color: context.coconutColors.homeBackground,
             child: Column(
               children: [
                 Visibility(
@@ -667,7 +667,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         ShrinkAnimationButton(
                           borderRadius: CoconutStyles.radius_100,
                           defaultColor: context.coconutColors.surfaceButton,
-                          pressedColor: context.coconutColors.surfacePressed,
+                          pressedColor: context.coconutColors.homeSurfaceCardPressed,
                           onPressed: () {
                             // if (fakeBalanceTotalAmount != null) {
                             //   _viewModel.clearFakeBlanceTotalAmount();
@@ -754,7 +754,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         },
                         borderRadius: CoconutStyles.radius_100,
                         defaultColor: context.coconutColors.surfaceButton,
-                        pressedColor: context.coconutColors.surfacePressed,
+                        pressedColor: context.coconutColors.homeSurfaceCardPressed,
                         child: Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -786,7 +786,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         },
                         borderRadius: CoconutStyles.radius_100,
                         defaultColor: context.coconutColors.surfaceButton,
-                        pressedColor: context.coconutColors.surfacePressed,
+                        pressedColor: context.coconutColors.homeSurfaceCardPressed,
                         child: Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -911,7 +911,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: ShrinkAnimationButton(
               defaultColor: context.coconutColors.surfaceButton,
-              pressedColor: context.coconutColors.surfacePressed,
+              pressedColor: context.coconutColors.homeSurfaceCardPressed,
               onPressed: () {
                 Navigator.pushNamed(context, '/wallet-list');
               },
@@ -968,7 +968,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       child: Container(
         margin: const EdgeInsets.only(top: 12, left: 20, right: 20),
         padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: context.coconutColors.homeSurfaceCard,
+        ),
         child: Column(
           children: List.generate(walletList.length, (index) {
             final wallet = walletList[index];
@@ -981,6 +984,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 walletBalanceMap[wallet.id] ?? AnimatedBalanceData(0, 0),
                 getFakeBalance(wallet.id),
                 index == walletList.length - 1,
+                context.coconutColors.homeSurfaceCard,
               );
             } else {
               return Container();
@@ -997,8 +1001,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     AnimatedBalanceData animatedBalanceData,
     int? fakeBalance,
     bool isLastItem,
+    Color backgroundColor,
   ) {
-    return _getWalletRowItem(Key(wallet.id.toString()), wallet, animatedBalanceData, fakeBalance, isLastItem);
+    return _getWalletRowItem(
+      Key(wallet.id.toString()),
+      wallet,
+      animatedBalanceData,
+      fakeBalance,
+      isLastItem,
+      backgroundColor,
+    );
   }
 
   Widget _getWalletRowItem(
@@ -1007,6 +1019,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     AnimatedBalanceData animatedBalanceData,
     int? fakeBalance,
     bool isLastItem,
+    Color backgroundColor,
   ) {
     final WalletListItemBase(
       id: id,
@@ -1040,6 +1053,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           currentUnit: currentUnit,
           iconGradientColors: signers != null ? ColorUtil.getGradientColors(signers) : taprootStyle?.iconGradientColors,
           entryPoint: kEntryPointWalletHome,
+          backgroundColor: backgroundColor,
         );
       },
     );
@@ -1093,7 +1107,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: context.coconutColors.background,
+                  color: context.coconutColors.homeBackground,
                 ),
                 child: Center(
                   child: Selector2<
@@ -1304,8 +1318,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: context.coconutColors.surfaceCard),
-          color: context.coconutColors.surfaceCard,
+          border: Border.all(color: context.coconutColors.homeSurfaceCard),
+          color: context.coconutColors.homeSurfaceCard,
         ),
         child: buildTxRow(transaction),
       );
@@ -1313,8 +1327,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     return ShrinkAnimationButton(
       borderRadius: CoconutStyles.radius_200,
-      defaultColor: context.coconutColors.surfaceCard,
-      pressedColor: context.coconutColors.surfacePressed,
+      defaultColor: context.coconutColors.homeSurfaceCard,
+      pressedColor: context.coconutColors.homeSurfaceCardPressed,
       onPressed: () {
         Navigator.pushNamed(
           context,
@@ -1341,7 +1355,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-            color: context.coconutColors.surfaceCard,
+            color: context.coconutColors.homeSurfaceCard,
           ),
           child: Text('', style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
         ),
@@ -1368,7 +1382,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     return Container(
       padding: const EdgeInsets.only(left: 20, right: 14, top: 28, bottom: 28),
       decoration: BoxDecoration(
-        color: context.coconutColors.surfaceCard,
+        color: context.coconutColors.homeSurfaceCard,
         borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
       child: Center(
@@ -1426,7 +1440,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   ),
                 ] else ...[
                   ShrinkAnimationButton(
-                    defaultColor: context.coconutColors.background,
+                    defaultColor: context.coconutColors.homeBackground,
                     onPressed: () {
                       CommonBottomSheets.showCustomHeightBottomSheet(
                         context: context,
@@ -1456,7 +1470,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      color: context.coconutColors.surfaceCard,
+                      color: context.coconutColors.homeSurfaceCard,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1486,7 +1500,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          color: context.coconutColors.surfaceCard,
+                          color: context.coconutColors.homeSurfaceCard,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1745,7 +1759,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       context: context,
       barrierDismissible: true,
       barrierLabel: "Dismiss",
-      barrierColor: context.coconutColors.background.withValues(alpha: 0.5),
+      barrierColor: context.coconutColors.homeBackground.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
         final offsetTween = Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero);
@@ -1763,7 +1777,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 child: Material(
                   elevation: 4,
                   borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                  color: context.coconutColors.background,
+                  color: context.coconutColors.homeBackground,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -1847,12 +1861,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               right: 0,
               child: Column(
                 children: [
-                  Container(height: MediaQuery.of(context).padding.top, color: context.coconutColors.background),
+                  Container(height: MediaQuery.of(context).padding.top, color: context.coconutColors.homeBackground),
                   Container(
                     width: MediaQuery.sizeOf(context).width,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     height: kToolbarHeight,
-                    color: context.coconutColors.background,
+                    color: context.coconutColors.homeBackground,
                     child: Row(
                       children: [
                         SizedBox(
@@ -2092,8 +2106,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType) {
     return ShrinkAnimationButton(
-      defaultColor: context.coconutColors.background,
-      pressedColor: context.coconutColors.surfacePressed,
+      defaultColor: context.coconutColors.homeBackground,
+      pressedColor: context.coconutColors.homeSurfaceCardPressed,
       onPressed: () => onPressed(),
       child:
           scanType == WalletImportSource.extendedPublicKey

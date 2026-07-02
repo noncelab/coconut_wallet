@@ -81,8 +81,12 @@ const List<Color> BackgroundColorPalette = [
 
 @immutable
 class CoconutColors {
+  final Color homeBackground;
+  final Color homeSurfaceCard;
+  final Color homeSurfaceCardPressed;
   final Color background;
   final Color backgroundSubtle;
+  final Color blurButtonBackground;
   final Color surface;
   final Color surfaceDeep;
   final Color surfaceCard;
@@ -120,6 +124,7 @@ class CoconutColors {
   final Color segmentedControlSelectedText;
   final Color segmentedControlUnselectedText;
   final Color tertiaryText;
+  final Color tooltipBackground;
   final Color mutedText;
   final Color textFilterChip;
   final Color textFilterChipSelected;
@@ -165,8 +170,12 @@ class CoconutColors {
   final Color switchThumbDisabled;
 
   const CoconutColors({
+    required this.homeBackground,
+    required this.homeSurfaceCard,
+    required this.homeSurfaceCardPressed,
     required this.background,
     required this.backgroundSubtle,
+    required this.blurButtonBackground,
     required this.surface,
     required this.surfaceDeep,
     required this.surfaceCard,
@@ -204,6 +213,7 @@ class CoconutColors {
     required this.segmentedControlSelectedText,
     required this.segmentedControlUnselectedText,
     required this.tertiaryText,
+    required this.tooltipBackground,
     required this.mutedText,
     required this.textFilterChip,
     required this.textFilterChipSelected,
@@ -251,8 +261,12 @@ class CoconutColors {
 
   factory CoconutColors.dark() {
     return const CoconutColors(
+      homeBackground: ds.CoconutColors.black,
+      homeSurfaceCard: ds.CoconutColors.gray850,
+      homeSurfaceCardPressed: ds.CoconutColors.gray900,
       background: ds.CoconutColors.black,
       backgroundSubtle: ds.CoconutColors.gray850,
+      blurButtonBackground: ds.CoconutColors.gray600,
       surface: ds.CoconutColors.gray850,
       surfaceDeep: ds.CoconutColors.gray700,
       surfaceCard: ds.CoconutColors.gray850,
@@ -290,13 +304,14 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray500,
       tertiaryText: ds.CoconutColors.gray600,
+      tooltipBackground: ds.CoconutColors.gray850,
       mutedText: ds.CoconutColors.gray500,
       textFilterChip: ds.CoconutColors.white,
       textFilterChipSelected: ds.CoconutColors.gray800,
       borderSubtle: ds.CoconutColors.gray700,
       borderStrong: ds.CoconutColors.white,
       iconBackground: ds.CoconutColors.gray800,
-      iconBackgroundSubtle: Color(0x1FFCFCFC),
+      iconBackgroundSubtle: ds.CoconutColors.gray600,
       iconDefault: ds.CoconutColors.white,
       iconSubDefault: ds.CoconutColors.gray400,
       iconHighlight: ds.CoconutColors.gray850,
@@ -338,8 +353,12 @@ class CoconutColors {
 
   factory CoconutColors.ccosPreview() {
     return const CoconutColors(
+      homeBackground: Color(0xFFF6F3EA),
+      homeSurfaceCard: Color(0xFFD9E8F5),
+      homeSurfaceCardPressed: Color.fromARGB(255, 202, 223, 242),
       background: Color(0xFFF6F3EA),
       backgroundSubtle: Color(0xFFE5EEF7),
+      blurButtonBackground: Color(0xFF727987),
       surface: Color(0xFFE5EEF7),
       surfaceDeep: Color.fromARGB(255, 196, 224, 250),
       surfaceCard: Color(0xFFD9E8F5),
@@ -377,13 +396,14 @@ class CoconutColors {
       segmentedControlSelectedText: Color(0xFF181A1F),
       segmentedControlUnselectedText: Color(0xFF727987),
       tertiaryText: Color(0xFF727987),
+      tooltipBackground: Color(0xFFE5EEF7),
       mutedText: Color(0xFF5E6675),
       textFilterChip: Color(0xFF181A1F),
       textFilterChipSelected: Color(0xFFF6F3EA),
       borderSubtle: Color.fromARGB(255, 69, 126, 211),
       borderStrong: Color(0xFF181A1F),
       iconBackground: Color.fromARGB(255, 213, 228, 243),
-      iconBackgroundSubtle: Color(0x1F181A1F),
+      iconBackgroundSubtle: ds.CoconutColors.gray600,
       iconDefault: Color(0xFF181A1F),
       iconSubDefault: Color(0xFF727987),
       iconHighlight: Color.fromARGB(255, 60, 73, 86),
@@ -425,15 +445,19 @@ class CoconutColors {
 
   factory CoconutColors.ccosLight() {
     return CoconutColors(
+      homeBackground: ds.CoconutColors.gray150,
+      homeSurfaceCard: ds.CoconutColors.white,
+      homeSurfaceCardPressed: ds.CoconutColors.gray200,
       background: ds.CoconutColors.white,
       backgroundSubtle: ds.CoconutColors.gray150,
+      blurButtonBackground: ds.CoconutColors.gray400,
       surface: ds.CoconutColors.white,
       surfaceDeep: ds.CoconutColors.gray100,
-      surfaceCard: ds.CoconutColors.gray100,
+      surfaceCard: ds.CoconutColors.gray200,
       surfaceButton: ds.CoconutColors.white,
       surfaceMuted: ds.CoconutColors.gray200,
       surfaceRaised: ds.CoconutColors.white,
-      surfaceDisabled: ds.CoconutColors.gray150,
+      surfaceDisabled: ds.CoconutColors.gray300,
       surfaceBottomSheet: ds.CoconutColors.white,
       surfaceSectionBreak: ds.CoconutColors.gray200,
       surfaceFilterChip: ds.CoconutColors.gray200,
@@ -464,13 +488,14 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray400,
       tertiaryText: ds.CoconutColors.gray400,
+      tooltipBackground: ds.CoconutColors.gray150,
       mutedText: ds.CoconutColors.gray500,
       textFilterChip: ds.CoconutColors.gray900,
       textFilterChipSelected: ds.CoconutColors.white,
       borderSubtle: ds.CoconutColors.borderLightGray,
       borderStrong: ds.CoconutColors.black,
       iconBackground: ds.CoconutColors.gray350,
-      iconBackgroundSubtle: const Color(0x1F000000),
+      iconBackgroundSubtle: ds.CoconutColors.gray600,
       iconDefault: ds.CoconutColors.black,
       iconSubDefault: ds.CoconutColors.gray600,
       iconHighlight: ds.CoconutColors.gray600,

@@ -53,7 +53,11 @@ class SendAmountHeader extends StatelessWidget {
             ),
           ),
         ),
-        FiatPrice(satoshiAmount: satoshiAmount, textStyle: fiatTextStyle, textColor: context.coconutColors.primaryText),
+        FiatPrice(
+          satoshiAmount: satoshiAmount,
+          textStyle: fiatTextStyle,
+          textColor: context.coconutColors.secondaryText,
+        ),
         CoconutLayout.spacing_1000h,
         Text(
           t.send_confirm_screen.total_required_amount(

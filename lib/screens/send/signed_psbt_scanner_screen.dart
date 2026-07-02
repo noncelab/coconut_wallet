@@ -51,7 +51,12 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           backgroundColor: context.coconutColors.background.withValues(alpha: 0.95),
           actionButtonList: [
             IconButton(
-              icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
+              icon: SvgPicture.asset(
+                'assets/svg/arrow-reload.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+              ),
               color: context.coconutColors.primaryText,
               onPressed: () {
                 controller?.switchCamera();

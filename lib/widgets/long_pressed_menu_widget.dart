@@ -398,7 +398,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                   height: 24,
                                   padding: const EdgeInsets.all(2),
                                   decoration: BoxDecoration(
-                                    color: context.coconutColors.iconBackgroundSubtle.withValues(alpha: 0.15),
+                                    color: context.coconutColors.tertiaryText.withValues(alpha: 0.35),
                                     shape: BoxShape.circle,
                                   ),
                                   child: SvgPicture.asset(

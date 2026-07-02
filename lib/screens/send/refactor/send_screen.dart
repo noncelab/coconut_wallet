@@ -973,7 +973,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             return Container(
               padding: const EdgeInsets.only(left: 16, right: 14, top: 12, bottom: 20),
               decoration: BoxDecoration(
-                border: Border.all(color: context.coconutColors.borderStrong, width: 1),
+                border: Border.all(color: context.coconutColors.borderSubtle, width: 1),
                 borderRadius: const BorderRadius.all(Radius.circular(12)),
               ),
               child: Column(
@@ -1162,7 +1162,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeRowLabel(String label) {
-    return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText));
+    return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong));
   }
 
   Widget _buildPageView(BuildContext context) {
@@ -1334,9 +1334,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       hasInsufficientBalanceErrorOfLastRecipient) {
                     amountTextColor = context.coconutColors.danger;
                   } else if (_viewModel.isMaxModeLastIndex(index)) {
-                    amountTextColor = context.coconutColors.tertiaryText;
-                  } else if (amountText.isEmpty) {
                     amountTextColor = context.coconutColors.secondaryText;
+                  } else if (amountText.isEmpty) {
+                    amountTextColor = context.coconutColors.tertiaryText;
                   } else {
                     amountTextColor = context.coconutColors.primaryText;
                   }
@@ -1539,7 +1539,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
                     backgroundColor: context.coconutColors.background,
-                    placeholderColor: context.coconutColors.secondaryText,
+                    placeholderColor: context.coconutColors.borderSubtle,
                     height: 52,
                     padding: const EdgeInsets.only(left: 16, right: 0),
                     onChanged: (text) {},
