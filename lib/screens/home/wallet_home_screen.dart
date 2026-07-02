@@ -1017,6 +1017,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           currentUnit: currentUnit,
           iconGradientColors: signers != null ? ColorUtil.getGradientColors(signers) : taprootStyle?.iconGradientColors,
           entryPoint: kEntryPointWalletHome,
+          onPressed: () {
+            Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id, 'entryPoint': kEntryPointWalletHome});
+          },
+          rightWidget: SvgPicture.asset(
+            'assets/svg/arrow-right.svg',
+            width: 6,
+            height: 10,
+            colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+          ),
         );
       },
     );

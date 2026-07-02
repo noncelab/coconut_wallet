@@ -1,18 +1,13 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
+import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -46,56 +41,6 @@ int _getUnspentUtxoSum(List<UtxoState> utxos) {
     }
     return accu;
   });
-}
-
-Widget _buildWalletRow({
-  required WalletListItemBase walletBase,
-  required BitcoinUnit currentUnit,
-  required int? balance,
-  required bool showCheckIcon,
-  required bool isChecked,
-}) {
-  String amountText = currentUnit.displayBitcoinAmount(balance ?? 0, withUnit: true);
-  List<MultisigSigner>? signer;
-  if (walletBase.walletType == WalletType.multiSignature) {
-    signer = (walletBase as MultisigWalletListItem).signers;
-  }
-  return Row(
-    children: [
-      Expanded(
-        child: Row(
-          children: [
-            SizedBox(
-              width: Sizes.size32,
-              height: Sizes.size32,
-              child: WalletIconSmall(
-                walletImportSource: walletBase.walletImportSource,
-                iconIndex: walletBase.iconIndex,
-                colorIndex: walletBase.colorIndex,
-                gradientColors: signer != null ? ColorUtil.getGradientColors(signer) : null,
-              ),
-            ),
-            CoconutLayout.spacing_300w,
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(amountText, style: CoconutTypography.body2_14_Number),
-                  Text(
-                    walletBase.name,
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      if (showCheckIcon && isChecked) ...{SvgPicture.asset('assets/svg/check.svg')},
-    ],
-  );
 }
 
 class SelectWalletBottomSheet extends StatefulWidget {
@@ -145,23 +90,22 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                 child: Column(
                   children: List.generate(_walletList.length, (index) {
                     int walletId = _walletList[index].id;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: Sizes.size24, left: 14, right: 22),
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.translucent,
-                        onTap: () {
-                          _selectedWalletId = walletId;
-                          setState(() {});
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
-                          child: _buildWalletItem(
-                            _walletList[index],
-                            _walletBalanceMap[walletId],
-                            _selectedWalletId == walletId,
-                          ),
-                        ),
+                    bool isChecked = _selectedWalletId == walletId;
+                    return WalletItemCard(
+                      id: walletId,
+                      name: _walletList[index].name,
+                      animatedBalanceData: AnimatedBalanceData(
+                        _walletBalanceMap[walletId] ?? 0,
+                        _walletBalanceMap[walletId] ?? 0,
                       ),
+                      iconIndex: _walletList[index].iconIndex,
+                      colorIndex: _walletList[index].colorIndex,
+                      isLastItem: index == _walletList.length - 1,
+                      currentUnit: widget.currentUnit,
+                      entryPoint: '',
+                      backgroundColor: CoconutColors.black,
+                      rightWidget: isChecked ? SvgPicture.asset('assets/svg/check.svg') : Container(),
+                      onPressed: () => setState(() => _selectedWalletId = walletId),
                     );
                   }),
                 ),
@@ -216,16 +160,6 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
       case BalanceMode.onlyUnspent:
         return _buildBalanceMapOnlyUnspent(context, _walletList);
     }
-  }
-
-  Widget _buildWalletItem(WalletListItemBase walletBase, int? balance, bool isChecked) {
-    return _buildWalletRow(
-      walletBase: walletBase,
-      currentUnit: widget.currentUnit,
-      balance: balance,
-      showCheckIcon: true,
-      isChecked: isChecked,
-    );
   }
 }
 
@@ -301,17 +235,26 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
                 child: Column(
                   children: List.generate(_walletList.length, (index) {
                     int walletId = _walletList[index].id;
-                    return ShrinkAnimationButton(
-                      defaultColor: CoconutColors.black,
-                      pressedColor: CoconutColors.gray850,
-                      borderRadius: 12,
-                      onPressed: () {
-                        widget.onWalletSelected(walletId);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: Sizes.size12, horizontal: 22),
-                        child: _buildWalletItem(_walletList[index], _walletBalanceMap[walletId]),
+                    return WalletItemCard(
+                      id: walletId,
+                      name: _walletList[index].name,
+                      animatedBalanceData: AnimatedBalanceData(
+                        _walletBalanceMap[walletId] ?? 0,
+                        _walletBalanceMap[walletId] ?? 0,
                       ),
+                      iconIndex: _walletList[index].iconIndex,
+                      colorIndex: _walletList[index].colorIndex,
+                      isLastItem: index == _walletList.length - 1,
+                      currentUnit: widget.currentUnit,
+                      entryPoint: '',
+                      backgroundColor: CoconutColors.black,
+                      rightWidget: SvgPicture.asset(
+                        'assets/svg/arrow-right.svg',
+                        width: 6,
+                        height: 10,
+                        colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+                      ),
+                      onPressed: () => widget.onWalletSelected(walletId),
                     );
                   }),
                 ),
@@ -321,16 +264,6 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildWalletItem(WalletListItemBase walletBase, int? balance) {
-    return _buildWalletRow(
-      walletBase: walletBase,
-      currentUnit: widget.currentUnit,
-      balance: balance,
-      showCheckIcon: false,
-      isChecked: false,
     );
   }
 }

@@ -33,6 +33,8 @@ class WalletItemCard extends StatelessWidget {
   final int? index;
   final String entryPoint;
   final VoidCallback? onLongPressed;
+  final Widget rightWidget;
+  final VoidCallback onPressed;
 
   const WalletItemCard({
     super.key,
@@ -58,6 +60,8 @@ class WalletItemCard extends StatelessWidget {
     this.onTapStar,
     this.index,
     this.onLongPressed,
+    required this.rightWidget,
+    required this.onPressed,
   });
 
   @override
@@ -79,9 +83,7 @@ class WalletItemCard extends StatelessWidget {
       defaultColor: backgroundColor ?? CoconutColors.gray800,
       pressedColor: pressedColor ?? CoconutColors.gray750,
       borderRadius: 12,
-      onPressed: () {
-        Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id, 'entryPoint': entryPoint});
-      },
+      onPressed: onPressed,
       onLongPress: () {
         onLongPressed?.call();
       },
@@ -227,12 +229,7 @@ class WalletItemCard extends StatelessWidget {
                   ),
                 ),
               )
-              : SvgPicture.asset(
-                'assets/svg/arrow-right.svg',
-                width: 6,
-                height: 10,
-                colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
-              ),
+              : rightWidget,
         ],
       ),
     );

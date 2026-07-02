@@ -625,6 +625,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           onTapStar: (pair) {
             // pair: (bool isFavorite, int walletId)
             vibrateExtraLight();
+            if (isEditMode) {
+              return;
+            }
             _viewModel.toggleTempFavorite(pair.$2);
           },
           index: index,
@@ -638,6 +641,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               child: WalletItemSettingBottomSheet(id: id),
             );
           },
+          onPressed: () {
+            Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id, 'entryPoint': kEntryPointWalletList});
+          },
+          rightWidget: SvgPicture.asset(
+            'assets/svg/arrow-right.svg',
+            width: 6,
+            height: 10,
+            colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+          ),
         );
       },
     );
