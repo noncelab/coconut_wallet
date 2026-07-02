@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/single_field_fixed_bottom_sheet_body.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -269,6 +270,8 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
   Widget build(BuildContext context) {
     final formatters = widget.textInputFormatters ?? _buildFormatters();
 
+    final bool isAndroid = defaultTargetPlatform == TargetPlatform.android;
+
     final clearIcon = IconButton(
       iconSize: 14,
       padding: EdgeInsets.zero,
@@ -299,6 +302,7 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
       isLengthVisible: widget.visibleTextLimit,
       maxLength: widget.maxLength ?? 30,
       maxLines: 1,
+      enableSuggestions: isAndroid, // Required for Android emoji input
       backgroundColor: widget.fieldBackgroundColor,
       errorColor: widget.errorColor,
       placeholderColor: widget.placeholderColor,
