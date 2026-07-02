@@ -39,10 +39,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
@@ -985,19 +982,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     int? fakeBalance,
     bool isLastItem,
   ) {
-    final WalletListItemBase(
-      id: id,
-      name: name,
-      iconIndex: iconIndex,
-      colorIndex: colorIndex,
-      walletImportSource: walletImportSource,
-    ) = walletItem;
-    List<MultisigSigner>? signers;
-    if (walletItem.walletType == WalletType.multiSignature) {
-      signers = (walletItem as MultisigWalletListItem).signers;
-    }
-    final taprootStyle = TaprootCardStyle.from(walletItem);
-
     return Selector2<PreferenceProvider, WalletHomeViewModel, Tuple2<BitcoinUnit, bool>>(
       selector: (_, preferenceProvider, viewModel) => Tuple2(preferenceProvider.currentUnit, viewModel.isBalanceHidden),
       builder: (context, data, child) {
@@ -1005,18 +989,25 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         final isBalanceHidden = data.item2;
         return WalletItemCard(
           key: key,
-          id: id,
-          name: name,
+          walletItem: walletItem,
           animatedBalanceData: animatedBalanceData,
-          iconIndex: iconIndex,
-          colorIndex: colorIndex,
           isLastItem: isLastItem,
           isBalanceHidden: isBalanceHidden,
           fakeBalance: fakeBalance,
-          walletImportSource: walletImportSource,
           currentUnit: currentUnit,
-          iconGradientColors: signers != null ? ColorUtil.getGradientColors(signers) : taprootStyle?.iconGradientColors,
-          entryPoint: kEntryPointWalletHome,
+          onPressed: () {
+            Navigator.pushNamed(
+              context,
+              '/wallet-detail',
+              arguments: {'id': walletItem.id, 'entryPoint': kEntryPointWalletHome},
+            );
+          },
+          rightWidget: SvgPicture.asset(
+            'assets/svg/arrow-right.svg',
+            width: 6,
+            height: 10,
+            colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+          ),
         );
       },
     );

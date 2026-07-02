@@ -25,11 +25,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
@@ -225,7 +221,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   Widget _buildEditModeHeader() {
     SvgPicture starIcon = SvgPicture.asset('assets/svg/star-small.svg', width: 16, height: 16);
     SvgPicture hamburgerIcon = SvgPicture.asset('assets/svg/hamburger.svg', width: 16, height: 16);
-    SvgPicture deleteIcon = SvgPicture.asset('assets/svg/delete.svg', width: 16, height: 16);
     return Container(
       width: MediaQuery.sizeOf(context).width,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -586,58 +581,52 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     bool isFavorite, {
     int? index,
   }) {
-    final WalletListItemBase(
-      id: id,
-      name: name,
-      iconIndex: iconIndex,
-      colorIndex: colorIndex,
-      walletImportSource: walletImportSource,
-    ) = walletItem;
-    List<MultisigSigner>? signers;
-    if (walletItem.walletType == WalletType.multiSignature) {
-      signers = (walletItem as MultisigWalletListItem).signers;
-    }
-    final taprootStyle = TaprootCardStyle.from(walletItem);
     return Selector<PreferenceProvider, Tuple2<BitcoinUnit, List<int>>>(
       selector: (_, viewModel) => Tuple2(viewModel.currentUnit, viewModel.excludedFromTotalBalanceWalletIds),
       builder: (context, data, child) {
         final currentUnit = data.item1;
-        bool isExludedFromTotalBalance = data.item2.contains(id);
+        bool isExcludedFromTotalBalance = data.item2.contains(walletItem.id);
 
         return WalletItemCard(
           key: key,
-          id: id,
-          name: name,
+          walletItem: walletItem,
           animatedBalanceData: animatedBalanceData,
-          iconIndex: iconIndex,
-          colorIndex: colorIndex,
           isLastItem: isLastItem,
           isBalanceHidden: false,
-          walletImportSource: walletImportSource,
           currentUnit: currentUnit,
           backgroundColor: CoconutColors.black,
-          iconGradientColors: signers != null ? ColorUtil.getGradientColors(signers) : taprootStyle?.iconGradientColors,
           isPrimaryWallet: isFirstItem,
-          isExcludeFromTotalBalance: isExludedFromTotalBalance,
+          isExcludeFromTotalBalance: isExcludedFromTotalBalance,
           isEditMode: isEditMode,
           isFavorite: isFavorite,
-          isStarVisible: isFavorite || _viewModel.tempFavoriteWalletIds.length < kMaxStarLenght, // 즐겨찾기 제한 만큼 설정
+          isStarVisible: isFavorite || _viewModel.tempFavoriteWalletIds.length < kMaxStarLenght,
           onTapStar: (pair) {
-            // pair: (bool isFavorite, int walletId)
             vibrateExtraLight();
             _viewModel.toggleTempFavorite(pair.$2);
           },
           index: index,
-          entryPoint: kEntryPointWalletList,
           onLongPressed: () {
             vibrateExtraLight();
             CommonBottomSheets.showBottomSheet(
               title: '',
               titlePadding: EdgeInsets.zero,
               context: context,
-              child: WalletItemSettingBottomSheet(id: id),
+              child: WalletItemSettingBottomSheet(id: walletItem.id),
             );
           },
+          onPressed: () {
+            Navigator.pushNamed(
+              context,
+              '/wallet-detail',
+              arguments: {'id': walletItem.id, 'entryPoint': kEntryPointWalletList},
+            );
+          },
+          rightWidget: SvgPicture.asset(
+            'assets/svg/arrow-right.svg',
+            width: 6,
+            height: 10,
+            colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+          ),
         );
       },
     );
