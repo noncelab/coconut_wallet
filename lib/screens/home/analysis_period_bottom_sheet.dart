@@ -242,9 +242,10 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                     MediaQuery(
                       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                       child: CoconutSegmentedControl(
-                        selectedColor: context.coconutColors.surfacePressed,
-                        segmentedControlContainerColor: context.coconutColors.surface,
-                        selectedTextColor: context.coconutColors.primaryText,
+                        selectedColor: context.coconutColors.segmentedControlSelected,
+                        segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+                        selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+                        unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
                         isSelected: _selectedPeriodIndices,
                         onPressed: (index) {
                           if (index == 3) {
@@ -319,9 +320,10 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                       child: CoconutSegmentedControl(
                         isSelected: transactionTypes.map((type) => type == _selectedAnalysisTransactionType).toList(),
-                        selectedColor: context.coconutColors.surfacePressed,
-                        segmentedControlContainerColor: context.coconutColors.surface,
-                        selectedTextColor: context.coconutColors.primaryText,
+                        selectedColor: context.coconutColors.segmentedControlSelected,
+                        segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+                        selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+                        unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
                         onPressed: (index) {
                           setState(() {
                             _selectedAnalysisTransactionType = transactionTypes[index];

@@ -57,9 +57,10 @@ class WalletSignerSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: CoconutSegmentedControl(
-                selectedColor: context.coconutColors.surfacePressed,
-                segmentedControlContainerColor: context.coconutColors.surface,
-                selectedTextColor: context.coconutColors.primaryText,
+                selectedColor: context.coconutColors.segmentedControlSelected,
+                segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+                selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+                unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
                 isSelected: [effectiveIndex == 0, effectiveIndex == 1],
                 onPressed: (index) {
                   viewModel.updateTaprootSpendType(index);

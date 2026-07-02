@@ -240,9 +240,10 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
       customTitle: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 260),
         child: CoconutSegmentedControl(
-          selectedColor: context.coconutColors.surfacePressed,
-          segmentedControlContainerColor: context.coconutColors.surface,
-          selectedTextColor: context.coconutColors.primaryText,
+          selectedColor: context.coconutColors.segmentedControlSelected,
+          segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+          selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+          unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
           isSelected: [_isByAmount, !_isByAmount],
           onPressed: (index) {
             WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -258,9 +258,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
           await scrollToTop();
           await _initializeAddressList();
         },
-        selectedColor: context.coconutColors.surfacePressed,
-        segmentedControlContainerColor: context.coconutColors.surface,
-        selectedTextColor: context.coconutColors.primaryText,
+        selectedColor: context.coconutColors.segmentedControlSelected,
+        segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+        selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+        unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
         children: [Text(t.address_list_screen.receiving), Text(t.address_list_screen.change)],
       ),
     );

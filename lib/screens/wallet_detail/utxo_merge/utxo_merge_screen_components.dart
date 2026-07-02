@@ -50,9 +50,10 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                     child: CoconutSegmentedControl(
-                      selectedColor: context.coconutColors.surfacePressed,
-                      segmentedControlContainerColor: context.coconutColors.surface,
-                      selectedTextColor: context.coconutColors.primaryText,
+                      selectedColor: context.coconutColors.segmentedControlSelected,
+                      segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+                      selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+                      unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
                       isSelected: List.generate(tabs.length, (index) => selectedTabIndex == index),
                       onPressed: onTabSelected,
                       children: tabs.map((tab) => Text(tab.label)).toList(),

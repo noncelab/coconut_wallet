@@ -115,9 +115,10 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     return Padding(
       padding: const EdgeInsets.only(top: 14, bottom: 14, left: 16, right: 16),
       child: CoconutSegmentedControl(
-        selectedColor: context.coconutColors.surfacePressed,
-        segmentedControlContainerColor: context.coconutColors.surface,
-        selectedTextColor: context.coconutColors.primaryText,
+        selectedColor: context.coconutColors.segmentedControlSelected,
+        segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+        selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+        unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
         isSelected: [_isSignedTransactionSelected ?? true, !(_isSignedTransactionSelected ?? true)],
         onPressed: (index) async {
           final wasSignedSelected = _isSignedTransactionSelected ?? true;

@@ -93,6 +93,7 @@ class CoconutColors {
   final Color surfaceBottomSheet;
   final Color surfaceSectionBreak;
   final Color surfaceFilterChip;
+  final Color surfaceFilterChipPressed;
   final Color surfaceFilterChipSelected;
   final Color surfaceSkeletonBase;
   final Color surfaceSkeletonHighlight;
@@ -114,6 +115,10 @@ class CoconutColors {
   final Color secondaryTextStrong;
   final Color secondaryButtonBackground;
   final Color secondaryButtonText;
+  final Color segmentedControlSelected;
+  final Color segmentedControlBackground;
+  final Color segmentedControlSelectedText;
+  final Color segmentedControlUnselectedText;
   final Color tertiaryText;
   final Color mutedText;
   final Color textFilterChip;
@@ -172,6 +177,7 @@ class CoconutColors {
     required this.surfaceBottomSheet,
     required this.surfaceSectionBreak,
     required this.surfaceFilterChip,
+    required this.surfaceFilterChipPressed,
     required this.surfaceFilterChipSelected,
     required this.surfaceSkeletonBase,
     required this.surfaceSkeletonHighlight,
@@ -193,6 +199,10 @@ class CoconutColors {
     required this.secondaryTextStrong,
     required this.secondaryButtonBackground,
     required this.secondaryButtonText,
+    required this.segmentedControlSelected,
+    required this.segmentedControlBackground,
+    required this.segmentedControlSelectedText,
+    required this.segmentedControlUnselectedText,
     required this.tertiaryText,
     required this.mutedText,
     required this.textFilterChip,
@@ -253,6 +263,7 @@ class CoconutColors {
       surfaceBottomSheet: ds.CoconutColors.gray900,
       surfaceSectionBreak: ds.CoconutColors.gray900,
       surfaceFilterChip: ds.CoconutColors.gray800,
+      surfaceFilterChipPressed: ds.CoconutColors.gray700,
       surfaceFilterChipSelected: ds.CoconutColors.white,
       surfaceSkeletonBase: ds.CoconutColors.gray850,
       surfaceSkeletonHighlight: ds.CoconutColors.gray750,
@@ -274,6 +285,10 @@ class CoconutColors {
       secondaryTextStrong: ds.CoconutColors.gray300,
       secondaryButtonBackground: ds.CoconutColors.gray350,
       secondaryButtonText: ds.CoconutColors.black,
+      segmentedControlSelected: ds.CoconutColors.gray900,
+      segmentedControlBackground: ds.CoconutColors.gray800,
+      segmentedControlSelectedText: ds.CoconutColors.white,
+      segmentedControlUnselectedText: ds.CoconutColors.gray500,
       tertiaryText: ds.CoconutColors.gray600,
       mutedText: ds.CoconutColors.gray500,
       textFilterChip: ds.CoconutColors.white,
@@ -335,6 +350,7 @@ class CoconutColors {
       surfaceBottomSheet: Color(0xFFE8E0F2),
       surfaceSectionBreak: Color(0xFFD8CCE9),
       surfaceFilterChip: Color(0xFFDCEFE3),
+      surfaceFilterChipPressed: Color.fromARGB(255, 194, 210, 200),
       surfaceFilterChipSelected: Color(0xFF181A1F),
       surfaceSkeletonBase: Color(0xFFD7D1E6),
       surfaceSkeletonHighlight: Color(0xFFF0EBFA),
@@ -356,6 +372,10 @@ class CoconutColors {
       secondaryTextStrong: Color(0xFF303642),
       secondaryButtonBackground: Color(0xFFEDE3CF),
       secondaryButtonText: Color(0xFF181A1F),
+      segmentedControlSelected: Color.fromARGB(255, 202, 223, 242),
+      segmentedControlBackground: Color(0xFFE5EEF7),
+      segmentedControlSelectedText: Color(0xFF181A1F),
+      segmentedControlUnselectedText: Color(0xFF727987),
       tertiaryText: Color(0xFF727987),
       mutedText: Color(0xFF5E6675),
       textFilterChip: Color(0xFF181A1F),
@@ -405,7 +425,7 @@ class CoconutColors {
 
   factory CoconutColors.ccosLight() {
     return CoconutColors(
-      background: ds.CoconutColors.whiteLilac,
+      background: ds.CoconutColors.white,
       backgroundSubtle: ds.CoconutColors.gray150,
       surface: ds.CoconutColors.white,
       surfaceDeep: ds.CoconutColors.gray100,
@@ -417,6 +437,7 @@ class CoconutColors {
       surfaceBottomSheet: ds.CoconutColors.white,
       surfaceSectionBreak: ds.CoconutColors.gray200,
       surfaceFilterChip: ds.CoconutColors.gray200,
+      surfaceFilterChipPressed: ds.CoconutColors.gray350,
       surfaceFilterChipSelected: ds.CoconutColors.black,
       surfaceSkeletonBase: ds.CoconutColors.gray200,
       surfaceSkeletonHighlight: ds.CoconutColors.gray100,
@@ -438,6 +459,10 @@ class CoconutColors {
       secondaryTextStrong: ds.CoconutColors.gray800,
       secondaryButtonBackground: ds.CoconutColors.gray200,
       secondaryButtonText: ds.CoconutColors.black,
+      segmentedControlSelected: ds.CoconutColors.gray900,
+      segmentedControlBackground: ds.CoconutColors.gray150,
+      segmentedControlSelectedText: ds.CoconutColors.white,
+      segmentedControlUnselectedText: ds.CoconutColors.gray400,
       tertiaryText: ds.CoconutColors.gray400,
       mutedText: ds.CoconutColors.gray500,
       textFilterChip: ds.CoconutColors.gray900,
