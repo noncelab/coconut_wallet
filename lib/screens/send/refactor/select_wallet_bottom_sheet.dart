@@ -90,16 +90,14 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                 child: Column(
                   children: List.generate(_walletList.length, (index) {
                     int walletId = _walletList[index].id;
+                    final wallet = _walletList[index];
                     bool isChecked = _selectedWalletId == walletId;
                     return WalletItemCard(
-                      id: walletId,
-                      name: _walletList[index].name,
+                      walletItem: wallet,
                       animatedBalanceData: AnimatedBalanceData(
                         _walletBalanceMap[walletId] ?? 0,
                         _walletBalanceMap[walletId] ?? 0,
                       ),
-                      iconIndex: _walletList[index].iconIndex,
-                      colorIndex: _walletList[index].colorIndex,
                       isLastItem: index == _walletList.length - 1,
                       currentUnit: widget.currentUnit,
                       entryPoint: '',
@@ -235,15 +233,13 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
                 child: Column(
                   children: List.generate(_walletList.length, (index) {
                     int walletId = _walletList[index].id;
+                    final wallet = _walletList[index];
                     return WalletItemCard(
-                      id: walletId,
-                      name: _walletList[index].name,
+                      walletItem: wallet,
                       animatedBalanceData: AnimatedBalanceData(
                         _walletBalanceMap[walletId] ?? 0,
                         _walletBalanceMap[walletId] ?? 0,
                       ),
-                      iconIndex: _walletList[index].iconIndex,
-                      colorIndex: _walletList[index].colorIndex,
                       isLastItem: index == _walletList.length - 1,
                       currentUnit: widget.currentUnit,
                       entryPoint: '',
