@@ -172,7 +172,7 @@ class TaprootParticipantCard extends StatelessWidget {
     return _TaprootParticipantCardStyle(
       background: context.coconutColors.surfaceSelected,
       border: context.coconutColors.surfaceSelected,
-      roleBackgroundColor: context.coconutColors.borderSubtle,
+      roleBackgroundColor: context.coconutColors.border,
       roleTextColor: context.coconutColors.primaryText,
       iconAssetPath: _iconAssetPath,
     );

@@ -1562,7 +1562,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: context.coconutColors.borderSubtle, width: 1.2),
+                        border: Border.all(color: context.coconutColors.border, width: 1.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
 

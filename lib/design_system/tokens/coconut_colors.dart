@@ -134,7 +134,7 @@ class CoconutColors {
   final Color textFilterChip;
   final Color textFilterChipSelected;
   final Color textHighlight;
-  final Color borderSubtle;
+  final Color border;
   final Color borderStrong;
   final Color iconBackground;
   final Color iconBackgroundSubtle;
@@ -237,7 +237,7 @@ class CoconutColors {
     required this.textFilterChip,
     required this.textFilterChipSelected,
     required this.textHighlight,
-    required this.borderSubtle,
+    required this.border,
     required this.borderStrong,
     required this.iconBackground,
     required this.iconBackgroundSubtle,
@@ -294,7 +294,7 @@ class CoconutColors {
       backgroundHighlightText: ds.CoconutColors.black,
       blurButtonBackground: ds.CoconutColors.gray600,
       surface: ds.CoconutColors.gray850,
-      surfaceDeep: ds.CoconutColors.gray700,
+      surfaceDeep: ds.CoconutColors.black,
       surfaceCard: ds.CoconutColors.gray850,
       surfaceButton: ds.CoconutColors.gray850,
       surfaceButtonText: ds.CoconutColors.white,
@@ -338,7 +338,7 @@ class CoconutColors {
       textFilterChip: ds.CoconutColors.white,
       textFilterChipSelected: ds.CoconutColors.gray800,
       textHighlight: ds.CoconutColors.primary,
-      borderSubtle: ds.CoconutColors.gray700,
+      border: ds.CoconutColors.gray700,
       borderStrong: ds.CoconutColors.white,
       iconBackground: ds.CoconutColors.gray800,
       iconBackgroundSubtle: ds.CoconutColors.gray600,
@@ -440,7 +440,7 @@ class CoconutColors {
       textFilterChip: Color(0xFF181A1F),
       textFilterChipSelected: Color(0xFFF6F3EA),
       textHighlight: Color.fromARGB(255, 87, 65, 232),
-      borderSubtle: Color.fromARGB(255, 69, 126, 211),
+      border: Color.fromARGB(255, 69, 126, 211),
       borderStrong: Color(0xFF181A1F),
       iconBackground: Color.fromARGB(255, 213, 228, 243),
       iconBackgroundSubtle: ds.CoconutColors.gray600,
@@ -542,10 +542,10 @@ class CoconutColors {
       textFilterChip: ds.CoconutColors.gray900,
       textFilterChipSelected: ds.CoconutColors.white,
       textHighlight: ds.CoconutColors.green,
-      borderSubtle: ds.CoconutColors.borderLightGray,
+      border: ds.CoconutColors.gray400,
       borderStrong: ds.CoconutColors.black,
       iconBackground: ds.CoconutColors.gray350,
-      iconBackgroundSubtle: ds.CoconutColors.gray600,
+      iconBackgroundSubtle: ds.CoconutColors.gray300,
       iconDefault: ds.CoconutColors.black,
       iconSubDefault: ds.CoconutColors.gray600,
       iconHighlight: ds.CoconutColors.gray600,

@@ -297,7 +297,7 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(width: 1, color: context.coconutColors.borderSubtle),
+          border: Border.all(width: 1, color: context.coconutColors.border),
           borderRadius: const BorderRadius.all(Radius.circular(8)),
         ),
         child: Row(

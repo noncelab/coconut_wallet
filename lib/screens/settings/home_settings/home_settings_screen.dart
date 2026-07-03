@@ -29,7 +29,7 @@ class HomeSettingsScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: colors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colors.borderSubtle),
+              border: Border.all(color: colors.border),
             ),
             child: Text(
               t.wallet_home_screen.edit.title,

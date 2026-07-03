@@ -70,7 +70,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             width: 1,
-            color: widget.isSelected ? context.coconutColors.borderStrong : context.coconutColors.borderSubtle,
+            color: widget.isSelected ? context.coconutColors.borderStrong : context.coconutColors.border,
           ),
         ),
         padding: const EdgeInsets.only(top: 23, bottom: 22, left: 18, right: 23),

@@ -239,7 +239,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
         decoration: BoxDecoration(
           color: context.coconutColors.surfaceCard,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: context.coconutColors.borderSubtle, width: 1),
+          border: Border.all(color: context.coconutColors.border, width: 1),
         ),
         child: Text(usedCountText, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)),
       ),
@@ -588,9 +588,7 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                       decoration: BoxDecoration(
                         color: context.coconutColors.bottomSheetExtensionFieldBackground,
-                        border: Border.symmetric(
-                          horizontal: BorderSide(color: context.coconutColors.borderSubtle, width: 1),
-                        ),
+                        border: Border.symmetric(horizontal: BorderSide(color: context.coconutColors.border, width: 1)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -627,8 +625,8 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: context.coconutColors.bottomSheetExtensionFieldBackground,
                         border: Border(
-                          top: BorderSide(color: context.coconutColors.borderSubtle),
-                          left: BorderSide(color: context.coconutColors.borderSubtle),
+                          top: BorderSide(color: context.coconutColors.border),
+                          left: BorderSide(color: context.coconutColors.border),
                         ),
                       ),
                     ),

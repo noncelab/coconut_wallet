@@ -139,7 +139,7 @@ class _GuideContentRow extends StatelessWidget {
               width: TaprootSetupSummaryCard._sectionIndent,
               child: CustomPaint(
                 painter: _GuideRailPainter(
-                  color: context.coconutColors.borderSubtle,
+                  color: context.coconutColors.border,
                   showGuideLine: showGuideLine,
                   showBranch: showBranch,
                   drawBottom: !isLastGuideRow,
@@ -207,7 +207,7 @@ class _GuideSpacer extends StatelessWidget {
           SizedBox(
             width: TaprootSetupSummaryCard._sectionIndent,
             child: CustomPaint(
-              painter: _GuideRailPainter(color: context.coconutColors.borderSubtle, showGuideLine: showGuideLine),
+              painter: _GuideRailPainter(color: context.coconutColors.border, showGuideLine: showGuideLine),
             ),
           ),
           const Expanded(child: SizedBox()),

@@ -69,7 +69,7 @@ class MultisigSignerCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: context.coconutColors.surfaceCard,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: context.coconutColors.borderSubtle),
+                border: Border.all(color: context.coconutColors.border),
               ),
               child: Row(
                 children: [

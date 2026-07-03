@@ -623,7 +623,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: context.coconutColors.borderSubtle, width: 1),
+                    border: Border.all(color: context.coconutColors.border, width: 1),
                   ),
                   child:
                       _viewModel.excludeDustUtxos
@@ -668,7 +668,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: context.coconutColors.borderSubtle, width: 1),
+                border: Border.all(color: context.coconutColors.border, width: 1),
               ),
               child:
                   _viewModel.excludeDustUtxos

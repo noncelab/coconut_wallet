@@ -151,7 +151,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
-        border: hasGradient ? null : Border.all(color: context.coconutColors.borderSubtle, width: 1),
+        border: hasGradient ? null : Border.all(color: context.coconutColors.border, width: 1),
         gradient:
             hasGradient
                 ? LinearGradient(

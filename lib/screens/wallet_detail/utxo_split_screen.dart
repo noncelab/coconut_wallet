@@ -958,7 +958,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                             constraints: const BoxConstraints(minWidth: 47),
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              border: Border.all(color: context.coconutColors.borderSubtle),
+                              border: Border.all(color: context.coconutColors.border),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             height: 24,
@@ -1098,7 +1098,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               borderRadius: 12,
               child: CustomPaint(
                 foregroundPainter: DashedBorderPainter(
-                  color: context.coconutColors.borderSubtle,
+                  color: context.coconutColors.border,
                   radius: 12,
                   dashWidth: 2,
                   dashSpace: 2,
@@ -1156,7 +1156,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                       constraints: const BoxConstraints(minWidth: 47),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
-                        border: Border.all(color: context.coconutColors.borderSubtle),
+                        border: Border.all(color: context.coconutColors.border),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       height: 24,
@@ -2113,7 +2113,7 @@ class _SplitCountStepButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: isActive ? context.coconutColors.surfaceButton : context.coconutColors.surfaceDisabled,
           shape: BoxShape.circle,
-          border: Border.all(color: isActive ? context.coconutColors.borderStrong : context.coconutColors.borderSubtle),
+          border: Border.all(color: isActive ? context.coconutColors.borderStrong : context.coconutColors.border),
         ),
         child: Icon(icon, color: isActive ? context.coconutColors.primaryText : context.coconutColors.iconDisabled),
       ),

@@ -40,7 +40,7 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final dividerColor = widget.dividerColor ?? colors.borderSubtle;
+    final dividerColor = widget.dividerColor ?? colors.border;
     final backgroundColor = widget.backgroundColor ?? colors.surface;
 
     return Container(
@@ -117,7 +117,7 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
                       : isLast
                       ? const BorderRadius.only(bottomLeft: Radius.circular(16), bottomRight: Radius.circular(16))
                       : null,
-              color: tapDownButtonIndex == index ? colors.borderSubtle : backgroundColor,
+              color: tapDownButtonIndex == index ? colors.border : backgroundColor,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

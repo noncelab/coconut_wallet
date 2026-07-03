@@ -321,9 +321,11 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
 
   Widget _buildIcon() {
     final iconColor =
-        _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).backgroundColor : context.coconutColors.tertiaryText;
+        _canEditPalette
+            ? ColorUtil.getColor(_selectedColorIndex).backgroundColor
+            : context.coconutColors.iconBackgroundSubtle;
     final iconColorFilter =
-        _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).color : context.coconutColors.background;
+        _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).color : context.coconutColors.iconDefault;
     final svgPath =
         _canEditPalette
             ? CustomIcons.getPathByIndex(_selectedIconIndex)
@@ -332,7 +334,11 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
-      decoration: BoxDecoration(shape: BoxShape.circle, color: iconColor),
+      decoration: BoxDecoration(
+        shape: _canEditPalette ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: _canEditPalette ? null : BorderRadius.circular(10),
+        color: iconColor,
+      ),
       padding: const EdgeInsets.all(10),
       child: SvgPicture.asset(svgPath, colorFilter: ColorFilter.mode(iconColorFilter, BlendMode.srcIn)),
     );
@@ -402,7 +408,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(40.0),
           border: Border.all(
-            color: isSelected ? context.coconutColors.primaryText : context.coconutColors.borderSubtle,
+            color: isSelected ? context.coconutColors.primaryText : context.coconutColors.border,
             width: 1.8,
           ),
         ),

@@ -26,7 +26,7 @@ class CoconutAppBarButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isActive ? Colors.transparent : colors.borderSubtle),
+          border: Border.all(color: isActive ? Colors.transparent : colors.border),
           color: isActive ? (isActivePrimaryColor ? colors.primary : colors.primaryText) : colors.surfaceMuted,
         ),
         child: Center(

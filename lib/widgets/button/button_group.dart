@@ -17,7 +17,7 @@ class ButtonGroup extends StatelessWidget {
         buttonListWithDividers.add(
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: Sizes.size20),
-            child: Divider(color: context.coconutColors.borderSubtle.withValues(alpha: 0.21), height: 1),
+            child: Divider(color: context.coconutColors.border.withValues(alpha: 0.21), height: 1),
           ),
         );
       }

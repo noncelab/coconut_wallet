@@ -734,7 +734,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(width: 1, color: context.coconutColors.borderSubtle),
+          border: Border.all(width: 1, color: context.coconutColors.border),
           borderRadius: const BorderRadius.all(Radius.circular(8)),
         ),
         child: Row(
@@ -974,7 +974,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             return Container(
               padding: const EdgeInsets.only(left: 16, right: 14, top: 12, bottom: 20),
               decoration: BoxDecoration(
-                border: Border.all(color: context.coconutColors.borderSubtle, width: 1),
+                border: Border.all(color: context.coconutColors.border, width: 1),
                 borderRadius: const BorderRadius.all(Radius.circular(12)),
               ),
               child: Column(
@@ -1108,6 +1108,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   child: MediaQuery(
                     data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                     child: CoconutTextField(
+                      placeholderColor: context.coconutColors.border,
                       textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
                       textInputFormatter: const [RateInputFormatter()],
                       enableInteractiveSelection: false,
@@ -1540,7 +1541,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
                     backgroundColor: context.coconutColors.background,
-                    placeholderColor: context.coconutColors.borderSubtle,
+                    placeholderColor: context.coconutColors.border,
                     height: 52,
                     padding: const EdgeInsets.only(left: 16, right: 0),
                     onChanged: (text) {},

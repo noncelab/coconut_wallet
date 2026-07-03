@@ -42,7 +42,10 @@ class AddressItemCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               margin: const EdgeInsets.only(right: 6),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.coconutColors.surfaceDeep),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: context.coconutColors.surfaceDeep,
+              ),
               child: Text(index, style: Styles.caption.setColor(context.coconutColors.secondaryText)),
             ),
             Expanded(
@@ -76,12 +79,12 @@ class AddressItemCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: context.coconutColors.surfaceDeep,
+                color: context.coconutColors.surfaceFilterChip,
               ),
               child: Text(
                 isUsed ? t.status_used : t.status_unused,
                 style: TextStyle(
-                  color: isUsed ? context.coconutColors.primary : context.coconutColors.secondaryText,
+                  color: isUsed ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
                   fontSize: 10,
                   fontFamily: CustomFonts.text.getFontFamily,
                 ),

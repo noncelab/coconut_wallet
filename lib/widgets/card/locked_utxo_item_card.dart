@@ -36,7 +36,7 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
       decoration: BoxDecoration(
         color: context.coconutColors.background,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(width: 1, color: context.coconutColors.borderSubtle),
+        border: Border.all(width: 1, color: context.coconutColors.border),
       ),
       padding: const EdgeInsets.only(top: 23, bottom: 22, left: 18, right: 20),
       child: Row(
