@@ -176,6 +176,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                             _onBroadcastButtonClicked(viewModel);
                           },
                           text: t.broadcasting_screen.btn_submit,
+                          backgroundColor: context.coconutColors.backgroundHighlight,
+                          pressedBackgroundColor: getDarkerColor(context.coconutColors.backgroundHighlight),
+                          textColor: context.coconutColors.backgroundHighlightText,
                         ),
                       },
                     ],

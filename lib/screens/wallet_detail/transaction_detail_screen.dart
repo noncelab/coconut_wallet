@@ -391,14 +391,23 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               shape: BoxShape.circle,
               color:
                   _viewModel.isSendType!
-                      ? context.coconutColors.sendingColor.withValues(alpha: 0.2)
-                      : context.coconutColors.receivingColor.withValues(alpha: 0.2),
+                      ? context.coconutColors.sendingBackground.withValues(alpha: 0.2)
+                      : context.coconutColors.receivingBackground.withValues(alpha: 0.2),
             ),
             child: Center(
               child:
                   _viewModel.isSendType!
-                      ? Lottie.asset('assets/lottie/arrow-up.json', fit: BoxFit.fill, repeat: true)
-                      : Lottie.asset('assets/lottie/arrow-down.json', fit: BoxFit.fill, repeat: true),
+                      ? ColorFiltered(
+                        colorFilter: ColorFilter.mode(context.coconutColors.sendingIconOverlayColor, BlendMode.srcATop),
+                        child: Lottie.asset('assets/lottie/arrow-up.json', fit: BoxFit.fill, repeat: true),
+                      )
+                      : ColorFiltered(
+                        colorFilter: ColorFilter.mode(
+                          context.coconutColors.receivingIconOverlayColor,
+                          BlendMode.srcATop,
+                        ),
+                        child: Lottie.asset('assets/lottie/arrow-down.json', fit: BoxFit.fill, repeat: true),
+                      ),
             ),
           ),
           Expanded(

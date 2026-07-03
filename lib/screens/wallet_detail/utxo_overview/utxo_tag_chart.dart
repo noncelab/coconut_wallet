@@ -864,7 +864,7 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                           const SizedBox(width: 8),
                           Text(
                             '${g.utxos.length} coins',
-                            style: CoconutTypography.body3_12_Number.setColor(colors.mutedText),
+                            style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText),
                           ),
                           const Spacer(),
                           AnimatedSwitcher(

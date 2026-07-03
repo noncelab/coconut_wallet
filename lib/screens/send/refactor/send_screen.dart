@@ -599,14 +599,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     int selectedUtxoListLength,
   ) {
     final colors = context.coconutColors;
-    final bgColor = isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButton : colors.primary;
+    final bgColor =
+        isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButton : colors.backgroundHighlight;
     final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
     final textColor =
         isUtxoSelectionAuto
-            ? colors.primaryText
+            ? colors.surfaceButtonText
             : selectedUtxoListLength == 0
-            ? colors.primaryText
-            : colors.background;
+            ? colors.surfaceButtonText
+            : colors.backgroundHighlightText;
     final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
 
     return !isUtxoSelectionAuto
@@ -1730,7 +1731,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           if (isCurrentWallet) ...[
             TextSpan(
               text: ' • ${t.send_screen.current_wallet_label}',
-              style: fontStyle.setColor(context.coconutColors.primary),
+              style: fontStyle.setColor(context.coconutColors.textHighlight),
             ),
           ],
           TextSpan(text: ' • $derivationPath', style: fontStyle),

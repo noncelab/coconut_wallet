@@ -28,7 +28,7 @@ class FixedBottomTweenButton extends StatefulWidget {
     this.gradientColor,
     this.subWidget,
     this.leftButtonBackgroundColor = CoconutColors.gray200,
-    this.rightButtonBackgroundColor = CoconutColors.primary,
+    this.rightButtonBackgroundColor,
     this.leftButtonTextColor = CoconutColors.black,
     this.rightButtonTextColor = CoconutColors.black,
     this.buttonSpacing = 8.0, // 두 버튼 사이의 간격
@@ -49,7 +49,7 @@ class FixedBottomTweenButton extends StatefulWidget {
   final EdgeInsets? gradientPadding;
   final Widget? subWidget;
   final Color leftButtonBackgroundColor;
-  final Color rightButtonBackgroundColor;
+  final Color? rightButtonBackgroundColor;
   final Color leftButtonTextColor;
   final Color rightButtonTextColor;
   final Color? gradientColor;
@@ -163,8 +163,10 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                           widget.rightButtonClicked();
                         },
                         isActive: widget.isRightButtonActive,
-                        defaultColor: widget.rightButtonBackgroundColor,
-                        pressedColor: getDarkerColor(widget.rightButtonBackgroundColor),
+                        defaultColor: widget.rightButtonBackgroundColor ?? context.coconutColors.backgroundHighlight,
+                        pressedColor: getDarkerColor(
+                          widget.rightButtonBackgroundColor ?? context.coconutColors.backgroundHighlight,
+                        ),
                         disabledColor: colors.surfaceDisabled,
                         borderRadius: 12,
                         child: SizedBox(

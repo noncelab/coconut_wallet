@@ -71,11 +71,11 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: context.coconutColors.primary,
+                        color: context.coconutColors.backgroundHighlight,
                       ),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text3,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.backgroundHighlightText),
                         textAlign: TextAlign.center,
                       ),
                     ),

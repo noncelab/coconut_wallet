@@ -87,20 +87,28 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
           widget.sendingAmount != 0,
           'assets/lottie/arrow-up.json',
           getSendingAmountText(),
-          context.coconutColors.primary.withValues(alpha: 0.2),
+          context.coconutColors.sendingIconOverlayColor,
+          context.coconutColors.sendingBackground.withValues(alpha: 0.2),
         ),
         CoconutLayout.spacing_100h,
         _buildPendingAmountRow(
           widget.receivingAmount != 0,
           'assets/lottie/arrow-down.json',
           getReceivingAmountText(),
-          context.coconutColors.success.withValues(alpha: 0.2),
+          context.coconutColors.receivingIconOverlayColor,
+          context.coconutColors.receivingBackground.withValues(alpha: 0.2),
         ),
       ],
     );
   }
 
-  Widget _buildPendingAmountRow(bool condition, String animationPath, String text, Color color) {
+  Widget _buildPendingAmountRow(
+    bool condition,
+    String animationPath,
+    String text,
+    Color iconOverlayColor,
+    Color backgroundColor,
+  ) {
     if (!condition) return const SizedBox.shrink();
 
     return FittedBox(
@@ -110,8 +118,11 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
         children: [
           Container(
             padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.0), color: color),
-            child: Lottie.asset(animationPath, width: 12, height: 12),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.0), color: backgroundColor),
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(iconOverlayColor, BlendMode.srcATop),
+              child: Lottie.asset(animationPath, width: 12, height: 12),
+            ),
           ),
           CoconutLayout.spacing_200w,
           Text(text, style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText)),

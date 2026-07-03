@@ -216,7 +216,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
     return Flexible(
       child: CoconutButton(
         backgroundColor: colors.surfaceButton,
-        foregroundColor: colors.primaryText,
+        foregroundColor: colors.surfaceButtonText,
         text: text,
         onPressed: onPressed,
       ),

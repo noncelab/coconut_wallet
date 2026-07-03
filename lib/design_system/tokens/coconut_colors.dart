@@ -86,11 +86,16 @@ class CoconutColors {
   final Color homeSurfaceCardPressed;
   final Color background;
   final Color backgroundSubtle;
+  final Color backgroundHighlight;
+  final Color backgroundHighlightText;
   final Color blurButtonBackground;
   final Color surface;
   final Color surfaceDeep;
   final Color surfaceCard;
   final Color surfaceButton;
+  final Color surfaceButtonText;
+  final Color surfaceButtonSecondary;
+  final Color surfaceButtonSecondaryText;
   final Color surfaceMuted;
   final Color surfaceRaised;
   final Color surfaceDisabled;
@@ -128,6 +133,7 @@ class CoconutColors {
   final Color mutedText;
   final Color textFilterChip;
   final Color textFilterChipSelected;
+  final Color textHighlight;
   final Color borderSubtle;
   final Color borderStrong;
   final Color iconBackground;
@@ -153,7 +159,11 @@ class CoconutColors {
   final Color pageIndicatorActive;
   final Color pageIndicatorInactive;
   final Color sendingColor;
+  final Color sendingBackground;
+  final Color sendingIconOverlayColor;
   final Color receivingColor;
+  final Color receivingBackground;
+  final Color receivingIconOverlayColor;
   final Color bottomActionBarBackground;
   final Color bottomSheetKeyboardToolbar;
   final Color bottomSheetExtensionFieldBackground;
@@ -175,11 +185,16 @@ class CoconutColors {
     required this.homeSurfaceCardPressed,
     required this.background,
     required this.backgroundSubtle,
+    required this.backgroundHighlight,
+    required this.backgroundHighlightText,
     required this.blurButtonBackground,
     required this.surface,
     required this.surfaceDeep,
     required this.surfaceCard,
     required this.surfaceButton,
+    required this.surfaceButtonText,
+    required this.surfaceButtonSecondary,
+    required this.surfaceButtonSecondaryText,
     required this.surfaceMuted,
     required this.surfaceRaised,
     required this.surfaceDisabled,
@@ -217,6 +232,7 @@ class CoconutColors {
     required this.mutedText,
     required this.textFilterChip,
     required this.textFilterChipSelected,
+    required this.textHighlight,
     required this.borderSubtle,
     required this.borderStrong,
     required this.iconBackground,
@@ -242,7 +258,11 @@ class CoconutColors {
     required this.pageIndicatorActive,
     required this.pageIndicatorInactive,
     required this.sendingColor,
+    required this.sendingBackground,
+    required this.sendingIconOverlayColor,
     required this.receivingColor,
+    required this.receivingBackground,
+    required this.receivingIconOverlayColor,
     required this.bottomActionBarBackground,
     required this.bottomSheetKeyboardToolbar,
     required this.bottomSheetExtensionFieldBackground,
@@ -266,11 +286,16 @@ class CoconutColors {
       homeSurfaceCardPressed: ds.CoconutColors.gray900,
       background: ds.CoconutColors.black,
       backgroundSubtle: ds.CoconutColors.gray850,
+      backgroundHighlight: ds.CoconutColors.primary,
+      backgroundHighlightText: ds.CoconutColors.black,
       blurButtonBackground: ds.CoconutColors.gray600,
       surface: ds.CoconutColors.gray850,
       surfaceDeep: ds.CoconutColors.gray700,
       surfaceCard: ds.CoconutColors.gray850,
       surfaceButton: ds.CoconutColors.gray850,
+      surfaceButtonText: ds.CoconutColors.white,
+      surfaceButtonSecondary: ds.CoconutColors.gray850,
+      surfaceButtonSecondaryText: ds.CoconutColors.white,
       surfaceMuted: ds.CoconutColors.gray850,
       surfaceRaised: ds.CoconutColors.gray900,
       surfaceDisabled: ds.CoconutColors.gray850,
@@ -308,6 +333,7 @@ class CoconutColors {
       mutedText: ds.CoconutColors.gray500,
       textFilterChip: ds.CoconutColors.white,
       textFilterChipSelected: ds.CoconutColors.gray800,
+      textHighlight: ds.CoconutColors.primary,
       borderSubtle: ds.CoconutColors.gray700,
       borderStrong: ds.CoconutColors.white,
       iconBackground: ds.CoconutColors.gray800,
@@ -333,7 +359,11 @@ class CoconutColors {
       pageIndicatorActive: ds.CoconutColors.gray400,
       pageIndicatorInactive: ds.CoconutColors.gray800,
       sendingColor: ds.CoconutColors.primary,
+      sendingBackground: ds.CoconutColors.primary,
+      sendingIconOverlayColor: ds.CoconutColors.primary,
       receivingColor: ds.CoconutColors.cyanBlue,
+      receivingBackground: ds.CoconutColors.cyanBlue,
+      receivingIconOverlayColor: ds.CoconutColors.cyanBlue,
       bottomActionBarBackground: ds.CoconutColors.gray900,
       bottomSheetKeyboardToolbar: Color(0xFF2E2E2E),
       bottomSheetExtensionFieldBackground: ds.CoconutColors.black,
@@ -358,11 +388,16 @@ class CoconutColors {
       homeSurfaceCardPressed: Color.fromARGB(255, 202, 223, 242),
       background: Color(0xFFF6F3EA),
       backgroundSubtle: Color(0xFFE5EEF7),
+      backgroundHighlight: Color.fromARGB(255, 87, 65, 232),
+      backgroundHighlightText: ds.CoconutColors.white,
       blurButtonBackground: Color(0xFF727987),
       surface: Color(0xFFE5EEF7),
       surfaceDeep: Color.fromARGB(255, 196, 224, 250),
       surfaceCard: Color(0xFFD9E8F5),
       surfaceButton: Color(0xFFD9E8F5),
+      surfaceButtonText: Color(0xFF181A1F),
+      surfaceButtonSecondary: Color(0xFFD9E8F5),
+      surfaceButtonSecondaryText: Color(0xFF181A1F),
       surfaceMuted: Color(0xFFEDE3CF),
       surfaceRaised: Color(0xFFEDE3CF),
       surfaceDisabled: Color(0xFFE2D9DE),
@@ -400,6 +435,7 @@ class CoconutColors {
       mutedText: Color(0xFF5E6675),
       textFilterChip: Color(0xFF181A1F),
       textFilterChipSelected: Color(0xFFF6F3EA),
+      textHighlight: Color.fromARGB(255, 87, 65, 232),
       borderSubtle: Color.fromARGB(255, 69, 126, 211),
       borderStrong: Color(0xFF181A1F),
       iconBackground: Color.fromARGB(255, 213, 228, 243),
@@ -425,7 +461,11 @@ class CoconutColors {
       pageIndicatorActive: Color(0xFF454B57),
       pageIndicatorInactive: Color(0xFFCBB8D8),
       sendingColor: Color.fromARGB(255, 163, 124, 189),
+      sendingBackground: Color.fromARGB(255, 163, 124, 189),
+      sendingIconOverlayColor: Color.fromARGB(255, 163, 124, 189),
       receivingColor: Color.fromARGB(255, 102, 136, 136),
+      receivingBackground: Color.fromARGB(255, 102, 136, 136),
+      receivingIconOverlayColor: Color.fromARGB(255, 102, 136, 136),
       bottomActionBarBackground: Color(0xFFE8E0F2),
       bottomSheetKeyboardToolbar: Color.fromARGB(255, 234, 227, 242),
       bottomSheetExtensionFieldBackground: Color.fromARGB(255, 237, 232, 243),
@@ -450,17 +490,22 @@ class CoconutColors {
       homeSurfaceCardPressed: ds.CoconutColors.gray200,
       background: ds.CoconutColors.white,
       backgroundSubtle: ds.CoconutColors.gray150,
+      backgroundHighlight: ds.CoconutColors.primary,
+      backgroundHighlightText: ds.CoconutColors.black,
       blurButtonBackground: ds.CoconutColors.gray400,
       surface: ds.CoconutColors.gray150,
       surfaceDeep: ds.CoconutColors.white,
       surfaceCard: ds.CoconutColors.gray150,
       surfaceButton: ds.CoconutColors.white,
+      surfaceButtonText: ds.CoconutColors.white,
+      surfaceButtonSecondary: ds.CoconutColors.white,
+      surfaceButtonSecondaryText: ds.CoconutColors.black,
       surfaceMuted: ds.CoconutColors.gray200,
       surfaceRaised: ds.CoconutColors.white,
       surfaceDisabled: ds.CoconutColors.gray300,
       surfaceBottomSheet: ds.CoconutColors.white,
       surfaceSectionBreak: ds.CoconutColors.gray200,
-      surfaceFilterChip: ds.CoconutColors.gray200,
+      surfaceFilterChip: ds.CoconutColors.gray300,
       surfaceFilterChipPressed: ds.CoconutColors.gray350,
       surfaceFilterChipSelected: ds.CoconutColors.black,
       surfaceSkeletonBase: ds.CoconutColors.gray200,
@@ -474,7 +519,7 @@ class CoconutColors {
       surfacePressed: ds.CoconutColors.gray150,
       inputSurface: const Color(0xFFF1F2F5),
       inputPlaceholder: ds.CoconutColors.gray400,
-      primary: ds.CoconutColors.green,
+      primary: ds.CoconutColors.black,
       primaryText: ds.CoconutColors.black,
       primaryButtonBackground: ds.CoconutColors.black,
       primaryButtonPressed: ds.CoconutColors.gray800,
@@ -492,6 +537,7 @@ class CoconutColors {
       mutedText: ds.CoconutColors.gray500,
       textFilterChip: ds.CoconutColors.gray900,
       textFilterChipSelected: ds.CoconutColors.white,
+      textHighlight: ds.CoconutColors.green,
       borderSubtle: ds.CoconutColors.borderLightGray,
       borderStrong: ds.CoconutColors.black,
       iconBackground: ds.CoconutColors.gray350,
@@ -517,7 +563,11 @@ class CoconutColors {
       pageIndicatorActive: ds.CoconutColors.gray700,
       pageIndicatorInactive: ds.CoconutColors.gray300,
       sendingColor: ds.CoconutColors.green,
+      sendingBackground: ds.CoconutColors.green,
+      sendingIconOverlayColor: const Color(0xFF8ABC36),
       receivingColor: ds.CoconutColors.cyanBlue,
+      receivingBackground: ds.CoconutColors.sky,
+      receivingIconOverlayColor: const Color(0xFF62C596),
       bottomActionBarBackground: ds.CoconutColors.white,
       bottomSheetKeyboardToolbar: ds.CoconutColors.gray150,
       bottomSheetExtensionFieldBackground: const Color(0xFFF1F2F5),
