@@ -212,7 +212,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                               height: Platform.isAndroid ? 55 : 58,
                               textStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                               disabledBackgroundColor: context.coconutColors.surfaceDisabled,
-                              disabledForegroundColor: context.coconutColors.surfaceDeep,
+                              disabledForegroundColor: context.coconutColors.tertiaryText,
                               isActive: true,
                               backgroundColor: context.coconutColors.secondaryButtonBackground,
                               foregroundColor: context.coconutColors.secondaryButtonText,

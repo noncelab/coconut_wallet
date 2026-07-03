@@ -675,14 +675,14 @@ class _TargetQuantityCard extends StatelessWidget {
                 children: [
                   Text(
                     t.wallet_info_screen.target_quantity,
-                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.mutedText),
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
                   ),
                   const SizedBox(width: 4),
                   SvgPicture.asset(
                     'assets/svg/edit-outlined.svg',
                     width: 12,
                     height: 12,
-                    colorFilter: ColorFilter.mode(context.coconutColors.mutedText, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
                   ),
                 ],
               ),

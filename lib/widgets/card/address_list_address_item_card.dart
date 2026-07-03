@@ -33,7 +33,7 @@ class AddressItemCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       pressedOpacity: 0.8,
       child: Container(
-        decoration: BoxDecoration(borderRadius: MyBorder.defaultRadius, color: context.coconutColors.surfaceDeep),
+        decoration: BoxDecoration(borderRadius: MyBorder.defaultRadius, color: context.coconutColors.surfaceCard),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         margin: const EdgeInsets.only(bottom: 8),
         child: Row(
@@ -42,8 +42,8 @@ class AddressItemCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               margin: const EdgeInsets.only(right: 6),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.coconutColors.surface),
-              child: Text(index, style: Styles.caption.setColor(context.coconutColors.primaryText)),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.coconutColors.surfaceDeep),
+              child: Text(index, style: Styles.caption.setColor(context.coconutColors.secondaryText)),
             ),
             Expanded(
               child: FittedBox(
@@ -76,12 +76,12 @@ class AddressItemCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: context.coconutColors.iconSubDefault,
+                color: context.coconutColors.surfaceDeep,
               ),
               child: Text(
                 isUsed ? t.status_used : t.status_unused,
                 style: TextStyle(
-                  color: isUsed ? context.coconutColors.primary : context.coconutColors.primaryButtonText,
+                  color: isUsed ? context.coconutColors.primary : context.coconutColors.secondaryText,
                   fontSize: 10,
                   fontFamily: CustomFonts.text.getFontFamily,
                 ),
