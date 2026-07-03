@@ -371,7 +371,7 @@ wallet_connect_screen:
     init:
       step1: "Conecta tu BitBox02 Nova mediante USB."
       step2: "Desbloquea tu dispositivo."
-      step3: "Cuando aparezca en el dispositivo la billetera que deseas importar, pulsa el botón '$btn' de abajo."
+      step3: "Cuando aparezca 'See the BitBoxApp' en la pantalla del dispositivo, pulsa el botón '$btn' de abajo."
     connecting:
       title: "Conectando el dispositivo"
       step1: "Desbloquea el dispositivo."
@@ -538,6 +538,7 @@ bitbox02_sign_screen:
     description: "La transacción ha sido firmada por BitBox02."
     ready_to_broadcast: "Listo para transmitir."
   error_title: "Error al firmar"
+  device_mismatch: "El dispositivo conectado no coincide con esta billetera. Por favor conecte el dispositivo correcto."
   btn:
     sign: "Firmar con BitBox02"
   state_label:
@@ -785,6 +786,15 @@ wallet_info_screen:
       select: "Seleccionar"
   error:
     delete: "No se pudo eliminar la billetera"
+  bitbox02_device:
+    title: "Información del dispositivo"
+    connection_status: "Estado de conexión"
+    connected: "Conectado"
+    disconnected: "No conectado"
+    device_id: "ID de dispositivo"
+    disconnect_button: "Desconectar"
+    disconnect_confirm_title: "Desconectar"
+    disconnect_confirm_description: "Se desconectará el dispositivo actual.\nNecesitará volver a conectar para la próxima firma."
 wallet_signer_section:
   title: "Método de firma"
   segmented_control:

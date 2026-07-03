@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
@@ -35,9 +36,10 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
   final String psbtBase64;
   final String walletName;
+  final String walletFingerprint;
   final String transport;
 
-  BitBox02SignViewModel({required this.psbtBase64, required this.walletName, this.transport = 'usb'}) {
+  BitBox02SignViewModel({required this.psbtBase64, required this.walletName, this.walletFingerprint = '', this.transport = 'usb'}) {
     _probeDeviceStatus();
   }
 
@@ -50,16 +52,23 @@ class BitBox02SignViewModel extends ChangeNotifier {
   String? get fingerprint => _fingerprint;
 
   void _probeDeviceStatus() {
-    if (BitBox02Device.lastConnected != null) {
-      _deviceStatus = BitBox02DeviceStatus.locked;
-      _device = BitBox02Device.lastConnected;
-      final fp = _device!.cachedFingerprint;
-      if (fp != null) {
-        _fingerprint = fp;
-      }
-    } else {
+    final last = BitBox02Device.lastConnected;
+    if (last == null) {
       _deviceStatus = BitBox02DeviceStatus.disconnected;
+      return;
     }
+    final fp = last.cachedFingerprint;
+    final mismatch = walletFingerprint.isNotEmpty &&
+        fp != null &&
+        fp.toLowerCase() != walletFingerprint.toLowerCase();
+    if (mismatch) {
+      BitBox02Device.lastConnected = null;
+      _deviceStatus = BitBox02DeviceStatus.disconnected;
+      return;
+    }
+    _deviceStatus = BitBox02DeviceStatus.locked;
+    _device = last;
+    if (fp != null) _fingerprint = fp;
   }
 
   Future<void> signTransaction({BitBox02Device? existingDevice}) async {
@@ -99,7 +108,11 @@ class BitBox02SignViewModel extends ChangeNotifier {
           _fingerprint = fp;
           _device!.cachedFingerprint = fp;
           debugPrint('BB02_SIGN rootFingerprint ok: $fp');
+          if (walletFingerprint.isNotEmpty && fp.toLowerCase() != walletFingerprint.toLowerCase()) {
+            throw BitBox02SignException('FINGERPRINT_MISMATCH', t.bitbox02_sign_screen.device_mismatch);
+          }
         } catch (e) {
+          if (e is BitBox02SignException) rethrow;
           _fingerprint = null;
           debugPrint('BB02_SIGN rootFingerprint FAILED: $e');
         }

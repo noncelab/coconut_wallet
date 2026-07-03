@@ -37,6 +37,12 @@ class SendConfirmViewModel extends ChangeNotifier {
   double? get totalSendAmount => _totalSendAmount; // BTC
   WalletImportSource get walletImportSource => _walletListItemBase.walletImportSource;
 
+  String get walletFingerprint {
+    final wallet = _walletListItemBase.walletBase;
+    if (wallet is SingleSignatureWallet) return wallet.keyStore.masterFingerprint;
+    return '';
+  }
+
   void _setTotalSendAmount() {
     final externalOutputAmountSum = externalOutputAmounts.fold<int>(0, (sum, amount) => sum + amount);
     _totalSendAmount = UnitUtil.convertSatoshiToBitcoin(externalOutputAmountSum).roundTo8Digits();

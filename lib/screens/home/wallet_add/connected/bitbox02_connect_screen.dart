@@ -5,7 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/connected/bitbox02_connect_viewmodel.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
@@ -21,8 +21,9 @@ class BitBox02ConnectScreen extends StatefulWidget {
   /// after pairing, the button navigates to /bitbox02-sign instead of adding the wallet.
   final String? psbtBase64;
   final String? walletName;
+  final String? walletFingerprint;
 
-  const BitBox02ConnectScreen({super.key, required this.importSource, this.psbtBase64, this.walletName});
+  const BitBox02ConnectScreen({super.key, required this.importSource, this.psbtBase64, this.walletName, this.walletFingerprint});
 
   @override
   State<BitBox02ConnectScreen> createState() => _BitBox02ConnectScreenState();
@@ -388,6 +389,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
           arguments: {
             'psbtBase64': widget.psbtBase64,
             'walletName': widget.walletName ?? '',
+            'walletFingerprint': widget.walletFingerprint ?? '',
             'isFromSendFlow': true,
             'transport': BitBox02Transport.resolveForSign(),
           },

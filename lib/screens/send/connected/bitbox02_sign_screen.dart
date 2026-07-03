@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 class BitBox02SignScreen extends StatefulWidget {
   final String psbtBase64;
   final String walletName;
+  final String walletFingerprint;
   final bool isFromSendFlow;
   final String transport;
 
@@ -21,6 +22,7 @@ class BitBox02SignScreen extends StatefulWidget {
     super.key,
     required this.psbtBase64,
     required this.walletName,
+    this.walletFingerprint = '',
     this.isFromSendFlow = false,
     this.transport = 'usb',
   });
@@ -42,6 +44,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     _viewModel = BitBox02SignViewModel(
       psbtBase64: widget.psbtBase64,
       walletName: widget.walletName,
+      walletFingerprint: widget.walletFingerprint,
       transport: widget.transport,
     );
     _viewModel.addListener(_onStateChanged);
@@ -242,10 +245,10 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       stateLabel = t.bitbox02_sign_screen.state_label.signing;
       detailText = _subStatusText(vm.subStatus);
     } else if (isDone) {
-      stateColor = CoconutColors.green;
+      stateColor = CoconutColors.primary;
       stateIcon = SvgPicture.asset(
         'assets/svg/circle-check-outline.svg',
-        colorFilter: const ColorFilter.mode(CoconutColors.green, BlendMode.srcIn),
+        colorFilter: const ColorFilter.mode(CoconutColors.primary, BlendMode.srcIn),
         width: 16,
         height: 16,
       );

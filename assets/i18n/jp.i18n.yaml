@@ -396,7 +396,7 @@ wallet_connect_screen:
     init:
       step1: "BitBox02 NovaをUSBで接続してください。"
       step2: "デバイスのロックを解除してください。"
-      step3: "デバイス画面にインポートするウォレットが表示されたら、下の「$btn」ボタンを押してください。"
+      step3: "デバイス画面に「See the BitBoxApp」と表示されたら、下の「$btn」ボタンを押してください。"
     connecting:
       title: "デバイスを接続中"
       step1: "デバイスのロックを解除してください。"
@@ -536,6 +536,7 @@ bitbox02_sign_screen:
     description: "BitBox02がトランザクションに署名しました。"
     ready_to_broadcast: "ブロードキャストの準備が完了しました。"
   error_title: "署名に失敗"
+  device_mismatch: "接続されたデバイスがこのウォレットと一致しません。正しいデバイスを接続してください。"
   btn:
     sign: "BitBox02で署名"
   state_label:
@@ -783,6 +784,15 @@ wallet_info_screen:
       select: "選択"
   error:
     delete: "ウォレットの削除に失敗しました"
+  bitbox02_device:
+    title: "デバイス情報"
+    connection_status: "接続状態"
+    connected: "接続中"
+    disconnected: "未接続"
+    device_id: "デバイスID"
+    disconnect_button: "接続解除"
+    disconnect_confirm_title: "接続解除"
+    disconnect_confirm_description: "現在接続中のデバイスを解除します。\n次回署名時に再接続が必要です。"
 wallet_signer_section:
   title: "署名方式"
   segmented_control:

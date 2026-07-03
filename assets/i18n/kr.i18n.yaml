@@ -535,6 +535,7 @@ bitbox02_sign_screen:
     description: "BitBox02가 트랜잭션에 서명했습니다."
     ready_to_broadcast: "전송할 준비가 되었어요."
   error_title: "서명 실패"
+  device_mismatch: "연결된 기기가 이 지갑과 일치하지 않습니다. 올바른 기기를 연결해 주세요."
   btn:
     sign: "BitBox02로 서명하기"
   state_label:
@@ -786,6 +787,15 @@ wallet_info_screen:
       select: "선택"
   error:
     delete: "지갑 삭제 실패"
+  bitbox02_device:
+    title: "기기 정보"
+    connection_status: "연결 상태"
+    connected: "연결됨"
+    disconnected: "연결 안 됨"
+    device_id: "기기 ID"
+    disconnect_button: "연결 해제"
+    disconnect_confirm_title: "연결 해제"
+    disconnect_confirm_description: "현재 연결된 기기를 해제합니다.\n다음 서명 시 다시 연결이 필요합니다."
 wallet_signer_section:
   title: "서명 방식"
   segmented_control:

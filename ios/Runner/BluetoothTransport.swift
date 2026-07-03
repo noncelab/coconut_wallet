@@ -20,6 +20,14 @@ class BluetoothTransport: NSObject {
     private var connectCompletion: ((Result<Void, Error>) -> Void)?
     private var productString: String?
 
+    /// Called when the BLE peripheral disconnects unexpectedly or via [disconnect].
+    var onDisconnect: (() -> Void)?
+
+    /// True when the BLE peripheral is in the connected state.
+    var isConnected: Bool {
+        return peripheral?.state == .connected
+    }
+
     override init() {
         super.init()
     }
@@ -163,6 +171,7 @@ extension BluetoothTransport: CBCentralManagerDelegate {
                         didDisconnectPeripheral peripheral: CBPeripheral,
                         error: Error?) {
         readSemaphore.signal()
+        onDisconnect?()
     }
 
     func centralManager(_ central: CBCentralManager,

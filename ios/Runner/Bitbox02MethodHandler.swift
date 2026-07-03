@@ -4,6 +4,7 @@ import Foundation
 class Bitbox02MethodHandler: NSObject {
     private var channel: FlutterMethodChannel
     private var bleTransport: BluetoothTransport?
+    private var connectivityEventSink: FlutterEventSink?
 
     init(messenger: FlutterBinaryMessenger) {
         channel = FlutterMethodChannel(name: "bitbox02", binaryMessenger: messenger)
@@ -11,6 +12,9 @@ class Bitbox02MethodHandler: NSObject {
         channel.setMethodCallHandler { [weak self] (call, result) in
             self?.handle(call, result: result)
         }
+
+        let eventChannel = FlutterEventChannel(name: "bitbox02/connectivity", binaryMessenger: messenger)
+        eventChannel.setStreamHandler(self)
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -39,6 +43,8 @@ class Bitbox02MethodHandler: NSObject {
             disconnect(call, result: result)
         case "setLoggerEnabled":
             setLoggerEnabled(call, result: result)
+        case "isConnected":
+            result(bleTransport?.isConnected ?? false)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -57,6 +63,12 @@ class Bitbox02MethodHandler: NSObject {
 
         let bt = BluetoothTransport()
         self.bleTransport = bt
+
+        bt.onDisconnect = { [weak self] in
+            DispatchQueue.main.async {
+                self?.connectivityEventSink?(false)
+            }
+        }
 
         bt.scanAndConnect(timeout: 15) { [weak self] connectResult in
             switch connectResult {
@@ -275,5 +287,19 @@ class Bitbox02MethodHandler: NSObject {
         let enabled = args["enabled"] as? Bool ?? true
         BitboxbridgeSetLoggerEnabled(enabled)
         result(nil)
+    }
+}
+
+// MARK: - FlutterStreamHandler (bitbox02/connectivity EventChannel)
+
+extension Bitbox02MethodHandler: FlutterStreamHandler {
+    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+        connectivityEventSink = events
+        return nil
+    }
+
+    func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        connectivityEventSink = nil
+        return nil
     }
 }

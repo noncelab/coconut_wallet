@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/widgets/card/taproot_participant_card.dart';
 import 'package:collection/collection.dart';
@@ -206,6 +207,19 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   Future<void> setTargetSats(int targetSats) async {
     await _sharedPrefs.setWalletTargetSats(_walletId, targetSats);
+    notifyListeners();
+  }
+
+  bool get isBitBox02Wallet => _walletItemBase.walletImportSource == WalletImportSource.bitbox02;
+
+  Future<void> disconnectBitBox02() async {
+    final device = BitBox02Device.lastConnected;
+    BitBox02Device.lastConnected = null;
+    if (device != null) {
+      try {
+        await device.disconnect();
+      } catch (_) {}
+    }
     notifyListeners();
   }
 

@@ -1,10 +1,16 @@
 package onl.coconut.wallet
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
 import android.os.Handler
 import android.os.Looper
 import bridge.Bridge
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
@@ -19,6 +25,9 @@ class Bitbox02MethodHandler(
     private val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    private var connectivityEventSink: EventChannel.EventSink? = null
+    private var connectivityDetachReceiver: BroadcastReceiver? = null
+
     init {
         channel.setMethodCallHandler { call, result ->
             try {
@@ -27,6 +36,33 @@ class Bitbox02MethodHandler(
                 result.error("BITBOX02_ERROR", e.message ?: "Unknown error", null)
             }
         }
+
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, "bitbox02/connectivity")
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
+                    connectivityEventSink = sink
+                    val receiver = object : BroadcastReceiver() {
+                        override fun onReceive(ctx: Context, intent: Intent) {
+                            if (UsbManager.ACTION_USB_DEVICE_DETACHED != intent.action) return
+                            val device = intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+                            if (device?.vendorId == Bitbox02UsbManager.VENDOR_ID &&
+                                device?.productId == Bitbox02UsbManager.PRODUCT_ID_NOVA
+                            ) {
+                                mainHandler.post { sink.success(false) }
+                            }
+                        }
+                    }
+                    val filter = IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED)
+                    context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+                    connectivityDetachReceiver = receiver
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    connectivityDetachReceiver?.let { context.unregisterReceiver(it) }
+                    connectivityDetachReceiver = null
+                    connectivityEventSink = null
+                }
+            })
     }
 
     private fun handleMethod(call: MethodCall, result: MethodChannel.Result) {
@@ -47,6 +83,7 @@ class Bitbox02MethodHandler(
             "loadConfig" -> loadConfig(call, result)
             "disconnect" -> disconnect(call, result)
             "setLoggerEnabled" -> setLoggerEnabled(call, result)
+            "isConnected" -> isConnected(result)
             else -> result.notImplemented()
         }
     }
@@ -345,7 +382,19 @@ class Bitbox02MethodHandler(
         result.success(null)
     }
 
+    private fun isConnected(result: MethodChannel.Result) {
+        val usbMgr = context.getSystemService(Context.USB_SERVICE) as UsbManager
+        val found = usbMgr.deviceList.values.any { device ->
+            device.vendorId == Bitbox02UsbManager.VENDOR_ID &&
+                device.productId == Bitbox02UsbManager.PRODUCT_ID_NOVA
+        }
+        result.success(found)
+    }
+
     fun dispose() {
+        connectivityDetachReceiver?.let { context.unregisterReceiver(it) }
+        connectivityDetachReceiver = null
+        connectivityEventSink = null
         usbManager?.dispose()
         synchronized(this) {
             tcpTransports.values.forEach { it.close() }

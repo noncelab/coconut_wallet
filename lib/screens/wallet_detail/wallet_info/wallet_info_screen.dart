@@ -24,6 +24,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -121,6 +122,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           ),
                         ),
                         WalletSignerSection(walletType: widget.walletType),
+                        if (viewModel.isBitBox02Wallet)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                            child: BitBox02Section(
+                              onDisconnect: () async {
+                                await viewModel.disconnectBitBox02();
+                              },
+                            ),
+                          ),
                         _WalletInfoStatsSection(
                           walletId: widget.id,
                           transactionCount: viewModel.transactionCount,
@@ -796,3 +806,4 @@ class _TargetQuantityCard extends StatelessWidget {
     return count;
   }
 }
+

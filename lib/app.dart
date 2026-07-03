@@ -3,6 +3,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -55,12 +56,12 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/air-gapped/airgap_wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_overview_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -92,6 +93,18 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
   final RealmManager _realmManager = RealmManager();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    BitBox02ConnectivityService.startMonitoring();
+  }
+
+  @override
+  void dispose() {
+    BitBox02ConnectivityService.stopMonitoring();
+    super.dispose();
+  }
 
   /// startSplash 완료 콜백
   void _completeSplash(AppEntryFlow appEntryFlow) {
@@ -360,6 +373,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       (args) => BitBox02SignScreen(
                         psbtBase64: args['psbtBase64'],
                         walletName: args['walletName'],
+                        walletFingerprint: args['walletFingerprint'] ?? '',
                         isFromSendFlow: args['isFromSendFlow'] ?? false,
                         transport: args['transport'] ?? 'usb',
                       ),

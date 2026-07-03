@@ -395,7 +395,7 @@ wallet_connect_screen:
     init:
       step1: "Connect your BitBox02 Nova via USB."
       step2: "Unlock your device."
-      step3: "When the wallet to import appears on your device, tap the '$btn' button below."
+      step3: "When you see 'See the BitBoxApp' on your device, tap '$btn' below."
     connecting:
       title: "Connecting Device"
       step1: "Unlock your device."
@@ -538,6 +538,7 @@ bitbox02_sign_screen:
     description: "Transaction has been signed by BitBox02."
     ready_to_broadcast: "Ready to broadcast."
   error_title: "Signing Failed"
+  device_mismatch: "The connected device does not match this wallet. Please connect the correct device."
   btn:
     sign: "Sign with BitBox02"
   state_label:
@@ -783,6 +784,15 @@ wallet_info_screen:
       select: "Select"
   error:
     delete: "Failed to delete wallet"
+  bitbox02_device:
+    title: "Device Info"
+    connection_status: "Connection Status"
+    connected: "Connected"
+    disconnected: "Not Connected"
+    device_id: "Device ID"
+    disconnect_button: "Disconnect"
+    disconnect_confirm_title: "Disconnect"
+    disconnect_confirm_description: "Disconnect the current device.\nYou will need to reconnect for the next signing."
 wallet_signer_section:
   title: "Signing Method"
   segmented_control:
