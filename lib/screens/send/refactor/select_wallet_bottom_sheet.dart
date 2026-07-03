@@ -104,15 +104,13 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                       isLastItem: index == _walletList.length - 1,
                       currentUnit: widget.currentUnit,
                       backgroundColor: backgroundColor,
-                      rightWidget: isChecked
-                          ? SvgPicture.asset(
-                              'assets/svg/check.svg',
-                              colorFilter: ColorFilter.mode(
-                                context.coconutColors.iconDefault,
-                                BlendMode.srcIn,
-                              ),
-                            )
-                          : Container(),
+                      rightWidget:
+                          isChecked
+                              ? SvgPicture.asset(
+                                'assets/svg/check.svg',
+                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                              )
+                              : Container(),
                       onPressed: () => setState(() => _selectedWalletId = walletId),
                     );
                   }),

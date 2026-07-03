@@ -4,9 +4,7 @@ class RandomSampler {
   final List<double> _probs;
   final List<double> _aliases;
 
-  RandomSampler._(List<double> probs, List<double> _aliases)
-      : _probs = probs,
-        _aliases = _aliases {}
+  RandomSampler._(List<double> probs, List<double> _aliases) : _probs = probs, _aliases = _aliases {}
 
   factory RandomSampler(List<double> probs) {
     assert(probs.every((p) => p > 0), "All probabilities must be positive");
