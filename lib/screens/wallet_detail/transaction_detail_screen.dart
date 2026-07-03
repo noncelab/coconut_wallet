@@ -391,8 +391,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               shape: BoxShape.circle,
               color:
                   _viewModel.isSendType!
-                      ? context.coconutColors.sendingBackground.withValues(alpha: 0.2)
-                      : context.coconutColors.receivingBackground.withValues(alpha: 0.2),
+                      ? context.coconutColors.sendingIconBackground.withValues(alpha: 0.2)
+                      : context.coconutColors.receivingIconBackground.withValues(alpha: 0.2),
             ),
             child: Center(
               child:

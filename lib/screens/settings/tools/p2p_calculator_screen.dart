@@ -1208,7 +1208,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     if (_viewModel.isOfflineMode) {
       return ShrinkAnimationButton(
         onPressed: _changeInputAsset,
-        defaultColor: context.coconutColors.surfaceButtonSecondary,
+        defaultColor: context.coconutColors.surfaceButton,
         pressedColor: context.coconutColors.surfacePressed,
         borderRadius: 8,
         child: SizedBox(
@@ -1227,7 +1227,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     }
     return ShrinkAnimationButton(
       onPressed: _changeInputAsset,
-      defaultColor: context.coconutColors.surfaceButtonSecondary,
+      defaultColor: context.coconutColors.surfaceButton,
       pressedColor: context.coconutColors.surfacePressed,
       child: SizedBox(
         width: 52,

@@ -88,7 +88,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
           'assets/lottie/arrow-up.json',
           getSendingAmountText(),
           context.coconutColors.sendingIconOverlayColor,
-          context.coconutColors.sendingBackground.withValues(alpha: 0.2),
+          context.coconutColors.sendingIconBackground.withValues(alpha: 0.2),
         ),
         CoconutLayout.spacing_100h,
         _buildPendingAmountRow(
@@ -96,7 +96,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
           'assets/lottie/arrow-down.json',
           getReceivingAmountText(),
           context.coconutColors.receivingIconOverlayColor,
-          context.coconutColors.receivingBackground.withValues(alpha: 0.2),
+          context.coconutColors.receivingIconBackground.withValues(alpha: 0.2),
         ),
       ],
     );

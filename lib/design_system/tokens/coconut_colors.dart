@@ -158,11 +158,15 @@ class CoconutColors {
   final Color dimOverlay;
   final Color pageIndicatorActive;
   final Color pageIndicatorInactive;
+
+  /// 보내는 중 아이콘/로티 색상
   final Color sendingColor;
-  final Color sendingBackground;
+  final Color sendingIconBackground;
   final Color sendingIconOverlayColor;
+
+  /// 받는 중 아이콘/로티 색상
   final Color receivingColor;
-  final Color receivingBackground;
+  final Color receivingIconBackground;
   final Color receivingIconOverlayColor;
   final Color bottomActionBarBackground;
   final Color bottomSheetKeyboardToolbar;
@@ -258,10 +262,10 @@ class CoconutColors {
     required this.pageIndicatorActive,
     required this.pageIndicatorInactive,
     required this.sendingColor,
-    required this.sendingBackground,
+    required this.sendingIconBackground,
     required this.sendingIconOverlayColor,
     required this.receivingColor,
-    required this.receivingBackground,
+    required this.receivingIconBackground,
     required this.receivingIconOverlayColor,
     required this.bottomActionBarBackground,
     required this.bottomSheetKeyboardToolbar,
@@ -312,7 +316,7 @@ class CoconutColors {
       billSurface: ds.CoconutColors.gray900,
       selectionOverlay: ds.CoconutColors.black,
       surfaceSelected: ds.CoconutColors.gray800,
-      surfacePressed: ds.CoconutColors.gray900,
+      surfacePressed: ds.CoconutColors.gray750,
       inputSurface: ds.CoconutColors.gray800,
       inputPlaceholder: ds.CoconutColors.gray700,
       primary: ds.CoconutColors.primary,
@@ -359,10 +363,10 @@ class CoconutColors {
       pageIndicatorActive: ds.CoconutColors.gray400,
       pageIndicatorInactive: ds.CoconutColors.gray800,
       sendingColor: ds.CoconutColors.primary,
-      sendingBackground: ds.CoconutColors.primary,
+      sendingIconBackground: ds.CoconutColors.primary,
       sendingIconOverlayColor: ds.CoconutColors.primary,
       receivingColor: ds.CoconutColors.cyanBlue,
-      receivingBackground: ds.CoconutColors.cyanBlue,
+      receivingIconBackground: ds.CoconutColors.cyanBlue,
       receivingIconOverlayColor: ds.CoconutColors.cyanBlue,
       bottomActionBarBackground: ds.CoconutColors.gray900,
       bottomSheetKeyboardToolbar: Color(0xFF2E2E2E),
@@ -461,10 +465,10 @@ class CoconutColors {
       pageIndicatorActive: Color(0xFF454B57),
       pageIndicatorInactive: Color(0xFFCBB8D8),
       sendingColor: Color.fromARGB(255, 163, 124, 189),
-      sendingBackground: Color.fromARGB(255, 163, 124, 189),
+      sendingIconBackground: Color.fromARGB(255, 163, 124, 189),
       sendingIconOverlayColor: Color.fromARGB(255, 163, 124, 189),
       receivingColor: Color.fromARGB(255, 102, 136, 136),
-      receivingBackground: Color.fromARGB(255, 102, 136, 136),
+      receivingIconBackground: Color.fromARGB(255, 102, 136, 136),
       receivingIconOverlayColor: Color.fromARGB(255, 102, 136, 136),
       bottomActionBarBackground: Color(0xFFE8E0F2),
       bottomSheetKeyboardToolbar: Color.fromARGB(255, 234, 227, 242),
@@ -498,8 +502,8 @@ class CoconutColors {
       surfaceCard: ds.CoconutColors.gray150,
       surfaceButton: ds.CoconutColors.white,
       surfaceButtonText: ds.CoconutColors.white,
-      surfaceButtonSecondary: ds.CoconutColors.white,
-      surfaceButtonSecondaryText: ds.CoconutColors.black,
+      surfaceButtonSecondary: ds.CoconutColors.black,
+      surfaceButtonSecondaryText: ds.CoconutColors.white,
       surfaceMuted: ds.CoconutColors.gray200,
       surfaceRaised: ds.CoconutColors.white,
       surfaceDisabled: ds.CoconutColors.gray300,
@@ -563,10 +567,10 @@ class CoconutColors {
       pageIndicatorActive: ds.CoconutColors.gray700,
       pageIndicatorInactive: ds.CoconutColors.gray300,
       sendingColor: ds.CoconutColors.green,
-      sendingBackground: ds.CoconutColors.green,
+      sendingIconBackground: ds.CoconutColors.green,
       sendingIconOverlayColor: const Color(0xFF8ABC36),
       receivingColor: ds.CoconutColors.cyanBlue,
-      receivingBackground: ds.CoconutColors.sky,
+      receivingIconBackground: ds.CoconutColors.sky,
       receivingIconOverlayColor: const Color(0xFF62C596),
       bottomActionBarBackground: ds.CoconutColors.white,
       bottomSheetKeyboardToolbar: ds.CoconutColors.gray150,

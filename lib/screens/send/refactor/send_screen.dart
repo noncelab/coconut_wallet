@@ -600,7 +600,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   ) {
     final colors = context.coconutColors;
     final bgColor =
-        isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButton : colors.backgroundHighlight;
+        isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButtonSecondary : colors.backgroundHighlight;
     final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
     final textColor =
         isUtxoSelectionAuto
