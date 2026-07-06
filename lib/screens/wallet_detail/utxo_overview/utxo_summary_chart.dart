@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -48,15 +49,16 @@ class UtxoSummaryChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [CoconutColors.black, Color(0xFF1D1D1D)],
+          colors: [colors.background, colors.surfaceSectionBreak],
         ),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24)),
+        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -107,7 +109,7 @@ class UtxoSummaryChart extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: CoconutColors.hotPink.withValues(alpha: 0.18),
+                    color: colors.danger.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
@@ -117,25 +119,25 @@ class UtxoSummaryChart extends StatelessWidget {
                         children: [
                           Container(
                             padding: const EdgeInsets.fromLTRB(4, 4, 4, 5),
-                            decoration: const BoxDecoration(color: CoconutColors.hotPink, shape: BoxShape.circle),
+                            decoration: BoxDecoration(color: colors.danger, shape: BoxShape.circle),
                             child: SvgPicture.asset(
                               'assets/svg/triangle-warning.svg',
                               width: 10,
                               height: 10,
-                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                              colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             t.utxo_list_screen.reused_address_legend,
-                            style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
+                            style: CoconutTypography.body3_12_Bold.setColor(colors.primaryText),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
                         t.utxo_list_screen.reused_address,
-                        style: CoconutTypography.caption_10.setColor(CoconutColors.white),
+                        style: CoconutTypography.caption_10.setColor(colors.primaryText),
                       ),
                     ],
                   ),
@@ -159,15 +161,16 @@ class _AvailabilityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: colors.chartSurface, borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$label • $count coins', style: CoconutTypography.caption_10.setColor(CoconutColors.gray500)),
+          Text('$label • $count coins', style: CoconutTypography.caption_10.setColor(colors.mutedText)),
           const SizedBox(height: 4),
-          Text(formatBalance(sats), style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+          Text(formatBalance(sats), style: CoconutTypography.body3_12_Number.setColor(colors.primaryText)),
         ],
       ),
     );
@@ -221,7 +224,7 @@ class _BarChartState extends State<_BarChart> {
   void _showIntervalInfoModal(BuildContext context, UtxoTierTheme tierTheme) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder:
           (ctx) => SafeArea(
@@ -236,7 +239,7 @@ class _BarChartState extends State<_BarChart> {
                       Expanded(
                         child: Text(
                           t.utxo_overview_screen.interval_info_title,
-                          style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                          style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                         ),
                       ),
                       if (widget.onThemeSettingTap != null)
@@ -248,9 +251,9 @@ class _BarChartState extends State<_BarChart> {
                               widget.onThemeSettingTap?.call();
                             },
                             borderRadius: BorderRadius.circular(20),
-                            child: const Padding(
-                              padding: EdgeInsets.all(8),
-                              child: Icon(Icons.palette_outlined, size: 22, color: CoconutColors.gray200),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(Icons.palette_outlined, size: 22, color: context.coconutColors.iconDefault),
                             ),
                           ),
                         ),
@@ -281,13 +284,13 @@ class _BarChartState extends State<_BarChart> {
                             width: 54,
                             child: Text(
                               r.label,
-                              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
+                              style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
                             ),
                           ),
                           Expanded(
                             child: Text(
                               rangeStr,
-                              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
+                              style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
                             ),
                           ),
                         ],
@@ -305,6 +308,7 @@ class _BarChartState extends State<_BarChart> {
   Widget build(BuildContext context) {
     if (widget.buckets.isEmpty) return const SizedBox.shrink();
 
+    final colors = context.coconutColors;
     final maxCount = widget.buckets.map((b) => b.utxos.length).reduce((a, b) => a > b ? a : b).toDouble();
     final maxCountClamped = maxCount < 1 ? 1.0 : maxCount;
 
@@ -313,9 +317,9 @@ class _BarChartState extends State<_BarChart> {
       children: [
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: CoconutColors.gray800,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: colors.chartSurface,
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(24),
               topRight: Radius.circular(48),
               bottomLeft: Radius.circular(24),
@@ -335,7 +339,7 @@ class _BarChartState extends State<_BarChart> {
                   final isTapped = _tappedBucketIndex == index;
                   var color = widget.tierTheme.colorForSats(bucket.maxSats, dustThreshold: widget.dustThreshold);
                   if (!isTapped) {
-                    color = Color.lerp(color, const Color(0xFF1D1D1D), _overlayOpacity)!;
+                    color = Color.lerp(color, colors.surfaceSectionBreak, _overlayOpacity)!;
                   }
 
                   return Expanded(
@@ -372,11 +376,11 @@ class _BarChartState extends State<_BarChart> {
                                     width: 24,
                                     height: 24,
                                     decoration: BoxDecoration(
-                                      color: CoconutColors.gray800,
+                                      color: colors.chartSurface,
                                       borderRadius: BorderRadius.circular(999),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: CoconutColors.black.withValues(alpha: 0.4),
+                                          color: colors.shadowDefault.withValues(alpha: 0.4),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -385,13 +389,13 @@ class _BarChartState extends State<_BarChart> {
                                     alignment: Alignment.center,
                                     child: Text(
                                       '$count',
-                                      style: CoconutTypography.caption_10_NumberBold.setColor(CoconutColors.white),
+                                      style: CoconutTypography.caption_10_NumberBold.setColor(colors.primaryText),
                                     ),
                                   ),
                                 ),
                                 Text(
                                   bucket.label,
-                                  style: CoconutTypography.caption_10.setColor(CoconutColors.gray500),
+                                  style: CoconutTypography.caption_10.setColor(colors.mutedText),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   textAlign: TextAlign.center,
@@ -417,11 +421,11 @@ class _BarChartState extends State<_BarChart> {
               child: InkWell(
                 onTap: () => _showIntervalInfoModal(context, widget.tierTheme),
                 borderRadius: BorderRadius.circular(20),
-                splashColor: CoconutColors.gray500.withValues(alpha: 0.2),
-                highlightColor: CoconutColors.gray500.withValues(alpha: 0.1),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.info_outline_rounded, size: 18, color: CoconutColors.gray500),
+                splashColor: colors.mutedText.withValues(alpha: 0.2),
+                highlightColor: colors.mutedText.withValues(alpha: 0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.info_outline_rounded, size: 18, color: colors.mutedText),
                 ),
               ),
             ),

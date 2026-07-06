@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -11,7 +12,6 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
 import 'package:flutter/material.dart';
@@ -209,9 +209,9 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
               if (widget.onDelete != null)
                 Positioned.fill(
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: CoconutColors.hotPink,
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    decoration: BoxDecoration(
+                      color: context.coconutColors.danger,
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                 ),
@@ -266,7 +266,10 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                 child: Transform.translate(
                   offset: Offset(_dragOffset, 0),
                   child: Container(
-                    decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(
+                      color: context.coconutColors.surfaceCard,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,7 +299,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: CoconutColors.gray350, width: 1),
+                      border: Border.all(color: context.coconutColors.secondaryText, width: 1),
                     ),
                   ),
                 ),
@@ -311,13 +314,13 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     if (transactionTimeStamp.isEmpty) {
       return const SizedBox.shrink();
     }
-    final textStyle = CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400);
+    final textStyle = CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(transactionTimeStamp[0], style: textStyle),
         CoconutLayout.spacing_200w,
-        Container(width: 1, height: 10, color: CoconutColors.gray600),
+        Container(width: 1, height: 10, color: context.coconutColors.tertiaryText),
         CoconutLayout.spacing_200w,
         Text(transactionTimeStamp[1], style: textStyle),
         if (isMaxMode) ...[const Spacer(), Text(t.transaction_draft.max, style: textStyle)],
@@ -356,7 +359,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
               Expanded(
                 child: Text(
                   walletName,
-                  style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -369,7 +372,10 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
-            child: Text(amountString, style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+            child: Text(
+              amountString,
+              style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+            ),
           ),
         ),
       ],
@@ -389,19 +395,28 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
             address: firstRecipientAddress,
             count: recipientListJson.length - 1,
           ),
-          style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
         )
-        : Text(firstRecipientAddress, style: CoconutTypography.body3_12.setColor(CoconutColors.white));
+        : Text(firstRecipientAddress, style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText));
   }
 
   Widget _buildFeeRate(double feeRate) {
     return Row(
       children: [
-        Text(t.transaction_draft.fee_rate, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+        Text(
+          t.transaction_draft.fee_rate,
+          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+        ),
         CoconutLayout.spacing_100w,
-        Text(_formatFeeRateForDisplay(feeRate), style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+        Text(
+          _formatFeeRateForDisplay(feeRate),
+          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+        ),
         CoconutLayout.spacing_100w,
-        Text(t.transaction_draft.sats_per_vbyte, style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+        Text(
+          t.transaction_draft.sats_per_vbyte,
+          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+        ),
       ],
     );
   }

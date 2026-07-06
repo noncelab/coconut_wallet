@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -41,20 +42,28 @@ class SendAmountHeader extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 child: BitcoinAmountUnit(
                   currentUnit: unit,
-                  unitStyle: Styles.unit,
-                  child: Text(amountText, style: Styles.balance1, textAlign: textAlign),
+                  unitStyle: Styles.unit.setColor(context.coconutColors.primaryText),
+                  child: Text(
+                    amountText,
+                    style: Styles.balance1.setColor(context.coconutColors.primaryText),
+                    textAlign: textAlign,
+                  ),
                 ),
               ),
             ),
           ),
         ),
-        FiatPrice(satoshiAmount: satoshiAmount, textStyle: fiatTextStyle),
+        FiatPrice(
+          satoshiAmount: satoshiAmount,
+          textStyle: fiatTextStyle,
+          textColor: context.coconutColors.secondaryText,
+        ),
         CoconutLayout.spacing_1000h,
         Text(
           t.send_confirm_screen.total_required_amount(
             n: '${unit.isPrefixSymbol ? unit.symbol : ''} $totalCostAmountText ${unit.isPrefixSymbol ? '' : unit.symbol}',
           ),
-          style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
+          style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
           textScaler: const TextScaler.linear(1.0),
         ),
       ],

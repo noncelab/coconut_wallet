@@ -214,7 +214,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
       _xpub,
       name,
       _fingerprint,
-      importSource: WalletImportSource.bitbox02,
+      walletImportSource: WalletImportSource.bitbox02,
     );
     return _walletProvider.syncFromThirdParty(wallet);
   }

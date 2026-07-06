@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -15,7 +17,6 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_scr
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -88,9 +89,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final isEnglishOrSpanish =
-        Provider.of<PreferenceProvider>(context, listen: false).isEnglish ||
-        Provider.of<PreferenceProvider>(context, listen: false).isSpanish;
+    final hasEnglishWordOrder =
+        AppLanguage.fromCode(Provider.of<PreferenceProvider>(context, listen: false).language).hasEnglishWordOrder;
 
     switch (widget.importSource) {
       case WalletImportSource.coconutVault:
@@ -99,7 +99,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.seedSigner:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
@@ -158,7 +158,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.keystone:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               // 키스톤 3 프로 외 에센셜, 이전 프로 기기 호환되지 않음에 따른 임시 조치
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
@@ -191,7 +191,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.jade:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
@@ -230,7 +230,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.coldCard:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step1),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step1_em),
@@ -271,7 +271,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.krux:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),
@@ -290,6 +290,42 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step2),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(' ${t.wallet_add_scanner_screen.guide_krux.step2_em}'),
+            ];
+          }
+        }
+      case WalletImportSource.passport:
+        {
+          if (!hasEnglishWordOrder) {
+            return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
+              _em(t.wallet_add_scanner_screen.guide_passport.step1_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
+              _em(t.wallet_add_scanner_screen.guide_passport.step2_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
+              _em(t.wallet_add_scanner_screen.guide_passport.step3_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step4),
+              _em(t.wallet_add_scanner_screen.guide_passport.step4_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+            ];
+          } else {
+            return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step1_em}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step2_em}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step3_em}'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step4),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step4_em}'),
             ];
           }
         }
@@ -314,7 +350,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         title: _getAppBarTitle(),
         context: context,
         isBottom: true,
-        backgroundColor: CoconutColors.black.withValues(alpha: 0.95),
+        backgroundColor: context.coconutColors.background,
         actionButtonList: [
           IconButton(
             onPressed: () {
@@ -322,8 +358,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
                 controller!.switchCamera();
               }
             },
-            icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
-            color: CoconutColors.white,
+            icon: SvgPicture.asset(
+              'assets/svg/arrow-reload.svg',
+              width: 20,
+              height: 20,
+              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            ),
+            color: context.coconutColors.iconDefault,
           ),
         ],
       ),
@@ -353,8 +394,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               onButtonClicked: _handleClipboardImport,
               text: t.wallet_add_scanner_screen.paste.paste_button,
               showGradient: false,
-              backgroundColor: CoconutColors.white,
-              textColor: CoconutColors.black,
+              backgroundColor: context.coconutColors.primaryButtonBackground,
+              textColor: context.coconutColors.primaryButtonText,
             ),
         ],
       ),
@@ -401,12 +442,15 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     }
 
     try {
+      if (!mounted) return;
+
       ResultOfSyncFromVault? addResult;
-      if (descriptor != null) {
+      if (descriptor != null && mounted) {
         context.loaderOverlay.show();
         addResult = await _viewModel.addWallet(descriptor);
       } else {
         String? mfp = await _showMfpInputBottomSheet();
+        if (!mounted) return;
         context.loaderOverlay.show();
         addResult = await _viewModel.addWallet(extendedPublicKey!, isExtendedPublicKey: true, masterFingerPrint: mfp);
       }
@@ -434,7 +478,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           ),
         );
       },
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
@@ -454,15 +498,20 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     if (_getGuideTextSpan().isEmpty) return const SizedBox.shrink();
 
     return CoconutToolTip(
-      backgroundColor: CoconutColors.gray900,
-      borderColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surface,
+      borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
         'assets/svg/circle-info.svg',
         width: 20,
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
       tooltipType: CoconutTooltipType.fixed,
-      richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
+      richText: RichText(
+        text: TextSpan(
+          style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+          children: _getGuideTextSpan(),
+        ),
+      ),
     );
   }
 
@@ -630,14 +679,14 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
           title: title,
-          backgroundColor: CoconutColors.black.withValues(alpha: 0.7),
+          backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
           description: description,
           descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
           insetPadding: const EdgeInsets.symmetric(horizontal: 50),
           leftButtonText: t.cancel,
-          leftButtonColor: CoconutColors.black.withValues(alpha: 0.7),
+          leftButtonColor: context.coconutColors.primaryButtonBackground.withValues(alpha: 0.7),
           rightButtonText: t.confirm,
-          rightButtonColor: CoconutColors.white,
+          rightButtonColor: context.coconutColors.primaryText,
           onTapRight: () {
             _isProcessing = false;
             Navigator.pop(context);
@@ -654,6 +703,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     WalletImportSource.seedSigner => t.wallet_add_scanner_screen.seed_signer,
     WalletImportSource.coldCard => t.wallet_add_scanner_screen.cold_card,
     WalletImportSource.krux => t.wallet_add_scanner_screen.krux,
+    WalletImportSource.passport => t.wallet_add_scanner_screen.passport,
     WalletImportSource.extendedPublicKey => t.wallet_add_scanner_screen.self,
     _ => '',
   };

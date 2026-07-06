@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
@@ -48,7 +49,7 @@ class WalletSignerSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Text(
               t.wallet_signer_section.title,
-              style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
+              style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
             ),
           ),
           CoconutLayout.spacing_200h,
@@ -56,12 +57,17 @@ class WalletSignerSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: CoconutSegmentedControl(
+                selectedColor: context.coconutColors.segmentedControlSelected,
+                segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+                selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+                unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
                 isSelected: [effectiveIndex == 0, effectiveIndex == 1],
                 onPressed: (index) {
                   viewModel.updateTaprootSpendType(index);
                 },
                 children: [
                   _buildSegmentLabel(
+                    context,
                     t.wallet_signer_section.segmented_control.parent_key,
                     effectiveIndex == 0
                         ? t.wallet_signer_section.segmented_control.currently_using
@@ -69,6 +75,7 @@ class WalletSignerSection extends StatelessWidget {
                     effectiveIndex == 0,
                   ),
                   _buildSegmentLabel(
+                    context,
                     t.wallet_signer_section.segmented_control.child_key,
                     effectiveIndex == 1
                         ? t.wallet_signer_section.segmented_control.currently_using
@@ -84,7 +91,7 @@ class WalletSignerSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _buildRoleDescriptionCard(effectiveIndex, viewModel),
           ),
-          const Divider(color: CoconutColors.gray800, height: 40, indent: 16, endIndent: 16),
+          Divider(color: context.coconutColors.divider, height: 40, indent: 16, endIndent: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TaprootSetupSummaryCard(
@@ -92,7 +99,7 @@ class WalletSignerSection extends StatelessWidget {
               taprootSetupSummaryCardType: TaprootSetupSummaryCardType.column,
             ),
           ),
-          const Divider(color: CoconutColors.gray800, height: 40, indent: 16, endIndent: 16),
+          Divider(color: context.coconutColors.divider, height: 40, indent: 16, endIndent: 16),
         ],
       );
     }
@@ -100,7 +107,7 @@ class WalletSignerSection extends StatelessWidget {
     return CoconutLayout.spacing_800h;
   }
 
-  Widget _buildSegmentLabel(String title, String subTitle, bool isSelected) {
+  Widget _buildSegmentLabel(BuildContext context, String title, String subTitle, bool isSelected) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -108,7 +115,9 @@ class WalletSignerSection extends StatelessWidget {
         Text(
           subTitle,
           style: CoconutTypography.caption_10.setColor(
-            isSelected ? CoconutColors.gray400 : CoconutColors.gray400.withOpacity(0.5),
+            isSelected
+                ? context.coconutColors.secondaryText
+                : context.coconutColors.secondaryText.withValues(alpha: 0.5),
           ),
         ),
       ],

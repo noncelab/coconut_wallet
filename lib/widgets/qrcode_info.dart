@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/adaptive_qr_image.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +51,7 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
           child: CopyTextContainer(
             text: widget.displayText ?? widget.qrData,
             copyText: widget.qrData,
-            textStyle: widget.textStyle ?? CoconutTypography.body2_14,
+            textStyle: widget.textStyle ?? CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
             isAddress: widget.isAddress,
             padding: const EdgeInsets.all(20),
           ),

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -124,7 +125,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           builder:
               (context, viewModel, child) => Scaffold(
                 floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-                backgroundColor: CoconutColors.black,
+                backgroundColor: context.coconutColors.background,
                 appBar: CoconutAppBar.build(title: t.broadcasting_screen.title, context: context),
                 body: SafeArea(
                   child: Stack(
@@ -175,6 +176,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                             _onBroadcastButtonClicked(viewModel);
                           },
                           text: t.broadcasting_screen.btn_submit,
+                          backgroundColor: context.coconutColors.backgroundHighlight,
+                          pressedBackgroundColor: getDarkerColor(context.coconutColors.backgroundHighlight),
+                          textColor: context.coconutColors.backgroundHighlightText,
                         ),
                       },
                     ],
@@ -306,6 +310,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         }
       } catch (e) {
         vibrateMedium();
+        if (!mounted) return;
         showAlertDialog(
           context: context,
           content: t.alert.error_tx.not_parsed(error: e),
@@ -339,7 +344,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             CoconutLayout.spacing_1000h,
             Text(
               t.broadcasting_screen.description,
-              style: CoconutTypography.heading4_18_Bold,
+              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
               textAlign: TextAlign.center,
             ),
             CoconutLayout.spacing_400h,
@@ -350,7 +355,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               totalCostAmountText: totalCostText,
               onTap: _toggleUnit,
               topMargin: 0,
-              fiatTextStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
+              fiatTextStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
             ),
             CoconutLayout.spacing_300h,
             _buildTransactionFlowCard(viewModel),
@@ -361,7 +366,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               Text(
                 t.broadcasting_screen.self_sending,
                 textAlign: TextAlign.center,
-                style: CoconutTypography.caption_10_Number,
+                style: CoconutTypography.caption_10_Number.setColor(context.coconutColors.secondaryText),
               ),
             ],
             CoconutLayout.spacing_500h,

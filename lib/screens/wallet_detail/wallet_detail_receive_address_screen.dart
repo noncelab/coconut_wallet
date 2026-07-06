@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -92,7 +93,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       resizeToAvoidBottomInset: false,
       appBar: CoconutAppBar.build(
         title: t.receive,
@@ -101,10 +102,13 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(_selectedWalletItem?.name ?? t.send_screen.select_wallet, style: CoconutTypography.body1_16),
+                Text(
+                  _selectedWalletItem?.name ?? t.send_screen.select_wallet,
+                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                ),
                 if (_walletCount > 1) ...[
                   CoconutLayout.spacing_50w,
-                  const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: 16),
+                  Icon(Icons.keyboard_arrow_down_sharp, color: context.coconutColors.iconDefault, size: 16),
                 ],
               ],
             ),
@@ -122,52 +126,50 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
       ),
       body:
           _selectedWalletItem != null
-              ? SafeArea(
-                child: InputAndShareOverlay(
-                  shareButtonKey: _shareButtonKey,
-                  onEnterAmountTap: () async {
-                    final preferenceProvider = context.read<PreferenceProvider>();
-                    final result = await Bip21AmountBottomSheet.show(
-                      context: context,
-                      currentUnit: preferenceProvider.currentUnit,
-                      initialAmountSats: _enteredReceiveAmountSats,
+              ? InputAndShareOverlay(
+                shareButtonKey: _shareButtonKey,
+                onEnterAmountTap: () async {
+                  final preferenceProvider = context.read<PreferenceProvider>();
+                  final result = await Bip21AmountBottomSheet.show(
+                    context: context,
+                    currentUnit: preferenceProvider.currentUnit,
+                    initialAmountSats: _enteredReceiveAmountSats,
+                  );
+                  if (!mounted || result == null || !result.didEdit) return;
+                  setState(() {
+                    _enteredReceiveAmountSats = result.amountInSats;
+                  });
+                },
+                onShareTap: () async {
+                  try {
+                    final RenderRepaintBoundary boundary =
+                        _qrCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+                    final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+                    final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+                    final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+                    final directory = await getTemporaryDirectory();
+                    final file = File('${directory.path}/share_qr_address.png');
+                    await file.writeAsBytes(pngBytes);
+
+                    // 버튼 위치 계산
+                    final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+                    final Rect sharePositionOrigin =
+                        box != null ? box.localToGlobal(Offset.zero) & box.size : const Rect.fromLTWH(0, 400, 300, 50);
+
+                    AppGuard.disablePrivacyScreen();
+                    await SharePlus.instance.share(
+                      ShareParams(files: [XFile(file.path)], text: qrData, sharePositionOrigin: sharePositionOrigin),
                     );
-                    if (!mounted || result == null || !result.didEdit) return;
-                    setState(() {
-                      _enteredReceiveAmountSats = result.amountInSats;
-                    });
-                  },
-                  onShareTap: () async {
-                    try {
-                      final RenderRepaintBoundary boundary =
-                          _qrCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-
-                      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-                      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-                      final Uint8List pngBytes = byteData!.buffer.asUint8List();
-
-                      final directory = await getTemporaryDirectory();
-                      final file = File('${directory.path}/share_qr_address.png');
-                      await file.writeAsBytes(pngBytes);
-
-                      // 버튼 위치 계산
-                      final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
-                      final Rect sharePositionOrigin =
-                          box != null
-                              ? box.localToGlobal(Offset.zero) & box.size
-                              : const Rect.fromLTWH(0, 400, 300, 50); // fallback
-
-                      AppGuard.disablePrivacyScreen();
-                      await SharePlus.instance.share(
-                        ShareParams(files: [XFile(file.path)], text: qrData, sharePositionOrigin: sharePositionOrigin),
-                      );
-                    } catch (e, stack) {
-                      debugPrint('Failed to capture and share: $e');
-                      debugPrint('Stack: $stack');
-                    } finally {
-                      AppGuard.enablePrivacyScreen();
-                    }
-                  },
+                  } catch (e, stack) {
+                    debugPrint('Failed to capture and share: $e');
+                    debugPrint('Stack: $stack');
+                  } finally {
+                    AppGuard.enablePrivacyScreen();
+                  }
+                },
+                child: SafeArea(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                     child: Column(
@@ -189,12 +191,12 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                                       children: [
                                         Text(
                                           t.address_list_screen.address_index(index: receiveAddressIndex),
-                                          style: CoconutTypography.body1_16,
+                                          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
                                         ),
                                         Text(
                                           derivationPath,
                                           style: CoconutTypography.body2_14.setColor(
-                                            CoconutColors.white.withValues(alpha: 0.7),
+                                            context.coconutColors.secondaryText,
                                           ),
                                         ),
                                       ],
@@ -207,9 +209,12 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
-                                      color: CoconutColors.white.withValues(alpha: 0.15),
+                                      color: context.coconutColors.surfaceCard,
                                     ),
-                                    child: Text(t.view_all_addresses, style: CoconutTypography.body3_12),
+                                    child: Text(
+                                      t.view_all_addresses,
+                                      style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -232,7 +237,11 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: AddressListScreen(id: _selectedWalletItem!.id, isFullScreen: false),
+      child: AddressListScreen(
+        id: _selectedWalletItem!.id,
+        isFullScreen: false,
+        backgroundColor: context.coconutColors.surfaceBottomSheet,
+      ),
     );
   }
 

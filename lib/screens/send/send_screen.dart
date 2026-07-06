@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
@@ -20,13 +22,12 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
-import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -79,8 +80,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   bool _isDropdownMenuVisible = false;
 
-  final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
-  final Color feeRateFieldGray = const Color(0xFF2B2B2B);
   // 스크롤 범위 연산에 사용하는 값들
   final double kCoconutAppbarHeight = 60;
   final double kPageViewHeight = 225;
@@ -290,8 +289,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _amountController.dispose();
     _amountFocusNode.dispose();
 
-    for (var focusNode in _addressFocusNodeList) focusNode.dispose();
-    for (var controller in _addressControllerList) controller.dispose();
+    for (var focusNode in _addressFocusNodeList) {
+      focusNode.dispose();
+    }
+    for (var controller in _addressControllerList) {
+      controller.dispose();
+    }
 
     _addressFocusNodeList.clear();
     _addressControllerList.clear();
@@ -388,7 +391,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         },
         child: Scaffold(
           resizeToAvoidBottomInset: false,
-          backgroundColor: Colors.black,
+          backgroundColor: context.coconutColors.background,
           appBar: _buildAppBar(context),
           body: GestureDetector(
             onTap: _clearFocus,
@@ -457,8 +460,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       top: 0,
       right: 20,
       child: CoconutPulldownMenu(
-        shadowColor: CoconutColors.white.withValues(alpha: 0.1),
-        dividerColor: CoconutColors.black,
+        shadowColor: context.coconutColors.pulldownMenuBackground.withValues(alpha: 0.1),
+        dividerColor: context.coconutColors.pulldownMenuDividerColor,
+        backgroundColor: context.coconutColors.pulldownMenuBackground,
+        textColor: context.coconutColors.pulldownMenuTextColor,
         entries: [
           if (isSaved) ...[
             CoconutPulldownMenuItem(title: t.transaction_draft.update, isDisabled: !canGoNext), // 변경 사항 저장
@@ -510,7 +515,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               child: Text(
                 textAlign: TextAlign.center,
                 '-',
-                style: CoconutTypography.body1_16.setColor(CoconutColors.white),
+                style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
               ),
             );
           }
@@ -524,11 +529,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             children: [
               Text(
                 isWalletWithoutMfp(_viewModel.selectedWalletItem) ? '-' : selectedWalletItem.name,
-                style: CoconutTypography.body1_16.setColor(CoconutColors.white),
+                style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
               ),
               CoconutLayout.spacing_50h,
               if (!isWalletWithoutMfp(_viewModel.selectedWalletItem))
-                _buildUtxoSelectionModeContainer(isUtxoSelectionAuto, amountText, selectedUtxoListLength),
+                _buildUtxoSelectionModeContainer(context, isUtxoSelectionAuto, amountText, selectedUtxoListLength),
             ],
           );
         },
@@ -545,7 +550,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           height: 40,
           width: 40,
           child: IconButton(
-            icon: SvgPicture.asset('assets/svg/kebab.svg'),
+            icon: SvgPicture.asset(
+              'assets/svg/kebab.svg',
+              colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+            ),
             onPressed: () {
               if (_isDropdownMenuVisible) {
                 _setDropdownMenuVisiblility(false);
@@ -553,7 +561,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 _setDropdownMenuVisiblility(true);
               }
             },
-            color: CoconutColors.white,
           ),
         ),
       ],
@@ -576,6 +583,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             walletId: _viewModel.selectedWalletItem!.id,
             currentUnit: _viewModel.currentUnit,
             scrollController: scrollController,
+            backgroundColor: context.coconutColors.surfaceBottomSheet,
             showSkipButton: false,
           ),
     );
@@ -584,15 +592,22 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     }
   }
 
-  Widget _buildUtxoSelectionModeContainer(bool isUtxoSelectionAuto, String amountText, int selectedUtxoListLength) {
-    final bgColor = isUtxoSelectionAuto || selectedUtxoListLength == 0 ? CoconutColors.gray700 : CoconutColors.primary;
+  Widget _buildUtxoSelectionModeContainer(
+    BuildContext context,
+    bool isUtxoSelectionAuto,
+    String amountText,
+    int selectedUtxoListLength,
+  ) {
+    final colors = context.coconutColors;
+    final bgColor =
+        isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButtonSecondary : colors.backgroundHighlight;
     final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
     final textColor =
         isUtxoSelectionAuto
-            ? CoconutColors.white
+            ? colors.surfaceButtonText
             : selectedUtxoListLength == 0
-            ? CoconutColors.white
-            : CoconutColors.black;
+            ? colors.surfaceButtonText
+            : colors.backgroundHighlightText;
     final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
 
     return !isUtxoSelectionAuto
@@ -652,7 +667,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         /// isFeeRateLowerThanMin, unintendedDustFee중에서는 있는 것을 모두 표시
         if (_viewModel.finalErrorMessage.isNotEmpty) {
           finalButtonMessages.add(
-            FinalButtonMessage(textColor: CoconutColors.hotPink, message: _viewModel.finalErrorMessage),
+            FinalButtonMessage(textColor: context.coconutColors.danger, message: _viewModel.finalErrorMessage),
           );
         } else {
           if (isFeeRateLowerThanMin) {
@@ -666,7 +681,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           if (unintendedDustFee != null) {
             finalButtonMessages.add(
               FinalButtonMessage(
-                textColor: CoconutColors.white,
+                textColor: context.coconutColors.primaryText,
                 message: t.send_screen.unintended_dust_fee(unintendedDustFee: unintendedDustFee.toString()),
               ),
             );
@@ -702,8 +717,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               isActive:
                   !isWalletWithoutMfp(_viewModel.selectedWalletItem) && isReadyToSend && finalErrorMessage.isEmpty,
               text: t.done,
-              backgroundColor: CoconutColors.gray100,
-              pressedBackgroundColor: CoconutColors.gray500,
+              backgroundColor: context.coconutColors.primaryButtonBackground,
+              pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
+              textColor: context.coconutColors.primaryButtonText,
             ),
           ],
         );
@@ -718,7 +734,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(width: 1, color: CoconutColors.gray700),
+          border: Border.all(width: 1, color: context.coconutColors.border),
           borderRadius: const BorderRadius.all(Radius.circular(8)),
         ),
         child: Row(
@@ -727,7 +743,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             SvgPicture.asset(
               imagePath,
               height: 12,
-              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
             ),
             CoconutLayout.spacing_100w,
             FittedBox(
@@ -735,7 +751,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               alignment: Alignment.centerRight,
               child: Text(
                 "$feeRateText ${t.send_screen.fee_rate_suffix}",
-                style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
               ),
             ),
           ],
@@ -757,8 +773,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             !isFetching
                 ? child
                 : Shimmer.fromColors(
-                  baseColor: CoconutColors.white.withValues(alpha: 0.2),
-                  highlightColor: CoconutColors.white.withValues(alpha: 0.6),
+                  baseColor: context.coconutColors.primaryText.withValues(alpha: 0.2),
+                  highlightColor: context.coconutColors.primaryText.withValues(alpha: 0.6),
                   child: child,
                 ),
       ),
@@ -773,7 +789,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         child: Container(
           width: MediaQuery.of(context).size.width,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-          color: keyboardToolbarGray,
+          color: context.coconutColors.surfaceCard,
           child:
               _amountFocusNode.hasFocus ? _buildAmountKeyboardToolbar(context) : _buildFeeRateKeyboardToolbar(context),
         ),
@@ -797,12 +813,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   children: [
                     SvgPicture.asset(
                       'assets/svg/check.svg',
-                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                       width: 10,
                       height: 10,
                     ),
                     CoconutLayout.spacing_200w,
-                    Text(currentUnit.symbol, style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
+                    Text(
+                      currentUnit.symbol,
+                      style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                    ),
                   ],
                 );
               },
@@ -834,7 +853,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             if (isFailed) ...[
               SvgPicture.asset(
                 'assets/svg/triangle-warning.svg',
-                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                 width: 20,
               ),
               CoconutLayout.spacing_200w,
@@ -844,11 +863,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 children: [
                   Text(
                     t.send_screen.recommended_fee_unavailable,
-                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                   ),
                   Text(
                     t.send_screen.recommended_fee_unavailable_description,
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray300),
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                   ),
                 ],
               ),
@@ -916,20 +935,23 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return SizedBox(
       child: CoconutToolTip(
         key: key,
-        backgroundColor: CoconutColors.gray800,
-        borderColor: CoconutColors.gray800,
+        backgroundColor: context.coconutColors.surface,
+        borderColor: context.coconutColors.surface,
         borderRadius: 12,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         icon: Transform.translate(
           offset: const Offset(0, 3),
           child: SvgPicture.asset(
             iconPath,
-            colorFilter: const ColorFilter.mode(CoconutColors.gray300, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
           ),
         ),
         tooltipType: CoconutTooltipType.fixed,
         richText: RichText(
-          text: TextSpan(text: text, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray300)),
+          text: TextSpan(
+            text: text,
+            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+          ),
         ),
       ),
     );
@@ -952,7 +974,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             return Container(
               padding: const EdgeInsets.only(left: 16, right: 14, top: 12, bottom: 20),
               decoration: BoxDecoration(
-                border: Border.all(color: CoconutColors.gray700, width: 1),
+                border: Border.all(color: context.coconutColors.border, width: 1),
                 borderRadius: const BorderRadius.all(Radius.circular(12)),
               ),
               child: Column(
@@ -970,7 +992,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                           child: Text(
                             "${_viewModel.estimatedFeeInSats?.toThousandsSeparatedString() ?? '-'} sats",
                             style: CoconutTypography.body2_14_NumberBold.setColor(
-                              _viewModel.isEstimatedFeeGreaterThanBalance ? CoconutColors.hotPink : CoconutColors.white,
+                              _viewModel.isEstimatedFeeGreaterThanBalance
+                                  ? context.coconutColors.danger
+                                  : context.coconutColors.primaryText,
                             ),
                           ),
                         ),
@@ -1006,7 +1030,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       _viewModel.isFeeSubtractedFromSendAmount
                           ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
                           : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
                       maxLines: 2, // en - right overflow 방지
                       softWrap: true,
                     ),
@@ -1018,9 +1042,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             CoconutSwitch(
               scale: 0.7,
               isOn: _viewModel.isFeeSubtractedFromSendAmount,
-              activeColor: CoconutColors.gray100,
-              trackColor: CoconutColors.gray600,
-              thumbColor: CoconutColors.gray800,
+              activeColor: context.coconutColors.switchActiveTrack,
+              trackColor: context.coconutColors.switchInactiveTrack,
+              thumbColor: context.coconutColors.switchThumb,
               onChanged: (isOn) => _viewModel.setIsFeeSubtractedFromSendAmount(isOn),
             ),
           ],
@@ -1084,13 +1108,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   child: MediaQuery(
                     data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                     child: CoconutTextField(
+                      placeholderColor: context.coconutColors.border,
                       textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
                       textInputFormatter: const [RateInputFormatter()],
                       enableInteractiveSelection: false,
                       textAlign: TextAlign.end,
                       controller: _feeRateController,
                       focusNode: _feeRateFocusNode,
-                      backgroundColor: feeRateFieldGray,
+                      backgroundColor: context.coconutColors.inputSurface,
                       onEditingComplete: () {
                         _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
                         FocusScope.of(context).unfocus();
@@ -1117,14 +1142,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       maxLines: 1,
                       fontFamily: 'SpaceGrotesk',
                       fontSize: 14,
-                      activeColor: CoconutColors.white,
+                      activeColor: context.coconutColors.primaryText,
                       fontWeight: FontWeight.bold,
                       borderRadius: 8,
                       suffix: Container(
                         padding: const EdgeInsets.only(right: 12),
                         child: Text(
                           t.send_screen.fee_rate_suffix,
-                          style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                          style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
                         ),
                       ),
                     ),
@@ -1139,7 +1164,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeRowLabel(String label) {
-    return Text(label, style: CoconutTypography.body2_14.setColor(CoconutColors.gray300));
+    return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong));
   }
 
   Widget _buildPageView(BuildContext context) {
@@ -1200,16 +1225,27 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               child: Container(
                 height: kPageViewHeight,
                 width: MediaQuery.of(context).size.width,
-                color: CoconutColors.black.withValues(alpha: 0.6),
+                color: context.coconutColors.background.withValues(alpha: 0.6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Lottie.asset('assets/lottie/swipe-left.json', width: 60, height: 60),
+                    Lottie.asset(
+                      'assets/lottie/swipe-left.json',
+                      width: 60,
+                      height: 60,
+                      delegates: LottieDelegates(
+                        values: [
+                          ValueDelegate.colorFilter([
+                            '**',
+                          ], value: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcATop)),
+                        ],
+                      ),
+                    ),
                     CoconutLayout.spacing_200h,
                     Text(
                       t.send_screen.swipe_to_add_address,
-                      style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                      style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                     ),
                   ],
                 ),
@@ -1225,7 +1261,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return Padding(
       padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 25),
       child: ShrinkAnimationButton(
-        defaultColor: CoconutColors.black,
+        defaultColor: context.coconutColors.surfaceCard,
         onPressed: () {
           _viewModel.addRecipient();
           _amountController.text = '';
@@ -1233,13 +1269,19 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           _setDropdownMenuVisiblility(false);
         },
         child: CustomPaint(
-          painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: CoconutColors.gray600),
+          painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: context.coconutColors.tertiaryText),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SvgPicture.asset('assets/svg/plus.svg'),
+              SvgPicture.asset(
+                'assets/svg/plus.svg',
+                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+              ),
               CoconutLayout.spacing_100w,
-              Text(t.send_screen.add_recipient, style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
+              Text(
+                t.send_screen.add_recipient,
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+              ),
             ],
           ),
         ),
@@ -1292,21 +1334,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   if (_viewModel.isTotalSendAmountExceedsBalance ||
                       isMinimumAmount ||
                       hasInsufficientBalanceErrorOfLastRecipient) {
-                    amountTextColor = CoconutColors.hotPink;
+                    amountTextColor = context.coconutColors.danger;
                   } else if (_viewModel.isMaxModeLastIndex(index)) {
-                    amountTextColor = CoconutColors.gray600;
+                    amountTextColor = context.coconutColors.secondaryText;
                   } else if (amountText.isEmpty) {
-                    amountTextColor = MyColors.transparentWhite_20;
+                    amountTextColor = context.coconutColors.tertiaryText;
                   } else {
-                    amountTextColor = CoconutColors.white;
+                    amountTextColor = context.coconutColors.primaryText;
                   }
 
-                  final isEnglishOrSpanish =
-                      context.read<PreferenceProvider>().isEnglish || context.read<PreferenceProvider>().isSpanish;
+                  final hasEnglishWordOrder =
+                      AppLanguage.fromCode(context.read<PreferenceProvider>().language).hasEnglishWordOrder;
                   final maxButtonBaseText = t.send_screen.input_maximum_amount;
                   final maxButtonText =
                       _viewModel.isMaxMode
-                          ? (!isEnglishOrSpanish ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
+                          ? (!hasEnglishWordOrder ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
                           : maxButtonBaseText;
 
                   return Column(
@@ -1319,7 +1361,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                 _viewModel.isAmountInsufficient(index)
                                     ? Text(
                                       t.send_screen.max_mode_insufficient_balance,
-                                      style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.hotPink),
+                                      style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.danger),
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 1,
                                     )
@@ -1378,8 +1420,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                         _viewModel.setMaxMode(!isMaxMode);
                                         _clearFocus();
                                       },
-                                      defaultColor: MyColors.grey,
-                                      pressedColor: MyColors.grey.withValues(alpha: 0.8),
+                                      defaultColor: context.coconutColors.surfaceCard,
+                                      pressedColor: context.coconutColors.surfaceCard.withValues(alpha: 0.8),
                                       borderRadius: 4.0,
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
@@ -1390,7 +1432,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                             SvgPicture.asset(
                                               'assets/svg/broom.svg',
                                               colorFilter: ColorFilter.mode(
-                                                CoconutColors.white.withValues(alpha: isMaxMode ? 1.0 : 0.3),
+                                                context.coconutColors.primaryText.withValues(
+                                                  alpha: isMaxMode ? 1.0 : 0.3,
+                                                ),
                                                 BlendMode.srcIn,
                                               ),
                                             ),
@@ -1399,7 +1443,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                               maxButtonText,
                                               style: Styles.caption.merge(
                                                 TextStyle(
-                                                  color: CoconutColors.white,
+                                                  color: context.coconutColors.primaryText,
                                                   fontFamily: CustomFonts.text.getFontFamily,
                                                 ),
                                               ),
@@ -1433,8 +1477,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                                       _viewModel.setIsUtxoSelectionAuto(true);
                                                       _clearFocus();
                                                     },
-                                                    defaultColor: MyColors.grey,
-                                                    pressedColor: MyColors.grey.withValues(alpha: 0.8),
+                                                    defaultColor: context.coconutColors.surfaceCard,
+                                                    pressedColor: context.coconutColors.surfaceCard.withValues(
+                                                      alpha: 0.8,
+                                                    ),
                                                     borderRadius: 4.0,
                                                     child: Container(
                                                       padding: const EdgeInsets.symmetric(
@@ -1449,7 +1495,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                                             'assets/svg/arrow-reload.svg',
                                                             width: 16,
                                                             colorFilter: ColorFilter.mode(
-                                                              CoconutColors.white.withValues(alpha: 0.3),
+                                                              context.coconutColors.primaryText.withValues(alpha: 0.3),
                                                               BlendMode.srcIn,
                                                             ),
                                                           ),
@@ -1458,7 +1504,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                                             t.send_screen.utxo_auto_selection,
                                                             style: Styles.caption.merge(
                                                               TextStyle(
-                                                                color: CoconutColors.white,
+                                                                color: context.coconutColors.primaryText,
                                                                 fontFamily: CustomFonts.text.getFontFamily,
                                                               ),
                                                             ),
@@ -1494,7 +1540,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     key: index == 0 ? _addressInputFieldKey : null,
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
-                    backgroundColor: CoconutColors.black,
+                    backgroundColor: context.coconutColors.background,
+                    placeholderColor: context.coconutColors.border,
                     height: 52,
                     padding: const EdgeInsets.only(left: 16, right: 0),
                     onChanged: (text) {},
@@ -1522,11 +1569,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       },
                       icon:
                           controller.text.isEmpty
-                              ? SvgPicture.asset('assets/svg/scan.svg')
+                              ? SvgPicture.asset(
+                                'assets/svg/scan.svg',
+                                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                              )
                               : SvgPicture.asset(
                                 'assets/svg/text-field-clear.svg',
                                 colorFilter: ColorFilter.mode(
-                                  isAddressError ? CoconutColors.hotPink : CoconutColors.white,
+                                  isAddressError ? context.coconutColors.danger : context.coconutColors.primaryText,
                                   BlendMode.srcIn,
                                 ),
                               ),
@@ -1556,7 +1606,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               _viewModel.deleteRecipient();
                               _setDropdownMenuVisiblility(false);
                             },
-                            textStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                            textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                             padding: EdgeInsets.zero,
                           ),
                         );
@@ -1586,12 +1636,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           child: Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: CoconutColors.gray800),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: context.coconutColors.surfaceFilterChip,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("${currentIndex + 1} ", style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
-                Text("/ $recipientListLength", style: CoconutTypography.body3_12.setColor(CoconutColors.gray600)),
+                Text(
+                  "${currentIndex + 1} ",
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                ),
+                Text(
+                  "/ $recipientListLength",
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                ),
               ],
             ),
           ),
@@ -1635,7 +1694,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         });
       },
       defaultColor: Colors.transparent,
-      pressedColor: CoconutColors.gray800,
+      pressedColor: context.coconutColors.surfacePressed,
       borderRadius: 12.0,
       child: SizedBox(
         width: double.infinity,
@@ -1647,7 +1706,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               CoconutLayout.spacing_100h,
               Text(
                 shortenAddress(address, head: 12, tail: 14),
-                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
               ),
               _buildAddressRowSubtitle(context, walletName, derivationPath, isCurrentWallet),
               CoconutLayout.spacing_100h,
@@ -1665,7 +1724,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     String derivationPath,
     bool isCurrentWallet,
   ) {
-    final fontStyle = CoconutTypography.body3_12.setColor(CoconutColors.gray400);
+    final fontStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText);
     return Text.rich(
       TextSpan(
         children: [
@@ -1673,7 +1732,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           if (isCurrentWallet) ...[
             TextSpan(
               text: ' • ${t.send_screen.current_wallet_label}',
-              style: fontStyle.setColor(CoconutColors.primary),
+              style: fontStyle.setColor(context.coconutColors.textHighlight),
             ),
           ],
           TextSpan(text: ' • $derivationPath', style: fontStyle),
@@ -1693,8 +1752,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               onTap: () => {}, // ignore
               child: Container(
                 decoration: BoxDecoration(
-                  color: CoconutColors.black,
-                  border: Border.all(color: CoconutColors.gray700, width: 1),
+                  color: context.coconutColors.surface,
+                  border: Border.all(color: context.coconutColors.borderStrong, width: 1),
                   borderRadius: const BorderRadius.all(Radius.circular(14)),
                 ),
                 child: Column(
@@ -1711,7 +1770,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 t.send_screen.my_address,
-                                style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
+                                style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
                               ),
                             ),
                             const Spacer(),
@@ -1855,12 +1914,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             ignoring: true,
             child: Container(
               height: 30,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [CoconutColors.black, Colors.transparent],
-                  stops: [0.0, 1.0],
+                  colors: [context.coconutColors.surface, context.coconutColors.surface.withValues(alpha: 0)],
+                  stops: const [0.0, 1.0],
                 ),
               ),
             ),
@@ -1874,12 +1933,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             ignoring: true,
             child: Container(
               height: 30,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, CoconutColors.black],
-                  stops: [0.0, 1.0],
+                  colors: [context.coconutColors.surface.withValues(alpha: 0), context.coconutColors.surface],
+                  stops: const [0.0, 1.0],
                 ),
               ),
             ),
@@ -1938,7 +1997,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: AddressListScreen(id: walletId, isFullScreen: false),
+      child: AddressListScreen(
+        id: walletId,
+        isFullScreen: false,
+        backgroundColor: context.coconutColors.surfaceBottomSheet,
+      ),
     );
   }
 
@@ -2059,7 +2122,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           Future.delayed(const Duration(milliseconds: 1000), () {
             if (!mounted) return;
             final context = _viewMoreButtonKey.currentContext;
-            if (context == null) return;
+            if (context == null || !context.mounted) return;
             final viewMoreButtonRect = context.findRenderObject() as RenderBox?;
             if (viewMoreButtonRect == null) return;
             final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);

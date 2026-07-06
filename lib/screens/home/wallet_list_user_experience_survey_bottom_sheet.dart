@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 
@@ -32,10 +33,10 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                   toolbarHeight: Platform.isAndroid ? 100 : 120,
                   leading: IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: CoconutColors.white, size: 22),
+                    icon: Icon(Icons.close, color: context.coconutColors.iconDefault, size: 22),
                   ),
                 ),
-        backgroundColor: CoconutColors.black,
+        backgroundColor: context.coconutColors.background,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -46,19 +47,21 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                 children: [
                   Image.asset(
                     'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
+                    color: context.coconutColors.primaryText,
+                    colorBlendMode: BlendMode.srcIn,
                   ),
                   const SizedBox(height: 30),
                   if (isFirst)
                     FittedBox(
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text1,
-                        style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
+                        style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
                         textAlign: TextAlign.center,
                       ),
                     ),
                   Text(
                     t.user_experience_survey_bottom_sheet.text2,
-                    style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
+                    style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
                   ),
                   const SizedBox(height: 80),
                   GestureDetector(
@@ -66,10 +69,13 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: CoconutColors.primary),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color: context.coconutColors.backgroundHighlight,
+                      ),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text3,
-                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray700),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.backgroundHighlightText),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -84,11 +90,11 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: CoconutColors.white.withOpacity(0.5),
+                        color: context.coconutColors.primaryButtonBackground.withValues(alpha: 0.5),
                       ),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text4,
-                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                         textAlign: TextAlign.center,
                       ),
                     ),

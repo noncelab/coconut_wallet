@@ -1,13 +1,13 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class ShrinkAnimationButton extends StatefulWidget {
   final Widget child;
   final VoidCallback onPressed;
   final VoidCallback? onLongPress;
-  final Color pressedColor;
-  final Color defaultColor;
-  final Color disabledColor;
+  final Color? pressedColor;
+  final Color? defaultColor;
+  final Color? disabledColor;
   final double borderRadius;
   final Border? border;
   final double borderWidth;
@@ -20,9 +20,9 @@ class ShrinkAnimationButton extends StatefulWidget {
     required this.child,
     required this.onPressed,
     this.onLongPress,
-    this.pressedColor = CoconutColors.gray900,
-    this.defaultColor = CoconutColors.gray800,
-    this.disabledColor = CoconutColors.gray800,
+    this.pressedColor,
+    this.defaultColor,
+    this.disabledColor,
     this.borderRadius = 24.0,
     this.borderWidth = 2.0,
     this.border,
@@ -93,8 +93,11 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
 
   @override
   Widget build(BuildContext context) {
-    final Color solidColor =
-        widget.isActive ? (_isPressed ? widget.pressedColor : widget.defaultColor) : widget.disabledColor;
+    final colors = context.coconutColors;
+    final pressedColor = widget.pressedColor ?? colors.surfacePressed;
+    final defaultColor = widget.defaultColor ?? colors.surface;
+    final disabledColor = widget.disabledColor ?? colors.surface;
+    final Color solidColor = widget.isActive ? (_isPressed ? pressedColor : defaultColor) : disabledColor;
     final bool useGradientBorder = widget.borderGradient != null;
 
     return GestureDetector(

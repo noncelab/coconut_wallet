@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -26,6 +27,7 @@ class UtxoSelectionScreen extends StatefulWidget {
   final ScrollController? scrollController;
   final bool showSkipButton;
   final bool isSplitMode;
+  final Color? backgroundColor;
 
   const UtxoSelectionScreen({
     super.key,
@@ -35,6 +37,7 @@ class UtxoSelectionScreen extends StatefulWidget {
     this.scrollController,
     this.showSkipButton = false,
     this.isSplitMode = false,
+    this.backgroundColor,
   });
 
   @override
@@ -63,6 +66,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Color resolvedBackgroundColor = widget.backgroundColor ?? context.coconutColors.background;
     String titleText = widget.isSplitMode ? t.select_utxo : t.utxo_selection_screen.title;
     return ChangeNotifierProxyProvider<ConnectivityProvider, UtxoSelectionViewModel>(
       create: (_) => _viewModel,
@@ -84,15 +88,12 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                 GestureDetector(
                   onTap: () => _removeUtxoOrderDropdown(),
                   child: Scaffold(
-                    backgroundColor: CoconutColors.black,
+                    backgroundColor: resolvedBackgroundColor,
                     appBar: CoconutAppBar.build(
-                      backgroundColor: CoconutColors.black,
+                      backgroundColor: resolvedBackgroundColor,
                       customTitle: Text(
                         titleText,
-                        style:
-                            widget.isSplitMode
-                                ? CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)
-                                : CoconutTypography.body2_14.setColor(CoconutColors.white),
+                        style: widget.isSplitMode ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
@@ -145,6 +146,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                       _isOrderDropdownVisible = !_isOrderDropdownVisible;
                                     });
                                   },
+                                  backgroundColor: resolvedBackgroundColor,
                                 )
                               else
                                 Padding(
@@ -164,10 +166,16 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                         children: [
                                           Text(
                                             _viewModel.utxoOrder.text,
-                                            style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                                            style: CoconutTypography.caption_10.setColor(
+                                              context.coconutColors.secondaryText,
+                                            ),
                                           ),
                                           const SizedBox(width: 4),
-                                          const Icon(Icons.keyboard_arrow_down, color: CoconutColors.gray400, size: 16),
+                                          Icon(
+                                            Icons.keyboard_arrow_down,
+                                            color: context.coconutColors.secondaryText,
+                                            size: 16,
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -179,7 +187,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                     viewModel.isInitialized
                                         ? Stack(
                                           children: [
-                                            Container(color: CoconutColors.black, child: _buildUtxoList(viewModel)),
+                                            Container(color: resolvedBackgroundColor, child: _buildUtxoList(viewModel)),
                                             FixedBottomButton(
                                               onButtonClicked: () {
                                                 vibrateLight();
@@ -189,7 +197,10 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                               isActive: _viewModel.hasSelectionChanged,
                                               showGradient: true,
                                               horizontalPadding: 16,
-                                              backgroundColor: CoconutColors.white,
+                                              backgroundColor: context.coconutColors.primaryButtonBackground,
+                                              pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
+                                              textColor: context.coconutColors.primaryButtonText,
+                                              gradientColor: context.coconutColors.surfaceBottomSheet,
                                             ),
                                           ],
                                         )
@@ -320,7 +331,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       borderRadius: BorderRadius.circular(16),
       child: CoconutPulldownMenu(
         entries: _utxoOrderOptions.map((order) => CoconutPulldownMenuItem(title: order.text)).toList(),
-        dividerColor: CoconutColors.black,
+        dividerColor: context.coconutColors.divider,
         onSelected: (index, selectedText) async {
           bool isChanged = _viewModel.utxoOrder != _utxoOrderOptions[index];
           setState(() {

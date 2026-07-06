@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_edit_view_model.dart';
@@ -11,7 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
-import 'package:coconut_wallet/styles.dart';
 
 class WalletInfoEditBottomSheet extends StatelessWidget {
   final int id;
@@ -105,6 +105,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     return Selector<WalletInfoEditViewModel, Tuple3<bool, bool, String>>(
       selector: (_, viewModel) => Tuple3(viewModel.canUpdateName, viewModel.isProcessing, viewModel.walletName),
       builder: (context, data, child) {
+        final typography = context.coconutTypography;
         final canUpdateName = data.item1;
         final isProcessing = data.item2;
         final walletName = data.item3;
@@ -124,102 +125,112 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
           onTap: () => FocusScope.of(context).unfocus(),
           child: ClipRRect(
             borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-            child: AnimatedPadding(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-              padding: EdgeInsets.only(bottom: _canEditPalette ? 0 : mediaQuery.viewInsets.bottom),
-              child: SafeArea(
-                child: Container(
-                  color: CoconutColors.black,
-                  child: Stack(
-                    children: [
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Center(
-                              child: SizedBox(
-                                width: 55,
-                                height: 4,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    color: CoconutColors.gray400,
-                                    borderRadius: BorderRadius.all(Radius.circular(4)),
+            child: ColoredBox(
+              color: context.coconutColors.surfaceBottomSheet,
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                padding: EdgeInsets.only(bottom: _canEditPalette ? 0 : mediaQuery.viewInsets.bottom),
+                child: SafeArea(
+                  child: Container(
+                    color: context.coconutColors.surfaceBottomSheet,
+                    child: Stack(
+                      children: [
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 55,
+                                  height: 4,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: context.coconutColors.secondaryText,
+                                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                GestureDetector(
-                                  onTap:
-                                      isProcessing
-                                          ? null
-                                          : () {
-                                            Navigator.pop(context);
-                                          },
-                                  child: const Icon(Icons.close_rounded, size: 24, color: CoconutColors.white),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    walletName,
-                                    style: Styles.body2Bold.copyWith(color: CoconutColors.white),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  GestureDetector(
+                                    onTap:
+                                        isProcessing
+                                            ? null
+                                            : () {
+                                              Navigator.pop(context);
+                                            },
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 24,
+                                      color: context.coconutColors.primaryText,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 24),
-                              ],
+                                  Expanded(
+                                    child: Text(
+                                      walletName,
+                                      style: typography.bodyBold.copyWith(color: context.coconutColors.primaryText),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 24),
+                                ],
+                              ),
                             ),
-                          ),
-                          SizedBox(
-                            height: resolvedBodyHeight,
-                            child: Stack(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  child: _buildBody(context),
-                                ),
-                                FixedBottomButton(
-                                  backgroundColor: CoconutColors.white,
-                                  isVisibleAboveKeyboard: _canEditPalette,
-                                  isActive: isCompleteEnabled,
-                                  showGradient: true,
-                                  bottomPadding: FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
-                                  onButtonClicked: () {
-                                    if (!isCompleteEnabled) return;
-                                    FocusScope.of(context).unfocus();
-                                    context.read<WalletInfoEditViewModel>().changeWalletInfo(
-                                      _textEditingController.text,
-                                      _selectedIconIndex,
-                                      _selectedColorIndex,
-                                      () => Navigator.pop(context, _textEditingController.text.trim()),
-                                    );
-                                  },
-                                  text: t.done,
-                                ),
-                              ],
+                            SizedBox(
+                              height: resolvedBodyHeight,
+                              child: Stack(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: _buildBody(context),
+                                  ),
+                                  FixedBottomButton(
+                                    backgroundColor: context.coconutColors.primaryButtonBackground,
+                                    pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
+                                    textColor: context.coconutColors.primaryButtonText,
+                                    isVisibleAboveKeyboard: _canEditPalette,
+                                    isActive: isCompleteEnabled,
+                                    showGradient: true,
+                                    gradientColor: context.coconutColors.surfaceBottomSheet,
+                                    bottomPadding: FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
+                                    onButtonClicked: () {
+                                      if (!isCompleteEnabled) return;
+                                      FocusScope.of(context).unfocus();
+                                      context.read<WalletInfoEditViewModel>().changeWalletInfo(
+                                        _textEditingController.text,
+                                        _selectedIconIndex,
+                                        _selectedColorIndex,
+                                        () => Navigator.pop(context, _textEditingController.text.trim()),
+                                      );
+                                    },
+                                    text: t.done,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      if (isProcessing)
-                        Positioned.fill(
-                          child: Container(
-                            color: CoconutColors.black.withValues(alpha: 0.6),
-                            alignment: Alignment.center,
-                            child: const CoconutCircularIndicator(size: 160),
-                          ),
+                          ],
                         ),
-                    ],
+                        if (isProcessing)
+                          Positioned.fill(
+                            child: Container(
+                              color: context.coconutColors.iconDefault.withValues(alpha: 0.6),
+                              alignment: Alignment.center,
+                              child: const CoconutCircularIndicator(size: 160),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -266,12 +277,12 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                             _isFirst = false;
                           }
                         },
-                        backgroundColor: CoconutColors.white.withValues(alpha: 0.15),
-                        errorColor: CoconutColors.hotPink,
                         placeholderText: t.name,
-                        placeholderColor: CoconutColors.gray700,
-                        activeColor: CoconutColors.white,
-                        cursorColor: CoconutColors.white,
+                        backgroundColor: context.coconutColors.inputSurface,
+                        errorColor: context.coconutColors.danger,
+                        cursorColor: context.coconutColors.primaryText,
+                        activeColor: context.coconutColors.primaryText,
+                        placeholderColor: context.coconutColors.inputPlaceholder,
                         maxLength: 20,
                         errorText:
                             _isFirst
@@ -291,7 +302,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                                   },
                                   icon: SvgPicture.asset(
                                     'assets/svg/text-field-clear.svg',
-                                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                    colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                                   ),
                                 )
                                 : null,
@@ -309,8 +320,12 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
   }
 
   Widget _buildIcon() {
-    final iconColor = _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).backgroundColor : CoconutColors.gray700;
-    final iconColorFilter = _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).color : Colors.black;
+    final iconColor =
+        _canEditPalette
+            ? ColorUtil.getColor(_selectedColorIndex).backgroundColor
+            : context.coconutColors.iconBackgroundSubtle;
+    final iconColorFilter =
+        _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).color : context.coconutColors.iconDefault;
     final svgPath =
         _canEditPalette
             ? CustomIcons.getPathByIndex(_selectedIconIndex)
@@ -319,7 +334,11 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
-      decoration: BoxDecoration(shape: BoxShape.circle, color: iconColor),
+      decoration: BoxDecoration(
+        shape: _canEditPalette ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: _canEditPalette ? null : BorderRadius.circular(10),
+        color: iconColor,
+      ),
       padding: const EdgeInsets.all(10),
       child: SvgPicture.asset(svgPath, colorFilter: ColorFilter.mode(iconColorFilter, BlendMode.srcIn)),
     );
@@ -388,7 +407,10 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
         margin: const EdgeInsets.all(11.5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(40.0),
-          border: Border.all(color: isSelected ? CoconutColors.white : CoconutColors.black, width: 1.8),
+          border: Border.all(
+            color: isSelected ? context.coconutColors.primaryText : context.coconutColors.border,
+            width: 1.8,
+          ),
         ),
       ),
     );

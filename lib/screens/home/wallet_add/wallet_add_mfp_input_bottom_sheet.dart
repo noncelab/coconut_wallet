@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -70,12 +71,15 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.close, color: CoconutColors.white),
+                      icon: Icon(Icons.close, color: context.coconutColors.iconDefault),
                       onPressed: () {
                         Navigator.pop(context);
                       },
                     ),
-                    Text(t.wallet_add_scanner_screen.paste.mfp_title, style: CoconutTypography.body1_16),
+                    Text(
+                      t.wallet_add_scanner_screen.paste.mfp_title,
+                      style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                    ),
                     Visibility(
                       visible: false,
                       maintainSize: true,
@@ -84,7 +88,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       maintainSemantics: false,
                       maintainInteractivity: false,
                       child: IconButton(
-                        icon: const Icon(Icons.close, color: CoconutColors.white),
+                        icon: Icon(Icons.close, color: context.coconutColors.iconDefault),
                         onPressed: () {
                           Navigator.pop(context);
                         },
@@ -100,9 +104,9 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                   children: [
                     Container(
                       padding: const EdgeInsets.all(CoconutStyles.radius_200),
-                      decoration: const BoxDecoration(
-                        color: CoconutColors.gray800,
-                        borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
+                      decoration: BoxDecoration(
+                        color: context.coconutColors.surfaceCard,
+                        borderRadius: const BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,12 +115,12 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                             children: [
                               SvgPicture.asset(
                                 'assets/svg/circle-warning.svg',
-                                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                               ),
                               CoconutLayout.spacing_100w,
                               Text(
                                 t.wallet_add_scanner_screen.paste.mfp_description_title,
-                                style: CoconutTypography.body2_14_Bold,
+                                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                               ),
                             ],
                           ),
@@ -129,15 +133,17 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                                 RichText(
                                   text: TextSpan(
                                     text: t.wallet_add_scanner_screen.paste.mfp_description_texts[0],
-                                    style: CoconutTypography.body3_12,
+                                    style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                                     children: [
                                       TextSpan(
                                         text: " ${t.wallet_add_scanner_screen.paste.mfp_description_texts[1]}",
-                                        style: CoconutTypography.body3_12,
+                                        style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                                       ),
                                       TextSpan(
                                         text: " ${t.wallet_add_scanner_screen.paste.mfp_description_texts[2]}",
-                                        style: CoconutTypography.body3_12_Bold,
+                                        style: CoconutTypography.body3_12_Bold.setColor(
+                                          context.coconutColors.primaryText,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -153,11 +159,11 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       height: Sizes.size52,
                       padding: const EdgeInsets.only(bottom: 0, left: Sizes.size14, right: Sizes.size14),
                       textAlign: TextAlign.left,
-                      backgroundColor: CoconutColors.gray800,
-                      errorColor: CoconutColors.hotPink,
-                      cursorColor: CoconutColors.white,
-                      activeColor: CoconutColors.white,
-                      placeholderColor: CoconutColors.gray700,
+                      backgroundColor: context.coconutColors.inputSurface,
+                      errorColor: context.coconutColors.danger,
+                      cursorColor: context.coconutColors.primaryText,
+                      activeColor: context.coconutColors.primaryText,
+                      placeholderColor: context.coconutColors.inputPlaceholder,
                       controller: _mfpController,
                       focusNode: _mfpFocusNode,
                       maxLines: 1,
@@ -181,10 +187,10 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                           'assets/svg/text-field-clear.svg',
                           colorFilter: ColorFilter.mode(
                             _isError
-                                ? CoconutColors.hotPink
+                                ? context.coconutColors.danger
                                 : _mfpController.text.isNotEmpty
-                                ? CoconutColors.white
-                                : CoconutColors.gray700,
+                                ? context.coconutColors.primaryText
+                                : context.coconutColors.inputPlaceholder,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -204,13 +210,13 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                                 widget.onSkip?.call();
                               },
                               height: Platform.isAndroid ? 55 : 58,
-                              textStyle: CoconutTypography.body2_14,
-                              disabledBackgroundColor: CoconutColors.gray800,
-                              disabledForegroundColor: CoconutColors.gray700,
+                              textStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                              disabledBackgroundColor: context.coconutColors.surfaceDisabled,
+                              disabledForegroundColor: context.coconutColors.tertiaryText,
                               isActive: true,
-                              backgroundColor: CoconutColors.gray350,
-                              foregroundColor: CoconutColors.black,
-                              pressedTextColor: CoconutColors.black,
+                              backgroundColor: context.coconutColors.secondaryButtonBackground,
+                              foregroundColor: context.coconutColors.secondaryButtonText,
+                              pressedTextColor: context.coconutColors.secondaryButtonText,
                               text: t.wallet_add_scanner_screen.paste.mfp_skip,
                             ),
                           ),
@@ -226,12 +232,12 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                               widget.onComplete(_mfpController.text);
                             },
                             height: Platform.isAndroid ? 55 : 58,
-                            disabledBackgroundColor: CoconutColors.gray800,
-                            disabledForegroundColor: CoconutColors.gray700,
+                            disabledBackgroundColor: context.coconutColors.surfaceDisabled,
+                            disabledForegroundColor: context.coconutColors.tertiaryText,
                             isActive: _isButtonEnabled,
-                            backgroundColor: CoconutColors.white,
-                            foregroundColor: CoconutColors.black,
-                            pressedTextColor: CoconutColors.black,
+                            backgroundColor: context.coconutColors.primaryButtonBackground,
+                            foregroundColor: context.coconutColors.primaryButtonText,
+                            pressedTextColor: context.coconutColors.primaryButtonText,
                             text: t.done,
                           ),
                         ),

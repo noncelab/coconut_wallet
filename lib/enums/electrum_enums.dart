@@ -18,6 +18,10 @@ enum DefaultElectrumServer {
   emzy(ElectrumServer('electrum.emzy.de', 50002, true), 'EMZY', 10, false),
   blockstream(ElectrumServer('blockstream.info', 700, true), 'BLOCKSTREAM', 11, false),
 
+  // Testnet
+  blockstreamTestnet(ElectrumServer('electrum.blockstream.info', 60002, true), 'BLOCKSTREAM_TESTNET', 95, false, true),
+  qtornado(ElectrumServer('testnet.qtornado.com', 51002, true), 'QTORNADO_TESTNET', 96, false, true),
+
   // Regtest
   regtest(
     ElectrumServer('regtest-electrum.coconut.onl', 443, true),
@@ -26,12 +30,13 @@ enum DefaultElectrumServer {
     true, // isRegtest
   );
 
-  const DefaultElectrumServer(this.server, this.serverName, this.order, this.isRegtest);
+  const DefaultElectrumServer(this.server, this.serverName, this.order, this.isRegtest, [this.isTestnet = false]);
 
   final ElectrumServer server;
   final String serverName;
   final int order;
   final bool isRegtest;
+  final bool isTestnet;
 
   static DefaultElectrumServer fromServerType(String serverType) {
     return DefaultElectrumServer.values.firstWhere(
@@ -43,7 +48,9 @@ enum DefaultElectrumServer {
   /// Flavor에 따른 서버 리스트 반환
   static List<ElectrumServer> getServersByFlavor(bool isRegtestFlavor) {
     final filteredServers =
-        DefaultElectrumServer.values.where((server) => server.isRegtest == isRegtestFlavor).toList()
+        DefaultElectrumServer.values
+            .where((server) => server.isRegtest == isRegtestFlavor && !server.isTestnet)
+            .toList()
           ..sort((a, b) => a.order.compareTo(b.order));
 
     return List<ElectrumServer>.unmodifiable(filteredServers.map((e) => e.server).toList());
@@ -54,4 +61,12 @@ enum DefaultElectrumServer {
 
   /// Regtest 서버만 반환
   static List<ElectrumServer> get regtestServers => getServersByFlavor(true);
+
+  /// Testnet 서버만 반환
+  static List<ElectrumServer> get testnetServers {
+    final filteredServers =
+        DefaultElectrumServer.values.where((server) => server.isTestnet).toList()
+          ..sort((a, b) => a.order.compareTo(b.order));
+    return List<ElectrumServer>.unmodifiable(filteredServers.map((e) => e.server).toList());
+  }
 }

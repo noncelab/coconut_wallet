@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -81,7 +82,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     return ChangeNotifierProvider.value(
       value: _viewModel,
       child: Scaffold(
-        backgroundColor: CoconutColors.black,
+        backgroundColor: context.coconutColors.background,
         appBar: CoconutAppBar.build(title: widget.walletName, context: context),
         body: Consumer<BitBox02SignViewModel>(
           builder: (context, vm, _) {
@@ -124,7 +125,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
           padding: const EdgeInsets.only(left: 4.0),
           child: Text(
             t.bitbox02_sign_screen.tx_card.title,
-            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
             textAlign: TextAlign.left,
           ),
         ),
@@ -132,7 +133,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: CoconutColors.gray900,
+            color: context.coconutColors.surface,
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
           ),
           child: Column(
@@ -194,8 +195,17 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 80, child: Text(label, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400))),
-        Expanded(child: Text(value, style: CoconutTypography.body3_12_NumberBold, textAlign: TextAlign.right)),
+        SizedBox(
+          width: 80,
+          child: Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: CoconutTypography.body3_12_NumberBold.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.right,
+          ),
+        ),
       ],
     );
   }
@@ -211,7 +221,8 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     final String? detailText;
 
     if (isIdle) {
-      stateColor = CoconutColors.primary;
+      final color = context.coconutColors.success;
+      stateColor = color;
       stateIcon = AnimatedBuilder(
         animation: _pulseAnimation,
         builder: (_, __) {
@@ -221,13 +232,9 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
             height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: CoconutColors.primary,
+              color: color,
               boxShadow: [
-                BoxShadow(
-                  color: CoconutColors.primary.withValues(alpha: 0.4 + v * 0.6),
-                  blurRadius: 2 + v * 10,
-                  spreadRadius: v * 0.3,
-                ),
+                BoxShadow(color: color.withValues(alpha: 0.4 + v * 0.6), blurRadius: 2 + v * 10, spreadRadius: v * 0.3),
               ],
             ),
           );
@@ -236,29 +243,28 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       stateLabel = t.bitbox02_sign_screen.state_label.idle;
       detailText = null;
     } else if (isBusy) {
-      stateColor = CoconutColors.primary;
-      stateIcon = const SizedBox(
-        width: 12,
-        height: 12,
-        child: CircularProgressIndicator(color: CoconutColors.primary, strokeWidth: 2.5),
-      );
+      final color = context.coconutColors.warning;
+      stateColor = color;
+      stateIcon = SizedBox(width: 12, height: 12, child: CircularProgressIndicator(color: color, strokeWidth: 2.5));
       stateLabel = t.bitbox02_sign_screen.state_label.signing;
       detailText = _subStatusText(vm.subStatus);
     } else if (isDone) {
-      stateColor = CoconutColors.primary;
+      final color = context.coconutColors.success;
+      stateColor = color;
       stateIcon = SvgPicture.asset(
         'assets/svg/circle-check-outline.svg',
-        colorFilter: const ColorFilter.mode(CoconutColors.primary, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         width: 16,
         height: 16,
       );
       stateLabel = t.bitbox02_sign_screen.done.title;
       detailText = t.bitbox02_sign_screen.done.description;
     } else {
-      stateColor = CoconutColors.red;
+      final color = context.coconutColors.danger;
+      stateColor = color;
       stateIcon = SvgPicture.asset(
         'assets/svg/triangle-warning.svg',
-        colorFilter: const ColorFilter.mode(CoconutColors.red, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         width: 16,
         height: 16,
       );
@@ -273,14 +279,14 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
           padding: const EdgeInsets.only(left: 4.0),
           child: Text(
             t.bitbox02_sign_screen.device_status.title,
-            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
           ),
         ),
         CoconutLayout.spacing_300h,
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: CoconutColors.gray900,
+            color: context.coconutColors.surface,
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
           ),
           child: Column(
@@ -289,11 +295,11 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
               Row(
                 children: [
                   if (vm.fingerprint != null) ...[
-                    const Icon(Icons.fingerprint, size: 14, color: CoconutColors.gray400),
+                    Icon(Icons.fingerprint, size: 14, color: context.coconutColors.secondaryText),
                     CoconutLayout.spacing_100w,
                     Text(
                       vm.fingerprint!.toUpperCase(),
-                      style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
+                      style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
                     ),
                     const Spacer(),
                   ],
@@ -304,9 +310,9 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
               ),
               if (detailText != null && detailText.isNotEmpty) ...[
                 CoconutLayout.spacing_400h,
-                Container(height: 1, color: CoconutColors.gray800),
+                Container(height: 1, color: context.coconutColors.divider),
                 CoconutLayout.spacing_400h,
-                Text(detailText, style: CoconutTypography.body3_12.setColor(CoconutColors.gray300)),
+                Text(detailText, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
               ],
             ],
           ),
@@ -348,7 +354,6 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       onButtonClicked: onPressed,
       text: buttonText,
       isActive: !isBusy,
-      backgroundColor: CoconutColors.white,
       subWidget:
           isError
               ? CoconutUnderlinedButton(

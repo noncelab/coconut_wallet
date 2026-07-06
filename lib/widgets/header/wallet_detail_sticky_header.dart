@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
@@ -41,7 +42,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
           child: Column(
             children: [
               Container(
-                color: CoconutColors.black,
+                color: context.coconutColors.background,
                 padding: const EdgeInsets.only(left: 16.0, right: 16, top: 0),
                 alignment: Alignment.center,
                 child: Column(
@@ -53,7 +54,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                         alignment: Alignment.center,
                         child: Text(
                           widget.fiatPrice,
-                          style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                          style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
                         ),
                       ),
                     FittedBox(
@@ -66,7 +67,9 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                           prevValue: widget.animatedBalanceData.previous,
                           value: widget.animatedBalanceData.current,
                           currentUnit: widget.currentUnit,
-                          textStyle: CoconutTypography.body1_16_NumberBold.merge(const TextStyle(fontSize: 18)),
+                          textStyle: CoconutTypography.body1_16_NumberBold
+                              .setColor(context.coconutColors.primaryText)
+                              .merge(const TextStyle(fontSize: 18)),
                         ),
                       ),
                     ),
@@ -80,12 +83,12 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                       Container(
                         width: MediaQuery.sizeOf(context).width,
                         padding: const EdgeInsets.only(top: 10, left: 16, right: 16, bottom: 9),
-                        decoration: const BoxDecoration(
-                          color: CoconutColors.black,
+                        decoration: BoxDecoration(
+                          color: context.coconutColors.background,
                           boxShadow: [
                             BoxShadow(
-                              color: Color.fromRGBO(255, 255, 255, 0.12),
-                              offset: Offset(0, 5),
+                              color: context.coconutColors.shadowDefault.withValues(alpha: 0.12),
+                              offset: const Offset(0, 5),
                               blurRadius: 12,
                               spreadRadius: -2,
                             ),

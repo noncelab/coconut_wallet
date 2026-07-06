@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -23,7 +24,13 @@ class BitBox02ConnectScreen extends StatefulWidget {
   final String? walletName;
   final String? walletFingerprint;
 
-  const BitBox02ConnectScreen({super.key, required this.importSource, this.psbtBase64, this.walletName, this.walletFingerprint});
+  const BitBox02ConnectScreen({
+    super.key,
+    required this.importSource,
+    this.psbtBase64,
+    this.walletName,
+    this.walletFingerprint,
+  });
 
   @override
   State<BitBox02ConnectScreen> createState() => _BitBox02ConnectScreenState();
@@ -99,13 +106,8 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     return ChangeNotifierProvider.value(
       value: _viewModel,
       child: Scaffold(
-        backgroundColor: CoconutColors.black,
-        appBar: CoconutAppBar.build(
-          title: widget.importSource.displayName,
-          context: context,
-          isBottom: true,
-          backgroundColor: CoconutColors.black,
-        ),
+        backgroundColor: context.coconutColors.background,
+        appBar: CoconutAppBar.build(title: widget.importSource.displayName, context: context, isBottom: true),
         body: Consumer<BitBox02ConnectViewModel>(
           builder: (context, vm, _) {
             return SafeArea(
@@ -160,12 +162,12 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
 
   Widget _buildInstructionToolTip(List<String> steps) {
     return CoconutToolTip(
-      backgroundColor: CoconutColors.gray900,
-      borderColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surface,
+      borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
         'assets/svg/circle-info.svg',
         width: 20,
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
       tooltipType: CoconutTooltipType.fixed,
       richText: RichText(
@@ -175,8 +177,8 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
               steps.asMap().entries.expand((e) {
                 final isLast = e.key == steps.length - 1;
                 return [
-                  TextSpan(text: '${e.key + 1}. ', style: const TextStyle(color: CoconutColors.white)),
-                  TextSpan(text: e.value),
+                  TextSpan(text: '${e.key + 1}. ', style: TextStyle(color: context.coconutColors.primaryText)),
+                  TextSpan(text: e.value, style: TextStyle(color: context.coconutColors.primaryText)),
                   if (!isLast) const TextSpan(text: '\n'),
                 ];
               }).toList(),
@@ -190,13 +192,17 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 40,
             height: 40,
-            child: CircularProgressIndicator(color: CoconutColors.primary, strokeWidth: 3),
+            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 3),
           ),
           CoconutLayout.spacing_400h,
-          Text(title, style: CoconutTypography.body2_14.setColor(CoconutColors.primary), textAlign: TextAlign.center),
+          Text(
+            title,
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.primary),
+            textAlign: TextAlign.center,
+          ),
           CoconutLayout.spacing_400h,
           _buildInstructionToolTip(steps),
         ],
@@ -212,14 +218,14 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
         children: [
           SvgPicture.asset(
             'assets/svg/circle-check.svg',
-            colorFilter: const ColorFilter.mode(CoconutColors.green, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
             height: 48,
             width: 48,
           ),
           CoconutLayout.spacing_200h,
           Text(
             t.wallet_connect_screen.guide_bitbox02.paired.title,
-            style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
             textAlign: TextAlign.center,
           ),
           CoconutLayout.spacing_200h,
@@ -235,7 +241,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       decoration: BoxDecoration(
-        color: CoconutColors.gray900,
+        color: context.coconutColors.surface,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       child: Column(
@@ -266,7 +272,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       decoration: BoxDecoration(
-        color: CoconutColors.gray900,
+        color: context.coconutColors.surface,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       child: Column(
@@ -284,12 +290,15 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
 
   Widget _buildSkeletonBox({required double width, double height = 12}) {
     return Shimmer.fromColors(
-      baseColor: CoconutColors.gray800,
-      highlightColor: CoconutColors.gray700,
+      baseColor: context.coconutColors.surfaceSkeletonBase,
+      highlightColor: context.coconutColors.surfaceSkeletonHighlight,
       child: Container(
         width: width,
         height: height,
-        decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(4)),
+        decoration: BoxDecoration(
+          color: context.coconutColors.surfaceSkeletonBase,
+          borderRadius: BorderRadius.circular(4),
+        ),
       ),
     );
   }
@@ -310,8 +319,8 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
   }
 
   Widget _buildInfo({required String label, required String value, Axis direction = Axis.horizontal}) {
-    TextStyle labelStyle = CoconutTypography.body3_12.setColor(CoconutColors.gray500);
-    TextStyle valueStyle = CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white);
+    TextStyle labelStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText);
+    TextStyle valueStyle = CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText);
 
     if (direction == Axis.horizontal) {
       return Row(children: [Text(label, style: labelStyle), const Spacer(), Text(value, style: valueStyle)]);
@@ -331,34 +340,34 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
         children: [
           SvgPicture.asset(
             'assets/svg/circle-warning.svg',
-            colorFilter: const ColorFilter.mode(CoconutColors.red, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
             height: 48,
             width: 48,
           ),
           CoconutLayout.spacing_200h,
           Text(
             t.wallet_connect_screen.guide_bitbox02.error.title,
-            style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.red),
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.danger),
           ),
           CoconutLayout.spacing_400h,
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
             decoration: BoxDecoration(
-              color: CoconutColors.gray900,
+              color: context.coconutColors.surface,
               borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
             ),
             child: Column(
               children: [
                 Text(
                   t.wallet_connect_screen.guide_bitbox02.error.description,
-                  style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                   textAlign: TextAlign.center,
                 ),
                 CoconutLayout.spacing_200h,
                 Text(
                   vm.errorMessage ?? 'Unknown error',
-                  style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                  style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -406,11 +415,6 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       onPressed = () => vm.connect(transport: 'usb');
     }
 
-    return FixedBottomButton(
-      onButtonClicked: onPressed,
-      text: buttonText,
-      isActive: !_isAddingWallet,
-      backgroundColor: CoconutColors.white,
-    );
+    return FixedBottomButton(onButtonClicked: onPressed, text: buttonText, isActive: !_isAddingWallet);
   }
 }

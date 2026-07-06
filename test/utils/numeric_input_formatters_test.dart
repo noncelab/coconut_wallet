@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +8,7 @@ import 'package:intl/intl.dart';
 void main() {
   group('BtcAmountInputFormatter', () {
     TextEditingValue format(String text, {String decimalSeparator = '.', String groupingSeparator = ','}) {
-      NumberFormatConfig.instance.update(decimalSeparator == ',' ? 'es' : 'en');
+      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
       const formatter = BtcAmountInputFormatter();
       return formatter.formatEditUpdate(
         const TextEditingValue(),
@@ -17,7 +18,7 @@ void main() {
 
     // 실제 키 입력을 한 글자씩 시뮬레이션: 이전 상태에서 다음 상태로 연속 호출
     List<String> typeSequence(List<String> inputs, {String decimalSeparator = '.', String groupingSeparator = ','}) {
-      NumberFormatConfig.instance.update(decimalSeparator == ',' ? 'es' : 'en');
+      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
       const formatter = BtcAmountInputFormatter();
       var current = const TextEditingValue();
       final results = <String>[];
@@ -132,7 +133,7 @@ void main() {
     });
 
     test('CASE1: decimalSep=dot, 쉼표 입력 시 소수점 없으면 마침표로 변환', () {
-      NumberFormatConfig.instance.update('en');
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
       // 소수점 없는 상태에서 쉼표 → 마침표 변환
       expect(format(',').text, '0.');
 
@@ -149,7 +150,7 @@ void main() {
     });
 
     test('CASE2: decimalSep=comma, 마침표 입력 시 소수점 없으면 쉼표로 변환', () {
-      NumberFormatConfig.instance.update('es');
+      NumberFormatConfig.instance.update(AppLanguage.es.code);
       // 소수점 없는 상태에서 마침표 → 쉼표 변환
       expect(format('.', decimalSeparator: ',', groupingSeparator: '.').text, '0,');
 
@@ -166,7 +167,7 @@ void main() {
     });
 
     test('rejects multiple decimal separators', () {
-      NumberFormatConfig.instance.update('en');
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
       const oldValue = TextEditingValue(text: '0.1', selection: TextSelection.collapsed(offset: 3));
       const newValue = TextEditingValue(text: '0.1.', selection: TextSelection.collapsed(offset: 4));
       const formatter = BtcAmountInputFormatter();
@@ -183,7 +184,7 @@ void main() {
 
   group('RateInputFormatter', () {
     TextEditingValue format(String text, {String decimalSeparator = '.'}) {
-      NumberFormatConfig.instance.update(decimalSeparator == ',' ? 'es' : 'en');
+      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
       const formatter = RateInputFormatter();
       return formatter.formatEditUpdate(
         const TextEditingValue(),
@@ -192,7 +193,7 @@ void main() {
     }
 
     List<String> typeSequence(List<String> inputs, {String decimalSeparator = '.'}) {
-      NumberFormatConfig.instance.update(decimalSeparator == ',' ? 'es' : 'en');
+      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
       const formatter = RateInputFormatter();
       var current = const TextEditingValue();
       final results = <String>[];
@@ -243,7 +244,7 @@ void main() {
     });
 
     test('소수점 중복 입력 거부', () {
-      NumberFormatConfig.instance.update('en');
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
       const formatter = RateInputFormatter();
       const before = TextEditingValue(text: '1.5', selection: TextSelection.collapsed(offset: 3));
       const addingDot = TextEditingValue(text: '1.5.', selection: TextSelection.collapsed(offset: 4));
@@ -251,7 +252,7 @@ void main() {
     });
 
     test('소수 3자리 이상 거부', () {
-      NumberFormatConfig.instance.update('en');
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
       const formatter = RateInputFormatter();
       const before = TextEditingValue(text: '1.12', selection: TextSelection.collapsed(offset: 4));
       const addingDigit = TextEditingValue(text: '1.123', selection: TextSelection.collapsed(offset: 5));
@@ -264,7 +265,7 @@ void main() {
     });
 
     test('정수 9자리 이상 거부', () {
-      NumberFormatConfig.instance.update('en');
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
       const formatter = RateInputFormatter();
       const before = TextEditingValue(text: '99999999', selection: TextSelection.collapsed(offset: 8));
       const addingDigit = TextEditingValue(text: '999999999', selection: TextSelection.collapsed(offset: 9));
@@ -279,7 +280,7 @@ void main() {
     });
 
     test('정수부/소수부 최대 자리수를 지정할 수 있다', () {
-      NumberFormatConfig.instance.update('en');
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
       const formatter = RateInputFormatter(integerPlaces: 2, decimalPlaces: 1);
 
       const valid = TextEditingValue(text: '99.9', selection: TextSelection.collapsed(offset: 4));
@@ -310,7 +311,7 @@ void main() {
     });
 
     test('숫자가 아닌 문자 입력 거부', () {
-      NumberFormatConfig.instance.update('en');
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
       const formatter = RateInputFormatter();
       const before = TextEditingValue(text: '1', selection: TextSelection.collapsed(offset: 1));
       const addingAlpha = TextEditingValue(text: '1a', selection: TextSelection.collapsed(offset: 2));
@@ -320,7 +321,7 @@ void main() {
 
   group('SatoshiAmountInputFormatter', () {
     test('keeps cursor at the end when locale grouping separator is dot', () {
-      NumberFormatConfig.instance.update('es');
+      NumberFormatConfig.instance.update(AppLanguage.es.code);
       const formatter = SatoshiAmountInputFormatter();
       const oldValue = TextEditingValue(text: '123', selection: TextSelection.collapsed(offset: 3));
       const newValue = TextEditingValue(text: '1234', selection: TextSelection.collapsed(offset: 4));

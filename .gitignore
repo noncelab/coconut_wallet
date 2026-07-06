@@ -178,6 +178,14 @@ firebase.json
 coconut-fastlane-supply.json
 
 # BitBox bridge generated artifacts
+# ```
+# $ make gomobile-bind
+# ```
 **/android/app/libs/bitboxbridge.aar
 **/android/app/libs/bitboxbridge-sources.jar
 **/ios/Runner/bitboxbridge.xcframework
+
+# CCOS
+docs/*
+
+/META-INF

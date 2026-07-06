@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +43,7 @@ class SingleButton extends StatelessWidget {
   final Widget? leftElement;
   final SingleButtonPosition buttonPosition;
   final TextStyle? subtitleStyle;
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final double? betweenGap;
   final EdgeInsets? customPadding;
   final bool enableShrinkAnim;
@@ -59,7 +60,7 @@ class SingleButton extends StatelessWidget {
     this.leftElement,
     this.buttonPosition = SingleButtonPosition.none,
     this.subtitleStyle,
-    this.backgroundColor = CoconutColors.gray800,
+    this.backgroundColor,
     this.betweenGap = 0,
     this.customPadding,
     this.enableShrinkAnim = false,
@@ -69,13 +70,15 @@ class SingleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttonContent = _buildButtonContent();
+    final colors = context.coconutColors;
+    final resolvedBackgroundColor = backgroundColor ?? colors.surface;
+    final buttonContent = _buildButtonContent(context);
 
     return enableShrinkAnim
         ? ShrinkAnimationButton(
           onPressed: onPressed ?? () {},
-          defaultColor: backgroundColor,
-          pressedColor: CoconutColors.gray750,
+          defaultColor: resolvedBackgroundColor,
+          pressedColor: colors.surfacePressed,
           borderRadius: 24,
           animationEndValue: animationEndValue,
           child: Container(
@@ -87,7 +90,7 @@ class SingleButton extends StatelessWidget {
         : GestureDetector(
           onTap: onPressed,
           child: Container(
-            decoration: BoxDecoration(color: backgroundColor, borderRadius: buttonPosition.radius),
+            decoration: BoxDecoration(color: resolvedBackgroundColor, borderRadius: buttonPosition.radius),
             padding: getPadding(),
             child: buttonContent,
           ),
@@ -99,7 +102,7 @@ class SingleButton extends StatelessWidget {
     return customPadding ?? buttonPosition.padding;
   }
 
-  TextStyle get _resolvedSubtitleStyle {
+  TextStyle _resolvedSubtitleStyle(BuildContext context) {
     final baseStyle =
         subtitleStyle != null
             ? subtitle != null && subtitle!.containsCJK
@@ -108,10 +111,10 @@ class SingleButton extends StatelessWidget {
             : subtitle != null && subtitle!.containsCJK
             ? CoconutTypography.body3_12.copyWith(height: 1.3)
             : CoconutTypography.body3_12_Number;
-    return baseStyle.setColor(CoconutColors.gray400);
+    return baseStyle.setColor(subtitleStyle?.color ?? context.coconutColors.tertiaryText);
   }
 
-  Widget _buildButtonContent() {
+  Widget _buildButtonContent(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -122,21 +125,22 @@ class SingleButton extends StatelessWidget {
             children: [
               FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)),
               ),
               if (isVerticalSubtitle) ...{
                 SizedBox(height: betweenGap),
-                FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle)),
+                FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle(context))),
               },
             ],
           ),
         ),
         if (subtitle != null && !isVerticalSubtitle)
-          FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle)),
-        rightElement ?? _rightArrow(),
+          FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle(context))),
+        rightElement ?? _rightArrow(context),
       ],
     );
   }
 
-  Widget _rightArrow() => const Icon(Icons.keyboard_arrow_right_rounded, color: CoconutColors.gray400);
+  Widget _rightArrow(BuildContext context) =>
+      Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSubDefault);
 }

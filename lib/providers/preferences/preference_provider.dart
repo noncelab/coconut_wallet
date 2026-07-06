@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
@@ -57,11 +59,11 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 전체 주소 보기 화면 [입금] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
   late bool _isReceivingTooltipDisabled;
-  bool get isReceivingTooltipDisabled => language == 'kr' ? _isReceivingTooltipDisabled : true;
+  bool get isReceivingTooltipDisabled => language == AppLanguage.ko.code ? _isReceivingTooltipDisabled : true;
 
   /// 전체 주소 보기 화면 [잔돈] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
   late bool _isChangeTooltipDisabled;
-  bool get isChangeTooltipDisabled => language == 'kr' ? _isChangeTooltipDisabled : true;
+  bool get isChangeTooltipDisabled => language == AppLanguage.ko.code ? _isChangeTooltipDisabled : true;
 
   /// 보내기 화면 [수신자 추가하기 카드] 확인 여부
   late bool _hasSeenAddRecipientCard;
@@ -74,11 +76,6 @@ class PreferenceProvider extends ChangeNotifier {
   /// UTXO 수동선택 모드 여부
   late bool _isManualUtxoSelectionMode;
   bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
-
-  bool get isKorean => _language == "kr";
-  bool get isEnglish => _language == "en";
-  bool get isJapanese => _language == "jp";
-  bool get isSpanish => _language == "es";
 
   /// 선택된 통화
   late FiatCode _selectedFiat;
@@ -126,6 +123,10 @@ class PreferenceProvider extends ChangeNotifier {
   late List<FiatCode> _walletListVisibleFiats;
   List<FiatCode> get walletListVisibleFiats => _walletListVisibleFiats;
 
+  /// 테마 variant
+  late CoconutThemeVariant _themeVariant;
+  CoconutThemeVariant get themeVariant => _themeVariant;
+
   PreferenceProvider(
     this._walletPreferencesRepository,
     this._electrumServerProvider,
@@ -165,9 +166,7 @@ class PreferenceProvider extends ChangeNotifier {
 
     _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
     _walletListVisibleFiats = _loadWalletListVisibleFiats();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _applyLanguageSettingSync();
-    });
+    _themeVariant = _loadThemeVariant();
   }
 
   /// 통화 설정 초기화
@@ -183,6 +182,8 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// OS 설정에 따라 언어 설정 초기화
   void _initializeLanguageFromSystem() {
+    _migrateLanguageCodeIfNeeded();
+
     bool changed = false;
     if (_sharedPrefs.isContainsKey(SharedPrefKeys.kLanguage)) {
       _language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
@@ -192,55 +193,45 @@ class PreferenceProvider extends ChangeNotifier {
       changed = true;
     }
 
-    _applyLanguageSettingSync();
+    _applyLanguageSetting();
     if (changed) {
       notifyListeners();
     }
   }
 
-  /// 언어 설정 적용 (동기 버전)
-  void _applyLanguageSettingSync() {
-    try {
-      Logger.log('Applying language setting: $_language');
-      if (isKorean) {
-        LocaleSettings.setLocaleSync(AppLocale.kr);
-        Logger.log('Korean locale applied successfully');
-      } else if (isJapanese) {
-        LocaleSettings.setLocaleSync(AppLocale.jp);
-        Logger.log('Japanese locale applied successfully');
-      } else if (isEnglish) {
-        LocaleSettings.setLocaleSync(AppLocale.en);
-        Logger.log('English locale applied successfully');
-      } else if (isSpanish) {
-        LocaleSettings.setLocaleSync(AppLocale.es);
-        Logger.log('Spanish locale applied successfully');
+  /// 이전 국가 코드 기반 언어 코드(kr, jp)를 ISO 639-1 언어 코드(ko, ja)로 마이그레이션
+  void _migrateLanguageCodeIfNeeded() {
+    if (_sharedPrefs.isContainsKey(SharedPrefKeys.kLanguage)) {
+      final storedLanguage = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
+      final migratedLanguage = _migrateLanguageCode(storedLanguage);
+      if (migratedLanguage != storedLanguage) {
+        _sharedPrefs.setString(SharedPrefKeys.kLanguage, migratedLanguage);
       }
-
-      NumberFormatConfig.instance.update(_language);
-
-      // 언어 설정 후 상태 업데이트를 위해 notifyListeners 호출
-      notifyListeners();
-    } catch (e) {
-      // 언어 초기화 실패 시 로그 출력 (선택사항)
-      Logger.log('Language initialization failed: $e');
     }
   }
 
+  /// v0.13.1까지 사용하던 앱 언어코드('kr', 'jp')를 ISO 639-1 언어 코드('ko', 'ja')로 마이그레이션
+  String _migrateLanguageCode(String languageCode) {
+    const Map<String, String> migrationMap = {'kr': 'ko', 'jp': 'ja'};
+    return migrationMap[languageCode] ?? languageCode;
+  }
+
+  /// 현재 설정된 언어에 해당하는 AppLocale 반환
+  AppLocale _resolveAppLocale() {
+    return switch (AppLanguage.fromCode(_language)) {
+      AppLanguage.ko => AppLocale.ko,
+      AppLanguage.en => AppLocale.en,
+      AppLanguage.ja => AppLocale.ja,
+      AppLanguage.es => AppLocale.es,
+      AppLanguage.de => AppLocale.de,
+    };
+  }
+
   /// 언어 설정 적용
-  Future<void> _applyLanguageSetting() async {
+  void _applyLanguageSetting() {
     try {
-      if (isKorean) {
-        await LocaleSettings.setLocale(AppLocale.kr);
-      } else if (isJapanese) {
-        await LocaleSettings.setLocale(AppLocale.jp);
-      } else if (isEnglish) {
-        await LocaleSettings.setLocale(AppLocale.en);
-      } else if (isSpanish) {
-        await LocaleSettings.setLocale(AppLocale.es);
-      } else {
-        // 기본값은 영어로 설정
-        await LocaleSettings.setLocale(AppLocale.en);
-      }
+      Logger.log('Applying language setting: $_language');
+      LocaleSettings.setLocaleSync(_resolveAppLocale());
       NumberFormatConfig.instance.update(_language);
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
@@ -338,7 +329,7 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setString(SharedPrefKeys.kLanguage, languageCode);
 
     // 언어 설정 적용
-    await _applyLanguageSetting();
+    _applyLanguageSetting();
 
     // 언어 설정 후 상태 업데이트
     notifyListeners();
@@ -587,10 +578,26 @@ class PreferenceProvider extends ChangeNotifier {
   List<FiatCode> get orderedFiats => _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
 
   static const Map<FiatCode, List<FiatCode>> _fiatOrder = {
-    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY],
-    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
-    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW],
+    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY, FiatCode.EUR],
+    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY, FiatCode.EUR],
+    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW, FiatCode.EUR],
+    FiatCode.EUR: [FiatCode.EUR, FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
   };
+
+  CoconutThemeVariant _loadThemeVariant() {
+    final stored = _sharedPrefs.getString(SharedPrefKeys.kThemeVariant);
+    return CoconutThemeVariant.values.firstWhere(
+      (e) => e.name == stored,
+      orElse: () => CoconutThemeVariant.dark,
+    );
+  }
+
+  Future<void> changeThemeVariant(CoconutThemeVariant variant) async {
+    _themeVariant = variant;
+    CoconutThemeController.variantNotifier.value = variant;
+    await _sharedPrefs.setString(SharedPrefKeys.kThemeVariant, variant.name);
+    notifyListeners();
+  }
 
   List<FiatCode> _loadWalletListVisibleFiats() {
     final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats);

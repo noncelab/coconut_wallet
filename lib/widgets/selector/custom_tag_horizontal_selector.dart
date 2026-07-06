@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 
@@ -78,11 +79,9 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
   }
 
   Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag) {
-    Color bgColor;
-    Color textColor;
-
-    bgColor = isSelected ? CoconutColors.white : CoconutColors.gray800;
-    textColor = isSelected ? CoconutColors.gray800 : CoconutColors.white;
+    final colors = context.coconutColors;
+    final bgColor = isSelected ? colors.surfaceFilterChipSelected : colors.surfaceFilterChip;
+    final textColor = isSelected ? colors.textFilterChipSelected : colors.textFilterChip;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),

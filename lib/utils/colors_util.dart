@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -9,13 +8,7 @@ import 'dart:math' as math;
 const defaultIconColor = Color.fromRGBO(218, 216, 228, 1);
 const defaultBackgroundColor = Color.fromRGBO(255, 255, 255, 0.1);
 
-const defaultBoxDecoration = BoxDecoration(
-  color: CoconutColors.gray800,
-  borderRadius: BorderRadius.all(Radius.circular(24)),
-);
-
-const defaultCardColor = Color.fromRGBO(255, 255, 255, 0.06);
-
+// FIXME: deprecated
 class ColorSet {
   final Color color;
   final Color backgroundColor;

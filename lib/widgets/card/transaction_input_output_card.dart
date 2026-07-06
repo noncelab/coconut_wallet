@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
@@ -172,7 +173,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 20, 12, 20),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: CoconutColors.gray850),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: context.coconutColors.surfaceCard),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -185,7 +186,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
                 Expanded(
                   child: Text(
                     t.transaction_detail_screen.input_output_detail_title,
-                    style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -196,7 +197,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
                     'assets/svg/arrow-right-md.svg',
                     width: 24,
                     height: 24,
-                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                   ),
                 ),
               ],
@@ -222,7 +223,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
                             SvgPicture.asset(
                               'assets/svg/triangle-warning.svg',
                               width: 14,
-                              colorFilter: const ColorFilter.mode(CoconutColors.warningYellow, BlendMode.srcIn),
+                              colorFilter: ColorFilter.mode(context.coconutColors.warning, BlendMode.srcIn),
                             ),
                           ],
                         ),
@@ -231,7 +232,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
                           child: Text(
                             t.errors.empty_input,
                             softWrap: true,
-                            style: CoconutTypography.body2_14.copyWith(color: CoconutColors.warningYellow),
+                            style: CoconutTypography.body2_14.copyWith(color: context.coconutColors.warning),
                           ),
                         ),
                       ],
@@ -296,7 +297,13 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
             ),
 
           /// balance 최대 너비 체크를 위함
-          Offstage(child: Text(key: _balanceWidthKey, _minimumLongestText, style: CoconutTypography.body2_14_Number)),
+          Offstage(
+            child: Text(
+              key: _balanceWidthKey,
+              _minimumLongestText,
+              style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+            ),
+          ),
         ],
       ),
     );

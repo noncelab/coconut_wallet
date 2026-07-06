@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -79,7 +80,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               GestureDetector(
                 onTapDown: (details) => _removeTooltip(),
                 child: Scaffold(
-                  backgroundColor: CoconutColors.black,
+                  backgroundColor: context.coconutColors.background,
                   appBar: CoconutAppBar.build(title: '', context: context),
                   body: SingleChildScrollView(
                     child: Column(
@@ -214,7 +215,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             margin: const EdgeInsets.symmetric(vertical: 20),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(1),
-                              color: CoconutColors.white,
+                              color: context.coconutColors.divider,
                             ),
                           ),
                         ),
@@ -226,13 +227,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             rightElement: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: CoconutColors.white.withValues(alpha: 0.1),
+                                color: context.coconutColors.primaryText.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: SvgPicture.asset(
                                 'assets/svg/trash.svg',
                                 width: 16,
-                                colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
+                                colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
                               ),
                             ),
                             onPressed: () {
@@ -255,7 +256,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       Navigator.of(context).pop();
                                     },
                                     rightButtonText: t.delete,
-                                    rightButtonColor: CoconutColors.hotPink,
+                                    rightButtonColor: context.coconutColors.danger,
                                     leftButtonText: t.cancel,
                                   );
                                 },
@@ -350,7 +351,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           ),
         );
       },
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
@@ -411,12 +412,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         return currentText.isNotEmpty && currentText != original.trim();
       },
       focusOnlyWhenOriginalNotEmpty: true,
-      fieldBackgroundColor: CoconutColors.white.withValues(alpha: 0.15),
-      errorColor: CoconutColors.hotPink,
-      placeholderColor: CoconutColors.gray700,
-      activeColor: CoconutColors.white,
-      cursorColor: CoconutColors.white,
-      suffix: Text(BitcoinUnit.btc.symbol, style: CoconutTypography.body2_14_Bold),
+      fieldBackgroundColor: context.coconutColors.inputSurface,
+      errorColor: context.coconutColors.danger,
+      placeholderColor: context.coconutColors.inputPlaceholder,
+      activeColor: context.coconutColors.primaryText,
+      cursorColor: context.coconutColors.primaryText,
+      suffix: Text(
+        BitcoinUnit.btc.symbol,
+        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+      ),
       onComplete: (text) {
         final btc = text.toDoubleSafe();
         if (btc == null || btc <= 0) {
@@ -524,7 +528,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: QrWithCopyTextScreen(qrData: extendedPublicKey, title: t.extended_public_key, showPulldownMenu: false),
+      backgroundColor: context.coconutColors.background,
+      child: QrWithCopyTextScreen(
+        qrData: extendedPublicKey,
+        title: t.extended_public_key,
+        showPulldownMenu: false,
+        backgroundColor: context.coconutColors.background,
+      ),
     );
   }
 }
@@ -553,6 +563,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       child: Column(
@@ -564,8 +575,8 @@ class _WalletInfoStatsSection extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ShrinkAnimationButton(
-                  defaultColor: CoconutColors.gray800,
-                  pressedColor: CoconutColors.gray750,
+                  defaultColor: colors.surfaceCard,
+                  pressedColor: colors.surfacePressed,
                   borderRadius: 24,
                   onPressed: () {
                     Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
@@ -577,8 +588,8 @@ class _WalletInfoStatsSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ShrinkAnimationButton(
-            defaultColor: CoconutColors.gray800,
-            pressedColor: CoconutColors.gray750,
+            defaultColor: colors.surfaceCard,
+            pressedColor: colors.surfacePressed,
             borderRadius: 24,
             onPressed: onEditTargetTap,
             child: _TargetQuantityCard(
@@ -607,7 +618,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: transparentBackground ? Colors.transparent : CoconutColors.gray800,
+        color: transparentBackground ? Colors.transparent : context.coconutColors.surfaceCard,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -615,17 +626,20 @@ class _StatCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(label, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500)),
+              Text(label, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText)),
               const SizedBox(width: 4),
               transparentBackground
-                  ? const Icon(Icons.keyboard_arrow_right_rounded, size: 20, color: CoconutColors.gray500)
+                  ? Icon(Icons.keyboard_arrow_right_rounded, size: 20, color: context.coconutColors.iconSubDefault)
                   : const SizedBox.shrink(),
             ],
           ),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: Text(value, style: CoconutTypography.heading3_21_NumberBold.setColor(CoconutColors.white)),
+            child: Text(
+              value,
+              style: CoconutTypography.heading3_21_NumberBold.setColor(context.coconutColors.primaryText),
+            ),
           ),
         ],
       ),
@@ -661,7 +675,7 @@ class _TargetQuantityCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: transparentBackground ? Colors.transparent : CoconutColors.gray800,
+            color: transparentBackground ? Colors.transparent : context.coconutColors.tertiaryText,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
@@ -671,14 +685,14 @@ class _TargetQuantityCard extends StatelessWidget {
                 children: [
                   Text(
                     t.wallet_info_screen.target_quantity,
-                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500),
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
                   ),
                   const SizedBox(width: 4),
                   SvgPicture.asset(
                     'assets/svg/edit-outlined.svg',
                     width: 12,
                     height: 12,
-                    colorFilter: const ColorFilter.mode(CoconutColors.gray500, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
                   ),
                 ],
               ),
@@ -689,16 +703,17 @@ class _TargetQuantityCard extends StatelessWidget {
                     children: [
                       Text(
                         'Stay humble, stack sats!',
-                        style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.gray500),
+                        style: CoconutTypography.heading4_18_NumberBold.setColor(context.coconutColors.secondaryText),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         t.wallet_info_screen.target_not_set_secondary,
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray600),
+                        style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
                       ),
                     ],
                   )
                   : _buildTargetProgressText(
+                    context: context,
                     percent: percent,
                     amountText: currentUnit.displayBitcoinAmount(effectiveTarget, withUnit: false),
                     unitSymbol: currentUnit.symbol,
@@ -710,8 +725,8 @@ class _TargetQuantityCard extends StatelessWidget {
                   width: double.infinity,
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: CoconutColors.white,
-                      inactiveTrackColor: CoconutColors.gray600,
+                      activeTrackColor: context.coconutColors.pageIndicatorActive,
+                      inactiveTrackColor: context.coconutColors.pageIndicatorInactive,
                       overlayShape: SliderComponentShape.noOverlay,
                       trackHeight: 6,
                       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 0),
@@ -746,13 +761,14 @@ class _TargetQuantityCard extends StatelessWidget {
   }
 
   Widget _buildTargetProgressText({
+    required BuildContext context,
     required String percent,
     required String amountText,
     required String unitSymbol,
     required bool isPrefixUnit,
   }) {
-    final whiteStyle = CoconutTypography.heading3_21_Number.setColor(CoconutColors.white);
-    final grayStyle = CoconutTypography.body1_16_Number.setColor(CoconutColors.gray400);
+    final whiteStyle = CoconutTypography.heading3_21_Number.setColor(context.coconutColors.primaryText);
+    final grayStyle = CoconutTypography.body1_16_Number.setColor(context.coconutColors.secondaryText);
 
     return RichText(
       text: TextSpan(

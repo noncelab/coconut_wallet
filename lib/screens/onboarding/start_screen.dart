@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app/bootstrap/splash_theme.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
@@ -28,13 +30,13 @@ class _StartScreenState extends State<StartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDefaultTheme = CoconutThemeController.currentVariant == CoconutThemeVariant.dark;
+
     return ColoredBox(
       color:
-          Platform.isIOS
-              ? CoconutColors.black
-              : (NetworkType.currentNetworkType.isTestnet
-                  ? splashBackgroundColorRegtest
-                  : splashBackgroundColorMainnet),
+          isDefaultTheme
+              ? (NetworkType.currentNetworkType.isTestnet ? splashBackgroundColorRegtest : splashBackgroundColorMainnet)
+              : context.coconutColors.background,
       child: Center(
         child: Image.asset(
           'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
@@ -87,11 +89,12 @@ class _StartScreenState extends State<StartScreen> {
                 title: t.alert.update.title,
                 description: t.alert.update.description,
                 rightButtonText: t.alert.update.btn_update,
-                rightButtonColor: CoconutColors.primary,
+                rightButtonColor: context.coconutColors.primary,
                 leftButtonText: t.alert.update.btn_do_later,
                 onTapRight: () async {
                   await _viewModel.launchUpdate();
-                  if (mounted) Navigator.pop(context, true);
+                  if (!context.mounted) return;
+                  Navigator.pop(context, true);
                 },
                 onTapLeft: () => Navigator.pop(context, false),
               ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -10,7 +11,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
-import 'package:coconut_wallet/widgets/textfield/custom_text_field.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -48,6 +48,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   String _walletIndex = '';
 
   final TextEditingController textController = TextEditingController();
+  final FocusNode _addressFocusNode = FocusNode();
 
   Duration _remainingTime = const Duration();
   Timer? _timer;
@@ -128,12 +129,15 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.close, color: CoconutColors.white),
+                      icon: Icon(Icons.close, color: context.coconutColors.iconDefault),
                       onPressed: () {
                         Navigator.pop(context);
                       },
                     ),
-                    Text(t.faucet_request_bottom_sheet.title, style: CoconutTypography.body1_16),
+                    Text(
+                      t.faucet_request_bottom_sheet.title,
+                      style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                    ),
                     Visibility(
                       visible: false,
                       maintainSize: true,
@@ -142,7 +146,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                       maintainSemantics: false,
                       maintainInteractivity: false,
                       child: IconButton(
-                        icon: const Icon(Icons.close, color: CoconutColors.white),
+                        icon: Icon(Icons.close, color: context.coconutColors.iconDefault),
                         onPressed: () {
                           Navigator.pop(context);
                         },
@@ -159,19 +163,30 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                     const SizedBox(height: 30),
                     MediaQuery(
                       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                      child: Text(t.faucet_request_bottom_sheet.recipient, style: CoconutTypography.body1_16_Bold),
+                      child: Text(
+                        t.faucet_request_bottom_sheet.recipient,
+                        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     MediaQuery(
                       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                      child: CustomTextField(
+                      child: CoconutTextField(
                         controller: textController,
-                        placeholder: t.faucet_request_bottom_sheet.placeholder,
+                        focusNode: _addressFocusNode,
+                        placeholderText: t.faucet_request_bottom_sheet.placeholder,
                         onChanged: (text) {
                           _validateAddress(text.toLowerCase());
                         },
                         maxLines: 2,
-                        style: CoconutTypography.body1_16_Number,
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                        backgroundColor: context.coconutColors.inputSurface,
+                        activeColor: context.coconutColors.primaryText,
+                        cursorColor: context.coconutColors.primaryText,
+                        placeholderColor: context.coconutColors.inputPlaceholder,
+                        errorColor: context.coconutColors.danger,
+                        fontSize: 16,
+                        fontFamily: 'SpaceGrotesk',
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -189,7 +204,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                           alignment: Alignment.centerRight,
                           child: Text(
                             t.faucet_request_bottom_sheet.my_address(name: _walletName, index: _walletIndex),
-                            style: CoconutTypography.body2_14_Number,
+                            style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
                           ),
                         ),
                       ),
@@ -205,17 +220,21 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                     widget.onRequest.call(_walletAddress, _requestAmount);
                     FocusScope.of(context).unfocus();
                   },
+                  pressedOpacity: 0.8,
                   borderRadius: BorderRadius.circular(8.0),
                   padding: EdgeInsets.zero,
-                  color: canRequestFaucet() ? CoconutColors.white : CoconutColors.white.withOpacity(0.3),
+                  color:
+                      canRequestFaucet()
+                          ? context.coconutColors.primaryButtonBackground
+                          : context.coconutColors.primaryButtonBackground.withValues(alpha: 0.3),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                     child:
                         _state == _AvailabilityState.checking
-                            ? const SizedBox(
+                            ? SizedBox(
                               height: 28,
                               width: 28,
-                              child: CircularProgressIndicator(color: CoconutColors.white),
+                              child: CircularProgressIndicator(color: context.coconutColors.iconDefault),
                             )
                             : Text(
                               _isRequesting
@@ -225,7 +244,9 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                                   ),
                               style: CoconutTypography.body2_14
                                   .setColor(
-                                    (canRequestFaucet()) ? CoconutColors.black : CoconutColors.black.withOpacity(0.5),
+                                    (canRequestFaucet())
+                                        ? context.coconutColors.primaryButtonText
+                                        : context.coconutColors.primaryButtonText.withValues(alpha: 0.5),
                                   )
                                   .merge(const TextStyle(letterSpacing: -0.1, fontWeight: FontWeight.w600)),
                             ),
@@ -305,12 +326,13 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   }
 
   Widget _buildWarningMessage(String message) {
-    return Text(message, style: CoconutTypography.body3_12.setColor(CoconutColors.red));
+    return Text(message, style: CoconutTypography.body3_12.setColor(context.coconutColors.danger));
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _addressFocusNode.dispose();
     textController.dispose();
     super.dispose();
   }

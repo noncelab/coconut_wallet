@@ -1,6 +1,5 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_toggle_row.dart';
 
 class ToggleWidget extends StatefulWidget {
   final String toggleName;
@@ -24,25 +23,15 @@ class _ToggleWidgetState extends State<ToggleWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Text(widget.toggleName, style: Styles.subLabel.merge(const TextStyle(color: MyColors.defaultText))),
-        ),
-        CupertinoSwitch(
-          value: _value,
-          onChanged: (newValue) {
-            setState(() {
-              _value = newValue;
-            });
-            if (widget.onChanged != null) {
-              widget.onChanged!(newValue);
-            }
-          },
-          activeColor: CoconutColors.primary.withOpacity(0.8),
-        ),
-      ],
+    return CoconutToggleRow(
+      toggleName: widget.toggleName,
+      initialValue: _value,
+      onChanged: (newValue) {
+        setState(() {
+          _value = newValue;
+        });
+        widget.onChanged?.call(newValue);
+      },
     );
   }
 }

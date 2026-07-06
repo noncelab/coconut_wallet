@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/number_symbols.dart';
 
@@ -22,30 +23,20 @@ String getNumberGroupingSeparator({String? localeName}) {
   return getNumberFormatSymbols(localeName: localeName).GROUP_SEP;
 }
 
-/// 시스템 언어를 감지하여 적절한 언어 코드를 반환합니다.
+/// 시스템 언어를 감지하여 앱 내부 언어 코드로 반환합니다.
 String getSystemLanguageCode() {
   final Locale systemLocale = PlatformDispatcher.instance.locale;
-  final String languageCode = systemLocale.languageCode.toLowerCase();
+  final String systemLanguageCode = systemLocale.languageCode.toLowerCase();
 
-  switch (languageCode) {
-    case 'ko':
-      return 'kr';
-    case 'ja':
-    case 'jp':
-      return 'jp';
-    case 'es':
-      return 'es';
-    default:
-      return 'en';
-  }
+  return AppLanguage.fromCode(systemLanguageCode).code;
 }
 
 /// 시스템 언어가 한국어인지 확인합니다.
 bool isSystemLanguageKorean() {
-  return getSystemLanguageCode() == 'kr';
+  return getSystemLanguageCode() == AppLanguage.ko.code;
 }
 
 /// 시스템 언어가 일본어인지 확인합니다.
 bool isSystemLanguageJapanese() {
-  return getSystemLanguageCode() == 'jp';
+  return getSystemLanguageCode() == AppLanguage.ja.code;
 }

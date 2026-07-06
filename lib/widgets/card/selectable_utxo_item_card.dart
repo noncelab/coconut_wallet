@@ -1,9 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
@@ -66,9 +66,12 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: _isPressing ? MyColors.transparentWhite_10 : CoconutColors.black,
+          color: _isPressing ? context.coconutColors.surfacePressed : context.coconutColors.surfaceCard,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(width: 1, color: widget.isSelected ? CoconutColors.white : MyColors.borderGrey),
+          border: Border.all(
+            width: 1,
+            color: widget.isSelected ? context.coconutColors.borderStrong : context.coconutColors.border,
+          ),
         ),
         padding: const EdgeInsets.only(top: 23, bottom: 22, left: 18, right: 23),
         child: Row(
@@ -81,13 +84,16 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(widget.currentUnit.displayBitcoinAmount(widget.utxo.amount), style: Styles.h2Number),
+                      Text(
+                        widget.currentUnit.displayBitcoinAmount(widget.utxo.amount),
+                        style: CoconutTypography.heading4_18_NumberBold,
+                      ),
                       CoconutLayout.spacing_100w,
                       if (widget.utxo.status == UtxoStatus.incoming)
                         CoconutChip(
-                          color: CoconutColors.gray500,
+                          color: context.coconutColors.surfaceFilterChip,
                           label: t.status_receiving,
-                          labelColor: CoconutColors.black,
+                          labelColor: context.coconutColors.background,
                           padding: const EdgeInsets.symmetric(vertical: 2),
                         ),
                     ],
@@ -95,14 +101,20 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                   CoconutLayout.spacing_200h,
                   Row(
                     children: [
-                      Text(dateString[0], style: Styles.caption),
+                      Text(
+                        dateString[0],
+                        style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                      ),
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
-                        color: MyColors.transparentWhite_40,
+                        color: context.coconutColors.secondaryText,
                         width: 1,
                         height: 10,
                       ),
-                      Text(dateString[1], style: Styles.caption),
+                      Text(
+                        dateString[1],
+                        style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                      ),
                     ],
                   ),
                   Visibility(
@@ -134,7 +146,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
             SvgPicture.asset(
               'assets/svg/circle-check.svg',
               colorFilter: ColorFilter.mode(
-                widget.isSelected ? CoconutColors.white : MyColors.transparentWhite_40,
+                widget.isSelected ? context.coconutColors.primaryText : context.coconutColors.primaryText.withAlpha(40),
                 BlendMode.srcIn,
               ),
             ),

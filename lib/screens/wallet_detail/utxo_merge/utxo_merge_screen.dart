@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
@@ -34,7 +35,6 @@ import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/widgets/card/animated_summary_card.dart';
 import 'package:provider/provider.dart';
@@ -153,7 +153,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       child: ChangeNotifierProvider<UtxoMergeViewModel>.value(
         value: _viewModel,
         child: Scaffold(
-          backgroundColor: CoconutColors.black,
+          backgroundColor: context.coconutColors.background,
           appBar: _buildAppBar(context),
           body: SafeArea(child: _buildBody(context)),
         ),
@@ -164,7 +164,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       context: context,
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       title: t.merge_utxos_screen.title,
       isBottom: true,
       isBackButton: true,
@@ -223,7 +223,9 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
               debugPrint(_viewModel.currentStep.toString());
             },
             text: t.merge_utxos_screen.merge_anyway,
-            backgroundColor: CoconutColors.white,
+            backgroundColor: context.coconutColors.primaryButtonBackground,
+            pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
+            textColor: context.coconutColors.primaryButtonText,
           ),
         ),
       ],
@@ -346,7 +348,9 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
               onButtonClicked: _onMergeButtonClicked,
               isActive: ctaState.isMergeButtonEnabled,
               text: t.apply,
-              backgroundColor: CoconutColors.white,
+              backgroundColor: context.coconutColors.primaryButtonBackground,
+              pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
+              textColor: context.coconutColors.primaryButtonText,
               subWidget: subWidget,
             ),
           ),
@@ -363,18 +367,18 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     final messages = <({String message, Color color})>[];
 
     for (final warning in warningMessages) {
-      messages.add((message: warning, color: CoconutColors.yellow));
+      messages.add((message: warning, color: context.coconutColors.warning));
     }
 
     switch (summaryState) {
       case MergeState.notEnoughSelectedUtxo:
-        messages.add((message: t.toast.merge_utxos_unavailable_description, color: CoconutColors.hotPink));
+        messages.add((message: t.toast.merge_utxos_unavailable_description, color: context.coconutColors.danger));
       case MergeState.ready:
         if (mergeRecommendationLevelAndInfo != null) {
           final color = switch (mergeRecommendationLevelAndInfo.mergeRecommendationLevel) {
-            MergeRecommendationLevel.discouraged => CoconutColors.hotPink,
-            MergeRecommendationLevel.neutral => CoconutColors.yellow,
-            MergeRecommendationLevel.recommended => CoconutColors.white,
+            MergeRecommendationLevel.discouraged => context.coconutColors.danger,
+            MergeRecommendationLevel.neutral => context.coconutColors.warning,
+            MergeRecommendationLevel.recommended => context.coconutColors.primaryText,
           };
           messages.add((message: mergeRecommendationLevelAndInfo.message, color: color));
         }
@@ -599,13 +603,13 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
         Expanded(
           child: Text(
             t.merge_utxos_screen.dust_warning,
-            style: CoconutTypography.body3_12.setColor(CoconutColors.yellow),
+            style: CoconutTypography.body3_12.setColor(context.coconutColors.warning),
           ),
         ),
         ShrinkAnimationButton(
           onPressed: _toggleDustExclusion,
           defaultColor: Colors.transparent,
-          pressedColor: CoconutColors.gray800,
+          pressedColor: context.coconutColors.surfacePressed,
           borderRadius: 8,
           borderWidth: 0,
           child: Padding(
@@ -619,7 +623,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: CoconutColors.gray500, width: 1),
+                    border: Border.all(color: context.coconutColors.border, width: 1),
                   ),
                   child:
                       _viewModel.excludeDustUtxos
@@ -628,7 +632,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                               'assets/svg/check.svg',
                               width: 12,
                               height: 12,
-                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                              colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                             ),
                           )
                           : null,
@@ -636,7 +640,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                 const SizedBox(width: 8),
                 Text(
                   t.merge_utxos_screen.exclude_dust,
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                 ),
               ],
             ),
@@ -650,7 +654,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     return ShrinkAnimationButton(
       onPressed: _toggleDustExclusion,
       defaultColor: Colors.transparent,
-      pressedColor: CoconutColors.gray800,
+      pressedColor: context.coconutColors.surfacePressed,
       borderRadius: 8,
       borderWidth: 0,
       child: Padding(
@@ -664,7 +668,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: CoconutColors.gray500, width: 1),
+                border: Border.all(color: context.coconutColors.border, width: 1),
               ),
               child:
                   _viewModel.excludeDustUtxos
@@ -673,13 +677,16 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                           'assets/svg/check.svg',
                           width: 14,
                           height: 14,
-                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                         ),
                       )
                       : null,
             ),
             const SizedBox(width: 8),
-            Text(t.merge_utxos_screen.exclude_dust, style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+            Text(
+              t.merge_utxos_screen.exclude_dust,
+              style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+            ),
           ],
         ),
       ),
@@ -737,7 +744,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     return RichText(
       key: const ValueKey('receive-address-summary-single-selection-text'),
       text: TextSpan(
-        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
         children: [
           _buildSelectableSummaryHeadlineSpan(_getSummaryCardHeadlineText(method, selectedUtxoCount)),
           const TextSpan(text: ','),
@@ -756,7 +763,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     return RichText(
       key: const ValueKey('receive-address-summary-text'),
       text: TextSpan(
-        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
         children: [
           _buildSelectableSummaryHeadlineSpan(_getSummaryCardHeadlineText(method, selectedUtxoCount)),
           const TextSpan(text: ','),
@@ -772,7 +779,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       text: text,
       style: TextStyle(
         decoration: TextDecoration.underline,
-        color: _isAmountTextHighlighted ? CoconutColors.gray350 : CoconutColors.white,
+        color: _isAmountTextHighlighted ? context.coconutColors.secondaryText : context.coconutColors.primaryText,
       ),
       recognizer:
           TapGestureRecognizer()
@@ -850,8 +857,8 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   Widget _buildReceiveAddressSummarySkeleton() {
     return Shimmer.fromColors(
       key: const ValueKey('receive-address-summary-skeleton'),
-      baseColor: CoconutColors.gray700,
-      highlightColor: CoconutColors.gray600,
+      baseColor: context.coconutColors.surfaceSkeletonBase,
+      highlightColor: context.coconutColors.surfaceSkeletonHighlight,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -859,19 +866,28 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
           Container(
             width: 132,
             height: 16,
-            decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(
+              color: context.coconutColors.surfaceSkeletonHighlight,
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
           const SizedBox(height: 6),
           Container(
             width: 120,
             height: 16,
-            decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(
+              color: context.coconutColors.surfaceSkeletonHighlight,
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
           const SizedBox(height: 6),
           Container(
             width: 168,
             height: 16,
-            decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(
+              color: context.coconutColors.surfaceSkeletonHighlight,
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
         ],
       ),
@@ -882,7 +898,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     return Text(
       message,
       key: ValueKey('receive-address-summary-fallback-$message'),
-      style: CoconutTypography.body2_14.setColor(CoconutColors.gray300),
+      style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
     );
   }
 
@@ -911,6 +927,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     final method = _viewModel.currentMethod;
 
     try {
+      debugPrint('sjkdjkansjdknasndkjnajksdnjaksn');
       await CommonBottomSheets.showDraggableBottomSheet<void>(
         minChildSize: 0.6,
         maxChildSize: 0.9,
@@ -958,7 +975,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                 ),
           ),
         ],
-        backgroundColor: CoconutColors.gray900,
+        backgroundColor: context.coconutColors.surfaceBottomSheet,
       );
     } finally {
       isEditingNotifier.dispose();
@@ -1099,8 +1116,8 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
 
   Widget _buildReceiveAddressOptionText() {
     final address = _viewModel.selectedReceiveAddress ?? '';
-    final baseStyle = CoconutTypography.body1_16_Number.setColor(CoconutColors.white);
-    final boldStyle = CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white);
+    final baseStyle = CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText);
+    final boldStyle = CoconutTypography.body1_16_NumberBold.setColor(context.coconutColors.primaryText);
 
     return _buildHighlightedSegwitAddressText(address: address, baseStyle: baseStyle, highlightedStyle: boldStyle);
   }
@@ -1128,7 +1145,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                   ? t.merge_utxos_screen.fee_rate_input_placeholder
                   : selector.estimatedFeeText,
           label: t.estimated_fee,
-          textColor: shouldShowFeeRatePlaceholder ? CoconutColors.gray500 : CoconutColors.white,
+          textColor: shouldShowFeeRatePlaceholder ? context.coconutColors.mutedText : context.coconutColors.primaryText,
           onTap: _showEstimatedFeeBottomSheet,
           coconutOptionStateEnum:
               isFeeTooHigh || selector.feeRate == 0 ? CoconutOptionStateEnum.error : CoconutOptionStateEnum.normal,

@@ -1,4 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -53,7 +55,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         builder: (context, viewModel, child) {
           return Scaffold(
             floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-            backgroundColor: CoconutColors.black,
+            backgroundColor: context.coconutColors.background,
             appBar: CoconutAppBar.build(title: t.send, context: context),
             body: SafeArea(
               child: LayoutBuilder(
@@ -114,8 +116,9 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                           },
                         ),
                         text: t.next,
-                        backgroundColor: CoconutColors.gray100,
-                        pressedBackgroundColor: CoconutColors.gray500,
+                        backgroundColor: context.coconutColors.primaryButtonBackground,
+                        pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
+                        textColor: context.coconutColors.primaryButtonText,
                       ),
                     ],
                   );
@@ -141,18 +144,18 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                   constraints: const BoxConstraints(maxWidth: 100),
                   child: Text(
                     t.unsigned_tx_qr_screen.low_density_qr,
-                    style: CoconutTypography.body3_12,
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                     textAlign: TextAlign.center,
                   ),
                 ),
                 Expanded(
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: CoconutColors.gray700,
-                      inactiveTrackColor: CoconutColors.gray700,
+                      activeTrackColor: context.coconutColors.switchTrackDisabled,
+                      inactiveTrackColor: context.coconutColors.switchTrackDisabled,
                       trackHeight: 8,
-                      thumbColor: CoconutColors.gray400,
-                      overlayColor: CoconutColors.gray700.withValues(alpha: 0.2),
+                      thumbColor: context.coconutColors.secondaryText,
+                      overlayColor: context.coconutColors.switchTrackDisabled.withValues(alpha: 0.2),
                       trackShape: const RoundedRectSliderTrackShape(),
                     ),
                     child: Slider(
@@ -174,7 +177,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                   constraints: const BoxConstraints(maxWidth: 100),
                   child: Text(
                     t.unsigned_tx_qr_screen.high_density_qr,
-                    style: CoconutTypography.body3_12,
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -188,73 +191,92 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
   Widget _buildToolTip() {
     return CoconutToolTip(
-      backgroundColor: CoconutColors.gray900,
-      borderColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.tooltipBackground,
+      borderColor: context.coconutColors.tooltipBackground,
       icon: SvgPicture.asset(
         'assets/svg/circle-info.svg',
         width: 20,
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
       tooltipType: CoconutTooltipType.fixed,
       richText: RichText(
-        text: TextSpan(style: CoconutTypography.body2_14.copyWith(height: 1.3), children: _getGuideTextSpan()),
+        text: TextSpan(
+          style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.3),
+          children: _getGuideTextSpan(),
+        ),
       ),
     );
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final isEnglishOrSpanish =
-        context.read<PreferenceProvider>().isEnglish || context.read<PreferenceProvider>().isSpanish;
+    final hasEnglishWordOrder = AppLanguage.fromCode(context.read<PreferenceProvider>().language).hasEnglishWordOrder;
 
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
-                style: CoconutTypography.body2_14.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
               ),
               TextSpan(
                 text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)}',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14_Bold
+                    .setColor(context.coconutColors.primaryText)
+                    .copyWith(height: 1.2),
               ),
               TextSpan(
                 text: ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14_Bold
+                    .setColor(context.coconutColors.primaryText)
+                    .copyWith(height: 1.2),
               ),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.scan_qr_below,
-                style: CoconutTypography.body2_14.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
               ),
             ];
           } else {
             return [
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
-                style: CoconutTypography.body2_14.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
               ),
-              TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
+              TextSpan(
+                text: ', ',
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
+              ),
               TextSpan(
                 text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)}',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14_Bold
+                    .setColor(context.coconutColors.primaryText)
+                    .copyWith(height: 1.2),
               ),
-              TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
+              TextSpan(
+                text: ', ',
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
+              ),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\''),
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14_Bold
+                    .setColor(context.coconutColors.primaryText)
+                    .copyWith(height: 1.2),
               ),
-              TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
+              TextSpan(
+                text: ', ',
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
+              ),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.scan_qr_below,
-                style: CoconutTypography.body2_14.copyWith(height: 1.2),
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
               ),
             ];
           }
         }
       case WalletImportSource.seedSigner:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1} '),
@@ -274,7 +296,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.keystone:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1} '),
@@ -294,7 +316,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.jade:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
@@ -325,7 +347,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.krux:
         {
-          if (!isEnglishOrSpanish) {
+          if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: '${t.third_party.krux} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step1} '),
@@ -356,5 +378,8 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     }
   }
 
-  TextSpan _em(String text) => TextSpan(text: text, style: CoconutTypography.body2_14_Bold.copyWith(height: 1.3));
+  TextSpan _em(String text) => TextSpan(
+    text: text,
+    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText).copyWith(height: 1.3),
+  );
 }

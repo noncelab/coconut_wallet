@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -163,7 +164,10 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(t.select_wallet_with_options_bottom_sheet.select_utxo_auto, style: CoconutTypography.body2_14),
+                  Text(
+                    t.select_wallet_with_options_bottom_sheet.select_utxo_auto,
+                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                  ),
                   Text(
                     _isUtxoSelectionAuto
                         ? t.select_wallet_with_options_bottom_sheet.select_utxo_auto_minimal_fee_description
@@ -230,7 +234,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
               borderRadius: 8,
               isActive: _selectedWalletItem != null,
               text: t.select_wallet_with_options_bottom_sheet.select_utxo,
-              textStyle: CoconutTypography.caption_10,
+              textStyle: CoconutTypography.caption_10.setColor(context.coconutColors.primaryText),
               padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
             ),
             CoconutLayout.spacing_100h,
@@ -298,7 +302,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
                                 ? '${_selectedWalletItem!.name.substring(0, 10)}...'
                                 : _selectedWalletItem!.name)
                             : t.send_screen.select_wallet,
-                        style: CoconutTypography.body2_14_Bold,
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -313,7 +317,10 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(amountText, style: CoconutTypography.body2_14_Number),
+            child: Text(
+              amountText,
+              style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
+            ),
           ),
         ],
       ),

@@ -1,9 +1,10 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
@@ -33,9 +34,9 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: CoconutColors.black,
+        color: context.coconutColors.background,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(width: 1, color: MyColors.borderGrey),
+        border: Border.all(width: 1, color: context.coconutColors.border),
       ),
       padding: const EdgeInsets.only(top: 23, bottom: 22, left: 18, right: 20),
       child: Row(
@@ -50,14 +51,14 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                   children: [
                     Text(
                       widget.currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                      style: Styles.h2Number.setColor(CoconutColors.white.withValues(alpha: 0.3)),
+                      style: Styles.h2Number.setColor(context.coconutColors.primaryText.withValues(alpha: 0.3)),
                     ),
                     CoconutLayout.spacing_100w,
                     if (widget.utxo.status == UtxoStatus.incoming)
                       CoconutChip(
-                        color: CoconutColors.gray500,
+                        color: context.coconutColors.mutedText,
                         label: t.status_receiving,
-                        labelColor: CoconutColors.black,
+                        labelColor: context.coconutColors.background,
                         padding: const EdgeInsets.symmetric(vertical: 2),
                       ),
                   ],
@@ -65,14 +66,20 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                 CoconutLayout.spacing_200h,
                 Row(
                   children: [
-                    Text(dateString[0], style: Styles.caption.setColor(CoconutColors.white.withValues(alpha: 0.3))),
+                    Text(
+                      dateString[0],
+                      style: Styles.caption.setColor(context.coconutColors.primaryText.withValues(alpha: 0.3)),
+                    ),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
-                      color: CoconutColors.white.withValues(alpha: 0.3),
+                      color: context.coconutColors.primaryText.withValues(alpha: 0.3),
                       width: 1,
                       height: 10,
                     ),
-                    Text(dateString[1], style: Styles.caption.setColor(CoconutColors.white.withValues(alpha: 0.3))),
+                    Text(
+                      dateString[1],
+                      style: Styles.caption.setColor(context.coconutColors.primaryText.withValues(alpha: 0.3)),
+                    ),
                   ],
                 ),
                 Visibility(

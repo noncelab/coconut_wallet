@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
@@ -24,7 +25,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
@@ -104,7 +104,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           final txMemo = viewModel.fetchTransactionMemo();
 
           return Scaffold(
-            backgroundColor: CoconutColors.black,
+            backgroundColor: context.coconutColors.background,
             appBar: CoconutAppBar.build(title: t.view_tx_details, context: context),
             body: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -191,6 +191,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
   }
 
   Widget _rbfHistoryWidget() {
+    final rbfHistoryLineColor = context.coconutColors.feeBumpingHistoryLine;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
@@ -201,7 +203,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (index == 0)
-                SizedBox(width: 7, child: Center(child: Container(width: 1, height: 4, color: CoconutColors.gray700))),
+                SizedBox(width: 7, child: Center(child: Container(width: 1, height: 4, color: rbfHistoryLineColor))),
               // 타임라인 선
               Row(
                 children: [
@@ -210,14 +212,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                     children: [
                       Column(
                         children: [
-                          Container(width: 1, height: isLast ? 16 : 33, color: CoconutColors.gray700),
+                          Container(width: 1, height: isLast ? 16 : 33, color: rbfHistoryLineColor),
                           if (isLast) Container(width: 1, height: 16, color: Colors.transparent),
                         ],
                       ),
                       Container(
                         width: 7,
                         height: 7,
-                        decoration: const BoxDecoration(color: CoconutColors.gray700, shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: rbfHistoryLineColor, shape: BoxShape.circle),
                       ),
                       // )
                     ],
@@ -229,14 +231,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                       CoconutChip(
                         color:
                             _viewModel.selectedTransactionIndex == index
-                                ? CoconutColors.primary
-                                : CoconutColors.gray800,
+                                ? context.coconutColors.sendingColor
+                                : context.coconutColors.surface,
                         label:
                             !isLast
                                 ? t.transaction_fee_bumping_screen.new_fee
                                 : t.transaction_fee_bumping_screen.existing_fee,
                         labelColor:
-                            _viewModel.selectedTransactionIndex == index ? CoconutColors.black : CoconutColors.white,
+                            _viewModel.selectedTransactionIndex == index
+                                ? context.coconutColors.background
+                                : context.coconutColors.primaryText,
                         isSelected: _viewModel.selectedTransactionIndex == index,
                         onTap: () {
                           _changeTransaction(index);
@@ -247,7 +251,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         t.transaction_fee_bumping_screen.existing_fee_value(
                           value: _formatFeeRateForDisplay(feeHistory.feeRate),
                         ),
-                        style: CoconutTypography.body2_14_Number,
+                        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
                         textScaler: const TextScaler.linear(1.0),
                       ),
                     ],
@@ -295,7 +299,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           padding: const EdgeInsets.only(left: 2.5),
                           child: Column(
                             children: [
-                              Container(width: 1, height: 22, color: const Color.fromRGBO(81, 81, 96, 1)),
+                              Container(width: 1, height: 22, color: context.coconutColors.feeBumpingHistoryLine),
                               Container(width: 1, height: 11, color: Colors.transparent),
                             ],
                           ),
@@ -305,8 +309,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           child: Container(
                             width: 7,
                             height: 7,
-                            decoration: const BoxDecoration(
-                              color: Color.fromRGBO(81, 81, 96, 1),
+                            decoration: BoxDecoration(
+                              color: context.coconutColors.feeBumpingHistoryLine,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -317,19 +321,19 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                     Row(
                       children: [
                         CoconutChip(
-                          color: CoconutColors.gray800,
+                          color: context.coconutColors.surface,
                           label:
                               index == 0
                                   ? t.transaction_fee_bumping_screen.existing_fee
                                   : t.transaction_fee_bumping_screen.new_fee,
-                          labelColor: CoconutColors.white,
+                          labelColor: context.coconutColors.primaryText,
                         ),
                         CoconutLayout.spacing_200w,
                         Text(
                           t.transaction_fee_bumping_screen.existing_fee_value(
                             value: _formatFeeRateForDisplay(feeHistory.feeRate),
                           ),
-                          style: CoconutTypography.body2_14_Number,
+                          style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
                           textScaler: const TextScaler.linear(1.0),
                         ),
                       ],
@@ -372,7 +376,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
     return Container(
       width: MediaQuery.sizeOf(context).width,
       decoration: BoxDecoration(
-        border: Border.all(width: 1, color: CoconutColors.gray700),
+        border: Border.all(width: 1, color: context.coconutColors.feeBumpingHistoryLine),
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       padding: const EdgeInsets.all(10),
@@ -387,14 +391,23 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               shape: BoxShape.circle,
               color:
                   _viewModel.isSendType!
-                      ? CoconutColors.primary.withValues(alpha: 0.2)
-                      : CoconutColors.cyan.withValues(alpha: 0.2),
+                      ? context.coconutColors.sendingIconBackground.withValues(alpha: 0.2)
+                      : context.coconutColors.receivingIconBackground.withValues(alpha: 0.2),
             ),
             child: Center(
               child:
                   _viewModel.isSendType!
-                      ? Lottie.asset('assets/lottie/arrow-up.json', fit: BoxFit.fill, repeat: true)
-                      : Lottie.asset('assets/lottie/arrow-down.json', fit: BoxFit.fill, repeat: true),
+                      ? ColorFiltered(
+                        colorFilter: ColorFilter.mode(context.coconutColors.sendingIconOverlayColor, BlendMode.srcATop),
+                        child: Lottie.asset('assets/lottie/arrow-up.json', fit: BoxFit.fill, repeat: true),
+                      )
+                      : ColorFiltered(
+                        colorFilter: ColorFilter.mode(
+                          context.coconutColors.receivingIconOverlayColor,
+                          BlendMode.srcATop,
+                        ),
+                        child: Lottie.asset('assets/lottie/arrow-down.json', fit: BoxFit.fill, repeat: true),
+                      ),
             ),
           ),
           Expanded(
@@ -404,11 +417,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               child: Text.rich(
                 TextSpan(
                   text: _viewModel.isSendType! ? t.status_sending : t.status_receiving,
-                  style: CoconutTypography.body2_14.copyWith(fontWeight: FontWeight.w500),
+                  style: CoconutTypography.body2_14
+                      .setColor(context.coconutColors.primaryText)
+                      .copyWith(fontWeight: FontWeight.w500),
                   children: [
                     TextSpan(
                       text: ' (${_getTimeGapString()})',
-                      style: CoconutTypography.body3_12.copyWith(fontWeight: FontWeight.w300),
+                      style: CoconutTypography.body3_12
+                          .setColor(context.coconutColors.primaryText)
+                          .copyWith(fontWeight: FontWeight.w300),
                     ),
                   ],
                 ),
@@ -447,7 +464,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           }
                         });
 
-                        if (result == false) {
+                        if (result == false || !mounted) {
                           return;
                         }
 
@@ -481,7 +498,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                       child: Text(
                         _viewModel.isSendType! ? t.quick_send : t.quick_receive,
                         style: CoconutTypography.body2_14.setColor(
-                          _viewModel.isSendType! ? CoconutColors.primary : CoconutColors.cyan,
+                          _viewModel.isSendType!
+                              ? context.coconutColors.sendingColor
+                              : context.coconutColors.receivingColor,
                         ),
                       ),
                     ),
@@ -519,13 +538,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
   Widget _buildTransactionFlowCardSkeleton() {
     return Shimmer.fromColors(
-      baseColor: CoconutColors.gray850,
-      highlightColor: CoconutColors.gray800,
+      baseColor: context.coconutColors.surfaceSkeletonBase,
+      highlightColor: context.coconutColors.surfaceSkeletonHighlight,
       child: Container(
         width: double.infinity,
         height: 180,
         decoration: BoxDecoration(
-          color: CoconutColors.gray850,
+          color: context.coconutColors.surfaceSkeletonBase,
           borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
         ),
       ),
@@ -616,13 +635,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
-              children: [_amountText(tx)],
+              children: [_amountText(context, tx)],
             ),
           ),
           CoconutLayout.spacing_100h,
           FiatPrice(
             satoshiAmount: tx.amount.abs(),
-            textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
+            textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
           ),
         ],
       ),
@@ -660,7 +679,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (selectedTags.isEmpty)
-              Text('-', style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white))
+              Text('-', style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText))
             else
               Wrap(
                 spacing: 4,
@@ -713,7 +732,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           },
           child: Text(
             txMemo?.isNotEmpty == true ? txMemo! : '-',
-            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+            style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
           ),
         ),
       ],
@@ -729,7 +748,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       },
       child: CopyTextContainer(
         text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
-        textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+        textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }
@@ -742,7 +761,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       child: Text(
         // 인풋을 조회할 수 없는 경우, 수수료 표시 안 함.
         tx.inputAddressList.isNotEmpty ? '${tx.feeRate.toLocaleString(maxDecimalPlaces: 2)} sats/vB' : '-',
-        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }
@@ -762,7 +781,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               count: _confirmedCountText(tx, viewModel.currentBlock?.height),
             )
             : '-',
-        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }
@@ -906,9 +925,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
     }
   }
 
-  Widget _amountText(TransactionRecord tx) {
+  Widget _amountText(BuildContext context, TransactionRecord tx) {
     final bool isPositive = _getPrefix(tx) != '-';
-    final Color color = isPositive ? CoconutColors.cyan : CoconutColors.primary;
+    final Color color = isPositive ? context.coconutColors.receivingColor : context.coconutColors.sendingColor;
     final String sign = isPositive ? '+' : '-';
     final String absAmount = _currentUnit.displayBitcoinAmount(tx.amount.abs());
     final String symbol = _currentUnit.symbol;

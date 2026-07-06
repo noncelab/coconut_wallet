@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -63,7 +64,7 @@ class PinInputPadState extends State<PinInputPad> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       appBar:
           widget.appBarVisible
               ? AppBar(
@@ -73,13 +74,13 @@ class PinInputPadState extends State<PinInputPad> {
                     widget.step == 0
                         ? IconButton(
                           onPressed: widget.onClosePressed,
-                          icon: const Icon(Icons.close, color: CoconutColors.white, size: 22),
+                          icon: Icon(Icons.close, color: context.coconutColors.iconDefault, size: 22),
                         )
                         : IconButton(
                           onPressed: widget.onBackPressed,
                           icon: SvgPicture.asset(
                             'assets/svg/back.svg',
-                            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                           ),
                         ),
               )
@@ -91,7 +92,11 @@ class PinInputPadState extends State<PinInputPad> {
           // initOptionVisible: 앱진입 핀체크 화면(true), 핀 설정 화면(false)
           // centerWidget: 앱진입 핀체크 화면(null), 핀 설정 화면(notNull)
           if (widget.initOptionVisible) const SizedBox(height: 60),
-          Text(widget.title, style: CoconutTypography.body1_16_Bold, textAlign: TextAlign.center),
+          Text(
+            widget.title,
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 20),
           SizedBox(
             height: 50,
@@ -114,7 +119,7 @@ class PinInputPadState extends State<PinInputPad> {
               padding: const EdgeInsets.only(top: 16),
               child: Text(
                 widget.errorMessage,
-                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -159,7 +164,7 @@ class PinInputPadState extends State<PinInputPad> {
                       },
                       child: Text(
                         t.forgot_password,
-                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray600),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.tertiaryText),
                         textAlign: TextAlign.center,
                       ),
                     ),

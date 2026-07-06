@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:flutter/material.dart';
 
@@ -33,7 +34,10 @@ class UtxoOrderDropdown extends StatelessWidget {
                 CoconutPulldownMenuItem(title: UtxoOrder.byTimestampDesc.text),
                 CoconutPulldownMenuItem(title: UtxoOrder.byTimestampAsc.text),
               ],
-              dividerColor: CoconutColors.black,
+              backgroundColor: context.coconutColors.pulldownMenuBackground,
+              shadowColor: context.coconutColors.shadowDefault.withValues(alpha: 0.06),
+              dividerColor: context.coconutColors.pulldownMenuDividerColor,
+              splashColor: context.coconutColors.pulldownMenuPressedColor,
               onSelected: (index, filterName) {
                 switch (index) {
                   case 0: // 큰 금액순

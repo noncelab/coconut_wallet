@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -189,9 +190,9 @@ class TransactionUtil {
           languageCode: context.read<PreferenceProvider>().language,
           title: t.transaction_fee_bumping_screen.dialog.confirmed_alert_title,
           description: t.transaction_fee_bumping_screen.dialog.confirmed_alert_description,
-          backgroundColor: CoconutColors.gray800,
+          backgroundColor: context.coconutColors.popupBackground,
           rightButtonText: t.view_tx_details,
-          rightButtonColor: CoconutColors.white,
+          rightButtonColor: context.coconutColors.primaryText,
           onTapRight: () {
             Navigator.popUntil(context, (route) {
               return route.settings.name == '/transaction-detail';

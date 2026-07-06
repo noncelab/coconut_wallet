@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:coconut_wallet/main.dart';
+import 'package:coconut_wallet/app/bootstrap/platform_channels.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';

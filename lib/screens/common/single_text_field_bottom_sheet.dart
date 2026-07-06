@@ -1,7 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/single_field_fixed_bottom_sheet_body.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -84,6 +86,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
       title: title,
       showCloseButton: true,
       showDragHandle: true,
+      keyboardBottomPadding: 0,
       titlePadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: child,
     );
@@ -120,6 +123,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
       title: title,
       showCloseButton: true,
       showDragHandle: true,
+      keyboardBottomPadding: 0,
       titlePadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: SingleTextFieldBottomSheet(
         originalText: original,
@@ -177,6 +181,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
       title: title,
       showCloseButton: true,
       showDragHandle: true,
+      keyboardBottomPadding: 0,
       titlePadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: SingleTextFieldBottomSheet(
         originalText: originalText ?? '',
@@ -267,7 +272,10 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     final formatters = widget.textInputFormatters ?? _buildFormatters();
+
+    final bool isAndroid = defaultTargetPlatform == TargetPlatform.android;
 
     final clearIcon = IconButton(
       iconSize: 14,
@@ -277,7 +285,10 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
       onPressed: _clearField,
       icon: SvgPicture.asset(
         'assets/svg/text-field-clear.svg',
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(
+          _controller.text.isNotEmpty ? colors.primaryText : colors.inputPlaceholder,
+          BlendMode.srcIn,
+        ),
       ),
     );
 
@@ -299,6 +310,7 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
       isLengthVisible: widget.visibleTextLimit,
       maxLength: widget.maxLength ?? 30,
       maxLines: 1,
+      enableSuggestions: isAndroid, // Required for Android emoji input
       backgroundColor: widget.fieldBackgroundColor,
       errorColor: widget.errorColor,
       placeholderColor: widget.placeholderColor,

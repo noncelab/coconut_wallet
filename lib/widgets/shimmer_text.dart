@@ -36,7 +36,7 @@ class _ShimmerTextState extends State<ShimmerText> with SingleTickerProviderStat
         return ShaderMask(
           shaderCallback: (Rect bounds) {
             return LinearGradient(
-              colors: [widget.color.withOpacity(0.8), widget.color, widget.color.withOpacity(0.8)],
+              colors: [widget.color.withValues(alpha: 0.8), widget.color, widget.color.withValues(alpha: 0.8)],
               stops: const [0.0, 0.5, 1.0],
               begin: Alignment(-1.0 + _animation.value, 0),
               end: Alignment(1.0 + _animation.value, 0),

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -24,9 +25,10 @@ class FixedBottomTweenButton extends StatefulWidget {
     this.horizontalPadding = CoconutLayout.defaultPadding,
     this.bottomPadding = FixedBottomTweenButton.fixedBottomButtonDefaultBottomPadding,
     this.gradientPadding,
+    this.gradientColor,
     this.subWidget,
     this.leftButtonBackgroundColor = CoconutColors.gray200,
-    this.rightButtonBackgroundColor = CoconutColors.primary,
+    this.rightButtonBackgroundColor,
     this.leftButtonTextColor = CoconutColors.black,
     this.rightButtonTextColor = CoconutColors.black,
     this.buttonSpacing = 8.0, // 두 버튼 사이의 간격
@@ -47,9 +49,10 @@ class FixedBottomTweenButton extends StatefulWidget {
   final EdgeInsets? gradientPadding;
   final Widget? subWidget;
   final Color leftButtonBackgroundColor;
-  final Color rightButtonBackgroundColor;
+  final Color? rightButtonBackgroundColor;
   final Color leftButtonTextColor;
   final Color rightButtonTextColor;
+  final Color? gradientColor;
   final double buttonSpacing;
 
   @override
@@ -59,6 +62,7 @@ class FixedBottomTweenButton extends StatefulWidget {
 class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     double keyboardHeight = (widget.isVisibleAboveKeyboard ? MediaQuery.of(context).viewInsets.bottom : 0);
     double bottomInset = MediaQuery.of(context).padding.bottom;
 
@@ -66,7 +70,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
     final totalWidth = MediaQuery.sizeOf(context).width - (widget.horizontalPadding * 2) - widget.buttonSpacing;
     final leftButtonWidth = totalWidth * widget.leftButtonRatio;
     final rightButtonWidth = totalWidth * (1 - widget.leftButtonRatio);
-
+    final resolvedGradientColor = widget.gradientColor ?? colors.background;
     double buttonHeight =
         widget.buttonHeight ??
         (Platform.isAndroid
@@ -98,12 +102,12 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.transparent,
-                        CoconutColors.black.withValues(alpha: 0.1),
-                        CoconutColors.black.withValues(alpha: 0.4),
-                        CoconutColors.black.withValues(alpha: 0.8),
-                        CoconutColors.black,
-                        CoconutColors.black,
+                        resolvedGradientColor.withValues(alpha: 0.0),
+                        resolvedGradientColor.withValues(alpha: 0.1),
+                        resolvedGradientColor.withValues(alpha: 0.4),
+                        resolvedGradientColor.withValues(alpha: 0.8),
+                        resolvedGradientColor,
+                        resolvedGradientColor,
                       ],
                       stops: const [0.0, 0.1, 0.2, 0.35, 0.5, 1.0],
                     ),
@@ -128,9 +132,10 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                         onPressed: () {
                           widget.leftButtonClicked();
                         },
+                        isActive: widget.isLeftButtonActive,
                         defaultColor: widget.leftButtonBackgroundColor,
                         pressedColor: getDarkerColor(widget.leftButtonBackgroundColor),
-                        disabledColor: CoconutColors.gray800,
+                        disabledColor: colors.surfaceDisabled,
                         borderRadius: 12,
                         child: SizedBox(
                           width: leftButtonWidth,
@@ -141,7 +146,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                               child: Text(
                                 widget.leftText,
                                 style: CoconutTypography.body1_16_Bold.setColor(
-                                  widget.isLeftButtonActive ? widget.leftButtonTextColor : CoconutColors.gray700,
+                                  widget.isLeftButtonActive ? widget.leftButtonTextColor : colors.tertiaryText,
                                 ),
                               ),
                             ),
@@ -157,9 +162,12 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                         onPressed: () {
                           widget.rightButtonClicked();
                         },
-                        defaultColor: widget.rightButtonBackgroundColor,
-                        pressedColor: getDarkerColor(widget.rightButtonBackgroundColor),
-                        disabledColor: CoconutColors.gray800,
+                        isActive: widget.isRightButtonActive,
+                        defaultColor: widget.rightButtonBackgroundColor ?? context.coconutColors.backgroundHighlight,
+                        pressedColor: getDarkerColor(
+                          widget.rightButtonBackgroundColor ?? context.coconutColors.backgroundHighlight,
+                        ),
+                        disabledColor: colors.surfaceDisabled,
                         borderRadius: 12,
                         child: SizedBox(
                           width: rightButtonWidth,
@@ -168,7 +176,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                             child: Text(
                               widget.rightText,
                               style: CoconutTypography.body1_16_Bold.setColor(
-                                widget.isRightButtonActive ? widget.rightButtonTextColor : CoconutColors.gray700,
+                                widget.isRightButtonActive ? widget.rightButtonTextColor : colors.tertiaryText,
                               ),
                             ),
                           ),

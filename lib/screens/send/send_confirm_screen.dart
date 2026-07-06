@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -51,7 +52,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
       child: Consumer<SendConfirmViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
-            backgroundColor: CoconutColors.black,
+            backgroundColor: context.coconutColors.background,
             appBar: CoconutAppBar.build(title: t.send_confirm_screen.title, context: context),
             body: SafeArea(
               child: Stack(
@@ -128,8 +129,9 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                       }
                     },
                     text: t.next,
-                    backgroundColor: CoconutColors.gray100,
-                    pressedBackgroundColor: CoconutColors.gray500,
+                    backgroundColor: context.coconutColors.primaryButtonBackground,
+                    pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
+                    textColor: context.coconutColors.primaryButtonText,
                   ),
                 ],
               ),

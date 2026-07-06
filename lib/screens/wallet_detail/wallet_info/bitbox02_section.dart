@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class BitBox02Section extends StatefulWidget {
@@ -78,16 +78,16 @@ class _BitBox02SectionState extends State<BitBox02Section> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(color: context.coconutColors.surfaceCard, borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             t.wallet_info_screen.bitbox02_device.title,
-            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400),
+            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
           ),
           CoconutLayout.spacing_300h,
-          const Divider(color: CoconutColors.gray700, height: 1),
+          Divider(color: context.coconutColors.divider, height: 1),
           CoconutLayout.spacing_300h,
           _InfoRow(
             label: t.wallet_info_screen.bitbox02_device.connection_status,
@@ -99,7 +99,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _isConnected ? CoconutColors.primary : CoconutColors.gray600,
+                    color: _isConnected ? context.coconutColors.textHighlight : context.coconutColors.surfaceDisabled,
                   ),
                 ),
                 CoconutLayout.spacing_100w,
@@ -108,11 +108,11 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                       ? t.wallet_info_screen.bitbox02_device.connected
                       : t.wallet_info_screen.bitbox02_device.disconnected,
                   style: CoconutTypography.body3_12_Bold.setColor(
-                    _isConnected ? CoconutColors.primary : CoconutColors.gray500,
+                    _isConnected ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
                   ),
                 ),
                 if (_isConnected) ...[
-                  const Divider(color: CoconutColors.gray700, height: 1),
+                  Divider(color: context.coconutColors.divider, height: 1),
                   CoconutLayout.spacing_300w,
                   GestureDetector(
                     onTap: _confirmDisconnect,
@@ -120,7 +120,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: CoconutColors.white.withValues(alpha: 0.15),
+                        color: context.coconutColors.surfaceButtonSecondary.withAlpha(15),
                       ),
                       child: Text(
                         t.wallet_info_screen.bitbox02_device.disconnect_button,
@@ -136,7 +136,10 @@ class _BitBox02SectionState extends State<BitBox02Section> {
             const SizedBox(height: 10),
             _InfoRow(
               label: t.wallet_info_screen.bitbox02_device.device_id,
-              child: Text(_deviceId!, style: CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.white)),
+              child: Text(
+                _deviceId!,
+                style: CoconutTypography.body3_12_NumberBold.setColor(context.coconutColors.primaryText),
+              ),
             ),
           ],
         ],

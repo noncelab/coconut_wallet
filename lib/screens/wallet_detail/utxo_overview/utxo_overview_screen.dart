@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -235,10 +236,14 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     return CoconutAppBar.build(
       context: context,
       entireWidgetKey: _appBarKey,
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       customTitle: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 260),
         child: CoconutSegmentedControl(
+          selectedColor: context.coconutColors.segmentedControlSelected,
+          segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+          selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+          unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
           isSelected: [_isByAmount, !_isByAmount],
           onPressed: (index) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -264,7 +269,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       appBar: _buildAppBar(context),
       body: Consumer<UtxoTagProvider>(
         builder: (context, tagProvider, _) {
@@ -441,6 +446,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
 
   Widget _buildTagView(List<UtxoTag> utxoTagList) {
     return CustomScrollView(
+      clipBehavior: Clip.none,
       slivers: [
         SliverToBoxAdapter(
           child: UtxoTagChart(
@@ -526,7 +532,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                     label: t.utxo_list_screen.utxo_unlocked_button,
                     onTap: () => _updateSelectedUtxosLock(lock: false),
                     buttonLayout: BottomActionButtonLayout.horizontal,
-                    textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                    textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconDefault),
                   )
                   : Builder(
                     builder: (context) {
@@ -542,7 +548,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                               onTap: _onSendPressed,
                               enabled: !hasLockedUtxo,
                               buttonLayout: BottomActionButtonLayout.horizontal,
-                              textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                              textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -552,7 +558,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                               label: t.utxo_list_screen.utxo_locked_button,
                               onTap: () => _updateSelectedUtxosLock(lock: true),
                               buttonLayout: BottomActionButtonLayout.horizontal,
-                              textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                              textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconDefault),
                             ),
                           ),
                         ],
@@ -586,7 +592,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             },
             enabled: !hasLockedUtxo,
             buttonLayout: BottomActionButtonLayout.horizontal,
-            textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+            textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
           ),
         ),
         const SizedBox(width: 8),
@@ -596,7 +602,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             label: t.utxo_list_screen.tag_apply,
             onTap: _showTagApplyBottomSheet,
             buttonLayout: BottomActionButtonLayout.horizontal,
-            textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+            textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
           ),
         ),
       ],

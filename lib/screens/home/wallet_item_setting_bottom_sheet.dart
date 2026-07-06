@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -58,7 +59,7 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
             },
           ),
           CoconutLayout.spacing_400h,
-          const Divider(color: CoconutColors.gray700, height: 1),
+          Divider(color: context.coconutColors.divider, height: 1),
           CoconutLayout.spacing_400h,
           _buildToggleWidget(
             t.wallet_list.settings.exclude_from_total_amount,
@@ -96,10 +97,10 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: CoconutTypography.body2_14),
+              Text(title, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
               Text(
                 description,
-                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                 maxLines: 2,
                 softWrap: true,
               ),
@@ -114,9 +115,9 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
           maintainState: true,
           child: CoconutSwitch(
             isOn: value,
-            activeColor: CoconutColors.gray100,
-            thumbColor: value ? CoconutColors.black : CoconutColors.gray500,
-            trackColor: CoconutColors.gray600,
+            activeColor: context.coconutColors.switchActiveTrack,
+            thumbColor: context.coconutColors.switchThumb,
+            trackColor: context.coconutColors.switchInactiveTrack,
             scale: 0.8,
             onChanged: (bool newValue) {
               vibrateExtraLight();

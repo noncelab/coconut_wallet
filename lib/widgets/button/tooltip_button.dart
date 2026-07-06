@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class TooltipIconAction {
@@ -55,7 +56,7 @@ class _TooltipButtonState extends State<TooltipButton> {
     final defaultTextStyle =
         widget.textStyle ??
         CoconutTypography.body2_14
-            .setColor(widget.isSelected ? CoconutColors.white : CoconutColors.gray500)
+            .setColor(widget.isSelected ? context.coconutColors.primaryText : context.coconutColors.mutedText)
             .copyWith(fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal);
 
     return GestureDetector(
@@ -68,7 +69,8 @@ class _TooltipButtonState extends State<TooltipButton> {
         padding: widget.containerPadding,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: widget.isSelected ? CoconutColors.black.withValues(alpha: 0.5) : Colors.transparent,
+          color:
+              widget.isSelected ? context.coconutColors.primaryButtonText.withValues(alpha: 0.5) : Colors.transparent,
         ),
         child: Center(
           child: Row(
@@ -86,7 +88,8 @@ class _TooltipButtonState extends State<TooltipButton> {
                         ? widget.defaultIconBuilder!(_isPressed)
                         : Icon(
                           Icons.info_outline_rounded,
-                          color: widget.isSelected ? CoconutColors.white : CoconutColors.gray500,
+                          color:
+                              widget.isSelected ? context.coconutColors.iconDefault : context.coconutColors.mutedText,
                           size: 18,
                         ),
               ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -10,7 +11,6 @@ import 'package:coconut_wallet/providers/view_model/send/air-gapped/signed_psbt_
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/signed_psbt_scan_data_handler.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -44,15 +44,20 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         controller = null;
       },
       child: Scaffold(
-        backgroundColor: CoconutColors.black,
+        backgroundColor: context.coconutColors.background,
         appBar: CoconutAppBar.build(
           title: t.signed_psbt_scanner_screen.title,
           context: context,
-          backgroundColor: CoconutColors.black.withOpacity(0.95),
+          backgroundColor: context.coconutColors.background.withValues(alpha: 0.95),
           actionButtonList: [
             IconButton(
-              icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
-              color: CoconutColors.white,
+              icon: SvgPicture.asset(
+                'assets/svg/arrow-reload.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+              ),
+              color: context.coconutColors.primaryText,
               onPressed: () {
                 controller?.switchCamera();
               },
@@ -298,15 +303,20 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
   Widget _buildToolTip() {
     return CoconutToolTip(
-      backgroundColor: CoconutColors.gray900,
-      borderColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surface,
+      borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
         'assets/svg/circle-info.svg',
         width: 20,
-        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
       tooltipType: CoconutTooltipType.fixed,
-      richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
+      richText: RichText(
+        text: TextSpan(
+          style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+          children: _getGuideTextSpan(),
+        ),
+      ),
     );
   }
 
@@ -323,7 +333,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           by_hardware_wallet: hardwareWalletWords[0],
           hardware_wallet: hardwareWalletWords[1],
         ),
-        style: CoconutTypography.body2_14.copyWith(height: 1.3),
+        style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.3),
       ),
     ];
   }
