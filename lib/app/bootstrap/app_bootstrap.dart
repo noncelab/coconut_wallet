@@ -5,6 +5,8 @@ import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/app/bootstrap/localization_bootstrap.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/firebase_options.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/app_icon_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
@@ -22,6 +24,7 @@ class AppBootstrap {
 
     Provider.debugCheckInvalidValueType = null;
     await SharedPrefsRepository().init();
+    _applyPersistedTheme();
 
     await _loadEnvironment();
     await _initializeFirebase();
@@ -29,6 +32,15 @@ class AppBootstrap {
     await _updateAppIconIfNeeded();
 
     setupPluralResolvers();
+  }
+
+  static void _applyPersistedTheme() {
+    final stored = SharedPrefsRepository().getString(SharedPrefKeys.kThemeVariant);
+    final variant = CoconutThemeVariant.values.firstWhere(
+      (e) => e.name == stored,
+      orElse: () => CoconutThemeVariant.dark,
+    );
+    CoconutThemeController.variantNotifier.value = variant;
   }
 
   static Future<void> _loadEnvironment() async {

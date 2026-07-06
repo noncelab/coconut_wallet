@@ -27,18 +27,9 @@ class CoconutThemeExtension extends ThemeExtension<CoconutThemeExtension> {
     );
   }
 
-  factory CoconutThemeExtension.ccosPreview() {
+  factory CoconutThemeExtension.light() {
     return CoconutThemeExtension(
-      colors: CoconutColors.ccosPreview(),
-      typography: CoconutTypography.dark(),
-      spacing: const CoconutSpacing.base(),
-      radius: const CoconutRadius.base(),
-    );
-  }
-
-  factory CoconutThemeExtension.ccosLight() {
-    return CoconutThemeExtension(
-      colors: CoconutColors.ccosLight(),
+      colors: CoconutColors.light(),
       typography: CoconutTypography.dark(),
       spacing: const CoconutSpacing.base(),
       radius: const CoconutRadius.base(),

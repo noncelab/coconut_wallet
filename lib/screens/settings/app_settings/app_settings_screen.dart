@@ -14,6 +14,7 @@ import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
@@ -200,21 +201,45 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
 
                   // 일반
                   _category(t.general),
-                  Selector<PreferenceProvider, String>(
-                    selector: (_, provider) => provider.language,
-                    builder: (context, language, child) {
-                      return _buildAnimatedButton(
-                        title: t.settings_screen.language,
-                        subtitle: _getCurrentLanguageDisplayName(language),
-                        onPressed: () async {
-                          CommonBottomSheets.showCustomHeightBottomSheet(
-                            context: context,
-                            heightRatio: 0.6,
-                            child: LanguageBottomSheet(),
+                  ButtonGroup(
+                    buttons: [
+                      Selector<PreferenceProvider, String>(
+                        selector: (_, provider) => provider.language,
+                        builder: (context, language, child) {
+                          return _buildAnimatedButton(
+                            title: t.settings_screen.language,
+                            subtitle: _getCurrentLanguageDisplayName(language),
+                            onPressed: () async {
+                              CommonBottomSheets.showCustomHeightBottomSheet(
+                                context: context,
+                                heightRatio: 0.6,
+                                child: LanguageBottomSheet(),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
+                      ),
+                      ValueListenableBuilder<CoconutThemeVariant>(
+                        valueListenable: CoconutThemeController.variantNotifier,
+                        builder: (context, variant, _) {
+                          final currentLabel = switch (variant) {
+                            CoconutThemeVariant.light => t.theme_light,
+                            CoconutThemeVariant.dark => t.theme_dark,
+                          };
+                          return _buildAnimatedButton(
+                            title: t.theme,
+                            subtitle: currentLabel,
+                            onPressed: () {
+                              CommonBottomSheets.showCustomHeightBottomSheet(
+                                context: context,
+                                heightRatio: 0.4,
+                                child: const ThemeBottomSheet(),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   CoconutLayout.spacing_400h,
 
@@ -276,42 +301,6 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                   if (kDebugMode) ...[
                     CoconutLayout.spacing_400h,
                     _category('개발자 도구'),
-                    ValueListenableBuilder<CoconutThemeVariant>(
-                      valueListenable: CoconutThemeController.variantNotifier,
-                      builder: (context, variant, _) {
-                        final isPreviewEnabled = variant == CoconutThemeVariant.ccosPreview;
-                        final isLightEnabled = variant == CoconutThemeVariant.ccosLight;
-                        return _buildAnimatedButton(
-                          title: isPreviewEnabled ? 'CCOS Theme Preview 끄기' : 'CCOS Theme Preview 켜기',
-                          subtitle:
-                              isPreviewEnabled
-                                  ? 'Preview'
-                                  : isLightEnabled
-                                  ? 'CCOS Light'
-                                  : 'Default dark',
-                          onPressed: CoconutThemeController.togglePreview,
-                        );
-                      },
-                    ),
-                    CoconutLayout.spacing_200h,
-                    ValueListenableBuilder<CoconutThemeVariant>(
-                      valueListenable: CoconutThemeController.variantNotifier,
-                      builder: (context, variant, _) {
-                        final isPreviewEnabled = variant == CoconutThemeVariant.ccosPreview;
-                        final isLightEnabled = variant == CoconutThemeVariant.ccosLight;
-                        return _buildAnimatedButton(
-                          title: isLightEnabled ? 'CCOS Light 끄기' : 'CCOS Light 켜기',
-                          subtitle:
-                              isLightEnabled
-                                  ? 'Light'
-                                  : isPreviewEnabled
-                                  ? 'CCOS Preview'
-                                  : 'Default dark',
-                          onPressed: CoconutThemeController.toggleLight,
-                        );
-                      },
-                    ),
-                    CoconutLayout.spacing_200h,
                     _buildAnimatedButton(
                       title: 'Realm 디버그용 뷰어',
                       onPressed: () {

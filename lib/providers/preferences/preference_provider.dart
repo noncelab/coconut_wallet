@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
@@ -122,6 +123,10 @@ class PreferenceProvider extends ChangeNotifier {
   late List<FiatCode> _walletListVisibleFiats;
   List<FiatCode> get walletListVisibleFiats => _walletListVisibleFiats;
 
+  /// 테마 variant
+  late CoconutThemeVariant _themeVariant;
+  CoconutThemeVariant get themeVariant => _themeVariant;
+
   PreferenceProvider(
     this._walletPreferencesRepository,
     this._electrumServerProvider,
@@ -161,6 +166,7 @@ class PreferenceProvider extends ChangeNotifier {
 
     _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
     _walletListVisibleFiats = _loadWalletListVisibleFiats();
+    _themeVariant = _loadThemeVariant();
   }
 
   /// 통화 설정 초기화
@@ -577,6 +583,21 @@ class PreferenceProvider extends ChangeNotifier {
     FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW, FiatCode.EUR],
     FiatCode.EUR: [FiatCode.EUR, FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
   };
+
+  CoconutThemeVariant _loadThemeVariant() {
+    final stored = _sharedPrefs.getString(SharedPrefKeys.kThemeVariant);
+    return CoconutThemeVariant.values.firstWhere(
+      (e) => e.name == stored,
+      orElse: () => CoconutThemeVariant.dark,
+    );
+  }
+
+  Future<void> changeThemeVariant(CoconutThemeVariant variant) async {
+    _themeVariant = variant;
+    CoconutThemeController.variantNotifier.value = variant;
+    await _sharedPrefs.setString(SharedPrefKeys.kThemeVariant, variant.name);
+    notifyListeners();
+  }
 
   List<FiatCode> _loadWalletListVisibleFiats() {
     final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats);
