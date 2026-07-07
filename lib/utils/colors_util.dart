@@ -152,13 +152,18 @@ class ColorUtil {
     return backgroundColorPalette[index % colorPalette.length];
   }
 
-  static List<Color> getGradientColors(List<MultisigSigner> list) {
+  static Color lightenColor(Color color, {double factor = 0.5}) {
+    return Color.lerp(color, Colors.white, factor)!;
+  }
+
+  static List<Color> getGradientColors(List<MultisigSigner> list, {bool lighten = false}) {
     if (list.isEmpty) {
       return [CoconutColors.gray300];
     }
 
     Color getColor(MultisigSigner item) {
-      return item.innerVaultId != null ? ColorUtil.getColorByIndex(item.colorIndex ?? 0) : CoconutColors.gray300;
+      final base = item.innerVaultId != null ? ColorUtil.getColorByIndex(item.colorIndex ?? 0) : CoconutColors.gray300;
+      return lighten ? lightenColor(base) : base;
     }
 
     // 2개인 경우

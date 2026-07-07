@@ -145,7 +145,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   Widget build(BuildContext context) {
     final taprootStyle = TaprootCardStyle.from(widget.walletItem);
     final List<Color>? gradientColors =
-        signers != null ? ColorUtil.getGradientColors(signers!) : taprootStyle?.iconGradientColors;
+        signers != null ? ColorUtil.getGradientColors(signers!, lighten: true) : taprootStyle?.iconGradientColors;
     final bool hasGradient = gradientColors != null;
 
     return Container(
