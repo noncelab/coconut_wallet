@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -66,12 +65,17 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
       if (result.isFailure) {
         vibrateMedium();
-        String message = t.alert.error_send.broadcasting_failed(error: result.error.message);
+        String message = result.error.message;
         if (_viewModel.isTaprootScriptPathWallet && result.error.message.contains('non-final')) {
           message = t.alert.error_send.non_final_taproot_child;
         }
         if (!mounted) return;
-        showAlertDialog(context: context, title: t.broadcasting_screen.error_popup_title, content: message);
+        showInfoDialog(
+          context,
+          context.read<PreferenceProvider>().language,
+          t.broadcasting_screen.error_popup_title,
+          message,
+        );
         return;
       }
 
@@ -94,12 +98,17 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     } catch (e) {
       Logger.error(">>>>> broadcast error: $e");
       _setOverlayLoading(false);
-      String message = t.alert.error_send.broadcasting_failed(error: e.toString());
+      String message = e.toString();
       if (e.toString().contains('min relay fee not met')) {
         message = t.alert.error_send.insufficient_fee;
       }
       if (!mounted) return;
-      showAlertDialog(context: context, content: message);
+      showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.broadcasting_screen.error_popup_title,
+        message,
+      );
       vibrateMedium();
     }
   }
@@ -176,9 +185,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                             _onBroadcastButtonClicked(viewModel);
                           },
                           text: t.broadcasting_screen.btn_submit,
-                          backgroundColor: context.coconutColors.backgroundHighlight,
-                          pressedBackgroundColor: getDarkerColor(context.coconutColors.backgroundHighlight),
-                          textColor: context.coconutColors.backgroundHighlightText,
                         ),
                       },
                     ],
@@ -311,10 +317,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       } catch (e) {
         vibrateMedium();
         if (!mounted) return;
-        showAlertDialog(
-          context: context,
-          content: t.alert.error_tx.not_parsed(error: e),
-          onClosed: () => Navigator.pop(context),
+        showInfoDialog(
+          context,
+          context.read<PreferenceProvider>().language,
+          '',
+          t.alert.error_tx.not_parsed(error: e),
+          onTapButton: () => Navigator.pop(context),
         );
       }
 

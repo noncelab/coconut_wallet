@@ -1,35 +1,6 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
-import 'package:provider/provider.dart';
-
-void showAlertDialog({
-  required BuildContext context,
-  String? title,
-  String? content,
-  bool dismissible = true,
-  VoidCallback? onClosed,
-}) {
-  showCupertinoModalPopup<void>(
-    context: context,
-    barrierDismissible: dismissible,
-    builder:
-        (BuildContext context) => CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
-          title: title ?? '',
-          description: content ?? '',
-          backgroundColor: CoconutColors.gray800,
-          rightButtonText: t.confirm,
-          rightButtonColor: CoconutColors.white,
-          onTapRight: () {
-            if (onClosed != null) onClosed();
-            Navigator.pop(context);
-          },
-        ),
-  );
-}
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:flutter/cupertino.dart';
 
 // todo : cds에 맞게 수정 후 삭제 예정
 // send_fee_selection_screen.dart > showModalBottomSheet 부분 확인

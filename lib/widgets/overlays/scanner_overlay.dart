@@ -1,4 +1,4 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class ScannerOverlay extends StatelessWidget {
@@ -8,7 +8,10 @@ class ScannerOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final scanAreaSize = calculateScanAreaSize(context);
 
-    return CustomPaint(size: MediaQuery.of(context).size, painter: _ScannerOverlayPainter(scanAreaSize));
+    return CustomPaint(
+      size: MediaQuery.of(context).size,
+      painter: _ScannerOverlayPainter(scanAreaSize, context.coconutColors.qrScannerOverlay),
+    );
   }
 
   static double calculateScanAreaSize(BuildContext context) {
@@ -25,8 +28,9 @@ class ScannerOverlay extends StatelessWidget {
 
 class _ScannerOverlayPainter extends CustomPainter {
   final double scanSize;
+  final Color borderColor;
 
-  _ScannerOverlayPainter(this.scanSize);
+  _ScannerOverlayPainter(this.scanSize, this.borderColor);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -47,12 +51,13 @@ class _ScannerOverlayPainter extends CustomPainter {
 
     final borderPaint =
         Paint()
-          ..color = CoconutColors.gray350
+          ..color = borderColor
           ..style = PaintingStyle.stroke
           ..strokeWidth = 4;
     canvas.drawRRect(rrect, borderPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ScannerOverlayPainter oldDelegate) =>
+      oldDelegate.scanSize != scanSize || oldDelegate.borderColor != borderColor;
 }

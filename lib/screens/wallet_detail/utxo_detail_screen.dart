@@ -228,7 +228,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       actionButtonList: [
         IconButton(
           key: _utxoTooltipIconKey,
-          icon: SvgPicture.asset('assets/svg/question-mark.svg'),
+          icon: SvgPicture.asset(
+            'assets/svg/question-mark.svg',
+            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+          ),
           onPressed: _toggleUtxoTooltip,
         ),
       ],
@@ -246,10 +249,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           child: Container(
             width: MediaQuery.sizeOf(context).width * 0.68,
             padding: const EdgeInsets.only(top: 28, left: 16, right: 16, bottom: 12),
-            color: CoconutColors.white,
+            color: context.coconutColors.popoverBackground,
             child: Text(
               t.tooltip.utxo,
-              style: CoconutTypography.body3_12.copyWith(color: CoconutColors.gray900, height: 1.3),
+              style: CoconutTypography.body3_12.copyWith(color: context.coconutColors.popoverText, height: 1.3),
             ),
           ),
         ),

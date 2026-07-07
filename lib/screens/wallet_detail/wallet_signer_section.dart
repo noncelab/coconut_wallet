@@ -116,7 +116,7 @@ class WalletSignerSection extends StatelessWidget {
           subTitle,
           style: CoconutTypography.caption_10.setColor(
             isSelected
-                ? context.coconutColors.secondaryText
+                ? context.coconutColors.segmentedControlSelectedText
                 : context.coconutColors.secondaryText.withValues(alpha: 0.5),
           ),
         ),

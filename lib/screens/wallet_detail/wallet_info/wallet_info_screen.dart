@@ -283,11 +283,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                   width: MediaQuery.sizeOf(context).width,
                   isBubbleClipperSideLeft: false,
                   tooltipType: CoconutTooltipType.placement,
+                  backgroundColor: context.coconutColors.popoverBackground,
                   richText: RichText(
                     text: TextSpan(
                       text: _getTooltipText(viewModel),
                       style: CoconutTypography.body3_12
-                          .setColor(CoconutColors.black)
+                          .setColor(context.coconutColors.popoverText)
                           .merge(const TextStyle(height: 1.3)),
                     ),
                   ),

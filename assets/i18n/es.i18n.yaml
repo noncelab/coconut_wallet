@@ -1133,11 +1133,10 @@ alert:
     not_parsed: "Fallo al analizar la transacción: $error"
     not_created: "Fallo al crear la transacción $error"
   error_send:
-    broadcasting_failed: "[Envío fallido]\n$error"
     insufficient_balance: "Saldo insuficiente"
     minimum_amount: "Puedes enviar al menos $amount"
-    insufficient_fee: "[Envío fallido]\nPor favor, intenta nuevamente aumentando la comisión."
-    non_final_taproot_child: "[Envío fallido]\nPor favor, verifica la fecha y hora de herencia de la billetera secundaria."
+    insufficient_fee: "Por favor, intenta nuevamente aumentando la comisión."
+    non_final_taproot_child: "Por favor, verifica la fecha y hora de herencia de la billetera secundaria."
   signed_psbt:
     wrong_send_info: "La información de envío es diferente.\nPor favor, intenta nuevamente desde el principio."
     need_more_sign: "Necesitas $count firmas más"

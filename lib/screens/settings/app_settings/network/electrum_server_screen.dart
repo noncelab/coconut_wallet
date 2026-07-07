@@ -435,8 +435,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                                     shape: BoxShape.circle,
                                     color:
                                         serverConnectionStatus == NodeConnectionStatus.connected
-                                            ? CoconutColors.green
-                                            : CoconutColors.red,
+                                            ? context.coconutColors.nodeConnected
+                                            : context.coconutColors.nodeFailed,
                                   ),
                                 ),
                               ],

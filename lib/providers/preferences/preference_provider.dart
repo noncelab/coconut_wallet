@@ -586,10 +586,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   CoconutThemeVariant _loadThemeVariant() {
     final stored = _sharedPrefs.getString(SharedPrefKeys.kThemeVariant);
-    return CoconutThemeVariant.values.firstWhere(
-      (e) => e.name == stored,
-      orElse: () => CoconutThemeVariant.dark,
-    );
+    return CoconutThemeVariant.values.firstWhere((e) => e.name == stored, orElse: () => CoconutThemeVariant.dark);
   }
 
   Future<void> changeThemeVariant(CoconutThemeVariant variant) async {

@@ -44,7 +44,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
   TextSpan linkSpan({required String text, required String url}) {
     return TextSpan(
       text: text,
-      style: defaultTextStyle.copyWith(color: CoconutColors.sky, decoration: TextDecoration.underline),
+      style: defaultTextStyle.copyWith(color: context.coconutColors.linkText, decoration: TextDecoration.underline),
       recognizer:
           TapGestureRecognizer()
             ..onTap = () async {

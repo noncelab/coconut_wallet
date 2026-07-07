@@ -502,8 +502,8 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                                     shape: BoxShape.circle,
                                                     color:
                                                         (widget['isEnabled'] as bool)
-                                                            ? CoconutColors.white
-                                                            : context.coconutColors.surfacePressed,
+                                                            ? context.coconutColors.checkIconBackground
+                                                            : context.coconutColors.checkIconBackgroundDisabled,
                                                     border: Border.all(
                                                       width: (widget['isEnabled'] as bool) ? 0 : 1.5,
                                                       color: context.coconutColors.switchInactiveTrack,
@@ -516,8 +516,8 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                                       height: 6,
                                                       colorFilter: ColorFilter.mode(
                                                         (widget['isEnabled'] as bool)
-                                                            ? CoconutColors.gray800
-                                                            : CoconutColors.gray600,
+                                                            ? context.coconutColors.checkIconForeground
+                                                            : context.coconutColors.checkIconForegroundDisabled,
                                                         BlendMode.srcIn,
                                                       ),
                                                     ),

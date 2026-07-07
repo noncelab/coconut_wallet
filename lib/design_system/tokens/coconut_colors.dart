@@ -148,6 +148,13 @@ class CoconutColors {
   final Color taprootParent;
   final Color taprootChild;
   final Color taprootRoleText;
+  final Color taprootParticipantIconBorder;
+  final Color taprootParticipantIconBackground;
+  final Color taprootParticipantNeutralBackground;
+  final Color taprootParticipantNeutralBorder;
+  final Color taprootParticipantNeutralRoleBackground;
+  final Color taprootParticipantNeutralRoleBorder;
+  final Color taprootParticipantNeutralRoleText;
   final Color pulldownMenuBackground;
   final Color pulldownMenuPressedColor;
   final Color pulldownMenuDividerColor;
@@ -182,6 +189,35 @@ class CoconutColors {
   final Color switchThumb;
   final Color switchTrackDisabled;
   final Color switchThumbDisabled;
+  final Color linkText;
+  final Color nodeConnected;
+  final Color nodeFailed;
+
+  /// 아이콘 탭 시 말풍선 형태로 표시되는 Popover 툴팁
+  final Color popoverBackground;
+  final Color popoverText;
+
+  /// Faucet 전용 Popover 툴팁 (하늘색 강조 배경) (only Regtest)
+  final Color faucetPopoverBackground;
+  final Color faucetPopoverText;
+
+  /// 바텀시트 상단 드래그 핸들 바
+  final Color bottomSheetHandle;
+
+  /// QR 스캐너 (카메라 오버레이)
+  final Color qrScannerOverlay;
+
+  /// QR 스캐너 프로그레스 바
+  final Color qrScannerProgressBarTrack;
+  final Color qrScannerProgressBarFill;
+
+  /// 체크 아이콘 배경/아이콘 색상 쌍
+  /// [checkIconBackground] / [checkIconForeground]: 활성화(isEnabled=true) 상태
+  /// [checkIconBackgroundDisabled] / [checkIconForegroundDisabled]: 비활성화(isEnabled=false) 상태
+  final Color checkIconBackground;
+  final Color checkIconForeground;
+  final Color checkIconBackgroundDisabled;
+  final Color checkIconForegroundDisabled;
 
   const CoconutColors({
     required this.homeBackground,
@@ -251,6 +287,13 @@ class CoconutColors {
     required this.taprootParent,
     required this.taprootChild,
     required this.taprootRoleText,
+    required this.taprootParticipantIconBorder,
+    required this.taprootParticipantIconBackground,
+    required this.taprootParticipantNeutralBackground,
+    required this.taprootParticipantNeutralBorder,
+    required this.taprootParticipantNeutralRoleBackground,
+    required this.taprootParticipantNeutralRoleBorder,
+    required this.taprootParticipantNeutralRoleText,
     required this.pulldownMenuBackground,
     required this.pulldownMenuPressedColor,
     required this.pulldownMenuDividerColor,
@@ -281,6 +324,21 @@ class CoconutColors {
     required this.switchThumb,
     required this.switchTrackDisabled,
     required this.switchThumbDisabled,
+    required this.linkText,
+    required this.nodeConnected,
+    required this.nodeFailed,
+    required this.popoverBackground,
+    required this.popoverText,
+    required this.faucetPopoverBackground,
+    required this.faucetPopoverText,
+    required this.bottomSheetHandle,
+    required this.qrScannerOverlay,
+    required this.qrScannerProgressBarTrack,
+    required this.qrScannerProgressBarFill,
+    required this.checkIconBackground,
+    required this.checkIconForeground,
+    required this.checkIconBackgroundDisabled,
+    required this.checkIconForegroundDisabled,
   });
 
   factory CoconutColors.dark() {
@@ -352,6 +410,13 @@ class CoconutColors {
       taprootParent: ds.CoconutColors.purple,
       taprootChild: ds.CoconutColors.sky,
       taprootRoleText: ds.CoconutColors.white,
+      taprootParticipantIconBorder: ds.CoconutColors.gray800,
+      taprootParticipantIconBackground: ds.CoconutColors.gray800,
+      taprootParticipantNeutralBackground: ds.CoconutColors.gray900,
+      taprootParticipantNeutralBorder: ds.CoconutColors.gray800,
+      taprootParticipantNeutralRoleBackground: ds.CoconutColors.gray700,
+      taprootParticipantNeutralRoleBorder: ds.CoconutColors.gray600,
+      taprootParticipantNeutralRoleText: ds.CoconutColors.white,
       pulldownMenuBackground: ds.CoconutColors.gray900,
       pulldownMenuPressedColor: ds.CoconutColors.gray700,
       pulldownMenuDividerColor: ds.CoconutColors.black,
@@ -382,6 +447,21 @@ class CoconutColors {
       switchThumb: ds.CoconutColors.gray800,
       switchTrackDisabled: ds.CoconutColors.gray700,
       switchThumbDisabled: ds.CoconutColors.gray600,
+      linkText: ds.CoconutColors.sky,
+      nodeConnected: ds.CoconutColors.green,
+      nodeFailed: ds.CoconutColors.red,
+      popoverBackground: ds.CoconutColors.white,
+      popoverText: ds.CoconutColors.gray900,
+      faucetPopoverBackground: const Color.fromRGBO(179, 240, 255, 1),
+      faucetPopoverText: ds.CoconutColors.gray900,
+      bottomSheetHandle: ds.CoconutColors.gray600,
+      qrScannerOverlay: ds.CoconutColors.gray350,
+      qrScannerProgressBarTrack: ds.CoconutColors.gray350,
+      qrScannerProgressBarFill: ds.CoconutColors.black,
+      checkIconBackground: ds.CoconutColors.white,
+      checkIconForeground: ds.CoconutColors.gray800,
+      checkIconBackgroundDisabled: ds.CoconutColors.gray800,
+      checkIconForegroundDisabled: ds.CoconutColors.gray600,
     );
   }
 
@@ -430,7 +510,7 @@ class CoconutColors {
       secondaryTextStrong: ds.CoconutColors.gray800,
       secondaryButtonBackground: ds.CoconutColors.gray200,
       secondaryButtonText: ds.CoconutColors.black,
-      segmentedControlSelected: ds.CoconutColors.gray900,
+      segmentedControlSelected: ds.CoconutColors.gray800,
       segmentedControlBackground: ds.CoconutColors.gray150,
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray400,
@@ -442,8 +522,8 @@ class CoconutColors {
       textHighlight: ds.CoconutColors.green,
       border: ds.CoconutColors.gray400,
       borderStrong: ds.CoconutColors.black,
-      iconBackground: ds.CoconutColors.gray350,
-      iconBackgroundSubtle: ds.CoconutColors.gray300,
+      iconBackground: ds.CoconutColors.gray300,
+      iconBackgroundSubtle: ds.CoconutColors.gray200,
       iconDefault: ds.CoconutColors.black,
       iconSubDefault: ds.CoconutColors.gray600,
       iconHighlight: ds.CoconutColors.gray600,
@@ -454,6 +534,13 @@ class CoconutColors {
       taprootParent: ds.CoconutColors.purple,
       taprootChild: ds.CoconutColors.sky,
       taprootRoleText: ds.CoconutColors.white,
+      taprootParticipantIconBorder: ds.CoconutColors.gray200,
+      taprootParticipantIconBackground: ds.CoconutColors.gray100,
+      taprootParticipantNeutralBackground: ds.CoconutColors.white,
+      taprootParticipantNeutralBorder: ds.CoconutColors.gray200,
+      taprootParticipantNeutralRoleBackground: ds.CoconutColors.gray100,
+      taprootParticipantNeutralRoleBorder: ds.CoconutColors.gray200,
+      taprootParticipantNeutralRoleText: ds.CoconutColors.gray800,
       pulldownMenuBackground: ds.CoconutColors.white,
       pulldownMenuPressedColor: ds.CoconutColors.gray200,
       pulldownMenuDividerColor: ds.CoconutColors.gray200,
@@ -484,6 +571,21 @@ class CoconutColors {
       switchThumb: ds.CoconutColors.white,
       switchTrackDisabled: ds.CoconutColors.gray200,
       switchThumbDisabled: ds.CoconutColors.gray350,
+      linkText: ds.CoconutColors.sky,
+      nodeConnected: ds.CoconutColors.green,
+      nodeFailed: ds.CoconutColors.red,
+      popoverBackground: ds.CoconutColors.gray850,
+      popoverText: ds.CoconutColors.white,
+      faucetPopoverBackground: const Color.fromRGBO(179, 240, 255, 1),
+      faucetPopoverText: ds.CoconutColors.gray900,
+      bottomSheetHandle: ds.CoconutColors.gray600,
+      qrScannerOverlay: ds.CoconutColors.gray350,
+      qrScannerProgressBarTrack: ds.CoconutColors.gray350,
+      qrScannerProgressBarFill: ds.CoconutColors.black,
+      checkIconBackground: ds.CoconutColors.black,
+      checkIconForeground: ds.CoconutColors.white,
+      checkIconBackgroundDisabled: ds.CoconutColors.gray200,
+      checkIconForegroundDisabled: ds.CoconutColors.gray400,
     );
   }
 }

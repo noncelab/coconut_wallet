@@ -25,6 +25,5 @@ class BitBox02ConfigException extends BitBox02Exception {
 }
 
 class BitBox02DeviceNotFoundException extends BitBox02Exception {
-  const BitBox02DeviceNotFoundException()
-      : super('NO_DEVICE', 'BitBox02 Nova not found. Connect via USB or BLE.');
+  const BitBox02DeviceNotFoundException() : super('NO_DEVICE', 'BitBox02 Nova not found. Connect via USB or BLE.');
 }

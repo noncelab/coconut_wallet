@@ -30,6 +30,9 @@ Future<void> configureSystemUi() async {
     overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
   );
 
+  /// StatusBar: 화면 상단의 시간, 배터리, 신호 표시 영역
+  /// Android에서만 실제로 적용되고, iOS는 무시됩니다.
+  /// NavigationBar: 뒤로가기/홈/멀티태스킹 버튼 영역 (화면 최상단)
   setSystemBarColor(
     Platform.isIOS
         ? CoconutColors.black

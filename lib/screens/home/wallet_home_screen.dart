@@ -1877,6 +1877,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           height: 40,
                           child: IconButton(
                             onPressed: () => Navigator.pop(context),
+                            // TODO: light 모드에서 iconHighlight가 회색임....
                             highlightColor: context.coconutColors.iconHighlight,
                             splashRadius: 20,
                             padding: EdgeInsets.zero,
@@ -2006,11 +2007,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         duration: const Duration(milliseconds: 300),
         child:
             viewModel.shouldShowLoadingIndicator && viewModel.walletItemList.isNotEmpty
-                ? Center(
+                ? const Center(
                   child: Padding(
-                    key: const ValueKey("loading"),
-                    padding: const EdgeInsets.only(bottom: 20.0),
-                    child: LoadingIndicator(color: context.coconutColors.loadingIndicatorColor),
+                    key: ValueKey("loading"),
+                    padding: EdgeInsets.only(bottom: 20.0),
+                    child: LoadingIndicator(),
                   ),
                 )
                 : null,

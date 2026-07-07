@@ -97,9 +97,9 @@ class TaprootParticipantCard extends StatelessWidget {
         children: [
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: context.coconutColors.secondaryTextStrong, width: 1),
+              border: Border.all(color: context.coconutColors.taprootParticipantIconBorder, width: 1),
               borderRadius: BorderRadius.circular(8),
-              color: CoconutColors.gray100.withValues(alpha: 0.12),
+              color: context.coconutColors.taprootParticipantIconBackground,
             ),
             padding: const EdgeInsets.all(5),
             child: SvgPicture.asset(style.iconAssetPath, width: 16, height: 16),
@@ -142,6 +142,7 @@ class TaprootParticipantCard extends StatelessWidget {
         background: context.coconutColors.danger.withValues(alpha: 0.06),
         border: context.coconutColors.danger.withValues(alpha: 0.5),
         roleBackgroundColor: context.coconutColors.danger.withValues(alpha: 0.06),
+        roleBorderColor: context.coconutColors.danger.withValues(alpha: 0.5),
         roleTextColor: context.coconutColors.danger,
         iconAssetPath: _iconAssetPath,
       );
@@ -155,6 +156,7 @@ class TaprootParticipantCard extends StatelessWidget {
         background: context.coconutColors.taprootParent.withValues(alpha: 0.08),
         border: context.coconutColors.taprootParent.withValues(alpha: 0.5),
         roleBackgroundColor: context.coconutColors.taprootParent,
+        roleBorderColor: context.coconutColors.taprootParent.withValues(alpha: 0.5),
         roleTextColor: context.coconutColors.taprootRoleText,
         iconAssetPath: _iconAssetPath,
       );
@@ -163,6 +165,7 @@ class TaprootParticipantCard extends StatelessWidget {
       background: context.coconutColors.taprootChild.withValues(alpha: 0.08),
       border: context.coconutColors.taprootChild.withValues(alpha: 0.5),
       roleBackgroundColor: context.coconutColors.taprootChild,
+      roleBorderColor: context.coconutColors.taprootChild.withValues(alpha: 0.5),
       roleTextColor: context.coconutColors.taprootRoleText,
       iconAssetPath: _iconAssetPath,
     );
@@ -170,10 +173,11 @@ class TaprootParticipantCard extends StatelessWidget {
 
   _TaprootParticipantCardStyle _neutralStyle(BuildContext context) {
     return _TaprootParticipantCardStyle(
-      background: context.coconutColors.surfaceSelected,
-      border: context.coconutColors.surfaceSelected,
-      roleBackgroundColor: context.coconutColors.border,
-      roleTextColor: context.coconutColors.primaryText,
+      background: context.coconutColors.taprootParticipantNeutralBackground,
+      border: context.coconutColors.taprootParticipantNeutralBorder,
+      roleBackgroundColor: context.coconutColors.taprootParticipantNeutralRoleBackground,
+      roleBorderColor: context.coconutColors.taprootParticipantNeutralRoleBorder,
+      roleTextColor: context.coconutColors.taprootParticipantNeutralRoleText,
       iconAssetPath: _iconAssetPath,
     );
   }
@@ -211,7 +215,7 @@ class TaprootParticipantCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: style.roleBackgroundColor,
-        border: Border.all(color: style.border, width: 0.5),
+        border: Border.all(color: style.roleBorderColor, width: 0.5),
         borderRadius: BorderRadius.circular(4),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -254,6 +258,7 @@ class _TaprootParticipantCardStyle {
   final Color background;
   final Color border;
   final Color roleBackgroundColor;
+  final Color roleBorderColor;
   final Color roleTextColor;
   final String iconAssetPath;
 
@@ -261,6 +266,7 @@ class _TaprootParticipantCardStyle {
     required this.background,
     required this.border,
     required this.roleBackgroundColor,
+    required this.roleBorderColor,
     required this.roleTextColor,
     required this.iconAssetPath,
   });

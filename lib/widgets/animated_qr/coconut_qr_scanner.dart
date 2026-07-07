@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart';
@@ -18,7 +19,6 @@ class CoconutQrScanner extends StatefulWidget {
   final Function(MobileScannerController) setMobileScannerController;
   final Function(dynamic) onComplete;
   final Function(String, String?) onFailed;
-  final Color borderColor;
   final IQrScanDataHandler qrDataHandler;
   final ValueChanged<String>? onScanData;
 
@@ -28,7 +28,6 @@ class CoconutQrScanner extends StatefulWidget {
     required this.onComplete,
     required this.onFailed,
     required this.qrDataHandler,
-    this.borderColor = CoconutColors.gray400,
     this.onScanData,
   });
 
@@ -263,9 +262,9 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
               Container(
                 width: maxWidth,
                 height: 8,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.all(Radius.circular(20)),
-                  color: CoconutColors.gray350,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(Radius.circular(20)),
+                  color: context.coconutColors.qrScannerProgressBarTrack,
                 ),
               ),
               ValueListenableBuilder<double>(
@@ -276,9 +275,9 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
                     width: maxWidth * _progressNotifier.value,
                     height: 6,
                     margin: const EdgeInsets.all(1),
-                    decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(20)),
-                      color: Colors.black,
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.all(Radius.circular(20)),
+                      color: context.coconutColors.qrScannerProgressBarFill,
                     ),
                   );
                 },

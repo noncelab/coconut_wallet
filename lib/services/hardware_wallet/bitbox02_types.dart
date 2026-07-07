@@ -47,11 +47,7 @@ class BitBox02SignMessageResult {
   final int recId;
   final String electrumSig65;
 
-  const BitBox02SignMessageResult({
-    required this.signature,
-    required this.recId,
-    required this.electrumSig65,
-  });
+  const BitBox02SignMessageResult({required this.signature, required this.recId, required this.electrumSig65});
 
   factory BitBox02SignMessageResult.fromJson(Map<String, dynamic> json) {
     return BitBox02SignMessageResult(

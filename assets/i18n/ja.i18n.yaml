@@ -1131,11 +1131,10 @@ alert:
     not_parsed: "トランザクション解析に失敗しました。$error"
     not_created: "トランザクション作成に失敗しました。$error"
   error_send:
-    broadcasting_failed: "[送信失敗]\n$error"
     insufficient_balance: "残高が不足しています。"
     minimum_amount: "$amountから送信できます。"
-    insufficient_fee: "[送信失敗]\n手数料を増やして\n再度お試しください。"
-    non_final_taproot_child: "[送信失敗]\n子ウォレットの相続日時を確認してください。"
+    insufficient_fee: "手数料を増やして\n再度お試しください。"
+    non_final_taproot_child: "子ウォレットの相続日時を確認してください。"
   signed_psbt:
     wrong_send_info: "送信情報が異なります。\n最初からやり直してください。"
     need_more_sign: "$count個の署名が必要です。"

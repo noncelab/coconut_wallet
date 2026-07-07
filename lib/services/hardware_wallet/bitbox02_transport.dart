@@ -13,9 +13,7 @@ class BitBox02Transport {
   static String resolve({String? preferred}) {
     if (preferred == 'tcp') {
       if (!NetworkType.currentNetworkType.isTestnet) {
-        throw const BitBox02TransportException(
-          'TCP transport is only available on testnet/regtest',
-        );
+        throw const BitBox02TransportException('TCP transport is only available on testnet/regtest');
       }
       return 'tcp';
     }
@@ -33,9 +31,7 @@ class BitBox02Transport {
   static String resolveForSign() {
     final lastTransport = BitBox02Device.lastConnected?.transport;
     if (lastTransport != null) return resolve(preferred: lastTransport);
-    return resolve(
-      preferred: NetworkType.currentNetworkType.isTestnet ? 'tcp' : null,
-    );
+    return resolve(preferred: NetworkType.currentNetworkType.isTestnet ? 'tcp' : null);
   }
 
   /// Whether TCP transport is currently allowed.

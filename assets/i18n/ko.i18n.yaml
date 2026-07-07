@@ -1137,11 +1137,10 @@ alert:
     not_parsed: "트랜잭션 파싱 실패: $error"
     not_created: "트랜잭션 생성 실패 $error"
   error_send:
-    broadcasting_failed: "[전송 실패]\n$error"
     insufficient_balance: "잔액이 부족해요"
     minimum_amount: "$amount부터 전송할 수 있어요"
-    insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
-    non_final_taproot_child: "[전송 실패]\n자식 지갑의 상속 일시를 확인하세요."
+    insufficient_fee: "수수료율을 높여서\n다시 시도해주세요."
+    non_final_taproot_child: "자식 지갑의 상속 일시를 확인하세요."
   signed_psbt:
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
     need_more_sign: "$count개 서명이 더 필요해요"

@@ -218,7 +218,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                           children: [
                             CircleAvatar(
                               radius: 36,
-                              backgroundColor: CoconutColors.borderGray,
+                              backgroundColor: context.coconutColors.iconBackgroundSubtle,
                               backgroundImage: NetworkImage(profileImageSrc),
                             ),
                             CoconutLayout.spacing_400w,

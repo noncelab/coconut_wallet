@@ -202,7 +202,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.rectangle,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: CoconutColors.gray500, width: 2.0),
+                  border: Border.all(color: context.coconutColors.border, width: 2.0),
                   color: Colors.black,
                 ),
                 child: Image.asset(

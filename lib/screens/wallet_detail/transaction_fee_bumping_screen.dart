@@ -108,7 +108,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                           actionButtonList: [
                             IconButton(
                               key: _tooltipIconKey,
-                              icon: SvgPicture.asset('assets/svg/question-mark.svg'),
+                              icon: SvgPicture.asset(
+                                'assets/svg/question-mark.svg',
+                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                              ),
                               onPressed: _toggleTooltip,
                             ),
                           ],
@@ -424,10 +427,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
           child: Container(
             width: MediaQuery.sizeOf(context).width * 0.9,
             padding: const EdgeInsets.only(top: 28, left: 16, right: 16, bottom: 12),
-            color: CoconutColors.white,
+            color: context.coconutColors.popoverBackground,
             child: Text(
               _isRbf ? t.tooltip.rbf : t.tooltip.cpfp,
-              style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray900, height: 1.3),
+              style: CoconutTypography.body2_14.copyWith(color: context.coconutColors.popoverText, height: 1.3),
             ),
           ),
         ),

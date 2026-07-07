@@ -50,7 +50,7 @@ class CommonBottomSheets {
                       width: 55,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: context.coconutColors.iconSubDefault,
+                        color: context.coconutColors.bottomSheetHandle,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -315,7 +315,7 @@ class CommonBottomSheets {
                                 width: 55,
                                 height: 4,
                                 decoration: BoxDecoration(
-                                  color: CoconutColors.gray400,
+                                  color: context.coconutColors.bottomSheetHandle,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),

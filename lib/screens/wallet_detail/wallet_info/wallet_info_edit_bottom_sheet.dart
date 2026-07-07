@@ -5,8 +5,8 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/icon/svg_icon.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -320,27 +320,14 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
   }
 
   Widget _buildIcon() {
-    final iconColor =
-        _canEditPalette
-            ? ColorUtil.getColor(_selectedColorIndex).backgroundColor
-            : context.coconutColors.iconBackgroundSubtle;
-    final iconColorFilter =
-        _canEditPalette ? ColorUtil.getColor(_selectedColorIndex).color : context.coconutColors.iconDefault;
-    final svgPath =
-        _canEditPalette
-            ? CustomIcons.getPathByIndex(_selectedIconIndex)
-            : widget.walletImportSource.externalWalletIconPath;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
-      decoration: BoxDecoration(
-        shape: _canEditPalette ? BoxShape.circle : BoxShape.rectangle,
-        borderRadius: _canEditPalette ? null : BorderRadius.circular(10),
-        color: iconColor,
+      child: WalletIcon(
+        walletImportSource: _canEditPalette ? WalletImportSource.coconutVault : widget.walletImportSource,
+        colorIndex: _selectedColorIndex,
+        iconIndex: _selectedIconIndex,
+        isInnerWallet: _canEditPalette,
       ),
-      padding: const EdgeInsets.all(10),
-      child: SvgPicture.asset(svgPath, colorFilter: ColorFilter.mode(iconColorFilter, BlendMode.srcIn)),
     );
   }
 

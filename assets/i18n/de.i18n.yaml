@@ -1090,11 +1090,10 @@ alert:
     not_parsed: "Transaktions-Parsing fehlgeschlagen: $error"
     not_created: "Transaktionserstellung fehlgeschlagen $error"
   error_send:
-    broadcasting_failed: "[Senden fehlgeschlagen]\n$error"
     insufficient_balance: "Unzureichendes Guthaben"
     minimum_amount: "Sie können mindestens $amount senden"
-    insufficient_fee: "[Senden fehlgeschlagen]\nBitte versuchen Sie es erneut, indem Sie\ndie Gebührenrate erhöhen."
-    non_final_taproot_child: "[Senden fehlgeschlagen]\nBitte überprüfen Sie das Vererbungsdatum und die Uhrzeit der untergeordneten Wallet."
+    insufficient_fee: "Bitte versuchen Sie es erneut, indem Sie\ndie Gebührenrate erhöhen."
+    non_final_taproot_child: "Bitte überprüfen Sie das Vererbungsdatum und die Uhrzeit der untergeordneten Wallet."
   signed_psbt:
     wrong_send_info: "Sendeinformationen sind unterschiedlich.\nBitte versuchen Sie es von Anfang an erneut."
     need_more_sign: "Benötige $count weitere Signaturen"

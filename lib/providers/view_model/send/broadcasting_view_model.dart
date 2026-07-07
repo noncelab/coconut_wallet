@@ -113,6 +113,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   ///
   /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이며, [FileLogger]에는 브로드캐스트 전용로 일부만 남김.
   Future<Result<String>> broadcast() async {
+    throw 'test';
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final isConnected = await isElectrumServerConnected();
     if (!isConnected) {

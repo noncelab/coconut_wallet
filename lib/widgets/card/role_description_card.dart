@@ -70,6 +70,7 @@ class RoleDescriptionCard extends StatelessWidget {
 }
 
 /// 역할 별 스타일 및 설정 정의
+/// context.CoconutColors 사용 안하고 색상 고정
 class RoleDescriptionTheme {
   final Color themeColor;
   final Color backgroundColor;

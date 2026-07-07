@@ -26,10 +26,7 @@ class BitBox02Device {
     int? port,
   }) async {
     try {
-      final args = <String, dynamic>{
-        'transport': transport,
-        'config': configJson,
-      };
+      final args = <String, dynamic>{'transport': transport, 'config': configJson};
       if (host != null) args['host'] = host;
       if (port != null) args['port'] = port;
 
@@ -160,11 +157,7 @@ class BitBox02Device {
   /// Must be called before [btcSignPSBT] for each input that lacks NonWitnessUtxo.
   Future<void> setPrevTxHex(int inputIndex, String rawTxHex) async {
     try {
-      await _channel.invokeMethod('setPrevTxHex', {
-        'id': id,
-        'inputIndex': inputIndex,
-        'rawTxHex': rawTxHex,
-      });
+      await _channel.invokeMethod('setPrevTxHex', {'id': id, 'inputIndex': inputIndex, 'rawTxHex': rawTxHex});
     } on PlatformException catch (e) {
       throw BitBox02SignException(e.code, e.message ?? 'setPrevTxHex failed');
     }
@@ -235,10 +228,7 @@ class BitBox02Device {
 
   Future<void> loadConfig(String configJson) async {
     try {
-      await _channel.invokeMethod('loadConfig', {
-        'id': id,
-        'config': configJson,
-      });
+      await _channel.invokeMethod('loadConfig', {'id': id, 'config': configJson});
     } on PlatformException catch (e) {
       throw BitBox02ConfigException(e.code, e.message ?? 'loadConfig failed');
     }

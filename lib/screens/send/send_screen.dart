@@ -673,7 +673,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           if (isFeeRateLowerThanMin) {
             finalButtonMessages.add(
               FinalButtonMessage(
-                textColor: CoconutColors.yellow,
+                textColor: context.coconutColors.warning,
                 message: t.toast.min_fee(minimum: _viewModel.minimumFeeRate ?? 0),
               ),
             );
@@ -1135,7 +1135,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                             isVisibleIcon: true,
                             text: t.send_screen.fee_rate_too_low,
                             seconds: 1,
-                            //backgroundColor: CoconutColors.gray700,
                           );
                         }
                       },

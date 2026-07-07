@@ -40,7 +40,12 @@ class BitBox02SignViewModel extends ChangeNotifier {
   final String walletFingerprint;
   final String transport;
 
-  BitBox02SignViewModel({required this.psbtBase64, required this.walletName, this.walletFingerprint = '', this.transport = 'usb'}) {
+  BitBox02SignViewModel({
+    required this.psbtBase64,
+    required this.walletName,
+    this.walletFingerprint = '',
+    this.transport = 'usb',
+  }) {
     _probeDeviceStatus();
   }
 
@@ -59,9 +64,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
       return;
     }
     final fp = last.cachedFingerprint;
-    final mismatch = walletFingerprint.isNotEmpty &&
-        fp != null &&
-        fp.toLowerCase() != walletFingerprint.toLowerCase();
+    final mismatch = walletFingerprint.isNotEmpty && fp != null && fp.toLowerCase() != walletFingerprint.toLowerCase();
     if (mismatch) {
       BitBox02Device.lastConnected = null;
       _deviceStatus = BitBox02DeviceStatus.disconnected;

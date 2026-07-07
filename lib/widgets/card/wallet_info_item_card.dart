@@ -353,13 +353,14 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
           walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
           colorIndex: colorIndex,
           iconIndex: iconIndex,
+          isInnerWallet: !isExternalWallet,
         ),
         if (shouldShowEditIcon)
           Positioned(
             right: -3,
             bottom: -3,
             child: Container(
-              padding: const EdgeInsets.all(4.3),
+              padding: const EdgeInsets.all(1),
               decoration: BoxDecoration(
                 color: isItemTapped ? colors.surfacePressed : colors.iconBackground,
                 shape: BoxShape.circle,
@@ -368,9 +369,9 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                 ],
               ),
               child: Container(
-                padding: const EdgeInsets.all(1),
+                padding: const EdgeInsets.all(3.3),
                 decoration: BoxDecoration(
-                  color: isItemTapped ? colors.surfacePressed : colors.iconBackground,
+                  color: isItemTapped ? colors.surfacePressed : colors.iconBackgroundSubtle,
                   shape: BoxShape.circle,
                 ),
                 child: SvgPicture.asset(
