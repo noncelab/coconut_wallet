@@ -810,7 +810,6 @@ wallet_info_screen:
     connection_status: "接続状態"
     connected: "接続中"
     disconnected: "未接続"
-    device_id: "デバイスID"
     disconnect_button: "接続解除"
     disconnect_confirm_title: "接続解除"
     disconnect_confirm_description: "現在接続中のデバイスを解除します。\n次回署名時に再接続が必要です。"

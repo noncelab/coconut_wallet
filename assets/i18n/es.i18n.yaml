@@ -812,7 +812,6 @@ wallet_info_screen:
     connection_status: "Estado de conexión"
     connected: "Conectado"
     disconnected: "No conectado"
-    device_id: "ID de dispositivo"
     disconnect_button: "Desconectar"
     disconnect_confirm_title: "Desconectar"
     disconnect_confirm_description: "Se desconectará el dispositivo actual.\nNecesitará volver a conectar para la próxima firma."

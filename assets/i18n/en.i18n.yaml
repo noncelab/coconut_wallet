@@ -810,7 +810,6 @@ wallet_info_screen:
     connection_status: "Connection Status"
     connected: "Connected"
     disconnected: "Not Connected"
-    device_id: "Device ID"
     disconnect_button: "Disconnect"
     disconnect_confirm_title: "Disconnect"
     disconnect_confirm_description: "Disconnect the current device.\nYou will need to reconnect for the next signing."

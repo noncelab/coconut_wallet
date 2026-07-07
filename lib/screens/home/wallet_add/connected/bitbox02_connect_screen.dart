@@ -429,6 +429,13 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       onPressed = () => vm.connect(transport: 'usb');
     }
 
-    return FixedBottomButton(onButtonClicked: onPressed, text: buttonText, isActive: !_isAddingWallet && !vm.isConnecting);
+    return FixedBottomButton(
+      onButtonClicked: onPressed,
+      text: buttonText,
+      isActive: !_isAddingWallet && !vm.isConnecting,
+      backgroundColor: context.coconutColors.primaryButtonBackground,
+      pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
+      textColor: context.coconutColors.primaryButtonText,
+    );
   }
 }

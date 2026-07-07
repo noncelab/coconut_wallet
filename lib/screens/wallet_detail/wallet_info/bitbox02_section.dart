@@ -5,7 +5,6 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
-import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,7 +19,6 @@ class BitBox02Section extends StatefulWidget {
 
 class _BitBox02SectionState extends State<BitBox02Section> {
   bool _isConnected = false;
-  String? _deviceId;
   StreamSubscription<bool>? _sub;
 
   @override
@@ -34,13 +32,11 @@ class _BitBox02SectionState extends State<BitBox02Section> {
     if (!mounted) return;
     setState(() {
       _isConnected = connected;
-      _deviceId = BitBox02Device.lastConnected?.id;
     });
     _sub = BitBox02ConnectivityService.onConnectionChanged.listen((connected) {
       if (!mounted) return;
       setState(() {
         _isConnected = connected;
-        if (!connected) _deviceId = null;
       });
     });
   }
@@ -69,7 +65,6 @@ class _BitBox02SectionState extends State<BitBox02Section> {
       await widget.onDisconnect();
       setState(() {
         _isConnected = false;
-        _deviceId = null;
       });
     }
   }
@@ -132,16 +127,6 @@ class _BitBox02SectionState extends State<BitBox02Section> {
               ],
             ),
           ),
-          if (_isConnected && _deviceId != null) ...[
-            const SizedBox(height: 10),
-            _InfoRow(
-              label: t.wallet_info_screen.bitbox02_device.device_id,
-              child: Text(
-                _deviceId!,
-                style: CoconutTypography.body3_12_NumberBold.setColor(context.coconutColors.primaryText),
-              ),
-            ),
-          ],
         ],
       ),
     );

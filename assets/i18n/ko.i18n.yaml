@@ -814,7 +814,6 @@ wallet_info_screen:
     connection_status: "연결 상태"
     connected: "연결됨"
     disconnected: "연결 안 됨"
-    device_id: "기기 ID"
     disconnect_button: "연결 해제"
     disconnect_confirm_title: "연결 해제"
     disconnect_confirm_description: "현재 연결된 기기를 해제합니다.\n다음 서명 시 다시 연결이 필요합니다."

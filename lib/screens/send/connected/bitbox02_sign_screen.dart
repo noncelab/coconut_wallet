@@ -367,6 +367,9 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
                 },
               )
               : null,
+      backgroundColor: context.coconutColors.primaryButtonBackground,
+      pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
+      textColor: context.coconutColors.primaryButtonText,
     );
   }
 }

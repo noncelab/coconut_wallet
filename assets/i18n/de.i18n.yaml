@@ -764,6 +764,14 @@ wallet_info_screen:
       select: "Auswählen"
   error:
     delete: "Wallet konnte nicht gelöscht werden"
+  bitbox02_device:
+    title: "Geräteinformationen"
+    connection_status: "Verbindungsstatus"
+    connected: "Verbunden"
+    disconnected: "Nicht verbunden"
+    disconnect_button: "Trennen"
+    disconnect_confirm_title: "Verbindung trennen"
+    disconnect_confirm_description: "Die aktuelle Geräteverbindung wird getrennt.\nBeim nächsten Signiervorgang ist eine erneute Verbindung erforderlich."
 wallet_signer_section:
   title: "Signiermethode"
   segmented_control:
