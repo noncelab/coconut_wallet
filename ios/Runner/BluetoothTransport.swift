@@ -1,3 +1,4 @@
+import Bitboxbridge
 import CoreBluetooth
 import Foundation
 
@@ -61,76 +62,44 @@ class BluetoothTransport: NSObject {
     }
 }
 
-// MARK: - BitboxbridgeTransport Protocol
+// MARK: - BridgeTransport Protocol
 
-extension BluetoothTransport: BitboxbridgeTransport {
+extension BluetoothTransport: BridgeTransportProtocol {
 
-    func read(_ p0: Data?, ret0_: UnsafeMutablePointer<Int>?, error: NSErrorPointer) -> Bool {
-        guard let p0 = p0 else {
-            error?.pointee = NSError(domain: "BitBox02", code: -2,
-                                     userInfo: [NSLocalizedDescriptionKey: "null buffer"])
-            return false
-        }
-
-        return readQueue.sync {
+    func read(_ n: Int) throws -> Data {
+        return try readQueue.sync {
             while readBuffer.isEmpty {
                 guard peripheral?.state == .connected else {
-                    error?.pointee = NSError(domain: "BitBox02", code: -2,
-                                             userInfo: [NSLocalizedDescriptionKey: "BLE disconnected"])
-                    return false
+                    throw NSError(domain: "BitBox02", code: -2,
+                                  userInfo: [NSLocalizedDescriptionKey: "BLE disconnected"])
                 }
                 if readSemaphore.wait(timeout: .now() + 5) == .timedOut {
                     if peripheral?.state != .connected {
-                        error?.pointee = NSError(domain: "BitBox02", code: -2,
-                                                 userInfo: [NSLocalizedDescriptionKey: "BLE disconnected"])
-                        return false
+                        throw NSError(domain: "BitBox02", code: -2,
+                                      userInfo: [NSLocalizedDescriptionKey: "BLE disconnected"])
                     }
                 }
             }
-
-            let count = min(readBuffer.count, p0.count)
-            let dest = UnsafeMutableRawPointer(mutating: p0.withUnsafeBytes { $0.baseAddress! })
-            readBuffer.withUnsafeBytes { src in
-                memcpy(dest, src.baseAddress!, count)
-            }
+            let count = min(readBuffer.count, n)
+            let result = Data(readBuffer.prefix(count))
             readBuffer.removeFirst(count)
-
-            ret0_?.pointee = count
-            return true
+            return result
         }
     }
 
-    func write(_ p0: Data?, ret0_: UnsafeMutablePointer<Int>?, error: NSErrorPointer) -> Bool {
+    func write(_ p0: Data?, ret0_: UnsafeMutablePointer<Int>?) throws {
         guard let data = p0,
               let peripheral = peripheral,
               let writeChar = writeCharacteristic else {
-            error?.pointee = NSError(domain: "BitBox02", code: -3,
-                                     userInfo: [NSLocalizedDescriptionKey: "BLE not connected"])
-            return false
+            throw NSError(domain: "BitBox02", code: -3,
+                          userInfo: [NSLocalizedDescriptionKey: "BLE not connected"])
         }
-
-        let semaphore = DispatchSemaphore(value: 0)
-        var writeError: Error?
-
         peripheral.writeValue(data, for: writeChar, type: .withResponse)
-
-        if semaphore.wait(timeout: .now() + 5) == .timedOut {
-            error?.pointee = NSError(domain: "BitBox02", code: -3,
-                                     userInfo: [NSLocalizedDescriptionKey: "Write timeout"])
-            return false
-        }
-        if let writeError = writeError {
-            error?.pointee = writeError as NSError
-            return false
-        }
-
         ret0_?.pointee = data.count
-        return true
     }
 
-    func close(_ error: NSErrorPointer) -> Bool {
+    func close() throws {
         disconnect()
-        return true
     }
 }
 

@@ -10,6 +10,8 @@
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		5BDE05CA37B7431FB7C74C09 /* Bitbox02MethodHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593DC4AF28BA47E6BE6E6E8F /* Bitbox02MethodHandler.swift */; };
+		A0B1C2D3E4F5060708090A0B /* BluetoothTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A2B1C0D9E8F7A6B5C4D3E2 /* BluetoothTransport.swift */; };
 		5F30C6482DD5909E007E3A6E /* LaunchScreenRegtest.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5F30C6462DD5909E007E3A6E /* LaunchScreenRegtest.storyboard */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
@@ -17,7 +19,9 @@
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		C27F3A112EB7A618000DF5BB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = C27F3A0F2EB7A618000DF5BB /* InfoPlist.strings */; };
 		C4BD7B19EF57826E7044304F /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF6E69EA31F680FC5DDC38A4 /* Pods_RunnerTests.framework */; };
-		CEB6D888FCEA72BDAB7E1DC5 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C67200FB8402D2CCB62072C5 /* Pods_Runner.framework */; };
+		C8D7E6F5A4B302C1D0E9F8A7 /* Bitboxbridge.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9C8D7E6F5040302A1B0C9D8 /* bitboxbridge.xcframework */; };
+		D7E6F5A4B3C2D1E0F9A8B7C6 /* Bitboxbridge.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B9C8D7E6F5040302A1B0C9D8 /* bitboxbridge.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+				CEB6D888FCEA72BDAB7E1DC5 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C67200FB8402D2CCB62072C5 /* Pods_Runner.framework */; };
 		DEB72D872E24830A0069ED9B /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = DEB72D852E24830A0069ED9B /* InfoPlist.strings */; };
 		DEB72D8B2E2483130069ED9B /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = DEB72D892E2483130069ED9B /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
@@ -39,6 +43,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				D7E6F5A4B3C2D1E0F9A8B7C6 /* Bitboxbridge.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -52,11 +57,15 @@
 		13F9D7366B631230FD007806 /* Pods-Runner.release-mainnet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release-mainnet.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release-mainnet.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
+		15505124E4324B10BB753A0B /* es */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = es; path = InfoPlist.strings; sourceTree = "<group>"; };
+		2BAFCA0EC6C14A8A8F6F98CF /* de */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = de; path = InfoPlist.strings; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		36E8CAA72C7DD4F5001E9DFD /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		3E6C4F8BA061F4F545A31186 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		593DC4AF28BA47E6BE6E6E8F /* Bitbox02MethodHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Bitbox02MethodHandler.swift; sourceTree = "<group>"; };
+		F3A2B1C0D9E8F7A6B5C4D3E2 /* BluetoothTransport.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothTransport.swift; sourceTree = "<group>"; };
 		5F30C6472DD5909E007E3A6E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreenRegtest.storyboard; sourceTree = "<group>"; };
 		5F36737A5BDB1BAC2FBA6952 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		69BC47BCF6A4CEDB9F89EAC9 /* Pods-RunnerTests.profile-regtest.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile-regtest.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile-regtest.xcconfig"; sourceTree = "<group>"; };
@@ -84,7 +93,8 @@
 		BF71A04B35B0249648B60B01 /* Pods-RunnerTests.debug-regtest.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug-regtest.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug-regtest.xcconfig"; sourceTree = "<group>"; };
 		C27F3A072EB7A47C000DF5BB /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ../ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		C27F3A0E2EB7A618000DF5BB /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = InfoPlist.strings; sourceTree = "<group>"; };
-		C67200FB8402D2CCB62072C5 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		B9C8D7E6F5040302A1B0C9D8 /* bitboxbridge.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = bitboxbridge.xcframework; path = Runner/bitboxbridge.xcframework; sourceTree = "<group>"; };
+				C67200FB8402D2CCB62072C5 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE599B60C21922DDF10792DC /* Pods-Runner.debug-regtest.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-regtest.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-regtest.xcconfig"; sourceTree = "<group>"; };
 		D092F9B294690AC61D258083 /* Pods-Runner.debug-mainnet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-mainnet.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-mainnet.xcconfig"; sourceTree = "<group>"; };
 		D15DFA706F0E346025E7C166 /* Pods-RunnerTests.release-mainnet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release-mainnet.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release-mainnet.xcconfig"; sourceTree = "<group>"; };
@@ -109,6 +119,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C8D7E6F5A4B302C1D0E9F8A7 /* Bitboxbridge.xcframework in Frameworks */,
 				CEB6D888FCEA72BDAB7E1DC5 /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -155,6 +166,22 @@
 			path = RunnerTests;
 			sourceTree = "<group>";
 		};
+		414E6ADA51AE484AA49BA6FA /* de.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				29EE1DF5C9924DD19CB0DB75 /* InfoPlist.strings */,
+			);
+			path = de.lproj;
+			sourceTree = "<group>";
+		};
+		81C96A65C4C149CCA072E448 /* es.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				AC4BF2382D0841DDA06B0A77 /* InfoPlist.strings */,
+			);
+			path = es.lproj;
+			sourceTree = "<group>";
+		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
 			isa = PBXGroup;
 			children = (
@@ -193,6 +220,8 @@
 			children = (
 				DEB72D8A2E2483130069ED9B /* ko.lproj */,
 				DEB72D862E24830A0069ED9B /* en.lproj */,
+				414E6ADA51AE484AA49BA6FA /* de.lproj */,
+				81C96A65C4C149CCA072E448 /* es.lproj */,
 				36E8CAA72C7DD4F5001E9DFD /* Runner.entitlements */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				C27F3A102EB7A618000DF5BB /* ja.lproj */,
@@ -203,6 +232,8 @@
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
+				593DC4AF28BA47E6BE6E6E8F /* Bitbox02MethodHandler.swift */,
+				F3A2B1C0D9E8F7A6B5C4D3E2 /* BluetoothTransport.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
@@ -219,6 +250,7 @@
 		CC252184760F376DD2314C18 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				B9C8D7E6F5040302A1B0C9D8 /* bitboxbridge.xcframework */,
 				C67200FB8402D2CCB62072C5 /* Pods_Runner.framework */,
 				BF6E69EA31F680FC5DDC38A4 /* Pods_RunnerTests.framework */,
 			);
@@ -315,6 +347,8 @@
 				Base,
 				ko,
 				ja,
+				de,
+				es,
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
@@ -343,6 +377,8 @@
 				C27F3A112EB7A618000DF5BB /* InfoPlist.strings in Resources */,
 				DEB72D8B2E2483130069ED9B /* InfoPlist.strings in Resources */,
 				DEB72D872E24830A0069ED9B /* InfoPlist.strings in Resources */,
+				62F1F371AC3C45DC9F6AECB2 /* InfoPlist.strings in Resources */,
+				D7AFF10F7DEA4C5F97BC1886 /* InfoPlist.strings in Resources */,
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
@@ -443,7 +479,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\n\n\n# Configuration에 따른 앱 이름 설정\nif [[ \"${CONFIGURATION}\" == *\"mainnet\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\n    JA_APP_NAME=\"Coconut Wallet\"\nelif [[ \"${CONFIGURATION}\" == *\"regtest\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet-Regtest\"\n    KO_APP_NAME=\"코코넛 월렛 학습용\"\n    JA_APP_NAME=\"Coconut Wallet-Regtest\"\nelse\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\n    JA_APP_NAME=\"Coconut Wallet\"\nfi\n\n# 권한 문구 설정\nEN_NSCameraUsageDescription=\"Camera access is required for QR code scanning.\"\nKO_NSCameraUsageDescription=\"QR 코드 스캔을 위해 카메라가 필요합니다.\"\nJA_NSCameraUsageDescription=\"QRコードのスキャンにカメラへのアクセスが必要です。\"\n\nEN_NSFaceIDUsageDescription=\"Face ID is required to unlock the app.\"\nKO_NSFaceIDUsageDescription=\"앱의 잠금을 해제할 때 Face ID를 사용하기 위해 필요합니다.\"\nJA_NSFaceIDUsageDescription=\"アプリのロック解除にFace IDを使用するために必要です。\"\n\necho \"EN_APP_NAME: $EN_APP_NAME\"\necho \"KO_APP_NAME: $KO_APP_NAME\"\necho \"JA_APP_NAME: $JA_APP_NAME\"\n\n# 영어 InfoPlist.strings 파일 경로\nEN_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/en.lproj\"\nEN_STRINGS_FILE=\"${EN_STRINGS_PATH}/InfoPlist.strings\"\n\n# 한국어 InfoPlist.strings 파일 경로\nKO_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/ko.lproj\"\nKO_STRINGS_FILE=\"${KO_STRINGS_PATH}/InfoPlist.strings\"\n\n# 일본어 InfoPlist.strings 파일 경로\nJA_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/ja.lproj\"\nJA_STRINGS_FILE=\"${JA_STRINGS_PATH}/InfoPlist.strings\"\n\n# 디렉토리 생성\nmkdir -p \"$EN_STRINGS_PATH\"\nmkdir -p \"$KO_STRINGS_PATH\"\nmkdir -p \"$JA_STRINGS_PATH\"\n\n# InfoPlist.strings 생성\ncat > \"$EN_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$EN_APP_NAME\";\nNSCameraUsageDescription = \"$EN_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$EN_NSFaceIDUsageDescription\";\nEOF\n\ncat > \"$KO_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$KO_APP_NAME\";\nNSCameraUsageDescription = \"$KO_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$KO_NSFaceIDUsageDescription\";\nEOF\n\ncat > \"$JA_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$JA_APP_NAME\";\nNSCameraUsageDescription = \"$JA_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$JA_NSFaceIDUsageDescription\";\nEOF\n\n\necho \"✅ 앱 이름 및 권한 설명 설정 완료\"\necho \"📝 Configuration: $CONFIGURATION\"\necho \"📝 English App Name: $EN_APP_NAME\"\necho \"📝 Korean App Name: $KO_APP_NAME\"\n\n# DART_DEFINES에서 USE_FIREBASE 값 추출\nfor value in $(echo \"$DART_DEFINES\" | tr ',' '\\n'); do\n  decoded=$(echo \"$value\" | base64 --decode)\n  if [[ $decoded == USE_FIREBASE=* ]]; then\n    USE_FIREBASE_VALUE=\"${decoded#*=}\"\n  fi\ndone\n\nif [ \"$USE_FIREBASE_VALUE\" = \"true\" ]; then\n  echo \"✅ Firebase enabled - copying GoogleService-Info.plist\"\n  cp \"${PROJECT_DIR}/Runner/GoogleService-Info.plist\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\nelse\n  echo \"✅ Firebase disabled - skipping GoogleService-Info.plist\"\nfi\n\n";
+			shellScript = "#!/bin/bash\n\n\n# Configuration에 따른 앱 이름 설정\nif [[ \"${CONFIGURATION}\" == *\"mainnet\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\n    JA_APP_NAME=\"Coconut Wallet\"\n    DE_APP_NAME=\"Coconut Wallet\"\n    ES_APP_NAME=\"Coconut Wallet\"\nelif [[ \"${CONFIGURATION}\" == *\"regtest\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet-Regtest\"\n    KO_APP_NAME=\"코코넛 월렛 학습용\"\n    JA_APP_NAME=\"Coconut Wallet-Regtest\"\n    DE_APP_NAME=\"Coconut Wallet-Regtest\"\n    ES_APP_NAME=\"Coconut Wallet-Regtest\"\nelse\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\n    JA_APP_NAME=\"Coconut Wallet\"\n    DE_APP_NAME=\"Coconut Wallet\"\n    ES_APP_NAME=\"Coconut Wallet\"\nfi\n\n# 권한 문구 설정\nEN_NSCameraUsageDescription=\"Camera access is required for QR code scanning.\"\nKO_NSCameraUsageDescription=\"QR 코드 스캔을 위해 카메라가 필요합니다.\"\nJA_NSCameraUsageDescription=\"QRコードのスキャンにカメラへのアクセスが必要です。\"\nDE_NSCameraUsageDescription=\"Die Kamera wird zum Scannen von QR-Codes benötigt.\"\nES_NSCameraUsageDescription=\"Se necesita la cámara para escanear códigos QR.\"\n\nEN_NSFaceIDUsageDescription=\"Face ID is required to unlock the app.\"\nKO_NSFaceIDUsageDescription=\"앱의 잠금을 해제할 때 Face ID를 사용하기 위해 필요합니다.\"\nJA_NSFaceIDUsageDescription=\"アプリのロック解除にFace IDを使用するために必要です。\"\nDE_NSFaceIDUsageDescription=\"Face ID wird zum Entsperren der App benötigt.\"\nES_NSFaceIDUsageDescription=\"Se necesita Face ID para desbloquear la aplicación.\"\n\necho \"EN_APP_NAME: $EN_APP_NAME\"\necho \"KO_APP_NAME: $KO_APP_NAME\"\necho \"JA_APP_NAME: $JA_APP_NAME\"\n\n# 영어 InfoPlist.strings 파일 경로\nEN_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/en.lproj\"\nEN_STRINGS_FILE=\"${EN_STRINGS_PATH}/InfoPlist.strings\"\n\n# 한국어 InfoPlist.strings 파일 경로\nKO_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/ko.lproj\"\nKO_STRINGS_FILE=\"${KO_STRINGS_PATH}/InfoPlist.strings\"\n\n# 일본어 InfoPlist.strings 파일 경로\nJA_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/ja.lproj\"\nJA_STRINGS_FILE=\"${JA_STRINGS_PATH}/InfoPlist.strings\"\n\n# 독일어 InfoPlist.strings 파일 경로\nDE_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/de.lproj\"\nDE_STRINGS_FILE=\"${DE_STRINGS_PATH}/InfoPlist.strings\"\n\n# 스페인어 InfoPlist.strings 파일 경로\nES_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/es.lproj\"\nES_STRINGS_FILE=\"${ES_STRINGS_PATH}/InfoPlist.strings\"\n\n# 디렉토리 생성\nmkdir -p \"$EN_STRINGS_PATH\"\nmkdir -p \"$KO_STRINGS_PATH\"\nmkdir -p \"$JA_STRINGS_PATH\"\nmkdir -p \"$DE_STRINGS_PATH\"\nmkdir -p \"$ES_STRINGS_PATH\"\n\n# InfoPlist.strings 생성\ncat > \"$EN_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$EN_APP_NAME\";\nNSCameraUsageDescription = \"$EN_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$EN_NSFaceIDUsageDescription\";\nEOF\n\ncat > \"$KO_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$KO_APP_NAME\";\nNSCameraUsageDescription = \"$KO_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$KO_NSFaceIDUsageDescription\";\nEOF\n\ncat > \"$JA_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$JA_APP_NAME\";\nNSCameraUsageDescription = \"$JA_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$JA_NSFaceIDUsageDescription\";\nEOF\n\ncat > \"$DE_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$DE_APP_NAME\";\nNSCameraUsageDescription = \"$DE_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$DE_NSFaceIDUsageDescription\";\nEOF\n\ncat > \"$ES_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$ES_APP_NAME\";\nNSCameraUsageDescription = \"$ES_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$ES_NSFaceIDUsageDescription\";\nEOF\n\n\necho \"✅ 앱 이름 및 권한 설명 설정 완료\"\necho \"📝 Configuration: $CONFIGURATION\"\necho \"📝 English App Name: $EN_APP_NAME\"\necho \"📝 Korean App Name: $KO_APP_NAME\"\n\n# DART_DEFINES에서 USE_FIREBASE 값 추출\nfor value in $(echo \"$DART_DEFINES\" | tr ',' '\\n'); do\n  decoded=$(echo \"$value\" | base64 --decode)\n  if [[ $decoded == USE_FIREBASE=* ]]; then\n    USE_FIREBASE_VALUE=\"${decoded#*=}\"\n  fi\ndone\n\nif [ \"$USE_FIREBASE_VALUE\" = \"true\" ]; then\n  echo \"✅ Firebase enabled - copying GoogleService-Info.plist\"\n  cp \"${PROJECT_DIR}/Runner/GoogleService-Info.plist\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\nelse\n  echo \"✅ Firebase disabled - skipping GoogleService-Info.plist\"\nfi\n\n";
 		};
 		DFD5326D7C61DE059C053AD8 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -453,9 +489,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -478,6 +518,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
+				5BDE05CA37B7431FB7C74C09 /* Bitbox02MethodHandler.swift in Sources */,
+				A0B1C2D3E4F5060708090A0B /* BluetoothTransport.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -493,6 +535,14 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		29EE1DF5C9924DD19CB0DB75 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				2BAFCA0EC6C14A8A8F6F98CF /* de */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
 		5F30C6462DD5909E007E3A6E /* LaunchScreenRegtest.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -515,6 +565,14 @@
 				97C147001CF9000F007C117D /* Base */,
 			);
 			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+		AC4BF2382D0841DDA06B0A77 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				15505124E4324B10BB753A0B /* es */,
+			);
+			name = InfoPlist.strings;
 			sourceTree = "<group>";
 		};
 		C27F3A0F2EB7A618000DF5BB /* InfoPlist.strings */ = {

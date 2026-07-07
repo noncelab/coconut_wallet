@@ -326,7 +326,9 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       case BitBox02SignSubStatus.waiting:
         return t.bitbox02_sign_screen.idle.waiting;
       case BitBox02SignSubStatus.connectingDevice:
-        return t.bitbox02_sign_screen.status.connecting_device;
+        return widget.transport == 'ble'
+            ? t.bitbox02_sign_screen.status.connecting_device_ble
+            : t.bitbox02_sign_screen.status.connecting_device;
       case BitBox02SignSubStatus.checkPairing:
         return t.bitbox02_sign_screen.status.check_pairing;
       case BitBox02SignSubStatus.preparingData:

@@ -404,6 +404,7 @@ wallet_connect_screen:
   guide_bitbox02:
     btn:
       connect_via_usb: "Connect via USB"
+      connect_via_ble: "Connect via Bluetooth"
       add_wallet: "Add Wallet"
       retry: "Retry"
       start_signing: "Start Signing"
@@ -411,6 +412,9 @@ wallet_connect_screen:
       step1: "Connect your BitBox02 Nova via USB."
       step2: "Unlock your device."
       step3: "When you see 'See the BitBoxApp' on your device, tap '$btn' below."
+      ble_step1: "Turn on Bluetooth and keep BitBox02 Nova nearby."
+      ble_step2: "If 'Tap this side' appears on the device screen, tap both sides of the device."
+      ble_step3: "When the wallet appears on the device screen, tap the '$btn' button below."
     connecting:
       title: "Connecting Device"
       step1: "Unlock your device."
@@ -423,6 +427,7 @@ wallet_connect_screen:
     error:
       title: "Connection Failed"
       description: "BitBox02 Nova was not found. Reconnect the device and try again."
+      ble_description: "BitBox02 Nova not found. Please turn on Bluetooth and bring the device closer."
 
 
 # lib/screens/review
@@ -544,7 +549,8 @@ bitbox02_sign_screen:
     device_found: "Device found: $fingerprint"
     ready: "Ready"
   status:
-    connecting_device: "Connecting to BitBox02..."
+    connecting_device: "Connecting to BitBox02 via USB..."
+    connecting_device_ble: "Searching for BitBox02 via Bluetooth..."
     check_pairing: "Check the Pairing code on your device"
     preparing_data: "Preparing transaction data..."
     confirm_on_device: "Confirm amount, address, and fee on your device"

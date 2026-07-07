@@ -11,7 +11,7 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/foundation.dart';
 
-enum BitBox02ConnectStep { idle, scanning, pairing, paired, error }
+enum BitBox02ConnectStep { idle, pairing, paired, error }
 
 class BitBox02ConnectViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
@@ -27,6 +27,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
   String _xpub = '';
   String _fingerprint = '';
   String _transport = 'usb';
+  bool _isConnecting = false;
 
   BitBox02ConnectStep get step => _step;
   String get statusMessage => _statusMessage;
@@ -34,6 +35,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
   BitBox02Device? get device => _device;
   String? get errorMessage => _errorMessage;
   bool get isPaired => _step == BitBox02ConnectStep.paired;
+  bool get isConnecting => _isConnecting;
   // bool get mockMode => _mockMode;
   String get xpub => _xpub;
   String get fingerprint => _fingerprint;
@@ -51,21 +53,13 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
   }
 
   Future<void> connect({required String transport, String configJson = '', String? host, int? port}) async {
-    if (_step == BitBox02ConnectStep.pairing) {
-      return; // Already in progress
-    }
-    if (_step == BitBox02ConnectStep.paired) {
-      return; // Already connected
-    }
+    if (_isConnecting || _step == BitBox02ConnectStep.paired) return;
 
     final resolvedTransport = BitBox02Transport.resolve(preferred: transport);
 
-    // if (_mockMode) {
-    //   await _connectMock();
-    //   return;
-    // }
-
     _transport = resolvedTransport;
+    _isConnecting = true;
+    notifyListeners();
 
     try {
       _device = await BitBox02Device.connect(
@@ -95,6 +89,9 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString();
       _setState(BitBox02ConnectStep.error, status: 'Unexpected error');
+    } finally {
+      _isConnecting = false;
+      notifyListeners();
     }
   }
 

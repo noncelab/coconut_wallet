@@ -77,7 +77,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(color: context.coconutColors.surfaceCard, borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,12 +119,12 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: context.coconutColors.surfaceButtonSecondary.withAlpha(15),
+                        borderRadius: BorderRadius.circular(4),
+                        color: context.coconutColors.primaryText.withValues(alpha: 0.06),
                       ),
                       child: Text(
                         t.wallet_info_screen.bitbox02_device.disconnect_button,
-                        style: CoconutTypography.caption_10,
+                        style: CoconutTypography.caption_10.setColor(context.coconutColors.primaryText),
                       ),
                     ),
                   ),
@@ -160,7 +160,7 @@ class _InfoRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(label, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
+        Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
         const SizedBox(width: 12),
         child,
       ],

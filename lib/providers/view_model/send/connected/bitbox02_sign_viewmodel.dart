@@ -10,6 +10,7 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_exceptions.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_types.dart';
 import 'package:flutter/foundation.dart';
@@ -86,7 +87,16 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
       if (existingDevice != null) {
         _device = existingDevice;
+        _deviceStatus = BitBox02DeviceStatus.ready;
+      } else if (_device != null && await BitBox02ConnectivityService.isDeviceConnected()) {
+        // Device is already paired and physically connected — skip re-pairing.
+        _cancelTimeout();
+        _fingerprint = _device!.cachedFingerprint;
+        _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.preparingData);
+        _deviceStatus = BitBox02DeviceStatus.ready;
       } else {
+        _device = null;
+        BitBox02Device.lastConnected = null;
         _device = await BitBox02Device.connect(transport: BitBox02Transport.resolve(preferred: transport));
 
         _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.checkPairing);

@@ -368,6 +368,7 @@ wallet_connect_screen:
   guide_bitbox02:
     btn:
       connect_via_usb: "Über USB verbinden"
+      connect_via_ble: "Über Bluetooth verbinden"
       add_wallet: "Wallet hinzufügen"
       retry: "Erneut versuchen"
       start_signing: "Signierung starten"
@@ -375,6 +376,9 @@ wallet_connect_screen:
       step1: "Bitte schließen Sie BitBox02 Nova über USB an."
       step2: "Wenn 'Tap this side' auf dem Display erscheint, tippen Sie auf beide Seiten des Geräts."
       step3: "Wenn das Wallet auf dem Display angezeigt wird, drücken Sie die Schaltfläche '$btn' unten."
+      ble_step1: "Aktivieren Sie Bluetooth und halten Sie BitBox02 Nova in der Nähe."
+      ble_step2: "Wenn 'Tap this side' auf dem Bildschirm erscheint, tippen Sie auf beide Seiten des Geräts."
+      ble_step3: "Wenn das Wallet auf dem Bildschirm angezeigt wird, tippen Sie auf '$btn' unten."
     connecting:
       title: "Gerät wird verbunden"
       step1: "Bitte entsperren Sie das Gerät."
@@ -387,6 +391,7 @@ wallet_connect_screen:
     error:
       title: "Verbindung fehlgeschlagen"
       description: "BitBox02 Nova wurde nicht gefunden. Bitte schließen Sie das Gerät erneut an und versuchen Sie es nochmal."
+      ble_description: "BitBox02 Nova wurde nicht gefunden. Bitte aktivieren Sie Bluetooth und bringen Sie das Gerät näher."
 
 # lib/screens/wallet_list
 wallet_list:

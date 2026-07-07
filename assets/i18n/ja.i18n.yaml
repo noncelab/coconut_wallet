@@ -405,6 +405,7 @@ wallet_connect_screen:
   guide_bitbox02:
     btn:
       connect_via_usb: "USBで接続"
+      connect_via_ble: "Bluetoothで接続"
       add_wallet: "ウォレットを追加"
       retry: "再試行"
       start_signing: "署名を開始"
@@ -412,6 +413,9 @@ wallet_connect_screen:
       step1: "BitBox02 NovaをUSBで接続してください。"
       step2: "デバイスのロックを解除してください。"
       step3: "デバイス画面に「See the BitBoxApp」と表示されたら、下の「$btn」ボタンを押してください。"
+      ble_step1: "Bluetoothをオンにして、BitBox02 Novaを近くに置いてください。"
+      ble_step2: "デバイス画面に「Tap this side」と表示されたら、デバイスの両面をタップしてください。"
+      ble_step3: "デバイス画面にウォレットが表示されたら、下の「$btn」ボタンをタップしてください。"
     connecting:
       title: "デバイスを接続中"
       step1: "デバイスのロックを解除してください。"
@@ -424,6 +428,7 @@ wallet_connect_screen:
     error:
       title: "接続に失敗しました"
       description: "BitBox02 Novaが見つかりませんでした。デバイスを再接続して、もう一度お試しください。"
+      ble_description: "BitBox02 Novaが見つかりません。Bluetoothをオンにして、デバイスを近づけてください。"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -542,7 +547,8 @@ bitbox02_sign_screen:
     device_found: "デバイス発見: $fingerprint"
     ready: "準備完了"
   status:
-    connecting_device: "BitBox02に接続中..."
+    connecting_device: "USBでBitBox02に接続中..."
+    connecting_device_ble: "Bluetoothで BitBox02を検索中..."
     check_pairing: "デバイスでペアリングコードを確認してください"
     preparing_data: "署名データを準備しています..."
     confirm_on_device: "デバイスで金額・アドレス・手数料を確認してください"

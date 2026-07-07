@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -139,6 +141,15 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
   Widget _buildStatusSection(BitBox02ConnectViewModel vm) {
     switch (vm.step) {
       case BitBox02ConnectStep.idle:
+        if (Platform.isIOS) {
+          return _buildInstructionToolTip([
+            t.wallet_connect_screen.guide_bitbox02.init.ble_step1,
+            t.wallet_connect_screen.guide_bitbox02.init.ble_step2,
+            t.wallet_connect_screen.guide_bitbox02.init.ble_step3(
+              btn: t.wallet_connect_screen.guide_bitbox02.btn.connect_via_ble,
+            ),
+          ]);
+        }
         return _buildInstructionToolTip([
           t.wallet_connect_screen.guide_bitbox02.init.step1,
           t.wallet_connect_screen.guide_bitbox02.init.step2,
@@ -155,8 +166,6 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
         return _buildSuccessCard(vm);
       case BitBox02ConnectStep.error:
         return _buildErrorCard(vm);
-      case BitBox02ConnectStep.scanning:
-        return _buildProgressCard('Scanning...', []);
     }
   }
 
@@ -360,7 +369,9 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
             child: Column(
               children: [
                 Text(
-                  t.wallet_connect_screen.guide_bitbox02.error.description,
+                  Platform.isIOS
+                      ? t.wallet_connect_screen.guide_bitbox02.error.ble_description
+                      : t.wallet_connect_screen.guide_bitbox02.error.description,
                   style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                   textAlign: TextAlign.center,
                 ),
@@ -410,11 +421,14 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     } else if (isRetry) {
       buttonText = t.wallet_connect_screen.guide_bitbox02.btn.retry;
       onPressed = () => vm.connect(transport: vm.transport);
+    } else if (Platform.isIOS) {
+      buttonText = t.wallet_connect_screen.guide_bitbox02.btn.connect_via_ble;
+      onPressed = () => vm.connect(transport: 'ble');
     } else {
       buttonText = t.wallet_connect_screen.guide_bitbox02.btn.connect_via_usb;
       onPressed = () => vm.connect(transport: 'usb');
     }
 
-    return FixedBottomButton(onButtonClicked: onPressed, text: buttonText, isActive: !_isAddingWallet);
+    return FixedBottomButton(onButtonClicked: onPressed, text: buttonText, isActive: !_isAddingWallet && !vm.isConnecting);
   }
 }

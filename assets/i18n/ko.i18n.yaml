@@ -379,13 +379,17 @@ wallet_connect_screen:
   guide_bitbox02:
     btn:
       connect_via_usb: "USB로 연결하기"
+      connect_via_ble: "블루투스로 연결하기"
       add_wallet: "지갑 추가"
       retry: "재시도"
       start_signing: "서명 시작"
-    init: 
+    init:
       step1: "BitBox02 Nova를 USB로 연결해주세요."
       step2: "기기 화면에 'Tap this side'가 보이면 기기의 양면을 탭해주세요."
       step3: "기기 화면에 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
+      ble_step1: "블루투스를 켜고 BitBox02 Nova를 가까이 두세요."
+      ble_step2: "기기 화면에 'Tap this side'가 보이면 기기의 양면을 탭해주세요."
+      ble_step3: "기기 화면에 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
     connecting: 
       title: "기기 연결 중"
       step1: "기기의 잠금을 해제해 주세요."
@@ -398,6 +402,7 @@ wallet_connect_screen:
     error:
       title: "연결 실패"
       description: "BitBox02 Nova를 찾을 수 없어요. 기기를 다시 연결한 후 시도해 주세요."
+      ble_description: "BitBox02 Nova를 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
 
 # lib/screens/wallet_list
 wallet_list:
@@ -541,7 +546,8 @@ bitbox02_sign_screen:
     device_found: "기기 발견: $fingerprint"
     ready: "준비 완료"
   status:
-    connecting_device: "BitBox02 연결 중..."
+    connecting_device: "USB로 BitBox02를 연결 중..."
+    connecting_device_ble: "블루투스로 BitBox02를 찾는 중..."
     check_pairing: "기기 화면에서 Pairing code를 확인해 주세요"
     preparing_data: "서명 데이터를 준비하고 있어요"
     confirm_on_device: "기기 화면에서 금액, 주소, 수수료를 확인해 주세요"

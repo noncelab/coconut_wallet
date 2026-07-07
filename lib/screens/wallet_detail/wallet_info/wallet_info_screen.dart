@@ -246,9 +246,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     title: t.alert.wallet_delete.confirm_delete,
                                     description: t.alert.wallet_delete.confirm_delete_description,
                                     onTapRight: () {
+                                      final dialogContext = context;
                                       _handleAuthFlow(
                                         onComplete: () async {
-                                          await _deleteWalletAndGoToEntryPoint(context, viewModel);
+                                          Navigator.of(dialogContext).pop();
+                                          await _deleteWalletAndGoToEntryPoint(viewModel);
                                         },
                                       );
                                     },
@@ -464,9 +466,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     );
   }
 
-  Future<void> _deleteWalletAndGoToEntryPoint(BuildContext context, WalletInfoViewModel viewModel) async {
-    Navigator.of(context).pop();
-
+  Future<void> _deleteWalletAndGoToEntryPoint(WalletInfoViewModel viewModel) async {
     final navigator = Navigator.of(context);
     final languageCode = context.read<PreferenceProvider>().language;
 
@@ -476,8 +476,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       await viewModel.deleteWallet();
 
       _setOverlayLoading(false);
-
-      await Future.delayed(const Duration(milliseconds: 200));
 
       if (mounted) {
         if (widget.entryPoint == kEntryPointWalletHome) {
@@ -489,7 +487,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     } catch (e) {
       debugPrint('Delete wallet failed: $e');
       _setOverlayLoading(false);
-      if (context.mounted) {
+      if (mounted) {
         await showInfoDialog(context, languageCode, t.wallet_info_screen.error.delete, e.toString());
       }
     }
@@ -616,7 +614,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 20, 16, 20),
       decoration: BoxDecoration(
         color: transparentBackground ? Colors.transparent : context.coconutColors.surfaceCard,
         borderRadius: BorderRadius.circular(24),
@@ -673,7 +671,7 @@ class _TargetQuantityCard extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
           decoration: BoxDecoration(
             color: transparentBackground ? Colors.transparent : context.coconutColors.tertiaryText,
             borderRadius: BorderRadius.circular(24),
@@ -822,4 +820,3 @@ class _TargetQuantityCard extends StatelessWidget {
     return count;
   }
 }
-

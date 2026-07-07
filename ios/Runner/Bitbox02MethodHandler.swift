@@ -1,3 +1,4 @@
+import Bitboxbridge
 import Flutter
 import Foundation
 
@@ -41,6 +42,14 @@ class Bitbox02MethodHandler: NSObject {
             loadConfig(call, result: result)
         case "disconnect":
             disconnect(call, result: result)
+        case "channelHashVerify":
+            channelHashVerify(call, result: result)
+        case "deviceInitialized":
+            deviceInitialized(call, result: result)
+        case "restoreFromMnemonic":
+            restoreFromMnemonic(call, result: result)
+        case "setPassword":
+            setPassword(call, result: result)
         case "setLoggerEnabled":
             setLoggerEnabled(call, result: result)
         case "isConnected":
@@ -73,19 +82,32 @@ class Bitbox02MethodHandler: NSObject {
         bt.scanAndConnect(timeout: 15) { [weak self] connectResult in
             switch connectResult {
             case .success:
-                do {
+                // BridgeConnect internally calls bt.read() which waits on a semaphore
+                // that is signalled by CBPeripheralDelegate callbacks.
+                // Those callbacks run on the same "bitbox02.ble.central" queue that
+                // this completion block runs on — calling BridgeConnect here would deadlock.
+                // Dispatch to a global queue so the BLE delegate queue stays free.
+                DispatchQueue.global(qos: .userInitiated).async {
                     var err: NSError?
-                    let deviceId = BitboxbridgeConnect(bt, config, &err)
-                    if let err = err {
-                        result(FlutterError(code: "CONNECT_FAILED",
-                                            message: err.localizedDescription, details: nil))
-                        return
+                    let deviceId = BridgeConnect(bt, &err)
+                    if !config.isEmpty, err == nil {
+                        var loadErr: NSError?
+                        BridgeLoadConfig(deviceId, config, &loadErr)
                     }
-                    result(deviceId)
+                    DispatchQueue.main.async {
+                        if let err = err {
+                            result(FlutterError(code: "CONNECT_FAILED",
+                                                message: err.localizedDescription, details: nil))
+                            return
+                        }
+                        result(deviceId)
+                    }
                 }
             case .failure(let error):
-                result(FlutterError(code: "BLE_FAILED",
-                                    message: error.localizedDescription, details: nil))
+                DispatchQueue.main.async {
+                    result(FlutterError(code: "BLE_FAILED",
+                                        message: error.localizedDescription, details: nil))
+                }
             }
         }
     }
@@ -96,14 +118,16 @@ class Bitbox02MethodHandler: NSObject {
             result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
             return
         }
-        do {
+        DispatchQueue.global(qos: .userInitiated).async {
             var err: NSError?
-            let status = BitboxbridgeInit(deviceId, &err)
-            if let err = err {
-                result(FlutterError(code: "INIT_FAILED", message: err.localizedDescription, details: nil))
-                return
+            let status = BridgeInit(deviceId, &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "INIT_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                result(status)
             }
-            result(status)
         }
     }
 
@@ -113,14 +137,16 @@ class Bitbox02MethodHandler: NSObject {
             result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
             return
         }
-        do {
+        DispatchQueue.global(qos: .userInitiated).async {
             var err: NSError?
-            let fingerprint = BitboxbridgeRootFingerprint(deviceId, &err)
-            if let err = err {
-                result(FlutterError(code: "ROOT_FINGERPRINT_FAILED", message: err.localizedDescription, details: nil))
-                return
+            let fingerprint = BridgeRootFingerprint(deviceId, &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "ROOT_FINGERPRINT_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                result(fingerprint)
             }
-            result(fingerprint)
         }
     }
 
@@ -134,14 +160,16 @@ class Bitbox02MethodHandler: NSObject {
         let keypath = args["keypath"] as? String ?? ""
         let xpubType = args["xpubType"] as? Int ?? 3
         let display = args["display"] as? Bool ?? false
-        do {
+        DispatchQueue.global(qos: .userInitiated).async {
             var err: NSError?
-            let xpub = BitboxbridgeBtcXPub(deviceId, Int64(coin), keypath, Int64(xpubType), display, &err)
-            if let err = err {
-                result(FlutterError(code: "BTC_XPUB_FAILED", message: err.localizedDescription, details: nil))
-                return
+            let xpub = BridgeBTCXPub(deviceId, Int64(coin), keypath, Int64(xpubType), display, &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "BTC_XPUB_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                result(xpub)
             }
-            result(xpub)
         }
     }
 
@@ -155,14 +183,16 @@ class Bitbox02MethodHandler: NSObject {
         let keypath = args["keypath"] as? String ?? ""
         let scriptType = args["scriptType"] as? String ?? "p2wpkh"
         let display = args["display"] as? Bool ?? false
-        do {
+        DispatchQueue.global(qos: .userInitiated).async {
             var err: NSError?
-            let address = BitboxbridgeBtcAddress(deviceId, Int64(coin), keypath, scriptType, display, &err)
-            if let err = err {
-                result(FlutterError(code: "BTC_ADDRESS_FAILED", message: err.localizedDescription, details: nil))
-                return
+            let address = BridgeBTCAddress(deviceId, Int64(coin), keypath, scriptType, display, &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "BTC_ADDRESS_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                result(address)
             }
-            result(address)
         }
     }
 
@@ -178,14 +208,21 @@ class Bitbox02MethodHandler: NSObject {
             return
         }
         let formatUnit = args["formatUnit"] as? Int ?? 0
-        do {
+        let bytes = psbtData.data
+        DispatchQueue.global(qos: .userInitiated).async {
             var err: NSError?
-            let signed = BitboxbridgeBtcSignPSBT(deviceId, Int64(coin), psbtData.data, Int64(formatUnit), &err)
-            if let err = err {
-                result(FlutterError(code: "BTC_SIGN_PSBT_FAILED", message: err.localizedDescription, details: nil))
-                return
+            let signed = BridgeBTCSignPSBT(deviceId, Int64(coin), bytes, Int64(formatUnit), &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "BTC_SIGN_PSBT_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                guard let signed = signed else {
+                    result(FlutterError(code: "BTC_SIGN_PSBT_FAILED", message: "no data returned", details: nil))
+                    return
+                }
+                result(FlutterStandardTypedData(bytes: signed))
             }
-            result(FlutterStandardTypedData(bytes: signed))
         }
     }
 
@@ -200,7 +237,7 @@ class Bitbox02MethodHandler: NSObject {
             result(FlutterError(code: "INVALID_ARG", message: "rawTxHex required", details: nil))
             return
         }
-        BitboxbridgeSetPrevTxHex(deviceId, Int64(inputIndex), rawTxHex)
+        BridgeSetPrevTxHex(deviceId, inputIndex, rawTxHex)
         result(nil)
     }
 
@@ -217,14 +254,16 @@ class Bitbox02MethodHandler: NSObject {
             result(FlutterError(code: "INVALID_ARG", message: "message required", details: nil))
             return
         }
-        do {
+        DispatchQueue.global(qos: .userInitiated).async {
             var err: NSError?
-            let sigJson = BitboxbridgeBtcSignMessage(deviceId, Int64(coin), keypath, scriptType, message, &err)
-            if let err = err {
-                result(FlutterError(code: "BTC_SIGN_MESSAGE_FAILED", message: err.localizedDescription, details: nil))
-                return
+            let sigJson = BridgeBTCSignMessage(deviceId, Int64(coin), keypath, scriptType, message, &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "BTC_SIGN_MESSAGE_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                result(sigJson)
             }
-            result(sigJson)
         }
     }
 
@@ -234,15 +273,13 @@ class Bitbox02MethodHandler: NSObject {
             result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
             return
         }
-        do {
-            var err: NSError?
-            let configJson = BitboxbridgeSaveConfig(deviceId, &err)
-            if let err = err {
-                result(FlutterError(code: "SAVE_CONFIG_FAILED", message: err.localizedDescription, details: nil))
-                return
-            }
-            result(configJson)
+        var err: NSError?
+        let configJson = BridgeSaveConfig(deviceId, &err)
+        if let err = err {
+            result(FlutterError(code: "SAVE_CONFIG_FAILED", message: err.localizedDescription, details: nil))
+            return
         }
+        result(configJson)
     }
 
     private func loadConfig(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -252,15 +289,13 @@ class Bitbox02MethodHandler: NSObject {
             return
         }
         let configJson = args["config"] as? String ?? ""
-        do {
-            var err: NSError?
-            BitboxbridgeLoadConfig(deviceId, configJson, &err)
-            if let err = err {
-                result(FlutterError(code: "LOAD_CONFIG_FAILED", message: err.localizedDescription, details: nil))
-                return
-            }
-            result(nil)
+        var err: NSError?
+        BridgeLoadConfig(deviceId, configJson, &err)
+        if let err = err {
+            result(FlutterError(code: "LOAD_CONFIG_FAILED", message: err.localizedDescription, details: nil))
+            return
         }
+        result(nil)
     }
 
     private func disconnect(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -269,23 +304,96 @@ class Bitbox02MethodHandler: NSObject {
             result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
             return
         }
-        do {
+        var err: NSError?
+        BridgeDisconnect(deviceId, &err)
+        if let err = err {
+            result(FlutterError(code: "DISCONNECT_FAILED", message: err.localizedDescription, details: nil))
+            return
+        }
+        bleTransport?.disconnect()
+        bleTransport = nil
+        result(nil)
+    }
+
+    private func channelHashVerify(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        let ok = args["ok"] as? Bool ?? true
+        DispatchQueue.global(qos: .userInitiated).async {
             var err: NSError?
-            BitboxbridgeDisconnect(deviceId, &err)
-            if let err = err {
-                result(FlutterError(code: "DISCONNECT_FAILED", message: err.localizedDescription, details: nil))
-                return
+            BridgeChannelHashVerify(deviceId, ok, &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "CHANNEL_HASH_VERIFY_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                result(nil)
             }
-            bleTransport?.disconnect()
-            bleTransport = nil
-            result(nil)
+        }
+    }
+
+    private func deviceInitialized(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        var initialized: ObjCBool = false
+        var err: NSError?
+        BridgeDeviceInitialized(deviceId, &initialized, &err)
+        if let err = err {
+            result(FlutterError(code: "DEVICE_INITIALIZED_FAILED", message: err.localizedDescription, details: nil))
+            return
+        }
+        result(initialized.boolValue)
+    }
+
+    private func restoreFromMnemonic(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+            var err: NSError?
+            BridgeRestoreFromMnemonic(deviceId, &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "RESTORE_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                result(nil)
+            }
+        }
+    }
+
+    private func setPassword(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        let seedLen = args["seedLen"] as? Int ?? 32
+        DispatchQueue.global(qos: .userInitiated).async {
+            var err: NSError?
+            BridgeSetPassword(deviceId, Int64(seedLen), &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "SET_PASSWORD_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                result(nil)
+            }
         }
     }
 
     private func setLoggerEnabled(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         let args = call.arguments as? [String: Any] ?? [:]
         let enabled = args["enabled"] as? Bool ?? true
-        BitboxbridgeSetLoggerEnabled(enabled)
+        BridgeSetLoggerEnabled(enabled)
         result(nil)
     }
 }
