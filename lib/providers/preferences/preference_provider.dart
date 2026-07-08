@@ -18,6 +18,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:collection/collection.dart';
@@ -593,6 +594,7 @@ class PreferenceProvider extends ChangeNotifier {
     _themeVariant = variant;
     CoconutThemeController.variantNotifier.value = variant;
     await _sharedPrefs.setString(SharedPrefKeys.kThemeVariant, variant.name);
+    updateSystemBarColor(variant);
     notifyListeners();
   }
 

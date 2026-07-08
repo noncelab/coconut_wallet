@@ -186,6 +186,6 @@ coconut-fastlane-supply.json
 **/ios/Runner/bitboxbridge.xcframework
 
 # CCOS
-docs/*
+docs/ccos/*
 
 /META-INF

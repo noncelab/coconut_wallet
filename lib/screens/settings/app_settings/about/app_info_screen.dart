@@ -202,8 +202,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.rectangle,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: context.coconutColors.border, width: 2.0),
-                  color: Colors.black,
+                  color: CoconutColors.black, // fixed color
                 ),
                 child: Image.asset(
                   'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
@@ -327,7 +326,13 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
   }
 
   Widget githubWidget() {
-    Widget githubLogo = SvgPicture.asset('assets/svg/github-logo-white.svg', width: 24, height: 24, fit: BoxFit.cover);
+    Widget githubLogo = SvgPicture.asset(
+      'assets/svg/github-logo-white.svg',
+      width: 24,
+      height: 24,
+      fit: BoxFit.cover,
+      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(color: context.coconutColors.background),
