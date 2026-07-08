@@ -373,6 +373,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       return Container();
     }
 
+    final status = _viewModel.transactionStatus!;
+    final iconColor = switch (status) {
+      TransactionStatus.sent || TransactionStatus.sending => context.coconutColors.sendingColor,
+      TransactionStatus.received || TransactionStatus.receiving => context.coconutColors.receivingColor,
+      _ => context.coconutColors.iconDefault,
+    };
+
     return Container(
       width: MediaQuery.sizeOf(context).width,
       decoration: BoxDecoration(
@@ -387,27 +394,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             margin: const EdgeInsets.symmetric(horizontal: 8),
             width: 24,
             height: 24,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color:
-                  _viewModel.isSendType!
-                      ? context.coconutColors.sendingIconBackground.withValues(alpha: 0.2)
-                      : context.coconutColors.receivingIconBackground.withValues(alpha: 0.2),
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: iconColor.withValues(alpha: 0.2)),
             child: Center(
-              child:
-                  _viewModel.isSendType!
-                      ? ColorFiltered(
-                        colorFilter: ColorFilter.mode(context.coconutColors.sendingIconOverlayColor, BlendMode.srcATop),
-                        child: Lottie.asset('assets/lottie/arrow-up.json', fit: BoxFit.fill, repeat: true),
-                      )
-                      : ColorFiltered(
-                        colorFilter: ColorFilter.mode(
-                          context.coconutColors.receivingIconOverlayColor,
-                          BlendMode.srcATop,
-                        ),
-                        child: Lottie.asset('assets/lottie/arrow-down.json', fit: BoxFit.fill, repeat: true),
-                      ),
+              child: ColorFiltered(
+                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcATop),
+                child: Lottie.asset(
+                  _viewModel.isSendType! ? 'assets/lottie/arrow-up.json' : 'assets/lottie/arrow-down.json',
+                  fit: BoxFit.fill,
+                  repeat: true,
+                ),
+              ),
             ),
           ),
           Expanded(

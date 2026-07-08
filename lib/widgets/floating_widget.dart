@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 
+@Deprecated('온라인 후원 화면이 제거됨')
 class FloatingWidget extends StatefulWidget {
   final Widget child;
   final int? delayMilliseconds;

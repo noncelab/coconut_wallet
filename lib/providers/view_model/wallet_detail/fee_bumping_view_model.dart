@@ -489,7 +489,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       _isFeeFetchSuccess = false;
       return;
     }
-    // TODO: 테스트 코드 - 추천수수료 mock
+    // INFO: 👇 테스트 코드 - 추천수수료 mock
     // final recommendedFees = await DioClient().getRecommendedFee();
     if (recommendedFees.fastestFee == null || recommendedFees.halfHourFee == null || recommendedFees.hourFee == null) {
       _isFeeFetchSuccess = false;

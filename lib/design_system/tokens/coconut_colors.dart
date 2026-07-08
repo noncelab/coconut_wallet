@@ -134,6 +134,7 @@ class CoconutColors {
   final Color textFilterChip;
   final Color textFilterChipSelected;
   final Color textHighlight;
+  final Color changeOutputText;
   final Color border;
   final Color borderStrong;
   final Color iconBackground;
@@ -145,6 +146,10 @@ class CoconutColors {
   final Color warning;
   final Color danger;
   final Color success;
+  final Color rbfAccent;
+  final Color cpfpAccent;
+  final Color recommendFeeAnimStart;
+  final Color recommendFeeAnimHighlight;
   final Color taprootParent;
   final Color taprootChild;
   final Color taprootRoleText;
@@ -168,17 +173,15 @@ class CoconutColors {
 
   /// 보내는 중 아이콘/로티 색상
   final Color sendingColor;
-  final Color sendingIconBackground;
-  final Color sendingIconOverlayColor;
 
   /// 받는 중 아이콘/로티 색상
   final Color receivingColor;
-  final Color receivingIconBackground;
-  final Color receivingIconOverlayColor;
+
   final Color bottomActionBarBackground;
   final Color bottomSheetKeyboardToolbar;
   final Color bottomSheetExtensionFieldBackground;
   final Color loadingIndicatorColor;
+  final Color loadingOverlay;
   final Color glossaryKeywordBackground;
   final Color glossaryKeywordText;
   final Color divider;
@@ -273,6 +276,7 @@ class CoconutColors {
     required this.textFilterChip,
     required this.textFilterChipSelected,
     required this.textHighlight,
+    required this.changeOutputText,
     required this.border,
     required this.borderStrong,
     required this.iconBackground,
@@ -284,6 +288,10 @@ class CoconutColors {
     required this.warning,
     required this.danger,
     required this.success,
+    required this.rbfAccent,
+    required this.cpfpAccent,
+    required this.recommendFeeAnimStart,
+    required this.recommendFeeAnimHighlight,
     required this.taprootParent,
     required this.taprootChild,
     required this.taprootRoleText,
@@ -305,15 +313,12 @@ class CoconutColors {
     required this.pageIndicatorActive,
     required this.pageIndicatorInactive,
     required this.sendingColor,
-    required this.sendingIconBackground,
-    required this.sendingIconOverlayColor,
     required this.receivingColor,
-    required this.receivingIconBackground,
-    required this.receivingIconOverlayColor,
     required this.bottomActionBarBackground,
     required this.bottomSheetKeyboardToolbar,
     required this.bottomSheetExtensionFieldBackground,
     required this.loadingIndicatorColor,
+    required this.loadingOverlay,
     required this.glossaryKeywordBackground,
     required this.glossaryKeywordText,
     required this.divider,
@@ -396,6 +401,7 @@ class CoconutColors {
       textFilterChip: ds.CoconutColors.white,
       textFilterChipSelected: ds.CoconutColors.gray800,
       textHighlight: ds.CoconutColors.primary,
+      changeOutputText: ds.CoconutColors.cyan,
       border: ds.CoconutColors.gray700,
       borderStrong: ds.CoconutColors.white,
       iconBackground: ds.CoconutColors.gray800,
@@ -407,6 +413,10 @@ class CoconutColors {
       warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
+      rbfAccent: ds.CoconutColors.primary,
+      cpfpAccent: ds.CoconutColors.cyan,
+      recommendFeeAnimStart: ds.CoconutColors.whiteLilac,
+      recommendFeeAnimHighlight: ds.CoconutColors.gray700,
       taprootParent: ds.CoconutColors.purple,
       taprootChild: ds.CoconutColors.sky,
       taprootRoleText: ds.CoconutColors.white,
@@ -428,15 +438,12 @@ class CoconutColors {
       pageIndicatorActive: ds.CoconutColors.gray400,
       pageIndicatorInactive: ds.CoconutColors.gray800,
       sendingColor: ds.CoconutColors.primary,
-      sendingIconBackground: ds.CoconutColors.primary,
-      sendingIconOverlayColor: ds.CoconutColors.primary,
       receivingColor: ds.CoconutColors.cyanBlue,
-      receivingIconBackground: ds.CoconutColors.cyanBlue,
-      receivingIconOverlayColor: ds.CoconutColors.cyanBlue,
       bottomActionBarBackground: ds.CoconutColors.gray900,
       bottomSheetKeyboardToolbar: Color(0xFF2E2E2E),
       bottomSheetExtensionFieldBackground: ds.CoconutColors.black,
       loadingIndicatorColor: ds.CoconutColors.white,
+      loadingOverlay: Color.fromRGBO(0, 0, 0, 0.2),
       glossaryKeywordBackground: Color(0xFFA6E1E7),
       glossaryKeywordText: ds.CoconutColors.black,
       divider: ds.CoconutColors.gray800,
@@ -520,6 +527,7 @@ class CoconutColors {
       textFilterChip: ds.CoconutColors.gray900,
       textFilterChipSelected: ds.CoconutColors.white,
       textHighlight: ds.CoconutColors.green,
+      changeOutputText: ds.CoconutColors.cyan,
       border: ds.CoconutColors.gray400,
       borderStrong: ds.CoconutColors.black,
       iconBackground: ds.CoconutColors.gray300,
@@ -531,6 +539,10 @@ class CoconutColors {
       warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
+      rbfAccent: ds.CoconutColors.green,
+      cpfpAccent: ds.CoconutColors.cyan,
+      recommendFeeAnimStart: ds.CoconutColors.gray800,
+      recommendFeeAnimHighlight: ds.CoconutColors.gray400,
       taprootParent: ds.CoconutColors.purple,
       taprootChild: ds.CoconutColors.sky,
       taprootRoleText: ds.CoconutColors.white,
@@ -552,15 +564,12 @@ class CoconutColors {
       pageIndicatorActive: ds.CoconutColors.gray700,
       pageIndicatorInactive: ds.CoconutColors.gray300,
       sendingColor: ds.CoconutColors.green,
-      sendingIconBackground: ds.CoconutColors.green,
-      sendingIconOverlayColor: const Color(0xFF8ABC36),
       receivingColor: ds.CoconutColors.cyanBlue,
-      receivingIconBackground: ds.CoconutColors.sky,
-      receivingIconOverlayColor: const Color(0xFF62C596),
       bottomActionBarBackground: ds.CoconutColors.white,
       bottomSheetKeyboardToolbar: ds.CoconutColors.gray150,
       bottomSheetExtensionFieldBackground: const Color(0xFFF1F2F5),
       loadingIndicatorColor: ds.CoconutColors.black,
+      loadingOverlay: const Color.fromRGBO(0, 0, 0, 0.2),
       glossaryKeywordBackground: ds.CoconutColors.lightSky,
       glossaryKeywordText: ds.CoconutColors.black,
       divider: ds.CoconutColors.gray200,

@@ -176,7 +176,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                 _onCompleteButtonPressed(context, viewModel);
                               },
                               text: t.done,
-                              backgroundColor: _getNewFeeTextColor(),
+                              backgroundColor: _getFeeBumpingAccentColor(),
                               showGradient: true,
                               gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 95),
                               isActive:
@@ -505,7 +505,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               return Text(
                 t.transaction_fee_bumping_screen.new_fee,
                 style: CoconutTypography.body2_14_Bold.setColor(
-                  _getNewFeeTextColor(isError: state.isEstimatedFeeTooLow || state.isUtxoInsufficient),
+                  _getFeeBumpingAccentColor(isError: state.isEstimatedFeeTooLow || state.isUtxoInsufficient),
                 ),
               );
             },
@@ -577,7 +577,12 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                       builder: (context, _) {
                         final t = animation.value;
                         final highlightStrength = 1 - ((t - 0.5).abs() * 2);
-                        final color = Color.lerp(CoconutColors.whiteLilac, CoconutColors.gray700, highlightStrength)!;
+                        final color =
+                            Color.lerp(
+                              context.coconutColors.recommendFeeAnimStart,
+                              context.coconutColors.recommendFeeAnimHighlight,
+                              highlightStrength,
+                            )!;
 
                         return DefaultTextStyle.merge(
                           style: TextStyle(color: color),
@@ -805,7 +810,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     return Container(
       width: MediaQuery.sizeOf(context).width,
       decoration: BoxDecoration(
-        color: CoconutColors.hotPink150,
+        color: context.coconutColors.danger,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding, vertical: 14),
@@ -845,7 +850,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         }
       }
 
-      Color textColor = viewModel.selectedUtxoList.isNotEmpty ? CoconutColors.primary : context.coconutColors.danger;
+      Color textColor =
+          viewModel.selectedUtxoList.isNotEmpty ? context.coconutColors.textHighlight : context.coconutColors.danger;
 
       child = Container(
         key: const ValueKey('content'),
@@ -853,7 +859,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 27),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-          color: CoconutColors.gray800,
+          color: context.coconutColors.surfaceCard,
         ),
         child: Column(
           children: [
@@ -914,10 +920,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                   }
                 });
               },
-              disabledBackgroundColor: CoconutColors.gray800,
-              disabledForegroundColor: CoconutColors.gray700,
-              backgroundColor: CoconutColors.white,
-              borderColor: CoconutColors.gray400,
+              disabledBackgroundColor: context.coconutColors.surfaceDisabled,
+              disabledForegroundColor: context.coconutColors.iconDisabled,
+              backgroundColor: context.coconutColors.surfaceButton,
+              borderColor: context.coconutColors.border,
               buttonType: CoconutButtonType.outlined,
               borderRadius: 8,
               isActive: true,
@@ -983,11 +989,11 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     );
   }
 
-  Color _getNewFeeTextColor({bool isError = false}) {
+  Color _getFeeBumpingAccentColor({bool isError = false}) {
     if (isError) {
       return context.coconutColors.danger;
     }
-    return _isRbf ? CoconutColors.primary : CoconutColors.cyan;
+    return _isRbf ? context.coconutColors.rbfAccent : context.coconutColors.cpfpAccent;
   }
 
   void _removeTooltip() {

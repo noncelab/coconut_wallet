@@ -20,11 +20,11 @@ import 'system_ui_bootstrap.dart';
 
 class AppBootstrap {
   static Future<void> initialize() async {
-    await configureSystemUi();
-
     Provider.debugCheckInvalidValueType = null;
     await SharedPrefsRepository().init();
     _applyPersistedTheme();
+
+    await configureSystemUi();
 
     await _loadEnvironment();
     await _initializeFirebase();

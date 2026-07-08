@@ -294,44 +294,6 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
               },
             ),
           ),
-          // Positioned(
-          //   right: 16,
-          //   top: 0,
-          //   bottom: 0,
-          //   child: Align(
-          //     alignment: Alignment.center,
-          //     child: Container(
-          //       width: 30,
-          //       padding: const EdgeInsets.symmetric(vertical: 8),
-          //       decoration: BoxDecoration(
-          //         color: CoconutColors.white.withOpacity(0.3),
-          //         borderRadius: const BorderRadius.all(
-          //           Radius.circular(12),
-          //         ),
-          //       ),
-          //       child: ConstrainedBox(
-          //         constraints: BoxConstraints(
-          //           maxHeight: MediaQuery.sizeOf(context).height - 32,
-          //         ),
-          //         child: Column(
-          //           mainAxisSize: MainAxisSize.min,
-          //           mainAxisAlignment: MainAxisAlignment.center,
-          //           children: _scrollbarList
-          //               .take(((MediaQuery.sizeOf(context).height - 32) ~/ 24))
-          //               .map((item) {
-          //             return Padding(
-          //               padding: const EdgeInsets.symmetric(vertical: 4),
-          //               child: Text(
-          //                 item.str,
-          //                 style: CoconutTypography.body3_12.setColor(CoconutColors.black),
-          //               ),
-          //             );
-          //           }).toList(),
-          //         ),
-          //       ),
-          //     ),
-          //   ),
-          // )
         ],
       ),
     );

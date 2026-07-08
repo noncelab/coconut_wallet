@@ -5,7 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
-import 'package:coconut_wallet/widgets/icon/svg_icon.dart';
+import 'package:coconut_wallet/widgets/icon/icon_palette_cell.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
@@ -110,6 +110,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
         final isProcessing = data.item2;
         final walletName = data.item3;
         final isCompleteEnabled = !isProcessing && _textEditingController.text.isNotEmpty && canUpdateName;
+        final backgroundColor = context.coconutColors.surfaceBottomSheet;
 
         final mediaQuery = MediaQuery.of(context);
         final statusBarHeight = mediaQuery.padding.top;
@@ -126,14 +127,14 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
           child: ClipRRect(
             borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
             child: ColoredBox(
-              color: context.coconutColors.surfaceBottomSheet,
+              color: backgroundColor,
               child: AnimatedPadding(
                 duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
                 padding: EdgeInsets.only(bottom: _canEditPalette ? 0 : mediaQuery.viewInsets.bottom),
                 child: SafeArea(
                   child: Container(
-                    color: context.coconutColors.surfaceBottomSheet,
+                    color: backgroundColor,
                     child: Stack(
                       children: [
                         Column(
@@ -202,7 +203,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                                     isVisibleAboveKeyboard: _canEditPalette,
                                     isActive: isCompleteEnabled,
                                     showGradient: true,
-                                    gradientColor: context.coconutColors.surfaceBottomSheet,
+                                    gradientColor: backgroundColor,
                                     bottomPadding: FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
                                     onButtonClicked: () {
                                       if (!isCompleteEnabled) return;
@@ -310,7 +311,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                     ),
                   ],
                 ),
-                if (_canEditPalette) ...[const SizedBox(height: 8), _buildPaletteGrid()],
+                if (_canEditPalette) ...[const SizedBox(height: 8), _buildPaletteGrid(context)],
               ],
             ),
           ),
@@ -331,19 +332,23 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     );
   }
 
-  Widget _buildPaletteGrid() {
+  Widget _buildPaletteGrid(BuildContext context) {
     return GridView.builder(
       padding: EdgeInsets.zero,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5, crossAxisSpacing: 4.0),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5),
       itemCount: _colorCount + CustomIcons.totalCount,
       itemBuilder: (context, index) {
         final isColorItem = index < _colorCount;
+        final backgroundColor = context.coconutColors.surfaceBottomSheet;
 
         return GestureDetector(
           onTap: () => _handleItemTap(index, isColorItem),
-          child: isColorItem ? _buildColorPaletteItem(index) : _buildIconPaletteItem(index - _colorCount),
+          child:
+              isColorItem
+                  ? _buildColorPaletteItem(index, backgroundColor)
+                  : _buildIconPaletteItem(index - _colorCount, backgroundColor),
         );
       },
     );
@@ -365,7 +370,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     );
   }
 
-  Widget _buildColorPaletteItem(int colorIndex) {
+  Widget _buildColorPaletteItem(int colorIndex, Color backgroundColor) {
     final isSelected = colorIndex == _selectedColorIndex;
 
     return Stack(
@@ -377,27 +382,29 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
             color: CoconutColors.colorPalette[colorIndex],
           ),
         ),
-        _buildSelectionBorder(isSelected),
+        _buildSelectionBorder(isSelected, backgroundColor),
       ],
     );
   }
 
-  Widget _buildIconPaletteItem(int iconIndex) {
+  Widget _buildIconPaletteItem(int iconIndex, Color backgroundColor) {
     final isSelected = iconIndex == _selectedIconIndex;
 
-    return Stack(children: [Positioned.fill(child: SvgIcon(index: iconIndex)), _buildSelectionBorder(isSelected)]);
+    return Stack(
+      children: [
+        Positioned.fill(child: IconPaletteCell(index: iconIndex)),
+        _buildSelectionBorder(isSelected, backgroundColor),
+      ],
+    );
   }
 
-  Widget _buildSelectionBorder(bool isSelected) {
+  Widget _buildSelectionBorder(bool isSelected, Color backgroundColor) {
     return Positioned.fill(
       child: Container(
         margin: const EdgeInsets.all(11.5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(40.0),
-          border: Border.all(
-            color: isSelected ? context.coconutColors.primaryText : context.coconutColors.border,
-            width: 1.8,
-          ),
+          border: Border.all(color: isSelected ? context.coconutColors.primaryText : backgroundColor, width: 1.8),
         ),
       ),
     );

@@ -107,9 +107,8 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
       final taprootWallet = walletItem.walletBase as TaprootWallet;
       colorIndex = widget.walletItem.colorIndex;
       iconIndex = widget.walletItem.iconIndex;
-      // TODO: UI createdAtInVault
       rightText = _formatCreatedAtInVault((widget.walletItem as TaprootWalletListItem).createdAtInVault);
-      rightSubText = taprootWallet.derivationPath; // TODO:
+      rightSubText = taprootWallet.derivationPath;
       walletImportSource = widget.walletItem.walletImportSource;
       isCustomAccount = _getAccountIndex(taprootWallet.derivationPath) != 0;
     } else {
@@ -362,10 +361,15 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             child: Container(
               padding: const EdgeInsets.all(1),
               decoration: BoxDecoration(
-                color: isItemTapped ? colors.surfacePressed : colors.iconBackground,
+                color: isItemTapped ? colors.surfacePressed : colors.iconBackgroundSubtle,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: colors.shadowSubtle, offset: const Offset(2, 2), blurRadius: 10, spreadRadius: 0),
+                  BoxShadow(
+                    color: colors.shadowDefault.withValues(alpha: 0.25),
+                    offset: const Offset(1, 1),
+                    blurRadius: 6,
+                    spreadRadius: 0,
+                  ),
                 ],
               ),
               child: Container(
