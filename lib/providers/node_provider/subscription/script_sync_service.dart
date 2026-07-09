@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
@@ -22,7 +22,7 @@ class ScriptSyncService {
   final UtxoSyncService _utxoSyncService;
   final AddressRepository _addressRepository;
   final ScriptCallbackService _scriptCallbackService;
-  late Future<Result<bool>> Function(WalletListItemBase walletItem) _subscribeWallet;
+  late Future<Result<bool>> Function(WalletItemBase walletItem) _subscribeWallet;
 
   ScriptSyncService(
     this._stateManager,
@@ -33,7 +33,7 @@ class ScriptSyncService {
     this._scriptCallbackService,
   );
 
-  set subscribeWallet(Future<Result<bool>> Function(WalletListItemBase walletItem) subscribeWallet) {
+  set subscribeWallet(Future<Result<bool>> Function(WalletItemBase walletItem) subscribeWallet) {
     _subscribeWallet = subscribeWallet;
   }
 
@@ -108,14 +108,14 @@ class ScriptSyncService {
   }
 
   /// 필요한 경우 추가 스크립트를 구독합니다.
-  bool _needSubscriptionUpdate(WalletListItemBase walletItem, int oldUsedIndex, bool isChange) {
+  bool _needSubscriptionUpdate(WalletItemBase walletItem, int oldUsedIndex, bool isChange) {
     // receive 또는 change 인덱스가 증가한 경우 추가 구독이 필요
     return isChange ? walletItem.changeUsedIndex > oldUsedIndex : walletItem.receiveUsedIndex > oldUsedIndex;
   }
 
   /// 스크립트 상태 변경 배치 처리
   Future<void> syncBatchScriptStatusList({
-    required WalletListItemBase walletItem,
+    required WalletItemBase walletItem,
     required List<ScriptStatus> scriptStatuses,
   }) async {
     try {

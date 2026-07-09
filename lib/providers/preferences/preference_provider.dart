@@ -10,7 +10,7 @@ import 'package:coconut_wallet/providers/preferences/electrum_server_provider.da
 import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -333,7 +333,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 가짜 잔액 분배
   Future<void> distributeFakeBalance(
-    List<WalletListItemBase> wallets, {
+    List<WalletItemBase> wallets, {
     required bool isFakeBalanceActive,
     double? fakeBalanceTotalSats,
   }) async {
@@ -482,7 +482,7 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setWalletPreferences(List<WalletListItemBase> walletItemList) async {
+  Future<void> setWalletPreferences(List<WalletItemBase> walletItemList) async {
     var walletOrder = _walletOrder;
     var favoriteWalletIds = _favoriteWalletIds;
 

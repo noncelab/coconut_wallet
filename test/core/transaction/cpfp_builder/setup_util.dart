@@ -7,7 +7,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 
 import '../../../mock/transaction_record_mock.dart';
 
@@ -31,7 +31,7 @@ class CpfpBuilderCreator {
   /// 부모 tx의 hash (고정값 사용)
   static const String pendingTxHash = 'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4';
 
-  final WalletListItemBase _walletListItemBase;
+  final WalletItemBase _walletListItemBase;
   late final List<String> receiveAddressList = [];
   late final List<String> changeAddressList = [];
   late final String derivationPathPrefix;

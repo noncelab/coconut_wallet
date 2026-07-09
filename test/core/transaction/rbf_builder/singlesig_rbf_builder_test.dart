@@ -3,7 +3,7 @@ import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/packages/bc-ur-dart/lib/utils.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
@@ -20,7 +20,7 @@ void expectRbfMinimumCondition(RbfBuildResult result, TransactionRecord pendingT
 }
 
 void main() {
-  SinglesigWalletListItem singleWallet = WalletMock.createSingleSigWalletItem();
+  SinglesigWalletItem singleWallet = WalletMock.createSingleSigWalletItem();
 
   final creator = RbfBuilderCreator(singleWallet);
   group('변수 생성 테스트', () {

@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -99,7 +99,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (walletId == null) return false;
     try {
       final wallet = _walletProvider.getWalletById(walletId);
-      return wallet is TaprootWalletListItem && wallet.defaultSpendType == TaprootSpendType.scriptPath;
+      return wallet is TaprootWalletItem && wallet.defaultSpendType == TaprootSpendType.scriptPath;
     } catch (_) {
       return false;
     }

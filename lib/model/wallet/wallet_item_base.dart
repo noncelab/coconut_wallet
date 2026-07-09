@@ -3,7 +3,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/multisig_config.dart';
 
-abstract class WalletListItemBase {
+abstract class WalletItemBase {
   static const String walletTypeField = 'walletType';
 
   final int id;
@@ -20,7 +20,7 @@ abstract class WalletListItemBase {
 
   Map<String, UnaddressedScriptStatus> subscribedScriptMap = {}; // { ScriptPubKey: ScriptStatus }
 
-  WalletListItemBase({
+  WalletItemBase({
     required this.id,
     required this.name,
     required this.colorIndex,

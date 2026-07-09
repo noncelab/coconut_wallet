@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -11,22 +11,22 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class FakeWalletListItemBase extends Fake implements WalletListItemBase {
+class FakeWalletListItemBase extends Fake implements WalletItemBase {
   @override
   final int id;
   FakeWalletListItemBase(this.id);
 }
 
 class FakeWalletProvider extends Fake implements WalletProvider {
-  final List<WalletListItemBase> _walletItems;
+  final List<WalletItemBase> _walletItems;
   final Map<int, Set<String>> _addressesByWalletId;
 
-  FakeWalletProvider({List<WalletListItemBase>? walletItems, Map<int, Set<String>>? addressesByWalletId})
+  FakeWalletProvider({List<WalletItemBase>? walletItems, Map<int, Set<String>>? addressesByWalletId})
     : _walletItems = walletItems ?? [],
       _addressesByWalletId = addressesByWalletId ?? {};
 
   @override
-  List<WalletListItemBase> get walletItemList => _walletItems;
+  List<WalletItemBase> get walletItemList => _walletItems;
 
   @override
   bool containsAddress(int walletId, String address, {bool? isChange}) {

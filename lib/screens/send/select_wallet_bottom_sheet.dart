@@ -4,7 +4,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -25,7 +25,7 @@ Map<int, int> _buildBalanceMapIncludingPending(BuildContext context) {
   });
 }
 
-Map<int, int> _buildBalanceMapOnlyUnspent(BuildContext context, List<WalletListItemBase> walletList) {
+Map<int, int> _buildBalanceMapOnlyUnspent(BuildContext context, List<WalletItemBase> walletList) {
   final walletProvider = context.read<WalletProvider>();
   Map<int, int> balanceMap = {};
   for (var wallet in walletList) {
@@ -67,7 +67,7 @@ class SelectWalletBottomSheet extends StatefulWidget {
 }
 
 class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
-  late List<WalletListItemBase> _walletList;
+  late List<WalletItemBase> _walletList;
   late final Map<int, int> _walletBalanceMap;
   int _selectedWalletId = -1;
 
@@ -148,8 +148,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     _walletList = walletProvider.walletItemList;
     if (preferenceProvider.walletOrder.isNotEmpty) {
       final walletMap = {for (var wallet in _walletList) wallet.id: wallet};
-      var orderedList =
-          preferenceProvider.walletOrder.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+      var orderedList = preferenceProvider.walletOrder.map((id) => walletMap[id]).whereType<WalletItemBase>().toList();
       _walletList = orderedList;
     }
 
@@ -191,7 +190,7 @@ class P2PSelectWalletBottomSheet extends StatefulWidget {
 }
 
 class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet> {
-  late List<WalletListItemBase> _walletList;
+  late List<WalletItemBase> _walletList;
   late final Map<int, int> _walletBalanceMap;
 
   @override
@@ -203,8 +202,7 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
     _walletList = walletProvider.walletItemList;
     if (preferenceProvider.walletOrder.isNotEmpty) {
       final walletMap = {for (var wallet in _walletList) wallet.id: wallet};
-      var orderedList =
-          preferenceProvider.walletOrder.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+      var orderedList = preferenceProvider.walletOrder.map((id) => walletMap[id]).whereType<WalletItemBase>().toList();
       _walletList = orderedList;
     }
 

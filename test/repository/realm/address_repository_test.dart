@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -12,7 +12,7 @@ import 'test_realm_manager.dart';
 void main() {
   late TestRealmManager realmManager;
   late AddressRepository addressRepository;
-  SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem();
+  SinglesigWalletItem testWalletItem = WalletMock.createSingleSigWalletItem();
   late RealmWalletBase realmWalletBase;
   const int testWalletId = 1;
 

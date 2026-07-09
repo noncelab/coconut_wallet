@@ -5,7 +5,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -165,7 +165,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
       colorIndex = wallet.colorIndex;
       walletImportSource = wallet.walletImportSource;
       if (wallet.walletType == WalletType.multiSignature) {
-        signers = (wallet as MultisigWalletListItem).signers;
+        signers = (wallet as MultisigWalletItem).signers;
       }
     } catch (e) {
       // 삭제된 지갑인 경우

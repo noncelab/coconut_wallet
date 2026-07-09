@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/model/node/script_status.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
 import 'package:coconut_wallet/model/node/transaction_processing_state.dart';
 
@@ -54,7 +54,7 @@ class ScriptCallbackService {
   /// fetchTransactions 종료 후 반환된 트랜잭션 해시 목록을 기반으로 스크립트 종속성 등록.
   /// 만약 모든 트랜잭션이 처리 완료되었으면 스크립트 종속성 등록 없이 바로 fetchUtxos 함수 실행
   Future<void> registerTransactionDependency(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     ScriptStatus status,
     List<String> txHashes,
   ) async {

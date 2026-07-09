@@ -2,7 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_service.dart';
@@ -53,7 +53,7 @@ class TransactionSyncService {
 
   /// 특정 스크립트의 트랜잭션을 조회하고 DB에 업데이트합니다.
   Future<List<String>> fetchScriptTransaction(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     ScriptStatus scriptStatus, {
     DateTime? now,
     bool inBatchProcess = false,
@@ -228,7 +228,7 @@ class TransactionSyncService {
 
   /// 6. RBF/CPFP 히스토리 저장
   Future<void> _saveRbfAndCpfpHistory(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     List<TransactionRecord> txRecords,
     RbfCpfpDetectionResult rbfCpfpResult,
   ) async {
@@ -387,7 +387,7 @@ class TransactionSyncService {
   }
 
   Future<Map<ScriptStatus, List<String>>> fetchScriptTransactionBatch(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     List<ScriptStatus> scriptStatuses, {
     DateTime? now,
     bool inBatchProcess = false,

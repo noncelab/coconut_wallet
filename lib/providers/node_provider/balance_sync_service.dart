@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/update_address_balance_dto.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
@@ -19,7 +19,7 @@ class BalanceSyncService {
   BalanceSyncService(this._electrumService, this._stateManager, this._addressRepository, this._walletRepository);
 
   /// 스크립트의 잔액을 조회하고 업데이트합니다.
-  Future<void> fetchScriptBalance(WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
+  Future<void> fetchScriptBalance(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
     // 동기화 시작 state 업데이트
     _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
 
@@ -40,7 +40,7 @@ class BalanceSyncService {
   }
 
   /// 여러 스크립트의 잔액을 일괄적으로 조회하고 업데이트합니다.
-  Future<void> fetchScriptBalanceBatch(WalletListItemBase walletItem, List<ScriptStatus> scriptStatuses) async {
+  Future<void> fetchScriptBalanceBatch(WalletItemBase walletItem, List<ScriptStatus> scriptStatuses) async {
     if (scriptStatuses.isEmpty) {
       Logger.error('fetchScriptBalanceBatch: scriptStatus is empty');
       return;

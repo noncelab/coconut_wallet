@@ -4,7 +4,7 @@ import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.d
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -21,7 +21,7 @@ void main() {
 
   late TestRealmManager realmManager;
   late AddressRepository addressRepository;
-  final MultisigWalletListItem wallet = WalletMock.createMultiSigWalletItem();
+  final MultisigWalletItem wallet = WalletMock.createMultiSigWalletItem();
   const int walletId = 1;
 
   UtxoState createUtxo(int amount) => UtxoState(

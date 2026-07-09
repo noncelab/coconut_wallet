@@ -9,8 +9,8 @@ import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -53,7 +53,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   final UtxoTagProvider _utxoTagProvider;
   final SendInfoProvider _sendInfoProvider;
   final WalletProvider _walletProvider;
-  late final WalletListItemBase _wallet;
+  late final WalletItemBase _wallet;
   late final int _dustThreshold;
   late String _selectedReceiveAddress;
   late final List<ReceiveAddressOption> _nextReceiveAddressesOfAllWallets;
@@ -787,7 +787,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
             scriptPathPolicy:
-                (_wallet is TaprootWalletListItem && _wallet.defaultSpendType == TaprootSpendType.scriptPath)
+                (_wallet is TaprootWalletItem && _wallet.defaultSpendType == TaprootSpendType.scriptPath)
                     ? _wallet.defaultPolicy
                     : null,
           ).build();

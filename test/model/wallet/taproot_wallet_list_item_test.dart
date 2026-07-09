@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -27,7 +27,7 @@ void main() {
         TaprootScriptPathSeedInfo(miniscript: inheritanceMiniscript, extendedPublicKeys: [childTaprootXpub]),
       ];
 
-      final item = TaprootWalletListItem(
+      final item = TaprootWalletItem(
         id: 1,
         name: 'One Parent Taproot',
         colorIndex: 2,
@@ -57,7 +57,7 @@ void main() {
         TaprootScriptPathSeedInfo(miniscript: inheritanceMiniscript, extendedPublicKeys: [childTaprootXpub]),
       ];
 
-      final item = TaprootWalletListItem(
+      final item = TaprootWalletItem(
         id: 2,
         name: 'Two Parent Taproot',
         colorIndex: 3,
@@ -83,7 +83,7 @@ void main() {
     });
 
     test('빈 배열도 허용', () {
-      final item = TaprootWalletListItem(
+      final item = TaprootWalletItem(
         id: 1,
         name: 'Empty',
         colorIndex: 0,

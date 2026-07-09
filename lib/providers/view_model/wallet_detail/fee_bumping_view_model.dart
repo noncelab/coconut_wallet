@@ -12,7 +12,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -44,7 +44,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final WalletPreferencesRepository _walletPreferencesRepository;
 
   late final List<UtxoState> _availableUtxos;
-  late WalletListItemBase _walletListItemBase;
+  late WalletItemBase _walletListItemBase;
   late bool? _isNetworkOn;
   late bool _isUtxoSelectionAuto = true;
 

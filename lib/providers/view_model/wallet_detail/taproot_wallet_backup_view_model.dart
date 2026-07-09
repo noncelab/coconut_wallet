@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
 
@@ -12,7 +12,7 @@ class TaprootWalletBackupViewModel extends ChangeNotifier {
 
   Map<String, String> get walletQrDataMap {
     final wallet = _walletProvider.getWalletById(_walletId);
-    if (wallet is! TaprootWalletListItem) return {};
+    if (wallet is! TaprootWalletItem) return {};
 
     final Map<String, dynamic> backupMap = {
       'name': wallet.name,

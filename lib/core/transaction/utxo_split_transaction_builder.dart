@@ -7,9 +7,9 @@ import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.d
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 
@@ -56,7 +56,7 @@ class UtxoSplitTransactionBuilder {
   UtxoState? _utxo;
   final int dustThreshold;
   double _feeRate;
-  final WalletListItemBase walletListItemBase;
+  final WalletItemBase walletListItemBase;
   final AddressRepository addressRepository;
   late final int _nextReceiveAddressIndex;
   final List<WalletAddress> _cachedReceiveAddresses = [];
@@ -111,9 +111,9 @@ class UtxoSplitTransactionBuilder {
        _utxo = utxo,
        _feeRate = feeRate {
     _scriptPathPolicy =
-        walletListItemBase is TaprootWalletListItem
-            ? ((walletListItemBase as TaprootWalletListItem).defaultSpendType == TaprootSpendType.scriptPath
-                ? (walletListItemBase as TaprootWalletListItem).defaultPolicy
+        walletListItemBase is TaprootWalletItem
+            ? ((walletListItemBase as TaprootWalletItem).defaultSpendType == TaprootSpendType.scriptPath
+                ? (walletListItemBase as TaprootWalletItem).defaultPolicy
                 : null)
             : null;
     /** output 개수가 253 이상일 때 tx 크기가 2 증가
@@ -163,7 +163,7 @@ class UtxoSplitTransactionBuilder {
         _oneOutputTxVBytes = 110;
         _outputVBytes = 31;
       case WalletType.multiSignature:
-        final wallet = walletListItemBase as MultisigWalletListItem;
+        final wallet = walletListItemBase as MultisigWalletItem;
         _oneOutputTxVBytes = 132 + (wallet.signers.length - 2) * 8 + (wallet.requiredSignatureCount - 1) * 18;
         _outputVBytes = 43;
       case WalletType.taproot:
@@ -774,7 +774,7 @@ class _SplitBuildIsolateRequest {
   final Map<String, int> recipients;
   final double feeRate;
   final String changeDerivationPath;
-  final WalletListItemBase walletListItemBase;
+  final WalletItemBase walletListItemBase;
   final Policy? scriptPathPolicy;
 
   const _SplitBuildIsolateRequest({

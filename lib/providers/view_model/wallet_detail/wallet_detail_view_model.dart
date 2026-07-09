@@ -6,7 +6,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -17,7 +17,7 @@ import 'package:coconut_wallet/services/model/error/default_error_response.dart'
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
@@ -39,7 +39,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
   StreamSubscription<NodeSyncState>? _nodeSyncStateSubscription;
 
-  late WalletListItemBase _walletListBaseItem;
+  late WalletItemBase _walletListBaseItem;
   late WalletType _walletType;
   late WalletAddress _receiveAddress;
 
@@ -153,12 +153,12 @@ class WalletDetailViewModel extends ChangeNotifier {
   List<TransactionRecord> get txList => _txProvider.txList;
 
   int get walletId => _walletId;
-  WalletListItemBase get walletListBaseItem => _walletListBaseItem;
+  WalletItemBase get walletListBaseItem => _walletListBaseItem;
   String get walletName => _walletName;
   WalletProvider? get walletProvider => _walletProvider;
   WalletType get walletType => _walletType;
   bool get isNetworkOff => _connectProvider.isInternetOff;
-  bool get isMultisigWallet => _walletListBaseItem is MultisigWalletListItem;
+  bool get isMultisigWallet => _walletListBaseItem is MultisigWalletItem;
   String? get masterFingerprint {
     switch (_walletListBaseItem.walletType) {
       case WalletType.multiSignature:

@@ -6,7 +6,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
@@ -19,7 +19,7 @@ class FaucetRequestBottomSheet extends StatefulWidget {
   final bool isRequesting;
   final Function(String, double) onRequest;
   final WalletProvider walletProvider;
-  final WalletListItemBase walletItem;
+  final WalletItemBase walletItem;
 
   const FaucetRequestBottomSheet({
     super.key,

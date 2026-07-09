@@ -7,7 +7,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
@@ -34,7 +34,7 @@ class ReceiveAddressScreen extends StatefulWidget {
 }
 
 class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
-  WalletListItemBase? _selectedWalletItem;
+  WalletItemBase? _selectedWalletItem;
   WalletAddress? _receiveAddress;
   int? _enteredReceiveAmountSats;
   late int _walletCount;

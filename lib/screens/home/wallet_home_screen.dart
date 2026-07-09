@@ -42,7 +42,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
@@ -80,7 +80,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   DateTime? _lastPressedAt;
   ResultOfSyncFromVault? _resultOfSyncFromVault;
 
-  late List<WalletListItemBase> _previousWalletList = [];
+  late List<WalletItemBase> _previousWalletList = [];
   final GlobalKey<SliverAnimatedListState> _walletListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
 
@@ -159,8 +159,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       child: Selector<
         WalletHomeViewModel,
         Tuple7<
-          List<WalletListItemBase>,
-          List<WalletListItemBase>,
+          List<WalletItemBase>,
+          List<WalletItemBase>,
           Tuple2<bool, bool>,
           bool,
           Map<int, AnimatedBalanceData>,
@@ -438,7 +438,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
   }
 
-  void _handleWalletListUpdate(List<WalletListItemBase> walletList) async {
+  void _handleWalletListUpdate(List<WalletItemBase> walletList) async {
     if (_isWalletListLoading) return;
     _isWalletListLoading = true;
     try {
@@ -955,8 +955,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildFavoriteWalletList(
-    List<WalletListItemBase> walletList,
-    List<WalletListItemBase> favoriteWalletList,
+    List<WalletItemBase> walletList,
+    List<WalletItemBase> favoriteWalletList,
     Map<int, AnimatedBalanceData> walletBalanceMap,
     bool isBalanceHidden,
     FakeBalanceGetter getFakeBalance,
@@ -993,7 +993,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildWalletItem(
-    WalletListItemBase wallet,
+    WalletItemBase wallet,
     Animation<double> animation,
     AnimatedBalanceData animatedBalanceData,
     int? fakeBalance,
@@ -1012,7 +1012,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _getWalletRowItem(
     Key key,
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     AnimatedBalanceData animatedBalanceData,
     int? fakeBalance,
     bool isLastItem,

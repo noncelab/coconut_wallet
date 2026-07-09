@@ -5,7 +5,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -43,7 +43,7 @@ class SubscriptionService {
   }
 
   /// 지갑의 스크립트 구독
-  Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
+  Future<Result<bool>> subscribeWallet(WalletItemBase walletItem) async {
     final walletId = walletItem.id;
 
     // 이미 구독 중이면 기존 작업 완료 대기
@@ -76,7 +76,7 @@ class SubscriptionService {
   }
 
   /// 지갑의 스크립트 구독 실제 구현부
-  Future<Result<bool>> _performSubscribeWallet(WalletListItemBase walletItem) async {
+  Future<Result<bool>> _performSubscribeWallet(WalletItemBase walletItem) async {
     _stateManager.addWalletSyncState(walletItem.id, UpdateElement.subscription);
     final [receiveResult, changeResult] = await Future.wait([
       _subscribeWallet(walletItem, false, _scriptStatusController),
@@ -124,7 +124,7 @@ class SubscriptionService {
   }
 
   /// 지갑의 스크립트 구독 해제
-  Future<Result<bool>> unsubscribeWallet(WalletListItemBase walletItem) async {
+  Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
     await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
     walletItem.subscribedScriptMap.clear();
     Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');
@@ -133,7 +133,7 @@ class SubscriptionService {
 
   /// 특정 유형(receive/change)의 주소에 대한 구독 처리
   Future<({List<ScriptStatus> scriptStatuses, int lastUsedIndex})> _subscribeWallet(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     bool isChange,
     StreamController<SubscribeScriptStreamDto> scriptStatusController,
   ) async {
@@ -181,7 +181,7 @@ class SubscriptionService {
 
   /// 주소 범위에 대한 구독 처리를 수행하는 공통 메서드
   Future<({List<ScriptStatus> newScriptStatuses, int maxUsedIndex, int nextIndex})> _subscribeAddressRange(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     int startIndex,
     int endIndex,
     bool isChange,
@@ -232,7 +232,7 @@ class SubscriptionService {
 
   /// 단일 주소에 대한 구독 처리를 수행하는 메서드
   Future<({ScriptStatus scriptStatus, bool isSubscribed})> _subscribeAddress(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     int derivationIndex,
     String address,
     bool isChange,
@@ -291,7 +291,7 @@ class SubscriptionService {
   void _handleScriptUpdate(
     String reversedScriptHash,
     ScriptStatus scriptStatus,
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     StreamController<SubscribeScriptStreamDto> scriptStatusController,
   ) {
     // 상태 변경 시 사용된 인덱스 업데이트 및 스캔 범위 확장
@@ -348,7 +348,7 @@ class SubscriptionService {
 
   /// 스캔 범위 확장을 위한 메서드
   Future<void> _extendSubscription(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     bool isChange,
     StreamController<SubscribeScriptStreamDto> scriptStatusController,
   ) async {
@@ -371,7 +371,7 @@ class SubscriptionService {
   }
 
   /// 특정 유형(receive/change)의 스크립트 구독 해제
-  Future<void> _unsubscribeScript(WalletListItemBase walletItem, bool isChange) async {
+  Future<void> _unsubscribeScript(WalletItemBase walletItem, bool isChange) async {
     final addressScanLimit =
         isChange ? walletItem.changeUsedIndex + _gapLimit + 1 : walletItem.receiveUsedIndex + _gapLimit + 1;
 

@@ -1,10 +1,10 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 
 class ScriptStatusMock {
   static ScriptStatus createMockScriptStatus(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     int index, {
     bool isChange = false,
     String? status,

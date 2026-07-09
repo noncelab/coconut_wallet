@@ -3,10 +3,10 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
@@ -21,7 +21,7 @@ import 'package:flutter_svg/svg.dart';
 
 class WalletInfoItemCard extends StatefulWidget {
   final int id;
-  final WalletListItemBase walletItem;
+  final WalletItemBase walletItem;
   final VoidCallback onTooltipClicked;
   final GlobalKey tooltipKey;
   final Function(String) onNameChanged;
@@ -47,14 +47,14 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   late String rightText;
   late String rightSubText;
   late String nameText;
-  late WalletListItemBase walletItem;
+  late WalletItemBase walletItem;
   WalletImportSource? walletImportSource;
 
   bool isItemTapped = false; // ui (edit 아이콘)
   bool isCustomAccount = false;
 
   bool _isWithoutMfp() =>
-      walletItem is SinglesigWalletListItem &&
+      walletItem is SinglesigWalletItem &&
       (isWalletWithoutMfp(walletItem) ||
           (walletItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
               WalletAddService.masterFingerprintPlaceholder);
@@ -92,9 +92,9 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   void _updateFromWalletItem() {
     walletItem = widget.walletItem;
     signers = null;
-    if (walletItem is MultisigWalletListItem) {
+    if (walletItem is MultisigWalletItem) {
       /// 멀티 시그
-      MultisigWalletListItem multiWallet = walletItem as MultisigWalletListItem;
+      MultisigWalletItem multiWallet = walletItem as MultisigWalletItem;
       signers = multiWallet.signers;
       colorIndex = multiWallet.colorIndex;
       iconIndex = multiWallet.iconIndex;
@@ -102,12 +102,12 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
       rightSubText = '${multiWallet.requiredSignatureCount}/${multiWallet.signers.length}';
       walletImportSource = widget.walletItem.walletImportSource;
       isCustomAccount = false;
-    } else if (walletItem is TaprootWalletListItem) {
+    } else if (walletItem is TaprootWalletItem) {
       /// 탭루트
       final taprootWallet = walletItem.walletBase as TaprootWallet;
       colorIndex = widget.walletItem.colorIndex;
       iconIndex = widget.walletItem.iconIndex;
-      rightText = _formatCreatedAtInVault((widget.walletItem as TaprootWalletListItem).createdAtInVault);
+      rightText = _formatCreatedAtInVault((widget.walletItem as TaprootWalletItem).createdAtInVault);
       rightSubText = taprootWallet.derivationPath;
       walletImportSource = widget.walletItem.walletImportSource;
       isCustomAccount = _getAccountIndex(taprootWallet.derivationPath) != 0;

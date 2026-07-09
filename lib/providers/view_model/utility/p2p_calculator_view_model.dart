@@ -2,7 +2,7 @@ import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
@@ -75,7 +75,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   /// WalletProvider 관련
-  List<WalletListItemBase> get wallets => _walletProvider.walletItemList;
+  List<WalletItemBase> get wallets => _walletProvider.walletItemList;
 
   P2PCalculatorViewModel(
     this._preferenceProvider,

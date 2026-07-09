@@ -4,7 +4,7 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/node/transaction_details.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
@@ -159,7 +159,7 @@ class TransactionRecordService {
   }
 
   /// 트랜잭션 레코드를 조회합니다.
-  Future<Result<TransactionRecord>> getTransactionRecord(WalletListItemBase walletItem, String txHash) async {
+  Future<Result<TransactionRecord>> getTransactionRecord(WalletItemBase walletItem, String txHash) async {
     Logger.log('TransactionRecordService: getTransactionRecord called (txHash: $txHash, walletId: ${walletItem.id})');
     try {
       final txRaw = await _electrumService.getTransaction(txHash);

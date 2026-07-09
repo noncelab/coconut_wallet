@@ -4,11 +4,11 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
@@ -28,8 +28,8 @@ class WalletRepository extends BaseRepository {
   WalletRepository(super._realmManager, this._transactionDraftRepository) : _sharedPrefs = SharedPrefsRepository();
 
   /// 지갑 목록을 DB에서 로드
-  Future<List<WalletListItemBase>> getWalletItemList() async {
-    List<WalletListItemBase> walletList = [];
+  Future<List<WalletItemBase>> getWalletItemList() async {
+    List<WalletItemBase> walletList = [];
     int multisigWalletIndex = 0;
     int externalWalletIndex = 0;
 
@@ -69,7 +69,7 @@ class WalletRepository extends BaseRepository {
   }
 
   /// 싱글시그 지갑 추가
-  Future<SinglesigWalletListItem> addSinglesigWallet(WatchOnlyWallet watchOnlyWallet) async {
+  Future<SinglesigWalletItem> addSinglesigWallet(WatchOnlyWallet watchOnlyWallet) async {
     var id = _getNextWalletId();
     var realmWalletBase = RealmWalletBase(
       id,
@@ -103,7 +103,7 @@ class WalletRepository extends BaseRepository {
   }
 
   /// 탭루트 지갑 추가
-  Future<TaprootWalletListItem> addTaprootWallet(WatchOnlyWallet watchOnlyWallet) async {
+  Future<TaprootWalletItem> addTaprootWallet(WatchOnlyWallet watchOnlyWallet) async {
     var id = _getNextWalletId();
     var realmWalletBase = RealmWalletBase(
       id,
@@ -145,7 +145,7 @@ class WalletRepository extends BaseRepository {
   }
 
   /// 멀티시그 지갑 추가
-  Future<MultisigWalletListItem> addMultisigWallet(WatchOnlyWallet walletSync) async {
+  Future<MultisigWalletItem> addMultisigWallet(WatchOnlyWallet walletSync) async {
     var id = _getNextWalletId();
     var realmWalletBase = RealmWalletBase(
       id,

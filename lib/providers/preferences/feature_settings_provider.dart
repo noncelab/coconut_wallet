@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:flutter/material.dart';
@@ -77,7 +77,7 @@ class FeatureSettingsProvider extends ChangeNotifier {
 
   /// 저장된 값과 기본값을 비교하여 동기화
   /// 새로운 기능이 추가되거나 제거된 기능이 있을 때 호출
-  Future<void> synchronizeWithDefaults({List<WalletListItemBase>? walletList}) async {
+  Future<void> synchronizeWithDefaults({List<WalletItemBase>? walletList}) async {
     final initialFeatures = [
       HomeFeature(homeFeatureTypeString: HomeFeatureType.recentTransaction.name, isEnabled: true),
       HomeFeature(homeFeatureTypeString: HomeFeatureType.analysis.name, isEnabled: true),

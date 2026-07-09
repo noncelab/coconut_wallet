@@ -2,8 +2,8 @@ part of 'script_sync_service_test.dart';
 
 /// 테스트 데이터 클래스
 class _ScriptSyncTestData {
-  final WalletListItemBase walletA;
-  final WalletListItemBase walletB;
+  final WalletItemBase walletA;
+  final WalletItemBase walletB;
   final SharedPrefsRepository sharedPrefsRepository;
 
   // previousWallet에서 A로 전송한 트랜잭션

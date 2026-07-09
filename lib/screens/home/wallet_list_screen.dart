@@ -26,7 +26,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
@@ -73,7 +73,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       },
       child: Selector<
         WalletListViewModel,
-        Tuple7<List<WalletListItemBase>, bool, Map<int, AnimatedBalanceData>, List<int>, List<int>, bool, List<int>>
+        Tuple7<List<WalletItemBase>, bool, Map<int, AnimatedBalanceData>, List<int>, List<int>, bool, List<int>>
       >(
         selector:
             (_, vm) => Tuple7(
@@ -497,7 +497,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildWalletList(
-    List<WalletListItemBase> walletList,
+    List<WalletItemBase> walletList,
     Map<int, AnimatedBalanceData> walletBalanceMap,
     List<int> walletOrder,
   ) {
@@ -547,9 +547,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         _viewModel.reorderTempWalletOrder(oldIndex, newIndex);
       },
       itemBuilder: (context, index) {
-        WalletListItemBase wallet = _viewModel.walletItemList.firstWhere(
-          (w) => w.id == _viewModel.tempWalletOrder[index],
-        );
+        WalletItemBase wallet = _viewModel.walletItemList.firstWhere((w) => w.id == _viewModel.tempWalletOrder[index]);
         return Dismissible(
           key: ValueKey(wallet.id),
           direction: DismissDirection.endToStart,
@@ -584,7 +582,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildWalletItem(
-    WalletListItemBase wallet,
+    WalletItemBase wallet,
     AnimatedBalanceData animatedBalanceData,
     bool isLastItem,
     bool isFirstItem, {
@@ -616,7 +614,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   Widget _getWalletRowItem(
     Key key,
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     AnimatedBalanceData animatedBalanceData,
     bool isLastItem,
     bool isFirstItem,

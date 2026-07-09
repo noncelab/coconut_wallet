@@ -11,7 +11,7 @@ import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -492,7 +492,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       height: kCoconutAppbarHeight,
-      customTitle: Selector<SendViewModel, Tuple5<WalletListItemBase?, bool, int, int, BitcoinUnit>>(
+      customTitle: Selector<SendViewModel, Tuple5<WalletItemBase?, bool, int, int, BitcoinUnit>>(
         selector:
             (_, viewModel) => Tuple5(
               viewModel.selectedWalletItem,

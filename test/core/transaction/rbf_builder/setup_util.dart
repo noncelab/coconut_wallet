@@ -7,7 +7,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/packages/bc-ur-dart/lib/utils.dart';
 
 import '../../../mock/transaction_record_mock.dart';
@@ -34,7 +34,7 @@ class RbfBuilderCreator {
     'bcrt1q02q4m5venfhucsvym5fadkftph0szumuuwdcf9',
   ];
 
-  final WalletListItemBase _walletListItemBase;
+  final WalletItemBase _walletListItemBase;
   late final List<String> receiveAddressList = [];
   late final List<String> changeAddressList = [];
   late final String derivationPathPrefix;

@@ -6,10 +6,10 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -25,7 +25,7 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
 typedef WalletInfoUpdateCallback =
-    void Function(WalletListItemBase walletItem, List<UtxoState> selectedUtxoList, bool isUtxoSelectionAuto);
+    void Function(WalletItemBase walletItem, List<UtxoState> selectedUtxoList, bool isUtxoSelectionAuto);
 
 enum AddressError {
   none,
@@ -115,7 +115,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   int _amountSum = 0;
   String get amountSumText => _currentUnit.displayBitcoinAmount(_amountSum, withUnit: true);
 
-  WalletListItemBase? _selectedWalletItem;
+  WalletItemBase? _selectedWalletItem;
   late bool _isUtxoSelectionAuto;
 
   /// 이번 송금에 대한 spend 경로 override. null = wallet 의 defaultSpendType 사용.
@@ -124,7 +124,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   TaprootSpendType? get taprootSpendType => _taprootSpendType;
   bool get canChooseTaprootSpendType {
     final w = _selectedWalletItem;
-    return w is TaprootWalletListItem && w.canSpendBothPaths;
+    return w is TaprootWalletItem && w.canSpendBothPaths;
   }
 
   void setTaprootSpendType(TaprootSpendType type) {
@@ -144,14 +144,14 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   int get selectedUtxoAmountSum => _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
 
   /// 사용자가 설정한 순서대로 정렬한 지갑 목록
-  late List<WalletListItemBase> _orderedRegisteredWallets;
-  List<WalletListItemBase> get orderedRegisteredWallets => _orderedRegisteredWallets;
+  late List<WalletItemBase> _orderedRegisteredWallets;
+  List<WalletItemBase> get orderedRegisteredWallets => _orderedRegisteredWallets;
 
   List<bool> _walletAddressNeedsUpdate = [];
   Map<int, WalletAddressInfo> _registeredWalletAddressMap = {};
   Map<int, WalletAddressInfo> get registeredWalletAddressMap => _registeredWalletAddressMap;
 
-  WalletListItemBase? get selectedWalletItem => _selectedWalletItem;
+  WalletItemBase? get selectedWalletItem => _selectedWalletItem;
 
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
   bool get isUtxoSelectionAuto => _isUtxoSelectionAuto;
@@ -283,7 +283,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   bool isOwnAddress(String address) {
-    for (WalletListItemBase walletItem in _walletProvider.walletItemList) {
+    for (WalletItemBase walletItem in _walletProvider.walletItemList) {
       if (_walletProvider.containsAddress(walletItem.id, address)) return true;
     }
     return false;
@@ -336,7 +336,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _loadDrafts();
   }
 
-  List<WalletListItemBase> _getOrderedRegisteredWallets() {
+  List<WalletItemBase> _getOrderedRegisteredWallets() {
     final walletList = _walletProvider.walletItemList;
     final order = _preferenceProvider.walletOrder;
 
@@ -390,8 +390,8 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     _initBalances(_allUtxos);
 
     // per-send override 리셋. Builder 가 wallet 의 defaultSpendType 으로 자동 해석함.
-    if (_selectedWalletItem is TaprootWalletListItem) {
-      _taprootSpendType = (_selectedWalletItem! as TaprootWalletListItem).defaultSpendType;
+    if (_selectedWalletItem is TaprootWalletItem) {
+      _taprootSpendType = (_selectedWalletItem! as TaprootWalletItem).defaultSpendType;
     }
   }
 
@@ -539,7 +539,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       isUtxoFixed: !_isUtxoSelectionAuto,
       scriptPathPolicy:
           (_taprootSpendType == TaprootSpendType.scriptPath)
-              ? (_selectedWalletItem! as TaprootWalletListItem).defaultPolicy!
+              ? (_selectedWalletItem! as TaprootWalletItem).defaultPolicy!
               : null,
     );
 

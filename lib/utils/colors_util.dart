@@ -1,7 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
@@ -72,8 +72,8 @@ class TaprootCardStyle {
     required this.iconGradientColors,
   });
 
-  static TaprootCardStyle? from(WalletListItemBase wallet) {
-    if (wallet is! TaprootWalletListItem) return null;
+  static TaprootCardStyle? from(WalletItemBase wallet) {
+    if (wallet is! TaprootWalletItem) return null;
     return TaprootCardStyle.fromKeyPath(wallet.canSpendViaKeyPath);
   }
 

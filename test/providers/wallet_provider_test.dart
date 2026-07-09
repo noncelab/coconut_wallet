@@ -3,11 +3,11 @@ import 'dart:ui';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -38,38 +38,38 @@ const _multisigDescriptor =
 // ─────────────────────────────────────────────
 
 class FakeWalletRepository extends Fake implements WalletRepository {
-  List<WalletListItemBase> walletItems = [];
+  List<WalletItemBase> walletItems = [];
 
   int addTaprootWalletCallCount = 0;
-  late TaprootWalletListItem addTaprootWalletResult;
+  late TaprootWalletItem addTaprootWalletResult;
   WatchOnlyWallet? lastTaprootWallet;
 
   int addSinglesigWalletCallCount = 0;
-  late SinglesigWalletListItem addSinglesigWalletResult;
+  late SinglesigWalletItem addSinglesigWalletResult;
 
   int addMultisigWalletCallCount = 0;
-  late MultisigWalletListItem addMultisigWalletResult;
+  late MultisigWalletItem addMultisigWalletResult;
 
   int updateWalletUICallCount = 0;
 
   @override
-  Future<List<WalletListItemBase>> getWalletItemList() async => walletItems;
+  Future<List<WalletItemBase>> getWalletItemList() async => walletItems;
 
   @override
-  Future<TaprootWalletListItem> addTaprootWallet(WatchOnlyWallet watchOnlyWallet) async {
+  Future<TaprootWalletItem> addTaprootWallet(WatchOnlyWallet watchOnlyWallet) async {
     addTaprootWalletCallCount++;
     lastTaprootWallet = watchOnlyWallet;
     return addTaprootWalletResult;
   }
 
   @override
-  Future<SinglesigWalletListItem> addSinglesigWallet(WatchOnlyWallet watchOnlyWallet) async {
+  Future<SinglesigWalletItem> addSinglesigWallet(WatchOnlyWallet watchOnlyWallet) async {
     addSinglesigWalletCallCount++;
     return addSinglesigWalletResult;
   }
 
   @override
-  Future<MultisigWalletListItem> addMultisigWallet(WatchOnlyWallet watchOnlyWallet) async {
+  Future<MultisigWalletItem> addMultisigWallet(WatchOnlyWallet watchOnlyWallet) async {
     addMultisigWalletCallCount++;
     return addMultisigWalletResult;
   }
@@ -82,7 +82,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
 
 class FakeAddressRepository extends Fake implements AddressRepository {
   @override
-  Future<void> ensureAddressesInit({required WalletListItemBase walletItemBase}) async {}
+  Future<void> ensureAddressesInit({required WalletItemBase walletItemBase}) async {}
 }
 
 class FakeTransactionRepository extends Fake implements TransactionRepository {}
@@ -91,7 +91,7 @@ class FakeUtxoRepository extends Fake implements UtxoRepository {}
 
 class FakePreferenceProvider extends Fake implements PreferenceProvider {
   @override
-  Future<void> setWalletPreferences(List<WalletListItemBase> walletItemList) async {}
+  Future<void> setWalletPreferences(List<WalletItemBase> walletItemList) async {}
 
   @override
   bool get isFakeBalanceActive => false;
@@ -119,13 +119,13 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
 // 테스트 Fixture 헬퍼
 // ─────────────────────────────────────────────
 
-SinglesigWalletListItem _createSinglesigWalletListItem({
+SinglesigWalletItem _createSinglesigWalletListItem({
   int id = 1,
   String name = 'My Wallet',
   int colorIndex = 0,
   int iconIndex = 0,
 }) {
-  return SinglesigWalletListItem(
+  return SinglesigWalletItem(
     id: id,
     name: name,
     colorIndex: colorIndex,
@@ -157,13 +157,13 @@ final _multisigSigners = [
   MultisigSigner(name: 'Signer C', iconIndex: 2, colorIndex: 2, memo: ''),
 ];
 
-MultisigWalletListItem _createMultisigWalletListItem({
+MultisigWalletItem _createMultisigWalletListItem({
   int id = 1,
   String name = 'My Multisig',
   int colorIndex = 0,
   int iconIndex = 0,
 }) {
-  return MultisigWalletListItem(
+  return MultisigWalletItem(
     id: id,
     name: name,
     colorIndex: colorIndex,
@@ -214,13 +214,13 @@ WatchOnlyWallet _createTaprootWatchOnlyWallet({
   });
 }
 
-TaprootWalletListItem _createTaprootWalletListItem({
+TaprootWalletItem _createTaprootWalletListItem({
   int id = 1,
   String name = 'Taproot Wallet',
   int colorIndex = 0,
   int iconIndex = 0,
 }) {
-  return TaprootWalletListItem(
+  return TaprootWalletItem(
     id: id,
     name: name,
     colorIndex: colorIndex,
@@ -389,7 +389,7 @@ void main() {
       final account0Descriptor = SingleSignatureVault.fromSeed(seed, accountIndex: 0).descriptor;
       final account1Descriptor = SingleSignatureVault.fromSeed(seed, accountIndex: 1).descriptor;
 
-      final existingItem = SinglesigWalletListItem(
+      final existingItem = SinglesigWalletItem(
         id: 1,
         name: 'My Wallet',
         colorIndex: 0,
@@ -397,7 +397,7 @@ void main() {
         descriptor: account0Descriptor,
       );
       final walletRepo = FakeWalletRepository()..walletItems = [existingItem];
-      walletRepo.addSinglesigWalletResult = SinglesigWalletListItem(
+      walletRepo.addSinglesigWalletResult = SinglesigWalletItem(
         id: 2,
         name: 'My Wallet Account 1',
         colorIndex: 0,

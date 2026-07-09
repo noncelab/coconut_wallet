@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
@@ -36,7 +36,7 @@ class ScriptSyncServiceMock {
   static late TransactionRecordService transactionRecordService;
   static late BalanceSyncService balanceSyncService;
 
-  static Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
+  static Future<Result<bool>> subscribeWallet(WalletItemBase walletItem) async {
     callSubscribeWalletCount++;
     return Result.success(true);
   }

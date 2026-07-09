@@ -8,7 +8,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
@@ -61,7 +61,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   final FocusNode splitCountFocusNode = FocusNode();
   String _lastAmountText = '';
   String _lastSplitCountText = '1';
-  late final WalletListItemBase _wallet;
+  late final WalletItemBase _wallet;
   late final UtxoSplitTransactionBuilder _splitBuilder;
 
   UtxoSplitResult? _splitResult;

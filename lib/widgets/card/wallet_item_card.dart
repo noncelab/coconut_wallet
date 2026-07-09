@@ -3,9 +3,9 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
@@ -14,7 +14,7 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter_svg/svg.dart';
 
 class WalletItemCard extends StatelessWidget {
-  final WalletListItemBase walletItem;
+  final WalletItemBase walletItem;
   final AnimatedBalanceData animatedBalanceData;
   final bool isLastItem;
   final bool isBalanceHidden;
@@ -59,7 +59,7 @@ class WalletItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     List<Color>? iconGradientColors;
     if (walletItem.walletType == WalletType.multiSignature) {
-      final signers = (walletItem as MultisigWalletListItem).signers;
+      final signers = (walletItem as MultisigWalletItem).signers;
       iconGradientColors = ColorUtil.getGradientColors(signers);
     } else if (walletItem.walletType == WalletType.taproot) {
       final taprootStyle = TaprootCardStyle.from(walletItem);

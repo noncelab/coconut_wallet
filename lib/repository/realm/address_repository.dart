@@ -6,7 +6,7 @@ import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/update_address_balance_dto.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -18,7 +18,7 @@ class AddressRepository extends BaseRepository {
   AddressRepository(super._realmManager);
 
   /// 주소 목록 검색하기(입금, 잔돈 주소)
-  List<WalletAddress> searchWalletAddressList(WalletListItemBase walletItemBase, String keyword) {
+  List<WalletAddress> searchWalletAddressList(WalletItemBase walletItemBase, String keyword) {
     final realmWalletAddress = realm.query<RealmWalletAddress>(
       r'walletId == $0 AND address CONTAINS $1 SORT(index ASC)',
       [walletItemBase.id, keyword],
@@ -28,7 +28,7 @@ class AddressRepository extends BaseRepository {
 
   /// 주소 목록 가져오기
   Future<List<WalletAddress>> getWalletAddressList(
-    WalletListItemBase walletItemBase,
+    WalletItemBase walletItemBase,
     int cursor,
     int count,
     bool isChange,
@@ -73,7 +73,7 @@ class AddressRepository extends BaseRepository {
     return List<WalletAddress>.from([...existingAddresses, ...newAddresses]);
   }
 
-  (int, int) getGeneratedAddressIndexes(WalletListItemBase walletItemBase) {
+  (int, int) getGeneratedAddressIndexes(WalletItemBase walletItemBase) {
     final realmWalletBase = realm.find<RealmWalletBase>(walletItemBase.id);
     if (realmWalletBase == null) {
       throw StateError('[getGeneratedAddressIndex] Wallet not found');
@@ -81,7 +81,7 @@ class AddressRepository extends BaseRepository {
     return (realmWalletBase.generatedReceiveIndex, realmWalletBase.generatedChangeIndex);
   }
 
-  int getGeneratedAddressIndex(WalletListItemBase walletItemBase, bool isChange) {
+  int getGeneratedAddressIndex(WalletItemBase walletItemBase, bool isChange) {
     final realmWalletBase = realm.find<RealmWalletBase>(walletItemBase.id);
     if (realmWalletBase == null) {
       throw StateError('[getGeneratedAddressIndex] Wallet not found');
@@ -89,7 +89,7 @@ class AddressRepository extends BaseRepository {
     return isChange ? realmWalletBase.generatedChangeIndex : realmWalletBase.generatedReceiveIndex;
   }
 
-  Future<void> ensureAddressesInit({required WalletListItemBase walletItemBase}) async {
+  Future<void> ensureAddressesInit({required WalletItemBase walletItemBase}) async {
     final realmWalletBase = realm.find<RealmWalletBase>(walletItemBase.id);
     if (realmWalletBase == null) {
       throw StateError('[getWalletAddressList] Wallet not found');
@@ -111,7 +111,7 @@ class AddressRepository extends BaseRepository {
 
   /// 필요한 경우 새로운 주소를 생성하고 저장
   Future<void> ensureAddressesExist({
-    required WalletListItemBase walletItemBase,
+    required WalletItemBase walletItemBase,
     required int cursor,
     required int count,
     required bool isChange,
@@ -361,7 +361,7 @@ class AddressRepository extends BaseRepository {
     return realmWalletBase;
   }
 
-  Future<void> setWalletAddressUsed(WalletListItemBase walletItem, int addressIndex, bool isChange) async {
+  Future<void> setWalletAddressUsed(WalletItemBase walletItem, int addressIndex, bool isChange) async {
     final realmWalletAddress =
         realm.query<RealmWalletAddress>(r'walletId == $0 AND index == $1 AND isChange == $2', [
           walletItem.id,
@@ -381,7 +381,7 @@ class AddressRepository extends BaseRepository {
     });
   }
 
-  Future<void> setWalletAddressUsedBatch(WalletListItemBase walletItem, List<ScriptStatus> scriptStatuses) async {
+  Future<void> setWalletAddressUsedBatch(WalletItemBase walletItem, List<ScriptStatus> scriptStatuses) async {
     final changedScriptStatuses = scriptStatuses.where((status) => status.status != null).toList();
 
     final receiveIndices =
@@ -427,7 +427,7 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 지갑 사용 인덱스 업데이트
-  Future<void> updateWalletUsedIndex(WalletListItemBase walletItem, int usedIndex, {required bool isChange}) async {
+  Future<void> updateWalletUsedIndex(WalletItemBase walletItem, int usedIndex, {required bool isChange}) async {
     final realmWalletBase = getWalletBase(walletItem.id);
 
     int dbUsedIndex = isChange ? realmWalletBase.usedChangeIndex : realmWalletBase.usedReceiveIndex;
@@ -561,7 +561,7 @@ class AddressRepository extends BaseRepository {
   }
 
   Future<void> syncWalletWithSubscriptionData(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     List<ScriptStatus> scriptStatuses,
     int receiveUsedIndex,
     int changeUsedIndex,
@@ -576,7 +576,7 @@ class AddressRepository extends BaseRepository {
 
   /// usedIndex와 generatedIndex의 차이가 200 이상이면 저장하지 않습니다.
   Future<void> addAddressesWithGapLimit({
-    required WalletListItemBase walletItemBase,
+    required WalletItemBase walletItemBase,
     required List<WalletAddress> newAddresses,
     required bool isChange,
   }) async {

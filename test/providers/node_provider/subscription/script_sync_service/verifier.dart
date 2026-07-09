@@ -2,7 +2,7 @@ part of 'script_sync_service_test.dart';
 
 /// 검증 헬퍼 클래스
 class _ScriptSyncTestVerifier {
-  static void verifyInitialState(WalletListItemBase walletItem, int walletId) {
+  static void verifyInitialState(WalletItemBase walletItem, int walletId) {
     final beforeWallet = ScriptSyncServiceMock.walletRepository.getWalletBase(walletId);
     expect(beforeWallet.usedReceiveIndex, -1, reason: '사용한 지갑이 없는 경우 usedReceiveIndex 값은 -1이어야 합니다.');
     expect(beforeWallet.usedChangeIndex, -1, reason: '사용한 지갑이 없는 경우 usedChangeIndex 값은 -1이어야 합니다.');
@@ -17,7 +17,7 @@ class _ScriptSyncTestVerifier {
     expect(beforeUtxoList.length, 0);
   }
 
-  static Future<void> verifyInitialAddress(WalletListItemBase walletItem) async {
+  static Future<void> verifyInitialAddress(WalletItemBase walletItem) async {
     final beforeAddressList = await ScriptSyncServiceMock.addressRepository.getWalletAddressList(
       walletItem,
       -1,
@@ -35,7 +35,7 @@ class _ScriptSyncTestVerifier {
     expect(isCompleted, true, reason: '트랜잭션 처리가 완료되어야 한다.');
   }
 
-  static Future<void> verifyAddressUpdate(WalletListItemBase walletItem) async {
+  static Future<void> verifyAddressUpdate(WalletItemBase walletItem) async {
     final addressList = await ScriptSyncServiceMock.addressRepository.getWalletAddressList(
       walletItem,
       -1,

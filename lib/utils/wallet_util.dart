@@ -1,16 +1,16 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-bool isWalletWithoutMfp(WalletListItemBase? wallet) {
+bool isWalletWithoutMfp(WalletItemBase? wallet) {
   if (wallet != null &&
-      wallet is SinglesigWalletListItem &&
+      wallet is SinglesigWalletItem &&
       (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
           WalletAddService.masterFingerprintPlaceholder) {
     return true;
@@ -19,10 +19,10 @@ bool isWalletWithoutMfp(WalletListItemBase? wallet) {
 }
 
 // MFP가 있는 지갑이 하나라도 존재하는지 여부
-bool hasMfpWallet(List<WalletListItemBase> walletItemList) {
+bool hasMfpWallet(List<WalletItemBase> walletItemList) {
   return walletItemList.any(
     (wallet) =>
-        wallet is! SinglesigWalletListItem ||
+        wallet is! SinglesigWalletItem ||
         (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint !=
             WalletAddService.masterFingerprintPlaceholder,
   );

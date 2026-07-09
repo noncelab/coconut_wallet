@@ -5,8 +5,8 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/taproot_script_path_config.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
@@ -30,7 +30,7 @@ class TransactionBuildResult {
     this.unintendedDustFee,
   });
 
-  double? getFeeRate(WalletListItemBase wallet) {
+  double? getFeeRate(WalletItemBase wallet) {
     if (transaction == null) return null;
     final vSize = transaction!.estimateVirtualByteForWallet(wallet);
     return FeeRateUtils.roundToTwoDecimals(estimatedFee / vSize);
@@ -76,7 +76,7 @@ class TransactionBuilder {
   final Map<String, int> recipients;
   final double feeRate;
   final String changeDerivationPath;
-  final WalletListItemBase walletListItemBase;
+  final WalletItemBase walletListItemBase;
   final bool isFeeSubtractedFromAmount;
   final bool isUtxoFixed;
 
@@ -85,12 +85,12 @@ class TransactionBuilder {
   /// scriptPath-only 지갑은 반드시 non-null 값을 전달해야 함
   final Policy? scriptPathPolicy;
   TaprootSpendType? get taprootSpendType =>
-      walletListItemBase is! TaprootWalletListItem
+      walletListItemBase is! TaprootWalletItem
           ? null
           : (scriptPathPolicy == null ? TaprootSpendType.keyPath : TaprootSpendType.scriptPath);
   TaprootScriptPathConfig? get _scriptPathConfig {
     if (taprootSpendType != TaprootSpendType.scriptPath) return null;
-    return (walletListItemBase as TaprootWalletListItem).scriptPathConfigFor(scriptPathPolicy!);
+    return (walletListItemBase as TaprootWalletItem).scriptPathConfigFor(scriptPathPolicy!);
   }
 
   List<UtxoState>? _selectedUtxos;
@@ -110,7 +110,7 @@ class TransactionBuilder {
     this.scriptPathPolicy,
   }) : assert(recipients.isNotEmpty),
        assert(
-         !(walletListItemBase is TaprootWalletListItem && !walletListItemBase.canSpendViaKeyPath) ||
+         !(walletListItemBase is TaprootWalletItem && !walletListItemBase.canSpendViaKeyPath) ||
              scriptPathPolicy != null,
          'scriptPath-only Taproot wallet requires taprootPolicy to be provided.',
        );
@@ -179,7 +179,7 @@ class TransactionBuilder {
     Map<String, int>? recipients,
     double? feeRate,
     String? changeDerivationPath,
-    WalletListItemBase? walletListItemBase,
+    WalletItemBase? walletListItemBase,
     bool? isFeeSubtractedFromAmount,
     bool? isUtxoFixed,
     Policy? taprootPolicy,
