@@ -83,7 +83,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
           isVisibleAboveKeyboard: false,
           onButtonClicked: () => onTapConfirmButton(context),
           backgroundColor: context.coconutColors.primary,
-          textColor: context.coconutColors.backgroundHighlightText,
+          textColor: context.coconutColors.primaryButtonText,
           text: t.confirm,
         ),
       ],

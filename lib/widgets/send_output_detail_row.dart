@@ -22,7 +22,7 @@ class SendOutputDetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final amountText = currentUnit.displayBitcoinAmount(amountSats, withUnit: true);
-    final valueColor = isChange ? context.coconutColors.changeOutputText : context.coconutColors.primaryText;
+    final valueColor = isChange ? context.coconutColors.receivingColor : context.coconutColors.primaryText;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

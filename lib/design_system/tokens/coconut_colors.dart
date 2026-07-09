@@ -134,7 +134,6 @@ class CoconutColors {
   final Color textFilterChip;
   final Color textFilterChipSelected;
   final Color textHighlight;
-  final Color changeOutputText;
   final Color border;
   final Color borderStrong;
   final Color iconBackground;
@@ -276,7 +275,6 @@ class CoconutColors {
     required this.textFilterChip,
     required this.textFilterChipSelected,
     required this.textHighlight,
-    required this.changeOutputText,
     required this.border,
     required this.borderStrong,
     required this.iconBackground,
@@ -383,10 +381,10 @@ class CoconutColors {
       inputSurface: ds.CoconutColors.gray800,
       inputPlaceholder: ds.CoconutColors.gray700,
       primary: ds.CoconutColors.primary,
-      primaryText: ds.CoconutColors.white,
+      primaryButtonText: ds.CoconutColors.black,
       primaryButtonBackground: ds.CoconutColors.white,
       primaryButtonPressed: ds.CoconutColors.gray300,
-      primaryButtonText: ds.CoconutColors.black,
+      primaryText: ds.CoconutColors.white,
       secondaryText: ds.CoconutColors.gray400,
       secondaryTextStrong: ds.CoconutColors.gray300,
       secondaryButtonBackground: ds.CoconutColors.gray350,
@@ -401,7 +399,6 @@ class CoconutColors {
       textFilterChip: ds.CoconutColors.white,
       textFilterChipSelected: ds.CoconutColors.gray800,
       textHighlight: ds.CoconutColors.primary,
-      changeOutputText: ds.CoconutColors.cyan,
       border: ds.CoconutColors.gray700,
       borderStrong: ds.CoconutColors.white,
       iconBackground: ds.CoconutColors.gray800,
@@ -509,10 +506,10 @@ class CoconutColors {
       inputSurface: const Color(0xFFF1F2F5),
       inputPlaceholder: ds.CoconutColors.gray400,
       primary: ds.CoconutColors.black,
-      primaryText: ds.CoconutColors.black,
+      primaryButtonText: ds.CoconutColors.white,
       primaryButtonBackground: ds.CoconutColors.black,
       primaryButtonPressed: ds.CoconutColors.gray800,
-      primaryButtonText: ds.CoconutColors.white,
+      primaryText: ds.CoconutColors.black,
       secondaryText: ds.CoconutColors.gray700,
       secondaryTextStrong: ds.CoconutColors.gray800,
       secondaryButtonBackground: ds.CoconutColors.gray200,
@@ -527,7 +524,6 @@ class CoconutColors {
       textFilterChip: ds.CoconutColors.gray900,
       textFilterChipSelected: ds.CoconutColors.white,
       textHighlight: ds.CoconutColors.green,
-      changeOutputText: ds.CoconutColors.cyan,
       border: ds.CoconutColors.gray400,
       borderStrong: ds.CoconutColors.black,
       iconBackground: ds.CoconutColors.gray300,
@@ -563,8 +559,8 @@ class CoconutColors {
       dimOverlay: const Color(0xFFEEEEEE),
       pageIndicatorActive: ds.CoconutColors.gray700,
       pageIndicatorInactive: ds.CoconutColors.gray300,
-      sendingColor: ds.CoconutColors.green,
-      receivingColor: ds.CoconutColors.cyanBlue,
+      sendingColor: const Color.fromARGB(255, 128, 148, 50),
+      receivingColor: const Color.fromARGB(255, 50, 148, 173),
       bottomActionBarBackground: ds.CoconutColors.white,
       bottomSheetKeyboardToolbar: ds.CoconutColors.gray150,
       bottomSheetExtensionFieldBackground: const Color(0xFFF1F2F5),

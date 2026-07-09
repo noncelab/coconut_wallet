@@ -28,7 +28,7 @@ import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -319,20 +319,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color:
-                  status == UtxoStatus.incoming
-                      ? context.coconutColors.receivingColor.withValues(alpha: 0.2)
-                      : context.coconutColors.sendingColor.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Lottie.asset(
-              status == UtxoStatus.incoming ? 'assets/lottie/arrow-down.json' : 'assets/lottie/arrow-up.json',
-              width: 20,
-              height: 20,
-            ),
-          ),
+          PendingTransactionLottieIcon(isIncoming: status == UtxoStatus.incoming, size: 20),
           CoconutLayout.spacing_200w,
           Text(
             status == UtxoStatus.incoming ? t.status_receiving : t.status_sending,

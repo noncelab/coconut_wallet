@@ -274,7 +274,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
                         ),
                         CoconutLayout.spacing_100w,
-                        LottieBuilder.asset('assets/files/status_loading.json', width: 16, height: 16),
+                        ColorFiltered(
+                          colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcATop),
+                          child: LottieBuilder.asset('assets/files/status_loading.json', width: 16, height: 16),
+                        ),
                       ],
                     ),
                 ],

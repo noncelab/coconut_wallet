@@ -7,7 +7,7 @@ import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
 
 class WalletDetailHeader extends StatefulWidget {
   final AnimatedBalanceData animatedBalanceData;
@@ -83,24 +83,14 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
 
     return Column(
       children: [
-        _buildPendingAmountRow(
-          widget.sendingAmount != 0,
-          'assets/lottie/arrow-up.json',
-          getSendingAmountText(),
-          context.coconutColors.sendingColor,
-        ),
-        CoconutLayout.spacing_100h,
-        _buildPendingAmountRow(
-          widget.receivingAmount != 0,
-          'assets/lottie/arrow-down.json',
-          getReceivingAmountText(),
-          context.coconutColors.receivingColor,
-        ),
+        _buildPendingAmountRow(widget.sendingAmount != 0, false, getSendingAmountText()),
+        if (widget.sendingAmount != 0 && widget.receivingAmount != 0) CoconutLayout.spacing_100h,
+        _buildPendingAmountRow(widget.receivingAmount != 0, true, getReceivingAmountText()),
       ],
     );
   }
 
-  Widget _buildPendingAmountRow(bool condition, String animationPath, String text, Color iconColor) {
+  Widget _buildPendingAmountRow(bool condition, bool isIncoming, String text) {
     if (!condition) return const SizedBox.shrink();
 
     return FittedBox(
@@ -108,17 +98,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10.0),
-              color: iconColor.withValues(alpha: 0.2),
-            ),
-            child: ColorFiltered(
-              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcATop),
-              child: Lottie.asset(animationPath, width: 12, height: 12),
-            ),
-          ),
+          PendingTransactionLottieIcon(isIncoming: isIncoming, size: 12, padding: const EdgeInsets.all(4)),
           CoconutLayout.spacing_200w,
           Text(text, style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText)),
         ],

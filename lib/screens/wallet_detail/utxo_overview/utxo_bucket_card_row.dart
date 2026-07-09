@@ -9,7 +9,7 @@ import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 
 class UtxoBucketCardRow extends StatelessWidget {
@@ -645,19 +645,10 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
               Positioned(
                 bottom: isLarge ? 8 : 4,
                 left: isLarge ? 8 : 4,
-                child: Container(
+                child: PendingTransactionLottieIcon(
+                  isIncoming: widget.utxo.status == UtxoStatus.incoming,
+                  size: isLarge ? 12 : 10,
                   padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: context.coconutColors.tertiaryText.withValues(alpha: 0.5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Lottie.asset(
-                    widget.utxo.status == UtxoStatus.incoming
-                        ? 'assets/lottie/arrow-down.json'
-                        : 'assets/lottie/arrow-up.json',
-                    width: isLarge ? 12 : 10,
-                    height: isLarge ? 12 : 10,
-                  ),
                 ),
               ),
           ],

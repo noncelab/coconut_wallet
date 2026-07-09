@@ -8,7 +8,7 @@ import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
 
 class UtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
@@ -190,20 +190,7 @@ class UtxoItemCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color:
-                status == UtxoStatus.incoming
-                    ? context.coconutColors.receivingColor.withValues(alpha: 0.2)
-                    : context.coconutColors.sendingColor.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: Lottie.asset(
-            status == UtxoStatus.incoming ? 'assets/lottie/arrow-down.json' : 'assets/lottie/arrow-up.json',
-            width: 16,
-            height: 16,
-          ),
-        ),
+        PendingTransactionLottieIcon(isIncoming: status == UtxoStatus.incoming, size: 16, fit: BoxFit.none),
         CoconutLayout.spacing_100w,
       ],
     );

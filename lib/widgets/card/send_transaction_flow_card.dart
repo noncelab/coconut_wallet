@@ -784,7 +784,7 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
                     ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
+                        Flexible(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,

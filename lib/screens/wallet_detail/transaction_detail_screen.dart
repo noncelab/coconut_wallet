@@ -36,7 +36,7 @@ import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -373,13 +373,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       return Container();
     }
 
-    final status = _viewModel.transactionStatus!;
-    final iconColor = switch (status) {
-      TransactionStatus.sent || TransactionStatus.sending => context.coconutColors.sendingColor,
-      TransactionStatus.received || TransactionStatus.receiving => context.coconutColors.receivingColor,
-      _ => context.coconutColors.iconDefault,
-    };
-
     return Container(
       width: MediaQuery.sizeOf(context).width,
       decoration: BoxDecoration(
@@ -392,19 +385,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         children: [
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 8),
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: iconColor.withValues(alpha: 0.2)),
-            child: Center(
-              child: ColorFiltered(
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcATop),
-                child: Lottie.asset(
-                  _viewModel.isSendType! ? 'assets/lottie/arrow-up.json' : 'assets/lottie/arrow-down.json',
-                  fit: BoxFit.fill,
-                  repeat: true,
-                ),
-              ),
-            ),
+            child: PendingTransactionLottieIcon(isIncoming: !_viewModel.isSendType!, size: 24),
           ),
           Expanded(
             child: FittedBox(
