@@ -42,7 +42,7 @@ class UtxoTierThemeBottomSheet extends StatelessWidget {
     for (var i = 0; i < themes.length; i++) {
       widgets.add(_buildItem(context, themes[i], currentTheme));
       if (i < themes.length - 1) {
-        widgets.add(Divider(color: context.coconutColors.primaryText.withValues(alpha: 0.12), height: 1));
+        widgets.add(Divider(color: context.coconutColors.divider, height: 1));
       }
     }
     return widgets;

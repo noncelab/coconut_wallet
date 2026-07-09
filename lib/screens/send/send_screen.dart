@@ -607,7 +607,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             ? colors.surfaceButtonSecondaryText
             : selectedUtxoListLength == 0
             ? colors.surfaceButtonText
-            : colors.surfaceButtonSecondaryText;
+            : colors.primaryButtonText;
     final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
 
     return !isUtxoSelectionAuto

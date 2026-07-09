@@ -804,7 +804,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                           : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Divider(color: context.coconutColors.primaryText, height: 1),
+                              Divider(color: context.coconutColors.divider, height: 1),
                               CoconutLayout.spacing_400h,
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 2),

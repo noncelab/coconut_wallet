@@ -928,7 +928,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               borderRadius: 8,
               isActive: true,
               text: t.select_wallet_with_options_bottom_sheet.select_utxo,
-              textStyle: CoconutTypography.caption_10,
+              textStyle: CoconutTypography.caption_10.setColor(context.coconutColors.primaryText),
               padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
             ),
             CoconutLayout.spacing_100h,

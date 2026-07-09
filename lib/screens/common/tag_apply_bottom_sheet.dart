@@ -102,7 +102,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
         child: Consumer<UtxoTagCrudViewModel>(
           builder: (context, model, child) {
             return ClipRRect(
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
               child: CoconutBottomSheet(
                 useIntrinsicHeight: true,
                 backgroundColor: context.coconutColors.surfaceBottomSheet,
@@ -188,7 +188,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
             ),
           ),
           CoconutLayout.spacing_500h,
-          Divider(color: context.coconutColors.divider.withValues(alpha: 0.12), height: 1),
+          Divider(color: context.coconutColors.divider, height: 1),
         ],
       ),
     );
@@ -319,7 +319,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Divider(color: context.coconutColors.divider.withValues(alpha: 0.12), height: 1),
+          Divider(color: context.coconutColors.divider, height: 1),
           _buildMenuItem(_isDeletionMode ? t.tag_bottom_sheet.exit_deletion : t.tag_bottom_sheet.delete_tag, () {
             _toggleDeletionMode();
           }),

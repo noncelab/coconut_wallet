@@ -106,13 +106,15 @@ class CoconutColors {
   final Color surfaceFilterChipSelected;
   final Color surfaceSkeletonBase;
   final Color surfaceSkeletonHighlight;
+  final Color surfaceSelected;
+  final Color surfacePressed;
+
   final Color chartSurface;
   final Color coinSurface;
   final Color selectedCoinBorder;
   final Color billSurface;
   final Color selectionOverlay;
-  final Color surfaceSelected;
-  final Color surfacePressed;
+
   final Color inputSurface;
   final Color inputPlaceholder;
   final Color primary;
@@ -371,13 +373,15 @@ class CoconutColors {
       surfaceFilterChipSelected: ds.CoconutColors.white,
       surfaceSkeletonBase: ds.CoconutColors.gray850,
       surfaceSkeletonHighlight: ds.CoconutColors.gray750,
+      surfaceSelected: ds.CoconutColors.gray800,
+      surfacePressed: ds.CoconutColors.gray750,
+
       chartSurface: ds.CoconutColors.gray800,
       coinSurface: ds.CoconutColors.gray900,
       selectedCoinBorder: ds.CoconutColors.gray150,
       billSurface: ds.CoconutColors.gray900,
       selectionOverlay: ds.CoconutColors.black,
-      surfaceSelected: ds.CoconutColors.gray800,
-      surfacePressed: ds.CoconutColors.gray750,
+
       inputSurface: ds.CoconutColors.gray800,
       inputPlaceholder: ds.CoconutColors.gray700,
       primary: ds.CoconutColors.primary,
@@ -482,7 +486,7 @@ class CoconutColors {
       surface: ds.CoconutColors.gray150,
       surfaceDeep: ds.CoconutColors.white,
       surfaceCard: ds.CoconutColors.gray150,
-      surfaceButton: ds.CoconutColors.white,
+      surfaceButton: ds.CoconutColors.gray400,
       surfaceButtonText: ds.CoconutColors.black,
       surfaceButtonSecondary: ds.CoconutColors.black,
       surfaceButtonSecondaryText: ds.CoconutColors.white,
@@ -496,13 +500,15 @@ class CoconutColors {
       surfaceFilterChipSelected: ds.CoconutColors.black,
       surfaceSkeletonBase: ds.CoconutColors.gray200,
       surfaceSkeletonHighlight: ds.CoconutColors.gray100,
+      surfaceSelected: ds.CoconutColors.gray200,
+      surfacePressed: ds.CoconutColors.gray150,
+
       chartSurface: ds.CoconutColors.white,
       coinSurface: ds.CoconutColors.white,
       selectedCoinBorder: ds.CoconutColors.black,
       billSurface: ds.CoconutColors.white,
       selectionOverlay: ds.CoconutColors.black,
-      surfaceSelected: ds.CoconutColors.gray200,
-      surfacePressed: ds.CoconutColors.gray150,
+
       inputSurface: const Color(0xFFF1F2F5),
       inputPlaceholder: ds.CoconutColors.gray400,
       primary: ds.CoconutColors.black,

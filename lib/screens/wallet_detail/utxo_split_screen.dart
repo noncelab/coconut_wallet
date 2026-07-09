@@ -2111,11 +2111,10 @@ class _SplitCountStepButton extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: isActive ? context.coconutColors.surfaceButton : context.coconutColors.surfaceDisabled,
           shape: BoxShape.circle,
-          border: Border.all(color: isActive ? context.coconutColors.borderStrong : context.coconutColors.border),
+          border: Border.all(color: isActive ? context.coconutColors.iconDisabled : context.coconutColors.iconDisabled),
         ),
-        child: Icon(icon, color: isActive ? context.coconutColors.primaryText : context.coconutColors.iconDisabled),
+        child: Icon(icon, color: isActive ? context.coconutColors.iconDefault : context.coconutColors.iconDisabled),
       ),
     );
   }
