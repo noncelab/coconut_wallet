@@ -204,35 +204,18 @@ class PreferenceProvider extends ChangeNotifier {
   void _migrateLanguageCodeIfNeeded() {
     if (_sharedPrefs.isContainsKey(SharedPrefKeys.kLanguage)) {
       final storedLanguage = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
-      final migratedLanguage = _migrateLanguageCode(storedLanguage);
+      final migratedLanguage = migrateLanguageCode(storedLanguage);
       if (migratedLanguage != storedLanguage) {
         _sharedPrefs.setString(SharedPrefKeys.kLanguage, migratedLanguage);
       }
     }
   }
 
-  /// v0.13.1까지 사용하던 앱 언어코드('kr', 'jp')를 ISO 639-1 언어 코드('ko', 'ja')로 마이그레이션
-  String _migrateLanguageCode(String languageCode) {
-    const Map<String, String> migrationMap = {'kr': 'ko', 'jp': 'ja'};
-    return migrationMap[languageCode] ?? languageCode;
-  }
-
-  /// 현재 설정된 언어에 해당하는 AppLocale 반환
-  AppLocale _resolveAppLocale() {
-    return switch (AppLanguage.fromCode(_language)) {
-      AppLanguage.ko => AppLocale.ko,
-      AppLanguage.en => AppLocale.en,
-      AppLanguage.ja => AppLocale.ja,
-      AppLanguage.es => AppLocale.es,
-      AppLanguage.de => AppLocale.de,
-    };
-  }
-
   /// 언어 설정 적용
   void _applyLanguageSetting() {
     try {
       Logger.log('Applying language setting: $_language');
-      LocaleSettings.setLocaleSync(_resolveAppLocale());
+      LocaleSettings.setLocaleSync(resolveAppLocale(_language));
       NumberFormatConfig.instance.update(_language);
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)

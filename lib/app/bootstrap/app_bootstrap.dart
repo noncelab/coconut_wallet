@@ -31,6 +31,7 @@ class AppBootstrap {
     await FileLogger.initialize();
     await _updateAppIconIfNeeded();
 
+    applyPersistedLocale();
     setupPluralResolvers();
   }
 
