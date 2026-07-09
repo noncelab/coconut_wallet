@@ -604,10 +604,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
     final textColor =
         isUtxoSelectionAuto
-            ? colors.surfaceButtonText
+            ? colors.surfaceButtonSecondaryText
             : selectedUtxoListLength == 0
             ? colors.surfaceButtonText
-            : colors.backgroundHighlightText;
+            : colors.surfaceButtonSecondaryText;
     final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
 
     return !isUtxoSelectionAuto
