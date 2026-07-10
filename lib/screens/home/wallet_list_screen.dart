@@ -532,7 +532,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
             boxShadow: [
               BoxShadow(
-                color: context.coconutColors.shadowSubtle.withValues(alpha: 0.24),
+                color: context.coconutColors.shadowSubtle,
                 blurRadius: 10,
                 spreadRadius: 0,
                 offset: const Offset(0, 3),

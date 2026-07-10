@@ -347,7 +347,7 @@ class CoconutColors {
   });
 
   factory CoconutColors.dark() {
-    return const CoconutColors(
+    return CoconutColors(
       homeBackground: ds.CoconutColors.black,
       homeSurfaceCard: ds.CoconutColors.gray850,
       homeSurfaceCardPressed: ds.CoconutColors.gray900,
@@ -432,8 +432,8 @@ class CoconutColors {
       pulldownMenuPressedColor: ds.CoconutColors.gray700,
       pulldownMenuDividerColor: ds.CoconutColors.black,
       pulldownMenuTextColor: ds.CoconutColors.white,
-      shadowDefault: ds.CoconutColors.black,
-      shadowSubtle: ds.CoconutColors.gray900,
+      shadowDefault: ds.CoconutColors.black.withValues(alpha: 0.3),
+      shadowSubtle: ds.CoconutColors.gray900.withValues(alpha: 0.3),
       popupBackground: ds.CoconutColors.gray900,
       dimOverlay: ds.CoconutColors.black,
       pageIndicatorActive: ds.CoconutColors.gray400,
@@ -559,8 +559,8 @@ class CoconutColors {
       pulldownMenuPressedColor: ds.CoconutColors.gray200,
       pulldownMenuDividerColor: ds.CoconutColors.gray200,
       pulldownMenuTextColor: ds.CoconutColors.black,
-      shadowDefault: ds.CoconutColors.black,
-      shadowSubtle: ds.CoconutColors.black.withValues(alpha: 0.12),
+      shadowDefault: ds.CoconutColors.gray600.withValues(alpha: 0.3),
+      shadowSubtle: ds.CoconutColors.gray600.withValues(alpha: 0.15),
       popupBackground: ds.CoconutColors.white,
       dimOverlay: const Color(0xFFEEEEEE),
       pageIndicatorActive: ds.CoconutColors.gray700,

@@ -198,9 +198,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
                 decoration: BoxDecoration(
                   shape: isBill ? BoxShape.rectangle : BoxShape.circle,
                   borderRadius: isBill ? BorderRadius.circular(8) : null,
-                  boxShadow: [
-                    BoxShadow(color: context.coconutColors.primaryText.withValues(alpha: 0.23), blurRadius: 12),
-                  ],
+                  boxShadow: [BoxShadow(color: context.coconutColors.shadowDefault, blurRadius: 12)],
                 ),
               ),
             ),

@@ -380,7 +380,7 @@ class _BarChartState extends State<_BarChart> {
                                       borderRadius: BorderRadius.circular(999),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: colors.shadowDefault.withValues(alpha: 0.4),
+                                          color: colors.shadowDefault,
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),

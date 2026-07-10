@@ -364,12 +364,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                 color: isItemTapped ? colors.surfacePressed : colors.iconBackgroundSubtle,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(
-                    color: colors.shadowDefault.withValues(alpha: 0.25),
-                    offset: const Offset(1, 1),
-                    blurRadius: 6,
-                    spreadRadius: 0,
-                  ),
+                  BoxShadow(color: colors.shadowDefault, offset: const Offset(1, 1), blurRadius: 6, spreadRadius: 0),
                 ],
               ),
               child: Container(

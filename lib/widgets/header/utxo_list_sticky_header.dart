@@ -91,13 +91,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                       height: 10,
                       decoration: BoxDecoration(
                         color: colors.background,
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.shadowDefault.withValues(alpha: 0.2),
-                            offset: const Offset(0, 3),
-                            blurRadius: 4,
-                          ),
-                        ],
+                        boxShadow: [BoxShadow(color: colors.shadowSubtle, offset: const Offset(0, 3), blurRadius: 4)],
                       ),
                     ),
                   ),

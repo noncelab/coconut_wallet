@@ -87,7 +87,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                           color: context.coconutColors.background,
                           boxShadow: [
                             BoxShadow(
-                              color: context.coconutColors.shadowDefault.withValues(alpha: 0.12),
+                              color: context.coconutColors.shadowSubtle,
                               offset: const Offset(0, 5),
                               blurRadius: 12,
                               spreadRadius: -2,

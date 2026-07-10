@@ -49,7 +49,7 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
+            color: context.coconutColors.shadowDefault,
             spreadRadius: 1,
             blurRadius: 16,
             offset: const Offset(5, 5),
