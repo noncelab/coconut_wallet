@@ -13,8 +13,10 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
   }
 
   void _showMergeOptionBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (_isMergeMethodBottomSheetOpen) return;
+    _setScreenState(() {
+      _isMergeMethodBottomSheetOpen = true;
+    });
 
     vibrateExtraLight();
 
@@ -66,13 +68,17 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
         }
       }
     } finally {
-      _isBottomSheetOpened = false;
+      _setScreenState(() {
+        _isMergeMethodBottomSheetOpen = false;
+      });
     }
   }
 
   void _showAmountRangeBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (_isAmountRangeBottomSheetOpen) return;
+    _setScreenState(() {
+      _isAmountRangeBottomSheetOpen = true;
+    });
 
     vibrateExtraLight();
 
@@ -243,13 +249,17 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     } finally {
       customAmountController.dispose();
       customAmountFocusNode.dispose();
-      _isBottomSheetOpened = false;
+      _setScreenState(() {
+        _isAmountRangeBottomSheetOpen = false;
+      });
     }
   }
 
   void _showTagSelectBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (_isTagBottomSheetOpen) return;
+    _setScreenState(() {
+      _isTagBottomSheetOpen = true;
+    });
 
     vibrateExtraLight();
 
@@ -284,7 +294,9 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
         unawaited(_viewModel.prepareMergeTransaction());
       }
     } finally {
-      _isBottomSheetOpened = false;
+      _setScreenState(() {
+        _isTagBottomSheetOpen = false;
+      });
     }
   }
 
@@ -318,8 +330,10 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
   }
 
   void _showReceiveAddressBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (_isReceiveAddressBottomSheetOpen) return;
+    _setScreenState(() {
+      _isReceiveAddressBottomSheetOpen = true;
+    });
 
     vibrateExtraLight();
 
@@ -470,7 +484,9 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
       directInputFocusNode.removeListener(handleDirectInputFocusChange);
       directInputController.dispose();
       directInputFocusNode.dispose();
-      _isBottomSheetOpened = false;
+      _setScreenState(() {
+        _isReceiveAddressBottomSheetOpen = false;
+      });
     }
 
     if (selectedItem != null && context.mounted) {

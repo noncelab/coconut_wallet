@@ -76,7 +76,13 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   UtxoMergeStep? _lastObservedOptionPickerStep;
   int _optionPickerAnimationNonce = 0;
   final List<UtxoMergeStep> _visibleOptionPickerSteps = [];
-  bool _isBottomSheetOpened = false;
+  bool _isMergeMethodBottomSheetOpen = false;
+  bool _isAmountRangeBottomSheetOpen = false;
+  bool _isTagBottomSheetOpen = false;
+  bool _isReceiveAddressBottomSheetOpen = false;
+  bool _isFeeBottomSheetOpen = false;
+
+  Color get _pickerDividerColor => context.coconutColors.inputPlaceholder;
 
   @override
   void initState() {
@@ -464,7 +470,12 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
 
   bool get _canAutoOpenBottomSheet {
     final route = ModalRoute.of(context);
-    return mounted && !_isBottomSheetOpened && (route?.isCurrent ?? false);
+    return mounted &&
+        !_isMergeMethodBottomSheetOpen &&
+        !_isAmountRangeBottomSheetOpen &&
+        !_isTagBottomSheetOpen &&
+        !_isReceiveAddressBottomSheetOpen &&
+        (route?.isCurrent ?? false);
   }
 
   String? _headerTextForStep(UtxoMergeStep? step) {
@@ -1076,11 +1087,13 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       UtxoMergeStep.selectMergeMethod => CoconutOptionPicker(
         text: _getCurrentMethodText(mergeMethod),
         label: _viewModel.currentStep == UtxoMergeStep.selectMergeMethod ? null : t.merge_utxos_screen.merge_method,
+        dividerColor: _isMergeMethodBottomSheetOpen ? null : _pickerDividerColor,
         onTap: _showMergeOptionBottomSheet,
       ),
       UtxoMergeStep.selectAmountRange => CoconutOptionPicker(
         text: _currentAmountRangeText,
         label: _viewModel.currentStep == UtxoMergeStep.selectAmountRange ? null : t.merge_utxos_screen.amount_range,
+        dividerColor: _isAmountRangeBottomSheetOpen ? null : _pickerDividerColor,
         onTap: _showAmountRangeBottomSheet,
         coconutOptionStateEnum:
             _viewModel.hasDustUtxosInInputs && !_viewModel.excludeDustUtxos
@@ -1092,6 +1105,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       UtxoMergeStep.selectTag => CoconutOptionPicker(
         text: _viewModel.effectiveSelectedTagName == null ? t.merge_utxos_screen.select_tag : '',
         label: _viewModel.currentStep == UtxoMergeStep.selectTag ? null : t.merge_utxos_screen.selected_tag,
+        dividerColor: _isTagBottomSheetOpen ? null : _pickerDividerColor,
         onTap: _showTagSelectBottomSheet,
         inlineWidgets: _buildSelectedTagInlineWidgets(context),
         inlineSpacing: 0,
@@ -1099,6 +1113,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       UtxoMergeStep.selectReceiveAddress => CoconutOptionPicker(
         inlineWidgets: [_buildReceiveAddressOptionText()],
         label: t.merge_utxos_screen.receive_address,
+        dividerColor: _isReceiveAddressBottomSheetOpen ? null : _pickerDividerColor,
         onTap: _showReceiveAddressBottomSheet,
         enableTextWrap: true,
         coconutOptionStateEnum:
@@ -1146,6 +1161,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                   : selector.estimatedFeeText,
           label: t.estimated_fee,
           textColor: shouldShowFeeRatePlaceholder ? context.coconutColors.mutedText : context.coconutColors.primaryText,
+          dividerColor: _isFeeBottomSheetOpen ? null : _pickerDividerColor,
           onTap: _showEstimatedFeeBottomSheet,
           coconutOptionStateEnum:
               isFeeTooHigh || selector.feeRate == 0 ? CoconutOptionStateEnum.error : CoconutOptionStateEnum.normal,
@@ -1157,6 +1173,9 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
 
   void _showEstimatedFeeBottomSheet() {
     vibrateExtraLight();
+    setState(() {
+      _isFeeBottomSheetOpen = true;
+    });
     EstimatedFeeBottomSheet.show(
       context: context,
       listenable: _viewModel,
@@ -1184,6 +1203,11 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
         _viewModel.runMergeTransactionPreparationNow();
         FocusScope.of(context).unfocus();
         Navigator.pop(context);
+      },
+      onClosed: () {
+        setState(() {
+          _isFeeBottomSheetOpen = false;
+        });
       },
     );
   }

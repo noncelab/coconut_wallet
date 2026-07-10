@@ -72,6 +72,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   bool _hasAutoOpenedMethodPicker = false;
   bool _isUtxoSelectionBottomSheetOpen = false;
   bool _isMethodBottomSheetOpen = false;
+  bool _isFeeBottomSheetOpen = false;
+
+  Color get _pickerDividerColor => context.coconutColors.inputPlaceholder;
 
   /// manual input 삭제 버튼은 딱 1개만 노출되어야 함
   ManualSplitItem? _visibleDeleteButtonItem;
@@ -617,6 +620,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               label: method != null ? t.split_utxo_screen.label_split_method : null,
               text: method?.getLabel(t) ?? t.split_utxo_screen.method_bottom_sheet.split_by_amount,
               textColor: context.coconutColors.primaryText,
+              dividerColor: _isMethodBottomSheetOpen ? null : _pickerDividerColor,
               onTap: () => _showSplitMethodBottomSheet(context, viewModel),
             ),
             CoconutLayout.spacing_1000h,
@@ -690,6 +694,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               textColor: isSelected ? context.coconutColors.primaryText : context.coconutColors.mutedText,
               inlineWidgets: inlineWidgets,
               coconutOptionStateEnum: optionState,
+              dividerColor: _isUtxoSelectionBottomSheetOpen ? null : _pickerDividerColor,
               onTap: () => _showUtxoSelectionBottomSheet(context, viewModel),
             ),
             CoconutLayout.spacing_1000h,
@@ -795,31 +800,39 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               textColor: hasFeeRate ? context.coconutColors.primaryText : context.coconutColors.mutedText,
               coconutOptionStateEnum: viewModel.feeOptionState,
               guideText: feeExceedsAmountErrorText,
-              onTap:
-                  () => EstimatedFeeBottomSheet.show(
-                    context: context,
-                    listenable: viewModel,
-                    estimatedFeeTextGetter: () => viewModel.feePickerDisplayText,
-                    feeRateController: viewModel.feeRateController,
-                    feeRateFocusNode: viewModel.feeRateFocusNode,
-                    onFeeRateChanged: viewModel.onFeeRateChanged,
-                    onEditingComplete: () {
-                      FocusScope.of(context).unfocus();
-                      Navigator.pop(context);
-                    },
-                    recommendedFeeFetchStatusGetter: () => viewModel.recommendedFeeFetchStatus,
-                    feeInfosGetter: () => viewModel.feeInfos,
-                    refreshRecommendedFees: viewModel.refreshRecommendedFees,
-                    onFeeRateSelected: (sats) {
-                      viewModel.setFeeRateFromRecommendation(sats);
-                      FocusScope.of(context).unfocus();
-                      Navigator.pop(context);
-                    },
-                    onClosed: () {
-                      viewModel.removeTrailingDotInFeeRate();
-                      viewModel.restoreFeeRateIfZero();
-                    },
-                  ),
+              dividerColor: _isFeeBottomSheetOpen ? null : _pickerDividerColor,
+              onTap: () {
+                setState(() {
+                  _isFeeBottomSheetOpen = true;
+                });
+                EstimatedFeeBottomSheet.show(
+                  context: context,
+                  listenable: viewModel,
+                  estimatedFeeTextGetter: () => viewModel.feePickerDisplayText,
+                  feeRateController: viewModel.feeRateController,
+                  feeRateFocusNode: viewModel.feeRateFocusNode,
+                  onFeeRateChanged: viewModel.onFeeRateChanged,
+                  onEditingComplete: () {
+                    FocusScope.of(context).unfocus();
+                    Navigator.pop(context);
+                  },
+                  recommendedFeeFetchStatusGetter: () => viewModel.recommendedFeeFetchStatus,
+                  feeInfosGetter: () => viewModel.feeInfos,
+                  refreshRecommendedFees: viewModel.refreshRecommendedFees,
+                  onFeeRateSelected: (sats) {
+                    viewModel.setFeeRateFromRecommendation(sats);
+                    FocusScope.of(context).unfocus();
+                    Navigator.pop(context);
+                  },
+                  onClosed: () {
+                    viewModel.removeTrailingDotInFeeRate();
+                    viewModel.restoreFeeRateIfZero();
+                    setState(() {
+                      _isFeeBottomSheetOpen = false;
+                    });
+                  },
+                );
+              },
             ),
             CoconutLayout.spacing_1000h,
           ],
@@ -1177,7 +1190,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
     if (_isUtxoSelectionBottomSheetOpen) return;
 
     _autoOpenUtxoPickerTimer?.cancel();
-    _isUtxoSelectionBottomSheetOpen = true;
+    setState(() {
+      _isUtxoSelectionBottomSheetOpen = true;
+    });
 
     try {
       final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
@@ -1203,7 +1218,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
         viewModel.setSelectedUtxoList(result);
       }
     } finally {
-      _isUtxoSelectionBottomSheetOpen = false;
+      setState(() {
+        _isUtxoSelectionBottomSheetOpen = false;
+      });
     }
   }
 
@@ -1211,7 +1228,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
     if (_isMethodBottomSheetOpen) return;
 
     _autoOpenMethodPickerTimer?.cancel();
-    _isMethodBottomSheetOpen = true;
+    setState(() {
+      _isMethodBottomSheetOpen = true;
+    });
 
     final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<SplitMethod>(
       context: context,
@@ -1248,7 +1267,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
         viewModel.setSplitMethod(selectedItem);
       }
     } finally {
-      _isMethodBottomSheetOpen = false;
+      setState(() {
+        _isMethodBottomSheetOpen = false;
+      });
     }
   }
 
