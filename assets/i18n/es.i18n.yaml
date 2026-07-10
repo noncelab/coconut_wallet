@@ -110,6 +110,7 @@ account: "Cuenta"
 merge_utxos: "Fusionar"
 split_utxo: "Dividir"
 apply: "Aplicar"
+export_label: "Exportar Memos"
 
 relative_time:
   just_now: "Justo ahora"
@@ -787,6 +788,7 @@ wallet_info_screen:
   target_set_21m: "¡Es la carrera por los sats!"
   view_xpub: "Ver clave pública extendida"
   duplicated_name: "Nombre ya en uso"
+  export_labels_description: "Puede aplicar las notas guardadas en su billetera en otros dispositivos.\n\n¿Desea continuar con la copia de seguridad?"
   view_descriptor: "Ver descriptor"
   view_wallet_backup_data: "Ver datos de respaldo de billetera" 
   wallet_backup_data: "Datos de respaldo de billetera" 

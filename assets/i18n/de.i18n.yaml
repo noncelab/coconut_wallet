@@ -109,6 +109,7 @@ account: "Konto"
 merge_utxos: "Zusammenführen"
 split_utxo: "Teilen"
 apply: "Anwenden"
+export_label: "Memos exportieren"
 
 relative_time:
   just_now: "Gerade eben"
@@ -744,6 +745,7 @@ wallet_info_screen:
   target_set_21m: "Es ist das Sats-Rennen!!!"
   view_xpub: "Erweiterten öffentlichen Schlüssel anzeigen"
   duplicated_name: "Name bereits in Verwendung"
+  export_labels_description: "Sie können die in Ihrer Wallet gespeicherten Memos auch auf anderen Geräten anwenden.\n\nMöchten Sie mit dem Backup fortfahren?"
   view_descriptor: "Deskriptor anzeigen"
   view_wallet_backup_data: "Wallet-Sicherungsdaten anzeigen"
   wallet_backup_data: "Wallet-Sicherungsdaten"

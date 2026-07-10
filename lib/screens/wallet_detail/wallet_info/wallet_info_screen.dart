@@ -205,6 +205,30 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
                                 },
                               ),
+                              SingleButton(
+                                enableShrinkAnim: true,
+                                title: t.export_label,
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return CoconutPopup(
+                                        languageCode: context.read<PreferenceProvider>().language,
+                                        title: t.export_label,
+                                        description: t.wallet_info_screen.export_labels_description,
+                                        onTapRight: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        rightButtonText: t.next,
+                                        onTapLeft: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        leftButtonText: t.cancel,
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
                             ],
                           ),
                         ),
