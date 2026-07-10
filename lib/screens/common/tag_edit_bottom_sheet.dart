@@ -5,6 +5,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -123,17 +124,7 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
               ],
             ),
             CoconutLayout.spacing_800h,
-            CoconutButton(
-              onPressed: _createTag,
-              text: t.done,
-              isActive: _isButtonActive,
-              backgroundColor: context.coconutColors.primaryButtonBackground,
-              foregroundColor: context.coconutColors.primaryButtonText,
-              pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
-              pressedTextColor: context.coconutColors.primaryButtonText,
-              disabledBackgroundColor: context.coconutColors.surfaceDisabled,
-              disabledForegroundColor: context.coconutColors.tertiaryText,
-            ),
+            InlineActionButton(onPressed: _createTag, text: t.done, isActive: _isButtonActive),
           ],
         ),
       ),

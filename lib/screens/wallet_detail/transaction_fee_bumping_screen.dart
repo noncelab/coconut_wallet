@@ -177,8 +177,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                               },
                               text: t.done,
                               backgroundColor: _getFeeBumpingAccentColor(),
-                              showGradient: true,
-                              gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 95),
+                              showSurroundings: true,
+                              surroundingsPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 95),
                               isActive:
                                   viewModel.hasValidTransaction &&
                                   viewModel.unexpectedError == null &&

@@ -90,16 +90,13 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
               child: SizedBox(
                 height: buttonAreaHeight,
                 child: FixedBottomButton(
-                  showGradient: false,
+                  showSurroundings: false,
                   isVisibleAboveKeyboard: false,
                   bottomPadding: buttonBottomSpacing,
                   subWidget: confirmSubWidget,
                   onButtonClicked: onConfirm,
                   isActive: isConfirmEnabled,
                   text: confirmText,
-                  backgroundColor: context.coconutColors.primaryButtonBackground,
-                  pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
-                  textColor: context.coconutColors.primaryButtonText,
                 ),
               ),
             ),
@@ -314,7 +311,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
       children: [
         for (final section in sections) ...[
           _SectionSummaryHeader(
-            showGradient: false,
+            showSurroundings: false,
             padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),
             utxoCount: section.utxos.length,
             leading: _buildHighlightedSegwitAddressText(
@@ -643,14 +640,14 @@ class _SectionSummaryHeader extends StatelessWidget {
   final Widget leading;
   final int utxoCount;
   final EdgeInsetsGeometry padding;
-  final bool showGradient;
+  final bool showSurroundings;
   final double countTopPadding;
 
   const _SectionSummaryHeader({
     required this.leading,
     required this.utxoCount,
     this.padding = const EdgeInsets.fromLTRB(0, 4, 12, 4),
-    this.showGradient = true,
+    this.showSurroundings = true,
     this.countTopPadding = 0,
   });
 
@@ -668,7 +665,7 @@ class _SectionSummaryHeader extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [showGradient ? backgroundColor.withValues(alpha: 0) : backgroundColor, backgroundColor],
+            colors: [showSurroundings ? backgroundColor.withValues(alpha: 0) : backgroundColor, backgroundColor],
           ),
         ),
         child: FixedTextScale(

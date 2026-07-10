@@ -307,10 +307,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                     child: Consumer<WalletHomeEditViewModel>(
                       builder: (context, viewModel, _) {
                         return FixedBottomButton(
-                          gradientKey: fixedBottomButtonKey,
-                          backgroundColor: context.coconutColors.primaryButtonBackground,
-                          pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
-                          textColor: context.coconutColors.primaryButtonText,
+                          surroundingsKey: fixedBottomButtonKey,
                           isActive: _shouldEnableCompleteButton(),
                           onButtonClicked: () async {
                             FocusScope.of(context).unfocus();

@@ -393,9 +393,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             FixedBottomButton(
               onButtonClicked: _handleClipboardImport,
               text: t.wallet_add_scanner_screen.paste.paste_button,
-              showGradient: false,
-              backgroundColor: context.coconutColors.primaryButtonBackground,
-              textColor: context.coconutColors.primaryButtonText,
+              showSurroundings: false,
             ),
         ],
       ),
@@ -683,8 +681,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           description: description,
           descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
           insetPadding: const EdgeInsets.symmetric(horizontal: 50),
-          leftButtonText: t.cancel,
-          leftButtonColor: context.coconutColors.primaryButtonBackground.withValues(alpha: 0.7),
           rightButtonText: t.confirm,
           rightButtonColor: context.coconutColors.primaryText,
           onTapRight: () {

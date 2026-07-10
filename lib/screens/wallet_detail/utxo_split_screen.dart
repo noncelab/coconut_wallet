@@ -594,9 +594,6 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                 }
               },
               isActive: isSplitValid && !isPreparingNextStep && finalErrorMessage.isEmpty && !showSkeletonResultBox,
-              backgroundColor: context.coconutColors.primaryButtonBackground,
-              pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
-              textColor: context.coconutColors.primaryButtonText,
             ),
           ),
         );
@@ -1245,7 +1242,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
       minChildSize: 0.49,
       maxChildSize: 0.9,
       backgroundColor: context.coconutColors.surfaceBottomSheet,
-      showGradient: false,
+      showSurroundings: false,
       itemBuilder: (context, item, isSelected, onTap) {
         return SelectableBottomSheetTextItem(
           isSelected: isSelected,
