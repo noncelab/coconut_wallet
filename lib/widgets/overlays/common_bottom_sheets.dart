@@ -393,7 +393,7 @@ class CommonBottomSheets {
     double? initialChildSize,
     Color? backgroundColor,
     TextStyle? titleTextStyle,
-    bool showGradient = true,
+    bool showSurroundings = true,
     bool allowConfirmWhenSelectionUnchanged = false,
     Widget Function(ScrollController scrollController)? childBuilder,
     bool adjustForKeyboardInset = true,
@@ -425,7 +425,7 @@ class CommonBottomSheets {
               initiallySelectedId: initiallySelectedId,
               confirmText: confirmText ?? t.select,
               backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
-              showGradient: showGradient,
+              showSurroundings: showSurroundings,
               allowConfirmWhenSelectionUnchanged: allowConfirmWhenSelectionUnchanged,
             );
           },
@@ -564,7 +564,7 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
   final Object? initiallySelectedId;
   final String confirmText;
   final Color backgroundColor;
-  final bool showGradient;
+  final bool showSurroundings;
   final bool showConfirmButton;
   final bool allowConfirmWhenSelectionUnchanged;
   final ValueChanged<T?>? onSelectionChanged;
@@ -578,7 +578,7 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
     this.initiallySelectedId,
     required this.confirmText,
     required this.backgroundColor,
-    this.showGradient = true,
+    this.showSurroundings = true,
     this.showConfirmButton = true,
     this.allowConfirmWhenSelectionUnchanged = false,
     this.onSelectionChanged,
@@ -665,7 +665,7 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                   child: SizedBox(
                     height: buttonAreaHeight + 5,
                     child: FixedBottomButton(
-                      showGradient: widget.showGradient,
+                      showSurroundings: widget.showSurroundings,
                       isVisibleAboveKeyboard: false,
                       bottomPadding: 16,
                       onButtonClicked: () {
@@ -678,10 +678,7 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                       isActive:
                           _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
                       text: widget.confirmText,
-                      backgroundColor: context.coconutColors.primaryButtonBackground,
-                      pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
-                      gradientColor: Colors.transparent,
-                      textColor: context.coconutColors.primaryButtonText,
+                      surroundingsColor: Colors.transparent,
                     ),
                   ),
                 ),

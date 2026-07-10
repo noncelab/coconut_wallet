@@ -4,7 +4,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -99,70 +98,28 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                       ),
                     ),
                     CoconutLayout.spacing_200h,
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 16, right: 16),
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width,
-                          child: MediaQuery(
-                            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                            child: Row(
-                              children: [
-                                Flexible(
-                                  flex: 1,
-                                  child: SizedBox(
-                                    width: MediaQuery.sizeOf(context).width,
-                                    child: ShrinkAnimationButton(
-                                      defaultColor: context.coconutColors.primaryButtonBackground,
-                                      pressedColor: context.coconutColors.primaryButtonPressed,
-                                      onPressed: () => Navigator.pop(context),
-                                      borderRadius: CoconutStyles.radius_200,
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 14),
-                                        child: Text(
-                                          t.cancel,
-                                          textAlign: TextAlign.center,
-                                          style: CoconutTypography.body2_14_Bold.setColor(
-                                            context.coconutColors.primaryButtonText,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                CoconutLayout.spacing_200w,
-                                Flexible(
-                                  flex: 2,
-                                  child: SizedBox(
-                                    width: MediaQuery.sizeOf(context).width,
-                                    child: ShrinkAnimationButton(
-                                      defaultColor: context.coconutColors.primaryButtonBackground,
-                                      pressedColor: context.coconutColors.primaryButtonPressed,
-                                      onPressed: () {
-                                        if (onDateChanged != null) {
-                                          onDateChanged(temp);
-                                        }
-                                        Navigator.pop(context);
-                                      },
-                                      borderRadius: CoconutStyles.radius_200,
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 14),
-                                        child: Text(
-                                          t.confirm,
-                                          textAlign: TextAlign.center,
-                                          style: CoconutTypography.body2_14_Bold.setColor(
-                                            context.coconutColors.primaryButtonText,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, right: 16),
+                      child: Row(
+                        children: [
+                          Flexible(
+                            flex: 1,
+                            child: InlineActionButton(onPressed: () => Navigator.pop(context), text: t.cancel),
+                          ),
+                          CoconutLayout.spacing_200w,
+                          Flexible(
+                            flex: 2,
+                            child: InlineActionButton(
+                              onPressed: () {
+                                if (onDateChanged != null) {
+                                  onDateChanged(temp);
+                                }
+                                Navigator.pop(context);
+                              },
+                              text: t.confirm,
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                     CoconutLayout.spacing_200h,
@@ -348,8 +305,6 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
                   widget.onTransactionTypeSelected(_selectedAnalysisTransactionType);
                   Navigator.pop(context);
                 },
-                backgroundColor: context.coconutColors.primaryButtonBackground,
-                textColor: context.coconutColors.primaryButtonText,
                 isActive:
                     (() {
                       final selectedIndex =

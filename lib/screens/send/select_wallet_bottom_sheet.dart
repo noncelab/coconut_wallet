@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -85,54 +86,44 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
         isBottom: true,
       ),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            Expanded(
-              child: SingleChildScrollView(
-                controller: widget.scrollController,
-                child: Column(
-                  children: List.generate(_walletList.length, (index) {
-                    int walletId = _walletList[index].id;
-                    final wallet = _walletList[index];
-                    bool isChecked = _selectedWalletId == walletId;
-                    return WalletItemCard(
-                      walletItem: wallet,
-                      animatedBalanceData: AnimatedBalanceData(
-                        _walletBalanceMap[walletId] ?? 0,
-                        _walletBalanceMap[walletId] ?? 0,
-                      ),
-                      isLastItem: index == _walletList.length - 1,
-                      currentUnit: widget.currentUnit,
-                      backgroundColor: backgroundColor,
-                      rightWidget:
-                          isChecked
-                              ? SvgPicture.asset(
-                                'assets/svg/check.svg',
-                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                              )
-                              : Container(),
-                      onPressed: () => setState(() => _selectedWalletId = walletId),
-                    );
-                  }),
-                ),
+            SingleChildScrollView(
+              controller: widget.scrollController,
+              child: Column(
+                children: List.generate(_walletList.length, (index) {
+                  int walletId = _walletList[index].id;
+                  final wallet = _walletList[index];
+                  bool isChecked = _selectedWalletId == walletId;
+                  return WalletItemCard(
+                    walletItem: wallet,
+                    animatedBalanceData: AnimatedBalanceData(
+                      _walletBalanceMap[walletId] ?? 0,
+                      _walletBalanceMap[walletId] ?? 0,
+                    ),
+                    isLastItem: index == _walletList.length - 1,
+                    currentUnit: widget.currentUnit,
+                    backgroundColor: backgroundColor,
+                    rightWidget:
+                        isChecked
+                            ? SvgPicture.asset(
+                              'assets/svg/check.svg',
+                              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                            )
+                            : Container(),
+                    onPressed: () => setState(() => _selectedWalletId = walletId),
+                  );
+                }),
               ),
             ),
-            CoconutLayout.spacing_800h,
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16),
-              child: CoconutButton(
-                onPressed: () => widget.onWalletChanged(_selectedWalletId),
-                disabledBackgroundColor: context.coconutColors.surfaceDisabled,
-                disabledForegroundColor: context.coconutColors.tertiaryText,
-                isActive: _selectedWalletId != widget.walletId,
-                backgroundColor: context.coconutColors.primaryButtonBackground,
-                foregroundColor: context.coconutColors.primaryButtonText,
-                pressedBackgroundColor: context.coconutColors.primaryButtonPressed,
-                pressedTextColor: context.coconutColors.primaryButtonText,
-                text: t.select,
-              ),
+            FixedBottomButton(
+              onButtonClicked: () => widget.onWalletChanged(_selectedWalletId),
+              isActive: _selectedWalletId != widget.walletId,
+              isVisibleAboveKeyboard: false,
+              showSurroundings: true,
+              surroundingsColor: backgroundColor,
+              text: t.select,
             ),
-            CoconutLayout.spacing_800h,
           ],
         ),
       ),

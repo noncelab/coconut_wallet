@@ -79,11 +79,9 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
         // if (_memoFocusNode.hasFocus && MediaQuery.of(context).viewInsets.bottom > 0)
         //   Positioned(bottom: Sizes.size16, child: _buildMemoTags()),
         FixedBottomButton(
-          showGradient: false,
+          showSurroundings: false,
           isVisibleAboveKeyboard: false,
           onButtonClicked: () => onTapConfirmButton(context),
-          backgroundColor: context.coconutColors.primary,
-          textColor: context.coconutColors.primaryButtonText,
           text: t.confirm,
         ),
       ],

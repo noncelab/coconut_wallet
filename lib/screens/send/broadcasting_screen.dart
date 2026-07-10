@@ -177,6 +177,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                           },
                           leftText: t.transaction_draft.save,
                           rightText: t.broadcasting_screen.btn_submit,
+                          rightButtonBackgroundColor: context.coconutColors.primary,
                         ),
                       } else ...{
                         FixedBottomButton(
@@ -185,6 +186,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                             _onBroadcastButtonClicked(viewModel);
                           },
                           text: t.broadcasting_screen.btn_submit,
+                          backgroundColor: context.coconutColors.primary,
                         ),
                       },
                     ],

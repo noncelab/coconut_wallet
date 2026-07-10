@@ -76,11 +76,11 @@ class NegativeFeedbackScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: context.coconutColors.primaryButtonBackground,
+                        color: context.coconutColors.actionButtonBackground,
                       ),
                       child: Text(
                         t.negative_feedback_screen.text4,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryButtonText),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.actionButtonText),
                         textAlign: TextAlign.center,
                       ),
                     ),

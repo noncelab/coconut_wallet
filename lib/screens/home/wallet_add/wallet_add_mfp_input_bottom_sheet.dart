@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -225,20 +226,15 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                         ],
                         Expanded(
                           flex: 6,
-                          child: CoconutButton(
+                          child: InlineActionButton(
                             onPressed: () {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 FocusScope.of(context).unfocus();
                               });
                               widget.onComplete(_mfpController.text);
                             },
-                            height: Platform.isAndroid ? 55 : 58,
-                            disabledBackgroundColor: context.coconutColors.surfaceDisabled,
-                            disabledForegroundColor: context.coconutColors.tertiaryText,
+                            buttonHeight: Platform.isAndroid ? 55 : 58,
                             isActive: _isButtonEnabled,
-                            backgroundColor: context.coconutColors.primaryButtonBackground,
-                            foregroundColor: context.coconutColors.primaryButtonText,
-                            pressedTextColor: context.coconutColors.primaryButtonText,
                             text: t.done,
                           ),
                         ),

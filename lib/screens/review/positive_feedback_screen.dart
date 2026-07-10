@@ -86,12 +86,12 @@ class PositiveFeedbackScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: colors.primaryButtonBackground,
+                        color: colors.actionButtonBackground,
                       ),
                       child: Text(
                         t.positive_feedback_screen.text4,
                         style: typography.caption.copyWith(
-                          color: colors.primaryButtonText,
+                          color: colors.actionButtonText,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),

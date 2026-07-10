@@ -119,21 +119,30 @@ class CoconutColors {
   final Color inputPlaceholder;
   final Color inputBorder;
   final Color primary;
-  final Color primaryText;
-  final Color primaryButtonBackground;
-  final Color primaryButtonPressed;
   final Color primaryButtonText;
-  final Color secondaryText;
-  final Color secondaryTextStrong;
+
+  /// FixedBottomButton
+  final Color actionButtonBackground;
+  final Color actionButtonText;
+  final Color actionButtonDisabled;
+  final Color actionButtonDisabledText;
+  final Color actionButtonPressed;
+
+  /// FixedBottomTweenButton에서 왼쪽 버튼
   final Color secondaryButtonBackground;
   final Color secondaryButtonText;
+
+  final Color primaryText;
+  final Color secondaryText;
+  final Color secondaryTextStrong;
+  final Color tertiaryText;
+  final Color mutedText;
+
   final Color segmentedControlSelected;
   final Color segmentedControlBackground;
   final Color segmentedControlSelectedText;
   final Color segmentedControlUnselectedText;
-  final Color tertiaryText;
   final Color tooltipBackground;
-  final Color mutedText;
   final Color textFilterChip;
   final Color textFilterChipSelected;
   final Color textHighlight;
@@ -145,6 +154,7 @@ class CoconutColors {
   final Color iconSubDefault;
   final Color iconHighlight;
   final Color iconDisabled;
+  final Color iconOnDanger;
   final Color warning;
   final Color danger;
   final Color success;
@@ -262,21 +272,24 @@ class CoconutColors {
     required this.inputPlaceholder,
     required this.inputBorder,
     required this.primary,
-    required this.primaryText,
-    required this.primaryButtonBackground,
-    required this.primaryButtonPressed,
     required this.primaryButtonText,
-    required this.secondaryText,
-    required this.secondaryTextStrong,
+    required this.actionButtonBackground,
+    required this.actionButtonText,
+    required this.actionButtonDisabled,
+    required this.actionButtonDisabledText,
+    required this.actionButtonPressed,
     required this.secondaryButtonBackground,
     required this.secondaryButtonText,
+    required this.primaryText,
+    required this.secondaryText,
+    required this.secondaryTextStrong,
+    required this.tertiaryText,
+    required this.mutedText,
     required this.segmentedControlSelected,
     required this.segmentedControlBackground,
     required this.segmentedControlSelectedText,
     required this.segmentedControlUnselectedText,
-    required this.tertiaryText,
     required this.tooltipBackground,
-    required this.mutedText,
     required this.textFilterChip,
     required this.textFilterChipSelected,
     required this.textHighlight,
@@ -288,6 +301,7 @@ class CoconutColors {
     required this.iconSubDefault,
     required this.iconHighlight,
     required this.iconDisabled,
+    required this.iconOnDanger,
     required this.warning,
     required this.danger,
     required this.success,
@@ -391,20 +405,27 @@ class CoconutColors {
       inputBorder: ds.CoconutColors.gray600,
       primary: ds.CoconutColors.primary,
       primaryButtonText: ds.CoconutColors.black,
-      primaryButtonBackground: ds.CoconutColors.white,
-      primaryButtonPressed: ds.CoconutColors.gray300,
+
+      actionButtonBackground: ds.CoconutColors.white,
+      actionButtonText: ds.CoconutColors.black,
+      actionButtonDisabled: ds.CoconutColors.gray800,
+      actionButtonDisabledText: ds.CoconutColors.gray900,
+      actionButtonPressed: ds.CoconutColors.white.withValues(alpha: 0.5),
+
+      secondaryButtonBackground: ds.CoconutColors.gray350,
+      secondaryButtonText: ds.CoconutColors.black,
+
       primaryText: ds.CoconutColors.white,
       secondaryText: ds.CoconutColors.gray400,
       secondaryTextStrong: ds.CoconutColors.gray300,
-      secondaryButtonBackground: ds.CoconutColors.gray350,
-      secondaryButtonText: ds.CoconutColors.black,
+      tertiaryText: ds.CoconutColors.gray600,
+      mutedText: ds.CoconutColors.gray500,
+
       segmentedControlSelected: ds.CoconutColors.gray900,
       segmentedControlBackground: ds.CoconutColors.gray800,
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray500,
-      tertiaryText: ds.CoconutColors.gray600,
       tooltipBackground: ds.CoconutColors.gray850,
-      mutedText: ds.CoconutColors.gray500,
       textFilterChip: ds.CoconutColors.white,
       textFilterChipSelected: ds.CoconutColors.gray800,
       textHighlight: ds.CoconutColors.primary,
@@ -416,6 +437,7 @@ class CoconutColors {
       iconSubDefault: ds.CoconutColors.gray400,
       iconHighlight: ds.CoconutColors.gray850,
       iconDisabled: ds.CoconutColors.gray600,
+      iconOnDanger: ds.CoconutColors.white,
       warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
@@ -518,22 +540,30 @@ class CoconutColors {
       inputSurface: const Color(0xFFF1F2F5),
       inputPlaceholder: ds.CoconutColors.gray400,
       inputBorder: ds.CoconutColors.gray350,
-      primary: ds.CoconutColors.black,
+
+      primary: ds.CoconutColors.purple,
       primaryButtonText: ds.CoconutColors.white,
-      primaryButtonBackground: ds.CoconutColors.black,
-      primaryButtonPressed: ds.CoconutColors.gray800,
+
+      actionButtonBackground: ds.CoconutColors.black,
+      actionButtonText: ds.CoconutColors.white,
+      actionButtonDisabled: ds.CoconutColors.gray150,
+      actionButtonDisabledText: ds.CoconutColors.gray350,
+      actionButtonPressed: ds.CoconutColors.black.withValues(alpha: 0.5),
+
+      secondaryButtonBackground: ds.CoconutColors.gray200,
+      secondaryButtonText: ds.CoconutColors.black,
+
       primaryText: ds.CoconutColors.black,
       secondaryText: ds.CoconutColors.gray700,
       secondaryTextStrong: ds.CoconutColors.gray800,
-      secondaryButtonBackground: ds.CoconutColors.gray200,
-      secondaryButtonText: ds.CoconutColors.black,
+      tertiaryText: ds.CoconutColors.gray600,
+      mutedText: ds.CoconutColors.gray500,
+
       segmentedControlSelected: ds.CoconutColors.gray800,
       segmentedControlBackground: ds.CoconutColors.gray150,
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray400,
-      tertiaryText: ds.CoconutColors.gray600,
       tooltipBackground: ds.CoconutColors.gray150,
-      mutedText: ds.CoconutColors.gray500,
       textFilterChip: ds.CoconutColors.gray900,
       textFilterChipSelected: ds.CoconutColors.white,
       textHighlight: ds.CoconutColors.purple,
@@ -545,6 +575,7 @@ class CoconutColors {
       iconSubDefault: ds.CoconutColors.gray600,
       iconHighlight: ds.CoconutColors.gray600,
       iconDisabled: ds.CoconutColors.gray350,
+      iconOnDanger: ds.CoconutColors.white,
       warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
@@ -572,7 +603,7 @@ class CoconutColors {
       dimOverlay: const Color(0xFFEEEEEE),
       pageIndicatorActive: ds.CoconutColors.gray700,
       pageIndicatorInactive: ds.CoconutColors.gray300,
-      sendingColor: const Color.fromARGB(255, 128, 148, 50),
+      sendingColor: ds.CoconutColors.purple,
       receivingColor: const Color.fromARGB(255, 50, 148, 173),
       bottomActionBarBackground: ds.CoconutColors.white,
       bottomSheetKeyboardToolbar: ds.CoconutColors.gray150,

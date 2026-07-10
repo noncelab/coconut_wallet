@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -796,50 +797,22 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                 children: [
                   Flexible(
                     flex: 1,
-                    child: SizedBox(
-                      width: MediaQuery.sizeOf(context).width,
-                      child: ShrinkAnimationButton(
-                        isActive: nodeConnectionStatus != NodeConnectionStatus.connecting && isDifferentFromInitial,
-                        defaultColor: context.coconutColors.primaryButtonBackground,
-                        pressedColor: context.coconutColors.primaryButtonPressed,
-                        disabledColor: context.coconutColors.surfaceDisabled,
-                        onPressed: _onReset,
-                        borderRadius: CoconutStyles.radius_200,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          child: Text(
-                            t.settings_screen.electrum_server.reset,
-                            textAlign: TextAlign.center,
-                            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryButtonText),
-                          ),
-                        ),
-                      ),
+                    child: InlineActionButton(
+                      isActive: nodeConnectionStatus != NodeConnectionStatus.connecting && isDifferentFromInitial,
+                      onPressed: _onReset,
+                      text: t.settings_screen.electrum_server.reset,
                     ),
                   ),
                   CoconutLayout.spacing_200w,
                   Flexible(
                     flex: 2,
-                    child: SizedBox(
-                      width: MediaQuery.sizeOf(context).width,
-                      child: ShrinkAnimationButton(
-                        isActive: hasActualChanges && nodeConnectionStatus != NodeConnectionStatus.connecting,
-                        defaultColor: context.coconutColors.primaryButtonBackground,
-                        pressedColor: context.coconutColors.primaryButtonPressed,
-                        disabledColor: context.coconutColors.surfaceDisabled,
-                        onPressed: () {
-                          _unFocus();
-                          _onSave();
-                        },
-                        borderRadius: CoconutStyles.radius_200,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          child: Text(
-                            t.settings_screen.electrum_server.save,
-                            textAlign: TextAlign.center,
-                            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryButtonText),
-                          ),
-                        ),
-                      ),
+                    child: InlineActionButton(
+                      isActive: hasActualChanges && nodeConnectionStatus != NodeConnectionStatus.connecting,
+                      onPressed: () {
+                        _unFocus();
+                        _onSave();
+                      },
+                      text: t.settings_screen.electrum_server.save,
                     ),
                   ),
                 ],
