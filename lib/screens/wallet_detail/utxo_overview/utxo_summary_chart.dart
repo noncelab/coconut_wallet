@@ -124,7 +124,7 @@ class UtxoSummaryChart extends StatelessWidget {
                               'assets/svg/triangle-warning.svg',
                               width: 10,
                               height: 10,
-                              colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
+                              colorFilter: ColorFilter.mode(colors.iconOnDanger, BlendMode.srcIn),
                             ),
                           ),
                           const SizedBox(width: 8),

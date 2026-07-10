@@ -154,6 +154,7 @@ class CoconutColors {
   final Color iconSubDefault;
   final Color iconHighlight;
   final Color iconDisabled;
+  final Color iconOnDanger;
   final Color warning;
   final Color danger;
   final Color success;
@@ -300,6 +301,7 @@ class CoconutColors {
     required this.iconSubDefault,
     required this.iconHighlight,
     required this.iconDisabled,
+    required this.iconOnDanger,
     required this.warning,
     required this.danger,
     required this.success,
@@ -435,6 +437,7 @@ class CoconutColors {
       iconSubDefault: ds.CoconutColors.gray400,
       iconHighlight: ds.CoconutColors.gray850,
       iconDisabled: ds.CoconutColors.gray600,
+      iconOnDanger: ds.CoconutColors.white,
       warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
@@ -572,6 +575,7 @@ class CoconutColors {
       iconSubDefault: ds.CoconutColors.gray600,
       iconHighlight: ds.CoconutColors.gray600,
       iconDisabled: ds.CoconutColors.gray350,
+      iconOnDanger: ds.CoconutColors.white,
       warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
