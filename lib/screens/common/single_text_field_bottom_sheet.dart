@@ -31,6 +31,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     this.fieldBackgroundColor,
     this.errorColor,
     this.placeholderColor,
+    this.inputBorderColor,
     this.activeColor,
     this.cursorColor,
     this.unfocusOnTapOutside = true,
@@ -63,6 +64,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
   final Color? fieldBackgroundColor;
   final Color? errorColor;
   final Color? placeholderColor;
+  final Color? inputBorderColor;
   final Color? activeColor;
   final Color? cursorColor;
 
@@ -110,6 +112,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     Color? fieldBackgroundColor,
     Color? errorColor,
     Color? placeholderColor,
+    Color? inputBorderColor,
     Color? activeColor,
     Color? cursorColor,
     bool unfocusOnTapOutside = true,
@@ -141,6 +144,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
         fieldBackgroundColor: fieldBackgroundColor,
         errorColor: errorColor,
         placeholderColor: placeholderColor,
+        inputBorderColor: inputBorderColor,
         activeColor: activeColor,
         cursorColor: cursorColor,
         unfocusOnTapOutside: unfocusOnTapOutside,
@@ -170,6 +174,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     Color? fieldBackgroundColor,
     Color? errorColor,
     Color? placeholderColor,
+    Color? inputBorderColor,
     Color? activeColor,
     Color? cursorColor,
     bool unfocusOnTapOutside = true,
@@ -199,6 +204,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
         fieldBackgroundColor: fieldBackgroundColor,
         errorColor: errorColor,
         placeholderColor: placeholderColor,
+        inputBorderColor: inputBorderColor,
         activeColor: activeColor,
         cursorColor: cursorColor,
         unfocusOnTapOutside: unfocusOnTapOutside,
@@ -314,6 +320,7 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
       backgroundColor: widget.fieldBackgroundColor,
       errorColor: widget.errorColor,
       placeholderColor: widget.placeholderColor,
+      borderColor: widget.inputBorderColor,
       activeColor: widget.activeColor,
       cursorColor: widget.cursorColor,
       prefix: widget.prefix,

@@ -594,6 +594,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                   backgroundColor: context.coconutColors.background,
                   errorColor: context.coconutColors.danger,
                   placeholderColor: context.coconutColors.tertiaryText,
+                  borderColor: context.coconutColors.inputBorder,
                   activeColor: context.coconutColors.primaryText,
                   cursorColor: context.coconutColors.primaryText,
                   maxLength: viewModel.maxInputLength,

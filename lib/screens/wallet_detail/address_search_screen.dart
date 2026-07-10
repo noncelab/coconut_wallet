@@ -219,6 +219,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                       activeColor: context.coconutColors.primaryText,
                       cursorColor: context.coconutColors.primaryText,
                       placeholderColor: context.coconutColors.inputPlaceholder,
+                      borderColor: context.coconutColors.inputBorder,
                       backgroundColor: context.coconutColors.inputSurface,
                     ),
                   ),

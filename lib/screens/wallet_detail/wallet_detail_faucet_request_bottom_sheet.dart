@@ -184,6 +184,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                         activeColor: context.coconutColors.primaryText,
                         cursorColor: context.coconutColors.primaryText,
                         placeholderColor: context.coconutColors.inputPlaceholder,
+                        borderColor: context.coconutColors.inputBorder,
                         errorColor: context.coconutColors.danger,
                         fontSize: 16,
                         fontFamily: 'SpaceGrotesk',

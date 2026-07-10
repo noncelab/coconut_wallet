@@ -528,6 +528,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
                     textInputType: TextInputType.text,
                     backgroundColor: context.coconutColors.background,
+                    borderColor: context.coconutColors.inputBorder,
                     maxLines: 1,
                     suffix:
                         _serverAddressController.text.isNotEmpty
@@ -611,6 +612,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                     textInputType: TextInputType.number,
                     backgroundColor: context.coconutColors.background,
+                    borderColor: context.coconutColors.inputBorder,
                     suffix:
                         _portController.text.isNotEmpty
                             ? IconButton(

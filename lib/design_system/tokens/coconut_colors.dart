@@ -117,6 +117,7 @@ class CoconutColors {
 
   final Color inputSurface;
   final Color inputPlaceholder;
+  final Color inputBorder;
   final Color primary;
   final Color primaryText;
   final Color primaryButtonBackground;
@@ -259,6 +260,7 @@ class CoconutColors {
     required this.surfacePressed,
     required this.inputSurface,
     required this.inputPlaceholder,
+    required this.inputBorder,
     required this.primary,
     required this.primaryText,
     required this.primaryButtonBackground,
@@ -386,6 +388,7 @@ class CoconutColors {
 
       inputSurface: ds.CoconutColors.gray800,
       inputPlaceholder: ds.CoconutColors.gray700,
+      inputBorder: ds.CoconutColors.gray600,
       primary: ds.CoconutColors.primary,
       primaryButtonText: ds.CoconutColors.black,
       primaryButtonBackground: ds.CoconutColors.white,
@@ -443,11 +446,11 @@ class CoconutColors {
       sendingColor: ds.CoconutColors.primary,
       receivingColor: ds.CoconutColors.cyanBlue,
       bottomActionBarBackground: ds.CoconutColors.gray900,
-      bottomSheetKeyboardToolbar: Color(0xFF2E2E2E),
+      bottomSheetKeyboardToolbar: const Color(0xFF2E2E2E),
       bottomSheetExtensionFieldBackground: ds.CoconutColors.black,
       loadingIndicatorColor: ds.CoconutColors.white,
-      loadingOverlay: Color.fromRGBO(0, 0, 0, 0.2),
-      glossaryKeywordBackground: Color(0xFFA6E1E7),
+      loadingOverlay: const Color.fromRGBO(0, 0, 0, 0.2),
+      glossaryKeywordBackground: const Color(0xFFA6E1E7),
       glossaryKeywordText: ds.CoconutColors.black,
       divider: ds.CoconutColors.gray800,
       txFlowLine: ds.CoconutColors.gray600,
@@ -463,7 +466,7 @@ class CoconutColors {
       nodeFailed: ds.CoconutColors.red,
       popoverBackground: ds.CoconutColors.white,
       popoverText: ds.CoconutColors.gray900,
-      faucetPopoverBackground: Color.fromRGBO(179, 240, 255, 1),
+      faucetPopoverBackground: const Color.fromRGBO(179, 240, 255, 1),
       faucetPopoverText: ds.CoconutColors.gray900,
       bottomSheetHandle: ds.CoconutColors.gray600,
       qrScannerOverlay: ds.CoconutColors.gray350,
@@ -514,6 +517,7 @@ class CoconutColors {
 
       inputSurface: const Color(0xFFF1F2F5),
       inputPlaceholder: ds.CoconutColors.gray400,
+      inputBorder: ds.CoconutColors.gray350,
       primary: ds.CoconutColors.black,
       primaryButtonText: ds.CoconutColors.white,
       primaryButtonBackground: ds.CoconutColors.black,

@@ -584,6 +584,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                 controller: controller,
                 focusNode: focusNode,
                 backgroundColor: context.coconutColors.background,
+                borderColor: context.coconutColors.inputBorder,
                 height: 52,
                 padding: const EdgeInsets.only(left: 16, right: 0),
                 onChanged: onChanged,
@@ -715,6 +716,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                       placeholderText: '',
                       backgroundColor: context.coconutColors.surfaceBottomSheet,
                       placeholderColor: context.coconutColors.inputPlaceholder,
+                      borderColor: context.coconutColors.inputBorder,
                       cursorColor: context.coconutColors.primaryText,
                       suffix: Text(
                         t.btc,

@@ -418,6 +418,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       fieldBackgroundColor: context.coconutColors.inputSurface,
       errorColor: context.coconutColors.danger,
       placeholderColor: context.coconutColors.inputPlaceholder,
+      inputBorderColor: context.coconutColors.inputBorder,
       activeColor: context.coconutColors.primaryText,
       cursorColor: context.coconutColors.primaryText,
       suffix: Text(

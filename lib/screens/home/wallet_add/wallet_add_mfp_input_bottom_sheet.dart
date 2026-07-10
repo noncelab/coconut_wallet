@@ -164,6 +164,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       cursorColor: context.coconutColors.primaryText,
                       activeColor: context.coconutColors.primaryText,
                       placeholderColor: context.coconutColors.inputPlaceholder,
+                      borderColor: context.coconutColors.inputBorder,
                       controller: _mfpController,
                       focusNode: _mfpFocusNode,
                       maxLines: 1,

@@ -185,6 +185,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
                         focusNode: _customExplorerFocusNode,
                         onChanged: (value) {},
                         placeholderText: t.settings_screen.block_explorer.custom_explorer_input_placeholder,
+                        borderColor: context.coconutColors.inputBorder,
                         suffix:
                             _customExplorerController.text.isNotEmpty
                                 ? IconButton(

@@ -524,6 +524,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                     errorColor: context.coconutColors.danger,
                     activeColor: context.coconutColors.primaryText,
                     backgroundColor: context.coconutColors.inputSurface.withValues(alpha: 0.15),
+                    borderColor: context.coconutColors.inputBorder,
                     prefix: null,
                     fontFamily: 'SpaceGrotesk',
                     maxLines: 1,

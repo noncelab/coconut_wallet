@@ -209,6 +209,7 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
                       fontFamily: 'SpaceGrotesk',
                       fontSize: 14,
                       activeColor: context.coconutColors.primaryText,
+                      borderColor: context.coconutColors.inputBorder,
                       fontWeight: FontWeight.bold,
                       borderRadius: 8,
                       suffix: Container(

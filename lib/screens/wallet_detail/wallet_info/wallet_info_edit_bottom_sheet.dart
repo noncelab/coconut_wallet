@@ -284,6 +284,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                         cursorColor: context.coconutColors.primaryText,
                         activeColor: context.coconutColors.primaryText,
                         placeholderColor: context.coconutColors.inputPlaceholder,
+                        borderColor: context.coconutColors.inputBorder,
                         maxLength: 20,
                         errorText:
                             _isFirst

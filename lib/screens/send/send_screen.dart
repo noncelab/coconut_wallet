@@ -1110,6 +1110,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                     child: CoconutTextField(
                       placeholderColor: context.coconutColors.border,
+                      borderColor: context.coconutColors.inputBorder,
                       textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
                       textInputFormatter: const [RateInputFormatter()],
                       enableInteractiveSelection: false,
@@ -1542,6 +1543,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     focusNode: _addressFocusNodeList[index],
                     backgroundColor: context.coconutColors.background,
                     placeholderColor: context.coconutColors.border,
+                    borderColor: context.coconutColors.inputBorder,
                     height: 52,
                     padding: const EdgeInsets.only(left: 16, right: 0),
                     onChanged: (text) {},
