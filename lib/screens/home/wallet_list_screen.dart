@@ -784,9 +784,10 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                   rightElement: CoconutSwitch(
                     isOn: viewModel.isWalletListFiatHidden,
                     scale: 0.7,
-                    activeColor: context.coconutColors.switchActiveTrack,
-                    trackColor: context.coconutColors.switchInactiveTrack,
-                    thumbColor: context.coconutColors.switchThumb,
+                    activeTrackColor: context.coconutColors.switchActiveTrack,
+                    activeThumbColor: context.coconutColors.switchActiveThumb,
+                    inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+                    inactiveThumbColor: context.coconutColors.switchInactiveThumb,
                     onChanged: (value) {
                       viewModel.setWalletListFiatHidden(value);
                       vibrateExtraLight();

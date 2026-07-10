@@ -144,9 +144,10 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
                 _clearFocus();
               }
             },
-            activeColor: context.coconutColors.switchActiveTrack,
-            trackColor: context.coconutColors.switchInactiveTrack,
-            thumbColor: context.coconutColors.switchThumb,
+            activeTrackColor: context.coconutColors.switchActiveTrack,
+            activeThumbColor: context.coconutColors.switchActiveThumb,
+            inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+            inactiveThumbColor: context.coconutColors.switchInactiveThumb,
           ),
         ],
       ),

@@ -975,9 +975,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             child: CoconutSwitch(
               scale: 0.7,
               isOn: viewModel.isUtxoSelectionAuto,
-              activeColor: context.coconutColors.switchActiveTrack,
-              trackColor: context.coconutColors.switchInactiveTrack,
-              thumbColor: context.coconutColors.switchThumb,
+              activeTrackColor: context.coconutColors.switchActiveTrack,
+              activeThumbColor: context.coconutColors.switchActiveThumb,
+              inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+              inactiveThumbColor: context.coconutColors.switchInactiveThumb,
               onChanged: (_) {
                 viewModel.toggleUtxoSelectionAuto();
               },

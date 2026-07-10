@@ -218,9 +218,10 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                       rightElement: CoconutSwitch(
                                         isOn: viewModel.tempIsBalanceHidden,
                                         scale: 0.7,
-                                        activeColor: context.coconutColors.switchActiveTrack,
-                                        trackColor: context.coconutColors.switchInactiveTrack,
-                                        thumbColor: context.coconutColors.switchThumb,
+                                        activeTrackColor: context.coconutColors.switchActiveTrack,
+                                        activeThumbColor: context.coconutColors.switchActiveThumb,
+                                        inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+                                        inactiveThumbColor: context.coconutColors.switchInactiveThumb,
                                         onChanged: (value) {
                                           viewModel.setTempIsBalanceHidden(value);
                                         },
@@ -246,9 +247,10 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                       rightElement: CoconutSwitch(
                                         isOn: viewModel.tempIsFakeBalanceActive,
                                         scale: 0.7,
-                                        activeColor: context.coconutColors.switchActiveTrack,
-                                        trackColor: context.coconutColors.switchInactiveTrack,
-                                        thumbColor: context.coconutColors.switchThumb,
+                                        activeTrackColor: context.coconutColors.switchActiveTrack,
+                                        activeThumbColor: context.coconutColors.switchActiveThumb,
+                                        inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+                                        inactiveThumbColor: context.coconutColors.switchInactiveThumb,
                                         onChanged: (value) {
                                           viewModel.setTempFakeBalanceActive(value);
                                         },
@@ -274,9 +276,10 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                       rightElement: CoconutSwitch(
                                         isOn: viewModel.tempIsFiatBalanceHidden,
                                         scale: 0.7,
-                                        activeColor: context.coconutColors.switchActiveTrack,
-                                        trackColor: context.coconutColors.switchInactiveTrack,
-                                        thumbColor: context.coconutColors.switchThumb,
+                                        activeTrackColor: context.coconutColors.switchActiveTrack,
+                                        activeThumbColor: context.coconutColors.switchActiveThumb,
+                                        inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+                                        inactiveThumbColor: context.coconutColors.switchInactiveThumb,
                                         onChanged: (value) {
                                           viewModel.setTempIsFiatBalanceHidden(value);
                                         },
