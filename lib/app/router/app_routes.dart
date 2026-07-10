@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/screens/home/wallet_add/air-gapped/airgap_wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
 import 'package:coconut_wallet/screens/settings/home_settings/wallet_home_edit_screen.dart';
@@ -151,6 +152,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           (args) => TransactionDraftScreen(isSignedTabActive: args['isSignedTabActive']),
         ),
     '/wallet-home-edit': (context) => const WalletHomeEditScreen(),
+    '/trezor-connect': (context) => const TrezorConnectScreen(),
     '/bitbox02-connect':
         (context) => _buildScreenWithArgs(
           context,

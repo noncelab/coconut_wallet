@@ -280,6 +280,7 @@ wallet_add_scanner_screen:
   krux: "Krux"
   bitbox02: "BitBox02"
   passport: "Passport"
+  trezor: "Trezor"
   self: "Ingresar datos de wallet"
   self_description: "Agrega una wallet watch-only desde otra app."
   select: "Seleccionar"
@@ -1203,7 +1204,8 @@ third_party:
   cold_card: "Coldcard"
   krux: "Krux"
   passport: "Passport"
-  bitbox02: "bitbox02"
+  trezor: "Trezor"
+  bitbox02: "Bitbox02"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"

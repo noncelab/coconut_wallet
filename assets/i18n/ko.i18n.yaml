@@ -278,6 +278,7 @@ wallet_add_scanner_screen:
   cold_card: "콜드카드"
   krux: "크럭스"
   passport: "패스포트"
+  trezor: "트레저"
   bitbox02: "비트박스02"
   self: "직접 입력"
   self_description: "다른 앱에서 생성한 정보로 지갑을 추가할 수 있어요"
@@ -1207,6 +1208,7 @@ third_party:
   cold_card: "콜드카드"
   krux: "크럭스"
   passport: "패스포트"
+  trezor: "트레저"
   bitbox02: "비트박스"
   extended_public_keys:
     zpub: "zpub"

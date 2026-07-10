@@ -278,6 +278,7 @@ wallet_add_scanner_screen:
   cold_card: "Coldcard"
   krux: "Krux"
   passport: "Passport"
+  trezor: "Trezor"
   bitbox02: "bitbox02"
   self: "Wallet-Info eingeben"
   self_description: "Fügen Sie eine Watch-Only-Wallet mit Informationen aus einer anderen App hinzu."
@@ -1160,6 +1161,7 @@ third_party:
   cold_card: "Coldcard"
   krux: "Krux"
   passport: "Passport"
+  trezor: "Trezor"
   bitbox02: "Bitbox"
   extended_public_keys:
     zpub: "zpub"

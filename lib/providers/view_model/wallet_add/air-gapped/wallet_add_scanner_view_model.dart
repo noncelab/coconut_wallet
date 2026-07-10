@@ -56,8 +56,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         _qrDataHandler = ComposedScanDataHandler2();
         break;
       case WalletImportSource.bitbox02:
-        _qrDataHandler = ComposedScanDataHandler2();
-        break;
+      case WalletImportSource.trezor:
+        throw UnsupportedError('${_walletImportSource.displayName} does not support QR wallet import');
     }
   }
 
