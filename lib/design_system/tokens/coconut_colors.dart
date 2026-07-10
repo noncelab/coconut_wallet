@@ -190,7 +190,8 @@ class CoconutColors {
   final Color feeBumpingHistoryLine;
   final Color switchActiveTrack;
   final Color switchInactiveTrack;
-  final Color switchThumb;
+  final Color switchActiveThumb;
+  final Color switchInactiveThumb;
   final Color switchTrackDisabled;
   final Color switchThumbDisabled;
   final Color linkText;
@@ -326,7 +327,8 @@ class CoconutColors {
     required this.feeBumpingHistoryLine,
     required this.switchActiveTrack,
     required this.switchInactiveTrack,
-    required this.switchThumb,
+    required this.switchActiveThumb,
+    required this.switchInactiveThumb,
     required this.switchTrackDisabled,
     required this.switchThumbDisabled,
     required this.linkText,
@@ -451,8 +453,9 @@ class CoconutColors {
       txFlowLine: ds.CoconutColors.gray600,
       feeBumpingHistoryLine: ds.CoconutColors.gray700,
       switchActiveTrack: ds.CoconutColors.gray100,
-      switchInactiveTrack: ds.CoconutColors.gray600,
-      switchThumb: ds.CoconutColors.gray800,
+      switchInactiveTrack: ds.CoconutColors.gray800,
+      switchActiveThumb: ds.CoconutColors.black,
+      switchInactiveThumb: ds.CoconutColors.gray600,
       switchTrackDisabled: ds.CoconutColors.gray700,
       switchThumbDisabled: ds.CoconutColors.gray600,
       linkText: ds.CoconutColors.sky,
@@ -577,9 +580,10 @@ class CoconutColors {
       divider: ds.CoconutColors.gray200,
       txFlowLine: ds.CoconutColors.gray350,
       feeBumpingHistoryLine: ds.CoconutColors.gray300,
-      switchActiveTrack: ds.CoconutColors.purple,
+      switchActiveTrack: ds.CoconutColors.black,
       switchInactiveTrack: ds.CoconutColors.gray300,
-      switchThumb: ds.CoconutColors.white,
+      switchActiveThumb: ds.CoconutColors.white,
+      switchInactiveThumb: ds.CoconutColors.gray200,
       switchTrackDisabled: ds.CoconutColors.gray200,
       switchThumbDisabled: ds.CoconutColors.gray350,
       linkText: ds.CoconutColors.sky,

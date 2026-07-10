@@ -115,9 +115,10 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
           maintainState: true,
           child: CoconutSwitch(
             isOn: value,
-            activeColor: context.coconutColors.switchActiveTrack,
-            thumbColor: context.coconutColors.switchThumb,
-            trackColor: context.coconutColors.switchInactiveTrack,
+            activeTrackColor: context.coconutColors.switchActiveTrack,
+            activeThumbColor: context.coconutColors.switchActiveThumb,
+            inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+            inactiveThumbColor: context.coconutColors.switchInactiveThumb,
             scale: 0.8,
             onChanged: (bool newValue) {
               vibrateExtraLight();

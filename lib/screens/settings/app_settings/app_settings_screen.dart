@@ -310,9 +310,10 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: CoconutSwitch(
         isOn: isOn,
-        activeColor: context.coconutColors.switchActiveTrack,
-        trackColor: context.coconutColors.switchInactiveTrack,
-        thumbColor: context.coconutColors.switchThumb,
+        activeTrackColor: context.coconutColors.switchActiveTrack,
+        activeThumbColor: context.coconutColors.switchActiveThumb,
+        inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+        inactiveThumbColor: context.coconutColors.switchInactiveThumb,
         onChanged: onChanged,
         scale: 0.75,
       ),

@@ -670,16 +670,22 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       _onServerInputChanged();
                     }
                   },
-                  activeColor:
+                  activeTrackColor:
                       isNodeConnecting
                           ? context.coconutColors.switchTrackDisabled
                           : context.coconutColors.switchActiveTrack,
-                  trackColor:
+                  inactiveTrackColor:
                       isNodeConnecting
                           ? context.coconutColors.switchTrackDisabled
                           : context.coconutColors.switchInactiveTrack,
-                  thumbColor:
-                      isNodeConnecting ? context.coconutColors.switchThumbDisabled : context.coconutColors.switchThumb,
+                  activeThumbColor:
+                      isNodeConnecting
+                          ? context.coconutColors.switchThumbDisabled
+                          : context.coconutColors.switchActiveThumb,
+                  inactiveThumbColor:
+                      isNodeConnecting
+                          ? context.coconutColors.switchThumbDisabled
+                          : context.coconutColors.switchInactiveThumb,
                 ),
               );
             },
