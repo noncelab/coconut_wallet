@@ -216,8 +216,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                         languageCode: context.read<PreferenceProvider>().language,
                                         title: t.export_label,
                                         description: t.wallet_info_screen.export_labels_description,
-                                        onTapRight: () {
+                                        onTapRight: () async {
                                           Navigator.of(context).pop();
+                                          await innerContext.read<WalletInfoViewModel>().exportMemosAsJsonL();
                                         },
                                         rightButtonText: t.next,
                                         onTapLeft: () {

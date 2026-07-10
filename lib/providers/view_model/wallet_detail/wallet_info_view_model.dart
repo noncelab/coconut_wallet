@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/bip/129/signer_bsms.dart';
@@ -21,6 +23,8 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/widgets/card/taproot_participant_card.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class WalletInfoViewModel extends ChangeNotifier {
   final int _walletId;
@@ -268,5 +272,39 @@ class WalletInfoViewModel extends ChangeNotifier {
     _walletProvider.removeListener(_onWalletProviderChanged);
 
     super.dispose();
+  }
+
+  Future<void> exportMemosAsJsonL() async {
+    final txMemos = _walletProvider.getAllTransactionMemos(_walletId);
+    if (txMemos.isEmpty) {
+      return;
+    }
+
+    final txMemosWithLabels = txMemos.where((memo) => memo.memo.isNotEmpty).toList();
+
+    if (txMemosWithLabels.isEmpty) {
+      // TODO: 내보낼 메모가 없을 경우 사용자에게 알림 (예: 토스트 메시지)
+      return;
+    }
+
+    final jsonlString = txMemosWithLabels
+        .map((memo) {
+          final data = {"type": "tx", "ref": memo.transactionHash, "label": memo.memo};
+          return jsonEncode(data);
+        })
+        .join('\n');
+
+    debugPrint('--- Exporting Memos as JSONL ---');
+    debugPrint(jsonlString);
+    debugPrint('---------------------------------');
+
+    final directory = await getTemporaryDirectory();
+    final fileName = 'coconut-memos-${DateTime.now().millisecondsSinceEpoch}.jsonl';
+    final file = File('${directory.path}/$fileName');
+    await file.writeAsString(jsonlString);
+
+    final xFile = XFile(file.path, name: fileName, mimeType: 'application/jsonl');
+    // TODO: 내보내기 성공/실패에 대한 사용자 피드백 추가
+    await Share.shareXFiles([xFile], text: 'Transaction Memos');
   }
 }

@@ -130,6 +130,11 @@ class TransactionRepository extends BaseRepository {
     });
   }
 
+  /// walletId 로 모든 트랜잭션 메모 조회
+  List<RealmTransactionMemo> getAllTransactionMemos(int walletId) {
+    return realm.query<RealmTransactionMemo>('walletId == $walletId').toList();
+  }
+
   /// 트랜잭션 상태 업데이트
   Future<void> updateTransactionStates(
     int walletId,

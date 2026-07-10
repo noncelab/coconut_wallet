@@ -16,6 +16,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/air-gapped/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
@@ -585,6 +586,10 @@ class WalletProvider extends ChangeNotifier {
 
   TransactionRecord? getTransactionRecord(int walletId, String transactionHash) {
     return _transactionRepository.getTransactionRecord(walletId, transactionHash);
+  }
+
+  List<RealmTransactionMemo> getAllTransactionMemos(int walletId) {
+    return _transactionRepository.getAllTransactionMemos(walletId);
   }
 
   Future<void> toggleUtxoLockStatus(int walletId, String utxoId) async {
