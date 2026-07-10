@@ -809,6 +809,7 @@ wallet_info_screen:
       select: "Seleccionar"
   error:
     delete: "No se pudo eliminar la billetera"
+    no_memos: "No hay notas registradas en la billetera."
   bitbox02_device:
     title: "Información del dispositivo"
     connection_status: "Estado de conexión"

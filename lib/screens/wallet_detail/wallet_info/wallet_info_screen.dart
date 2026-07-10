@@ -218,7 +218,17 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                         description: t.wallet_info_screen.export_labels_description,
                                         onTapRight: () async {
                                           Navigator.of(context).pop();
-                                          await innerContext.read<WalletInfoViewModel>().exportMemosAsJsonL();
+                                          final success =
+                                              await innerContext.read<WalletInfoViewModel>().exportMemosAsJsonL();
+                                          if (!success && mounted) {
+                                            CoconutToast.showToast(
+                                              context: context,
+                                              text: t.wallet_info_screen.error.no_memos,
+                                              level: CoconutToastLevel.info,
+                                              isVisibleIcon: true,
+                                              iconPath: 'assets/svg/info.svg',
+                                            );
+                                          }
                                         },
                                         rightButtonText: t.next,
                                         onTapLeft: () {

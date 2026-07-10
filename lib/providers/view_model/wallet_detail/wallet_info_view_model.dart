@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/bip/129/signer_bsms.dart';
@@ -16,15 +14,15 @@ import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/core/bip/329/label_export_jsonl.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/widgets/card/taproot_participant_card.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 class WalletInfoViewModel extends ChangeNotifier {
   final int _walletId;
@@ -33,6 +31,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
+  final LabelExportJsonL _labelExportJsonL = LabelExportJsonL();
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
 
   late String _walletName;
@@ -274,37 +273,11 @@ class WalletInfoViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> exportMemosAsJsonL() async {
-    final txMemos = _walletProvider.getAllTransactionMemos(_walletId);
-    if (txMemos.isEmpty) {
-      return;
-    }
+  List<RealmTransactionMemo> getAllTransactionMemos() {
+    return _walletProvider.getAllTransactionMemos(_walletId);
+  }
 
-    final txMemosWithLabels = txMemos.where((memo) => memo.memo.isNotEmpty).toList();
-
-    if (txMemosWithLabels.isEmpty) {
-      // TODO: 내보낼 메모가 없을 경우 사용자에게 알림 (예: 토스트 메시지)
-      return;
-    }
-
-    final jsonlString = txMemosWithLabels
-        .map((memo) {
-          final data = {"type": "tx", "ref": memo.transactionHash, "label": memo.memo};
-          return jsonEncode(data);
-        })
-        .join('\n');
-
-    debugPrint('--- Exporting Memos as JSONL ---');
-    debugPrint(jsonlString);
-    debugPrint('---------------------------------');
-
-    final directory = await getTemporaryDirectory();
-    final fileName = 'coconut-memos-${DateTime.now().millisecondsSinceEpoch}.jsonl';
-    final file = File('${directory.path}/$fileName');
-    await file.writeAsString(jsonlString);
-
-    final xFile = XFile(file.path, name: fileName, mimeType: 'application/jsonl');
-    // TODO: 내보내기 성공/실패에 대한 사용자 피드백 추가
-    await Share.shareXFiles([xFile], text: 'Transaction Memos');
+  Future<bool> exportMemosAsJsonL() async {
+    return _labelExportJsonL.exportMemosAsJsonL(_walletId, _walletProvider);
   }
 }

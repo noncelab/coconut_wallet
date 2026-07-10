@@ -807,6 +807,7 @@ wallet_info_screen:
       select: "選択"
   error:
     delete: "ウォレットの削除に失敗しました"
+    no_memos: "ウォレットに記録されたメモがありません。"
   bitbox02_device:
     title: "デバイス情報"
     connection_status: "接続状態"

@@ -807,6 +807,7 @@ wallet_info_screen:
       select: "Select"
   error:
     delete: "Failed to delete wallet"
+    no_memos: "There are no memos recorded in the wallet."
   bitbox02_device:
     title: "Device Info"
     connection_status: "Connection Status"
