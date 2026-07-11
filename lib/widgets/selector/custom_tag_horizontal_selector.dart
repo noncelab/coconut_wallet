@@ -80,8 +80,8 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
 
   Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag) {
     final colors = context.coconutColors;
-    final bgColor = isSelected ? colors.surfaceFilterChipSelected : colors.surfaceFilterChip;
-    final textColor = isSelected ? colors.textFilterChipSelected : colors.textFilterChip;
+    final bgColor = isSelected ? colors.chipSelectedBackground : colors.chipUnselectedBackground;
+    final textColor = isSelected ? colors.chipSelectedText : colors.chipUnselectedText;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),

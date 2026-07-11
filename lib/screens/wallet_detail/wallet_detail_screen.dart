@@ -271,7 +271,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       children: [
                         Text(
                           t.status_updating,
-                          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
+                          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primary),
                         ),
                         CoconutLayout.spacing_100w,
                         ColorFiltered(
@@ -463,16 +463,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _onTapMerge({required bool canMerge, required int availableUtxoCount}) {
-    if (!canMerge) {
-      _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
-      return;
-    }
-    if (availableUtxoCount < 2) {
-      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
-      return;
-    }
-    if (_showNoMfpDialogIfNeeded()) return;
-    if (!_checkStateAndShowToast()) return;
+    // if (!canMerge) {
+    //   _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
+    //   return;
+    // }
+    // if (availableUtxoCount < 2) {
+    //   _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
+    //   return;
+    // }
+    // if (_showNoMfpDialogIfNeeded()) return;
+    // if (!_checkStateAndShowToast()) return;
     Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
   }
 

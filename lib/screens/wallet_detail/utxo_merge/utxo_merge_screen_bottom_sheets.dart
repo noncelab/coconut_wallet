@@ -733,8 +733,8 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                     padding: const EdgeInsets.only(top: 16),
                     child: ShrinkAnimationButton(
                       onPressed: onLessThanToggle,
-                      defaultColor: context.coconutColors.surfaceFilterChip,
-                      pressedColor: context.coconutColors.surfaceFilterChipPressed,
+                      defaultColor: context.coconutColors.surfaceButton,
+                      pressedColor: context.coconutColors.surfacePressed,
                       borderRadius: 8,
                       borderWidth: 0,
                       child: Container(

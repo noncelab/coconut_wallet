@@ -627,11 +627,10 @@ class _TagSectionChip extends StatelessWidget {
     return IntrinsicWidth(
       child: CoconutChip(
         minWidth: 44,
-        color: colors.surfaceFilterChip,
-        borderColor: colors.surfaceFilterChip,
+        color: colors.infoChipBackground,
         label: name,
         labelSize: 11,
-        labelColor: colors.textFilterChip,
+        labelColor: colors.primaryText,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
     );

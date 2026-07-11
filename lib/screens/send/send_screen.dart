@@ -1336,7 +1336,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   } else if (_viewModel.isMaxModeLastIndex(index)) {
                     amountTextColor = context.coconutColors.secondaryText;
                   } else if (amountText.isEmpty) {
-                    amountTextColor = context.coconutColors.tertiaryText;
+                    amountTextColor = context.coconutColors.inputPlaceholder;
                   } else {
                     amountTextColor = context.coconutColors.primaryText;
                   }
@@ -1637,7 +1637,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: context.coconutColors.surfaceFilterChip,
+              color: context.coconutColors.infoChipBackground,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1751,7 +1751,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               onTap: () => {}, // ignore
               child: Container(
                 decoration: BoxDecoration(
-                  color: context.coconutColors.surface,
+                  color: context.coconutColors.background,
                   border: Border.all(color: context.coconutColors.borderStrong, width: 1),
                   borderRadius: const BorderRadius.all(Radius.circular(14)),
                 ),
@@ -1917,7 +1917,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [context.coconutColors.surface, context.coconutColors.surface.withValues(alpha: 0)],
+                  colors: [context.coconutColors.background, context.coconutColors.background.withValues(alpha: 0)],
                   stops: const [0.0, 1.0],
                 ),
               ),
@@ -1936,7 +1936,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [context.coconutColors.surface.withValues(alpha: 0), context.coconutColors.surface],
+                  colors: [context.coconutColors.background.withValues(alpha: 0), context.coconutColors.background],
                   stops: const [0.0, 1.0],
                 ),
               ),

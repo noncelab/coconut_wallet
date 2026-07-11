@@ -101,13 +101,19 @@ class CoconutColors {
   final Color surfaceDisabled;
   final Color surfaceBottomSheet;
   final Color surfaceSectionBreak;
-  final Color surfaceFilterChip;
-  final Color surfaceFilterChipPressed;
-  final Color surfaceFilterChipSelected;
   final Color surfaceSkeletonBase;
   final Color surfaceSkeletonHighlight;
   final Color surfaceSelected;
   final Color surfacePressed;
+
+  final Color infoChipBackground;
+
+  final Color chipUnselectedBackground;
+  final Color chipUnselectedText;
+  final Color chipSelectedBackground;
+  final Color chipSelectedText;
+  final Color chipOutlinedUnselectedBackground;
+  final Color chipOutlinedUnselectedText;
 
   final Color chartSurface;
   final Color coinSurface;
@@ -143,8 +149,7 @@ class CoconutColors {
   final Color segmentedControlSelectedText;
   final Color segmentedControlUnselectedText;
   final Color tooltipBackground;
-  final Color textFilterChip;
-  final Color textFilterChipSelected;
+
   final Color textHighlight;
   final Color border;
   final Color borderStrong;
@@ -256,9 +261,13 @@ class CoconutColors {
     required this.surfaceDisabled,
     required this.surfaceBottomSheet,
     required this.surfaceSectionBreak,
-    required this.surfaceFilterChip,
-    required this.surfaceFilterChipPressed,
-    required this.surfaceFilterChipSelected,
+    required this.infoChipBackground,
+    required this.chipUnselectedBackground,
+    required this.chipUnselectedText,
+    required this.chipSelectedBackground,
+    required this.chipSelectedText,
+    required this.chipOutlinedUnselectedBackground,
+    required this.chipOutlinedUnselectedText,
     required this.surfaceSkeletonBase,
     required this.surfaceSkeletonHighlight,
     required this.chartSurface,
@@ -290,8 +299,6 @@ class CoconutColors {
     required this.segmentedControlSelectedText,
     required this.segmentedControlUnselectedText,
     required this.tooltipBackground,
-    required this.textFilterChip,
-    required this.textFilterChipSelected,
     required this.textHighlight,
     required this.border,
     required this.borderStrong,
@@ -386,9 +393,16 @@ class CoconutColors {
       surfaceDisabled: ds.CoconutColors.gray850,
       surfaceBottomSheet: ds.CoconutColors.gray900,
       surfaceSectionBreak: ds.CoconutColors.gray900,
-      surfaceFilterChip: ds.CoconutColors.gray800,
-      surfaceFilterChipPressed: ds.CoconutColors.gray700,
-      surfaceFilterChipSelected: ds.CoconutColors.white,
+
+      infoChipBackground: ds.CoconutColors.gray850,
+
+      chipUnselectedBackground: ds.CoconutColors.gray800,
+      chipUnselectedText: ds.CoconutColors.gray600,
+      chipSelectedBackground: ds.CoconutColors.white,
+      chipSelectedText: ds.CoconutColors.black,
+      chipOutlinedUnselectedBackground: ds.CoconutColors.gray800,
+      chipOutlinedUnselectedText: ds.CoconutColors.gray700,
+
       surfaceSkeletonBase: ds.CoconutColors.gray850,
       surfaceSkeletonHighlight: ds.CoconutColors.gray750,
       surfaceSelected: ds.CoconutColors.gray800,
@@ -426,8 +440,6 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray500,
       tooltipBackground: ds.CoconutColors.gray850,
-      textFilterChip: ds.CoconutColors.white,
-      textFilterChipSelected: ds.CoconutColors.gray800,
       textHighlight: ds.CoconutColors.primary,
       border: ds.CoconutColors.gray700,
       borderStrong: ds.CoconutColors.white,
@@ -484,7 +496,7 @@ class CoconutColors {
       switchTrackDisabled: ds.CoconutColors.gray700,
       switchThumbDisabled: ds.CoconutColors.gray600,
       linkText: ds.CoconutColors.sky,
-      nodeConnected: ds.CoconutColors.green,
+      nodeConnected: ds.CoconutColors.primary,
       nodeFailed: ds.CoconutColors.red,
       popoverBackground: ds.CoconutColors.white,
       popoverText: ds.CoconutColors.gray900,
@@ -514,7 +526,7 @@ class CoconutColors {
       surface: ds.CoconutColors.gray150,
       surfaceDeep: ds.CoconutColors.white,
       surfaceCard: ds.CoconutColors.gray150,
-      surfaceButton: ds.CoconutColors.gray400,
+      surfaceButton: ds.CoconutColors.gray300,
       surfaceButtonText: ds.CoconutColors.black,
       surfaceButtonSecondary: ds.CoconutColors.black,
       surfaceButtonSecondaryText: ds.CoconutColors.white,
@@ -523,9 +535,16 @@ class CoconutColors {
       surfaceDisabled: ds.CoconutColors.gray300,
       surfaceBottomSheet: ds.CoconutColors.white,
       surfaceSectionBreak: ds.CoconutColors.gray200,
-      surfaceFilterChip: ds.CoconutColors.gray300,
-      surfaceFilterChipPressed: ds.CoconutColors.gray350,
-      surfaceFilterChipSelected: ds.CoconutColors.black,
+
+      infoChipBackground: ds.CoconutColors.gray300,
+
+      chipUnselectedBackground: ds.CoconutColors.gray150,
+      chipUnselectedText: ds.CoconutColors.gray350,
+      chipSelectedBackground: ds.CoconutColors.gray800,
+      chipSelectedText: ds.CoconutColors.white,
+      chipOutlinedUnselectedBackground: ds.CoconutColors.gray150,
+      chipOutlinedUnselectedText: ds.CoconutColors.gray350,
+
       surfaceSkeletonBase: ds.CoconutColors.gray200,
       surfaceSkeletonHighlight: ds.CoconutColors.gray100,
       surfaceSelected: ds.CoconutColors.gray200,
@@ -538,7 +557,7 @@ class CoconutColors {
       selectionOverlay: ds.CoconutColors.black,
 
       inputSurface: const Color(0xFFF1F2F5),
-      inputPlaceholder: ds.CoconutColors.gray400,
+      inputPlaceholder: ds.CoconutColors.gray300,
       inputBorder: ds.CoconutColors.gray350,
 
       primary: ds.CoconutColors.purple,
@@ -564,8 +583,6 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray400,
       tooltipBackground: ds.CoconutColors.gray150,
-      textFilterChip: ds.CoconutColors.gray900,
-      textFilterChipSelected: ds.CoconutColors.white,
       textHighlight: ds.CoconutColors.purple,
       border: ds.CoconutColors.gray400,
       borderStrong: ds.CoconutColors.black,
