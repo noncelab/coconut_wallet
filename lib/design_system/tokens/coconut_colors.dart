@@ -556,7 +556,8 @@ class CoconutColors {
       billSurface: ds.CoconutColors.white,
       selectionOverlay: ds.CoconutColors.black,
 
-      inputSurface: const Color(0xFFF1F2F5),
+      //inputSurface: const Color(0xFFF1F2F5),
+      inputSurface: ds.CoconutColors.white,
       inputPlaceholder: ds.CoconutColors.gray300,
       inputBorder: ds.CoconutColors.gray350,
 
