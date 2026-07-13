@@ -278,6 +278,6 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   Future<bool> exportMemosAsJsonL() async {
-    return _labelExportJsonL.exportMemosAsJsonL(_walletId, _walletProvider);
+    return _labelExportJsonL.exportLabelsAsJsonL(_walletId, _walletProvider);
   }
 }

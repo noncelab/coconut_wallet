@@ -7,36 +7,68 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 class LabelExportJsonL {
-  Future<bool> exportMemosAsJsonL(int walletId, WalletProvider walletProvider) async {
+  Future<bool> exportLabelsAsJsonL(int walletId, WalletProvider walletProvider) async {
     final txMemos = walletProvider.getAllTransactionMemos(walletId);
-    if (txMemos.isEmpty) {
-      return false;
-    }
+    final utxoTags = walletProvider.getUtxoTags(walletId);
 
     final txMemosWithLabels = txMemos.where((memo) => memo.memo.isNotEmpty).toList();
+    final utxoTagsWithLabels = utxoTags.where((tag) => tag.name.isNotEmpty && tag.utxoIdList.isNotEmpty).toList();
 
-    if (txMemosWithLabels.isEmpty) {
+    if (txMemosWithLabels.isEmpty && utxoTagsWithLabels.isEmpty) {
       return false;
     }
 
-    final jsonlString = txMemosWithLabels
-        .map((memo) {
-          final data = {"type": "tx", "ref": memo.transactionHash, "label": memo.memo};
-          return jsonEncode(data);
-        })
-        .join('\n');
+    final List<String> jsonLines = [];
 
-    debugPrint('--- Exporting Memos as JSONL ---');
+    // 거래 메모
+    for (final memo in txMemosWithLabels) {
+      final data = {"type": "tx", "ref": memo.transactionHash, "label": memo.memo};
+      jsonLines.add(jsonEncode(data));
+    }
+
+    // UTXO 태그
+    for (final tag in utxoTagsWithLabels) {
+      for (final utxoId in tag.utxoIdList) {
+        final parsedId = _parseUtxoId(utxoId);
+        if (parsedId == null) {
+          debugPrint('Could not parse utxoId: $utxoId');
+          continue;
+        }
+
+        final data = {"type": "output", "ref": '${parsedId.txid}:${parsedId.vout}', "label": tag.name};
+        jsonLines.add(jsonEncode(data));
+      }
+    }
+
+    if (jsonLines.isEmpty) {
+      return false;
+    }
+
+    final jsonlString = jsonLines.join('\n');
+
+    debugPrint('--- Exporting Labels as JSONL ---');
     debugPrint(jsonlString);
     debugPrint('---------------------------------');
 
     final directory = await getTemporaryDirectory();
-    final fileName = 'coconut-memos-${DateTime.now().millisecondsSinceEpoch}.jsonl';
+    final fileName = 'coconut-labels-${DateTime.now().millisecondsSinceEpoch}.jsonl';
     final file = File('${directory.path}/$fileName');
     await file.writeAsString(jsonlString);
 
     final xFile = XFile(file.path, name: fileName, mimeType: 'application/jsonl');
-    await Share.shareXFiles([xFile], text: 'Transaction Memos');
+    await Share.shareXFiles([xFile], text: 'Coconut Wallet Labels');
     return true;
+  }
+
+  ({String txid, int vout})? _parseUtxoId(String utxoId) {
+    if (utxoId.length < 65) {
+      return null;
+    }
+    final txid = utxoId.substring(0, 64);
+    final voutString = utxoId.substring(64);
+    final vout = int.tryParse(voutString);
+
+    if (vout == null) return null;
+    return (txid: txid, vout: vout);
   }
 }
