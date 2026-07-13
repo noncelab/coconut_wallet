@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -10,6 +11,7 @@ class LabelExportJsonL {
   Future<bool> exportLabelsAsJsonL(int walletId, WalletProvider walletProvider) async {
     final txMemos = walletProvider.getAllTransactionMemos(walletId);
     final utxoTags = walletProvider.getUtxoTags(walletId);
+    final utxoStates = walletProvider.getUtxoList(walletId);
 
     final txMemosWithLabels = txMemos.where((memo) => memo.memo.isNotEmpty).toList();
     final utxoTagsWithLabels = utxoTags.where((tag) => tag.name.isNotEmpty && tag.utxoIdList.isNotEmpty).toList();
@@ -19,6 +21,8 @@ class LabelExportJsonL {
     }
 
     final List<String> jsonLines = [];
+
+    final utxoStateMap = {for (var utxo in utxoStates) utxo.utxoId: utxo};
 
     // 거래 메모
     for (final memo in txMemosWithLabels) {
@@ -35,7 +39,17 @@ class LabelExportJsonL {
           continue;
         }
 
-        final data = {"type": "output", "ref": '${parsedId.txid}:${parsedId.vout}', "label": tag.name};
+        final utxoState = utxoStateMap[utxoId];
+        final bool isSpendable = utxoState?.status != UtxoStatus.locked;
+
+        final Map<String, dynamic> data = {
+          "type": "output",
+          "ref": "${parsedId.txid}:${parsedId.vout}",
+          "label": tag.name,
+        };
+        if (!isSpendable) {
+          data['spendable'] = false;
+        }
         jsonLines.add(jsonEncode(data));
       }
     }
