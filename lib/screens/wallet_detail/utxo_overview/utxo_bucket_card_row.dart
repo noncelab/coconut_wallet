@@ -306,7 +306,7 @@ class _CoinStackState extends State<_CoinStack> {
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(999),
-                            color: context.coconutColors.surfaceFilterChip,
+                            color: context.coconutColors.infoChipBackground,
                           ),
                           child: Text(
                             '+$extraCount',
@@ -637,7 +637,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                     'assets/svg/triangle-warning.svg',
                     width: isLarge ? 12 : 10,
                     height: isLarge ? 12 : 10,
-                    colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconOnDanger, BlendMode.srcIn),
                   ),
                 ),
               ),

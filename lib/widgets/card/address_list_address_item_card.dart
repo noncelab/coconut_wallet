@@ -79,7 +79,7 @@ class AddressItemCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: context.coconutColors.surfaceFilterChip,
+                color: context.coconutColors.infoChipBackground,
               ),
               child: Text(
                 isUsed ? t.status_used : t.status_unused,

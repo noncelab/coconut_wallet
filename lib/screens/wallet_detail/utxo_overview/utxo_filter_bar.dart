@@ -31,15 +31,12 @@ class _SelectionSummaryBar extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: context.coconutColors.surfaceFilterChipSelected,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: context.coconutColors.chipSelectedBackground, shape: BoxShape.circle),
                 child: SvgPicture.asset(
                   'assets/svg/check.svg',
                   width: 8,
                   height: 8,
-                  colorFilter: ColorFilter.mode(context.coconutColors.textFilterChipSelected, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(context.coconutColors.chipSelectedText, BlendMode.srcIn),
                 ),
               ),
               const SizedBox(width: 8),
@@ -264,9 +261,9 @@ class _ViewModeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final bgColor = isSelected ? colors.surfaceFilterChipSelected : Colors.transparent;
-    final iconColor = isSelected ? colors.textFilterChipSelected : colors.tertiaryText;
-    final borderColor = isSelected ? colors.surfaceFilterChipSelected : colors.tertiaryText;
+    final bgColor = isSelected ? colors.chipSelectedBackground : Colors.transparent;
+    final iconColor = isSelected ? colors.chipSelectedText : colors.chipOutlinedUnselectedText;
+    final borderColor = isSelected ? colors.chipSelectedBackground : colors.chipOutlinedUnselectedBackground;
     final borderRadius = BorderRadius.only(
       topLeft: isRightChunk ? Radius.zero : const Radius.circular(8),
       topRight: isLeftChunk ? Radius.zero : const Radius.circular(8),
@@ -317,10 +314,10 @@ class _FilterChipState extends State<_FilterChip> {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final bgColor = widget.isSelected ? colors.surfaceFilterChipSelected : Colors.transparent;
-    final textColor = widget.isSelected ? colors.textFilterChipSelected : colors.tertiaryText;
-    final iconColor = widget.isSelected ? colors.textFilterChipSelected : colors.tertiaryText;
-    final border = widget.isSelected ? null : Border.all(color: colors.tertiaryText, width: 1);
+    final bgColor = widget.isSelected ? colors.chipSelectedBackground : Colors.transparent;
+    final textColor = widget.isSelected ? colors.chipSelectedText : colors.chipOutlinedUnselectedText;
+    final iconColor = widget.isSelected ? colors.chipSelectedText : colors.chipOutlinedUnselectedText;
+    final border = widget.isSelected ? null : Border.all(color: colors.chipOutlinedUnselectedBackground, width: 1);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
