@@ -226,7 +226,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                               text: t.wallet_info_screen.error.no_memos,
                                               level: CoconutToastLevel.info,
                                               isVisibleIcon: true,
-                                              iconPath: 'assets/svg/info.svg',
+                                              iconPath: 'assets/svg/circle-info.svg',
                                             );
                                           }
                                         },
