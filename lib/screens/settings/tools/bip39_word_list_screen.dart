@@ -4,6 +4,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 
 /// 하이라이트 처리 함수
 List<TextSpan> highlightOccurrences(
@@ -64,6 +65,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   final String _hintText = t.text_field.search_mnemonic_word;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   List<Map<String, dynamic>> _filteredItems = [];
   bool _isTop = true;
@@ -81,6 +83,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   void dispose() {
     _scrollController.dispose();
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -198,38 +201,50 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
 
   Widget _searchBar(BuildContext context) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
 
     return Container(
       color: colors.background,
-      child: Container(
-        width: MediaQuery.of(context).size.width,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeOut,
-            decoration: BoxDecoration(color: colors.inputSurface, borderRadius: BorderRadius.circular(12)),
-            child: TextField(
-              keyboardType: TextInputType.text,
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
-              controller: _searchController,
-              maxLines: 1,
-              maxLength: 11,
-              decoration: InputDecoration(
-                counterText: '',
-                hintText: _hintText,
-                hintStyle: typography.body.copyWith(color: colors.tertiaryText, fontSize: 14),
-                prefixIcon: Icon(Icons.search_rounded, color: colors.tertiaryText),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                filled: true,
-                fillColor: Colors.transparent,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 16.0),
-              ),
-              style: typography.body.copyWith(decorationThickness: 0, color: colors.primaryText),
-            ),
+      padding: const EdgeInsets.symmetric(horizontal: Sizes.size16, vertical: Sizes.size8),
+      child: CoconutTextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        onChanged: (_) {},
+        textInputType: TextInputType.text,
+        textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
+        maxLines: 1,
+        maxLength: 11,
+        isLengthVisible: false,
+        padding: const EdgeInsets.only(),
+        height: Sizes.size40,
+        prefix: IgnorePointer(
+          ignoring: true,
+          child: IconButton(
+            onPressed: null,
+            icon: Icon(Icons.search_rounded, color: colors.tertiaryText),
+            iconSize: Sizes.size22,
           ),
         ),
+        suffix:
+            _searchController.text.isNotEmpty
+                ? IconButton(
+                  iconSize: 14,
+                  padding: EdgeInsets.zero,
+                  onPressed: () {
+                    _searchFocusNode.requestFocus();
+                    _searchController.clear();
+                  },
+                  icon: SvgPicture.asset(
+                    'assets/svg/text-field-clear.svg',
+                    colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
+                  ),
+                )
+                : null,
+        placeholderText: _hintText,
+        activeColor: colors.primaryText,
+        cursorColor: colors.primaryText,
+        placeholderColor: colors.inputPlaceholder,
+        borderColor: colors.inputBorder,
+        backgroundColor: colors.inputSurface,
       ),
     );
   }

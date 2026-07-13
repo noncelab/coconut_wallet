@@ -91,9 +91,9 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                       CoconutLayout.spacing_100w,
                       if (widget.utxo.status == UtxoStatus.incoming)
                         CoconutChip(
-                          color: context.coconutColors.surfaceFilterChip,
+                          color: context.coconutColors.infoChipBackground,
                           label: t.status_receiving,
-                          labelColor: context.coconutColors.background,
+                          labelColor: context.coconutColors.receivingColor,
                           padding: const EdgeInsets.symmetric(vertical: 2),
                         ),
                     ],
