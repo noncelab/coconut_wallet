@@ -322,7 +322,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               SingleButton(
                 enableShrinkAnim: true,
                 title: t.manage_label,
-                onPressed: () => _showExportLabelsDialog(context, viewModel),
+                onPressed: () => _showManageLabelsBottomSheet(context, viewModel),
               ),
             ],
           ),
@@ -581,4 +581,37 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       },
     );
   }
+
+  void _showManageLabelsBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
+    CommonBottomSheets.showBottomSheet(
+      context: context,
+      title: t.manage_label,
+      showCloseButton: true,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SingleButton(
+              title: t.wallet_info_screen.import_labels,
+              onPressed: () {
+                Navigator.of(context).pop();
+                _importLabels(viewModel);
+              },
+            ),
+            CoconutLayout.spacing_200h,
+            SingleButton(
+              title: t.wallet_info_screen.export_labels,
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showExportLabelsDialog(context, viewModel);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _importLabels(WalletInfoViewModel viewModel) async {}
 }

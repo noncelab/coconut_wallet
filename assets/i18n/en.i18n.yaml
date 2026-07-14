@@ -786,6 +786,7 @@ wallet_info_screen:
   target_set_21m: "It’s the sats race!!!"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
+  import_labels: "Import Memos"
   export_labels: "Export Memos"
   export_labels_description: "You can apply the memos recorded in your wallet to other devices as well.\n\nWould you like to proceed with the backup?"
   view_descriptor: "View Descriptor"

@@ -791,6 +791,7 @@ wallet_info_screen:
   view_xpub: "확장 공개키 보기"
   duplicated_name: "이미 사용중인 이름이에요"
   view_descriptor: "디스크립터 보기"
+  import_labels: "메모 가져오기"
   export_labels: "메모 내보내기"
   export_labels_description: "지갑에 기록한 메모들을\n다른 기기에서도 똑같이\n적용할 수 있습니다.\n\n백업을 진행하시겠습니까?"
   view_wallet_backup_data: "지갑 백업 데이터 보기"

@@ -788,6 +788,7 @@ wallet_info_screen:
   target_set_21m: "¡Es la carrera por los sats!"
   view_xpub: "Ver clave pública extendida"
   duplicated_name: "Nombre ya en uso"
+  import_labels: "Importar Memos"
   export_labels: "Exportar Memos"
   export_labels_description: "Puede aplicar las notas guardadas en su billetera en otros dispositivos.\n\n¿Desea continuar con la copia de seguridad?"
   view_descriptor: "Ver descriptor"
