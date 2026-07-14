@@ -321,7 +321,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               ),
               SingleButton(
                 enableShrinkAnim: true,
-                title: t.export_label,
+                title: t.manage_label,
                 onPressed: () => _showExportLabelsDialog(context, viewModel),
               ),
             ],
@@ -520,7 +520,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       builder: (BuildContext dialogContext) {
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
-          title: t.export_label,
+          title: t.wallet_info_screen.export_labels,
           description: t.wallet_info_screen.export_labels_description,
           onTapRight: () async {
             Navigator.of(dialogContext).pop();

@@ -109,7 +109,7 @@ account: "Account"
 merge_utxos: "Merge"
 split_utxo: "Split"
 apply: "Apply"
-export_label: "Export Memos"
+manage_label: "Manage Memos"
 
 relative_time:
   just_now: "Just now"
@@ -786,6 +786,7 @@ wallet_info_screen:
   target_set_21m: "It’s the sats race!!!"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
+  export_labels: "Export Memos"
   export_labels_description: "You can apply the memos recorded in your wallet to other devices as well.\n\nWould you like to proceed with the backup?"
   view_descriptor: "View Descriptor"
   view_wallet_backup_data: "View Wallet Backup Data"
