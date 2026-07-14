@@ -524,8 +524,22 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           description: t.wallet_info_screen.export_labels_description,
           onTapRight: () async {
             Navigator.of(dialogContext).pop();
-            final success = await viewModel.exportMemosAsJsonL();
-            if (!success && mounted) {
+            _setOverlayLoading(true);
+            final startTime = DateTime.now();
+
+            final file = await viewModel.createLabelsJsonLFile();
+
+            final duration = DateTime.now().difference(startTime);
+            if (duration < const Duration(seconds: 1)) {
+              await Future.delayed(const Duration(seconds: 1) - duration);
+            }
+            _setOverlayLoading(false);
+
+            if (!mounted) return;
+
+            if (file != null) {
+              await viewModel.shareLabelsFile(file);
+            } else {
               CoconutToast.showToast(
                 context: context,
                 text: t.wallet_info_screen.error.no_memos,

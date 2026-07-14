@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 class LabelExportJsonL {
-  Future<bool> exportLabelsAsJsonL(int walletId, WalletProvider walletProvider) async {
+  Future<XFile?> createLabelsJsonLFile(int walletId, WalletProvider walletProvider) async {
     final txMemos = walletProvider.getAllTransactionMemos(walletId);
     final utxoTags = walletProvider.getUtxoTags(walletId);
     final utxoStates = walletProvider.getUtxoList(walletId);
@@ -17,7 +17,7 @@ class LabelExportJsonL {
     final utxoTagsWithLabels = utxoTags.where((tag) => tag.name.isNotEmpty && tag.utxoIdList.isNotEmpty).toList();
 
     if (txMemosWithLabels.isEmpty && utxoTagsWithLabels.isEmpty) {
-      return false;
+      return null;
     }
 
     final List<String> jsonLines = [];
@@ -55,7 +55,7 @@ class LabelExportJsonL {
     }
 
     if (jsonLines.isEmpty) {
-      return false;
+      return null;
     }
 
     final jsonlString = jsonLines.join('\n');
@@ -69,9 +69,11 @@ class LabelExportJsonL {
     final file = File('${directory.path}/$fileName');
     await file.writeAsString(jsonlString);
 
-    final xFile = XFile(file.path, name: fileName, mimeType: 'application/jsonl');
+    return XFile(file.path, name: fileName, mimeType: 'application/jsonl');
+  }
+
+  Future<void> shareFile(XFile xFile) async {
     await Share.shareXFiles([xFile], text: 'Coconut Wallet Labels');
-    return true;
   }
 
   ({String txid, int vout})? _parseUtxoId(String utxoId) {

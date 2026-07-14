@@ -23,6 +23,7 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/widgets/card/taproot_participant_card.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:share_plus/share_plus.dart';
 
 class WalletInfoViewModel extends ChangeNotifier {
   final int _walletId;
@@ -277,7 +278,11 @@ class WalletInfoViewModel extends ChangeNotifier {
     return _walletProvider.getAllTransactionMemos(_walletId);
   }
 
-  Future<bool> exportMemosAsJsonL() async {
-    return _labelExportJsonL.exportLabelsAsJsonL(_walletId, _walletProvider);
+  Future<XFile?> createLabelsJsonLFile() async {
+    return _labelExportJsonL.createLabelsJsonLFile(_walletId, _walletProvider);
+  }
+
+  Future<void> shareLabelsFile(XFile file) async {
+    await _labelExportJsonL.shareFile(file);
   }
 }
