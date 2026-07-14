@@ -5,11 +5,11 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/connected/bitbox02_connect_viewmodel.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
+import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/material.dart';
@@ -78,29 +78,8 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
 
     setState(() => _isAddingWallet = false);
 
-    String message;
-    switch (result.result) {
-      case WalletSyncResult.existingWalletUpdateImpossible:
-        message = 'This wallet is already added.';
-        break;
-      case WalletSyncResult.existingName:
-        message = 'A wallet with the same name already exists.';
-        break;
-      default:
-        message = 'Failed to import wallet.';
-    }
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => CoconutPopup(
-            languageCode: context.read<PreferenceProvider>().language,
-            title: 'Import Failed',
-            description: message,
-            onTapRight: () => Navigator.pop(context),
-            rightButtonText: 'OK',
-          ),
-    );
+    final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    showWalletSyncResultErrorDialog(context, result, walletProvider);
   }
 
   @override

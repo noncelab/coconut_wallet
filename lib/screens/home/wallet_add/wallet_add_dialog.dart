@@ -10,11 +10,7 @@ class WalletAddDialog extends StatelessWidget {
   final Animation<double> animation;
   final ValueChanged<WalletImportSource> onWalletSelected;
 
-  const WalletAddDialog({
-    super.key,
-    required this.animation,
-    required this.onWalletSelected,
-  });
+  const WalletAddDialog({super.key, required this.animation, required this.onWalletSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +38,7 @@ class WalletAddDialog extends StatelessWidget {
                       WalletImportSource.keystone,
                       WalletImportSource.seedSigner,
                     ]),
-                    _buildWalletRow([
-                      WalletImportSource.jade,
-                      WalletImportSource.coldCard,
-                      WalletImportSource.krux,
-                    ]),
+                    _buildWalletRow([WalletImportSource.jade, WalletImportSource.coldCard, WalletImportSource.krux]),
                     _buildWalletRow([
                       WalletImportSource.passport,
                       WalletImportSource.trezor,

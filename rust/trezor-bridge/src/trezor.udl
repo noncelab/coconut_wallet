@@ -1,0 +1,53 @@
+// trezor.udl — UniFFI interface definition for Trezor Safe 7 BLE bridge
+// Generates Swift (iOS) and Kotlin (Android) bindings.
+
+namespace trezor_bridge {
+    // Register native BLE I/O callbacks for a peripheral.
+    // Must be called before trezor_connect() with the same ble_handle.
+    void trezor_register_callbacks(u64 ble_handle, TrezorBleCallbacks callbacks);
+
+    // Connect to a Trezor Safe 7 over BLE (THP v2 / Noise XX).
+    // Returns an opaque device_id string on success.
+    [Throws=TrezorError]
+    string trezor_connect(u64 ble_handle);
+
+    // Retrieve the BIP-84 extended public key at the given derivation path.
+    // Returns JSON: {"xpub": "zpub..."}
+    [Throws=TrezorError]
+    string trezor_get_xpub(string device_id, string keypath, string network);
+
+    // Retrieve the master fingerprint (8 hex chars, e.g. "deadbeef").
+    [Throws=TrezorError]
+    string trezor_get_fingerprint(string device_id);
+
+    // Disconnect and clean up device state.
+    [Throws=TrezorError]
+    void trezor_disconnect(string device_id);
+};
+
+// Callback interface implemented by the native layer (Swift / Kotlin).
+// Rust calls these to perform the actual BLE I/O.
+[Trait, WithForeign]
+interface TrezorBleCallbacks {
+    // Write data to the BLE peripheral. Returns true on success.
+    boolean write(sequence<u8> data);
+
+    // Blocking read of one BLE notification packet (max 5 s).
+    // Returns null on timeout.
+    sequence<u8>? read();
+
+    // Prompt the user for the 6-digit numeric comparison code shown on Trezor.
+    // Returns empty string to cancel pairing.
+    string get_pairing_code();
+};
+
+[Error]
+enum TrezorError {
+    "Connect",
+    "Pairing",
+    "XPub",
+    "Fingerprint",
+    "Disconnect",
+    "InvalidArg",
+    "Internal",
+};

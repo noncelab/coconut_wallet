@@ -117,4 +117,5 @@ flutter {
 dependencies {
     implementation "androidx.core:core-splashscreen:1.0.0"
     implementation(name: 'bitboxbridge', ext: 'aar')
+    implementation "net.java.dev.jna:jna:5.14.0@aar"
 }

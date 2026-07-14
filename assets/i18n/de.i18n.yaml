@@ -393,6 +393,33 @@ wallet_connect_screen:
       title: "Verbindung fehlgeschlagen"
       description: "BitBox02 Nova wurde nicht gefunden. Bitte schließen Sie das Gerät erneut an und versuchen Sie es nochmal."
       ble_description: "BitBox02 Nova wurde nicht gefunden. Bitte aktivieren Sie Bluetooth und bringen Sie das Gerät näher."
+  guide_trezor:
+    btn:
+      connect_via_ble: "Über Bluetooth verbinden"
+      add_wallet: "Wallet hinzufügen"
+      retry: "Erneut versuchen"
+    init:
+      notice: "Nur Trezor Safe 7 wird unterstützt."
+      ble_step1: "Aktivieren Sie Bluetooth und halten Sie Trezor Safe 7 in der Nähe."
+      ble_step2: "Entsperren Sie Ihr Trezor-Gerät. Bei der Erstverbindung tippen Sie auf Pair & Connect > Pair new device."
+      ble_step3: "Tippen Sie unten auf '$btn', um die Verbindung zu starten."
+    connecting:
+      title: "Gerät wird verbunden"
+      step1: "Bitte entsperren Sie das Gerät."
+      step2: "Erlauben Sie auf Ihrem Gerät die Verbindung mit Coconut Wallet."
+    pairing_dialog:
+      title: "Pairing-Code eingeben"
+      description: "Geben Sie den 6-stelligen Code ein, der auf Ihrem Trezor-Bildschirm angezeigt wird."
+      hint: "6-stelliger Code"
+    paired:
+      title: "Trezor erfolgreich verbunden."
+      device_name: "Gerätename"
+      master_fingerprint: "Master-Fingerabdruck"
+      derivation_path: "Ableitungspfad"
+      xpub: "Erweiterter öffentlicher Schlüssel"
+    error:
+      title: "Verbindung fehlgeschlagen"
+      ble_description: "Trezor Safe 7 wurde nicht gefunden. Bitte aktivieren Sie Bluetooth und bringen Sie das Gerät näher."
 
 # lib/screens/wallet_list
 wallet_list:

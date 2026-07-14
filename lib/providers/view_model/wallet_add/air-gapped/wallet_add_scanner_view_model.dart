@@ -166,8 +166,4 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     final wallet = _walletAddService.createBbQrWallet(walletImportSource: walletImportSource, json: json, name: name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
-
-  String getWalletName(int walletId) {
-    return _walletProvider.getWalletById(walletId).name;
-  }
 }

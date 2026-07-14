@@ -19,6 +19,7 @@ class MainActivity : FlutterFragmentActivity() {
     private var osChannel: MethodChannel? = null
     private var pendingBitcoinUri: String? = null
     private var bitbox02Handler: Bitbox02MethodHandler? = null
+    private var trezorHandler: TrezorMethodHandler? = null
     
     // Activity Alias 이름 (AndroidManifest.xml과 일치해야 함)
     private val EVENT_ICON_ALIAS = "onl.coconut.wallet.MainActivityEventIcon"
@@ -87,6 +88,7 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
         bitbox02Handler = Bitbox02MethodHandler(this, flutterEngine)
+        trezorHandler = TrezorMethodHandler(this, this, flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_OPEN_APP_SETTINGS).setMethodCallHandler { call, result ->
             if (call.method == "openAppSettings") {
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
@@ -157,6 +159,11 @@ class MainActivity : FlutterFragmentActivity() {
         } else {
             null
         }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        trezorHandler?.onRequestPermissionsResult(requestCode, grantResults)
     }
 
     private fun extractBitcoinUri(intent: Intent?): String? {

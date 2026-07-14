@@ -404,6 +404,34 @@ wallet_connect_screen:
       title: "연결 실패"
       description: "BitBox02 Nova를 찾을 수 없어요. 기기를 다시 연결한 후 시도해 주세요."
       ble_description: "BitBox02 Nova를 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
+  guide_trezor:
+    btn:
+      connect_via_ble: "블루투스로 연결하기"
+      add_wallet: "지갑 추가"
+      retry: "재시도"
+    init:
+      notice: "Trezor Safe 7만 연결 가능합니다."
+      ble_step1: "블루투스를 켜고 Trezor Safe 7을 가까이 두세요."
+      ble_step2: "Trezor 기기의 잠금을 해제해 주세요. 첫 연결인 경우 Pair & Connect > Pair new device를 눌러주세요."
+      ble_step3: "아래 '$btn' 버튼을 눌러 연결을 시작하세요."
+    connecting:
+      title: "기기 연결 중"
+      step1: "기기의 잠금을 해제해 주세요."
+      step2: "기기에서 코코넛 월렛과의 연결을 허용해주세요."
+    pairing_dialog:
+      title: "페어링 코드 입력"
+      description: "Trezor 화면에 표시된 6자리 숫자를 입력해 주세요."
+      hint: "6자리 코드"
+      error_wrong_code: "잘못된 페어링 코드입니다."
+    paired:
+      title: "Trezor 연결이 완료되었습니다."
+      device_name: "기기 이름"
+      master_fingerprint: "마스터 핑거프린트"
+      derivation_path: "파생 경로"
+      xpub: "확장 공개키"
+    error:
+      title: "연결 실패"
+      ble_description: "Trezor Safe 7을 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
 
 # lib/screens/wallet_list
 wallet_list:
