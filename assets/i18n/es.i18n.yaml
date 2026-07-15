@@ -414,6 +414,9 @@ wallet_connect_screen:
       notice: "Solo se admite Trezor Safe 7."
       ble_step1: "Active el Bluetooth y mantenga Trezor Safe 7 cerca."
       ble_step2: "Desbloquea tu dispositivo Trezor. Si es la primera vez, pulsa Pair & Connect > Pair new device en el Trezor."
+      ble_step2_prefix: "Desbloquea tu dispositivo Trezor. Si es la primera vez, pulsa "
+      ble_step2_bold: "Pair & Connect > Pair new device"
+      ble_step2_suffix: " en el Trezor."
       ble_step3: "Pulsa el botón '$btn' de abajo para iniciar la conexión."
     connecting:
       title: "Conectando el dispositivo"
@@ -422,7 +425,9 @@ wallet_connect_screen:
     pairing_dialog:
       title: "Ingresar código de emparejamiento"
       description: "Ingresa el código de 6 dígitos que aparece en la pantalla de tu Trezor."
-      hint: "Código de 6 dígitos"
+      verifying: "Verificando código..."
+      error_wrong_code: "Código de emparejamiento incorrecto"
+      error_wrong_code_dialog: "Código de emparejamiento incorrecto.\nEl proceso de conexión se reiniciará desde el principio."
     paired:
       title: "Trezor está conectado y listo."
       device_name: "Nombre del dispositivo"
@@ -432,6 +437,8 @@ wallet_connect_screen:
     error:
       title: "Error de conexión"
       ble_description: "No se encontró Trezor Safe 7. Encienda el Bluetooth y acerque el dispositivo."
+  common:
+    ble_off: "Por favor, encienda el Bluetooth de su dispositivo."
       
 # lib/screens/wallet_list
 wallet_list:
@@ -1223,6 +1230,9 @@ alert:
     description: "Para enviar Bitcoin, primero debes agregar la huella digital maestra. ¿Quieres continuar?"
     skip_button: "Cancelar"
     confirm_button: "Agregar"
+  ble_permission_denied:
+    title: "Permiso necesario"
+    description: "Se necesita el permiso de 'Dispositivos cercanos' para conectar el dispositivo. Por favor, permita este permiso en Configuración."
 
 third_party:
   keystone: "Keystone"

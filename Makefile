@@ -20,19 +20,19 @@ run-regtest-debug:
 	fvm flutter run --flavor regtest --debug
 
 run-regtest:
-	fvm flutter run --flavor regtest --profile -d ios
+	fvm flutter run --flavor regtest --profile -d iPhone
 
 run-regtest-release:
-	fvm flutter run --flavor regtest --release -d ios
+	fvm flutter run --flavor regtest --release -d iPhone
 
 run-mainnet-debug:
-	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --debug -d ios
+	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --debug -d iPhone
 
 run-mainnet:
-	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --profile -d ios
+	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --profile -d iPhone
 
 run-mainnet-release:
-	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --release -d ios
+	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --release -d iPhone
 
 ios-regtest:
 	fvm flutter build ios --flavor regtest --release
@@ -46,7 +46,7 @@ pre-deploy:
 
 # gomobile bind targets
 gomobile-android:
-	cd go && gomobile bind -target=android -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
+	cd go && gomobile bind -target=android -ldflags="-extldflags=-Wl,-z,max-page-size=16384" -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
 
 gomobile-ios:
 	cd go && gomobile bind -target=ios -o ../ios/Runner/bitboxbridge.xcframework .
@@ -67,4 +67,10 @@ fastlane-mainnet:
 
 fastlane-regtest:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
+	
+fastlane-mainnet-skipbridge:
+	cd android && caffeinate -dimsu bundle exec fastlane release_android_mainnet skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_bridge:true
+
+fastlane-regtest-skipbridge:
+	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_bridge:true
 	

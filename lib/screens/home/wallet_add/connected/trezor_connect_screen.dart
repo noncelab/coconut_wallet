@@ -12,6 +12,8 @@ import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/utils/app_settings_util.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -27,6 +29,8 @@ class TrezorConnectScreen extends StatefulWidget {
 class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
   late TrezorConnectViewModel _viewModel;
   bool _isAddingWallet = false;
+  bool _isVerifyingPairingCode = false;
+  TrezorConnectStep? _lastStep;
 
   static const int _codeLength = 6;
   static const List<String> _keypadKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '<'];
@@ -37,6 +41,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     super.initState();
     _viewModel = TrezorConnectViewModel(Provider.of<WalletProvider>(context, listen: false));
     _viewModel.onPairingFailed = () {};
+    _viewModel.addListener(_onViewModelChanged);
   }
 
   void _onPairingKeyTap(String value) {
@@ -54,13 +59,70 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
 
     if (_pairingCode.length == _codeLength) {
       final code = _pairingCode;
-      setState(() => _pairingCode = '');
+      setState(() => _isVerifyingPairingCode = true);
       _viewModel.submitPairingCode(code);
     }
   }
 
+  void _onViewModelChanged() {
+    final step = _viewModel.step;
+    if (_lastStep != step) {
+      _lastStep = step;
+      if (_isVerifyingPairingCode) {
+        _isVerifyingPairingCode = false;
+        _pairingCode = '';
+      }
+      if (mounted) setState(() {});
+    }
+    if (_viewModel.isPairingCodeWrong && mounted) {
+      _viewModel.consumePairingCodeWrong();
+      _showPairingCodeWrongDialog();
+    }
+    if (_viewModel.isPermissionDenied && mounted) {
+      _viewModel.consumePermissionDenied();
+      _showPermissionDeniedDialog();
+    }
+  }
+
+  void _showPairingCodeWrongDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            title: t.wallet_connect_screen.guide_trezor.pairing_dialog.error_wrong_code,
+            description: t.wallet_connect_screen.guide_trezor.pairing_dialog.error_wrong_code_dialog,
+            onTapRight: () {
+              _viewModel.reset();
+              Navigator.pop(context);
+            },
+            rightButtonText: t.OK,
+          ),
+    );
+  }
+
+  void _showPermissionDeniedDialog() {
+    showConfirmDialog(
+      context,
+      context.read<PreferenceProvider>().language,
+      t.alert.ble_permission_denied.title,
+      t.alert.ble_permission_denied.description,
+      rightButtonText: t.go_to_settings,
+      onTapRight: () {
+        _viewModel.reset();
+        openAppSettings();
+      },
+      onTapLeft: () {
+        _viewModel.reset();
+        Navigator.pop(context);
+      },
+    );
+  }
+
   @override
   void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
     _loadingOverlayEntry?.remove();
     _loadingOverlayEntry = null;
     _viewModel.dispose();
@@ -167,7 +229,20 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
       case TrezorConnectStep.idle:
         return _buildInstructionToolTip([
           t.wallet_connect_screen.guide_trezor.init.ble_step1,
-          t.wallet_connect_screen.guide_trezor.init.ble_step2,
+          [
+            TextSpan(
+              text: t.wallet_connect_screen.guide_trezor.init.ble_step2_prefix,
+              style: TextStyle(color: context.coconutColors.primaryText),
+            ),
+            TextSpan(
+              text: t.wallet_connect_screen.guide_trezor.init.ble_step2_bold,
+              style: TextStyle(color: context.coconutColors.primaryText, fontWeight: FontWeight.bold),
+            ),
+            TextSpan(
+              text: t.wallet_connect_screen.guide_trezor.init.ble_step2_suffix,
+              style: TextStyle(color: context.coconutColors.primaryText),
+            ),
+          ],
           t.wallet_connect_screen.guide_trezor.init.ble_step3(
             btn: t.wallet_connect_screen.guide_trezor.btn.connect_via_ble,
           ),
@@ -186,7 +261,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     }
   }
 
-  Widget _buildInstructionToolTip(List<String> steps, {String? notice}) {
+  Widget _buildInstructionToolTip(List<Object> steps, {String? notice}) {
     return CoconutToolTip(
       backgroundColor: context.coconutColors.surface,
       borderColor: context.coconutColors.surface,
@@ -209,9 +284,13 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
             ],
             ...steps.asMap().entries.expand((e) {
               final isLast = e.key == steps.length - 1;
+              final stepSpans =
+                  e.value is String
+                      ? [TextSpan(text: e.value as String, style: TextStyle(color: context.coconutColors.primaryText))]
+                      : e.value as List<TextSpan>;
               return [
                 TextSpan(text: '${e.key + 1}. ', style: TextStyle(color: context.coconutColors.primaryText)),
-                TextSpan(text: e.value, style: TextStyle(color: context.coconutColors.primaryText)),
+                ...stepSpans,
                 if (!isLast) const TextSpan(text: '\n'),
               ];
             }),
@@ -464,30 +543,56 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(_codeLength, (index) {
-              final filled = index < _pairingCode.length;
-              final digit = filled ? _pairingCode[index] : '';
-              final hasError = vm.pairingErrorMessage != null;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: _DigitBox(digit: digit, hasError: hasError),
-              );
-            }),
+            children: [
+              for (int index = 0; index < _codeLength; index++) ...[
+                if (index > 0) SizedBox(width: index == 3 ? 12 : 4),
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 40),
+                    child: _DigitBox(
+                      digit: index < _pairingCode.length ? _pairingCode[index] : '',
+                      hasError: vm.pairingErrorMessage != null,
+                      isVerifying: _isVerifyingPairingCode,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-          Visibility(
-            visible: vm.pairingErrorMessage != null,
-            maintainSize: true,
-            maintainAnimation: true,
-            maintainState: true,
-            child: Padding(
+          if (_isVerifyingPairingCode)
+            Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                vm.pairingErrorMessage ?? '',
-                style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
-                textAlign: TextAlign.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    t.wallet_connect_screen.guide_trezor.pairing_dialog.verifying,
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                  ),
+                ],
+              ),
+            )
+          else
+            Visibility(
+              visible: vm.pairingErrorMessage != null,
+              maintainSize: true,
+              maintainAnimation: true,
+              maintainState: true,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  vm.pairingErrorMessage ?? '',
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
-          ),
           const SizedBox(height: 24),
           GridView.count(
             crossAxisCount: 3,
@@ -498,7 +603,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
                 _keypadKeys.map((key) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: KeyButton(keyValue: key, onKeyTap: _onPairingKeyTap),
+                    child: KeyButton(keyValue: key, onKeyTap: _isVerifyingPairingCode ? (_) {} : _onPairingKeyTap),
                   );
                 }).toList(),
           ),
@@ -539,14 +644,15 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
 class _DigitBox extends StatelessWidget {
   final String digit;
   final bool hasError;
+  final bool isVerifying;
 
-  const _DigitBox({required this.digit, required this.hasError});
+  const _DigitBox({required this.digit, required this.hasError, this.isVerifying = false});
 
   @override
   Widget build(BuildContext context) {
     final filled = digit.isNotEmpty;
     return SizedBox(
-      width: 40,
+      width: double.infinity,
       height: 48,
       child: Container(
         decoration: BoxDecoration(
@@ -561,7 +667,12 @@ class _DigitBox extends StatelessWidget {
                   digit,
                   style: CoconutTypography.heading3_21_Number.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: hasError ? context.coconutColors.danger : context.coconutColors.primaryText,
+                    color:
+                        hasError
+                            ? context.coconutColors.danger
+                            : isVerifying
+                            ? context.coconutColors.mutedText
+                            : context.coconutColors.primaryText,
                   ),
                 )
                 : null,

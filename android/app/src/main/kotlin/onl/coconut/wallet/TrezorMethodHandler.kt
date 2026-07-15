@@ -310,11 +310,20 @@ class TrezorMethodHandler(
     private var scanCallback: ScanCallback? = null
 
     private fun connectToDevice(device: BluetoothDevice, deviceId: String, result: MethodChannel.Result) {
+        // Close any stale GATT before starting a new connection
+        gatt?.close()
+        gatt = null
+        rxChar = null
+        txChar = null
+        connectedDeviceId = null
+
         var callbackFired = false
+        var retryCount = 0
+        val maxRetries = 2
 
         val gattCallback = object : BluetoothGattCallback() {
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-                Log.d("TrezorBLE", "onConnectionStateChange: status=$status newState=$newState callbackFired=$callbackFired")
+                Log.d("TrezorBLE", "onConnectionStateChange: status=$status newState=$newState callbackFired=$callbackFired retryCount=$retryCount")
                 if (callbackFired) return
                 when (newState) {
                     BluetoothProfile.STATE_CONNECTED -> {
@@ -323,6 +332,15 @@ class TrezorMethodHandler(
                         gatt.requestMtu(517)
                     }
                     BluetoothProfile.STATE_DISCONNECTED -> {
+                        if (status == 133 && retryCount < maxRetries) {
+                            retryCount++
+                            Log.d("TrezorBLE", "status=133, retrying ($retryCount/$maxRetries)")
+                            gatt.close()
+                            this@TrezorMethodHandler.gatt = null
+                            Thread.sleep(500)
+                            device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE)
+                            return
+                        }
                         if (!callbackFired) {
                             callbackFired = true
                             gatt.close()

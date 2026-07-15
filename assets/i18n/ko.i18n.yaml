@@ -413,6 +413,9 @@ wallet_connect_screen:
       notice: "Trezor Safe 7만 연결 가능합니다."
       ble_step1: "블루투스를 켜고 Trezor Safe 7을 가까이 두세요."
       ble_step2: "Trezor 기기의 잠금을 해제해 주세요. 첫 연결인 경우 Pair & Connect > Pair new device를 눌러주세요."
+      ble_step2_prefix: "Trezor 기기의 잠금을 해제해 주세요. 첫 연결인 경우 "
+      ble_step2_bold: "Pair & Connect > Pair new device"
+      ble_step2_suffix: "를 눌러주세요."
       ble_step3: "아래 '$btn' 버튼을 눌러 연결을 시작하세요."
     connecting:
       title: "기기 연결 중"
@@ -421,8 +424,9 @@ wallet_connect_screen:
     pairing_dialog:
       title: "페어링 코드 입력"
       description: "Trezor 화면에 표시된 6자리 숫자를 입력해 주세요."
-      hint: "6자리 코드"
-      error_wrong_code: "잘못된 페어링 코드입니다."
+      verifying: "코드를 확인 중..."
+      error_wrong_code: "잘못된 페어링 코드"
+      error_wrong_code_dialog: "잘못된 페어링 코드입니다.\n연결 과정을 처음부터 다시 시작합니다."
     paired:
       title: "Trezor 연결이 완료되었습니다."
       device_name: "기기 이름"
@@ -432,7 +436,9 @@ wallet_connect_screen:
     error:
       title: "연결 실패"
       ble_description: "Trezor Safe 7을 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
-
+  common:
+    ble_off: "기기 블루투스를 켜주세요."
+    
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
@@ -1228,6 +1234,9 @@ alert:
     description: "비트코인을 보내려면 마스터 핑거프린트를 먼저 추가해야 해요. 계속 하시겠어요?"
     skip_button: "취소"
     confirm_button: "추가하기"
+  ble_permission_denied:
+    title: "권한 필요"
+    description: "기기 연결을 위해 '근처 기기' 권한이 필요합니다. 설정에서 권한을 허용해 주세요."
 
 third_party:
   keystone: "키스톤"

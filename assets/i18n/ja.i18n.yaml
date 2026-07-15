@@ -439,6 +439,9 @@ wallet_connect_screen:
       notice: "Trezor Safe 7のみ対応しています。"
       ble_step1: "Bluetoothをオンにして、Trezor Safe 7を近くに置いてください。"
       ble_step2: "Trezorデバイスのロックを解除してください。初回接続の場合は、Pair & Connect > Pair new deviceをタップしてください。"
+      ble_step2_prefix: "Trezorデバイスのロックを解除してください。初回接続の場合は、"
+      ble_step2_bold: "Pair & Connect > Pair new device"
+      ble_step2_suffix: "をタップしてください。"
       ble_step3: "下の「$btn」ボタンをタップして接続を開始してください。"
     connecting:
       title: "デバイスを接続中"
@@ -447,7 +450,9 @@ wallet_connect_screen:
     pairing_dialog:
       title: "ペアリングコードの入力"
       description: "Trezor画面に表示された6桁の数字を入力してください。"
-      hint: "6桁のコード"
+      verifying: "コードを確認中..."
+      error_wrong_code: "間違ったペアリングコード"
+      error_wrong_code_dialog: "ペアリングコードが間違っています。\n接続プロセスを最初からやり直します。"
     paired:
       title: "Trezorの接続が完了しました。"
       device_name: "デバイス名"
@@ -457,6 +462,8 @@ wallet_connect_screen:
     error:
       title: "接続に失敗しました"
       ble_description: "Trezor Safe 7が見つかりません。Bluetoothをオンにして、デバイスを近づけてください。"
+  common:
+    ble_off: "デバイスのBluetoothをオンにしてください。"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -1221,6 +1228,9 @@ alert:
     description: "ビットコインを送信するには、まずマスターフィンガープリントを追加する必要があります。追加した後、再び送信することができます。"
     skip_button: "キャンセル"
     confirm_button: "追加"
+  ble_permission_denied:
+    title: "権限が必要です"
+    description: "デバイスに接続するには「近くのデバイス」権限が必要です。設定で権限を許可してください。"
 
 third_party:
   keystone: "Keystone"

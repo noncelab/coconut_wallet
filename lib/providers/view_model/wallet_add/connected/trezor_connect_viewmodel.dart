@@ -6,6 +6,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/foundation.dart';
 
@@ -17,7 +18,6 @@ class TrezorConnectViewModel extends ChangeNotifier {
   TrezorConnectViewModel(this._walletProvider);
 
   TrezorConnectStep _step = TrezorConnectStep.idle;
-  String _statusMessage = '';
   TrezorDevice? _device;
   String? _errorMessage;
   String _xpub = '';
@@ -25,17 +25,28 @@ class TrezorConnectViewModel extends ChangeNotifier {
   String _deviceLabel = '';
   bool _isConnecting = false;
   bool _disposed = false;
+  bool _isPairingCodeWrong = false;
+  bool _isPermissionDenied = false;
 
   Completer<String>? _pairingCodeCompleter;
   String? _pairingErrorMessage;
 
   String? get pairingErrorMessage => _pairingErrorMessage;
+  bool get isPairingCodeWrong => _isPairingCodeWrong;
+  bool get isPermissionDenied => _isPermissionDenied;
+
+  void consumePairingCodeWrong() {
+    _isPairingCodeWrong = false;
+  }
+
+  void consumePermissionDenied() {
+    _isPermissionDenied = false;
+  }
 
   // Called when pairing failed for other reasons.
   void Function()? onPairingFailed;
 
   TrezorConnectStep get step => _step;
-  String get statusMessage => _statusMessage;
   String? get errorMessage => _errorMessage;
   bool get isPaired => _step == TrezorConnectStep.paired;
   bool get isConnecting => _isConnecting;
@@ -43,17 +54,16 @@ class TrezorConnectViewModel extends ChangeNotifier {
   String get fingerprint => _fingerprint;
   String get deviceLabel => _deviceLabel;
 
-  void _setState(TrezorConnectStep step, {String? status}) {
+  void _setState(TrezorConnectStep step) {
     if (_disposed) return;
     _step = step;
-    if (status != null) _statusMessage = status;
     notifyListeners();
   }
 
   Future<String> waitForPairingCode() async {
     _pairingErrorMessage = null;
     _pairingCodeCompleter = Completer<String>();
-    _setState(TrezorConnectStep.pairing, status: 'Pairing...');
+    _setState(TrezorConnectStep.pairing);
     final code = await _pairingCodeCompleter!.future;
     _pairingCodeCompleter = null;
     return code;
@@ -77,38 +87,51 @@ class TrezorConnectViewModel extends ChangeNotifier {
     _isConnecting = true;
     _errorMessage = null;
     _pairingErrorMessage = null;
-    notifyListeners();
+    _isPairingCodeWrong = false;
+    _isPermissionDenied = false;
+    if (!_disposed) notifyListeners();
 
     try {
       TrezorDevice.onPairingCodeRequested = () async {
         return await waitForPairingCode();
       };
-      _setState(TrezorConnectStep.connecting, status: 'Scanning...');
+      _setState(TrezorConnectStep.connecting);
       _device = await TrezorDevice.connect();
       _deviceLabel = _device!.label;
 
-      _setState(TrezorConnectStep.paired, status: 'Trezor connected');
+      _setState(TrezorConnectStep.paired);
       await _retrieveXPub(silent: true);
     } on TrezorPairingCodeWrongException catch (e) {
       _errorMessage = e.message;
-      _pairingErrorMessage = e.message;
       _pairingCodeCompleter = null;
-      _setState(TrezorConnectStep.error, status: 'Wrong pairing code');
+      _isPairingCodeWrong = true;
+      if (!_disposed) notifyListeners();
     } on TrezorConnectException catch (e) {
-      _errorMessage = e.message;
-      onPairingFailed?.call();
-      _setState(TrezorConnectStep.error, status: 'Connection failed');
+      if (e.code == 'PERMISSION_DENIED') {
+        _errorMessage = e.message;
+        _isPermissionDenied = true;
+        _step = TrezorConnectStep.idle;
+        if (!_disposed) notifyListeners();
+      } else if (e.code == 'BLE_DISABLED') {
+        _errorMessage = t.wallet_connect_screen.common.ble_off;
+        onPairingFailed?.call();
+        _setState(TrezorConnectStep.error);
+      } else {
+        _errorMessage = e.message;
+        onPairingFailed?.call();
+        _setState(TrezorConnectStep.error);
+      }
     } on TrezorPairingException catch (e) {
       _errorMessage = e.message;
       onPairingFailed?.call();
-      _setState(TrezorConnectStep.error, status: 'Pairing failed');
+      _setState(TrezorConnectStep.error);
     } catch (e) {
       _errorMessage = e.toString();
       onPairingFailed?.call();
-      _setState(TrezorConnectStep.error, status: 'Unexpected error');
+      _setState(TrezorConnectStep.error);
     } finally {
       _isConnecting = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -129,19 +152,19 @@ class TrezorConnectViewModel extends ChangeNotifier {
       try {
         _xpub = await _device!.getXPub(keypath: keypath, network: nt.toString());
         _fingerprint = await _device!.getFingerprint();
-        _setState(TrezorConnectStep.paired, status: 'XPub retrieved');
+        _setState(TrezorConnectStep.paired);
       } on Exception catch (e) {
         if (silent) {
           _errorMessage = e.toString();
-          _setState(TrezorConnectStep.paired, status: 'Trezor connected');
+          _setState(TrezorConnectStep.paired);
         } else {
           _errorMessage = e.toString();
-          _setState(TrezorConnectStep.error, status: 'XPub retrieval failed');
+          _setState(TrezorConnectStep.error);
         }
       }
     } finally {
       _isRetrievingXPub = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -186,18 +209,19 @@ class TrezorConnectViewModel extends ChangeNotifier {
       } catch (_) {}
       _device = null;
     }
-    _setState(TrezorConnectStep.idle, status: '');
+    _setState(TrezorConnectStep.idle);
   }
 
   void reset() {
     _step = TrezorConnectStep.idle;
-    _statusMessage = '';
     _device = null;
     _errorMessage = null;
+    _isPairingCodeWrong = false;
+    _isPermissionDenied = false;
     _xpub = '';
     _fingerprint = '';
     _deviceLabel = '';
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   @override
