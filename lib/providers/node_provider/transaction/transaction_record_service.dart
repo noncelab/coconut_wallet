@@ -7,16 +7,16 @@ import 'package:coconut_wallet/model/node/transaction_details.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
 class TransactionRecordService {
-  final ElectrumService _electrumService;
+  final ChainSource _chainSource;
   final AddressRepository _addressRepository;
 
-  TransactionRecordService(this._electrumService, this._addressRepository);
+  TransactionRecordService(this._chainSource, this._addressRepository);
 
   /// 트랜잭션 레코드를 생성합니다.
   Future<List<TransactionRecord>> createTransactionRecords(
@@ -51,7 +51,7 @@ class TransactionRecordService {
   }) async {
     now ??= DateTime.now();
 
-    final prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
+    final prevTxs = await _chainSource.getPreviousTransactions(tx, existingTxList: previousTxs);
     final txDetails = processTransactionDetails(tx, prevTxs, walletId);
 
     return TransactionRecord.fromTransactions(
@@ -68,7 +68,11 @@ class TransactionRecordService {
   }
 
   /// 트랜잭션의 입출력 상세 정보를 처리합니다.
-  TransactionDetails processTransactionDetails(Transaction tx, List<Transaction> previousTxs, int walletId) {
+  TransactionDetails processTransactionDetails(
+    Transaction tx,
+    List<Transaction> previousTxs,
+    int walletId,
+  ) {
     List<TransactionAddress> inputAddressList = [];
     int selfInputCount = 0;
     int selfOutputCount = 0;
@@ -82,7 +86,9 @@ class TransactionRecordService {
       // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
       Transaction? previousTx;
       try {
-        previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
+        previousTx = previousTxs.firstWhere(
+          (prevTx) => prevTx.transactionHash == input.transactionHash,
+        );
       } catch (_) {
         continue;
       }
@@ -92,7 +98,10 @@ class TransactionRecordService {
       }
 
       final previousOutput = previousTx.outputs[input.index];
-      final inputAddress = TransactionAddress(previousOutput.scriptPubKey.getAddress(), previousOutput.amount);
+      final inputAddress = TransactionAddress(
+        previousOutput.scriptPubKey.getAddress(),
+        previousOutput.amount,
+      );
       inputAddressList.add(inputAddress);
 
       fee += inputAddress.amount;
@@ -142,7 +151,12 @@ class TransactionRecordService {
     );
   }
 
-  TransactionType determineTransactionType(int selfInputCount, int selfOutputCount, int inputCount, int outputCount) {
+  TransactionType determineTransactionType(
+    int selfInputCount,
+    int selfOutputCount,
+    int inputCount,
+    int outputCount,
+  ) {
     if (selfInputCount == 0) {
       return TransactionType.received;
     }
@@ -159,12 +173,17 @@ class TransactionRecordService {
   }
 
   /// 트랜잭션 레코드를 조회합니다.
-  Future<Result<TransactionRecord>> getTransactionRecord(WalletItemBase walletItem, String txHash) async {
-    Logger.log('TransactionRecordService: getTransactionRecord called (txHash: $txHash, walletId: ${walletItem.id})');
+  Future<Result<TransactionRecord>> getTransactionRecord(
+    WalletItemBase walletItem,
+    String txHash,
+  ) async {
+    Logger.log(
+      'TransactionRecordService: getTransactionRecord called (txHash: $txHash, walletId: ${walletItem.id})',
+    );
     try {
-      final txRaw = await _electrumService.getTransaction(txHash);
+      final txRaw = await _chainSource.getTransaction(txHash);
       final tx = Transaction.parse(txRaw);
-      final previousTxs = await _electrumService.getPreviousTransactions(tx);
+      final previousTxs = await _chainSource.getPreviousTransactions(tx);
       final txDetails = processTransactionDetails(tx, previousTxs, walletItem.id);
       final blockTimestamp = await getTxHeight(
         walletItem.id,
@@ -203,7 +222,7 @@ class TransactionRecordService {
     TransactionDetails txDetails,
   ) async {
     final address = _findWalletRelatedAddress(walletId, txDetails);
-    final history = await _electrumService.getHistory(addressType, address);
+    final history = await _chainSource.getHistory(addressType, address);
 
     if (history.isEmpty) {
       return BlockTimestamp(0, DateTime.now());
@@ -215,7 +234,7 @@ class TransactionRecordService {
       return BlockTimestamp(0, DateTime.now());
     }
 
-    return await _electrumService.getBlockTimestamp(height);
+    return await _chainSource.getBlockTimestamp(height);
   }
 
   /// 지갑과 관련된 주소를 찾습니다.
@@ -272,7 +291,11 @@ class TransactionRecordService {
       final blockTimestamp = fetchedTransactionDetails.blockTimestampMap[blockHeight];
 
       // 이전 트랜잭션들을 맵에서 조회
-      final prevTxs = tx.inputs.map((input) => previousTxsMap[input.transactionHash]).whereType<Transaction>().toList();
+      final prevTxs =
+          tx.inputs
+              .map((input) => previousTxsMap[input.transactionHash])
+              .whereType<Transaction>()
+              .toList();
 
       final txDetails = processTransactionDetails(tx, prevTxs, walletId);
 
@@ -307,7 +330,7 @@ class TransactionRecordService {
     for (final chunk in chunks) {
       final futures = chunk.map((txHash) async {
         try {
-          final txHex = await _electrumService.getTransaction(txHash);
+          final txHex = await _chainSource.getTransaction(txHash);
           final tx = Transaction.parse(txHex);
           return MapEntry(txHash, tx);
         } catch (e) {

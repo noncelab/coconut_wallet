@@ -62,7 +62,11 @@ class IsolateStateManager implements StateManagerInterface {
   }
 
   /// 업데이트 요소에 따른 상태 업데이트 및 상태 변경 여부 반환
-  bool _isUpdatedElementStatus(WalletUpdateInfo walletUpdateInfo, UpdateElement updateType, WalletSyncState newStatus) {
+  bool _isUpdatedElementStatus(
+    WalletUpdateInfo walletUpdateInfo,
+    UpdateElement updateType,
+    WalletSyncState newStatus,
+  ) {
     WalletSyncState prevStatus;
 
     switch (updateType) {
@@ -93,7 +97,9 @@ class IsolateStateManager implements StateManagerInterface {
 
     _registeredWallets[walletId] = WalletUpdateInfo(walletId);
     _walletUpdateCounter[walletId] = WalletUpdateCounter.initial();
-    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.initWalletUpdateStatus, [walletId]));
+    _sendStateUpdateToMain(
+      IsolateStateMessage(IsolateStateMethod.initWalletUpdateStatus, [walletId]),
+    );
   }
 
   @override
@@ -110,7 +116,9 @@ class IsolateStateManager implements StateManagerInterface {
     _registeredWallets[walletId] = walletUpdateInfo;
 
     if (isChange) {
-      _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.addWalletSyncState, [walletId, updateType]));
+      _sendStateUpdateToMain(
+        IsolateStateMessage(IsolateStateMethod.addWalletSyncState, [walletId, updateType]),
+      );
     }
   }
 
@@ -131,13 +139,17 @@ class IsolateStateManager implements StateManagerInterface {
     _registeredWallets[walletId] = walletUpdateInfo;
 
     if (isChange) {
-      _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.addWalletCompletedState, [walletId, updateType]));
+      _sendStateUpdateToMain(
+        IsolateStateMessage(IsolateStateMethod.addWalletCompletedState, [walletId, updateType]),
+      );
     }
   }
 
   @override
   void addWalletCompletedAllStates(int walletId) {
-    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.addWalletCompletedAllStates, [walletId]));
+    _sendStateUpdateToMain(
+      IsolateStateMessage(IsolateStateMethod.addWalletCompletedAllStates, [walletId]),
+    );
   }
 
   @override

@@ -11,7 +11,7 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -24,7 +24,7 @@ import '../../../services/shared_prefs_service_test.mocks.dart';
 import 'rbf_service_test.mocks.dart';
 
 // 테스트에 필요한 모킹 클래스 생성
-@GenerateMocks([ElectrumService])
+@GenerateMocks([ChainSource])
 void main() {
   group('RbfService', () {
     TestRealmManager? realmManager;
@@ -32,7 +32,7 @@ void main() {
     late WalletRepository walletRepository;
     late AddressRepository addressRepository;
     late UtxoRepository utxoRepository;
-    late MockElectrumService electrumService;
+    late MockChainSource electrumService;
     late RbfService rbfService;
 
     const int walletId = 1;
@@ -85,7 +85,7 @@ void main() {
         ),
       );
       await addressRepository.ensureAddressesInit(walletItemBase: walletItem);
-      electrumService = MockElectrumService();
+      electrumService = MockChainSource();
       rbfService = RbfService(transactionRepository, utxoRepository, electrumService);
     });
 

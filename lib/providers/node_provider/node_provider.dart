@@ -284,7 +284,9 @@ class NodeProvider extends ChangeNotifier {
   void _createNewCompleter() {
     if (_initCompleter != null && !_initCompleter!.isCompleted) {
       try {
-        _initCompleter!.completeError(Exception('NodeProvider: Previous initialization was cancelled'));
+        _initCompleter!.completeError(
+          Exception('NodeProvider: Previous initialization was cancelled'),
+        );
       } catch (e) {
         // 이미 완료된 경우 무시
       }
@@ -385,7 +387,8 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> subscribeWallets() async {
-    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted || _connectivityProvider.isInternetOff) {
+    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted ||
+        _connectivityProvider.isInternetOff) {
       return Result.success(false);
     }
     final walletItems = _walletItemListNotifier.value;
@@ -409,7 +412,9 @@ class NodeProvider extends ChangeNotifier {
   Future<Result<String>> broadcast(Transaction signedTx) async {
     final result = await _isolateManager.broadcast(signedTx);
     if (result.isFailure) {
-      Logger.error('NodeProvider.broadcast: failed code=${result.error.code} message=${result.error.message}');
+      Logger.error(
+        'NodeProvider.broadcast: failed code=${result.error.code} message=${result.error.message}',
+      );
       FileLogger.logBroadcast('NodeProvider failure code=${result.error.code}');
     }
     return result;
@@ -443,7 +448,9 @@ class NodeProvider extends ChangeNotifier {
     Logger.log('NodeProvider: getTransactionRecord called (txHash: $txHash)');
     final result = await _isolateManager.getTransactionRecord(walletItem, txHash, timeout: timeout);
     if (result.isFailure) {
-      Logger.error('NodeProvider.getTransactionRecord failed (txHash: $txHash) - error: ${result.error}');
+      Logger.error(
+        'NodeProvider.getTransactionRecord failed (txHash: $txHash) - error: ${result.error}',
+      );
     }
     return result;
   }

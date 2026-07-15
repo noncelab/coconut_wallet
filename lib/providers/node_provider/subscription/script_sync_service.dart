@@ -62,7 +62,10 @@ class ScriptSyncService {
       );
 
       // 기존 인덱스 저장 (변경 전)
-      final oldUsedIndex = dto.scriptStatus.isChange ? dto.walletItem.changeUsedIndex : dto.walletItem.receiveUsedIndex;
+      final oldUsedIndex =
+          dto.scriptStatus.isChange
+              ? dto.walletItem.changeUsedIndex
+              : dto.walletItem.receiveUsedIndex;
 
       // 지갑 인덱스 업데이트
       await _addressRepository.updateWalletUsedIndex(
@@ -86,8 +89,16 @@ class ScriptSyncService {
       await _balanceSyncService.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
 
       // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
-      final txHashes = await _transactionSyncService.fetchScriptTransaction(dto.walletItem, dto.scriptStatus, now: now);
-      await _scriptCallbackService.registerTransactionDependency(dto.walletItem, dto.scriptStatus, txHashes);
+      final txHashes = await _transactionSyncService.fetchScriptTransaction(
+        dto.walletItem,
+        dto.scriptStatus,
+        now: now,
+      );
+      await _scriptCallbackService.registerTransactionDependency(
+        dto.walletItem,
+        dto.scriptStatus,
+        txHashes,
+      );
 
       // 새 스크립트 구독 여부 확인 및 처리
       if (_needSubscriptionUpdate(dto.walletItem, oldUsedIndex, dto.scriptStatus.isChange)) {
@@ -110,7 +121,9 @@ class ScriptSyncService {
   /// 필요한 경우 추가 스크립트를 구독합니다.
   bool _needSubscriptionUpdate(WalletItemBase walletItem, int oldUsedIndex, bool isChange) {
     // receive 또는 change 인덱스가 증가한 경우 추가 구독이 필요
-    return isChange ? walletItem.changeUsedIndex > oldUsedIndex : walletItem.receiveUsedIndex > oldUsedIndex;
+    return isChange
+        ? walletItem.changeUsedIndex > oldUsedIndex
+        : walletItem.receiveUsedIndex > oldUsedIndex;
   }
 
   /// 스크립트 상태 변경 배치 처리
@@ -127,7 +140,9 @@ class ScriptSyncService {
       await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses);
       final balanceEndTime = DateTime.now();
       final balanceDuration = balanceEndTime.difference(balanceStartTime);
-      Logger.performance('Balance sync completed in ${balanceDuration.inMilliseconds}ms for ${walletItem.name}');
+      Logger.performance(
+        'Balance sync completed in ${balanceDuration.inMilliseconds}ms for ${walletItem.name}',
+      );
 
       // Transaction 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
@@ -135,11 +150,16 @@ class ScriptSyncService {
 
       const chunkSize = 20;
       for (int i = 0; i < scriptStatuses.length; i += chunkSize) {
-        final endIndex = (i + chunkSize < scriptStatuses.length) ? i + chunkSize : scriptStatuses.length;
+        final endIndex =
+            (i + chunkSize < scriptStatuses.length) ? i + chunkSize : scriptStatuses.length;
         final batch = scriptStatuses.sublist(i, endIndex);
         final transactionFutures = batch.map(
-          (status) =>
-              _transactionSyncService.fetchScriptTransaction(walletItem, status, inBatchProcess: true, now: now),
+          (status) => _transactionSyncService.fetchScriptTransaction(
+            walletItem,
+            status,
+            inBatchProcess: true,
+            now: now,
+          ),
         );
         await Future.wait(transactionFutures);
 
@@ -161,7 +181,9 @@ class ScriptSyncService {
       final utxoStartTime = DateTime.now();
 
       await Future.wait(
-        scriptStatuses.map((status) => _utxoSyncService.fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
+        scriptStatuses.map(
+          (status) => _utxoSyncService.fetchScriptUtxo(walletItem, status, inBatchProcess: true),
+        ),
       );
 
       // 최초 지갑 구독 시 Outgoing Transaction이 있을 경우 UTXO가 생성되지 않을 경우 임의로 UTXO를 생성해야 함

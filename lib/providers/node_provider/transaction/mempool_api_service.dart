@@ -8,7 +8,9 @@ class MempoolApi {
   final Uri _baseUrl;
   final http.Client _client;
 
-  MempoolApi({http.Client? client}) : _client = client ?? http.Client(), _baseUrl = _resolveBaseUrl();
+  MempoolApi({http.Client? client})
+    : _client = client ?? http.Client(),
+      _baseUrl = _resolveBaseUrl();
 
   static Uri _resolveBaseUrl() {
     final networkType = NetworkType.currentNetworkType;
@@ -40,7 +42,10 @@ class MempoolApi {
     throw Exception('HTTP ${res.statusCode}: ${res.body}');
   }
 
-  Future<Map<String, dynamic>> fetchTx(String txid, {Duration timeout = const Duration(seconds: 15)}) async {
+  Future<Map<String, dynamic>> fetchTx(
+    String txid, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     _validateTxid(txid);
 
     final uri = _uri('/api/tx/$txid');

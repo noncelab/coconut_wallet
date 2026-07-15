@@ -11,7 +11,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
@@ -26,13 +26,13 @@ import '../../../mock/wallet_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
 
 // 모킹할 클래스 목록
-@GenerateMocks([ElectrumService, NodeStateManager, WalletProvider])
+@GenerateMocks([ChainSource, NodeStateManager, WalletProvider])
 import 'transaction_sync_service_test.mocks.dart';
 
 void main() {
   late TestRealmManager realmManager;
   late TransactionRepository transactionRepository;
-  late MockElectrumService electrumService;
+  late MockChainSource electrumService;
   late MockNodeStateManager stateManager;
   late UtxoRepository utxoRepository;
   late AddressRepository addressRepository;
@@ -48,7 +48,7 @@ void main() {
     realmManager = await setupTestRealmManager();
     transactionRepository = TransactionRepository(realmManager);
     addressRepository = AddressRepository(realmManager);
-    electrumService = MockElectrumService();
+    electrumService = MockChainSource();
     stateManager = MockNodeStateManager();
     utxoRepository = UtxoRepository(realmManager);
     walletProvider = MockWalletProvider();

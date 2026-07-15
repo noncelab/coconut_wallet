@@ -5,7 +5,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -13,14 +13,14 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 
 /// NodeProvider의 UTXO 관련 기능을 담당하는 서비스 클래스
 class UtxoSyncService {
-  final ElectrumService _electrumService;
+  final ChainSource _chainSource;
   final StateManagerInterface _stateManager;
   final UtxoRepository _utxoRepository;
   final TransactionRepository _transactionRepository;
   final AddressRepository _addressRepository;
 
   UtxoSyncService(
-    this._electrumService,
+    this._chainSource,
     this._stateManager,
     this._utxoRepository,
     this._transactionRepository,
@@ -46,9 +46,12 @@ class UtxoSyncService {
   }
 
   /// 스크립트에 대한 UTXO 목록을 가져옵니다.
-  Future<List<UtxoState>> fetchUtxoStateList(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
+  Future<List<UtxoState>> fetchUtxoStateList(
+    WalletItemBase walletItem,
+    ScriptStatus scriptStatus,
+  ) async {
     try {
-      final unspentResList = await _electrumService.getUnspentList(
+      final unspentResList = await _chainSource.getUnspentList(
         walletItem.walletBase.addressType,
         scriptStatus.address,
       );
@@ -57,7 +60,9 @@ class UtxoSyncService {
         walletItem.id,
         unspentResList.map((unspentRes) => unspentRes.txHash).toSet(),
       );
-      final transactionMap = {for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx};
+      final transactionMap = {
+        for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx,
+      };
       final realmLockedUtxos = _utxoRepository.getUtxosByStatus(walletItem.id, UtxoStatus.locked);
       final lockedUtxoMap = {for (final utxo in realmLockedUtxos) utxo.transactionHash: utxo};
       return unspentResList
@@ -85,7 +90,9 @@ class UtxoSyncService {
           )
           .toList();
     } catch (e, stackTrace) {
-      Logger.error('Failed to get UTXO list - [${scriptStatus.derivationPath}-${scriptStatus.address}}] $e');
+      Logger.error(
+        'Failed to get UTXO list - [${scriptStatus.derivationPath}-${scriptStatus.address}}] $e',
+      );
       Logger.error('Stack trace: $stackTrace');
       return [];
     }
@@ -109,9 +116,13 @@ class UtxoSyncService {
   Future<void> createOutgoingUtxos(WalletItemBase walletItem) async {
     try {
       // 1. 언컨펌 출금 트랜잭션 목록 조회
-      final unconfirmedTransactions = _transactionRepository.getUnconfirmedTransactionRecordList(walletItem.id);
+      final unconfirmedTransactions = _transactionRepository.getUnconfirmedTransactionRecordList(
+        walletItem.id,
+      );
       final sentTransactions =
-          unconfirmedTransactions.where((tx) => tx.transactionType == TransactionType.sent).toList();
+          unconfirmedTransactions
+              .where((tx) => tx.transactionType == TransactionType.sent)
+              .toList();
 
       // 언컨펌 sent 트랜잭션이 없으면 처리 필요 없음
       if (sentTransactions.isEmpty) {
@@ -126,11 +137,11 @@ class UtxoSyncService {
 
       // 3. 각 트랜잭션에 대해 트랜잭션 상세 정보 조회
       for (final txRecord in sentTransactions) {
-        final txHex = await _electrumService.getTransaction(txRecord.transactionHash);
+        final txHex = await _chainSource.getTransaction(txRecord.transactionHash);
         final transaction = Transaction.parse(txHex);
 
         // 4. 이전 트랜잭션 조회 (트랜잭션의 입력으로 사용된 트랜잭션)
-        final previousTxs = await _electrumService.getPreviousTransactions(transaction);
+        final previousTxs = await _chainSource.getPreviousTransactions(transaction);
 
         if (previousTxs.isEmpty) {
           continue; // 이전 트랜잭션을 찾을 수 없으면 처리 불가
@@ -147,7 +158,9 @@ class UtxoSyncService {
 
           Transaction? previousTx;
           try {
-            previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
+            previousTx = previousTxs.firstWhere(
+              (prevTx) => prevTx.transactionHash == input.transactionHash,
+            );
           } catch (_) {
             continue;
           }
@@ -189,12 +202,16 @@ class UtxoSyncService {
 
   /// orphaned UTXO를 정리합니다.
   Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem) async {
-    final pendingUtxos = _utxoRepository.getUtxoStateList(walletItem.id).where((utxo) => utxo.isPending).toList();
+    final pendingUtxos =
+        _utxoRepository.getUtxoStateList(walletItem.id).where((utxo) => utxo.isPending).toList();
 
     final orphanUtxoSet = <UtxoState>{};
     for (final utxo in pendingUtxos) {
       if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null) {
-        final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.spentByTransactionHash!);
+        final tx = _transactionRepository.getTransactionRecord(
+          walletItem.id,
+          utxo.spentByTransactionHash!,
+        );
         if (tx == null || tx.blockHeight > 0) {
           orphanUtxoSet.add(utxo);
         }
@@ -207,7 +224,10 @@ class UtxoSyncService {
     }
 
     if (orphanUtxoSet.isNotEmpty) {
-      await _utxoRepository.deleteUtxoList(walletItem.id, orphanUtxoSet.map((utxo) => utxo.utxoId).toList());
+      await _utxoRepository.deleteUtxoList(
+        walletItem.id,
+        orphanUtxoSet.map((utxo) => utxo.utxoId).toList(),
+      );
     }
   }
 }

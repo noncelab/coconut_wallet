@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_initializer.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
+import 'package:coconut_wallet/services/electrum_chain_source.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/model/node/spawn_isolate_dto.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -54,7 +55,9 @@ class IsolateManager {
   void _createIsolateCompleter() {
     if (_isolateReady != null && !_isolateReady!.isCompleted && _isInitializing) {
       try {
-        _isolateReady!.completeError(Exception('IsolateManager: Previous initialization was cancelled'));
+        _isolateReady!.completeError(
+          Exception('IsolateManager: Previous initialization was cancelled'),
+        );
       } catch (e) {
         // 이미 완료된 경우 무시
       }
@@ -265,12 +268,15 @@ class IsolateManager {
     NetworkType.setNetworkType(data.networkType);
 
     final isolateFromMainReceivePort = ReceivePort('isolateFromMainReceivePort');
-    final electrumService = ElectrumService();
+    final chainSource = ElectrumChainSource(ElectrumService());
 
     try {
-      final isConnected = await electrumService.connect(data.host, data.port, ssl: data.ssl);
+      final isConnected = await chainSource.connect(data.host, data.port, ssl: data.ssl);
 
-      final isolateController = IsolateInitializer.entryInitialize(data.isolateToMainSendPort, electrumService);
+      final isolateController = IsolateInitializer.entryInitialize(
+        data.isolateToMainSendPort,
+        chainSource,
+      );
 
       if (!isConnected) {
         Logger.error("Isolate: Failed to connect to Electrum server");
@@ -330,7 +336,9 @@ class IsolateManager {
       case IsolateControllerCommand.getTransaction:
       case IsolateControllerCommand.getRecommendedFees:
         final timeout =
-            _host.contains('.onion') ? kIsolateSimpleResponseTimeoutForOnion : kIsolateSimpleResponseTimeout;
+            _host.contains('.onion')
+                ? kIsolateSimpleResponseTimeoutForOnion
+                : kIsolateSimpleResponseTimeout;
         return timeout;
     }
   }
@@ -352,7 +360,9 @@ class IsolateManager {
   /// Isolate 명령 실패 로그
   void _logCommandFailure(IsolateControllerCommand command, String failureStage, [Object? detail]) {
     if (detail != null) {
-      Logger.error('IsolateManager: command=${command.name} failureStage=$failureStage detail=$detail');
+      Logger.error(
+        'IsolateManager: command=${command.name} failureStage=$failureStage detail=$detail',
+      );
     } else {
       Logger.error('IsolateManager: command=${command.name} failureStage=$failureStage');
     }
@@ -441,7 +451,8 @@ class IsolateManager {
       Result<dynamic> result;
       try {
         final timeLimit = commandTimeoutOverride ?? _getTimeoutForCommand(messageType);
-        final isSocketConnectionStatusMessage = messageType == IsolateControllerCommand.getSocketConnectionStatus;
+        final isSocketConnectionStatusMessage =
+            messageType == IsolateControllerCommand.getSocketConnectionStatus;
 
         result = await mainFromIsolateReceivePort.first.timeout(
           timeLimit,
@@ -451,12 +462,18 @@ class IsolateManager {
                 'IsolateManager: getTransactionRecord timeout (txHash: ${params[1]}, limit: ${timeLimit.inMilliseconds}ms)',
               );
             } else {
-              Logger.error('IsolateManager: Command timeout: $messageType (${timeLimit.inMilliseconds}ms)');
+              Logger.error(
+                'IsolateManager: Command timeout: $messageType (${timeLimit.inMilliseconds}ms)',
+              );
             }
             if (isSocketConnectionStatusMessage) {
               return Result.success(SocketConnectionStatus.terminated);
             }
-            _logCommandFailure(messageType, 'isolate_response_timeout', '${timeLimit.inMilliseconds}ms');
+            _logCommandFailure(
+              messageType,
+              'isolate_response_timeout',
+              '${timeLimit.inMilliseconds}ms',
+            );
             return Result<T>.failure(ErrorCodes.nodeIsolateError);
           },
         );
@@ -543,7 +560,10 @@ class IsolateManager {
     Logger.log(
       'IsolateManager: getTransactionRecord called (txHash: $txHash, timeout: ${timeout?.inSeconds ?? "default"}s)',
     );
-    return _send(IsolateControllerCommand.getTransactionRecord, [walletItem, txHash], commandTimeoutOverride: timeout);
+    return _send(IsolateControllerCommand.getTransactionRecord, [
+      walletItem,
+      txHash,
+    ], commandTimeoutOverride: timeout);
   }
 
   /// isolate 연결만 종료하는 메서드
@@ -583,7 +603,9 @@ class IsolateManager {
       // isolateReady가 완료되지 않았다면 에러로 완료 처리
       if (_isolateReady != null && !_isolateReady!.isCompleted) {
         try {
-          _isolateReady!.completeError(Exception('Isolate was closed before initialization completed'));
+          _isolateReady!.completeError(
+            Exception('Isolate was closed before initialization completed'),
+          );
         } catch (e) {
           // 이미 완료된 경우 무시
         }
