@@ -437,7 +437,6 @@ wallet_connect_screen:
     init:
       notice: "Only Trezor Safe 7 is supported."
       ble_step1: "Turn on Bluetooth and keep Trezor Safe 7 nearby."
-      ble_step2: "Unlock your Trezor device. For first-time pairing, tap Pair & Connect > Pair new device on the Trezor."
       ble_step2_prefix: "Unlock your Trezor device. For first-time pairing, tap "
       ble_step2_bold: "Pair & Connect > Pair new device"
       ble_step2_suffix: " on the Trezor."
@@ -445,7 +444,8 @@ wallet_connect_screen:
     connecting:
       title: "Connecting Device"
       step1: "Unlock your device."
-      step2: "Allow the connection to Coconut Wallet on your device."
+      step2: "For first-time connections, verify the pairing code matches and press Confirm."
+      step3: "When the Trezor asks whether to connect with Coconut Wallet, press Confirm."
     pairing_dialog:
       title: "Enter Pairing Code"
       description: "Enter the 6-digit code shown on your Trezor screen."
@@ -461,6 +461,12 @@ wallet_connect_screen:
     error:
       title: "Connection Failed"
       ble_description: "Trezor Safe 7 not found. Please turn on Bluetooth and bring the device closer."
+    ios_peer_removed_pairing:
+      title: "Existing Bluetooth Pairing Information Removed"
+      description: "The Trezor has removed its previous Bluetooth pairing information."
+      step1: "Go to iPhone \"Settings > Bluetooth\"."
+      step2: "Tap (i) next to [the device name set on your Trezor] or 'Trezor Safe 7'."
+      step3: "Select 'Forget This Device' and try again."
   common:
     ble_off: "Please turn on Bluetooth on your device."
 
@@ -1228,9 +1234,12 @@ alert:
     description: "To send Bitcoin, you need to add the Master Fingerprint first. Do you want to continue?"
     skip_button: "Cancel"
     confirm_button: "Add"
-  ble_permission_denied:
+  aos_ble_permission_denied:
     title: "Permission Required"
     description: "'Nearby devices' permission is required to connect to the device. Please allow this permission in Settings."
+  ios_ble_permission_denied:
+    title: "Bluetooth Permission Required"
+    description: "Bluetooth permission is required to connect to the device. Please allow Bluetooth permission for this app in iPhone \"Settings\"."
 
 third_party:
   keystone: "Keystone"

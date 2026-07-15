@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'dart:io';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -103,11 +104,15 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
   }
 
   void _showPermissionDeniedDialog() {
+    final isIOS = Platform.isIOS;
+    final title = isIOS ? t.alert.ios_ble_permission_denied.title : t.alert.aos_ble_permission_denied.title;
+    final description =
+        isIOS ? t.alert.ios_ble_permission_denied.description : t.alert.aos_ble_permission_denied.description;
     showConfirmDialog(
       context,
       context.read<PreferenceProvider>().language,
-      t.alert.ble_permission_denied.title,
-      t.alert.ble_permission_denied.description,
+      title,
+      description,
       rightButtonText: t.go_to_settings,
       onTapRight: () {
         _viewModel.reset();
@@ -251,13 +256,14 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
         return _buildProgressCard(t.wallet_connect_screen.guide_trezor.connecting.title, [
           t.wallet_connect_screen.guide_trezor.connecting.step1,
           t.wallet_connect_screen.guide_trezor.connecting.step2,
+          t.wallet_connect_screen.guide_trezor.connecting.step3,
         ]);
       case TrezorConnectStep.pairing:
         return _buildPairingCard(vm);
       case TrezorConnectStep.paired:
         return _buildSuccessCard(vm);
       case TrezorConnectStep.error:
-        return _buildErrorCard(vm);
+        return _buildErrorCard(vm, steps: vm.peerRemovedPairingSteps);
     }
   }
 
@@ -479,7 +485,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     );
   }
 
-  Widget _buildErrorCard(TrezorConnectViewModel vm) {
+  Widget _buildErrorCard(TrezorConnectViewModel vm, {List<String>? steps}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
@@ -506,16 +512,44 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
             child: Column(
               children: [
                 Text(
-                  t.wallet_connect_screen.guide_trezor.error.ble_description,
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                  vm.errorDescription ?? t.wallet_connect_screen.guide_trezor.error.ble_description,
+                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
                   textAlign: TextAlign.center,
                 ),
                 CoconutLayout.spacing_200h,
                 Text(
                   vm.errorMessage ?? 'Unknown error',
-                  style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                  style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
                   textAlign: TextAlign.center,
                 ),
+                if (steps != null && steps.isNotEmpty) ...[
+                  CoconutLayout.spacing_300h,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children:
+                        steps.asMap().entries.map((e) {
+                          final isLast = e.key == steps.length - 1;
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: '${e.key + 1}. ',
+                                    style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                                  ),
+                                  TextSpan(
+                                    text: e.value,
+                                    style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.left,
+                            ),
+                          );
+                        }).toList(),
+                  ),
+                ],
               ],
             ),
           ),

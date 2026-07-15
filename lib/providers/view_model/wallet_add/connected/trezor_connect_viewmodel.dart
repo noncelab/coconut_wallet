@@ -19,7 +19,9 @@ class TrezorConnectViewModel extends ChangeNotifier {
 
   TrezorConnectStep _step = TrezorConnectStep.idle;
   TrezorDevice? _device;
+  String? _errorDescription;
   String? _errorMessage;
+  List<String>? _peerRemovedPairingSteps;
   String _xpub = '';
   String _fingerprint = '';
   String _deviceLabel = '';
@@ -47,7 +49,9 @@ class TrezorConnectViewModel extends ChangeNotifier {
   void Function()? onPairingFailed;
 
   TrezorConnectStep get step => _step;
+  String? get errorDescription => _errorDescription;
   String? get errorMessage => _errorMessage;
+  List<String>? get peerRemovedPairingSteps => _peerRemovedPairingSteps;
   bool get isPaired => _step == TrezorConnectStep.paired;
   bool get isConnecting => _isConnecting;
   String get xpub => _xpub;
@@ -86,6 +90,7 @@ class TrezorConnectViewModel extends ChangeNotifier {
 
     _isConnecting = true;
     _errorMessage = null;
+    _errorDescription = null;
     _pairingErrorMessage = null;
     _isPairingCodeWrong = false;
     _isPermissionDenied = false;
@@ -114,6 +119,17 @@ class TrezorConnectViewModel extends ChangeNotifier {
         if (!_disposed) notifyListeners();
       } else if (e.code == 'BLE_DISABLED') {
         _errorMessage = t.wallet_connect_screen.common.ble_off;
+        onPairingFailed?.call();
+        _setState(TrezorConnectStep.error);
+      } else if (e.code == 'PEER_REMOVED_PAIRING') {
+        // iOS only
+        _errorDescription = t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.title;
+        _errorMessage = t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.description;
+        _peerRemovedPairingSteps = [
+          t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.step1,
+          t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.step2,
+          t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.step3,
+        ];
         onPairingFailed?.call();
         _setState(TrezorConnectStep.error);
       } else {
@@ -216,6 +232,8 @@ class TrezorConnectViewModel extends ChangeNotifier {
     _step = TrezorConnectStep.idle;
     _device = null;
     _errorMessage = null;
+    _errorDescription = null;
+    _peerRemovedPairingSteps = null;
     _isPairingCodeWrong = false;
     _isPermissionDenied = false;
     _xpub = '';

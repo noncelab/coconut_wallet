@@ -7,6 +7,9 @@ ready:
 slang:
 	fvm dart pub run slang
 
+ios-build-profile:
+	fvm flutter build ios --flavor regtest --profile
+
 ios-mainnet:
 	fvm flutter build ios --flavor mainnet --release --dart-define=USE_FIREBASE=true
 

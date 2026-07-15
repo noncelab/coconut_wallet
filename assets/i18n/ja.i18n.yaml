@@ -438,7 +438,6 @@ wallet_connect_screen:
     init:
       notice: "Trezor Safe 7のみ対応しています。"
       ble_step1: "Bluetoothをオンにして、Trezor Safe 7を近くに置いてください。"
-      ble_step2: "Trezorデバイスのロックを解除してください。初回接続の場合は、Pair & Connect > Pair new deviceをタップしてください。"
       ble_step2_prefix: "Trezorデバイスのロックを解除してください。初回接続の場合は、"
       ble_step2_bold: "Pair & Connect > Pair new device"
       ble_step2_suffix: "をタップしてください。"
@@ -446,7 +445,8 @@ wallet_connect_screen:
     connecting:
       title: "デバイスを接続中"
       step1: "デバイスのロックを解除してください。"
-      step2: "デバイスでCoconut Walletへの接続を許可してください。"
+      step2: "初回接続時、ペアリングコードが一致しているか確認後、Confirmを押してください。"
+      step3: "TrezorデバイスでCoconut Walletとの接続を求められたらConfirmを押してください。"
     pairing_dialog:
       title: "ペアリングコードの入力"
       description: "Trezor画面に表示された6桁の数字を入力してください。"
@@ -462,6 +462,12 @@ wallet_connect_screen:
     error:
       title: "接続に失敗しました"
       ble_description: "Trezor Safe 7が見つかりません。Bluetoothをオンにして、デバイスを近づけてください。"
+    ios_peer_removed_pairing:
+      title: "既存のBluetoothペアリング情報が削除されました"
+      description: "Trezorで以前のBluetoothペアリング情報が削除されました。"
+      step1: "iPhoneの「設定 > Bluetooth」を選択してください。"
+      step2: "「Trezorに設定したデバイス名」または「Trezor Safe 7」の横の(i)をタップしてください。"
+      step3: "「このデバイスを忘れる」を選択して削除した後、もう一度お試しください。"
   common:
     ble_off: "デバイスのBluetoothをオンにしてください。"
 
@@ -1228,9 +1234,12 @@ alert:
     description: "ビットコインを送信するには、まずマスターフィンガープリントを追加する必要があります。追加した後、再び送信することができます。"
     skip_button: "キャンセル"
     confirm_button: "追加"
-  ble_permission_denied:
+  aos_ble_permission_denied:
     title: "権限が必要です"
     description: "デバイスに接続するには「近くのデバイス」権限が必要です。設定で権限を許可してください。"
+  ios_ble_permission_denied:
+    title: "Bluetooth権限が必要です"
+    description: "デバイスに接続するにはBluetooth権限が必要です。iPhoneの「設定」でこのアプリのBluetooth権限を許可してください。"
 
 third_party:
   keystone: "Keystone"

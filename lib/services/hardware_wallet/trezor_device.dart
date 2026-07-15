@@ -54,6 +54,10 @@ class TrezorDevice {
       if (e.code == 'PAIRING_FAILED') {
         throw TrezorPairingException(e.code, e.message ?? 'Pairing failed');
       }
+      if (e.code == 'PEER_REMOVED_PAIRING') {
+        // iOS only
+        throw TrezorConnectException(e.code, e.message ?? 'Peer removed pairing information');
+      }
       throw TrezorConnectException(e.code, e.message ?? 'Connect failed');
     }
   }

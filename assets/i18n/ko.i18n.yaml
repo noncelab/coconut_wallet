@@ -412,7 +412,6 @@ wallet_connect_screen:
     init:
       notice: "Trezor Safe 7만 연결 가능합니다."
       ble_step1: "블루투스를 켜고 Trezor Safe 7을 가까이 두세요."
-      ble_step2: "Trezor 기기의 잠금을 해제해 주세요. 첫 연결인 경우 Pair & Connect > Pair new device를 눌러주세요."
       ble_step2_prefix: "Trezor 기기의 잠금을 해제해 주세요. 첫 연결인 경우 "
       ble_step2_bold: "Pair & Connect > Pair new device"
       ble_step2_suffix: "를 눌러주세요."
@@ -420,7 +419,8 @@ wallet_connect_screen:
     connecting:
       title: "기기 연결 중"
       step1: "기기의 잠금을 해제해 주세요."
-      step2: "기기에서 코코넛 월렛과의 연결을 허용해주세요."
+      step2: "첫 연결 시 페어링 코드가 동일한지 확인 후 Confirm을 눌러주세요."
+      step3: "트레저 기기에서 코코넛 월렛과 연결 여부를 물으면 Confirm을 눌러주세요."
     pairing_dialog:
       title: "페어링 코드 입력"
       description: "Trezor 화면에 표시된 6자리 숫자를 입력해 주세요."
@@ -436,6 +436,12 @@ wallet_connect_screen:
     error:
       title: "연결 실패"
       ble_description: "Trezor Safe 7을 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
+    ios_peer_removed_pairing:
+      title: "기존 블루투스 페어링 정보 삭제됨"
+      description: "Trezor에서 이전 블루투스 페어링 정보가 삭제되었어요."
+      step1: "iPhone '설정 > 블루투스'를 선택하세요."
+      step2: "[Trezor에 직접 설정하신 기기 이름] 또는 'Trezor Safe 7' 옆의 (i)를 누르세요."
+      step3: "'이 기기 잊기'를 눌러 삭제한 후 다시 시도해 주세요."
   common:
     ble_off: "기기 블루투스를 켜주세요."
     
@@ -1234,9 +1240,12 @@ alert:
     description: "비트코인을 보내려면 마스터 핑거프린트를 먼저 추가해야 해요. 계속 하시겠어요?"
     skip_button: "취소"
     confirm_button: "추가하기"
-  ble_permission_denied:
+  aos_ble_permission_denied:
     title: "권한 필요"
     description: "기기 연결을 위해 '근처 기기' 권한이 필요합니다. 설정에서 권한을 허용해 주세요."
+  ios_ble_permission_denied:
+    title: "블루투스 권한 필요"
+    description: "기기 연결을 위해 블루투스 권한이 필요합니다. iPhone \"설정\"에서 이 앱의 블루투스 권한을 허용해 주세요."
 
 third_party:
   keystone: "키스톤"

@@ -401,7 +401,6 @@ wallet_connect_screen:
     init:
       notice: "Nur Trezor Safe 7 wird unterstützt."
       ble_step1: "Aktivieren Sie Bluetooth und halten Sie Trezor Safe 7 in der Nähe."
-      ble_step2: "Entsperren Sie Ihr Trezor-Gerät. Bei der Erstverbindung tippen Sie auf Pair & Connect > Pair new device."
       ble_step2_prefix: "Entsperren Sie Ihr Trezor-Gerät. Bei der Erstverbindung tippen Sie auf "
       ble_step2_bold: "Pair & Connect > Pair new device"
       ble_step2_suffix: "."
@@ -409,7 +408,8 @@ wallet_connect_screen:
     connecting:
       title: "Gerät wird verbunden"
       step1: "Bitte entsperren Sie das Gerät."
-      step2: "Erlauben Sie auf Ihrem Gerät die Verbindung mit Coconut Wallet."
+      step2: "Bei der ersten Verbindung überprüfen Sie, ob der Pairing-Code übereinstimmt, und drücken Sie Confirm."
+      step3: "Wenn das Trezor-Gerät fragt, ob Sie eine Verbindung mit Coconut Wallet herstellen möchten, drücken Sie Confirm."
     pairing_dialog:
       title: "Pairing-Code eingeben"
       description: "Geben Sie den 6-stelligen Code ein, der auf Ihrem Trezor-Bildschirm angezeigt wird."
@@ -425,6 +425,12 @@ wallet_connect_screen:
     error:
       title: "Verbindung fehlgeschlagen"
       ble_description: "Trezor Safe 7 wurde nicht gefunden. Bitte aktivieren Sie Bluetooth und bringen Sie das Gerät näher."
+    ios_peer_removed_pairing:
+      title: "Vorhandene Bluetooth-Pairing-Informationen entfernt"
+      description: "Der Trezor hat seine vorherigen Bluetooth-Pairing-Informationen entfernt."
+      step1: "Öffnen Sie auf dem iPhone \"Einstellungen > Bluetooth\"."
+      step2: "Tippen Sie auf (i) neben [dem auf dem Trezor festgelegten Gerätenamen] oder 'Trezor Safe 7'."
+      step3: "Wählen Sie 'Dieses Gerät vergessen' und versuchen Sie es erneut."
   common:
     ble_off: "Bitte aktivieren Sie Bluetooth auf Ihrem Gerät."
 
@@ -1187,9 +1193,12 @@ alert:
     description: "Um Bitcoin zu senden, müssen Sie zuerst den Master-Fingerabdruck hinzufügen. Möchten Sie fortfahren?"
     skip_button: "Abbrechen"
     confirm_button: "Hinzufügen"
-  ble_permission_denied:
+  aos_ble_permission_denied:
     title: "Berechtigung erforderlich"
     description: "Für die Gerätekopplung ist die Berechtigung 'Geräte in der Nähe' erforderlich. Bitte erlauben Sie diese Berechtigung in den Einstellungen."
+  ios_ble_permission_denied:
+    title: "Bluetooth-Berechtigung erforderlich"
+    description: "Für die Gerätekopplung ist die Bluetooth-Berechtigung erforderlich. Bitte erlauben Sie die Bluetooth-Berechtigung für diese App in den iPhone \"Einstellungen\"."
 
 third_party:
   keystone: "Keystone"
