@@ -534,7 +534,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       recipients: _getRecipientMapForTx(recipientMap),
       feeRate: feeRate,
       changeDerivationPath: _changeAddressDerivationPath,
-      walletListItemBase: _selectedWalletItem!,
+      walletItemBase: _selectedWalletItem!,
       isFeeSubtractedFromAmount: _isFeeSubtractedFromSendAmount,
       isUtxoFixed: !_isUtxoSelectionAuto,
       scriptPathPolicy:

@@ -1,4 +1,5 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -199,6 +200,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           final currentLabel = switch (variant) {
                             CoconutThemeVariant.light => t.theme_light,
                             CoconutThemeVariant.dark => t.theme_dark,
+                            CoconutThemeVariant.coconutPulp => t.theme_coconut_pulp,
                           };
                           return _buildAnimatedButton(
                             title: t.theme,
@@ -206,7 +208,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             onPressed: () {
                               CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
-                                heightRatio: 0.4,
+                                heightRatio: 0.7,
                                 child: const ThemeBottomSheet(),
                               );
                             },

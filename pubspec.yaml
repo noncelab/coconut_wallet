@@ -22,7 +22,6 @@ app_versions:
   ios_mainnet: 0.13.1+1
   aos_regtest: 3.13.1+78
   aos_mainnet: 0.13.1+78
-  
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -65,7 +64,7 @@ dependencies:
   uuid: ^4.4.0
   vibration: ^3.1.3
   lottie: ^3.1.2
-  retrofit: '>=4.0.0 <5.0.0'
+  retrofit: ">=4.0.0 <5.0.0"
   dio: ^5.5.0+1
   http: ^1.2.1
   in_app_review: ^2.0.11
@@ -84,6 +83,7 @@ dependencies:
   ur:
     path: lib/packages/bc-ur-dart
   shimmer: ^3.0.0
+  visibility_detector: ^0.4.0+2
   coconut_lib: 1.1.0
   base32: ^2.1.3
   share_plus: ^11.1.0
@@ -107,7 +107,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^3.0.0
   json_serializable: ^6.7.1
-  build_runner: '>=2.3.0 <4.0.0'
+  build_runner: ">=2.3.0 <4.0.0"
   mockito: 5.4.6
   test: ^1.25.7
 
@@ -136,8 +136,6 @@ flutter:
     - assets/files/coconut_crew.json
     - assets/images/splash_logo_mainnet.png
     - assets/images/splash_logo_regtest.png
-    - assets/svg/coconut-mainnet.svg
-    - assets/svg/coconut-regtest.svg
     - assets/svg/bell.svg
     - assets/svg/add-circle.svg
     - assets/svg/arrow-right.svg
@@ -205,8 +203,6 @@ flutter:
     - assets/svg/wallet-icons/squid.svg
     - assets/svg/wallet-icons/dolphin.svg
     - assets/svg/wallet-icons/whale.svg
-    - assets/svg/scan-wallet-qr.svg
-    - assets/svg/scan-vault-qr.svg
     - assets/svg/completion-check.svg
     - assets/svg/face-id.svg
     - assets/svg/fingerprint.svg
@@ -273,8 +269,12 @@ flutter:
     - assets/svg/scan.svg
     - assets/svg/wallet-eyes.svg
     - assets/svg/kebab.svg
-    - assets/svg/coconut-vault-mainnet.svg
-    - assets/svg/coconut-vault-regtest.svg
+    - assets/svg/coconut-planet.svg
+    # app icons
+    - assets/svg/app-icons/coconut-mainnet.svg
+    - assets/svg/app-icons/coconut-regtest.svg
+    - assets/svg/app-icons/coconut-vault-mainnet.svg
+    - assets/svg/app-icons/coconut-vault-regtest.svg
     # wallet type icons
     - assets/svg/wallet-type/seed-signer.svg
     - assets/svg/wallet-type/jade.svg

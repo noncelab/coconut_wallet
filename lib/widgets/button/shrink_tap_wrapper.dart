@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 /// 자식 위젯을 감싸서 탭 시 shrink 애니메이션을 적용하는 래퍼
 ///
 /// [ShrinkAnimationButton]과 달리 배경색/테두리 스타일 없이
-/// 순수하게 scale 애니메이션만 제공
+/// 순수하게 scale 애니메이션과 눌림 시 어두워지는 오버레이만 제공
 class ShrinkTapWrapper extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
   final double shrinkScale;
   final Duration duration;
+  final Color overlayColor;
+  final double overlayOpacity;
 
   const ShrinkTapWrapper({
     super.key,
@@ -16,6 +18,8 @@ class ShrinkTapWrapper extends StatefulWidget {
     this.onTap,
     this.shrinkScale = 0.90,
     this.duration = const Duration(milliseconds: 100),
+    this.overlayColor = Colors.black,
+    this.overlayOpacity = 0.5,
   });
 
   @override
@@ -25,6 +29,7 @@ class ShrinkTapWrapper extends StatefulWidget {
 class _ShrinkTapWrapperState extends State<ShrinkTapWrapper> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _overlayOpacityAnimation;
 
   @override
   void initState() {
@@ -33,6 +38,10 @@ class _ShrinkTapWrapperState extends State<ShrinkTapWrapper> with SingleTickerPr
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: widget.shrinkScale,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _overlayOpacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: widget.overlayOpacity,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
@@ -50,7 +59,22 @@ class _ShrinkTapWrapperState extends State<ShrinkTapWrapper> with SingleTickerPr
         _controller.reverse().then((_) => widget.onTap?.call());
       },
       onTapCancel: () => _controller.reverse(),
-      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return ScaleTransition(
+            scale: _scaleAnimation,
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                widget.overlayColor.withValues(alpha: _overlayOpacityAnimation.value),
+                BlendMode.srcATop,
+              ),
+              child: child,
+            ),
+          );
+        },
+        child: widget.child,
+      ),
     );
   }
 }

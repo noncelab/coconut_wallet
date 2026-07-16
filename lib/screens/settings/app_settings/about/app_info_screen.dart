@@ -1,9 +1,10 @@
 import 'dart:io';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/settings/app_info_license_bottom_sheet.dart';
@@ -204,9 +205,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   borderRadius: BorderRadius.circular(20),
                   color: CoconutColors.black, // fixed color
                 ),
-                child: Image.asset(
-                  'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
-                ),
+                child: SvgPicture.asset(IconPath.coconut),
               ),
               const SizedBox(width: 30),
               Expanded(

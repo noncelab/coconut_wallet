@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -41,13 +42,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   final GlobalKey _qrCaptureKey = GlobalKey();
   final GlobalKey _shareButtonKey = GlobalKey();
 
-  ImageProvider get _qrEmbedImage {
-    final path =
-        NetworkType.currentNetworkType == NetworkType.regtest
-            ? 'assets/images/splash_logo_regtest.png'
-            : 'assets/images/splash_logo_mainnet.png';
-    return AssetImage(path);
-  }
+  ImageProvider get _qrEmbedImage => AssetImage(IconPath.qrEmbedLogo);
 
   String get derivationPath {
     if (_receiveAddress == null) return "";
@@ -240,7 +235,9 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
       child: AddressListScreen(
         id: _selectedWalletItem!.id,
         isFullScreen: false,
-        backgroundColor: context.coconutColors.surfaceBottomSheet,
+        // wallet info > address list 진입 시와 색상이 달라
+        // background로 통일
+        backgroundColor: context.coconutColors.background,
       ),
     );
   }

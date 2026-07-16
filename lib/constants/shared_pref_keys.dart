@@ -92,4 +92,7 @@ class SharedPrefKeys {
 
   /// 테마 variant
   static const String kThemeVariant = 'THEME_VARIANT';
+
+  /// 코코넛 오픈 스토어 소개 카드 숨김 만료일
+  static const String kOpenStoreIntroCardHiddenUntil = 'OPEN_STORE_INTRO_CARD_HIDDEN_UNTIL';
 }

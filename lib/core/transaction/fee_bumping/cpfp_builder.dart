@@ -6,6 +6,7 @@ import 'package:coconut_wallet/core/exceptions/cpfp_creation/cpfp_creation_excep
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_preparer.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
+import 'package:coconut_wallet/extensions/wallet_list_item_extension.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -13,7 +14,6 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/extensions/wallet_list_item_extension.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
@@ -56,8 +56,8 @@ class CpfpBuildResult {
 }
 
 class CpfpBuilder {
-  final WalletItemBase walletListItemBase;
-  int get _dustThreshold => walletListItemBase.walletType.addressType.dustThreshold;
+  final WalletItemBase walletItemBase;
+  int get _dustThreshold => walletItemBase.walletType.addressType.dustThreshold;
 
   /// child tx의 단일 output 주소 (sweep 대상)
   final WalletAddress nextReceiveAddress;
@@ -78,14 +78,14 @@ class CpfpBuilder {
 
   CpfpBuilder({
     required CpfpPreparer preparer,
-    required this.walletListItemBase,
+    required this.walletItemBase,
     required this.nextReceiveAddress,
     required this.minimumFeeRate,
     List<UtxoState> additionalSpendable = const [],
   }) {
     _pendingTx = preparer.pendingTx;
     _receivedUtxos = [...preparer.receivedUtxos]..sort((a, b) => b.amount.compareTo(a.amount));
-    _vSizeIncreasePerInput = walletListItemBase.inputVSize;
+    _vSizeIncreasePerInput = walletItemBase.inputVSize;
     _assertAllUnspent(additionalSpendable);
     _additionalSpendable = [...additionalSpendable]..sort((a, b) => b.amount.compareTo(a.amount));
   }
@@ -97,13 +97,13 @@ class CpfpBuilder {
       recipients: {nextReceiveAddress.address: inputSum},
       feeRate: feeRate,
       changeDerivationPath: '',
-      walletListItemBase: walletListItemBase,
+      walletItemBase: walletItemBase,
       isFeeSubtractedFromAmount: true,
       isUtxoFixed: true,
       scriptPathPolicy:
-          walletListItemBase is TaprootWalletItem
-              ? ((walletListItemBase as TaprootWalletItem).defaultSpendType == TaprootSpendType.scriptPath
-                  ? (walletListItemBase as TaprootWalletItem).defaultPolicy
+          walletItemBase is TaprootWalletItem
+              ? ((walletItemBase as TaprootWalletItem).defaultSpendType == TaprootSpendType.scriptPath
+                  ? (walletItemBase as TaprootWalletItem).defaultPolicy
                   : null)
               : null,
     ).build();
@@ -111,11 +111,11 @@ class CpfpBuilder {
 
   double _estimateVSize(int inputCount) {
     return WalletUtility.estimateVirtualByte(
-      walletListItemBase.walletType.addressType,
+      walletItemBase.walletType.addressType,
       inputCount,
       1, // sweep: 1 output (change 없음)
-      requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-      totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+      requiredSignature: walletItemBase.multisigConfig?.requiredSignature,
+      totalSigner: walletItemBase.multisigConfig?.totalSigner,
     );
   }
 
@@ -164,7 +164,7 @@ class CpfpBuilder {
       txBuildResult = _trySweep(inputs, minimumChildFeeRate);
 
       if (txBuildResult.isSuccess) {
-        actualChildVSize = txBuildResult.transaction!.estimateVirtualByteForWallet(walletListItemBase);
+        actualChildVSize = txBuildResult.transaction!.estimateVirtualByteForWallet(walletItemBase);
         // actualVSize 기반으로 feeRate 보정 후 재시도
         final correctedFeeRate = _calculateMinimumChildFeeRate(actualChildVSize);
         if (correctedFeeRate > minimumChildFeeRate) {
@@ -207,7 +207,7 @@ class CpfpBuilder {
     if (txBuildResult.isSuccess) {
       final tx = txBuildResult.transaction!;
       final actualChildFee = tx.totalInputAmount - tx.outputs.fold<int>(0, (s, o) => s + o.amount);
-      final actualChildVSize = tx.estimateVirtualByteForWallet(walletListItemBase);
+      final actualChildVSize = tx.estimateVirtualByteForWallet(walletItemBase);
       final packageFeeRate = FeeRateUtils.roundToTwoDecimals(
         (parentFee + actualChildFee) / (parentVSize + actualChildVSize),
       );
@@ -289,7 +289,7 @@ class CpfpBuilder {
         }
         txBuildResult = _trySweep(inputs, newFeeRate);
         if (txBuildResult.isSuccess) {
-          final actualChildVSize = txBuildResult.transaction!.estimateVirtualByteForWallet(walletListItemBase);
+          final actualChildVSize = txBuildResult.transaction!.estimateVirtualByteForWallet(walletItemBase);
           final correctedFeeRate = _calculateMinimumChildFeeRate(actualChildVSize);
           if (correctedFeeRate > newFeeRate) {
             // actualVSize 기반 최소 feeRate가 newFeeRate보다 높으면 보정하여 재시도

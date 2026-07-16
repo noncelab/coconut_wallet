@@ -204,6 +204,7 @@ class CoconutColors {
   final Color divider;
   final Color txFlowLine;
   final Color feeBumpingHistoryLine;
+  final Gradient mainnetLogoGradient;
   final Color switchActiveTrack;
   final Color switchInactiveTrack;
   final Color switchActiveThumb;
@@ -348,6 +349,7 @@ class CoconutColors {
     required this.divider,
     required this.txFlowLine,
     required this.feeBumpingHistoryLine,
+    required this.mainnetLogoGradient,
     required this.switchActiveTrack,
     required this.switchInactiveTrack,
     required this.switchActiveThumb,
@@ -489,6 +491,11 @@ class CoconutColors {
       divider: ds.CoconutColors.gray800,
       txFlowLine: ds.CoconutColors.gray600,
       feeBumpingHistoryLine: ds.CoconutColors.gray700,
+      mainnetLogoGradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF54C8F0), Color(0xFF8A61FF)],
+      ),
       switchActiveTrack: ds.CoconutColors.gray100,
       switchInactiveTrack: ds.CoconutColors.gray800,
       switchActiveThumb: ds.CoconutColors.black,
@@ -633,6 +640,11 @@ class CoconutColors {
       divider: ds.CoconutColors.gray200,
       txFlowLine: ds.CoconutColors.gray350,
       feeBumpingHistoryLine: ds.CoconutColors.gray300,
+      mainnetLogoGradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF54C8F0), Color(0xFF8A61FF)],
+      ),
       switchActiveTrack: ds.CoconutColors.black,
       switchInactiveTrack: ds.CoconutColors.gray300,
       switchActiveThumb: ds.CoconutColors.white,
@@ -654,6 +666,169 @@ class CoconutColors {
       checkIconForeground: ds.CoconutColors.white,
       checkIconBackgroundDisabled: ds.CoconutColors.gray200,
       checkIconForegroundDisabled: ds.CoconutColors.gray400,
+    );
+  }
+
+  factory CoconutColors.coconutPulp() {
+    const ivory = Color(0xFFFFEFCC);
+    const cream = Color(0xFFFFF4DD);
+    const shell = Color(0xFFFFFEFA);
+    const sand = Color(0xFFF1C998);
+    const caramel = Color(0xFFE3A567);
+    const husk = Color(0xFFC57723);
+    const huskDeep = Color(0xFF6E3D18);
+    const huskSoft = Color(0xFFE5C09B);
+    // const huskSoft = Color(0xFFA36B36);
+    const lagoon = Color(0xFF71C0D2);
+    const lagoonSoft = Color(0xFFF2FBFC);
+    //const lagoonSoft = Color(0xFFB9E0E4);
+    const line = Color(0xFFE2CCAA);
+    const dim = Color(0xFFF2DFC0);
+
+    return CoconutColors(
+      homeBackground: lagoonSoft,
+      homeSurfaceCard: cream,
+      homeSurfaceCardPressed: ivory,
+      background: ivory,
+      backgroundSubtle: dim,
+      backgroundHighlight: lagoon,
+      backgroundHighlightText: huskDeep,
+      blurButtonBackground: sand,
+      surface: cream,
+      surfaceDeep: shell,
+      surfaceCard: cream,
+      surfaceButton: sand,
+      surfaceButtonText: huskDeep,
+      surfaceButtonSecondary: husk,
+      surfaceButtonSecondaryText: ds.CoconutColors.white,
+      surfaceMuted: dim,
+      surfaceRaised: shell,
+      surfaceDisabled: line,
+      surfaceBottomSheet: shell,
+      surfaceSectionBreak: dim,
+
+      infoChipBackground: lagoonSoft,
+
+      chipUnselectedBackground: cream,
+      chipUnselectedText: huskSoft,
+      chipSelectedBackground: huskDeep,
+      chipSelectedText: ds.CoconutColors.white,
+      chipOutlinedUnselectedBackground: cream,
+      chipOutlinedUnselectedText: huskSoft,
+
+      surfaceSkeletonBase: cream,
+      surfaceSkeletonHighlight: shell,
+      surfaceSelected: dim,
+      surfacePressed: ivory,
+
+      chartSurface: shell,
+      coinSurface: shell,
+      selectedCoinBorder: huskDeep,
+      billSurface: shell,
+      selectionOverlay: huskDeep,
+
+      inputSurface: ds.CoconutColors.white,
+      inputPlaceholder: caramel,
+      inputBorder: line,
+
+      primary: lagoon,
+      primaryButtonText: huskDeep,
+
+      actionButtonBackground: huskDeep,
+      actionButtonText: ds.CoconutColors.white,
+      actionButtonDisabled: dim,
+      actionButtonDisabledText: huskSoft,
+      actionButtonPressed: huskDeep.withValues(alpha: 0.75),
+
+      secondaryButtonBackground: sand,
+      secondaryButtonText: huskDeep,
+
+      primaryText: huskDeep,
+      secondaryText: husk,
+      secondaryTextStrong: husk,
+      tertiaryText: caramel,
+      mutedText: caramel,
+
+      segmentedControlSelected: huskDeep,
+      segmentedControlBackground: dim,
+      segmentedControlSelectedText: ds.CoconutColors.white,
+      segmentedControlUnselectedText: huskSoft,
+      tooltipBackground: dim,
+      textHighlight: husk,
+      border: line,
+      borderStrong: huskDeep,
+      iconBackground: sand,
+      iconBackgroundSubtle: dim,
+      iconDefault: huskDeep,
+      iconSubDefault: huskSoft,
+      iconHighlight: husk,
+      iconDisabled: caramel,
+      iconOnDanger: ds.CoconutColors.white,
+      warning: ds.CoconutColors.warningYellow,
+      danger: ds.CoconutColors.hotPink,
+      success: lagoon,
+      rbfAccent: husk,
+      cpfpAccent: lagoon,
+      recommendFeeAnimStart: huskDeep,
+      recommendFeeAnimHighlight: caramel,
+      taprootParent: husk,
+      taprootChild: lagoon,
+      taprootRoleText: ds.CoconutColors.white,
+      taprootParticipantIconBorder: sand,
+      taprootParticipantIconBackground: cream,
+      taprootParticipantNeutralBackground: shell,
+      taprootParticipantNeutralBorder: line,
+      taprootParticipantNeutralRoleBackground: cream,
+      taprootParticipantNeutralRoleBorder: line,
+      taprootParticipantNeutralRoleText: huskDeep,
+      pulldownMenuBackground: shell,
+      pulldownMenuPressedColor: dim,
+      pulldownMenuDividerColor: line,
+      pulldownMenuTextColor: huskDeep,
+      shadowDefault: huskDeep.withValues(alpha: 0.18),
+      shadowSubtle: huskSoft.withValues(alpha: 0.12),
+      popupBackground: shell,
+      dimOverlay: ivory.withValues(alpha: 0.92),
+      pageIndicatorActive: husk,
+      pageIndicatorInactive: sand,
+      sendingColor: husk,
+      receivingColor: lagoon,
+      bottomActionBarBackground: shell,
+      bottomSheetKeyboardToolbar: dim,
+      bottomSheetExtensionFieldBackground: shell,
+      loadingIndicatorColor: huskDeep,
+      loadingOverlay: huskDeep.withValues(alpha: 0.18),
+      glossaryKeywordBackground: lagoonSoft,
+      glossaryKeywordText: huskDeep,
+      divider: line,
+      txFlowLine: caramel,
+      feeBumpingHistoryLine: sand,
+      mainnetLogoGradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF54C8F0), Color(0xFF8A61FF)],
+      ),
+      switchActiveTrack: huskDeep,
+      switchInactiveTrack: sand,
+      switchActiveThumb: ds.CoconutColors.white,
+      switchInactiveThumb: cream,
+      switchTrackDisabled: line,
+      switchThumbDisabled: caramel,
+      linkText: lagoon,
+      nodeConnected: lagoon,
+      nodeFailed: ds.CoconutColors.red,
+      popoverBackground: huskDeep,
+      popoverText: ds.CoconutColors.white,
+      faucetPopoverBackground: lagoonSoft,
+      faucetPopoverText: huskDeep,
+      bottomSheetHandle: caramel,
+      qrScannerOverlay: huskSoft.withValues(alpha: 0.4),
+      qrScannerProgressBarTrack: sand,
+      qrScannerProgressBarFill: huskDeep,
+      checkIconBackground: huskDeep,
+      checkIconForeground: ds.CoconutColors.white,
+      checkIconBackgroundDisabled: line,
+      checkIconForegroundDisabled: caramel,
     );
   }
 }

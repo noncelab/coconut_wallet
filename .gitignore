@@ -185,7 +185,6 @@ coconut-fastlane-supply.json
 **/android/app/libs/bitboxbridge-sources.jar
 **/ios/Runner/bitboxbridge.xcframework
 
-# CCOS
-docs/ccos/*
-
 /META-INF
+
+.zed/*

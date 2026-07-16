@@ -1,10 +1,11 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 // Usage
 // wallet_list_screen.dart
@@ -45,10 +46,9 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Image.asset(
-                    'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
-                    color: context.coconutColors.primaryText,
-                    colorBlendMode: BlendMode.srcIn,
+                  SvgPicture.asset(
+                    IconPath.coconut,
+                    colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                   ),
                   const SizedBox(height: 30),
                   if (isFirst)

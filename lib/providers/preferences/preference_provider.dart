@@ -128,6 +128,12 @@ class PreferenceProvider extends ChangeNotifier {
   late CoconutThemeVariant _themeVariant;
   CoconutThemeVariant get themeVariant => _themeVariant;
 
+  late DateTime? _openStoreIntroCardHiddenUntil;
+  bool get shouldShowOpenStoreIntroCard {
+    final hiddenUntil = _openStoreIntroCardHiddenUntil;
+    return hiddenUntil == null || DateTime.now().isAfter(hiddenUntil);
+  }
+
   PreferenceProvider(
     this._walletPreferencesRepository,
     this._electrumServerProvider,
@@ -168,6 +174,7 @@ class PreferenceProvider extends ChangeNotifier {
     _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
     _walletListVisibleFiats = _loadWalletListVisibleFiats();
     _themeVariant = _loadThemeVariant();
+    _openStoreIntroCardHiddenUntil = _loadOpenStoreIntroCardHiddenUntil();
   }
 
   /// 통화 설정 초기화
@@ -578,6 +585,23 @@ class PreferenceProvider extends ChangeNotifier {
     CoconutThemeController.variantNotifier.value = variant;
     await _sharedPrefs.setString(SharedPrefKeys.kThemeVariant, variant.name);
     updateSystemBarColor(variant);
+    notifyListeners();
+  }
+
+  DateTime? _loadOpenStoreIntroCardHiddenUntil() {
+    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kOpenStoreIntroCardHiddenUntil);
+    if (stored == null || stored.isEmpty) {
+      return null;
+    }
+    return DateTime.tryParse(stored);
+  }
+
+  Future<void> hideOpenStoreIntroCardForOneMonth() async {
+    _openStoreIntroCardHiddenUntil = DateTime.now().add(const Duration(days: 30));
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kOpenStoreIntroCardHiddenUntil,
+      _openStoreIntroCardHiddenUntil!.toIso8601String(),
+    );
     notifyListeners();
   }
 

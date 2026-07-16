@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutPulldownMenu, CoconutPulldownMenuItem, CoconutPulldownMenuGroup;
+import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
