@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class TrezorDevice {
@@ -100,6 +101,38 @@ class TrezorDevice {
       return result;
     } on PlatformException catch (e) {
       throw TrezorXPubException(e.code, e.message ?? 'getFingerprint failed');
+    }
+  }
+
+  Future<void> setPrevTxHex(int inputIndex, String rawTxHex) async {
+    try {
+      await _channel.invokeMethod('setPrevTxHex', {'id': id, 'inputIndex': inputIndex, 'rawTxHex': rawTxHex});
+    } on PlatformException catch (e) {
+      debugPrint('TREZOR_SET_PREV_TX_ERROR: code=${e.code} message=${e.message}');
+      throw TrezorSignException(e.code, e.message ?? 'setPrevTxHex failed');
+    }
+  }
+
+  Future<void> clearPrevTxHexes() async {
+    try {
+      await _channel.invokeMethod('clearPrevTxHexes', {'id': id});
+    } on PlatformException catch (_) {}
+  }
+
+  Future<String> signTransaction({required String psbtBase64, String network = 'mainnet'}) async {
+    try {
+      final result = await _channel.invokeMethod<String>('signTransaction', {
+        'id': id,
+        'psbtBase64': psbtBase64,
+        'network': network,
+      });
+      if (result == null) {
+        throw const TrezorSignException('NULL_RESPONSE', 'signTransaction returned null');
+      }
+      return result;
+    } on PlatformException catch (e) {
+      debugPrint('TREZOR_SIGN_ERROR: code=${e.code} message=${e.message}');
+      throw TrezorSignException(e.code, e.message ?? 'signTransaction failed');
     }
   }
 

@@ -8,9 +8,11 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_connect_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
@@ -85,51 +87,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                       ),
                     ),
                   ),
-                  FixedBottomButton(
-                    onButtonClicked: () async {
-                      context.loaderOverlay.show();
-                      viewModel.setTxWaitingForSign();
-                      if (context.mounted) {
-                        context.loaderOverlay.hide();
-                        if (viewModel.walletImportSource == WalletImportSource.bitbox02) {
-                          final isPhysicallyConnected = await BitBox02ConnectivityService.isDeviceConnected();
-                          final hasSession = BitBox02Device.lastConnected != null;
-                          if (!context.mounted) return;
-                          if (isPhysicallyConnected && hasSession) {
-                            Navigator.pushNamed(
-                              context,
-                              '/bitbox02-sign',
-                              arguments: {
-                                'psbtBase64': viewModel.txWaitingForSign,
-                                'walletName': viewModel.walletName,
-                                'walletFingerprint': viewModel.walletFingerprint,
-                                'isFromSendFlow': true,
-                                'transport': BitBox02Transport.resolveForSign(),
-                              },
-                            );
-                          } else {
-                            CommonBottomSheets.showCustomHeightBottomSheet(
-                              context: context,
-                              child: BitBox02ConnectScreen(
-                                importSource: WalletImportSource.bitbox02,
-                                psbtBase64: viewModel.txWaitingForSign,
-                                walletName: viewModel.walletName,
-                                walletFingerprint: viewModel.walletFingerprint,
-                              ),
-                              heightRatio: 0.9,
-                            );
-                          }
-                        } else {
-                          Navigator.pushNamed(
-                            context,
-                            '/unsigned-transaction-qr',
-                            arguments: {'walletName': viewModel.walletName},
-                          );
-                        }
-                      }
-                    },
-                    text: t.next,
-                  ),
+                  FixedBottomButton(text: t.next, onButtonClicked: () => _onButtonClicked(viewModel)),
                 ],
               ),
             ),
@@ -174,6 +132,79 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
             );
           }
         });
+  }
+
+  Future<void> _onButtonClicked(SendConfirmViewModel viewModel) async {
+    context.loaderOverlay.show();
+    viewModel.setTxWaitingForSign();
+    if (!context.mounted) return;
+    context.loaderOverlay.hide();
+
+    switch (viewModel.walletImportSource) {
+      case WalletImportSource.bitbox02:
+        await _navigateToBitBox02Sign(viewModel);
+      case WalletImportSource.trezor:
+        _navigateToTrezorSign(viewModel);
+      default:
+        Navigator.pushNamed(context, '/unsigned-transaction-qr', arguments: {'walletName': viewModel.walletName});
+    }
+  }
+
+  Future<void> _navigateToBitBox02Sign(SendConfirmViewModel viewModel) async {
+    final isPhysicallyConnected = await BitBox02ConnectivityService.isDeviceConnected();
+    final hasSession = BitBox02Device.lastConnected != null;
+    if (!context.mounted) return;
+    if (isPhysicallyConnected && hasSession) {
+      Navigator.pushNamed(
+        context,
+        '/bitbox02-sign',
+        arguments: {
+          'psbtBase64': viewModel.txWaitingForSign,
+          'walletName': viewModel.walletName,
+          'walletFingerprint': viewModel.walletFingerprint,
+          'isFromSendFlow': true,
+          'transport': BitBox02Transport.resolveForSign(),
+        },
+      );
+    } else {
+      CommonBottomSheets.showCustomHeightBottomSheet(
+        context: context,
+        child: BitBox02ConnectScreen(
+          importSource: WalletImportSource.bitbox02,
+          psbtBase64: viewModel.txWaitingForSign,
+          walletName: viewModel.walletName,
+          walletFingerprint: viewModel.walletFingerprint,
+        ),
+        heightRatio: 0.9,
+      );
+    }
+  }
+
+  void _navigateToTrezorSign(SendConfirmViewModel viewModel) {
+    final hasSession = TrezorDevice.lastConnected != null;
+    if (!context.mounted) return;
+    if (hasSession) {
+      Navigator.pushNamed(
+        context,
+        '/trezor-sign',
+        arguments: {
+          'psbtBase64': viewModel.txWaitingForSign,
+          'walletName': viewModel.walletName,
+          'walletFingerprint': viewModel.walletFingerprint,
+          'isFromSendFlow': true,
+        },
+      );
+    } else {
+      CommonBottomSheets.showCustomHeightBottomSheet(
+        context: context,
+        child: TrezorConnectScreen(
+          psbtBase64: viewModel.txWaitingForSign,
+          walletName: viewModel.walletName,
+          walletFingerprint: viewModel.walletFingerprint,
+        ),
+        heightRatio: 0.9,
+      );
+    }
   }
 
   void _toggleUnit() {

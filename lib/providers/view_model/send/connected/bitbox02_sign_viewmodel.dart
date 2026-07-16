@@ -3,11 +3,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/shared_pref_keys.dart';
-import 'package:coconut_wallet/enums/electrum_enums.dart';
+import 'package:coconut_wallet/core/transaction/prev_tx_fetcher.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_exceptions.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
@@ -139,65 +136,10 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
       // Fetch and inject NonWitnessUtxo (previous transactions) for each input.
       // BitBox02 requires full previous transactions for non-Taproot inputs.
-      try {
-        final psbtParsed = Psbt.parse(psbtBase64);
-        final unsignedTx = psbtParsed.unsignedTransaction;
-        if (unsignedTx != null && unsignedTx.inputs.isNotEmpty) {
-          final prefs = SharedPrefsRepository();
-          final serverName = prefs.getString(SharedPrefKeys.kElectrumServerName);
-          final customHost = prefs.getString(SharedPrefKeys.kCustomElectrumHost);
-          final customPort = prefs.getInt(SharedPrefKeys.kCustomElectrumPort);
-          final customSsl = prefs.getBool(SharedPrefKeys.kCustomElectrumIsSsl);
-
-          String electrumHost;
-          int electrumPort;
-          bool electrumSsl;
-
-          if (serverName == 'CUSTOM') {
-            electrumHost = customHost;
-            electrumPort = customPort;
-            electrumSsl = customSsl;
-          } else if (serverName.isNotEmpty) {
-            final defServer = DefaultElectrumServer.fromServerType(serverName);
-            electrumHost = defServer.server.host;
-            electrumPort = defServer.server.port;
-            electrumSsl = defServer.server.ssl;
-          } else {
-            final net = NetworkType.currentNetworkType;
-            final defServer =
-                net == NetworkType.mainnet ? DefaultElectrumServer.coconut : DefaultElectrumServer.regtest;
-            electrumHost = defServer.server.host;
-            electrumPort = defServer.server.port;
-            electrumSsl = defServer.server.ssl;
-          }
-
-          debugPrint('BB02_SIGN electrum: $electrumHost:$electrumPort ssl=$electrumSsl');
-
-          final electrum = ElectrumService();
-          try {
-            final connected = await electrum.connect(electrumHost, electrumPort, ssl: electrumSsl);
-            if (!connected) {
-              debugPrint('BB02_SIGN electrum connect failed');
-            } else {
-              for (int i = 0; i < unsignedTx.inputs.length; i++) {
-                final txid = unsignedTx.inputs[i].transactionHash;
-                debugPrint('BB02_SIGN fetching prevtx[$i]: $txid');
-                try {
-                  final rawTxHex = await electrum.getTransaction(txid);
-                  await _device!.setPrevTxHex(i, rawTxHex);
-                  debugPrint('BB02_SIGN prevtx[$i] loaded (${rawTxHex.length} chars)');
-                } catch (e) {
-                  debugPrint('BB02_SIGN prevtx[$i] fetch failed: $e');
-                }
-              }
-            }
-          } finally {
-            electrum.close();
-          }
-        }
-      } catch (e) {
-        debugPrint('BB02_SIGN prevtx injection failed: $e');
-      }
+      await PrevTxFetcher.fetchAndInject(
+        psbtBase64: psbtBase64,
+        onPrevTxHex: (i, rawTxHex) => _device!.setPrevTxHex(i, rawTxHex),
+      );
 
       _cancelTimeout();
       _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.confirmOnDevice);

@@ -3,6 +3,7 @@ import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connec
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
+import 'package:coconut_wallet/screens/send/connected/trezor_sign_screen.dart';
 import 'package:coconut_wallet/screens/settings/home_settings/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/settings/home_settings/home_settings_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/about/app_info_screen.dart';
@@ -171,6 +172,16 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             walletFingerprint: args['walletFingerprint'] ?? '',
             isFromSendFlow: args['isFromSendFlow'] ?? false,
             transport: args['transport'] ?? 'usb',
+          ),
+        ),
+    '/trezor-sign':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => TrezorSignScreen(
+            psbtBase64: args['psbtBase64'],
+            walletName: args['walletName'],
+            walletFingerprint: args['walletFingerprint'] ?? '',
+            isFromSendFlow: args['isFromSendFlow'] ?? false,
           ),
         ),
   };

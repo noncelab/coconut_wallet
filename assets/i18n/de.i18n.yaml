@@ -398,6 +398,7 @@ wallet_connect_screen:
       connect_via_ble: "Über Bluetooth verbinden"
       add_wallet: "Wallet hinzufügen"
       retry: "Erneut versuchen"
+      start_signing: "Signierung starten"
     init:
       notice: "Nur Trezor Safe 7 wird unterstützt."
       ble_step1: "Aktivieren Sie Bluetooth und halten Sie Trezor Safe 7 in der Nähe."
@@ -1265,3 +1266,28 @@ taproot:
   setup_summary_card:
     signer_configuration: "Unterzeichnerkonfiguration"
     inheritance_condition: "Vererbungsbedingung"
+trezor_sign_screen:
+  tx_card:
+    title: "Transaktion"
+    send: "Senden"
+    to: "An"
+    fee: "Gebühr"
+    total_cost: "Gesamtkosten"
+  device_status:
+    title: "Gerätestatus"
+  idle:
+    waiting: "Warten auf Signatur"
+  status:
+    connecting_device: "Verbindung zum Trezor über Bluetooth..."
+    confirm_on_device: "Bestätigen Sie Betrag, Adresse und Gebühr auf Ihrem Gerät"
+  done:
+    title: "Signiert"
+    description: "Transaktion wurde von Trezor signiert."
+  error_title: "Signatur fehlgeschlagen"
+  device_mismatch: "Das verbundene Gerät stimmt nicht mit dieser Wallet überein. Bitte verbinden Sie das richtige Gerät."
+  device_mismatch_other_wallet: "Das verbundene Gerät gehört zu '${wallet_name}'. Bitte verbinden Sie das richtige Gerät."
+  btn:
+    sign: "Mit Trezor signieren"
+  state_label:
+    idle: "Warten auf Signatur"
+    signing: "Signieren"

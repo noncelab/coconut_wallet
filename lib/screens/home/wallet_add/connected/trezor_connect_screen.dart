@@ -21,7 +21,11 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
 class TrezorConnectScreen extends StatefulWidget {
-  const TrezorConnectScreen({super.key});
+  final String? psbtBase64;
+  final String? walletName;
+  final String? walletFingerprint;
+
+  const TrezorConnectScreen({super.key, this.psbtBase64, this.walletName, this.walletFingerprint});
 
   @override
   State<TrezorConnectScreen> createState() => _TrezorConnectScreenState();
@@ -351,12 +355,50 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
           ),
           CoconutLayout.spacing_200h,
           CoconutLayout.spacing_600h,
-          if (hasXpub)
-            _buildWalletInfoCard(vm)
-          else if (hasSilentError)
+          if (hasXpub) ...[
+            _buildWalletInfoCard(vm),
+            if (widget.psbtBase64 != null && _isWalletMismatch(vm)) ...[
+              CoconutLayout.spacing_400h,
+              _buildWalletMismatchWarning(vm),
+            ],
+          ] else if (hasSilentError)
             _buildXPubRetryCard(vm)
           else
             _buildWalletInfoSkeleton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalletMismatchWarning(TrezorConnectViewModel vm) {
+    final matchedName = vm.findMatchingTrezorWalletName(vm.xpub);
+    final message =
+        matchedName != null
+            ? t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: matchedName)
+            : t.trezor_sign_screen.device_mismatch;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: BoxDecoration(
+        color: context.coconutColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+        border: Border.all(color: context.coconutColors.danger.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: SvgPicture.asset(
+              'assets/svg/triangle-warning.svg',
+              colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+              width: 16,
+              height: 16,
+            ),
+          ),
+          CoconutLayout.spacing_200w,
+          Expanded(child: Text(message, style: CoconutTypography.body3_12.setColor(context.coconutColors.danger))),
         ],
       ),
     );
@@ -647,17 +689,50 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     );
   }
 
+  bool _isWalletMismatch(TrezorConnectViewModel vm) {
+    if (widget.psbtBase64 == null) return false;
+    if (vm.step != TrezorConnectStep.paired) return false;
+    if (vm.xpub.isEmpty) return false;
+
+    final matchedName = vm.findMatchingTrezorWalletName(vm.xpub);
+    if (matchedName == null) return true;
+    return matchedName != (widget.walletName ?? '');
+  }
+
   Widget _buildMainButton(TrezorConnectViewModel vm) {
     if (vm.step == TrezorConnectStep.pairing) return const SizedBox.shrink();
 
     final bool isRetry = vm.step == TrezorConnectStep.error;
     final bool hasXpub = vm.xpub.isNotEmpty;
     final bool isPaired = vm.step == TrezorConnectStep.paired;
+    final bool isSignFlow = widget.psbtBase64 != null;
+    final bool isMismatch = _isWalletMismatch(vm);
 
     String buttonText;
     VoidCallback onPressed;
 
-    if (isPaired && hasXpub) {
+    if (isSignFlow && isPaired && isMismatch) {
+      buttonText = t.wallet_connect_screen.guide_trezor.btn.retry;
+      onPressed = () {
+        vm.reset();
+        vm.connect();
+      };
+    } else if (isSignFlow && isPaired) {
+      buttonText = t.wallet_connect_screen.guide_trezor.btn.start_signing;
+      onPressed = () {
+        Navigator.pop(context);
+        Navigator.pushNamed(
+          context,
+          '/trezor-sign',
+          arguments: {
+            'psbtBase64': widget.psbtBase64,
+            'walletName': widget.walletName ?? '',
+            'walletFingerprint': widget.walletFingerprint ?? '',
+            'isFromSendFlow': true,
+          },
+        );
+      };
+    } else if (!isSignFlow && isPaired && hasXpub) {
       buttonText = t.wallet_connect_screen.guide_trezor.btn.add_wallet;
       onPressed = () => _onAddWalletPressed(vm);
     } else if (isRetry) {

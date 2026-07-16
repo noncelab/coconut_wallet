@@ -23,3 +23,7 @@ class TrezorPairingCodeWrongException extends TrezorException {
 class TrezorXPubException extends TrezorException {
   const TrezorXPubException(super.code, super.message);
 }
+
+class TrezorSignException extends TrezorException {
+  const TrezorSignException(super.code, super.message);
+}

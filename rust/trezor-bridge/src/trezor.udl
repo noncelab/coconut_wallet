@@ -22,6 +22,22 @@ namespace trezor_bridge {
     [Throws=TrezorError]
     string trezor_get_fingerprint(string device_id);
 
+    // Store a raw previous transaction hex for a specific PSBT input index.
+    // Must be called for each input before trezor_sign_transaction.
+    // The hex is injected as NON_WITNESS_UTXO into the PSBT before signing.
+    [Throws=TrezorError]
+    void trezor_set_prev_tx_hex(string device_id, u32 input_index, string raw_tx_hex);
+
+    // Clear stored previous transaction hexes for a device.
+    [Throws=TrezorError]
+    void trezor_clear_prev_tx_hexes(string device_id);
+
+    // Sign a Bitcoin transaction from a PSBT (raw bytes).
+    // Returns the signed PSBT bytes.
+    // network: "mainnet", "testnet", or "regtest"
+    [Throws=TrezorError]
+    sequence<u8> trezor_sign_transaction(string device_id, sequence<u8> psbt_bytes, string network);
+
     // Disconnect and clean up device state.
     [Throws=TrezorError]
     void trezor_disconnect(string device_id);
@@ -49,6 +65,7 @@ enum TrezorError {
     "Pairing",
     "XPub",
     "Fingerprint",
+    "Sign",
     "Disconnect",
     "InvalidArg",
     "Internal",

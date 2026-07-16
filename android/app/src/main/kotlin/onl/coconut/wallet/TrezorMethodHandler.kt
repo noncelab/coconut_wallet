@@ -184,6 +184,9 @@ class TrezorMethodHandler(
             "connect" -> connect(result)
             "getXPub" -> getXPub(call, result)
             "getFingerprint" -> getFingerprint(call, result)
+            "signTransaction" -> signTransaction(call, result)
+            "setPrevTxHex" -> setPrevTxHex(call, result)
+            "clearPrevTxHexes" -> clearPrevTxHexes(call, result)
             "disconnect" -> disconnect(call, result)
             "cancel" -> cancel(result)
             else -> result.notImplemented()
@@ -530,6 +533,85 @@ class TrezorMethodHandler(
                 mainHandler.post { result.success(fp) }
             } catch (e: Exception) {
                 mainHandler.post { result.error("FINGERPRINT_FAILED", e.message, null) }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // setPrevTxHex
+    // -------------------------------------------------------------------------
+    private fun setPrevTxHex(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        val inputIndex = call.argument<Int>("inputIndex") ?: run {
+            result.error("INVALID_ARG", "inputIndex is required", null)
+            return
+        }
+        val rawTxHex = call.argument<String>("rawTxHex") ?: run {
+            result.error("INVALID_ARG", "rawTxHex is required", null)
+            return
+        }
+
+        executor.execute {
+            try {
+                if (!TrezorBridge.tryLoad()) throw bridgeNotReady()
+                uniffi.trezor_bridge.trezorSetPrevTxHex(deviceId, inputIndex.toUInt(), rawTxHex)
+                mainHandler.post { result.success(null) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("SET_PREV_TX_FAILED", e.message, null) }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // clearPrevTxHexes
+    // -------------------------------------------------------------------------
+    private fun clearPrevTxHexes(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+
+        executor.execute {
+            try {
+                if (!TrezorBridge.tryLoad()) throw bridgeNotReady()
+                uniffi.trezor_bridge.trezorClearPrevTxHexes(deviceId)
+                mainHandler.post { result.success(null) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("CLEAR_PREV_TX_FAILED", e.message, null) }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // signTransaction
+    // -------------------------------------------------------------------------
+    private fun signTransaction(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        val psbtBase64 = call.argument<String>("psbtBase64") ?: run {
+            result.error("INVALID_ARG", "psbtBase64 is required", null)
+            return
+        }
+        val network = call.argument<String>("network") ?: "mainnet"
+
+        executor.execute {
+            try {
+                if (!TrezorBridge.tryLoad()) throw bridgeNotReady()
+                val psbtBytes = android.util.Base64.decode(psbtBase64, android.util.Base64.DEFAULT)
+                val psbtUBytes = psbtBytes.map { it.toUByte() }
+                val signedBytes = uniffi.trezor_bridge.trezorSignTransaction(deviceId, psbtUBytes, network)
+                val signedBase64 = android.util.Base64.encodeToString(
+                    signedBytes.map { it.toByte() }.toByteArray(),
+                    android.util.Base64.NO_WRAP,
+                )
+                mainHandler.post { result.success(signedBase64) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("SIGN_FAILED", e.message, null) }
             }
         }
     }

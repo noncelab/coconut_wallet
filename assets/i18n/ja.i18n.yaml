@@ -435,6 +435,7 @@ wallet_connect_screen:
       connect_via_ble: "Bluetoothで接続"
       add_wallet: "ウォレットを追加"
       retry: "再試行"
+      start_signing: "署名開始"
     init:
       notice: "Trezor Safe 7のみ対応しています。"
       ble_step1: "Bluetoothをオンにして、Trezor Safe 7を近くに置いてください。"
@@ -604,6 +605,32 @@ bitbox02_sign_screen:
   device_mismatch: "接続されたデバイスがこのウォレットと一致しません。正しいデバイスを接続してください。"
   btn:
     sign: "BitBox02で署名"
+  state_label:
+    idle: "署名待機"
+    signing: "署名中"
+
+trezor_sign_screen:
+  tx_card:
+    title: "取引情報"
+    send: "送金額"
+    to: "送信先"
+    fee: "手数料"
+    total_cost: "合計費用"
+  device_status:
+    title: "デバイスの状態"
+  idle:
+    waiting: "署名待機中"
+  status:
+    connecting_device: "BluetoothでTrezorに接続中..."
+    confirm_on_device: "デバイスで金額・アドレス・手数料を確認してください"
+  done:
+    title: "署名完了"
+    description: "Trezorがトランザクションに署名しました。"
+  error_title: "署名に失敗"
+  device_mismatch: "接続されたデバイスがこのウォレットと一致しません。正しいデバイスを接続してください。"
+  device_mismatch_other_wallet: "接続されたデバイスは'${wallet_name}'のキーです。正しいデバイスを接続してください。"
+  btn:
+    sign: "Trezorで署名"
   state_label:
     idle: "署名待機"
     signing: "署名中"

@@ -22,6 +22,7 @@ use std::sync::{Arc, Mutex};
 use trezor_connect_rs::{
     CallbackDeviceInfo, CallbackReadResult, CallbackResult, CallbackTransport, ConnectedDevice,
     DeviceInfo, GetPublicKeyParams, TransportCallback,
+    psbt::{psbt_to_sign_tx_params, apply_signatures_to_psbt},
 };
 use trezor_connect_rs::types::Network;
 
@@ -39,6 +40,8 @@ pub enum TrezorError {
     XPub(String),
     #[error("Fingerprint error: {0}")]
     Fingerprint(String),
+    #[error("Sign error: {0}")]
+    Sign(String),
     #[error("Disconnect error: {0}")]
     Disconnect(String),
     #[error("Invalid argument: {0}")]
@@ -228,6 +231,12 @@ static SESSIONS: Lazy<Mutex<HashMap<String, Session>>> =
 static THP_CREDS: Lazy<Mutex<HashMap<String, String>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
+// In-memory store of previous transaction hexes keyed by (device_id, input_index).
+// Populated by trezor_set_prev_tx_hex() before signing so that the PSBT can be
+// enriched with NON_WITNESS_UTXO data that Trezor requires.
+static PREV_TX_STORE: Lazy<Mutex<HashMap<String, HashMap<usize, String>>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
 static RT: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
     tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
@@ -363,6 +372,90 @@ pub fn trezor_get_fingerprint(device_id: String) -> Result<String, TrezorError> 
         }
         // Layout: version(4) + depth(1) + parent_fingerprint(4) + ...
         Ok(hex::encode(&decoded[5..9]))
+    })
+}
+
+/// Store a raw previous transaction hex for a specific PSBT input index.
+/// Must be called for each input before [trezor_sign_transaction].
+/// The hex is injected as NON_WITNESS_UTXO into the PSBT before signing.
+pub fn trezor_set_prev_tx_hex(device_id: String, input_index: u32, raw_tx_hex: String) -> Result<(), TrezorError> {
+    let mut store = PREV_TX_STORE.lock().unwrap();
+    store.entry(device_id)
+        .or_insert_with(HashMap::new)
+        .insert(input_index as usize, raw_tx_hex);
+    Ok(())
+}
+
+/// Clear stored previous transaction hexes for a device.
+pub fn trezor_clear_prev_tx_hexes(device_id: String) -> Result<(), TrezorError> {
+    let mut store = PREV_TX_STORE.lock().unwrap();
+    store.remove(&device_id);
+    Ok(())
+}
+
+/// Inject NON_WITNESS_UTXO into PSBT inputs from stored prev tx hexes.
+fn inject_prev_txs_into_psbt(device_id: &str, psbt_bytes: &[u8]) -> Result<Vec<u8>, TrezorError> {
+    let store = PREV_TX_STORE.lock().unwrap();
+    let device_prev_txs = match store.get(device_id) {
+        Some(m) => m,
+        None => return Ok(psbt_bytes.to_vec()),
+    };
+
+    let mut psbt = bitcoin::psbt::Psbt::deserialize(psbt_bytes)
+        .map_err(|e| TrezorError::Sign(format!("PSBT deserialize for prev tx injection: {e}")))?;
+
+    for (&input_index, raw_tx_hex) in device_prev_txs.iter() {
+        if input_index >= psbt.inputs.len() {
+            return Err(TrezorError::Sign(format!(
+                "prevtx input index {input_index} out of range (PSBT has {} inputs)",
+                psbt.inputs.len()
+            )));
+        }
+        if psbt.inputs[input_index].non_witness_utxo.is_some() {
+            continue;
+        }
+        let raw_tx_bytes = hex::decode(raw_tx_hex)
+            .map_err(|e| TrezorError::Sign(format!("prevtx[{input_index}]: invalid hex: {e}")))?;
+        let prev_tx: bitcoin::Transaction = bitcoin::consensus::deserialize(&raw_tx_bytes)
+            .map_err(|e| TrezorError::Sign(format!("prevtx[{input_index}]: deserialize: {e}")))?;
+        psbt.inputs[input_index].non_witness_utxo = Some(prev_tx);
+        eprintln!("[TrezorBridge] injected NonWitnessUtxo for input[{input_index}]");
+    }
+
+    Ok(psbt.serialize())
+}
+
+/// Sign a Bitcoin transaction from a PSBT.
+///
+/// Takes raw PSBT bytes, converts them to Trezor signing parameters,
+/// calls the device to sign, then applies the signatures back into the PSBT.
+/// Returns the signed PSBT bytes.
+/// `network` must be one of: "mainnet", "testnet", "regtest" (default: "mainnet").
+pub fn trezor_sign_transaction(device_id: String, psbt_bytes: Vec<u8>, network: String) -> Result<Vec<u8>, TrezorError> {
+    RT.block_on(async move {
+        let mut sessions = SESSIONS.lock().unwrap();
+        let s = sessions.get_mut(&device_id)
+            .ok_or_else(|| TrezorError::InvalidArg(format!("Unknown device_id: {device_id}")))?;
+
+        let net = match network.to_lowercase().as_str() {
+            "testnet" => bitcoin::Network::Testnet,
+            "regtest" => bitcoin::Network::Regtest,
+            _ => bitcoin::Network::Bitcoin,
+        };
+
+        // Inject NON_WITNESS_UTXO from stored prev tx hexes before conversion.
+        let enriched_psbt = inject_prev_txs_into_psbt(&device_id, &psbt_bytes)?;
+
+        let params = psbt_to_sign_tx_params(&enriched_psbt, net)
+            .map_err(|e| TrezorError::Sign(format!("PSBT conversion: {e}")))?;
+
+        let signed = s.device.sign_transaction(params).await
+            .map_err(|e| TrezorError::Sign(e.to_string()))?;
+
+        let signed_psbt = apply_signatures_to_psbt(&enriched_psbt, &signed)
+            .map_err(|e| TrezorError::Sign(format!("Apply signatures: {e}")))?;
+
+        Ok(signed_psbt)
     })
 }
 

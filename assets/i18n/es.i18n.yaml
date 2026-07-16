@@ -410,6 +410,7 @@ wallet_connect_screen:
       connect_via_ble: "Conectar vía Bluetooth"
       add_wallet: "Añadir billetera"
       retry: "Reintentar"
+      start_signing: "Iniciar firma"
     init:
       notice: "Solo se admite Trezor Safe 7."
       ble_step1: "Active el Bluetooth y mantenga Trezor Safe 7 cerca."
@@ -606,6 +607,32 @@ bitbox02_sign_screen:
   device_mismatch: "El dispositivo conectado no coincide con esta billetera. Por favor conecte el dispositivo correcto."
   btn:
     sign: "Firmar con BitBox02"
+  state_label:
+    idle: "Esperando para firmar"
+    signing: "Firmando"
+
+trezor_sign_screen:
+  tx_card:
+    title: "Transacción"
+    send: "Enviar"
+    to: "Para"
+    fee: "Comisión"
+    total_cost: "Coste total"
+  device_status:
+    title: "Estado del dispositivo"
+  idle:
+    waiting: "Esperando para firmar"
+  status:
+    connecting_device: "Conectando con Trezor por Bluetooth..."
+    confirm_on_device: "Confirma el importe, la dirección y la comisión en el dispositivo"
+  done:
+    title: "Firmado"
+    description: "La transacción ha sido firmada por Trezor."
+  error_title: "Error al firmar"
+  device_mismatch: "El dispositivo conectado no coincide con esta billetera. Por favor conecte el dispositivo correcto."
+  device_mismatch_other_wallet: "El dispositivo conectado pertenece a '${wallet_name}'. Por favor conecte el dispositivo correcto."
+  btn:
+    sign: "Firmar con Trezor"
   state_label:
     idle: "Esperando para firmar"
     signing: "Firmando"

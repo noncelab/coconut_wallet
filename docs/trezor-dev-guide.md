@@ -481,6 +481,22 @@ let is_retryable = !error_str.contains("Pairing cancelled by user")
     || error_str.contains("Device disconnected"));
 ```
 
+**패치 2** — PSBT 트랜잭션 서명 처리 보완:
+
+Trezor Bridge에서 PSBT 서명 API를 노출하고, 서명에 필요한 이전 트랜잭션 정보를 주입하며, Trezor가 반환하는 ECDSA DER 서명 형식을 처리하도록 보완합니다.
+
+변경 대상 파일:
+
+- `rust/trezor-bridge/src/lib.rs`
+- `rust/trezor-bridge/src/trezor.udl`
+- `rust/trezor-connect-rs/src/psbt.rs`
+
+상세 변경 사항은 패치 적용 커밋을 기준으로 확인합니다.
+
+- GitHub commit: `<커밋 링크 추가 예정>`
+
+> 새 버전 소스로 `rust/trezor-connect-rs`를 교체하면 `src/psbt.rs` 변경은 사라지므로 반드시 다시 적용합니다. `trezor-bridge`의 `lib.rs`와 `trezor.udl`도 패치 2의 API와 구현이 유지되는지 함께 확인합니다.
+
 **4. Cargo.toml 버전 업데이트**
 
 `rust/trezor-bridge/Cargo.toml`의 `[dependencies]` 버전을 새 버전으로 변경합니다.

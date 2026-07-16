@@ -253,9 +253,7 @@ pub fn apply_signatures_to_psbt(
         if let Some((pubkey, _)) = psbt.inputs[i].bip32_derivation.iter().next() {
             // ECDSA input: insert into partial_sigs
             let pk = bitcoin::PublicKey::new(*pubkey);
-            let ecdsa_sig = bitcoin::ecdsa::Signature::from_slice(&sig_bytes).map_err(|e| {
-                DeviceError::InvalidInput(format!("Invalid ECDSA signature: {}", e))
-            })?;
+            let ecdsa_sig = parse_ecdsa_signature(&sig_bytes, &psbt.inputs[i])?;
             psbt.inputs[i].partial_sigs.insert(pk, ecdsa_sig);
         } else if !psbt.inputs[i].tap_key_origins.is_empty() {
             // Taproot input: insert into tap_key_sig
@@ -267,6 +265,26 @@ pub fn apply_signatures_to_psbt(
     }
 
     Ok(psbt.serialize())
+}
+
+fn parse_ecdsa_signature(
+    sig_bytes: &[u8],
+    input: &bitcoin::psbt::Input,
+) -> Result<bitcoin::ecdsa::Signature> {
+    if let Ok(signature) = bitcoin::ecdsa::Signature::from_slice(sig_bytes) {
+        return Ok(signature);
+    }
+
+    let signature = bitcoin::secp256k1::ecdsa::Signature::from_der(sig_bytes)
+        .map_err(|e| DeviceError::InvalidInput(format!("Invalid ECDSA signature: {}", e)))?;
+    let sighash_type = input.ecdsa_hash_ty().map_err(|e| {
+        DeviceError::InvalidInput(format!("Invalid PSBT ECDSA sighash type: {}", e))
+    })?;
+
+    Ok(bitcoin::ecdsa::Signature {
+        signature,
+        sighash_type,
+    })
 }
 
 /// Format a BIP32 derivation path as a string (e.g., "m/84'/0'/0'/0/0").
@@ -304,6 +322,14 @@ fn infer_script_type_from_path(path: &bitcoin::bip32::DerivationPath) -> ScriptT
 mod tests {
     use super::*;
 
+    fn sample_ecdsa_signature() -> bitcoin::secp256k1::ecdsa::Signature {
+        let secp = bitcoin::secp256k1::Secp256k1::new();
+        let secret_key = bitcoin::secp256k1::SecretKey::from_slice(&[1; 32]).unwrap();
+        let message = bitcoin::secp256k1::Message::from_digest([2; 32]);
+
+        secp.sign_ecdsa(&message, &secret_key)
+    }
+
     #[test]
     fn test_infer_script_type_from_purpose() {
         use bitcoin::bip32::DerivationPath;
@@ -323,5 +349,28 @@ mod tests {
 
         let path = DerivationPath::from_str("m/86'/0'/0'/0/0").unwrap();
         assert_eq!(infer_script_type_from_path(&path), ScriptType::SpendTaproot);
+    }
+
+    #[test]
+    fn parse_ecdsa_signature_accepts_trezor_der_signature() {
+        let signature = sample_ecdsa_signature();
+        let input = bitcoin::psbt::Input::default();
+        let parsed = parse_ecdsa_signature(signature.serialize_der().as_ref(), &input).unwrap();
+
+        assert_eq!(parsed.signature, signature);
+        assert_eq!(parsed.sighash_type, bitcoin::EcdsaSighashType::All);
+    }
+
+    #[test]
+    fn parse_ecdsa_signature_preserves_existing_sighash_byte() {
+        let signature = sample_ecdsa_signature();
+        let mut serialized = signature.serialize_der().to_vec();
+        serialized.push(bitcoin::EcdsaSighashType::Single as u8);
+
+        let input = bitcoin::psbt::Input::default();
+        let parsed = parse_ecdsa_signature(&serialized, &input).unwrap();
+
+        assert_eq!(parsed.signature, signature);
+        assert_eq!(parsed.sighash_type, bitcoin::EcdsaSighashType::Single);
     }
 }

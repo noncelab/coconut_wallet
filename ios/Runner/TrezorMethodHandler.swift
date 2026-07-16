@@ -45,6 +45,12 @@ class TrezorMethodHandler: NSObject {
             getXPub(call, result: result)
         case "getFingerprint":
             getFingerprint(call, result: result)
+        case "signTransaction":
+            signTransaction(call, result: result)
+        case "setPrevTxHex":
+            setPrevTxHex(call, result: result)
+        case "clearPrevTxHexes":
+            clearPrevTxHexes(call, result: result)
         case "disconnect":
             disconnect(call, result: result)
         default:
@@ -180,6 +186,91 @@ class TrezorMethodHandler: NSObject {
             } catch {
                 DispatchQueue.main.async {
                     result(FlutterError(code: "FINGERPRINT_FAILED", message: error.localizedDescription, details: nil))
+                }
+            }
+        }
+    }
+
+    // MARK: - setPrevTxHex
+    private func setPrevTxHex(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String,
+              let inputIndex = args["inputIndex"] as? Int,
+              let rawTxHex = args["rawTxHex"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id, inputIndex, and rawTxHex required", details: nil))
+            return
+        }
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+#if canImport(trezor_bridgeFFI)
+                try trezorSetPrevTxHex(deviceId: deviceId, inputIndex: UInt32(inputIndex), rawTxHex: rawTxHex)
+                DispatchQueue.main.async { result(nil) }
+#else
+                throw NSError(domain: "TrezorBridge", code: -99,
+                    userInfo: [NSLocalizedDescriptionKey: "TrezorBridgeFFI not linked"])
+#endif
+            } catch {
+                DispatchQueue.main.async {
+                    result(FlutterError(code: "SET_PREV_TX_FAILED", message: error.localizedDescription, details: nil))
+                }
+            }
+        }
+    }
+
+    // MARK: - clearPrevTxHexes
+    private func clearPrevTxHexes(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+#if canImport(trezor_bridgeFFI)
+                try trezorClearPrevTxHexes(deviceId: deviceId)
+                DispatchQueue.main.async { result(nil) }
+#else
+                throw NSError(domain: "TrezorBridge", code: -99,
+                    userInfo: [NSLocalizedDescriptionKey: "TrezorBridgeFFI not linked"])
+#endif
+            } catch {
+                DispatchQueue.main.async {
+                    result(FlutterError(code: "CLEAR_PREV_TX_FAILED", message: error.localizedDescription, details: nil))
+                }
+            }
+        }
+    }
+
+    // MARK: - signTransaction
+    private func signTransaction(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String,
+              let psbtBase64 = args["psbtBase64"] as? String,
+              let psbtData = Data(base64Encoded: psbtBase64) else {
+            result(FlutterError(code: "INVALID_ARG", message: "id and psbtBase64 required", details: nil))
+            return
+        }
+        let network = (args["network"] as? String) ?? "mainnet"
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+#if canImport(trezor_bridgeFFI)
+                let signedBytes = try trezorSignTransaction(
+                    deviceId: deviceId,
+                    psbtBytes: [UInt8](psbtData),
+                    network: network
+                )
+                let signedBase64 = Data(signedBytes).base64EncodedString()
+                DispatchQueue.main.async { result(signedBase64) }
+#else
+                throw NSError(domain: "TrezorBridge", code: -99,
+                    userInfo: [NSLocalizedDescriptionKey: "TrezorBridgeFFI not linked. Run: make trezor-ios"])
+#endif
+            } catch {
+                DispatchQueue.main.async {
+                    result(FlutterError(code: "SIGN_FAILED", message: error.localizedDescription, details: nil))
                 }
             }
         }

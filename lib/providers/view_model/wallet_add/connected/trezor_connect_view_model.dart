@@ -7,6 +7,7 @@ import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/foundation.dart';
 
@@ -57,6 +58,17 @@ class TrezorConnectViewModel extends ChangeNotifier {
   String get xpub => _xpub;
   String get fingerprint => _fingerprint;
   String get deviceLabel => _deviceLabel;
+
+  String? findMatchingTrezorWalletName(String xpub) {
+    for (final wallet in _walletProvider.walletItemList) {
+      if (wallet.walletImportSource != WalletImportSource.trezor) continue;
+      if (wallet is! SinglesigWalletItem) continue;
+      if (wallet.extendedPublicKey == xpub) {
+        return wallet.name;
+      }
+    }
+    return null;
+  }
 
   void _setState(TrezorConnectStep step) {
     if (_disposed) return;
