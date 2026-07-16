@@ -493,7 +493,7 @@ Trezor Bridge에서 PSBT 서명 API를 노출하고, 서명에 필요한 이전 
 
 상세 변경 사항은 패치 적용 커밋을 기준으로 확인합니다.
 
-- GitHub commit: `<커밋 링크 추가 예정>`
+- GitHub commit: `https://github.com/noncelab/coconut_wallet/commit/75aed8b062bcc62db9a4517a19c73ed4ddc45d16`
 
 > 새 버전 소스로 `rust/trezor-connect-rs`를 교체하면 `src/psbt.rs` 변경은 사라지므로 반드시 다시 적용합니다. `trezor-bridge`의 `lib.rs`와 `trezor.udl`도 패치 2의 API와 구현이 유지되는지 함께 확인합니다.
 
