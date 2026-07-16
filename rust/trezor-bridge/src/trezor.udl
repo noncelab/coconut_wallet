@@ -7,9 +7,11 @@ namespace trezor_bridge {
     void trezor_register_callbacks(u64 ble_handle, TrezorBleCallbacks callbacks);
 
     // Connect to a Trezor Safe 7 over BLE (THP v2 / Noise XX).
+    // device_uuid: stable BLE identifier (iOS peripheral UUID / Android MAC address)
+    // credential_path: filesystem path for persistent THP credential storage (empty = in-memory only)
     // Returns an opaque device_id string on success.
     [Throws=TrezorError]
-    string trezor_connect(u64 ble_handle);
+    string trezor_connect(u64 ble_handle, string device_uuid, string credential_path);
 
     // Retrieve the BIP-84 extended public key at the given derivation path.
     // Returns JSON: {"xpub": "zpub..."}

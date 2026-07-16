@@ -408,8 +408,9 @@ wallet_connect_screen:
     connecting:
       title: "Gerät wird verbunden"
       step1: "Bitte entsperren Sie das Gerät."
-      step2: "Bei der ersten Verbindung überprüfen Sie, ob der Pairing-Code übereinstimmt, und drücken Sie Confirm."
-      step3: "Wenn das Trezor-Gerät fragt, ob Sie eine Verbindung mit Coconut Wallet herstellen möchten, drücken Sie Confirm."
+      step2: "Bei der ersten Verbindung tippen Sie auf 'Pair & Connect > Pair new device'."
+      step3: "Bei der ersten Verbindung überprüfen Sie, ob der Pairing-Code übereinstimmt, und drücken Sie Confirm."
+      step4: "Wenn das Trezor-Gerät fragt, ob Sie eine Verbindung mit Coconut Wallet herstellen möchten, drücken Sie Confirm."
     pairing_dialog:
       title: "Pairing-Code eingeben"
       description: "Geben Sie den 6-stelligen Code ein, der auf Ihrem Trezor-Bildschirm angezeigt wird."
@@ -431,6 +432,8 @@ wallet_connect_screen:
       step1: "Öffnen Sie auf dem iPhone \"Einstellungen > Bluetooth\"."
       step2: "Tippen Sie auf (i) neben [dem auf dem Trezor festgelegten Gerätenamen] oder 'Trezor Safe 7'."
       step3: "Wählen Sie 'Dieses Gerät vergessen' und versuchen Sie es erneut."
+    pairing_aborted:
+      title: "Pairing abgebrochen"
   common:
     ble_off: "Bitte aktivieren Sie Bluetooth auf Ihrem Gerät."
 

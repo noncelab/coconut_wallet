@@ -17,6 +17,15 @@ class TrezorMethodHandler: NSObject {
     private static var handleMap: [UInt64: TrezorBleManager] = [:]
     private static var nextHandle: UInt64 = 1
 
+    static func credentialFilePath() -> String {
+        let fm = FileManager.default
+        let dir = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fm.temporaryDirectory
+        let credDir = dir.appendingPathComponent("trezor", isDirectory: true)
+        try? fm.createDirectory(at: credDir, withIntermediateDirectories: true)
+        return credDir.appendingPathComponent("thp-credentials.json").path
+    }
+
     init(messenger: FlutterBinaryMessenger) {
         channel = FlutterMethodChannel(name: "trezor", binaryMessenger: messenger)
         super.init()
@@ -70,8 +79,10 @@ class TrezorMethodHandler: NSObject {
 #if canImport(trezor_bridgeFFI)
                         let nativeCbs = SwiftBleCallbacks(manager: manager, channel: self!.channel)
                         trezorRegisterCallbacks(bleHandle: handle, callbacks: nativeCbs)
-                        print("[TrezorBLE] Callbacks registered, calling trezorConnect(handle=\(handle))")
-                        let deviceId = try trezorConnect(bleHandle: handle)
+                        let deviceUUID = manager.peripheralUUID ?? "ble-\(handle)"
+                        let credPath = Self.credentialFilePath()
+                        print("[TrezorBLE] Callbacks registered, calling trezorConnect(handle=\(handle), uuid=\(deviceUUID), credPath=\(credPath))")
+                        let deviceId = try trezorConnect(bleHandle: handle, deviceUuid: deviceUUID, credentialPath: credPath)
                         print("[TrezorBLE] trezorConnect succeeded: deviceId=\(deviceId)")
                         TrezorMethodHandler.handleMap.removeValue(forKey: handle)
                         DispatchQueue.main.async { result(deviceId) }
@@ -82,33 +93,36 @@ class TrezorMethodHandler: NSObject {
                     } catch {
                         print("[TrezorBLE] trezorConnect FAILED: \(error.localizedDescription)")
                         TrezorMethodHandler.handleMap.removeValue(forKey: handle)
+                        let msg = error.localizedDescription
+                        let code: String
+                        if msg.contains("Pairing cancelled by user") {
+                            code = "PAIRING_CANCELLED"
+                        } else if msg.contains("Code verification failed") {
+                            code = "PAIRING_CODE_WRONG"
+                        } else if msg.contains("airing") || msg.contains("pairing") {
+                            code = "PAIRING_FAILED"
+                        } else if msg.contains("Decryption error") || msg.contains("aead") {
+                            code = "PEER_REMOVED_PAIRING"
+                        } else {
+                            code = "CONNECT_FAILED"
+                        }
                         DispatchQueue.main.async {
-                            let msg = error.localizedDescription
-                            let code: String
-                            if msg.contains("Pairing cancelled by user") {
-                                code = "PAIRING_CANCELLED"
-                            } else if msg.contains("Code verification failed") {
-                                code = "PAIRING_CODE_WRONG"
-                            } else if msg.contains("airing") || msg.contains("pairing") {
-                                code = "PAIRING_FAILED"
-                            } else {
-                                code = "CONNECT_FAILED"
-                            }
                             result(FlutterError(code: code, message: msg, details: nil))
                         }
                     }
                 }
             case .failure(let error):
-                print("[TrezorBLE] scanAndConnect FAILED: \(error.localizedDescription)")
+                print("[TrezorBLE] scanAndConnect FAILED: \(error.localizedDescription) [domain=\((error as NSError).domain) code=\((error as NSError).code)]")
                 TrezorMethodHandler.handleMap.removeValue(forKey: handle)
                 DispatchQueue.main.async {
                     self?.bleManager = nil
+                    let nsError = error as NSError
                     let code: String
-                    if let nsError = error as NSError?, nsError.code == -7 {
+                    if nsError.domain == "TrezorBLE" && nsError.code == -7 {
                         code = "PEER_REMOVED_PAIRING"
-                    } else if let nsError = error as NSError?, nsError.code == -8 {
+                    } else if nsError.domain == "TrezorBLE" && nsError.code == -8 {
                         code = "PERMISSION_DENIED"
-                    } else if let nsError = error as NSError?, nsError.code == -2 {
+                    } else if nsError.domain == "TrezorBLE" && nsError.code == -2 {
                         code = "BLE_DISABLED"
                     } else {
                         code = "CONNECT_FAILED"

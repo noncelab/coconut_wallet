@@ -17,6 +17,7 @@ uniffi::include_scaffolding!("trezor");
 
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use trezor_connect_rs::{
     CallbackDeviceInfo, CallbackReadResult, CallbackResult, CallbackTransport, ConnectedDevice,
@@ -61,27 +62,97 @@ pub trait TrezorBleCallbacks: Send + Sync {
 // ---------------------------------------------------------------------------
 
 struct NativeAdapter {
-    handle: u64,
+    device_uuid: String,
     cbs: Arc<dyn TrezorBleCallbacks>,
+    credential_path: Option<PathBuf>,
+}
+
+impl NativeAdapter {
+    fn load_creds_file(&self) -> HashMap<String, String> {
+        let path = match &self.credential_path {
+            Some(p) => p,
+            None => return HashMap::new(),
+        };
+        match std::fs::read_to_string(path) {
+            Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+            Err(_) => HashMap::new(),
+        }
+    }
+
+    fn save_creds_file(&self, creds: &HashMap<String, String>) -> bool {
+        let path = match &self.credential_path {
+            Some(p) => p,
+            None => return false,
+        };
+        if let Ok(parent) = std::fs::canonicalize(path.parent().unwrap_or(std::path::Path::new("."))) {
+            let _ = std::fs::create_dir_all(&parent);
+        } else if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let json = match serde_json::to_string(creds) {
+            Ok(j) => j,
+            Err(_) => return false,
+        };
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            use std::io::Write;
+            match std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .mode(0o600)
+                .open(path)
+            {
+                Ok(mut file) => file.write_all(json.as_bytes()).is_ok(),
+                Err(_) => false,
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            std::fs::write(path, json).is_ok()
+        }
+    }
 }
 
 impl TransportCallback for NativeAdapter {
     fn save_thp_credential(&self, device_id: &str, credential_json: &str) -> bool {
-        let mut store = THP_CREDS.lock().unwrap();
-        if credential_json.is_empty() {
-            store.remove(device_id);
+        if self.credential_path.is_some() {
+            let mut creds = self.load_creds_file();
+            if credential_json.is_empty() {
+                creds.remove(device_id);
+            } else {
+                creds.insert(device_id.to_string(), credential_json.to_string());
+            }
+            self.save_creds_file(&creds)
         } else {
-            store.insert(device_id.to_string(), credential_json.to_string());
+            let mut store = THP_CREDS.lock().unwrap();
+            if credential_json.is_empty() {
+                store.remove(device_id);
+            } else {
+                store.insert(device_id.to_string(), credential_json.to_string());
+            }
+            true
         }
-        true
     }
 
     fn load_thp_credential(&self, device_id: &str) -> Option<String> {
-        THP_CREDS.lock().unwrap().get(device_id).cloned()
+        if self.credential_path.is_some() {
+            let creds = self.load_creds_file();
+            creds.get(device_id).cloned()
+        } else {
+            THP_CREDS.lock().unwrap().get(device_id).cloned()
+        }
     }
 
     fn clear_thp_credential(&self, device_id: &str) {
-        THP_CREDS.lock().unwrap().remove(device_id);
+        if self.credential_path.is_some() {
+            let mut creds = self.load_creds_file();
+            creds.remove(device_id);
+            self.save_creds_file(&creds);
+        } else {
+            THP_CREDS.lock().unwrap().remove(device_id);
+        }
     }
 
     fn log_debug(&self, tag: &str, message: &str) {
@@ -90,7 +161,7 @@ impl TransportCallback for NativeAdapter {
 
     fn enumerate_devices(&self) -> Vec<CallbackDeviceInfo> {
         vec![CallbackDeviceInfo {
-            path: format!("ble:{}", self.handle),
+            path: format!("ble:{}", self.device_uuid),
             transport_type: "bluetooth".to_string(),
             name: Some("Trezor Safe 7".to_string()),
             vendor_id: None,
@@ -139,7 +210,6 @@ impl TransportCallback for NativeAdapter {
 // ---------------------------------------------------------------------------
 
 struct PendingEntry {
-    handle: u64,
     cbs: Arc<dyn TrezorBleCallbacks>,
 }
 
@@ -174,7 +244,6 @@ static RT: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
 /// `callbacks` is implemented by the Swift/Kotlin native layer.
 pub fn trezor_register_callbacks(ble_handle: u64, callbacks: Arc<dyn TrezorBleCallbacks>) {
     PENDING.lock().unwrap().insert(ble_handle, PendingEntry {
-        handle: ble_handle,
         cbs: callbacks,
     });
 }
@@ -182,18 +251,26 @@ pub fn trezor_register_callbacks(ble_handle: u64, callbacks: Arc<dyn TrezorBleCa
 /// Connect to a Trezor Safe 7 over BLE (THP v2 Noise XX handshake).
 /// Must be preceded by `trezor_register_callbacks()` with the same `ble_handle`.
 /// Returns a `device_id` string for subsequent calls.
-pub fn trezor_connect(ble_handle: u64) -> Result<String, TrezorError> {
+pub fn trezor_connect(ble_handle: u64, device_uuid: String, credential_path: String) -> Result<String, TrezorError> {
     let entry = PENDING.lock().unwrap().remove(&ble_handle)
         .ok_or_else(|| TrezorError::Connect(
             format!("No callbacks for handle {ble_handle}. Call trezor_register_callbacks first.")
         ))?;
 
-    let path = format!("ble:{}", ble_handle);
+    // Use the stable device UUID as the path so credentials persist across app restarts.
+    let path = format!("ble:{}", device_uuid);
     let device_id = path.clone();
 
+    let cred_path = if credential_path.is_empty() {
+        None
+    } else {
+        Some(PathBuf::from(credential_path))
+    };
+
     let adapter = Arc::new(NativeAdapter {
-        handle: entry.handle,
+        device_uuid: device_uuid.clone(),
         cbs: entry.cbs,
+        credential_path: cred_path,
     });
 
     RT.block_on(async move {

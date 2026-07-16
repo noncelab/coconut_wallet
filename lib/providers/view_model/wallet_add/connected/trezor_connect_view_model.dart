@@ -92,6 +92,7 @@ class TrezorConnectViewModel extends ChangeNotifier {
     _errorMessage = null;
     _errorDescription = null;
     _pairingErrorMessage = null;
+    _peerRemovedPairingSteps = null;
     _isPairingCodeWrong = false;
     _isPermissionDenied = false;
     if (!_disposed) notifyListeners();
@@ -105,6 +106,7 @@ class TrezorConnectViewModel extends ChangeNotifier {
       _deviceLabel = _device!.label;
 
       _setState(TrezorConnectStep.paired);
+      TrezorDevice.lastConnected = _device;
       await _retrieveXPub(silent: true);
     } on TrezorPairingCodeWrongException catch (e) {
       _errorMessage = e.message;
@@ -130,6 +132,13 @@ class TrezorConnectViewModel extends ChangeNotifier {
           t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.step2,
           t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.step3,
         ];
+        onPairingFailed?.call();
+        _setState(TrezorConnectStep.error);
+      } else if (e.message.contains('Encryption is insufficient')) {
+        // 페어링 중간에 중단된 경우
+        _errorDescription = t.wallet_connect_screen.guide_trezor.pairing_aborted.title;
+        _errorMessage = e.message;
+        _peerRemovedPairingSteps = null;
         onPairingFailed?.call();
         _setState(TrezorConnectStep.error);
       } else {
@@ -168,6 +177,7 @@ class TrezorConnectViewModel extends ChangeNotifier {
       try {
         _xpub = await _device!.getXPub(keypath: keypath, network: nt.toString());
         _fingerprint = await _device!.getFingerprint();
+        _device!.cachedFingerprint = _fingerprint;
         _setState(TrezorConnectStep.paired);
       } on Exception catch (e) {
         if (silent) {
@@ -225,6 +235,7 @@ class TrezorConnectViewModel extends ChangeNotifier {
       } catch (_) {}
       _device = null;
     }
+    TrezorDevice.lastConnected = null;
     _setState(TrezorConnectStep.idle);
   }
 
@@ -239,17 +250,20 @@ class TrezorConnectViewModel extends ChangeNotifier {
     _xpub = '';
     _fingerprint = '';
     _deviceLabel = '';
+    TrezorDevice.lastConnected = null;
     if (!_disposed) notifyListeners();
   }
 
   @override
   void dispose() {
     _disposed = true;
-    TrezorDevice.cancel().catchError((_) {});
-    if (_device != null) {
-      _device!.disconnect().catchError((_) {});
-      _device = null;
+    if (_step != TrezorConnectStep.paired) {
+      TrezorDevice.cancel().catchError((_) {});
+      if (_device != null) {
+        _device!.disconnect().catchError((_) {});
+      }
     }
+    _device = null;
     super.dispose();
   }
 }

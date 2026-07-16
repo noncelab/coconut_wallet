@@ -27,6 +27,12 @@ class TrezorDevice {
   final String id;
   final String label;
 
+  /// Last successfully paired device, reused for signing to avoid re-pairing.
+  static TrezorDevice? lastConnected;
+
+  /// Fingerprint cached from [getFingerprint], may be set by callers.
+  String? cachedFingerprint;
+
   TrezorDevice._({required this.id, required this.label});
 
   static Future<TrezorDevice> connect() async {

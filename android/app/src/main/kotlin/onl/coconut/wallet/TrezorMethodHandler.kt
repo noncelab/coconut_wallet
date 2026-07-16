@@ -197,6 +197,12 @@ class TrezorMethodHandler(
         "Trezor Rust bridge not loaded. Build with: make trezor-android"
     )
 
+    private fun credentialFilePath(): String {
+        val dir = java.io.File(context.filesDir, "trezor")
+        if (!dir.exists()) dir.mkdirs()
+        return java.io.File(dir, "thp-credentials.json").absolutePath
+    }
+
     // -------------------------------------------------------------------------
     // connect
     // -------------------------------------------------------------------------
@@ -464,10 +470,11 @@ class TrezorMethodHandler(
                 if (!TrezorBridge.tryLoad()) throw bridgeNotReady()
                 val handle = (nextHandle++).toULong()
                 val cbs = KotlinBleCallbacks(this)
-                Log.d("TrezorBLE", "doRustConnect: registering callbacks, handle=$handle")
+                val credPath = credentialFilePath()
+                Log.d("TrezorBLE", "doRustConnect: registering callbacks, handle=$handle, credPath=$credPath")
                 uniffi.trezor_bridge.trezorRegisterCallbacks(handle, cbs)
                 Log.d("TrezorBLE", "doRustConnect: invoking trezorConnect")
-                val rustDeviceId = uniffi.trezor_bridge.trezorConnect(handle)
+                val rustDeviceId = uniffi.trezor_bridge.trezorConnect(handle, deviceId, credPath)
                 Log.d("TrezorBLE", "doRustConnect: connected, deviceId=$rustDeviceId")
                 activeHandle = handle
                 activeDeviceId = rustDeviceId

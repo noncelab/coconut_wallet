@@ -424,6 +424,19 @@ let is_retryable = !error_str.contains("Pairing cancelled by user")  // 사용�
 - `"Pairing failed: Code verification failed"` → `contains("Code verification failed")` = true → `!true` = false → non-retryable
 - 두 에러 메시지 모두 **원본 0.4.0 그대로** 사용하므로 에러 메시지 자체는 수정하지 않습니다.
 
+#### 패치 2 — THP credential 파일 기반 영구 저장
+
+기존에는 THP credential을 인메모리 `HashMap`(`THP_CREDS`)에만 저장했습니다. 앱 프로세스가 종료되면 credential이 사라지지만, Trezor 기기에는 credential이 남아 있어 재연결 시 `Decryption error: aead::Error`가 발생했습니다.
+
+변경 후 `trezor_connect`에 `device_uuid`와 `credential_path` 파라미터가 추가되었고, `NativeAdapter`는 `credential_path`가 지정된 경우 파일에서 credential을 로드/저장합니다.
+
+- **저장 위치**: iOS `Application Support/trezor/thp-credentials.json`, Android `filesDir/trezor/thp-credentials.json`
+- **저장 형식**: JSON (`{ "ble:{device_uuid}": "{credential_json}" }`)
+- **파일 권한**: Unix 0600 (소유자만 읽기/쓰기)
+- **device_uuid**: iOS `peripheral.identifier.uuidString`, Android MAC address — 앱 재시작 후에도 동일한 키로 credential 매칭
+
+**보안 고려사항**: 파일 저장은 앱 샌드박스(iOS)/앱 전용 영역(Android) 내에 저장되어 다른 앱이 접근할 수 없습니다. credential이 유출되더라도 BLE 물리적 근접(~10m), Trezor 기기 잠금 해제, 트랜잭션 서명 시 기기 화면 확인이 모두 필요하므로 실질적인 공격 위험은 낮습니다.
+
 ### trezor-connect-rs 버전 업그레이드 방법
 
 새 버전이 crates.io에 배포됐을 때 로컬 소스를 교체하고 패치를 재적용하는 절차입니다.

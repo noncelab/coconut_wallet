@@ -5,7 +5,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_connect_viewmodel.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_connect_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
@@ -257,6 +257,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
           t.wallet_connect_screen.guide_trezor.connecting.step1,
           t.wallet_connect_screen.guide_trezor.connecting.step2,
           t.wallet_connect_screen.guide_trezor.connecting.step3,
+          t.wallet_connect_screen.guide_trezor.connecting.step4,
         ]);
       case TrezorConnectStep.pairing:
         return _buildPairingCard(vm);
