@@ -1,5 +1,16 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutUnderlinedButton;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -107,20 +118,25 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
               child: CoconutBottomSheet(
                 useIntrinsicHeight: true,
                 backgroundColor: context.coconutColors.surfaceBottomSheet,
-                appBar: CoconutAppBar.buildWithNext(
+                appBar: CoconutAppBar.build(
                   isBottom: true,
                   context: context,
                   onBackPressed: _handlePop,
-                  onNextPressed: () {
-                    Navigator.pop(
-                      context,
-                      TagApplyResult(mode: UtxoTagApplyEditMode.changeAppliedTags, tagStates: _tagStates),
-                    );
-                  },
                   title: t.tag_bottom_sheet.title_apply_tag,
-                  isActive: !_isDeletionMode,
-                  nextButtonTitle: t.done,
                   backgroundColor: context.coconutColors.surfaceBottomSheet,
+                  actionButtonList: [
+                    CoconutUnderlinedButton(
+                      text: t.done,
+                      isActive: !_isDeletionMode,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      onTap: () {
+                        Navigator.pop(
+                          context,
+                          TagApplyResult(mode: UtxoTagApplyEditMode.changeAppliedTags, tagStates: _tagStates),
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 body: Consumer<UtxoTagCrudViewModel>(
                   builder: (context, viewModel, child) {

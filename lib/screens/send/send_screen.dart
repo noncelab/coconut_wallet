@@ -1,6 +1,20 @@
 import 'dart:async';
 
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutPulldownMenu, CoconutPulldownMenuItem, CoconutPulldownMenuGroup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutPulldownMenu,
+        CoconutPulldownMenuItem,
+        CoconutPulldownMenuGroup,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';

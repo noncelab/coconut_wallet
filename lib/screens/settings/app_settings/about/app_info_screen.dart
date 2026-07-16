@@ -203,9 +203,13 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.rectangle,
                   borderRadius: BorderRadius.circular(20),
-                  color: CoconutColors.black, // fixed color
+                  color: colors.backgroundSubtle,
                 ),
-                child: SvgPicture.asset(IconPath.coconut),
+                // TODO: mainnet인 경우 gradient 적용 필요
+                child: SvgPicture.asset(
+                  IconPath.coconut,
+                  colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                ),
               ),
               const SizedBox(width: 30),
               Expanded(
@@ -475,6 +479,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     COPYRIGHT_TEXT,
                     style: CoconutTypography.body2_14.merge(
                       TextStyle(
+                        color: colors.primaryText,
                         decoration: TextDecoration.underline,
                         decorationColor: colors.primaryText.withValues(alpha: 0.3),
                       ),

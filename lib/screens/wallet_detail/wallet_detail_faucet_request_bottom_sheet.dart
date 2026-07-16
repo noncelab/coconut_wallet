@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutTextField, CoconutTextFieldStyle;
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';

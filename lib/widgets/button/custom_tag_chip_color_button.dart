@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/material.dart';
@@ -52,8 +52,8 @@ class _CustomTagChipColorButtonState extends State<CustomTagChipColorButton> {
         widget.onTap.call(_colorIndex);
       },
       child: Container(
-        width: 55,
-        height: 28,
+        width: 72,
+        height: 32,
         decoration: BoxDecoration(
           color: ColorUtil.getColor(_colorIndex).backgroundColor,
           borderRadius: BorderRadius.circular(20),
@@ -62,11 +62,13 @@ class _CustomTagChipColorButtonState extends State<CustomTagChipColorButton> {
         child: Center(
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(
-              t.change_color,
-              style: CoconutTypography.caption_10
-                  .setColor(context.coconutColors.primaryText)
-                  .copyWith(decoration: TextDecoration.underline),
+            child: IgnorePointer(
+              child: CoconutUnderlinedButton(
+                text: t.change_color,
+                textStyle: CoconutTypography.caption_10,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                onTap: () {},
+              ),
             ),
           ),
         ),

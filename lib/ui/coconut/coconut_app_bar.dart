@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar_button.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +48,6 @@ class CoconutAppBar {
                     onTap: onTitlePressed,
                     padding: titlePadding,
                     textStyle: CoconutTypography.body1_16,
-                    brightness: brightness,
                   ),
                 if (showSubLabel) ...[
                   const SizedBox(height: 3),
