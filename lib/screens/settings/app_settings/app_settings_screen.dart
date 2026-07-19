@@ -1,7 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+// import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -14,7 +14,7 @@ import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
+// import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
@@ -193,26 +193,26 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           );
                         },
                       ),
-                      ValueListenableBuilder<CoconutThemeVariant>(
-                        valueListenable: CoconutThemeController.variantNotifier,
-                        builder: (context, variant, _) {
-                          final currentLabel = switch (variant) {
-                            CoconutThemeVariant.light => t.theme_light,
-                            CoconutThemeVariant.dark => t.theme_dark,
-                          };
-                          return _buildAnimatedButton(
-                            title: t.theme,
-                            subtitle: currentLabel,
-                            onPressed: () {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
-                                context: context,
-                                heightRatio: 0.4,
-                                child: const ThemeBottomSheet(),
-                              );
-                            },
-                          );
-                        },
-                      ),
+                      // ValueListenableBuilder<CoconutThemeVariant>(
+                      //   valueListenable: CoconutThemeController.variantNotifier,
+                      //   builder: (context, variant, _) {
+                      //     final currentLabel = switch (variant) {
+                      //       CoconutThemeVariant.light => t.theme_light,
+                      //       CoconutThemeVariant.dark => t.theme_dark,
+                      //     };
+                      //     return _buildAnimatedButton(
+                      //       title: t.theme,
+                      //       subtitle: currentLabel,
+                      //       onPressed: () {
+                      //         CommonBottomSheets.showCustomHeightBottomSheet(
+                      //           context: context,
+                      //           heightRatio: 0.4,
+                      //           child: const ThemeBottomSheet(),
+                      //         );
+                      //       },
+                      //     );
+                      //   },
+                      // ),
                     ],
                   ),
                   CoconutLayout.spacing_400h,
