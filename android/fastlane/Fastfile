@@ -14,6 +14,16 @@ def find_latest_aab(flavor:)
   Dir[File.join(ROOT_DIR, "build/app/outputs/bundle/#{flavor}Release/*.aab")].max_by { |f| File.mtime(f) }
 end
 
+def prompt_for_android_signing_passwords
+  ENV["ANDROID_SIGNING_STORE_PASSWORD"] = UI.password(prompt: "Keystore password: ")
+  ENV["ANDROID_SIGNING_KEY_PASSWORD"] = UI.password(prompt: "Key password: ")
+end
+
+def clear_android_signing_passwords
+  ENV.delete("ANDROID_SIGNING_STORE_PASSWORD")
+  ENV.delete("ANDROID_SIGNING_KEY_PASSWORD")
+end
+
 # ---------- Lanes ----------
 platform :android do
   desc "Release Android REGTEST to Play (pubspec에서 읽고, 성공 시 build +1)"
@@ -33,6 +43,7 @@ platform :android do
     UI.message("Android/#{flavor} -> versionName=#{marketing}, versionCode=#{new_build}")
 
     begin
+      prompt_for_android_signing_passwords
       ENV["SUPPLY_PACKAGE_NAME"] = package
 
       prep_cmds = []
@@ -71,6 +82,8 @@ platform :android do
       UI.error("❌ Android build/upload failed: #{e.message}")
       UI.important("pubspec.yaml was not updated because build failed.")
       raise
+    ensure
+      clear_android_signing_passwords
     end
   end
 
@@ -92,6 +105,7 @@ platform :android do
     UI.message("Android/#{flavor} -> versionName=#{marketing}, versionCode=#{new_build}")
 
     begin
+      prompt_for_android_signing_passwords
       ENV["SUPPLY_PACKAGE_NAME"] = package
 
       prep_cmds = []
@@ -130,6 +144,8 @@ platform :android do
       UI.error("❌ Android build/upload failed: #{e.message}")
       UI.important("pubspec.yaml was not updated because build failed.")
       raise
+    ensure
+      clear_android_signing_passwords
     end
   end
 end  # ← 여기서 단 한 번 platform 블록을 닫음

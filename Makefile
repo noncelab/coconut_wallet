@@ -13,14 +13,14 @@ ios-mainnet:
 ios-mainnet-appstore:
     fvm flutter build ipa --flavor mainnet --release --dart-define=USE_FIREBASE=true --export-method app-store
 
-aos-mainnet:
-	fvm flutter build appbundle --flavor mainnet --release --dart-define=USE_FIREBASE=true
-
 ios-regtest:
 	fvm flutter build ios --flavor regtest --release
 
-aos-regtest:
-	fvm flutter build appbundle --flavor regtest --release
+aos-release:
+	./android/scripts/build_android_release.sh
+
+aos-run-release:
+	./android/scripts/run_android_release.sh
 
 # fastlane
 pre-deploy: 
