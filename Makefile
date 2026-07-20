@@ -52,6 +52,7 @@ pre-deploy:
 
 # gomobile bind targets
 gomobile-android:
+	mkdir -p android/app/libs
 	cd go && gomobile bind -target=android -ldflags="-extldflags=-Wl,-z,max-page-size=16384" -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
 
 gomobile-ios:
