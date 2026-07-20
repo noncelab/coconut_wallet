@@ -150,9 +150,7 @@ class CoconutPulldownMenu extends StatelessWidget {
                         entry.groupTitle!,
                         style:
                             groupTitleStyle ??
-                            CoconutTypography.body3_12.copyWith(
-                              color: groupTitleColor ?? colors.secondaryText,
-                            ),
+                            CoconutTypography.body3_12.copyWith(color: groupTitleColor ?? colors.secondaryText),
                       ),
                     ),
                     if (!isLast) _buildDivider(context, entry.groupItemIndex),
@@ -209,10 +207,7 @@ class CoconutPulldownMenu extends StatelessWidget {
   }
 
   bool _isTopRounded(List<_FlattenedEntry> entries, int index) {
-    if (index != 0) {
-      return entries[index - 1].isGroupTitle;
-    }
-    return !entries[index].isGroupTitle;
+    return index == 0 && !entries[index].isGroupTitle;
   }
 
   bool _isBottomRounded(List<_FlattenedEntry> entries, int index) {
