@@ -17,6 +17,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/widgets/card/taproot_participant_card.dart';
 import 'package:collection/collection.dart';
@@ -211,6 +212,26 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   bool get isBitBox02Wallet => _walletItemBase.walletImportSource == WalletImportSource.bitbox02;
+
+  bool get isTrezorWallet => _walletItemBase.walletImportSource == WalletImportSource.trezor;
+
+  String get walletFingerprint {
+    if (_walletItemBase is SinglesigWalletItem) {
+      return (_walletItemBase.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+    }
+    return '';
+  }
+
+  Future<void> disconnectTrezor() async {
+    final device = TrezorDevice.lastConnected;
+    TrezorDevice.lastConnected = null;
+    if (device != null) {
+      try {
+        await device.disconnect();
+      } catch (_) {}
+    }
+    notifyListeners();
+  }
 
   Future<void> disconnectBitBox02() async {
     final device = BitBox02Device.lastConnected;

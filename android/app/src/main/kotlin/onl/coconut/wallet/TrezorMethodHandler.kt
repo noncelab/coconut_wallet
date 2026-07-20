@@ -188,6 +188,7 @@ class TrezorMethodHandler(
             "setPrevTxHex" -> setPrevTxHex(call, result)
             "clearPrevTxHexes" -> clearPrevTxHexes(call, result)
             "disconnect" -> disconnect(call, result)
+            "isConnected" -> result.success(connectedDeviceId != null && gatt != null)
             "cancel" -> cancel(result)
             else -> result.notImplemented()
         }
@@ -333,7 +334,19 @@ class TrezorMethodHandler(
         val gattCallback = object : BluetoothGattCallback() {
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                 Log.d("TrezorBLE", "onConnectionStateChange: status=$status newState=$newState callbackFired=$callbackFired retryCount=$retryCount")
-                if (callbackFired) return
+                // Allow post-connection disconnect events to pass through so the
+                // connectivity EventSink is notified even after callbackFired is set.
+                if (callbackFired) {
+                    if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                        gatt.close()
+                        this@TrezorMethodHandler.gatt = null
+                        connectedDeviceId = null
+                        mainHandler.post {
+                            connectivityEventSink?.success(false)
+                        }
+                    }
+                    return
+                }
                 when (newState) {
                     BluetoothProfile.STATE_CONNECTED -> {
                         this@TrezorMethodHandler.gatt = gatt

@@ -12,6 +12,7 @@ import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_connect_
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -180,10 +181,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
     }
   }
 
-  void _navigateToTrezorSign(SendConfirmViewModel viewModel) {
+  Future<void> _navigateToTrezorSign(SendConfirmViewModel viewModel) async {
+    final isPhysicallyConnected = await TrezorConnectivityService.isDeviceConnected();
     final hasSession = TrezorDevice.lastConnected != null;
     if (!context.mounted) return;
-    if (hasSession) {
+    if (isPhysicallyConnected && hasSession) {
       Navigator.pushNamed(
         context,
         '/trezor-sign',

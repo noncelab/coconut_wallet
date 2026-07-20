@@ -878,7 +878,7 @@ wallet_info_screen:
       select: "Seleccionar"
   error:
     delete: "No se pudo eliminar la billetera"
-  bitbox02_device:
+  connected_hardware_wallet:
     title: "Información del dispositivo"
     connection_status: "Estado de conexión"
     connected: "Conectado"

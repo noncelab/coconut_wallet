@@ -14,8 +14,6 @@ import 'package:flutter/foundation.dart';
 
 enum BitBox02SignStep { idle, signing, done, error }
 
-enum BitBox02DeviceStatus { disconnected, locked, ready }
-
 enum BitBox02SignSubStatus { waiting, connectingDevice, checkPairing, preparingData, confirmOnDevice }
 
 class BitBox02SignViewModel extends ChangeNotifier {
@@ -23,7 +21,6 @@ class BitBox02SignViewModel extends ChangeNotifier {
   static const Duration _signTimeout = Duration(seconds: 120);
 
   BitBox02SignStep _step = BitBox02SignStep.idle;
-  BitBox02DeviceStatus _deviceStatus = BitBox02DeviceStatus.disconnected;
   BitBox02SignSubStatus _subStatus = BitBox02SignSubStatus.waiting;
   String? _errorMessage;
   BitBox02Device? _device;
@@ -47,7 +44,6 @@ class BitBox02SignViewModel extends ChangeNotifier {
   }
 
   BitBox02SignStep get step => _step;
-  BitBox02DeviceStatus get deviceStatus => _deviceStatus;
   BitBox02SignSubStatus get subStatus => _subStatus;
   String? get errorMessage => _errorMessage;
   String get signedPsbt => _signedPsbt;
@@ -56,18 +52,13 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
   void _probeDeviceStatus() {
     final last = BitBox02Device.lastConnected;
-    if (last == null) {
-      _deviceStatus = BitBox02DeviceStatus.disconnected;
-      return;
-    }
+    if (last == null) return;
     final fp = last.cachedFingerprint;
     final mismatch = walletFingerprint.isNotEmpty && fp != null && fp.toLowerCase() != walletFingerprint.toLowerCase();
     if (mismatch) {
       BitBox02Device.lastConnected = null;
-      _deviceStatus = BitBox02DeviceStatus.disconnected;
       return;
     }
-    _deviceStatus = BitBox02DeviceStatus.locked;
     _device = last;
     if (fp != null) _fingerprint = fp;
   }
@@ -87,13 +78,11 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
       if (existingDevice != null) {
         _device = existingDevice;
-        _deviceStatus = BitBox02DeviceStatus.ready;
       } else if (_device != null && await BitBox02ConnectivityService.isDeviceConnected()) {
         // Device is already paired and physically connected — skip re-pairing.
         _cancelTimeout();
         _fingerprint = _device!.cachedFingerprint;
         _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.preparingData);
-        _deviceStatus = BitBox02DeviceStatus.ready;
       } else {
         _device = null;
         BitBox02Device.lastConnected = null;
@@ -128,7 +117,6 @@ class BitBox02SignViewModel extends ChangeNotifier {
         }
 
         _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.preparingData);
-        _deviceStatus = BitBox02DeviceStatus.ready;
       }
 
       final nt = NetworkType.currentNetworkType;

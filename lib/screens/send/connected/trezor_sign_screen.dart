@@ -60,12 +60,20 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
     _pulseController = AnimationController(duration: const Duration(milliseconds: 1200), vsync: this)
       ..repeat(reverse: true);
     _pulseAnimation = CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _viewModel.probeWalletMismatch();
+    });
   }
+
+  bool _lastIsWalletMismatch = false;
 
   Future<void> _onStateChanged() async {
     final step = _viewModel.step;
-    if (_lastStep != step) {
+    final mismatchChanged = _lastIsWalletMismatch != _viewModel.isWalletMismatch;
+    if (_lastStep != step || mismatchChanged) {
       _lastStep = step;
+      _lastIsWalletMismatch = _viewModel.isWalletMismatch;
       if (_isVerifyingPairingCode) {
         _isVerifyingPairingCode = false;
         _pairingCode = '';
@@ -343,6 +351,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
             ],
           ),
         ),
+        if (vm.isWalletMismatch) ...[CoconutLayout.spacing_400h, _buildWalletMismatchWarning(vm)],
       ],
     );
   }
@@ -484,6 +493,39 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
     );
   }
 
+  Widget _buildWalletMismatchWarning(TrezorSignViewModel vm) {
+    final message =
+        vm.mismatchedWalletName != null
+            ? t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: vm.mismatchedWalletName!)
+            : t.trezor_sign_screen.device_mismatch;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: BoxDecoration(
+        color: context.coconutColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+        border: Border.all(color: context.coconutColors.danger.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: SvgPicture.asset(
+              'assets/svg/triangle-warning.svg',
+              colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+              width: 16,
+              height: 16,
+            ),
+          ),
+          CoconutLayout.spacing_200w,
+          Expanded(child: Text(message, style: CoconutTypography.body3_12.setColor(context.coconutColors.danger))),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomButton(TrezorSignViewModel vm) {
     final bool isError = vm.step == TrezorSignStep.error;
     final bool isBusy = vm.step == TrezorSignStep.signing;
@@ -500,7 +542,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
     return FixedBottomButton(
       onButtonClicked: onPressed,
       text: buttonText,
-      isActive: !isBusy,
+      isActive: !isBusy && !vm.isWalletMismatch,
       subWidget:
           isError
               ? CoconutUnderlinedButton(

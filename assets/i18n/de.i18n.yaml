@@ -809,7 +809,7 @@ wallet_info_screen:
       select: "Auswählen"
   error:
     delete: "Wallet konnte nicht gelöscht werden"
-  bitbox02_device:
+  connected_hardware_wallet:
     title: "Geräteinformationen"
     connection_status: "Verbindungsstatus"
     connected: "Verbunden"

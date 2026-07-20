@@ -27,6 +27,7 @@ class TrezorSignViewModel extends ChangeNotifier {
   Timer? _timeoutTimer;
   Completer<String>? _pairingCodeCompleter;
   bool _isPairingCodeWrong = false;
+  bool _disposed = false;
 
   final String psbtBase64;
   final String walletName;
@@ -34,6 +35,8 @@ class TrezorSignViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
 
   String? _matchedWalletName;
+  bool _isWalletMismatch = false;
+  String? _mismatchedWalletName;
 
   TrezorSignViewModel({
     required this.psbtBase64,
@@ -52,6 +55,8 @@ class TrezorSignViewModel extends ChangeNotifier {
   String? get fingerprint => _fingerprint;
   bool get isPairingCodeWrong => _isPairingCodeWrong;
   String? get matchedWalletName => _matchedWalletName;
+  bool get isWalletMismatch => _isWalletMismatch;
+  String? get mismatchedWalletName => _mismatchedWalletName;
 
   void consumePairingCodeWrong() {
     _isPairingCodeWrong = false;
@@ -74,6 +79,31 @@ class TrezorSignViewModel extends ChangeNotifier {
     if (last == null) return;
     _device = last;
     if (last.cachedFingerprint != null) _fingerprint = last.cachedFingerprint;
+  }
+
+  Future<void> probeWalletMismatch() async {
+    if (_device == null) return;
+    try {
+      final nt = NetworkType.currentNetworkType;
+      final isTestnet = nt.isTestnet;
+      final keypath = isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'";
+      final deviceXpub = await _device!.getXPub(keypath: keypath, network: nt.toString());
+
+      final matchedName = _findMatchingTrezorWalletName(deviceXpub);
+      if (matchedName == null) {
+        _isWalletMismatch = true;
+        _mismatchedWalletName = null;
+      } else if (matchedName != walletName) {
+        _isWalletMismatch = true;
+        _mismatchedWalletName = matchedName;
+      } else {
+        _isWalletMismatch = false;
+        _mismatchedWalletName = null;
+      }
+      if (!_disposed) notifyListeners();
+    } catch (e) {
+      _isWalletMismatch = false;
+    }
   }
 
   String? _findMatchingTrezorWalletName(String xpub) {
@@ -221,6 +251,8 @@ class TrezorSignViewModel extends ChangeNotifier {
     _signedPsbt = '';
     _fingerprint = null;
     _matchedWalletName = null;
+    _isWalletMismatch = false;
+    _mismatchedWalletName = null;
     _probeDeviceStatus();
     notifyListeners();
   }
@@ -238,6 +270,7 @@ class TrezorSignViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _cancelTimeout();
+    _disposed = true;
     _device = null;
     super.dispose();
   }

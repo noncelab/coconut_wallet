@@ -4,22 +4,22 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
-import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class BitBox02Section extends StatefulWidget {
+class TrezorSection extends StatefulWidget {
   final String walletFingerprint;
   final Future<void> Function() onDisconnect;
 
-  const BitBox02Section({super.key, required this.walletFingerprint, required this.onDisconnect});
+  const TrezorSection({super.key, required this.walletFingerprint, required this.onDisconnect});
 
   @override
-  State<BitBox02Section> createState() => _BitBox02SectionState();
+  State<TrezorSection> createState() => _TrezorSectionState();
 }
 
-class _BitBox02SectionState extends State<BitBox02Section> {
+class _TrezorSectionState extends State<TrezorSection> {
   bool _isConnected = false;
   StreamSubscription<bool>? _sub;
 
@@ -30,7 +30,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
   }
 
   bool _isWalletMatch() {
-    final device = BitBox02Device.lastConnected;
+    final device = TrezorDevice.lastConnected;
     if (device == null) return false;
     final fp = device.cachedFingerprint;
     if (fp == null || widget.walletFingerprint.isEmpty) return false;
@@ -38,12 +38,12 @@ class _BitBox02SectionState extends State<BitBox02Section> {
   }
 
   Future<void> _checkAndSubscribe() async {
-    final physicallyConnected = await BitBox02ConnectivityService.isDeviceConnected();
+    final physicallyConnected = await TrezorConnectivityService.isDeviceConnected();
     if (!mounted) return;
     setState(() {
       _isConnected = physicallyConnected && _isWalletMatch();
     });
-    _sub = BitBox02ConnectivityService.onConnectionChanged.listen((connected) {
+    _sub = TrezorConnectivityService.onConnectionChanged.listen((connected) {
       if (!mounted) return;
       setState(() {
         _isConnected = connected && _isWalletMatch();

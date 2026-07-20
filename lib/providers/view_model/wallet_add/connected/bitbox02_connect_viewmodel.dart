@@ -95,57 +95,6 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> restoreWallet() async {
-    if (_device == null || _step != BitBox02ConnectStep.paired) {
-      _errorMessage = 'Device not paired. Connect first.';
-      notifyListeners();
-      return;
-    }
-
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      await _device!.restoreFromMnemonic();
-      _setState(BitBox02ConnectStep.paired, status: 'Wallet restored');
-    } on Exception catch (e) {
-      _errorMessage = e.toString();
-      _setState(BitBox02ConnectStep.error, status: 'Restore failed');
-    }
-  }
-
-  Future<void> createWallet({int seedLen = 32}) async {
-    if (_device == null || _step != BitBox02ConnectStep.paired) {
-      _errorMessage = 'Device not paired. Connect first.';
-      notifyListeners();
-      return;
-    }
-
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      await _device!.setPassword(seedLen: seedLen);
-      _setState(BitBox02ConnectStep.paired, status: 'Wallet created');
-    } on Exception catch (e) {
-      _errorMessage = e.toString();
-      _setState(BitBox02ConnectStep.error, status: 'Create failed');
-    }
-  }
-
-  // Future<void> _connectMock() async {
-  //   _errorMessage = null;
-  //   _device = null;
-
-  //   await Future.delayed(const Duration(seconds: 1));
-
-  //   _setState(BitBox02ConnectStep.pairing, status: 'Initializing Noise handshake...');
-  //   await Future.delayed(const Duration(seconds: 2));
-
-  //   _setState(BitBox02ConnectStep.paired, status: 'BitBox02 paired (mock)');
-  //   await retrieveXPub(silent: true);
-  // }
-
   bool _isRetrievingXPub = false;
 
   /// [silent]이 true이면 실패 시 error 상태로 전환하지 않고 paired(xpub 없음) 상태로 되돌려,

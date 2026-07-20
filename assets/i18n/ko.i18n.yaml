@@ -880,7 +880,7 @@ wallet_info_screen:
       select: "선택"
   error:
     delete: "지갑 삭제 실패"
-  bitbox02_device:
+  connected_hardware_wallet:
     title: "기기 정보"
     connection_status: "연결 상태"
     connected: "연결됨"

@@ -53,6 +53,8 @@ class TrezorMethodHandler: NSObject {
             clearPrevTxHexes(call, result: result)
         case "disconnect":
             disconnect(call, result: result)
+        case "isConnected":
+            result(bleManager?.isPeripheralConnected ?? false)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -328,6 +330,10 @@ fileprivate class TrezorBleManager: NSObject {
 
     var onDisconnect: (() -> Void)?
     var peripheralUUID: String? { peripheral?.identifier.uuidString }
+    var isPeripheralConnected: Bool {
+        guard let peripheral = peripheral else { return false }
+        return peripheral.state == .connected
+    }
 
     private var centralManager: CBCentralManager!
     private var peripheral: CBPeripheral?

@@ -876,7 +876,7 @@ wallet_info_screen:
       select: "Select"
   error:
     delete: "Failed to delete wallet"
-  bitbox02_device:
+  connected_hardware_wallet:
     title: "Device Info"
     connection_status: "Connection Status"
     connected: "Connected"
