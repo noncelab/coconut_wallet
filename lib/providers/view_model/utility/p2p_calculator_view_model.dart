@@ -2,14 +2,13 @@ import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:dio/dio.dart';
@@ -63,12 +62,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
           : (_currentUnit.isBip177Unit ? _currentUnit.symbol : '');
   String get inputCardPostfix =>
       _inputAssetType == InputAssetType.fiat || _currentUnit.isBip177Unit ? '' : _currentUnit.symbol;
-  String get resultCardPrefix =>
-      _inputAssetType == InputAssetType.fiat
-          ? (_currentUnit.isBip177Unit ? _currentUnit.symbol : '')
-          : _fiatCode.symbol;
-  String get resultCardPostfix =>
-      _inputAssetType == InputAssetType.fiat ? (_currentUnit.isBip177Unit ? '' : _currentUnit.symbol) : '';
+  String get resultCardPrefix => _getEffectiveResultPrefix();
+  String get resultCardPostfix => _getEffectiveResultPostfix();
 
   /// 1 BTC의 법정화폐 환산 가격 (포맷팅된 문자열)
   String get formattedOneBtcPrice {
@@ -80,7 +75,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   /// WalletProvider 관련
-  List<WalletListItemBase> get wallets => _walletProvider.walletItemList;
+  List<WalletItemBase> get wallets => _walletProvider.walletItemList;
 
   P2PCalculatorViewModel(
     this._preferenceProvider,
@@ -187,14 +182,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     if (_isNetworkOn && _btcPrice != null && _btcPrice! > 0) {
       return _btcPrice!;
     }
-    switch (_fiatCode) {
-      case FiatCode.KRW:
-        return 20000000;
-      case FiatCode.USD:
-        return 20000;
-      case FiatCode.JPY:
-        return 2000000;
-    }
+    return 0;
   }
 
   String getPlaceholder({required bool isInputCard}) {
@@ -214,6 +202,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
           return '50';
         case FiatCode.JPY:
           return 5000.toThousandsSeparatedString();
+        case FiatCode.EUR:
+          return '50';
       }
     } else {
       if (_currentUnit.isBasedOnSatoshi) {
@@ -236,17 +226,41 @@ class P2PCalculatorViewModel extends ChangeNotifier {
           inputValue = 50;
         case FiatCode.JPY:
           inputValue = 5000;
+        case FiatCode.EUR:
+          inputValue = 50;
       }
       // Fiat → Sats
       final sats = calculateSatsFromFiat(inputValue);
       return formatSatsResult(sats);
     } else {
+      if (!_isNetworkOn) {
+        return _getInputPlaceholder();
+      }
+
       // BTC 입력 모드: inputValue는 sats 금액 (모든 통화 동일)
       inputValue = 50000; // 50,000 sats = 0.0005 BTC
       // Sats → Fiat
       final fiat = calculateFiatFromSats(inputValue);
       return fiat.toThousandsSeparatedString();
     }
+  }
+
+  String _getEffectiveResultPrefix() {
+    if (_inputAssetType == InputAssetType.btc && !_isNetworkOn) {
+      return _currentUnit.isBip177Unit ? _currentUnit.symbol : '';
+    }
+
+    return _inputAssetType == InputAssetType.fiat
+        ? (_currentUnit.isBip177Unit ? _currentUnit.symbol : '')
+        : _fiatCode.symbol;
+  }
+
+  String _getEffectiveResultPostfix() {
+    if (_inputAssetType == InputAssetType.btc && !_isNetworkOn) {
+      return _currentUnit.isBip177Unit ? '' : _currentUnit.symbol;
+    }
+
+    return _inputAssetType == InputAssetType.fiat ? (_currentUnit.isBip177Unit ? '' : _currentUnit.symbol) : '';
   }
 
   String formatSatsResult(int sats) {
@@ -281,6 +295,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         _fiatCode = FiatCode.JPY;
         break;
       case FiatCode.JPY:
+        _fiatCode = FiatCode.EUR;
+        break;
+      case FiatCode.EUR:
         _fiatCode = FiatCode.KRW;
         break;
     }
@@ -329,6 +346,15 @@ class P2PCalculatorViewModel extends ChangeNotifier {
           if (response.statusCode == 200) {
             final ltp = response.data['ltp'];
             return (ltp is num) ? ltp.toInt() : null;
+          }
+          return null;
+
+        case FiatCode.EUR:
+          final response = await dio.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCEUR');
+          if (response.statusCode == 200) {
+            final priceStr = response.data['price'];
+            final price = double.tryParse(priceStr?.toString() ?? '');
+            return price?.toInt();
           }
           return null;
       }

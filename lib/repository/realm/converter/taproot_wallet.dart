@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
-TaprootWalletListItem mapRealmToTaprootWalletItem(RealmTaprootWallet realmTaprootWallet, String? decryptedDescriptor) {
+TaprootWalletItem mapRealmToTaprootWalletItem(RealmTaprootWallet realmTaprootWallet, String? decryptedDescriptor) {
   final keyPathSeedInfos =
       (jsonDecode(realmTaprootWallet.keyPathSeedInfosInJsonSerialization) as List).map((e) => e as String).toList();
   final scriptPathSeedInfos =
@@ -14,7 +14,7 @@ TaprootWalletListItem mapRealmToTaprootWalletItem(RealmTaprootWallet realmTaproo
           .toList();
   final userSelectedSpendType = _parseTaprootSpendType(realmTaprootWallet.defaultSpendTypeName);
 
-  return TaprootWalletListItem(
+  return TaprootWalletItem(
     id: realmTaprootWallet.id,
     name: realmTaprootWallet.walletBase!.name,
     colorIndex: realmTaprootWallet.walletBase!.colorIndex,

@@ -3,9 +3,10 @@ import Flutter
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
-  private var methodChannel: FlutterMethodChannel?
-  private var osMethodChannel: FlutterMethodChannel?
-  private var pendingBitcoinUri: String?
+    private var methodChannel: FlutterMethodChannel?
+    private var osMethodChannel: FlutterMethodChannel?
+    private var pendingBitcoinUri: String?
+    private var bitbox02Handler: Bitbox02MethodHandler?
 
   override func application(
     _ application: UIApplication,
@@ -70,6 +71,8 @@ import Flutter
        url.scheme?.lowercased() == "bitcoin" {
       pendingBitcoinUri = url.absoluteString
     }
+
+    bitbox02Handler = Bitbox02MethodHandler(messenger: controller.binaryMessenger)
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

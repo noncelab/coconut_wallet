@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -28,8 +29,9 @@ class SelectionBottomSheet<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: colors.background,
       appBar: CoconutAppBar.build(title: title, context: context, onBackPressed: null, isBottom: true),
       body: Padding(
         padding: const EdgeInsets.only(left: Sizes.size16, right: Sizes.size16),
@@ -40,34 +42,34 @@ class SelectionBottomSheet<T> extends StatelessWidget {
                 alignment: Alignment.topRight,
                 child: Padding(
                   padding: const EdgeInsets.only(right: Sizes.size8),
-                  child: Text(headerText!, style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                  child: Text(headerText!, style: CoconutTypography.body3_12_Number.setColor(colors.primaryText)),
                 ),
               ),
-            ..._buildItemsWithDividers(),
+            ..._buildItemsWithDividers(context),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildItemsWithDividers() {
+  List<Widget> _buildItemsWithDividers(BuildContext context) {
     List<Widget> widgets = [];
 
     for (int i = 0; i < items.length; i++) {
       final item = items[i];
       final isSelected = item.value == selectedValue;
 
-      widgets.add(_buildItem(item, isSelected));
+      widgets.add(_buildItem(context, item, isSelected));
 
       if (i < items.length - 1) {
-        widgets.add(Divider(color: CoconutColors.white.withOpacity(0.12), height: 1));
+        widgets.add(Divider(color: context.coconutColors.primaryText.withValues(alpha: 0.12), height: 1));
       }
     }
 
     return widgets;
   }
 
-  Widget _buildItem(SelectionItem<T> item, bool isSelected) {
+  Widget _buildItem(BuildContext context, SelectionItem<T> item, bool isSelected) {
     return GestureDetector(
       onTap: () {
         vibrateExtraLight();
@@ -82,16 +84,22 @@ class SelectionBottomSheet<T> extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                  Text(item.title, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)),
                   if (item.subtitle != null)
-                    Text(item.subtitle!, style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                    Text(
+                      item.subtitle!,
+                      style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
+                    ),
                 ],
               ),
             ),
             if (isSelected)
               Padding(
                 padding: const EdgeInsets.only(right: Sizes.size8),
-                child: SvgPicture.asset('assets/svg/check.svg'),
+                child: SvgPicture.asset(
+                  'assets/svg/check.svg',
+                  colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                ),
               ),
           ],
         ),

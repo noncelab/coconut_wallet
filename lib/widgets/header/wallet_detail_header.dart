@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -6,7 +7,7 @@ import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
 
 class WalletDetailHeader extends StatefulWidget {
   final AnimatedBalanceData animatedBalanceData;
@@ -39,40 +40,42 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CoconutLayout.spacing_800h,
-          _buildBalanceInfo(),
+          _buildBalanceInfo(context),
           CoconutLayout.spacing_500h,
-          _buildPendingAmountStatus(),
+          _buildPendingAmountStatus(context),
         ],
       ),
     );
   }
 
-  Widget _buildBalanceInfo() {
+  Widget _buildBalanceInfo(BuildContext context) {
     return GestureDetector(
       onTap: () {
         widget.onPressedUnitToggle();
       },
-      child: Column(children: [FiatPrice(satoshiAmount: widget.animatedBalanceData.current), _buildBtcBalance()]),
+      child: Column(
+        children: [FiatPrice(satoshiAmount: widget.animatedBalanceData.current), _buildBtcBalance(context)],
+      ),
     );
   }
 
-  Widget _buildBtcBalance() {
+  Widget _buildBtcBalance(BuildContext context) {
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: BitcoinAmountUnit(
         currentUnit: widget.currentUnit,
-        unitStyle: CoconutTypography.heading4_18_Number,
+        unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
         child: AnimatedBalance(
           prevValue: widget.animatedBalanceData.previous,
           value: widget.animatedBalanceData.current,
           currentUnit: widget.currentUnit,
-          textStyle: CoconutTypography.heading2_28_NumberBold,
+          textStyle: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
         ),
       ),
     );
   }
 
-  Widget _buildPendingAmountStatus() {
+  Widget _buildPendingAmountStatus(BuildContext context) {
     String getSendingAmountText() =>
         '${widget.currentUnit.displayBitcoinAmount(widget.sendingAmount, shouldCheckZero: true, withUnit: true)} ${t.status_sending}';
     String getReceivingAmountText() =>
@@ -80,24 +83,14 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
 
     return Column(
       children: [
-        _buildPendingAmountRow(
-          widget.sendingAmount != 0,
-          'assets/lottie/arrow-up.json',
-          getSendingAmountText(),
-          CoconutColors.primary.withValues(alpha: 0.2),
-        ),
-        CoconutLayout.spacing_100h,
-        _buildPendingAmountRow(
-          widget.receivingAmount != 0,
-          'assets/lottie/arrow-down.json',
-          getReceivingAmountText(),
-          CoconutColors.cyan.withValues(alpha: 0.2),
-        ),
+        _buildPendingAmountRow(widget.sendingAmount != 0, false, getSendingAmountText()),
+        if (widget.sendingAmount != 0 && widget.receivingAmount != 0) CoconutLayout.spacing_100h,
+        _buildPendingAmountRow(widget.receivingAmount != 0, true, getReceivingAmountText()),
       ],
     );
   }
 
-  Widget _buildPendingAmountRow(bool condition, String animationPath, String text, Color color) {
+  Widget _buildPendingAmountRow(bool condition, bool isIncoming, String text) {
     if (!condition) return const SizedBox.shrink();
 
     return FittedBox(
@@ -105,13 +98,9 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.0), color: color),
-            child: Lottie.asset(animationPath, width: 12, height: 12),
-          ),
+          PendingTransactionLottieIcon(isIncoming: isIncoming, size: 12, padding: const EdgeInsets.all(4)),
           CoconutLayout.spacing_200w,
-          Text(text, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray200)),
+          Text(text, style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText)),
         ],
       ),
     );

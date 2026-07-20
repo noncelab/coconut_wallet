@@ -1,7 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -60,7 +60,7 @@ class CpfpService {
 
   /// CPFP 내역을 저장하는 함수
   Future<void> saveCpfpHistoryMap(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     Map<String, CpfpInfo> cpfpInfoMap,
     Map<String, TransactionRecord> txRecordMap,
     int walletId,

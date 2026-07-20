@@ -68,7 +68,7 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
                   WidgetsBinding.instance.addPostFrameCallback((_) async {
                     if (!mounted) return;
                     await _showCameraPermissionDialog(context);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                   });
                 }

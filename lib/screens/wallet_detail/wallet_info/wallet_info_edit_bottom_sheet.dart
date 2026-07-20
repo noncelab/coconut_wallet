@@ -1,0 +1,410 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_edit_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/widgets/icon/icon_palette_cell.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import 'package:tuple/tuple.dart';
+
+class WalletInfoEditBottomSheet extends StatelessWidget {
+  final int id;
+  final WalletImportSource walletImportSource;
+  final bool isCustomAccount;
+  const WalletInfoEditBottomSheet({
+    super.key,
+    required this.id,
+    required this.walletImportSource,
+    required this.isCustomAccount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<WalletInfoEditViewModel>(
+      create: (context) => WalletInfoEditViewModel(id, Provider.of<WalletProvider>(context, listen: false)),
+      child: _WalletInfoEditBottomSheetContent(
+        id: id,
+        walletImportSource: walletImportSource,
+        isCustomAccount: isCustomAccount,
+      ),
+    );
+  }
+}
+
+class _WalletInfoEditBottomSheetContent extends StatefulWidget {
+  final int id;
+  final WalletImportSource walletImportSource;
+  final bool isCustomAccount;
+
+  const _WalletInfoEditBottomSheetContent({
+    required this.id,
+    required this.walletImportSource,
+    required this.isCustomAccount,
+  });
+
+  @override
+  State<_WalletInfoEditBottomSheetContent> createState() => _WalletInfoEditBottomSheetState();
+}
+
+class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetContent> {
+  final TextEditingController _textEditingController = TextEditingController();
+  final FocusNode _textFieldFocusNode = FocusNode();
+  bool _isFirst = true;
+  String _initialValue = '';
+
+  int _selectedIconIndex = 0;
+  int _selectedColorIndex = 0;
+
+  int get _colorCount => CoconutColors.colorPalette.length;
+
+  bool get _canEditPalette => widget.isCustomAccount && widget.walletImportSource == WalletImportSource.coconutVault;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final viewModel = context.read<WalletInfoEditViewModel>();
+    _initialValue = viewModel.walletName;
+    _textEditingController.text = viewModel.walletName;
+
+    if (_canEditPalette) {
+      _selectedIconIndex = viewModel.iconIndex;
+      _selectedColorIndex = viewModel.colorIndex;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_canEditPalette) {
+        _textFieldFocusNode.requestFocus();
+      }
+    });
+
+    _textEditingController.addListener(() {
+      context.read<WalletInfoEditViewModel>().checkValidity(
+        _textEditingController.text,
+        selectedIconIndex: _canEditPalette ? _selectedIconIndex : null,
+        selectedColorIndex: _canEditPalette ? _selectedColorIndex : null,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _textEditingController.dispose();
+    _textFieldFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<WalletInfoEditViewModel, Tuple3<bool, bool, String>>(
+      selector: (_, viewModel) => Tuple3(viewModel.canUpdateName, viewModel.isProcessing, viewModel.walletName),
+      builder: (context, data, child) {
+        final typography = context.coconutTypography;
+        final canUpdateName = data.item1;
+        final isProcessing = data.item2;
+        final walletName = data.item3;
+        final isCompleteEnabled = !isProcessing && _textEditingController.text.isNotEmpty && canUpdateName;
+        final backgroundColor = context.coconutColors.surfaceBottomSheet;
+
+        final mediaQuery = MediaQuery.of(context);
+        final statusBarHeight = mediaQuery.padding.top;
+        final androidBottomSystemHeight =
+            Theme.of(context).platform == TargetPlatform.android ? mediaQuery.viewPadding.bottom : 0.0;
+        final computedMaxBodyHeight = mediaQuery.size.height - statusBarHeight - androidBottomSystemHeight;
+        const estimatedHeaderHeight = 108.0; // drag handle + title row + top/bottom paddings
+        const bottomSpacing = 16.0;
+        final maxAllowedBodyHeight = computedMaxBodyHeight - estimatedHeaderHeight - bottomSpacing - 44;
+        final resolvedBodyHeight = _canEditPalette ? maxAllowedBodyHeight.clamp(160.0, double.infinity) : 220.0;
+
+        return GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+            child: ColoredBox(
+              color: backgroundColor,
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                padding: EdgeInsets.only(bottom: _canEditPalette ? 0 : mediaQuery.viewInsets.bottom),
+                child: SafeArea(
+                  child: Container(
+                    color: backgroundColor,
+                    child: Stack(
+                      children: [
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 55,
+                                  height: 4,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: context.coconutColors.secondaryText,
+                                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  GestureDetector(
+                                    onTap:
+                                        isProcessing
+                                            ? null
+                                            : () {
+                                              Navigator.pop(context);
+                                            },
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 24,
+                                      color: context.coconutColors.primaryText,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      walletName,
+                                      style: typography.bodyBold.copyWith(color: context.coconutColors.primaryText),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 24),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              height: resolvedBodyHeight,
+                              child: Stack(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: _buildBody(context),
+                                  ),
+                                  FixedBottomButton(
+                                    isVisibleAboveKeyboard: _canEditPalette,
+                                    isActive: isCompleteEnabled,
+                                    showSurroundings: true,
+                                    surroundingsColor: backgroundColor,
+                                    bottomPadding: FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
+                                    onButtonClicked: () {
+                                      if (!isCompleteEnabled) return;
+                                      FocusScope.of(context).unfocus();
+                                      context.read<WalletInfoEditViewModel>().changeWalletInfo(
+                                        _textEditingController.text,
+                                        _selectedIconIndex,
+                                        _selectedColorIndex,
+                                        () => Navigator.pop(context, _textEditingController.text.trim()),
+                                      );
+                                    },
+                                    text: t.done,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (isProcessing)
+                          Positioned.fill(
+                            child: Container(
+                              color: context.coconutColors.iconDefault.withValues(alpha: 0.6),
+                              alignment: Alignment.center,
+                              child: const CoconutCircularIndicator(size: 160),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return Selector<WalletInfoEditViewModel, Tuple2<bool, bool>>(
+      selector: (_, viewModel) => Tuple2(viewModel.isNameDuplicated, viewModel.isSameAsCurrentName),
+      builder: (context, data, child) {
+        final isNameDuplicated = data.item1;
+        final isSameAsCurrentName = data.item2;
+        final isError = isSameAsCurrentName || isNameDuplicated;
+
+        // FixedBottomButton이 위에 올라오기 때문에 본문 쪽에만 스크롤 여유(bottom spacer)를 둡니다.
+        const double bottomSpacer =
+            FixedBottomButton.fixedBottomButtonDefaultHeight +
+            FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
+            20;
+
+        return SizedBox(
+          height: double.infinity,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: bottomSpacer),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _buildIcon(),
+                    CoconutLayout.spacing_400w,
+                    Expanded(
+                      child: CoconutTextField(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        controller: _textEditingController,
+                        focusNode: _textFieldFocusNode,
+                        onChanged: (text) {
+                          if (_isFirst && _initialValue != text) {
+                            _isFirst = false;
+                          }
+                        },
+                        placeholderText: t.name,
+                        backgroundColor: context.coconutColors.inputSurface,
+                        errorColor: context.coconutColors.danger,
+                        cursorColor: context.coconutColors.primaryText,
+                        activeColor: context.coconutColors.primaryText,
+                        placeholderColor: context.coconutColors.inputPlaceholder,
+                        borderColor: context.coconutColors.inputBorder,
+                        maxLength: 20,
+                        errorText:
+                            _isFirst
+                                ? ''
+                                : isError
+                                ? t.wallet_info_screen.duplicated_name
+                                : '',
+                        isError: _isFirst ? false : isError,
+                        maxLines: 1,
+                        suffix:
+                            _textEditingController.text.isNotEmpty
+                                ? IconButton(
+                                  iconSize: 14,
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () {
+                                    _textEditingController.clear();
+                                  },
+                                  icon: SvgPicture.asset(
+                                    'assets/svg/text-field-clear.svg',
+                                    colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                                  ),
+                                )
+                                : null,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_canEditPalette) ...[const SizedBox(height: 8), _buildPaletteGrid(context)],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildIcon() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: WalletIcon(
+        walletImportSource: _canEditPalette ? WalletImportSource.coconutVault : widget.walletImportSource,
+        colorIndex: _selectedColorIndex,
+        iconIndex: _selectedIconIndex,
+        isInnerWallet: _canEditPalette,
+      ),
+    );
+  }
+
+  Widget _buildPaletteGrid(BuildContext context) {
+    return GridView.builder(
+      padding: EdgeInsets.zero,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5),
+      itemCount: _colorCount + CustomIcons.totalCount,
+      itemBuilder: (context, index) {
+        final isColorItem = index < _colorCount;
+        final backgroundColor = context.coconutColors.surfaceBottomSheet;
+
+        return GestureDetector(
+          onTap: () => _handleItemTap(index, isColorItem),
+          child:
+              isColorItem
+                  ? _buildColorPaletteItem(index, backgroundColor)
+                  : _buildIconPaletteItem(index - _colorCount, backgroundColor),
+        );
+      },
+    );
+  }
+
+  void _handleItemTap(int index, bool isColorItem) {
+    setState(() {
+      if (isColorItem) {
+        _selectedColorIndex = index;
+      } else {
+        _selectedIconIndex = index - _colorCount;
+      }
+    });
+
+    context.read<WalletInfoEditViewModel>().checkValidity(
+      _textEditingController.text,
+      selectedIconIndex: _selectedIconIndex,
+      selectedColorIndex: _selectedColorIndex,
+    );
+  }
+
+  Widget _buildColorPaletteItem(int colorIndex, Color backgroundColor) {
+    final isSelected = colorIndex == _selectedColorIndex;
+
+    return Stack(
+      children: [
+        Container(
+          margin: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(40.0),
+            color: CoconutColors.colorPalette[colorIndex],
+          ),
+        ),
+        _buildSelectionBorder(isSelected, backgroundColor),
+      ],
+    );
+  }
+
+  Widget _buildIconPaletteItem(int iconIndex, Color backgroundColor) {
+    final isSelected = iconIndex == _selectedIconIndex;
+
+    return Stack(
+      children: [
+        Positioned.fill(child: IconPaletteCell(index: iconIndex)),
+        _buildSelectionBorder(isSelected, backgroundColor),
+      ],
+    );
+  }
+
+  Widget _buildSelectionBorder(bool isSelected, Color backgroundColor) {
+    return Positioned.fill(
+      child: Container(
+        margin: const EdgeInsets.all(11.5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(40.0),
+          border: Border.all(color: isSelected ? context.coconutColors.primaryText : backgroundColor, width: 1.8),
+        ),
+      ),
+    );
+  }
+}

@@ -12,7 +12,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -25,7 +25,6 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
-import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:flutter/foundation.dart';
@@ -45,7 +44,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final WalletPreferencesRepository _walletPreferencesRepository;
 
   late final List<UtxoState> _availableUtxos;
-  late WalletListItemBase _walletListItemBase;
+  late WalletItemBase _walletListItemBase;
   late bool? _isNetworkOn;
   late bool _isUtxoSelectionAuto = true;
 
@@ -490,7 +489,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       _isFeeFetchSuccess = false;
       return;
     }
-    // TODO: 테스트 코드 - 추천수수료 mock
+    // INFO: 👇 테스트 코드 - 추천수수료 mock
     // final recommendedFees = await DioClient().getRecommendedFee();
     if (recommendedFees.fastestFee == null || recommendedFees.halfHourFee == null || recommendedFees.hourFee == null) {
       _isFeeFetchSuccess = false;

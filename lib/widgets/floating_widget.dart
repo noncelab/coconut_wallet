@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 
+@Deprecated('온라인 후원 화면이 제거됨')
 class FloatingWidget extends StatefulWidget {
   final Widget child;
   final int? delayMilliseconds;
@@ -64,9 +65,9 @@ class _FloatingSvgAnimationState extends State<FloatingWidget> with TickerProvid
                 shaderCallback:
                     (bounds) => LinearGradient(
                       colors: [
-                        CoconutColors.white.withOpacity(0.7),
+                        CoconutColors.white.withValues(alpha: 0.7),
                         Colors.transparent,
-                        CoconutColors.black.withOpacity(0.3),
+                        CoconutColors.black.withValues(alpha: 0.3),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,

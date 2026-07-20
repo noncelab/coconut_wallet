@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
@@ -94,7 +94,7 @@ void main() {
 
       expect(realmManager.realm.all<RealmWalletBase>().length, 1);
       expect(realmManager.realm.all<RealmTaprootWallet>().length, 1);
-      expect(result, isA<TaprootWalletListItem>());
+      expect(result, isA<TaprootWalletItem>());
       expect(result.keyPathSeedInfos, [_parentTaprootXpub]);
       expect(result.scriptPathSeedInfos.length, 1);
       expect(result.scriptPathSeedInfos.first.miniscript, _inheritanceMiniscript);
@@ -111,8 +111,8 @@ void main() {
       final list = await walletRepository.getWalletItemList();
 
       expect(list.length, 1);
-      expect(list.first, isA<TaprootWalletListItem>());
-      final item = list.first as TaprootWalletListItem;
+      expect(list.first, isA<TaprootWalletItem>());
+      final item = list.first as TaprootWalletItem;
       expect(item.keyPathSeedInfos, [_parentTaprootXpub]);
       expect(item.scriptPathSeedInfos.first.miniscript, _inheritanceMiniscript);
       expect(item.createdAtInVault, createdAtInVault);

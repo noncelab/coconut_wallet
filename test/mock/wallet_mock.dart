@@ -1,12 +1,12 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 
 class WalletMock {
-  static SinglesigWalletListItem createSingleSigWalletItem({
+  static SinglesigWalletItem createSingleSigWalletItem({
     int id = 1,
     String name = 'test_wallet',
     bool randomDescriptor = false,
@@ -16,16 +16,10 @@ class WalletMock {
             ? SingleSignatureVault.random().descriptor
             : "wpkh([D45AA182/84'/1'/0']vpub5YtEovN9MqeUZxWqdpUKngsiaLCPFY34KpWGQVk9Tjq8G5SYcRFj9s5aCKeAQYGunG7LrFkA5obtH8kPJiv92JtWHfRvnir6PDvhd4p93Pp/<0;1>/*)#rcn2hj6y";
 
-    return SinglesigWalletListItem(
-      id: id,
-      name: name + id.toString(),
-      colorIndex: 0,
-      iconIndex: 0,
-      descriptor: descriptor,
-    );
+    return SinglesigWalletItem(id: id, name: name + id.toString(), colorIndex: 0, iconIndex: 0, descriptor: descriptor);
   }
 
-  static MultisigWalletListItem createMultiSigWalletItem({
+  static MultisigWalletItem createMultiSigWalletItem({
     int id = 1,
     String name = 'test_multisig_wallet',
     int requiredSignatureCount = 2,
@@ -44,7 +38,7 @@ class WalletMock {
       ),
     );
 
-    return MultisigWalletListItem(
+    return MultisigWalletItem(
       id: id,
       name: name,
       colorIndex: 0,
@@ -55,7 +49,7 @@ class WalletMock {
     );
   }
 
-  static TaprootWalletListItem createTaprootWalletItem({
+  static TaprootWalletItem createTaprootWalletItem({
     int id = 1,
     String name = 'test_taproot_wallet',
     bool hasKeyPathSeedInfo = true,
@@ -68,7 +62,7 @@ class WalletMock {
     const inheritanceMiniscript = 'and_v(v:pk([70C4E9DE/86\'/1\'/0\']$childTaprootXpub/<0;1>/*),older(500000000))';
     const descriptor = 'tr([9B1441E4/86\'/1\'/0\']$parentTaprootXpub/<0;1>/*,{$inheritanceMiniscript})#w0hf4lu5';
 
-    return TaprootWalletListItem(
+    return TaprootWalletItem(
       id: id,
       name: name,
       colorIndex: 0,

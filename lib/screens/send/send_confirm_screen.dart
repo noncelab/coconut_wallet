@@ -1,13 +1,20 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +52,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
       child: Consumer<SendConfirmViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
-            backgroundColor: CoconutColors.black,
+            backgroundColor: context.coconutColors.background,
             appBar: CoconutAppBar.build(title: t.send_confirm_screen.title, context: context),
             body: SafeArea(
               child: Stack(
@@ -79,21 +86,49 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                     ),
                   ),
                   FixedBottomButton(
-                    onButtonClicked: () {
+                    onButtonClicked: () async {
                       context.loaderOverlay.show();
                       viewModel.setTxWaitingForSign();
                       if (context.mounted) {
                         context.loaderOverlay.hide();
-                        Navigator.pushNamed(
-                          context,
-                          '/unsigned-transaction-qr',
-                          arguments: {'walletName': viewModel.walletName},
-                        );
+                        if (viewModel.walletImportSource == WalletImportSource.bitbox02) {
+                          final isPhysicallyConnected = await BitBox02ConnectivityService.isDeviceConnected();
+                          final hasSession = BitBox02Device.lastConnected != null;
+                          if (!context.mounted) return;
+                          if (isPhysicallyConnected && hasSession) {
+                            Navigator.pushNamed(
+                              context,
+                              '/bitbox02-sign',
+                              arguments: {
+                                'psbtBase64': viewModel.txWaitingForSign,
+                                'walletName': viewModel.walletName,
+                                'walletFingerprint': viewModel.walletFingerprint,
+                                'isFromSendFlow': true,
+                                'transport': BitBox02Transport.resolveForSign(),
+                              },
+                            );
+                          } else {
+                            CommonBottomSheets.showCustomHeightBottomSheet(
+                              context: context,
+                              child: BitBox02ConnectScreen(
+                                importSource: WalletImportSource.bitbox02,
+                                psbtBase64: viewModel.txWaitingForSign,
+                                walletName: viewModel.walletName,
+                                walletFingerprint: viewModel.walletFingerprint,
+                              ),
+                              heightRatio: 0.9,
+                            );
+                          }
+                        } else {
+                          Navigator.pushNamed(
+                            context,
+                            '/unsigned-transaction-qr',
+                            arguments: {'walletName': viewModel.walletName},
+                          );
+                        }
                       }
                     },
                     text: t.next,
-                    backgroundColor: CoconutColors.gray100,
-                    pressedBackgroundColor: CoconutColors.gray500,
                   ),
                 ],
               ),

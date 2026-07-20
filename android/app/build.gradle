@@ -42,6 +42,15 @@ if (keystorePropertiesFile.exists()) {
     throw new GradleException("❌ keystore properties 파일이 존재하지 않습니다: ${keystorePropertiesFile}")
 }
 
+def signingStorePassword = System.getenv("ANDROID_SIGNING_STORE_PASSWORD")
+def signingKeyPassword = System.getenv("ANDROID_SIGNING_KEY_PASSWORD")
+def isReleaseBuild = gradle.startParameter.taskNames.any { it.toLowerCase().contains("release") }
+def isBundleBuild = gradle.startParameter.taskNames.any { it.toLowerCase().contains("bundle") }
+def useDebugSigningForReleaseRun = System.getenv("ANDROID_USE_DEBUG_SIGNING_FOR_RELEASE_RUN") == "true" && !isBundleBuild
+if (isReleaseBuild && !useDebugSigningForReleaseRun && (!signingStorePassword || !signingKeyPassword)) {
+    throw new GradleException("❌ Android 서명 비밀번호 환경변수가 설정되지 않았습니다.")
+}
+
 if (flavor == "mainnet" && file("src/mainnet/google-services.json").exists()) {
     apply plugin: 'com.google.gms.google-services'
 }
@@ -75,15 +84,15 @@ android {
     signingConfigs {
         release {
             keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
+            keyPassword signingKeyPassword
             storeFile file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
+            storePassword signingStorePassword
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig useDebugSigningForReleaseRun ? signingConfigs.debug : signingConfigs.release
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -116,4 +125,5 @@ flutter {
 
 dependencies {
     implementation "androidx.core:core-splashscreen:1.0.0"
+    implementation(name: 'bitboxbridge', ext: 'aar')
 }

@@ -1,16 +1,16 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class LoadingIndicator extends StatelessWidget {
   final EdgeInsetsGeometry padding;
-  final Color color;
+  final Color? color;
   final double radius;
 
   const LoadingIndicator({
     super.key,
     this.padding = const EdgeInsets.symmetric(vertical: 16.0),
-    this.color = CoconutColors.white,
+    this.color,
     this.radius = 14,
   });
 
@@ -19,7 +19,13 @@ class LoadingIndicator extends StatelessWidget {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
-      child: Container(padding: padding, child: CupertinoActivityIndicator(color: color, radius: radius)),
+      child: Container(
+        padding: padding,
+        child: CupertinoActivityIndicator(
+          color: color ?? context.coconutColors.loadingIndicatorColor.withValues(alpha: 0.4),
+          radius: radius,
+        ),
+      ),
     );
   }
 }

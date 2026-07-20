@@ -1,6 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -27,8 +27,8 @@ void main() {
   late TransactionRecordService transactionRecordService;
 
   const int testWalletId = 1;
-  final SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem(id: testWalletId);
-  final SinglesigWalletListItem testExternalWalletItem = WalletMock.createSingleSigWalletItem(
+  final SinglesigWalletItem testWalletItem = WalletMock.createSingleSigWalletItem(id: testWalletId);
+  final SinglesigWalletItem testExternalWalletItem = WalletMock.createSingleSigWalletItem(
     randomDescriptor: true,
     id: testWalletId + 1,
   );

@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -9,7 +9,7 @@ class WalletInfoEditViewModel extends ChangeNotifier {
   late String _walletName;
   late int _iconIndex;
   late int _colorIndex;
-  late List<WalletListItemBase> _walletList;
+  late List<WalletItemBase> _walletList;
 
   bool _isProcessing = false;
   bool _isNameDuplicated = false;

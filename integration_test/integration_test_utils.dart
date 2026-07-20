@@ -2,7 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -115,7 +115,7 @@ Future<void> savePinCode(String pinCode) async {
   await sharedPreferences.setBool(SharedPrefKeys.kIsSetPin, true);
 }
 
-void verifyWalletListItem(WalletListItemBase wallet, Map<String, dynamic> walletData) {
+void verifyWalletListItem(WalletItemBase wallet, Map<String, dynamic> walletData) {
   expect(wallet.name, walletData["name"]);
   expect(wallet.colorIndex, walletData["colorIndex"]);
   expect(wallet.iconIndex, walletData["iconIndex"]);

@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -28,7 +28,7 @@ void main() {
   late UtxoSyncService utxoSyncService;
 
   const int testWalletId = 1;
-  final SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem();
+  final SinglesigWalletItem testWalletItem = WalletMock.createSingleSigWalletItem();
 
   setUp(() async {
     realmManager = await setupTestRealmManager();

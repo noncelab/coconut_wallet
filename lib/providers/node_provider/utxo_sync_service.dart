@@ -2,7 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
@@ -30,7 +30,7 @@ class UtxoSyncService {
   /// 스크립트의 UTXO를 조회하고 업데이트합니다.
   /// TransactionRecord 데이터를 사용하므로 트랜잭션 fetch 이후 호출되어야 합니다.
   Future<void> fetchScriptUtxo(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     ScriptStatus scriptStatus, {
     bool inBatchProcess = false,
   }) async {
@@ -46,7 +46,7 @@ class UtxoSyncService {
   }
 
   /// 스크립트에 대한 UTXO 목록을 가져옵니다.
-  Future<List<UtxoState>> fetchUtxoStateList(WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
+  Future<List<UtxoState>> fetchUtxoStateList(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
     try {
       final unspentResList = await _electrumService.getUnspentList(
         walletItem.walletBase.addressType,
@@ -106,7 +106,7 @@ class UtxoSyncService {
 
   /// 언컨펌 출금 트랜잭션에 대한 UTXO를 생성합니다.
   /// 지갑 추가 시 기존 UTXO가 조회되지 않는 경우를 대비하여 필요한 UTXO를 추가합니다.
-  Future<void> createOutgoingUtxos(WalletListItemBase walletItem) async {
+  Future<void> createOutgoingUtxos(WalletItemBase walletItem) async {
     try {
       // 1. 언컨펌 출금 트랜잭션 목록 조회
       final unconfirmedTransactions = _transactionRepository.getUnconfirmedTransactionRecordList(walletItem.id);
@@ -188,7 +188,7 @@ class UtxoSyncService {
   }
 
   /// orphaned UTXO를 정리합니다.
-  Future<void> cleanupOrphanedUtxos(WalletListItemBase walletItem) async {
+  Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem) async {
     final pendingUtxos = _utxoRepository.getUtxoStateList(walletItem.id).where((utxo) => utxo.isPending).toList();
 
     final orphanUtxoSet = <UtxoState>{};

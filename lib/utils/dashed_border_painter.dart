@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
 
 class DashedBorderPainter extends CustomPainter {
@@ -9,12 +8,7 @@ class DashedBorderPainter extends CustomPainter {
   final double borderRadius;
   final Color color;
 
-  DashedBorderPainter({
-    this.dashWidth = 5.0,
-    this.dashSpace = 3.0,
-    this.borderRadius = 24.0,
-    this.color = CoconutColors.white,
-  });
+  DashedBorderPainter({required this.color, this.dashWidth = 5.0, this.dashSpace = 3.0, this.borderRadius = 24.0});
 
   @override
   void paint(Canvas canvas, Size size) {

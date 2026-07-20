@@ -1,8 +1,6 @@
 import 'package:coconut_wallet/extensions/int_extensions.dart';
-import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
-import 'package:intl/intl.dart';
 
 extension StringCheck on String {
   /// CJK 문자(한글, 일본어, 한자 등)를 포함하는지 검사

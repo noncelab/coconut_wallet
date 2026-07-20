@@ -11,14 +11,17 @@ class MempoolApi {
   MempoolApi({http.Client? client}) : _client = client ?? http.Client(), _baseUrl = _resolveBaseUrl();
 
   static Uri _resolveBaseUrl() {
+    final networkType = NetworkType.currentNetworkType;
     final mempoolApi =
-        NetworkType.currentNetworkType == NetworkType.mainnet
+        networkType == NetworkType.mainnet
             ? 'https://mempool.space'
+            : networkType == NetworkType.testnet
+            ? 'https://mempool.space/testnet'
             : 'https://regtest-mempool.coconut.onl';
     return Uri.parse(mempoolApi);
   }
 
-  Uri _uri(String path) => _baseUrl.replace(path: path);
+  Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
   Future<String> fetchTxHex(String txid, {Duration timeout = const Duration(seconds: 15)}) async {
     _validateTxid(txid);

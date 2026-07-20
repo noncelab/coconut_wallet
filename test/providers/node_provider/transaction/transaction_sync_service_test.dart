@@ -1,7 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
@@ -42,7 +42,7 @@ void main() {
   late ScriptCallbackService scriptCallbackService;
 
   const int testWalletId = 1;
-  final SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem();
+  final SinglesigWalletItem testWalletItem = WalletMock.createSingleSigWalletItem();
 
   setUp(() async {
     realmManager = await setupTestRealmManager();

@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/model/node/script_status.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +10,7 @@ import '../../../mock/wallet_mock.dart';
 
 void main() {
   late ScriptCallbackService scriptCallbackManager;
-  late WalletListItemBase testWalletItem;
+  late WalletItemBase testWalletItem;
   late ScriptStatus testScriptStatus1;
   late ScriptStatus testScriptStatus2;
 

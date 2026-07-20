@@ -42,6 +42,9 @@ confirm: "Confirmar"
 cancel: "Cancelar"
 security: "Seguridad"
 general: "General"
+theme: "Tema"
+theme_dark: "Tema oscuro"
+theme_light: "Tema claro"
 unit: "Unidad"
 utxo: "UTXO"
 tag: "Etiqueta"
@@ -275,6 +278,8 @@ wallet_add_scanner_screen:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
+  bitbox02: "BitBox02"
+  passport: "Passport"
   self: "Ingresar datos de wallet"
   self_description: "Agrega una wallet watch-only desde otra app."
   select: "Seleccionar"
@@ -330,6 +335,17 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "Seleccionar"
+  guide_passport:
+    step0: "En Passport, abre la cuenta que deseas conectar"
+    step1: "1. "
+    step1_em: "Account Details"
+    step2: "2. "
+    step2_em: "Coconut Wallet del menú …"
+    step3: "3. "
+    step3_em: "Sparrow"
+    step4: "4. "
+    step4_em: "Connect as Single Sig"
+    select: "Seleccionar"
   paste:
     paste_button: "Importar mediante pegado"
     app_bar_title_text: "Entrada manual" 
@@ -359,7 +375,36 @@ wallet_add_scanner_screen:
     mfp_input_placeholder: "Huella digital maestra ej: f75f7ab5"
     mfp_skip: "Omitir"
     back_scan: "Volver al escaneo de QR"
-  
+
+wallet_connect_screen:
+  guide_bitbox02:
+    btn:
+      connect_via_usb: "Conectar por USB"
+      connect_via_ble: "Conectar vía Bluetooth"
+      add_wallet: "Añadir billetera"
+      retry: "Reintentar"
+      start_signing: "Empezar a firmar"
+    init:
+      step1: "Conecta tu BitBox02 Nova mediante USB."
+      step2: "Desbloquea tu dispositivo."
+      step3: "Cuando aparezca 'See the BitBoxApp' en la pantalla del dispositivo, pulsa el botón '$btn' de abajo."
+      ble_step1: "Active el Bluetooth y mantenga BitBox02 Nova cerca."
+      ble_step2: "Si aparece 'Tap this side' en la pantalla del dispositivo, toque ambos lados del dispositivo."
+      ble_step3: "Cuando aparezca la cartera en la pantalla del dispositivo, toque el botón '$btn' a continuación."
+    connecting:
+      title: "Conectando el dispositivo"
+      step1: "Desbloquea el dispositivo."
+      step2: "Cuando aparezca el código de emparejamiento en el dispositivo, pulsa la marca de verificación (✓) para confirmar." 
+    paired:
+      title: "BitBox02 está emparejado y listo."
+      master_fingerprint: "Huella digital maestra"
+      derivation_path: "Ruta de derivación"
+      xpub: "Clave pública extendida"
+    error:
+      title: "Error de conexión"
+      description: "No se encontró BitBox02 Nova. Vuelve a conectar el dispositivo e inténtalo de nuevo."
+      ble_description: "No se encontró BitBox02 Nova. Encienda el Bluetooth y acerque el dispositivo."
+      
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elementos"
@@ -486,6 +531,41 @@ send_confirm_screen:
   output_detail_title: "Detalles de salida"
   flow_input_title: "Entrada #$index"
   flow_output_title: "Salida #$index"
+bitbox02_sign_screen:
+  tx_card:
+    title: "Transacción"
+    send: "Enviar"
+    to: "Para"
+    fee: "Comisión"
+    total_cost: "Coste total"
+  device_status:
+    title: "Estado del dispositivo"
+  idle:
+    waiting: "Esperando para firmar"
+    not_connected: "Sin conexión"
+    tap_sign_to_connect: "Pulsa Firmar para conectar"
+    locked: "Bloqueado"
+    device_found_pin: "Dispositivo encontrado — PIN requerido"
+    device_found: "Dispositivo encontrado: $fingerprint"
+    ready: "Listo"
+  status:
+    connecting_device: "Conectando con BitBox02 por USB..."
+    connecting_device_ble: "Buscando BitBox02 por Bluetooth..."
+    check_pairing: "Comprueba el código de emparejamiento en tu dispositivo"
+    preparing_data: "Preparando datos de la transacción..."
+    confirm_on_device: "Confirma el importe, la dirección y la comisión en el dispositivo"
+  done:
+    title: "Firmado"
+    description: "La transacción ha sido firmada por BitBox02."
+    ready_to_broadcast: "Listo para transmitir."
+  error_title: "Error al firmar"
+  device_mismatch: "El dispositivo conectado no coincide con esta billetera. Por favor conecte el dispositivo correcto."
+  btn:
+    sign: "Firmar con BitBox02"
+  state_label:
+    idle: "Esperando para firmar"
+    signing: "Firmando"
+
 signed_psbt_scanner_screen:
   title: "Escanear transacción firmada"
   bbqr_mode_switching: "Cambiando a modo BBQR.\nPor favor, espere un momento."
@@ -727,6 +807,14 @@ wallet_info_screen:
       select: "Seleccionar"
   error:
     delete: "No se pudo eliminar la billetera"
+  bitbox02_device:
+    title: "Información del dispositivo"
+    connection_status: "Estado de conexión"
+    connected: "Conectado"
+    disconnected: "No conectado"
+    disconnect_button: "Desconectar"
+    disconnect_confirm_title: "Desconectar"
+    disconnect_confirm_description: "Se desconectará el dispositivo actual.\nNecesitará volver a conectar para la próxima firma."
 wallet_signer_section:
   title: "Método de firma"
   segmented_control:
@@ -1045,11 +1133,10 @@ alert:
     not_parsed: "Fallo al analizar la transacción: $error"
     not_created: "Fallo al crear la transacción $error"
   error_send:
-    broadcasting_failed: "[Envío fallido]\n$error"
     insufficient_balance: "Saldo insuficiente"
     minimum_amount: "Puedes enviar al menos $amount"
-    insufficient_fee: "[Envío fallido]\nPor favor, intenta nuevamente aumentando la comisión."
-    non_final_taproot_child: "[Envío fallido]\nPor favor, verifica la fecha y hora de herencia de la billetera secundaria."
+    insufficient_fee: "Por favor, intenta nuevamente aumentando la comisión."
+    non_final_taproot_child: "Por favor, verifica la fecha y hora de herencia de la billetera secundaria."
   signed_psbt:
     wrong_send_info: "La información de envío es diferente.\nPor favor, intenta nuevamente desde el principio."
     need_more_sign: "Necesitas $count firmas más"
@@ -1114,7 +1201,9 @@ third_party:
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
-  krux: "Krux"  
+  krux: "Krux"
+  passport: "Passport"
+  bitbox02: "bitbox02"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"
@@ -1128,6 +1217,7 @@ fiat_bottom_sheet:
   krw_price: "Precio Upbit"
   usd_price: "Precio Binance"
   jpy_price: "Precio Bitflyer"
+  eur_price: "Precio Binance"
 
 language_bottom_sheet:
   title: "Configuración de idioma"
@@ -1135,6 +1225,7 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+  german: "Deutsch"
 
 estimated_fee_bottom_sheet:
     title: "Comisión estimada"

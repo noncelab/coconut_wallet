@@ -10,8 +10,8 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/extensions/wallet_list_item_extension.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart'
@@ -68,7 +68,7 @@ class RbfBuildResult {
 class RbfBuilder {
   static const double incrementalRelayFeeRate = 1.0; // 1 sat/vB (Bitcoin Core 기본값)
 
-  final WalletListItemBase walletListItemBase;
+  final WalletItemBase walletListItemBase;
   final WalletAddress nextChangeAddress;
   int get _dustThreshold => walletListItemBase.walletType.addressType.dustThreshold;
 
@@ -640,9 +640,9 @@ class RbfBuilder {
           isFeeSubtractedFromAmount: isSweep,
           isUtxoFixed: true,
           scriptPathPolicy:
-              walletListItemBase is TaprootWalletListItem
-                  ? ((walletListItemBase as TaprootWalletListItem).defaultSpendType == TaprootSpendType.scriptPath
-                      ? (walletListItemBase as TaprootWalletListItem).defaultPolicy
+              walletListItemBase is TaprootWalletItem
+                  ? ((walletListItemBase as TaprootWalletItem).defaultSpendType == TaprootSpendType.scriptPath
+                      ? (walletListItemBase as TaprootWalletItem).defaultPolicy
                       : null)
                   : null,
         ).build();

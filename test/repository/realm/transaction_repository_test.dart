@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/node/rbf_history.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -15,7 +15,7 @@ import 'test_realm_manager.dart';
 void main() {
   late TestRealmManager realmManager;
   late TransactionRepository transactionRepository;
-  SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem();
+  SinglesigWalletItem testWalletItem = WalletMock.createSingleSigWalletItem();
 
   setUp(() async {
     // 테스트 실행 전 셋업

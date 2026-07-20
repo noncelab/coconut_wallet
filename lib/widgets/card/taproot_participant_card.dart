@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -76,14 +77,14 @@ class TaprootParticipantCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (onTap != null) {
-      return ShrinkAnimationButton(onPressed: onTap!, child: _buildCardContainer());
+      return ShrinkAnimationButton(onPressed: onTap!, child: _buildCardContainer(context));
     }
 
-    return _buildCardContainer();
+    return _buildCardContainer(context);
   }
 
-  Widget _buildCardContainer() {
-    final style = _style;
+  Widget _buildCardContainer(BuildContext context) {
+    final style = _style(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -96,9 +97,9 @@ class TaprootParticipantCard extends StatelessWidget {
         children: [
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: CoconutColors.gray800, width: 1),
+              border: Border.all(color: context.coconutColors.taprootParticipantIconBorder, width: 1),
               borderRadius: BorderRadius.circular(8),
-              color: CoconutColors.gray100.withValues(alpha: 0.12),
+              color: context.coconutColors.taprootParticipantIconBackground,
             ),
             padding: const EdgeInsets.all(5),
             child: SvgPicture.asset(style.iconAssetPath, width: 16, height: 16),
@@ -119,7 +120,10 @@ class TaprootParticipantCard extends StatelessWidget {
                     if (_lockStatusIcon != null) ...[CoconutLayout.spacing_200w, _lockStatusIcon!],
                   ],
                 ),
-                Text('$mfp · $derivationPath', style: CoconutTypography.caption_10.setColor(CoconutColors.gray600)),
+                Text(
+                  '$mfp · $derivationPath',
+                  style: CoconutTypography.caption_10.setColor(context.coconutColors.tertiaryText),
+                ),
               ],
             ),
           ),
@@ -129,47 +133,51 @@ class TaprootParticipantCard extends StatelessWidget {
     );
   }
 
-  _TaprootParticipantCardStyle get _style {
+  _TaprootParticipantCardStyle _style(BuildContext context) {
     // 1. isValid가 false 인 경우 우선적으로 error 스타일 적용
     // 2. isMine 여부는 roleLabel에만 영향을 주도록 변경 (카드 전체 스타일에는 영향 X)
     // 3. hasBackgroundColor이 true인 경우에만 배경색과 테두리 색상이 적용
     if (!isValid) {
       return _TaprootParticipantCardStyle(
-        background: CoconutColors.hotPink.withValues(alpha: 0.06),
-        border: CoconutColors.hotPink.withValues(alpha: 0.5),
-        roleBackgroundColor: CoconutColors.hotPink.withValues(alpha: 0.06),
-        roleTextColor: CoconutColors.hotPink,
+        background: context.coconutColors.danger.withValues(alpha: 0.06),
+        border: context.coconutColors.danger.withValues(alpha: 0.5),
+        roleBackgroundColor: context.coconutColors.danger.withValues(alpha: 0.06),
+        roleBorderColor: context.coconutColors.danger.withValues(alpha: 0.5),
+        roleTextColor: context.coconutColors.danger,
         iconAssetPath: _iconAssetPath,
       );
     }
     if (!hasBackgroundColor || (!isMine && role != TaprootParticipantRole.child)) {
-      return _neutralStyle;
+      return _neutralStyle(context);
     }
 
     if (role == TaprootParticipantRole.parent) {
       return _TaprootParticipantCardStyle(
-        background: hasBackgroundColor ? CoconutColors.purple.withValues(alpha: 0.08) : CoconutColors.white,
-        border: hasBackgroundColor ? CoconutColors.purple.withValues(alpha: 0.5) : CoconutColors.gray300,
-        roleBackgroundColor: CoconutColors.purple,
-        roleTextColor: CoconutColors.white,
+        background: context.coconutColors.taprootParent.withValues(alpha: 0.08),
+        border: context.coconutColors.taprootParent.withValues(alpha: 0.5),
+        roleBackgroundColor: context.coconutColors.taprootParent,
+        roleBorderColor: context.coconutColors.taprootParent.withValues(alpha: 0.5),
+        roleTextColor: context.coconutColors.taprootRoleText,
         iconAssetPath: _iconAssetPath,
       );
     }
     return _TaprootParticipantCardStyle(
-      background: hasBackgroundColor ? CoconutColors.sky.withValues(alpha: 0.08) : CoconutColors.white,
-      border: hasBackgroundColor ? CoconutColors.sky.withValues(alpha: 0.5) : CoconutColors.gray300,
-      roleBackgroundColor: CoconutColors.sky,
-      roleTextColor: CoconutColors.white,
+      background: context.coconutColors.taprootChild.withValues(alpha: 0.08),
+      border: context.coconutColors.taprootChild.withValues(alpha: 0.5),
+      roleBackgroundColor: context.coconutColors.taprootChild,
+      roleBorderColor: context.coconutColors.taprootChild.withValues(alpha: 0.5),
+      roleTextColor: context.coconutColors.taprootRoleText,
       iconAssetPath: _iconAssetPath,
     );
   }
 
-  _TaprootParticipantCardStyle get _neutralStyle {
+  _TaprootParticipantCardStyle _neutralStyle(BuildContext context) {
     return _TaprootParticipantCardStyle(
-      background: CoconutColors.gray800,
-      border: CoconutColors.gray800,
-      roleBackgroundColor: CoconutColors.gray700,
-      roleTextColor: CoconutColors.white,
+      background: context.coconutColors.taprootParticipantNeutralBackground,
+      border: context.coconutColors.taprootParticipantNeutralBorder,
+      roleBackgroundColor: context.coconutColors.taprootParticipantNeutralRoleBackground,
+      roleBorderColor: context.coconutColors.taprootParticipantNeutralRoleBorder,
+      roleTextColor: context.coconutColors.taprootParticipantNeutralRoleText,
       iconAssetPath: _iconAssetPath,
     );
   }
@@ -207,7 +215,7 @@ class TaprootParticipantCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: style.roleBackgroundColor,
-        border: Border.all(color: style.border, width: 0.5),
+        border: Border.all(color: style.roleBorderColor, width: 0.5),
         borderRadius: BorderRadius.circular(4),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -250,6 +258,7 @@ class _TaprootParticipantCardStyle {
   final Color background;
   final Color border;
   final Color roleBackgroundColor;
+  final Color roleBorderColor;
   final Color roleTextColor;
   final String iconAssetPath;
 
@@ -257,6 +266,7 @@ class _TaprootParticipantCardStyle {
     required this.background,
     required this.border,
     required this.roleBackgroundColor,
+    required this.roleBorderColor,
     required this.roleTextColor,
     required this.iconAssetPath,
   });

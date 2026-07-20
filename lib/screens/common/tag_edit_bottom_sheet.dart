@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -75,8 +77,10 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
         onBackPressed: () => Navigator.pop(context),
         title: isUpdateMode ? t.tag_bottom_sheet.title_edit_tag : t.tag_bottom_sheet.title_new_tag,
       ),
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       bottomMargin: 20,
-      body: Padding(
+      body: Container(
+        color: context.coconutColors.surfaceBottomSheet,
         padding: EdgeInsets.only(bottom: keyboardHeight > 0 ? keyboardHeight : 0, left: 16, right: 16, top: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -102,10 +106,11 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
                   child: CustomLimitTextField(
                     controller: _controller,
                     focusNode: _focusNode,
-                    prefix: const Padding(
-                      padding: EdgeInsets.only(left: 16),
-                      child: Text("#", style: CoconutTypography.body3_12),
+                    prefix: Padding(
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Text("#", style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText)),
                     ),
+
                     onChanged: _onTextChanged,
                     onClear: () {
                       setState(() {
@@ -119,12 +124,7 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
               ],
             ),
             CoconutLayout.spacing_800h,
-            CoconutButton(
-              onPressed: _createTag,
-              text: t.done,
-              isActive: _isButtonActive,
-              backgroundColor: CoconutColors.white,
-            ),
+            InlineActionButton(onPressed: _createTag, text: t.done, isActive: _isButtonActive),
           ],
         ),
       ),

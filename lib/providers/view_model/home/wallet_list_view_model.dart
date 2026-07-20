@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 
@@ -33,7 +34,7 @@ class WalletListViewModel extends ChangeNotifier {
   late PreferenceProvider _preferenceProvider;
   late bool? _isNetworkOn;
   Map<int, AnimatedBalanceData> _walletBalance = {};
-  late List<WalletListItemBase> _walletItemListSnapshot;
+  late List<WalletItemBase> _walletItemListSnapshot;
 
   bool _isFirstLoaded = false;
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
@@ -56,8 +57,7 @@ class WalletListViewModel extends ChangeNotifier {
   bool _isEditMode = false;
   bool get isEditMode => _isEditMode;
 
-  bool get isKorean => _preferenceProvider.language == 'kr';
-  bool get isEnglishOrSpanish => _preferenceProvider.language == 'en' || _preferenceProvider.language == 'es';
+  bool get hasEnglishWordOrder => AppLanguage.fromCode(_preferenceProvider.language).hasEnglishWordOrder;
 
   bool get isWalletListFiatHidden => _preferenceProvider.isWalletListFiatHidden;
 
@@ -81,7 +81,7 @@ class WalletListViewModel extends ChangeNotifier {
     _visibleFiats = _preferenceProvider.walletListVisibleFiats;
     _syncNodeStateStream = _nodeProvider.syncStateStream;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
-    _walletItemListSnapshot = List<WalletListItemBase>.from(_walletProvider.walletItemList);
+    _walletItemListSnapshot = List<WalletItemBase>.from(_walletProvider.walletItemList);
     _walletBalance = _walletProvider.fetchWalletBalanceMap().map(
       (key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)),
     );
@@ -103,7 +103,7 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
-  List<WalletListItemBase> get walletItemList {
+  List<WalletItemBase> get walletItemList {
     final walletList = _walletProvider.walletItemListNotifier.value;
     final order = _preferenceProvider.walletOrder;
 
@@ -112,7 +112,7 @@ class WalletListViewModel extends ChangeNotifier {
     }
 
     final walletMap = {for (var wallet in walletList) wallet.id: wallet};
-    var orderedMap = order.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+    var orderedMap = order.map((id) => walletMap[id]).whereType<WalletItemBase>().toList();
     return orderedMap;
   }
 
@@ -215,8 +215,8 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   bool isWalletListChanged(
-    List<WalletListItemBase> oldList,
-    List<WalletListItemBase> newList,
+    List<WalletItemBase> oldList,
+    List<WalletItemBase> newList,
     Map<int, AnimatedBalanceData> walletBalanceMap,
   ) {
     if (oldList.length != newList.length) return true;
@@ -270,7 +270,7 @@ class WalletListViewModel extends ChangeNotifier {
 
           final walletMap = {for (var wallet in walletItemList) wallet.id: wallet};
           _walletProvider.walletItemListNotifier.value =
-              tempWalletOrder.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+              tempWalletOrder.map((id) => walletMap[id]).whereType<WalletItemBase>().toList();
         }
         if (hasFavoriteChanged) {
           await _preferenceProvider.setFavoriteWalletIds(tempFavoriteWalletIds);
@@ -394,11 +394,11 @@ class WalletListViewModel extends ChangeNotifier {
       return false;
     }
 
-    _walletItemListSnapshot = List<WalletListItemBase>.from(walletItemList);
+    _walletItemListSnapshot = List<WalletItemBase>.from(walletItemList);
     return true;
   }
 
-  bool _isSameWalletItemList(List<WalletListItemBase> previous, List<WalletListItemBase> current) {
+  bool _isSameWalletItemList(List<WalletItemBase> previous, List<WalletItemBase> current) {
     if (previous.length != current.length) {
       return false;
     }

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -20,7 +21,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
       child: Consumer<UtxoTagCrudViewModel>(
         builder: (context, model, child) {
           return Scaffold(
-            backgroundColor: CoconutColors.black,
+            backgroundColor: context.coconutColors.background,
             appBar: CoconutAppBar.build(
               title: t.tag_manage,
               context: context,
@@ -33,7 +34,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                     _handleAddTagPressed(context, model);
                   },
                   icon: const Icon(Icons.add_rounded),
-                  color: CoconutColors.white,
+                  color: context.coconutColors.iconDefault,
                 ),
               ],
             ),
@@ -67,9 +68,15 @@ class UtxoTagCrudScreen extends StatelessWidget {
       children: [
         CoconutLayout.spacing_900h,
         const SizedBox(height: 56),
-        Text(t.utxo_tag_screen.onboarding_title, style: CoconutTypography.body1_16_Bold),
+        Text(
+          t.utxo_tag_screen.onboarding_title,
+          style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+        ),
         CoconutLayout.spacing_200h,
-        Text(t.utxo_tag_screen.add_tag, style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray350)),
+        Text(
+          t.utxo_tag_screen.add_tag,
+          style: CoconutTypography.body2_14.copyWith(color: context.coconutColors.secondaryText),
+        ),
       ],
     );
   }
@@ -139,7 +146,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
             Navigator.of(context).pop();
           },
           rightButtonText: t.delete,
-          rightButtonColor: CoconutColors.hotPink,
+          rightButtonColor: context.coconutColors.danger,
           leftButtonText: t.cancel,
         );
       },

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
@@ -54,8 +55,9 @@ class _SelectableListBottomSheetState<T> extends State<SelectableListBottomSheet
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: colors.background,
       appBar: CoconutAppBar.build(title: widget.title, context: context, isBottom: true),
       body: SafeArea(
         child: Stack(
@@ -100,7 +102,6 @@ class _SelectableListBottomSheetState<T> extends State<SelectableListBottomSheet
               },
               isActive: _selectedId != null,
               text: widget.confirmText,
-              backgroundColor: CoconutColors.white,
             ),
           ],
         ),

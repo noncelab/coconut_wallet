@@ -13,18 +13,20 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
   }
 
   void _showMergeOptionBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (_isMergeMethodBottomSheetOpen) return;
+    _setScreenState(() {
+      _isMergeMethodBottomSheetOpen = true;
+    });
 
     vibrateExtraLight();
 
     try {
       final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<UtxoMergeMethod>(
         context: context,
-        backgroundColor: CoconutColors.gray900,
+        backgroundColor: context.coconutColors.surfaceBottomSheet,
         title: t.merge_utxos_screen.merge_method_bottomsheet.title,
         items: const [UtxoMergeMethod.smallAmounts, UtxoMergeMethod.sameTag, UtxoMergeMethod.sameAddress],
-        showGradient: false,
+        showSurroundings: false,
         initiallySelectedId: _viewModel.currentMethod,
         allowConfirmWhenSelectionUnchanged: _viewModel.mergeState == MergeState.idle,
         getItemId: (item) => item,
@@ -45,7 +47,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
             isDisabled: isDisabled,
             child: Text(
               _getCurrentMethodText(item)!,
-              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+              style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
             ),
           );
         },
@@ -66,13 +68,17 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
         }
       }
     } finally {
-      _isBottomSheetOpened = false;
+      _setScreenState(() {
+        _isMergeMethodBottomSheetOpen = false;
+      });
     }
   }
 
   void _showAmountRangeBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (_isAmountRangeBottomSheetOpen) return;
+    _setScreenState(() {
+      _isAmountRangeBottomSheetOpen = true;
+    });
 
     vibrateExtraLight();
 
@@ -105,7 +111,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     try {
       final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<_AmountRangeSelectionResult>(
         context: context,
-        backgroundColor: CoconutColors.gray900,
+        backgroundColor: context.coconutColors.surfaceBottomSheet,
         title: t.merge_utxos_screen.amount_range_bottomsheet.title,
         initialChildSize: 0.75,
         minChildSize: 0.749,
@@ -243,13 +249,17 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     } finally {
       customAmountController.dispose();
       customAmountFocusNode.dispose();
-      _isBottomSheetOpened = false;
+      _setScreenState(() {
+        _isAmountRangeBottomSheetOpen = false;
+      });
     }
   }
 
   void _showTagSelectBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (_isTagBottomSheetOpen) return;
+    _setScreenState(() {
+      _isTagBottomSheetOpen = true;
+    });
 
     vibrateExtraLight();
 
@@ -260,7 +270,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
         minChildSize: 0.45,
         maxChildSize: 0.8,
         initialChildSize: 0.45,
-        backgroundColor: CoconutColors.black,
+        backgroundColor: context.coconutColors.background,
         adjustForKeyboardInset: false,
         childBuilder:
             (scrollController) => MediaQuery(
@@ -284,7 +294,9 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
         unawaited(_viewModel.prepareMergeTransaction());
       }
     } finally {
-      _isBottomSheetOpened = false;
+      _setScreenState(() {
+        _isTagBottomSheetOpen = false;
+      });
     }
   }
 
@@ -318,8 +330,10 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
   }
 
   void _showReceiveAddressBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (_isReceiveAddressBottomSheetOpen) return;
+    _setScreenState(() {
+      _isReceiveAddressBottomSheetOpen = true;
+    });
 
     vibrateExtraLight();
 
@@ -368,7 +382,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     try {
       selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<_ReceivingAddressSelectionResult>(
         context: context,
-        backgroundColor: CoconutColors.gray900,
+        backgroundColor: context.coconutColors.surfaceBottomSheet,
         title: t.merge_utxos_screen.receive_address,
         adjustForKeyboardInset: true,
         initialChildSize: initialReceiveExtent,
@@ -470,7 +484,9 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
       directInputFocusNode.removeListener(handleDirectInputFocusChange);
       directInputController.dispose();
       directInputFocusNode.dispose();
-      _isBottomSheetOpened = false;
+      _setScreenState(() {
+        _isReceiveAddressBottomSheetOpen = false;
+      });
     }
 
     if (selectedItem != null && context.mounted) {
@@ -490,7 +506,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     if (!_viewModel.isCustomReceiveAddressValidFormat) {
       return Text(
         t.errors.address_error.invalid,
-        style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+        style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
         textAlign: TextAlign.center,
       );
     }
@@ -498,7 +514,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     if (!_viewModel.isCustomReceiveAddressOwnedByAnyWallet) {
       return Text(
         t.merge_utxos_screen.receive_address_bottomsheet.not_your_owned_wallet,
-        style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+        style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
         textAlign: TextAlign.center,
       );
     }
@@ -516,12 +532,12 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
       key: const ValueKey('owned-receive-address-list'),
       scrollController: scrollController,
       items: addresses,
-      showGradient: false,
+      showSurroundings: false,
       showConfirmButton: false,
       initiallySelectedId: selectedAddress,
       getItemId: (item) => item.address,
       confirmText: t.done,
-      backgroundColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       onSelectionChanged: (selected) {
         onSelectionChanged(selected?.address);
       },
@@ -533,10 +549,13 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(item.address, style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white)),
+              Text(
+                item.address,
+                style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
+              ),
               Text(
                 '${item.walletName} • ${item.derivationPath}',
-                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
               ),
             ],
           ),
@@ -554,7 +573,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     return SizedBox.expand(
       child: Container(
         key: const ValueKey('custom-receive-address'),
-        color: CoconutColors.gray900,
+        color: context.coconutColors.surfaceBottomSheet,
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
@@ -564,7 +583,8 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
               child: CoconutTextField(
                 controller: controller,
                 focusNode: focusNode,
-                backgroundColor: CoconutColors.black,
+                backgroundColor: context.coconutColors.background,
+                borderColor: context.coconutColors.inputBorder,
                 height: 52,
                 padding: const EdgeInsets.only(left: 16, right: 0),
                 onChanged: onChanged,
@@ -574,7 +594,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                   padding: EdgeInsets.zero,
                   onPressed: () async {
                     if (controller.text.isEmpty) {
-                      final scannedData = await showAddressScannerBottomSheet(context, title: t.send);
+                      final scannedData = await showAddressScannerBottomSheet(context, title: '');
                       if (scannedData == null) return;
                       final normalized =
                           scannedData.startsWith('bitcoin:')
@@ -591,13 +611,16 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                   },
                   icon:
                       controller.text.isEmpty
-                          ? SvgPicture.asset('assets/svg/scan.svg')
+                          ? SvgPicture.asset(
+                            'assets/svg/scan.svg',
+                            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                          )
                           : SvgPicture.asset(
                             'assets/svg/text-field-clear.svg',
                             colorFilter: ColorFilter.mode(
                               controller.text.isNotEmpty && !_viewModel.isCustomReceiveAddressValidFormat
-                                  ? CoconutColors.hotPink
-                                  : CoconutColors.white,
+                                  ? context.coconutColors.danger
+                                  : context.coconutColors.primaryText,
                               BlendMode.srcIn,
                             ),
                           ),
@@ -622,12 +645,12 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
       scrollController: scrollController,
       allowConfirmWhenSelectionUnchanged: true,
       items: UtxoMergeViewModel.recommendedAmountRangeItems,
-      showGradient: false,
+      showSurroundings: false,
       showConfirmButton: false,
       initiallySelectedId: selectedRecommendedRange,
       getItemId: (item) => item,
       confirmText: t.done,
-      backgroundColor: CoconutColors.gray900,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       onSelectionChanged: onSelectionChanged,
       itemBuilder: (context, item, isSelected, onTap) {
         final isDisabled = !_viewModel.hasCandidateUtxosForAmountRange(item);
@@ -638,9 +661,15 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_amountRangeText(item), style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+              Text(
+                _amountRangeText(item),
+                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+              ),
               if (_amountRangeDescription(item) != null)
-                Text(_amountRangeDescription(item)!, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                Text(
+                  _amountRangeDescription(item)!,
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                ),
             ],
           ),
         );
@@ -660,7 +689,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     return SizedBox.expand(
       child: Container(
         key: const ValueKey('custom-amount-range'),
-        color: CoconutColors.gray900,
+        color: context.coconutColors.surfaceBottomSheet,
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
@@ -680,15 +709,19 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                       onChanged: (_) => onAmountChanged(),
                       errorText: errorText ?? '',
                       isError: errorText != null,
-                      errorColor: CoconutColors.hotPink,
+                      errorColor: context.coconutColors.danger,
                       textInputType: const TextInputType.numberWithOptions(decimal: true),
                       isErrorTextMultiline: true,
                       textInputFormatter: const [BtcAmountInputFormatter()],
                       placeholderText: '',
+                      backgroundColor: context.coconutColors.surfaceBottomSheet,
+                      placeholderColor: context.coconutColors.inputPlaceholder,
+                      borderColor: context.coconutColors.inputBorder,
+                      cursorColor: context.coconutColors.primaryText,
                       suffix: Text(
                         t.btc,
                         style: CoconutTypography.heading4_18.copyWith(
-                          color: CoconutColors.white,
+                          color: context.coconutColors.primaryText,
                           height: 1.4,
                           letterSpacing: -0.4,
                         ),
@@ -700,8 +733,8 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                     padding: const EdgeInsets.only(top: 16),
                     child: ShrinkAnimationButton(
                       onPressed: onLessThanToggle,
-                      defaultColor: CoconutColors.gray800,
-                      pressedColor: CoconutColors.gray700,
+                      defaultColor: context.coconutColors.surfaceButton,
+                      pressedColor: context.coconutColors.surfacePressed,
                       borderRadius: 8,
                       borderWidth: 0,
                       child: Container(
@@ -710,7 +743,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                           isLessThan
                               ? t.merge_utxos_screen.amount_range_bottomsheet.less_than
                               : t.merge_utxos_screen.amount_range_bottomsheet.or_less,
-                          style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
+                          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
                         ),
                       ),
                     ),

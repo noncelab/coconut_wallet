@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -7,10 +8,10 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
-import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_add/air-gapped/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_item_setting_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
@@ -25,11 +26,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
@@ -76,7 +73,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       },
       child: Selector<
         WalletListViewModel,
-        Tuple7<List<WalletListItemBase>, bool, Map<int, AnimatedBalanceData>, List<int>, List<int>, bool, List<int>>
+        Tuple7<List<WalletItemBase>, bool, Map<int, AnimatedBalanceData>, List<int>, List<int>, bool, List<int>>
       >(
         selector:
             (_, vm) => Tuple7(
@@ -125,7 +122,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   }
                 },
                 child: Scaffold(
-                  backgroundColor: CoconutColors.black,
+                  backgroundColor: context.coconutColors.background,
                   extendBodyBehindAppBar: true,
                   appBar: _buildAppBar(context),
                   body: SafeArea(
@@ -143,7 +140,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                     await viewModel.applyTempDatasToWallets();
                                   },
                                   isActive: viewModel.hasFavoriteChanged || viewModel.hasWalletOrderChanged,
-                                  backgroundColor: CoconutColors.white,
                                   text: t.done,
                                 ),
                               ],
@@ -223,21 +219,36 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildEditModeHeader() {
-    SvgPicture starIcon = SvgPicture.asset('assets/svg/star-small.svg', width: 16, height: 16);
-    SvgPicture hamburgerIcon = SvgPicture.asset('assets/svg/hamburger.svg', width: 16, height: 16);
-    SvgPicture deleteIcon = SvgPicture.asset('assets/svg/delete.svg', width: 16, height: 16);
+    SvgPicture starIcon = SvgPicture.asset(
+      'assets/svg/star-small.svg',
+      width: 16,
+      height: 16,
+      colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+    );
+    SvgPicture hamburgerIcon = SvgPicture.asset(
+      'assets/svg/hamburger.svg',
+      width: 16,
+      height: 16,
+      colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+    );
+    SvgPicture deleteIcon = SvgPicture.asset(
+      'assets/svg/delete.svg',
+      width: 16,
+      height: 16,
+      colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+    );
     return Container(
       width: MediaQuery.sizeOf(context).width,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        color: CoconutColors.gray800,
+        color: context.coconutColors.surfaceCard,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       child: Column(
         children: [
           _buildEditModeHeaderLine([
-            if (_viewModel.isEnglishOrSpanish) ...[
+            if (_viewModel.hasEnglishWordOrder) ...[
               TextSpan(text: '${t.select} '),
               WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
               const TextSpan(text: ' '),
@@ -249,7 +260,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           ]),
           CoconutLayout.spacing_100h,
           _buildEditModeHeaderLine([
-            if (_viewModel.isEnglishOrSpanish) ...[
+            if (_viewModel.hasEnglishWordOrder) ...[
               TextSpan(text: '${t.tap} '),
               WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
               const TextSpan(text: ' '),
@@ -274,11 +285,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           margin: const EdgeInsets.symmetric(vertical: 8.5, horizontal: 6),
           height: 3,
           width: 3,
-          decoration: const BoxDecoration(color: CoconutColors.gray400, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: context.coconutColors.secondaryText, shape: BoxShape.circle),
         ),
         Expanded(
           child: RichText(
-            text: TextSpan(style: CoconutTypography.body2_14.setColor(CoconutColors.gray400), children: inlineSpan),
+            text: TextSpan(
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+              children: inlineSpan,
+            ),
             overflow: TextOverflow.visible,
             softWrap: true,
           ),
@@ -298,7 +312,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               Container(
                 width: MediaQuery.sizeOf(context).width,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: context.coconutColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Selector<PreferenceProvider, Tuple3<BitcoinUnit, List<int>, List<int>>>(
                   selector:
                       (_, viewModel) => Tuple3(
@@ -329,7 +346,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                         // 전체 총액
                         BitcoinAmountUnit(
                           currentUnit: currentUnit,
-                          unitStyle: CoconutTypography.heading4_18_NumberBold,
+                          unitStyle: CoconutTypography.heading4_18_NumberBold.setColor(
+                            context.coconutColors.primaryText,
+                          ),
                           spacing: CoconutLayout.spacing_100w,
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
@@ -338,7 +357,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                               prevValue: prevTotalBalance,
                               value: totalBalance,
                               currentUnit: currentUnit,
-                              textStyle: CoconutTypography.heading4_18_NumberBold,
+                              textStyle: CoconutTypography.heading4_18_NumberBold.setColor(
+                                context.coconutColors.primaryText,
+                              ),
                             ),
                           ),
                         ),
@@ -358,7 +379,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                       for (var fiat in _viewModel.visibleFiats) ...[
                                         Text(
                                           _viewModel.getBitcoinPrice(totalBalance, fiat),
-                                          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
+                                          style: CoconutTypography.body2_14_Number.setColor(
+                                            context.coconutColors.mutedText,
+                                          ),
                                         ),
                                       ],
                                       // 홈 화면 총액 (애니메이션)
@@ -416,7 +439,12 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                       ),
                     );
                   },
-                  icon: SvgPicture.asset('assets/svg/settings.svg', width: 16, height: 16),
+                  icon: SvgPicture.asset(
+                    'assets/svg/settings.svg',
+                    width: 16,
+                    height: 16,
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                  ),
                 ),
               ),
             ],
@@ -431,15 +459,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       children: [
         Row(
           children: [
-            Text(label, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+            Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
             const Spacer(),
             BitcoinAmountUnit(
               currentUnit: currentUnit,
-              unitStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+              unitStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryTextStrong),
               spacing: CoconutLayout.spacing_100w,
               child: Text(
                 currentUnit.displayBitcoinAmount(amount),
-                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryTextStrong),
               ),
             ),
           ],
@@ -454,7 +482,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 for (var fiat in _viewModel.visibleFiats) ...[
                   Text(
                     _viewModel.getBitcoinPrice(amount, fiat),
-                    style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                    style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.mutedText),
                   ),
                 ],
               ],
@@ -466,7 +494,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildWalletList(
-    List<WalletListItemBase> walletList,
+    List<WalletItemBase> walletList,
     Map<int, AnimatedBalanceData> walletBalanceMap,
     List<int> walletOrder,
   ) {
@@ -497,9 +525,16 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         // 드래그 중인 항목의 외관 변경
         return Container(
           decoration: BoxDecoration(
-            color: CoconutColors.gray900,
+            color: context.coconutColors.surfaceRaised,
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-            boxShadow: const [BoxShadow(color: CoconutColors.black, blurRadius: 8, spreadRadius: 0.5)],
+            boxShadow: [
+              BoxShadow(
+                color: context.coconutColors.shadowSubtle,
+                blurRadius: 10,
+                spreadRadius: 0,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: child,
         );
@@ -509,20 +544,18 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         _viewModel.reorderTempWalletOrder(oldIndex, newIndex);
       },
       itemBuilder: (context, index) {
-        WalletListItemBase wallet = _viewModel.walletItemList.firstWhere(
-          (w) => w.id == _viewModel.tempWalletOrder[index],
-        );
+        WalletItemBase wallet = _viewModel.walletItemList.firstWhere((w) => w.id == _viewModel.tempWalletOrder[index]);
         return Dismissible(
           key: ValueKey(wallet.id),
           direction: DismissDirection.endToStart,
           background: Container(
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            color: CoconutColors.hotPink,
+            color: context.coconutColors.danger,
             child: SvgPicture.asset(
               'assets/svg/trash.svg',
               width: 16,
-              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
             ),
           ),
           onDismissed: (direction) {
@@ -546,7 +579,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildWalletItem(
-    WalletListItemBase wallet,
+    WalletItemBase wallet,
     AnimatedBalanceData animatedBalanceData,
     bool isLastItem,
     bool isFirstItem, {
@@ -578,7 +611,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   Widget _getWalletRowItem(
     Key key,
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     AnimatedBalanceData animatedBalanceData,
     bool isLastItem,
     bool isFirstItem,
@@ -586,58 +619,52 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     bool isFavorite, {
     int? index,
   }) {
-    final WalletListItemBase(
-      id: id,
-      name: name,
-      iconIndex: iconIndex,
-      colorIndex: colorIndex,
-      walletImportSource: walletImportSource,
-    ) = walletItem;
-    List<MultisigSigner>? signers;
-    if (walletItem.walletType == WalletType.multiSignature) {
-      signers = (walletItem as MultisigWalletListItem).signers;
-    }
-    final taprootStyle = TaprootCardStyle.from(walletItem);
     return Selector<PreferenceProvider, Tuple2<BitcoinUnit, List<int>>>(
       selector: (_, viewModel) => Tuple2(viewModel.currentUnit, viewModel.excludedFromTotalBalanceWalletIds),
       builder: (context, data, child) {
         final currentUnit = data.item1;
-        bool isExludedFromTotalBalance = data.item2.contains(id);
+        bool isExcludedFromTotalBalance = data.item2.contains(walletItem.id);
 
         return WalletItemCard(
           key: key,
-          id: id,
-          name: name,
+          walletItem: walletItem,
           animatedBalanceData: animatedBalanceData,
-          iconIndex: iconIndex,
-          colorIndex: colorIndex,
           isLastItem: isLastItem,
           isBalanceHidden: false,
-          walletImportSource: walletImportSource,
           currentUnit: currentUnit,
-          backgroundColor: CoconutColors.black,
-          iconGradientColors: signers != null ? ColorUtil.getGradientColors(signers) : taprootStyle?.iconGradientColors,
+          backgroundColor: context.coconutColors.background,
           isPrimaryWallet: isFirstItem,
-          isExcludeFromTotalBalance: isExludedFromTotalBalance,
+          isExcludeFromTotalBalance: isExcludedFromTotalBalance,
           isEditMode: isEditMode,
           isFavorite: isFavorite,
-          isStarVisible: isFavorite || _viewModel.tempFavoriteWalletIds.length < kMaxStarLenght, // 즐겨찾기 제한 만큼 설정
+          isStarVisible: isFavorite || _viewModel.tempFavoriteWalletIds.length < kMaxStarLenght,
           onTapStar: (pair) {
-            // pair: (bool isFavorite, int walletId)
             vibrateExtraLight();
             _viewModel.toggleTempFavorite(pair.$2);
           },
           index: index,
-          entryPoint: kEntryPointWalletList,
           onLongPressed: () {
             vibrateExtraLight();
             CommonBottomSheets.showBottomSheet(
               title: '',
               titlePadding: EdgeInsets.zero,
               context: context,
-              child: WalletItemSettingBottomSheet(id: id),
+              child: WalletItemSettingBottomSheet(id: walletItem.id),
             );
           },
+          onPressed: () {
+            Navigator.pushNamed(
+              context,
+              '/wallet-detail',
+              arguments: {'id': walletItem.id, 'entryPoint': kEntryPointWalletList},
+            );
+          },
+          rightWidget: SvgPicture.asset(
+            'assets/svg/arrow-right.svg',
+            width: 6,
+            height: 10,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+          ),
         );
       },
     );
@@ -683,7 +710,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         if (!isEditMode) ...[
           CoconutUnderlinedButton(
             text: t.edit,
-            textStyle: CoconutTypography.body2_14,
+            textStyle: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             onTap: () {
               _viewModel.setEditMode(true);
             },
@@ -742,11 +769,11 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
             child: Column(
               children: [
                 SingleButton(
-                  customPadding: const EdgeInsets.fromLTRB(2, 0, 2, 16),
+                  customPadding: const EdgeInsets.fromLTRB(2, 8, 2, 8),
                   title: t.wallet_list.bottom_sheet.hide_fiat_price,
                   subtitle: t.wallet_list.bottom_sheet.hide_fiat_price_description,
                   isVerticalSubtitle: true,
-                  backgroundColor: CoconutColors.black,
+                  backgroundColor: context.coconutColors.surfaceBottomSheet,
                   onPressed: () {
                     viewModel.toggleWalletListFiatHidden();
                     vibrateExtraLight();
@@ -754,9 +781,10 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                   rightElement: CoconutSwitch(
                     isOn: viewModel.isWalletListFiatHidden,
                     scale: 0.7,
-                    activeColor: CoconutColors.gray100,
-                    trackColor: CoconutColors.gray600,
-                    thumbColor: CoconutColors.gray800,
+                    activeTrackColor: context.coconutColors.switchActiveTrack,
+                    activeThumbColor: context.coconutColors.switchActiveThumb,
+                    inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+                    inactiveThumbColor: context.coconutColors.switchInactiveThumb,
                     onChanged: (value) {
                       viewModel.setWalletListFiatHidden(value);
                       vibrateExtraLight();
@@ -774,14 +802,14 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                           : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Divider(color: CoconutColors.gray800, height: 1),
+                              Divider(color: context.coconutColors.divider, height: 1),
                               CoconutLayout.spacing_400h,
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 2),
                                 child: Column(
                                   children: [
                                     for (var fiat in viewModel.orderedFiats) ...[
-                                      _buildFiatRow(fiat, onTogglePressed, viewModel.visibleFiats),
+                                      _buildFiatRow(context, fiat, onTogglePressed, viewModel.visibleFiats),
                                       CoconutLayout.spacing_400h,
                                     ],
                                   ],
@@ -798,7 +826,12 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildFiatRow(FiatCode fiat, Function(FiatCode) onTogglePressed, List<FiatCode> currentVisibleFiats) {
+  Widget _buildFiatRow(
+    BuildContext context,
+    FiatCode fiat,
+    Function(FiatCode) onTogglePressed,
+    List<FiatCode> currentVisibleFiats,
+  ) {
     final isVisible = currentVisibleFiats.contains(fiat);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -808,7 +841,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: CoconutColors.gray800,
+                color: context.coconutColors.surfaceCard,
                 borderRadius: BorderRadius.circular(CoconutStyles.radius_50),
               ),
               width: 18,
@@ -816,26 +849,31 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
               child: Center(
                 child: Text(
                   fiat.symbol,
-                  style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400).copyWith(height: 1.4),
+                  style: CoconutTypography.body3_12_Number
+                      .setColor(context.coconutColors.secondaryText)
+                      .copyWith(height: 1.4),
                 ),
               ),
             ),
             CoconutLayout.spacing_200w,
-            Text(fiat.name, style: CoconutTypography.body3_12_Bold.copyWith(height: 1.4)),
+            Text(
+              fiat.name,
+              style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText).copyWith(height: 1.4),
+            ),
             CoconutLayout.spacing_150w,
             AnimatedOpacity(
               opacity: isVisible ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 300),
               child: Text(
                 t.wallet_list.bottom_sheet.visible,
-                style: CoconutTypography.caption_10.copyWith(height: 1.4, color: CoconutColors.cyan),
+                style: CoconutTypography.caption_10.copyWith(height: 1.4, color: context.coconutColors.textHighlight),
               ),
             ),
           ],
         ),
         ShrinkAnimationButton(
-          defaultColor: CoconutColors.gray700,
-          pressedColor: CoconutColors.gray800,
+          defaultColor: context.coconutColors.surface,
+          pressedColor: context.coconutColors.surfacePressed,
           borderRadius: 8,
           child: Container(
             constraints: const BoxConstraints(minWidth: 52),
@@ -843,7 +881,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
             child: Text(
               isVisible ? t.hide : t.show,
               textAlign: TextAlign.center,
-              style: CoconutTypography.body3_12.setColor(CoconutColors.white).copyWith(height: 1.4),
+              style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText).copyWith(height: 1.4),
             ),
           ),
           onPressed: () {

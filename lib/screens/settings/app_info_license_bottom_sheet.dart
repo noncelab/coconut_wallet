@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -43,7 +44,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
   TextSpan linkSpan({required String text, required String url}) {
     return TextSpan(
       text: text,
-      style: defaultTextStyle.copyWith(color: CoconutColors.sky, decoration: TextDecoration.underline),
+      style: defaultTextStyle.copyWith(color: context.coconutColors.linkText, decoration: TextDecoration.underline),
       recognizer:
           TapGestureRecognizer()
             ..onTap = () async {
@@ -54,10 +55,11 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return ClipRRect(
       borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
       child: Scaffold(
-        backgroundColor: CoconutColors.black,
+        backgroundColor: colors.background,
         appBar: CoconutAppBar.build(
           title: t.license_bottom_sheet.title,
           context: context,
@@ -77,7 +79,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                       child: RichText(
                         text: TextSpan(
                           text: t.license_bottom_sheet.copyright_text1,
-                          style: defaultTextStyle,
+                          style: defaultTextStyle.copyWith(color: colors.primaryText),
                           children: <TextSpan>[
                             linkSpan(text: MIT_LICENSE_URL, url: MIT_LICENSE_URL),
                             TextSpan(text: t.license_bottom_sheet.copyright_text2),
@@ -133,20 +135,24 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(licenseName, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-                            if (copyRight.isNotEmpty) Text(copyRight, style: CoconutTypography.body3_12),
+                            Text(licenseName, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                            if (copyRight.isNotEmpty)
+                              Text(copyRight, style: CoconutTypography.body3_12.setColor(colors.primaryText)),
                             SizedBox(
                               width: MediaQuery.of(context).size.width,
-                              child: Text(licenseClass ?? 'Unknown License', style: CoconutTypography.body3_12),
+                              child: Text(
+                                licenseClass ?? 'Unknown License',
+                                style: CoconutTypography.body3_12.setColor(colors.primaryText),
+                              ),
                             ),
                             if (licenseExplanationVisible[index - 1])
                               Container(
                                 margin: const EdgeInsets.only(top: 8),
                                 height: 200,
-                                decoration: BoxDecoration(border: Border.all(width: 1, color: CoconutColors.gray700)),
+                                decoration: BoxDecoration(border: Border.all(width: 1, color: colors.borderStrong)),
                                 child: SingleChildScrollView(
                                   padding: const EdgeInsets.symmetric(horizontal: 5),
-                                  child: Text(license.license!, style: const TextStyle(color: CoconutColors.gray700)),
+                                  child: Text(license.license!, style: TextStyle(color: colors.secondaryText)),
                                 ),
                               ),
                           ],

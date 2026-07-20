@@ -28,6 +28,10 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is required for QR code scanning.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Bluetooth access is required to communicate with BitBox02 hardware wallet.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Bluetooth access is required to communicate with BitBox02 hardware wallet.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Face ID is required to unlock the app.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

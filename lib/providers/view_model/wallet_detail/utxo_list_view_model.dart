@@ -8,7 +8,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -27,7 +27,7 @@ class UtxoListViewModel extends ChangeNotifier {
   late final ConnectivityProvider _connectProvider;
   late final PriceProvider _priceProvider;
   late final PreferenceProvider _preferenceProvider;
-  late final WalletListItemBase _walletListBaseItem;
+  late final WalletItemBase _walletListBaseItem;
 
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;

@@ -8,14 +8,15 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/widgets/card/taproot_participant_card.dart';
 import 'package:collection/collection.dart';
@@ -34,7 +35,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   late String _extendedPublicKey;
   late int _multisigTotalSignerCount;
   late int _multisigRequiredSignerCount;
-  late WalletListItemBase _walletItemBase;
+  late WalletItemBase _walletItemBase;
   late WalletUpdateInfo _prevWalletUpdateInfo;
 
   final WalletType _walletType;
@@ -59,7 +60,7 @@ class WalletInfoViewModel extends ChangeNotifier {
 
     switch (_walletType) {
       case WalletType.multiSignature:
-        final multisigItem = walletItemBase as MultisigWalletListItem;
+        final multisigItem = walletItemBase as MultisigWalletItem;
         _multisigTotalSignerCount = multisigItem.signers.length;
         _multisigRequiredSignerCount = multisigItem.requiredSignatureCount;
         break;
@@ -92,12 +93,12 @@ class WalletInfoViewModel extends ChangeNotifier {
   bool get isSetPin => _authProvider.isSetPin;
 
   String get walletName => _walletName;
-  WalletListItemBase get walletItemBase => _walletItemBase;
+  WalletItemBase get walletItemBase => _walletItemBase;
   int get multisigTotalSignerCount => _multisigTotalSignerCount;
   int get multisigRequiredSignerCount => _multisigRequiredSignerCount;
   String get extendedPublicKey => _extendedPublicKey;
   bool get isMfpPlaceholder =>
-      _walletItemBase is SinglesigWalletListItem &&
+      _walletItemBase is SinglesigWalletItem &&
       (_walletItemBase.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
           WalletAddService.masterFingerprintPlaceholder;
 
@@ -106,16 +107,16 @@ class WalletInfoViewModel extends ChangeNotifier {
   Balance get walletBalance => _walletProvider.getWalletBalance(_walletId);
 
   bool get hasTaprootKeyPath =>
-      _walletItemBase is TaprootWalletListItem && (_walletItemBase as TaprootWalletListItem).canSpendViaKeyPath;
+      _walletItemBase is TaprootWalletItem && (_walletItemBase as TaprootWalletItem).canSpendViaKeyPath;
 
   bool get hasTaprootScriptPath =>
-      _walletItemBase is TaprootWalletListItem && (_walletItemBase as TaprootWalletListItem).canSpendViaScriptPath;
+      _walletItemBase is TaprootWalletItem && (_walletItemBase as TaprootWalletItem).canSpendViaScriptPath;
 
   bool get canSpendBothPaths =>
-      _walletItemBase is TaprootWalletListItem && (_walletItemBase as TaprootWalletListItem).canSpendBothPaths;
+      _walletItemBase is TaprootWalletItem && (_walletItemBase as TaprootWalletItem).canSpendBothPaths;
 
   bool get hasSingleTaprootParent {
-    if (_walletItemBase is! TaprootWalletListItem) return false;
+    if (_walletItemBase is! TaprootWalletItem) return false;
 
     final taprootWallet = _walletItemBase.walletBase;
     if (taprootWallet is! TaprootWallet) return false;
@@ -125,7 +126,7 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   List<TaprootParticipantCard> getTaprootParticipants(int currentSegmentIndex) {
     final item = _walletItemBase;
-    if (item is! TaprootWalletListItem) return [];
+    if (item is! TaprootWalletItem) return [];
 
     final descriptor = item.descriptor;
 
@@ -209,6 +210,19 @@ class WalletInfoViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool get isBitBox02Wallet => _walletItemBase.walletImportSource == WalletImportSource.bitbox02;
+
+  Future<void> disconnectBitBox02() async {
+    final device = BitBox02Device.lastConnected;
+    BitBox02Device.lastConnected = null;
+    if (device != null) {
+      try {
+        await device.disconnect();
+      } catch (_) {}
+    }
+    notifyListeners();
+  }
+
   Future<void> deleteWallet() async {
     await _sharedPrefs.removeFaucetHistory(_walletId);
     await _sharedPrefs.removeWalletTargetSats(_walletId);
@@ -219,7 +233,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   MultisigSigner getSigner(int index) {
-    return (_walletItemBase as MultisigWalletListItem).signers[index];
+    return (_walletItemBase as MultisigWalletItem).signers[index];
   }
 
   String getSignerMasterFingerprint(int index) {
@@ -228,7 +242,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   SignerBsms getSignerBsms(int index) {
-    final multisigWallet = walletItemBase as MultisigWalletListItem;
+    final multisigWallet = walletItemBase as MultisigWalletItem;
     return multisigWallet.signerBsmsList[index];
   }
 
@@ -238,8 +252,8 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   int get taprootSpendTypeIndex {
-    if (_walletItemBase is! TaprootWalletListItem) return 0;
-    final item = _walletItemBase as TaprootWalletListItem;
+    if (_walletItemBase is! TaprootWalletItem) return 0;
+    final item = _walletItemBase as TaprootWalletItem;
     return item.defaultSpendType == TaprootSpendType.keyPath ? 0 : 1;
   }
 

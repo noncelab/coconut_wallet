@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -166,10 +167,9 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
                     ? null
                     : Text(
                       '${t.merge_utxos_screen.count(n: _selectedTagUtxoCountValue!, count: _selectedTagUtxoCountValue!)} ➔ ${t.merge_utxos_screen.count(n: 1, count: 1)}',
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray300),
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                     ),
             onButtonClicked: _confirm,
-            backgroundColor: CoconutColors.white,
           ),
         ),
       ],
@@ -187,7 +187,7 @@ class _SelectableTagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foregroundColor = tagColorPalette[tag.colorIndex];
-    final backgroundColor = foregroundColor.withOpacity(0.18);
+    final backgroundColor = foregroundColor.withValues(alpha: 0.18);
     final style = _styleFor(foregroundColor);
 
     Widget chipForeground = AnimatedContainer(
@@ -231,7 +231,7 @@ class _SelectableTagChip extends StatelessWidget {
       );
     }
 
-    final inactiveColor = foregroundColor.withOpacity(0.4);
+    final inactiveColor = foregroundColor.withValues(alpha: 0.4);
     return _SelectableChipStyle(
       borderColor: inactiveColor,
       textColor: inactiveColor,

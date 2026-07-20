@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -27,7 +28,7 @@ import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -143,7 +144,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   Widget _buildScaffold(BuildContext context) {
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       appBar: _buildAppBar(context),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -227,7 +228,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       actionButtonList: [
         IconButton(
           key: _utxoTooltipIconKey,
-          icon: SvgPicture.asset('assets/svg/question-mark.svg'),
+          icon: SvgPicture.asset(
+            'assets/svg/question-mark.svg',
+            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+          ),
           onPressed: _toggleUtxoTooltip,
         ),
       ],
@@ -245,10 +249,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           child: Container(
             width: MediaQuery.sizeOf(context).width * 0.68,
             padding: const EdgeInsets.only(top: 28, left: 16, right: 16, bottom: 12),
-            color: CoconutColors.white,
+            color: context.coconutColors.popoverBackground,
             child: Text(
               t.tooltip.utxo,
-              style: CoconutTypography.body3_12.copyWith(color: CoconutColors.gray900, height: 1.3),
+              style: CoconutTypography.body3_12.copyWith(color: context.coconutColors.popoverText, height: 1.3),
             ),
           ),
         ),
@@ -290,10 +294,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           child: FittedBox(
             child: BitcoinAmountUnit(
               currentUnit: _currentUnit,
-              unitStyle: CoconutTypography.heading4_18_Number,
+              unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
               child: Text(
                 _currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                style: CoconutTypography.heading2_28_NumberBold,
+                style: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
               ),
             ),
           ),
@@ -315,24 +319,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color:
-                  status == UtxoStatus.incoming
-                      ? CoconutColors.cyan.withValues(alpha: 0.2)
-                      : CoconutColors.primary.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Lottie.asset(
-              status == UtxoStatus.incoming ? 'assets/lottie/arrow-down.json' : 'assets/lottie/arrow-up.json',
-              width: 20,
-              height: 20,
-            ),
-          ),
+          PendingTransactionLottieIcon(isIncoming: status == UtxoStatus.incoming, size: 20),
           CoconutLayout.spacing_200w,
           Text(
             status == UtxoStatus.incoming ? t.status_receiving : t.status_sending,
-            style: CoconutTypography.body2_14_Number.copyWith(color: CoconutColors.gray200),
+            style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
           ),
         ],
       ),
@@ -353,9 +344,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             children: [
               CopyTextContainer(
                 text: widget.utxo.to,
-                textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
                 suffixText: '${path.join('/')} · ${_viewModel.walletNameDisplay}',
-                suffixTextStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                suffixTextStyle: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
               ),
             ],
           ),
@@ -369,7 +360,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       label: t.tx_memo,
       child: Text(
         memo?.isNotEmpty == true ? memo! : '-',
-        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }
@@ -391,7 +382,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         children: [
           CopyTextContainer(
             text: widget.utxo.transactionHash,
-            textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+            textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
           ),
           CoconutLayout.spacing_300h,
           child,
@@ -412,20 +403,20 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       },
       child: Text(
         widget.utxo.blockHeight != 0 ? widget.utxo.blockHeight.toString() : '-',
-        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }
 
   Widget _buildTransactionInputOutputSkeleton() {
     return Shimmer.fromColors(
-      baseColor: CoconutColors.gray850,
-      highlightColor: CoconutColors.gray800,
+      baseColor: context.coconutColors.surfaceSkeletonBase,
+      highlightColor: context.coconutColors.surfaceSkeletonHighlight,
       child: Container(
         width: double.infinity,
         height: 60,
         decoration: BoxDecoration(
-          color: CoconutColors.gray850,
+          color: context.coconutColors.surfaceSkeletonBase,
           borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
         ),
       ),
@@ -441,7 +432,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (selectedTags.isEmpty) ...{
-            Text('-', style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
+            Text('-', style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText)),
           } else ...{
             Wrap(
               spacing: 4,
@@ -541,7 +532,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildSuspiciousDustUtxoWarning(bool isSuspiciousDustUtxo, bool isLocked) {
     if (!isSuspiciousDustUtxo) return const SizedBox(height: 20);
 
-    final color = isLocked ? CoconutColors.white : CoconutColors.red;
+    final color = isLocked ? context.coconutColors.primaryText : context.coconutColors.danger;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
@@ -604,7 +595,10 @@ class UtxoLockStatusChip extends StatefulWidget {
 class _UtxoLockStatusChip extends State<UtxoLockStatusChip> {
   @override
   Widget build(BuildContext context) {
-    final color = widget.isSuspiciousDustUtxo && !widget.isLocked ? CoconutColors.red : CoconutColors.white;
+    final color =
+        widget.isSuspiciousDustUtxo && !widget.isLocked
+            ? context.coconutColors.danger
+            : context.coconutColors.primaryText;
 
     return Row(
       children: [

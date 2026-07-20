@@ -4,7 +4,7 @@ import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
-import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
+import 'package:coconut_wallet/screens/settings/app_settings/network/electrum_server_screen.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
@@ -59,8 +59,13 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
   /// 모든 기본 일렉트럼 서버 상태 체크
   void _checkAllElectrumServerConnections() {
-    final isRegtestFlavor = NetworkType.currentNetworkType == NetworkType.regtest;
-    final serverList = isRegtestFlavor ? DefaultElectrumServer.regtestServers : DefaultElectrumServer.mainnetServers;
+    final networkType = NetworkType.currentNetworkType;
+    final serverList =
+        networkType == NetworkType.regtest
+            ? DefaultElectrumServer.regtestServers
+            : networkType == NetworkType.testnet
+            ? DefaultElectrumServer.testnetServers
+            : DefaultElectrumServer.mainnetServers;
 
     for (final server in serverList) {
       _connectionStatusMap[server] = NodeConnectionStatus.connecting;
@@ -210,9 +215,13 @@ class ElectrumServerViewModel extends ChangeNotifier {
   }
 
   bool _isDefaultServer(ElectrumServer server) {
-    final isRegtestFlavor = NetworkType.currentNetworkType == NetworkType.regtest;
+    final networkType = NetworkType.currentNetworkType;
     final defaultServers =
-        isRegtestFlavor ? DefaultElectrumServer.regtestServers : DefaultElectrumServer.mainnetServers;
+        networkType == NetworkType.regtest
+            ? DefaultElectrumServer.regtestServers
+            : networkType == NetworkType.testnet
+            ? DefaultElectrumServer.testnetServers
+            : DefaultElectrumServer.mainnetServers;
 
     return defaultServers.any(
       (defaultServer) =>

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
@@ -42,6 +43,7 @@ class QrWithCopyTextScreen extends StatefulWidget {
   final ScrollController? scrollController;
   final bool showBottomActions;
   final bool showQrEmbedImage;
+  final Color? backgroundColor;
   final double? qrInternalPadding;
 
   const QrWithCopyTextScreen({
@@ -62,6 +64,7 @@ class QrWithCopyTextScreen extends StatefulWidget {
     this.scrollController,
     this.showBottomActions = false,
     this.showQrEmbedImage = false,
+    this.backgroundColor,
     this.qrInternalPadding,
   });
 
@@ -181,8 +184,10 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                           });
                           Navigator.pop(context);
                         },
-
-                        backgroundColor: CoconutColors.gray800,
+                        backgroundColor: context.coconutColors.pulldownMenuBackground,
+                        shadowColor: context.coconutColors.shadowDefault.withValues(alpha: 0.06),
+                        dividerColor: context.coconutColors.pulldownMenuDividerColor,
+                        splashColor: context.coconutColors.pulldownMenuPressedColor,
                         borderRadius: 8,
                         isSelectedItemBold: true,
                         buttonPadding: const EdgeInsets.only(right: 16, left: 16),
@@ -206,67 +211,66 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
     final displayQrData = _currentQrData;
     final displayTextData = _currentTextData;
     final currentUnit = context.read<PreferenceProvider>().currentUnit;
+    final backgroundColor = widget.backgroundColor ?? context.coconutColors.background;
 
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: backgroundColor,
       resizeToAvoidBottomInset: false,
       appBar: CoconutAppBar.build(
         title: widget.title,
         context: context,
-
+        backgroundColor: widget.backgroundColor,
         isBottom: widget.isBottom,
         onBackPressed: () {
           Navigator.pop(context);
         },
         actionButtonList: widget.actionButton != null ? [widget.actionButton!] : [],
       ),
-      body: SafeArea(
-        child: InputAndShareOverlay(
-          scrollController: widget.scrollController,
-          showBottomActions: widget.showBottomActions,
-          shareButtonKey: _shareButtonKey,
-          onEnterAmountTap: () async {
-            final result = await Bip21AmountBottomSheet.show(
-              context: context,
-              currentUnit: currentUnit,
-              initialAmountSats: _amountInSats,
+      body: InputAndShareOverlay(
+        scrollController: widget.scrollController,
+        showBottomActions: widget.showBottomActions,
+        shareButtonKey: _shareButtonKey,
+        onEnterAmountTap: () async {
+          final result = await Bip21AmountBottomSheet.show(
+            context: context,
+            currentUnit: currentUnit,
+            initialAmountSats: _amountInSats,
+          );
+          if (!mounted || result == null || !result.didEdit) return;
+          setState(() {
+            _amountInSats = result.amountInSats;
+          });
+        },
+        onShareTap: () async {
+          try {
+            final RenderRepaintBoundary boundary =
+                _qrCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+            final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+            final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+            final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+            final directory = await getTemporaryDirectory();
+            final file = File('${directory.path}/share_qr_address.png');
+            await file.writeAsBytes(pngBytes);
+
+            // 버튼 위치 계산
+            final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+            final Rect sharePositionOrigin =
+                box != null ? box.localToGlobal(Offset.zero) & box.size : const Rect.fromLTWH(0, 400, 300, 50);
+
+            AppGuard.disablePrivacyScreen();
+            await SharePlus.instance.share(
+              ShareParams(files: [XFile(file.path)], text: displayTextData, sharePositionOrigin: sharePositionOrigin),
             );
-            if (!mounted || result == null || !result.didEdit) return;
-            setState(() {
-              _amountInSats = result.amountInSats;
-            });
-          },
-          onShareTap: () async {
-            try {
-              final RenderRepaintBoundary boundary =
-                  _qrCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-
-              final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-              final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-              final Uint8List pngBytes = byteData!.buffer.asUint8List();
-
-              final directory = await getTemporaryDirectory();
-              final file = File('${directory.path}/share_qr_address.png');
-              await file.writeAsBytes(pngBytes);
-
-              // 버튼 위치 계산
-              final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
-              final Rect sharePositionOrigin =
-                  box != null
-                      ? box.localToGlobal(Offset.zero) & box.size
-                      : const Rect.fromLTWH(0, 400, 300, 50); // fallback
-
-              AppGuard.disablePrivacyScreen();
-              await SharePlus.instance.share(
-                ShareParams(files: [XFile(file.path)], text: displayTextData, sharePositionOrigin: sharePositionOrigin),
-              );
-            } catch (e, stack) {
-              debugPrint('Failed to capture and share: $e');
-              debugPrint('Stack: $stack');
-            } finally {
-              AppGuard.enablePrivacyScreen();
-            }
-          },
+          } catch (e, stack) {
+            debugPrint('Failed to capture and share: $e');
+            debugPrint('Stack: $stack');
+          } finally {
+            AppGuard.enablePrivacyScreen();
+          }
+        },
+        child: SafeArea(
           child: Column(
             children: [
               if (widget.tooltipDescription != null) ...[
@@ -280,7 +284,10 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                     child: Container(
                       key: _pulldownKey,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(
+                        color: context.coconutColors.pulldownMenuBackground,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: MediaQuery(
                         data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                         child: CoconutPulldown(

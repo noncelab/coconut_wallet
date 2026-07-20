@@ -1,0 +1,173 @@
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/file_logger.dart';
+import 'package:coconut_wallet/utils/third_party_util.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/composed_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/composed_scan_data_handler2.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/extended_pub_key_qr_scan_data_handler.dart';
+import 'package:flutter/material.dart';
+import 'package:ur/ur.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/coconut_wallet_add_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/descriptor_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
+
+const kMaxStarLenght = 5;
+const String className = 'WalletAddScannerViewModel';
+
+class WalletAddScannerViewModel extends ChangeNotifier {
+  final WalletImportSource _walletImportSource;
+  final WalletProvider _walletProvider;
+  final WalletAddService _walletAddService = WalletAddService();
+  final PreferenceProvider _preferenceProvider;
+  late final IQrScanDataHandler _qrDataHandler;
+
+  WalletAddScannerViewModel(this._walletImportSource, this._walletProvider, this._preferenceProvider) {
+    const methodName = 'constructor';
+    FileLogger.log(className, methodName, 'WalletAddScannerViewModel created for ${_walletImportSource.name}');
+
+    switch (_walletImportSource) {
+      case WalletImportSource.coconutVault:
+        _qrDataHandler = CoconutWalletAddQrScanDataHandler();
+        break;
+      case WalletImportSource.keystone:
+      case WalletImportSource.jade:
+        _qrDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
+        break;
+      case WalletImportSource.seedSigner:
+        _qrDataHandler = ComposedScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
+        break;
+      case WalletImportSource.krux:
+        _qrDataHandler = DescriptorQrScanDataHandler();
+        break;
+      case WalletImportSource.passport:
+        // 패스포트는 지갑 정보(JSON)를 UR bytes 타입으로 인코딩하여 전달한다.
+        _qrDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.bytes]);
+        break;
+      case WalletImportSource.coldCard:
+        _qrDataHandler = BbQrScanDataHandler();
+        break;
+      case WalletImportSource.extendedPublicKey:
+      case WalletImportSource.descriptor:
+        _qrDataHandler = ComposedScanDataHandler2();
+        break;
+      case WalletImportSource.bitbox02:
+        _qrDataHandler = ComposedScanDataHandler2();
+        break;
+    }
+  }
+
+  IQrScanDataHandler get qrDataHandler => _qrDataHandler;
+
+  bool get isExtendedPublicKeyScanned =>
+      _walletImportSource == WalletImportSource.extendedPublicKey &&
+      (_qrDataHandler as ComposedScanDataHandler2).selectedHandler is ExtendedPublicKeyQrScanDataHandler;
+  int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
+
+  Future<ResultOfSyncFromVault> addWallet(
+    dynamic additionInfo, {
+    bool? isExtendedPublicKey,
+    String? masterFingerPrint,
+  }) async {
+    const methodName = 'addWallet';
+
+    FileLogger.log(
+      className,
+      methodName,
+      'addWallet called with ${_walletImportSource.name} additionInfo type: ${additionInfo.runtimeType}',
+    );
+
+    try {
+      if (additionInfo is WatchOnlyWallet) {
+        return _addCoconutVaultWallet(additionInfo);
+      } else if (additionInfo is UR) {
+        if (_walletImportSource == WalletImportSource.passport) {
+          return _addUrBytesWallet(_walletImportSource, additionInfo);
+        }
+        return _addBcUrWallet(_walletImportSource, additionInfo);
+      } else if (additionInfo is String) {
+        if (isExtendedPublicKey == true) {
+          return _addExtendedPublicKeyWallet(additionInfo, masterFingerPrint);
+        }
+        return _addDescriptorWallet(additionInfo);
+      } else if (additionInfo is Map<String, dynamic>) {
+        return _addBbQrWallet(_walletImportSource, additionInfo);
+      }
+      throw 'Unknown additionInfo type: ${additionInfo.runtimeType}';
+    } catch (e, stackTrace) {
+      FileLogger.error(className, methodName, 'addWallet failed: $e', stackTrace);
+      rethrow;
+    }
+  }
+
+  Future<ResultOfSyncFromVault> _addCoconutVaultWallet(WatchOnlyWallet watchOnlyWallet) async {
+    return await _walletProvider.syncFromCoconutVault(watchOnlyWallet);
+  }
+
+  Future<ResultOfSyncFromVault> _addBcUrWallet(WalletImportSource walletImportSource, UR ur) async {
+    final name = getNextThirdPartyWalletName(
+      walletImportSource,
+      _walletProvider.walletItemList.map((e) => e.name).toList(),
+    );
+    final wallet = _walletAddService.createWalletFromUrCryptoAccount(
+      walletImportSource: walletImportSource,
+      ur: ur,
+      name: name,
+    );
+    return await _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  Future<ResultOfSyncFromVault> _addUrBytesWallet(WalletImportSource walletImportSource, UR ur) async {
+    final name = getNextThirdPartyWalletName(
+      walletImportSource,
+      _walletProvider.walletItemList.map((e) => e.name).toList(),
+    );
+    final wallet = _walletAddService.createWalletFromUrBytes(
+      walletImportSource: walletImportSource,
+      ur: ur,
+      name: name,
+    );
+    return await _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  Future<ResultOfSyncFromVault> _addDescriptorWallet(String descriptor) async {
+    final name = getNextThirdPartyWalletName(
+      _walletImportSource,
+      _walletProvider.walletItemList.map((e) => e.name).toList(),
+    );
+    final wallet = _walletAddService.createWalletFromDescriptor(
+      descriptor: descriptor,
+      name: name,
+      walletImportSource: _walletImportSource,
+    );
+    return await _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  Future<ResultOfSyncFromVault> _addExtendedPublicKeyWallet(String xPub, String? mfp) async {
+    final name = getNextThirdPartyWalletName(
+      _walletImportSource,
+      _walletProvider.walletItemList.map((e) => e.name).toList(),
+    );
+
+    final wallet = _walletAddService.createExtendedPublicKeyWallet(xPub, name, mfp);
+
+    return await _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  Future<ResultOfSyncFromVault> _addBbQrWallet(WalletImportSource walletImportSource, Map<String, dynamic> json) async {
+    final name = getNextThirdPartyWalletName(
+      walletImportSource,
+      _walletProvider.walletItemList.map((e) => e.name).toList(),
+    );
+    final wallet = _walletAddService.createBbQrWallet(walletImportSource: walletImportSource, json: json, name: name);
+    return await _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  String getWalletName(int walletId) {
+    return _walletProvider.getWalletById(walletId).name;
+  }
+}

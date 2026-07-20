@@ -2,7 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/packages/bc-ur-dart/lib/utils.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +10,7 @@ import '../../../mock/wallet_mock.dart';
 import 'setup_util.dart';
 
 void main() {
-  MultisigWalletListItem multiWallet = WalletMock.createMultiSigWalletItem();
+  MultisigWalletItem multiWallet = WalletMock.createMultiSigWalletItem();
   final creator = RbfBuilderCreator(multiWallet);
   group('멀티시그지갑 - getBaselineTransaction', () {
     test('External 1 / change enough', () async {

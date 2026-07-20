@@ -1,21 +1,14 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 const defaultIconColor = Color.fromRGBO(218, 216, 228, 1);
 const defaultBackgroundColor = Color.fromRGBO(255, 255, 255, 0.1);
 
-const defaultBoxDecoration = BoxDecoration(
-  color: CoconutColors.gray800,
-  borderRadius: BorderRadius.all(Radius.circular(24)),
-);
-
-const defaultCardColor = Color.fromRGBO(255, 255, 255, 0.06);
-
+// FIXME: deprecated
 class ColorSet {
   final Color color;
   final Color backgroundColor;
@@ -79,8 +72,8 @@ class TaprootCardStyle {
     required this.iconGradientColors,
   });
 
-  static TaprootCardStyle? from(WalletListItemBase wallet) {
-    if (wallet is! TaprootWalletListItem) return null;
+  static TaprootCardStyle? from(WalletItemBase wallet) {
+    if (wallet is! TaprootWalletItem) return null;
     return TaprootCardStyle.fromKeyPath(wallet.canSpendViaKeyPath);
   }
 
@@ -159,13 +152,18 @@ class ColorUtil {
     return backgroundColorPalette[index % colorPalette.length];
   }
 
-  static List<Color> getGradientColors(List<MultisigSigner> list) {
+  static Color lightenColor(Color color, {double factor = 0.5}) {
+    return Color.lerp(color, Colors.white, factor)!;
+  }
+
+  static List<Color> getGradientColors(List<MultisigSigner> list, {bool lighten = false}) {
     if (list.isEmpty) {
       return [CoconutColors.gray300];
     }
 
     Color getColor(MultisigSigner item) {
-      return item.innerVaultId != null ? ColorUtil.getColorByIndex(item.colorIndex ?? 0) : CoconutColors.gray300;
+      final base = item.innerVaultId != null ? ColorUtil.getColorByIndex(item.colorIndex ?? 0) : CoconutColors.gray300;
+      return lighten ? lightenColor(base) : base;
     }
 
     // 2개인 경우

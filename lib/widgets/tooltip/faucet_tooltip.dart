@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -55,13 +56,16 @@ class _FaucetTooltipState extends State<FaucetTooltip> {
               clipper: RightTriangleBubbleClipper(arrowOffset: arrowOffset),
               child: Container(
                 padding: const EdgeInsets.only(top: 25, left: 18, right: 18, bottom: 10),
-                color: const Color.fromRGBO(179, 240, 255, 1), // CDS에 없는 색상
+                color: context.coconutColors.faucetPopoverBackground,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     MediaQuery(
                       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                      child: Text(widget.text, style: CoconutTypography.body3_12.setColor(CoconutColors.gray900)),
+                      child: Text(
+                        widget.text,
+                        style: CoconutTypography.body3_12.setColor(context.coconutColors.faucetPopoverText),
+                      ),
                     ),
                   ],
                 ),

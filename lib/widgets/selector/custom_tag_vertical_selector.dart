@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
@@ -103,7 +104,7 @@ class CustomTagSelectorItem extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 11, horizontal: isSelected ? 10 : 0),
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
-        color: isSelected ? CoconutColors.gray800 : Colors.transparent,
+        color: isSelected ? context.coconutColors.surfaceSelected : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -130,7 +131,7 @@ class CustomTagSelectorItem extends StatelessWidget {
               children: [
                 Text(
                   '#$tag',
-                  style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                  style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -138,7 +139,7 @@ class CustomTagSelectorItem extends StatelessWidget {
                   visible: usedCount > 0,
                   child: Text(
                     t.apply_item(count: usedCount),
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                   ),
                 ),
               ],

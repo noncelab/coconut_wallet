@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/packages/bc-ur-dart/lib/cbor_lite.dart';
 import 'package:ur/ur.dart';
 import 'package:coconut_wallet/packages/bc-ur-dart/lib/ur_encoder.dart';
@@ -18,7 +18,7 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
   }
 
   void _init(WalletProvider walletProvider, int id) {
-    final walletListItem = walletProvider.getWalletById(id) as MultisigWalletListItem;
+    final walletListItem = walletProvider.getWalletById(id) as MultisigWalletItem;
 
     String descriptor = walletListItem.descriptor;
 
@@ -145,7 +145,7 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
     return buffer.toString();
   }
 
-  String _generateKeystoneTextFormat(MultisigWalletListItem wallet, List<_ParsedSignerInfo> signers) {
+  String _generateKeystoneTextFormat(MultisigWalletItem wallet, List<_ParsedSignerInfo> signers) {
     StringBuffer buffer = StringBuffer();
     buffer.writeln("# Keystone Multisig setup file (created by Coconut Vault)");
     buffer.writeln("#\n");
@@ -163,7 +163,7 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
     return buffer.toString();
   }
 
-  String _generateColdcardTextFormat(MultisigWalletListItem wallet, List<_ParsedSignerInfo> signers) {
+  String _generateColdcardTextFormat(MultisigWalletItem wallet, List<_ParsedSignerInfo> signers) {
     StringBuffer buffer = StringBuffer();
     buffer.writeln("Name: coconut wallet");
     buffer.writeln("Policy: ${wallet.requiredSignatureCount} of ${signers.length}");
@@ -179,7 +179,7 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
     return buffer.toString().trim();
   }
 
-  String _generateBlueWalletFormat(MultisigWalletListItem wallet, List<_ParsedSignerInfo> signers) {
+  String _generateBlueWalletFormat(MultisigWalletItem wallet, List<_ParsedSignerInfo> signers) {
     StringBuffer buffer = StringBuffer();
     buffer.writeln("# Blue Wallet Vault Multisig setup file (created by Coconut Vault)\n#");
     buffer.writeln("Name: ${wallet.name}");
@@ -195,7 +195,7 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
     return buffer.toString();
   }
 
-  String _generateSpecterFormat(MultisigWalletListItem wallet, String descriptor) {
+  String _generateSpecterFormat(MultisigWalletItem wallet, String descriptor) {
     final Map<String, dynamic> data = {"label": wallet.name, "blockheight": 0, "descriptor": descriptor};
     const encoder = JsonEncoder.withIndent('  ');
     return encoder.convert(data);

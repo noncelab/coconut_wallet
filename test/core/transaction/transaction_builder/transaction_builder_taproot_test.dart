@@ -4,7 +4,7 @@ import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/core/transaction/utxo_selector.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../mock/wallet_mock.dart';
@@ -12,7 +12,7 @@ import '../../../mock/wallet_mock.dart';
 void main() {
   NetworkType.setNetworkType(NetworkType.regtest);
 
-  late TaprootWalletListItem taprootWallet;
+  late TaprootWalletItem taprootWallet;
 
   // BIP-86 taproot testnet/regtest paths
   const changeDerivationPath = "m/86'/1'/0'/1/0";

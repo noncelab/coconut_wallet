@@ -79,9 +79,11 @@ The wallet stays online to keep your wallet data up to date and broadcasts signe
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (3.29+)
 - Dart 3.7+
 - Android Studio or Xcode
+- [Go](https://go.dev/dl/) (1.26+) — required to build the BitBox02 bridge
 
 ```bash
 flutter --version
+go version
 ```
 
 ### Clone & Install Dependencies
@@ -92,12 +94,48 @@ cd coconut_wallet
 flutter pub get
 ```
 
+### Native Bridge (gomobile)
+
+This project uses [gomobile](https://pkg.go.dev/golang.org/x/mobile/cmd/gomobile) to generate native bindings for the BitBox02 hardware wallet bridge. See [docs/bitbox02-dev-guide.md](./docs/bitbox02-dev-guide.md) for the full setup guide.
+
+Quick steps:
+
+```bash
+# 0. Clone the required fork as a sibling directory (do NOT use upstream BitBoxSwiss)
+git clone https://github.com/4xvgal/bitbox02-api-go.git ../bitbox02-api-go
+cd ../bitbox02-api-go && git checkout fix/nil-guard-psbt && cd ../coconut_wallet
+
+# 1. Install Go (if not already installed)
+brew install go
+
+# 2. Install gomobile and add to PATH
+go install golang.org/x/mobile/cmd/gomobile@latest
+echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.zshrc && source ~/.zshrc
+
+# 3. Initialize gomobile (re-run if you upgrade Go, Xcode, or Android NDK)
+gomobile init
+
+# 4. Sync Go dependencies
+cd go && go mod tidy && cd ..
+
+# 5. Build native bindings
+make gomobile-bind   # both iOS and Android
+# make gomobile-ios
+# make gomobile-android
+```
+
 ### Code Generation
 
 ```bash
 dart run build_runner build --delete-conflicting-outputs
 dart run realm generate
 flutter pub run slang
+```
+
+Or run all at once:
+
+```bash
+make ready
 ```
 
 > If Realm generation fails, run `dart run build_runner clean` first.
@@ -120,11 +158,25 @@ keytool -genkey -v -keystore android/app/local.jks \
 Create `key_regtest.properties` and `key_mainnet.properties` under the `android/` directory:
 
 ```properties
-storePassword=android
-keyPassword=android
 keyAlias=local
 storeFile=../app/local.jks
 ```
+
+Release signing passwords are not stored in these files. For local Android release builds, run:
+
+```bash
+./android/scripts/build_android_release.sh
+```
+
+The script prompts once for the keystore/key password and uses it for both `storePassword` and `keyPassword` during the build.
+
+For local Android release runs on a connected device, run:
+
+```bash
+./android/scripts/run_android_release.sh
+```
+
+This uses the Android debug keystore for the local release run only.
 
 ### Run
 
@@ -132,8 +184,8 @@ storeFile=../app/local.jks
 # Debug
 flutter run --flavor regtest
 
-# Release
-flutter run --release --flavor regtest
+# Release on a connected Android device
+./android/scripts/run_android_release.sh
 ```
 
 ### Flavors

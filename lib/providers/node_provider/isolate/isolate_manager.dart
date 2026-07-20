@@ -6,7 +6,7 @@ import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_initializer.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
@@ -494,15 +494,15 @@ class IsolateManager {
     }
   }
 
-  Future<Result<bool>> subscribeWallets(List<WalletListItemBase> walletItems) async {
+  Future<Result<bool>> subscribeWallets(List<WalletItemBase> walletItems) async {
     return _send(IsolateControllerCommand.subscribeWallets, [walletItems]);
   }
 
-  Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
+  Future<Result<bool>> subscribeWallet(WalletItemBase walletItem) async {
     return _send(IsolateControllerCommand.subscribeWallet, [walletItem]);
   }
 
-  Future<Result<bool>> unsubscribeWallet(WalletListItemBase walletItem) async {
+  Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
     return _send(IsolateControllerCommand.unsubscribeWallet, [walletItem]);
   }
 
@@ -536,7 +536,7 @@ class IsolateManager {
   }
 
   Future<Result<TransactionRecord>> getTransactionRecord(
-    WalletListItemBase walletItem,
+    WalletItemBase walletItem,
     String txHash, {
     Duration? timeout,
   }) {

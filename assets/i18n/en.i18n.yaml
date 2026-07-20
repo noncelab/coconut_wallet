@@ -41,6 +41,9 @@ confirm: "Confirm"
 cancel: "Cancel"
 security: "Security"
 general: "General"
+theme: "Theme"
+theme_dark: "Dark theme"
+theme_light: "Light theme"
 unit: "Unit"
 utxo: "UTXO"
 tag: "Tag"
@@ -274,6 +277,8 @@ wallet_add_scanner_screen:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
+  bitbox02: "BitBox02"
+  passport: "Passport"
   self: "Enter Wallet Info"
   self_description: "Add a watch-only wallet using information from another app."
   select: "Select"
@@ -329,6 +334,17 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "Select"
+  guide_passport:
+    step0: "On Passport, open the account you want to connect"
+    step1: "1. "
+    step1_em: "Account Details"
+    step2: "2. "
+    step2_em: "Connect Wallet from the … menu"
+    step3: "3. "
+    step3_em: "Sparrow"
+    step4: "4. "
+    step4_em: "Connect as Single Sig"
+    select: "Select"
   paste:
     paste_button: "Import from paste"
     app_bar_title_text: "Add Manually"
@@ -383,6 +399,36 @@ wallet_list:
     hide_fiat_price: "Hide Fiat Balance"
     hide_fiat_price_description: "This screen will not display the fiat balance."
     visible: "Visible"
+
+wallet_connect_screen:
+  guide_bitbox02:
+    btn:
+      connect_via_usb: "Connect via USB"
+      connect_via_ble: "Connect via Bluetooth"
+      add_wallet: "Add Wallet"
+      retry: "Retry"
+      start_signing: "Start Signing"
+    init:
+      step1: "Connect your BitBox02 Nova via USB."
+      step2: "Unlock your device."
+      step3: "When you see 'See the BitBoxApp' on your device, tap '$btn' below."
+      ble_step1: "Turn on Bluetooth and keep BitBox02 Nova nearby."
+      ble_step2: "If 'Tap this side' appears on the device screen, tap both sides of the device."
+      ble_step3: "When the wallet appears on the device screen, tap the '$btn' button below."
+    connecting:
+      title: "Connecting Device"
+      step1: "Unlock your device."
+      step2: "When the pairing code appears on your device, tap the check mark (✓) to confirm."
+    paired:
+      title: "BitBox02 is paired and ready."
+      master_fingerprint: "Master Fingerprint"
+      derivation_path: "Derivation Path"
+      xpub: "Extended Public Key"
+    error:
+      title: "Connection Failed"
+      description: "BitBox02 Nova was not found. Reconnect the device and try again."
+      ble_description: "BitBox02 Nova not found. Please turn on Bluetooth and bring the device closer."
+
 
 # lib/screens/review
 negative_feedback_screen:
@@ -485,6 +531,41 @@ send_confirm_screen:
   output_detail_title: "Output Details"
   flow_input_title: "Input #$index"
   flow_output_title: "Output #$index"
+bitbox02_sign_screen:
+  tx_card:
+    title: "Transaction"
+    send: "Send"
+    to: "To"
+    fee: "Fee"
+    total_cost: "Total Cost"
+  device_status:
+    title: "Device Status"
+  idle:
+    waiting: "Waiting to sign"
+    not_connected: "Not connected"
+    tap_sign_to_connect: "Tap Sign to connect"
+    locked: "Locked"
+    device_found_pin: "Device found — PIN required"
+    device_found: "Device found: $fingerprint"
+    ready: "Ready"
+  status:
+    connecting_device: "Connecting to BitBox02 via USB..."
+    connecting_device_ble: "Searching for BitBox02 via Bluetooth..."
+    check_pairing: "Check the Pairing code on your device"
+    preparing_data: "Preparing transaction data..."
+    confirm_on_device: "Confirm amount, address, and fee on your device"
+  done:
+    title: "Signed"
+    description: "Transaction has been signed by BitBox02."
+    ready_to_broadcast: "Ready to broadcast."
+  error_title: "Signing Failed"
+  device_mismatch: "The connected device does not match this wallet. Please connect the correct device."
+  btn:
+    sign: "Sign with BitBox02"
+  state_label:
+    idle: "Waiting to Sign"
+    signing: "Signing"
+
 signed_psbt_scanner_screen:
   title: "Scan Signed Tx"
   bbqr_mode_switching: "Switching to BBQR mode.\nPlease wait a moment."
@@ -724,6 +805,14 @@ wallet_info_screen:
       select: "Select"
   error:
     delete: "Failed to delete wallet"
+  bitbox02_device:
+    title: "Device Info"
+    connection_status: "Connection Status"
+    connected: "Connected"
+    disconnected: "Not Connected"
+    disconnect_button: "Disconnect"
+    disconnect_confirm_title: "Disconnect"
+    disconnect_confirm_description: "Disconnect the current device.\nYou will need to reconnect for the next signing."
 wallet_signer_section:
   title: "Signing Method"
   segmented_control:
@@ -1042,11 +1131,10 @@ alert:
     not_parsed: "Transaction Parsing Failed: $error"
     not_created: "Transaction Creation Failed $error"
   error_send:
-    broadcasting_failed: "[Send Failed]\n$error"
     insufficient_balance: "Insufficient balance"
     minimum_amount: "You can send at least $amount"
-    insufficient_fee: "[Send Failed]\nPlease try again by\nincreasing the fee rate."
-    non_final_taproot_child: "[Send Failed]\nPlease check the child wallet's inheritance date and time."
+    insufficient_fee: "Please try again by\nincreasing the fee rate."
+    non_final_taproot_child: "Please check the child wallet's inheritance date and time."
   signed_psbt:
     wrong_send_info: "Send information is different.\nPlease try again from the beginning."
     need_more_sign: "Need $count more signatures"
@@ -1112,6 +1200,8 @@ third_party:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
+  passport: "Passport"
+  bitbox02: "Bitbox"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"
@@ -1125,6 +1215,7 @@ fiat_bottom_sheet:
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
   jpy_price: "Bitflyer Price"
+  eur_price: "Binance Price"
 
 language_bottom_sheet:
   title: "Language Settings"
@@ -1132,6 +1223,7 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+  german: "Deutsch"
 
 estimated_fee_bottom_sheet:
   title: "Estimated Fee"

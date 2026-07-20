@@ -13,22 +13,40 @@ ios-mainnet:
 ios-mainnet-appstore:
     fvm flutter build ipa --flavor mainnet --release --dart-define=USE_FIREBASE=true --export-method app-store
 
-aos-mainnet:
-	fvm flutter build appbundle --flavor mainnet --release --dart-define=USE_FIREBASE=true
-
 ios-regtest:
 	fvm flutter build ios --flavor regtest --release
 
-aos-regtest:
-	fvm flutter build appbundle --flavor regtest --release
+aos-release:
+	./android/scripts/build_android_release.sh
+
+aos-run-release:
+	./android/scripts/run_android_release.sh
 
 # fastlane
 pre-deploy: 
 	fastlane pre_deploy
+
+# gomobile bind targets
+gomobile-android:
+	cd go && gomobile bind -target=android -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
+
+gomobile-ios:
+	cd go && gomobile bind -target=ios -o ../ios/Runner/bitboxbridge.xcframework .
+
+gomobile-bind: gomobile-android gomobile-ios
 
 fastlane-mainnet:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_mainnet && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_prep:true
 
 fastlane-regtest:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
+
+# Production draft/App Store preparation (manual review submission remains required)
+fastlane-production-mainnet:
+	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production skip_prep:true
+	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true
+
+fastlane-production-regtest:
+	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production
+	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true
 	

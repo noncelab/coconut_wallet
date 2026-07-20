@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -18,7 +18,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
+import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -69,7 +69,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           child: Stack(
             children: [
               Scaffold(
-                backgroundColor: CoconutColors.black,
+                backgroundColor: context.coconutColors.background,
                 appBar: _buildAppBar(context),
                 body: NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
@@ -136,8 +136,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
+      // FIXME: CDN 백버튼 및 닫기 버튼 지정할 수 있어야 함.
+      // 예: iconColor: context.coconutColors.iconDefault,
       entireWidgetKey: _appBarKey,
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.background,
       title: '',
       context: context,
       actionButtonList: [
@@ -145,15 +147,30 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           IconButton(
             key: _faucetIconKey,
             onPressed: () => _onFaucetIconPressed(),
-            icon: SvgPicture.asset('assets/svg/faucet.svg', width: 18, height: 18),
+            icon: SvgPicture.asset(
+              'assets/svg/faucet.svg',
+              width: 18,
+              height: 18,
+              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            ),
           ),
         IconButton(
           onPressed: () => _navigateToUtxoList(context),
-          icon: SvgPicture.asset('assets/svg/coins.svg', width: 18, height: 18),
+          icon: SvgPicture.asset(
+            'assets/svg/coins.svg',
+            width: 18,
+            height: 18,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+          ),
         ),
         IconButton(
           onPressed: () => _navigateToWalletInfo(context),
-          icon: SvgPicture.asset('assets/svg/wallet-outlined.svg', width: 18, height: 18),
+          icon: SvgPicture.asset(
+            'assets/svg/wallet-outlined.svg',
+            width: 18,
+            height: 18,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+          ),
         ),
       ],
     );
@@ -234,7 +251,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               t.tx_list,
-                              style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
                             ),
                           ),
                         ),
@@ -242,7 +259,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         if (txCount > 0)
                           Text(
                             t.total_item_count(count: txCount),
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                            style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                           ),
                       ],
                     ),
@@ -252,9 +269,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(t.status_updating, style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.primary)),
+                        Text(
+                          t.status_updating,
+                          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primary),
+                        ),
                         CoconutLayout.spacing_100w,
-                        LottieBuilder.asset('assets/files/status_loading.json', width: 16, height: 16),
+                        ColorFiltered(
+                          colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcATop),
+                          child: LottieBuilder.asset('assets/files/status_loading.json', width: 16, height: 16),
+                        ),
                       ],
                     ),
                 ],
@@ -440,16 +463,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _onTapMerge({required bool canMerge, required int availableUtxoCount}) {
-    if (!canMerge) {
-      _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
-      return;
-    }
-    if (availableUtxoCount < 2) {
-      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
-      return;
-    }
-    if (_showNoMfpDialogIfNeeded()) return;
-    if (!_checkStateAndShowToast()) return;
+    // if (!canMerge) {
+    //   _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
+    //   return;
+    // }
+    // if (availableUtxoCount < 2) {
+    //   _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
+    //   return;
+    // }
+    // if (_showNoMfpDialogIfNeeded()) return;
+    // if (!_checkStateAndShowToast()) return;
     Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
   }
 
@@ -612,7 +635,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       buttonLayout: BottomActionButtonLayout.vertical,
       iconSize: 24,
       spacing: 4,
-      textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+      textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
     );
   }
 
@@ -821,7 +844,10 @@ class _TransactionListState extends State<TransactionList> {
     return SliverFillRemaining(
       child: Padding(
         padding: const EdgeInsets.only(top: 80),
-        child: Align(alignment: Alignment.topCenter, child: Text(t.tx_not_found, style: CoconutTypography.body1_16)),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Text(t.tx_not_found, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+        ),
       ),
     );
   }

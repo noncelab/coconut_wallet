@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -12,7 +13,6 @@ import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -65,12 +65,17 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
       if (result.isFailure) {
         vibrateMedium();
-        String message = t.alert.error_send.broadcasting_failed(error: result.error.message);
+        String message = result.error.message;
         if (_viewModel.isTaprootScriptPathWallet && result.error.message.contains('non-final')) {
           message = t.alert.error_send.non_final_taproot_child;
         }
         if (!mounted) return;
-        showAlertDialog(context: context, title: t.broadcasting_screen.error_popup_title, content: message);
+        showInfoDialog(
+          context,
+          context.read<PreferenceProvider>().language,
+          t.broadcasting_screen.error_popup_title,
+          message,
+        );
         return;
       }
 
@@ -93,12 +98,17 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     } catch (e) {
       Logger.error(">>>>> broadcast error: $e");
       _setOverlayLoading(false);
-      String message = t.alert.error_send.broadcasting_failed(error: e.toString());
+      String message = e.toString();
       if (e.toString().contains('min relay fee not met')) {
         message = t.alert.error_send.insufficient_fee;
       }
       if (!mounted) return;
-      showAlertDialog(context: context, content: message);
+      showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.broadcasting_screen.error_popup_title,
+        message,
+      );
       vibrateMedium();
     }
   }
@@ -124,7 +134,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           builder:
               (context, viewModel, child) => Scaffold(
                 floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-                backgroundColor: CoconutColors.black,
+                backgroundColor: context.coconutColors.background,
                 appBar: CoconutAppBar.build(title: t.broadcasting_screen.title, context: context),
                 body: SafeArea(
                   child: Stack(
@@ -167,6 +177,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                           },
                           leftText: t.transaction_draft.save,
                           rightText: t.broadcasting_screen.btn_submit,
+                          rightButtonBackgroundColor: context.coconutColors.primary,
                         ),
                       } else ...{
                         FixedBottomButton(
@@ -175,6 +186,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                             _onBroadcastButtonClicked(viewModel);
                           },
                           text: t.broadcasting_screen.btn_submit,
+                          backgroundColor: context.coconutColors.primary,
                         ),
                       },
                     ],
@@ -306,10 +318,13 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         }
       } catch (e) {
         vibrateMedium();
-        showAlertDialog(
-          context: context,
-          content: t.alert.error_tx.not_parsed(error: e),
-          onClosed: () => Navigator.pop(context),
+        if (!mounted) return;
+        showInfoDialog(
+          context,
+          context.read<PreferenceProvider>().language,
+          '',
+          t.alert.error_tx.not_parsed(error: e),
+          onTapButton: () => Navigator.pop(context),
         );
       }
 
@@ -339,7 +354,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             CoconutLayout.spacing_1000h,
             Text(
               t.broadcasting_screen.description,
-              style: CoconutTypography.heading4_18_Bold,
+              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
               textAlign: TextAlign.center,
             ),
             CoconutLayout.spacing_400h,
@@ -350,7 +365,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               totalCostAmountText: totalCostText,
               onTap: _toggleUnit,
               topMargin: 0,
-              fiatTextStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
+              fiatTextStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
             ),
             CoconutLayout.spacing_300h,
             _buildTransactionFlowCard(viewModel),
@@ -361,7 +376,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               Text(
                 t.broadcasting_screen.self_sending,
                 textAlign: TextAlign.center,
-                style: CoconutTypography.caption_10_Number,
+                style: CoconutTypography.caption_10_Number.setColor(context.coconutColors.secondaryText),
               ),
             ],
             CoconutLayout.spacing_500h,

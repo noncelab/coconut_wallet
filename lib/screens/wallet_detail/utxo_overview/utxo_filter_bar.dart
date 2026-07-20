@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
@@ -30,18 +31,18 @@ class _SelectionSummaryBar extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: CoconutColors.white, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: context.coconutColors.chipSelectedBackground, shape: BoxShape.circle),
                 child: SvgPicture.asset(
                   'assets/svg/check.svg',
                   width: 8,
                   height: 8,
-                  colorFilter: const ColorFilter.mode(CoconutColors.black, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(context.coconutColors.chipSelectedText, BlendMode.srcIn),
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 '$selectedCount coins • ${formatUtxoAmountForDisplay(selectedTotalSats, currentUnit, dustThreshold: dustThreshold)}',
-                style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white),
+                style: CoconutTypography.body1_16_NumberBold.setColor(context.coconutColors.primaryText),
                 textScaler: const TextScaler.linear(1.0),
               ),
             ],
@@ -95,7 +96,7 @@ class UtxoAmountStickyFilterBarDelegate extends SliverPersistentHeaderDelegate {
     return SizedBox(
       height: height,
       child: Material(
-        color: CoconutColors.black,
+        color: context.coconutColors.background,
         elevation: overlapsContent ? 4 : 0,
         child: _StickyFilterBar(
           selectedCount: selectedCount,
@@ -259,9 +260,10 @@ class _ViewModeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isSelected ? CoconutColors.gray150 : Colors.transparent;
-    final iconColor = isSelected ? CoconutColors.black : CoconutColors.gray700;
-    final borderColor = isSelected ? CoconutColors.gray150 : CoconutColors.gray700;
+    final colors = context.coconutColors;
+    final bgColor = isSelected ? colors.chipSelectedBackground : Colors.transparent;
+    final iconColor = isSelected ? colors.chipSelectedText : colors.chipOutlinedUnselectedText;
+    final borderColor = isSelected ? colors.chipSelectedBackground : colors.chipOutlinedUnselectedBackground;
     final borderRadius = BorderRadius.only(
       topLeft: isRightChunk ? Radius.zero : const Radius.circular(8),
       topRight: isLeftChunk ? Radius.zero : const Radius.circular(8),
@@ -311,10 +313,11 @@ class _FilterChipState extends State<_FilterChip> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.isSelected ? CoconutColors.gray150 : Colors.transparent;
-    final textColor = widget.isSelected ? CoconutColors.black : CoconutColors.gray600;
-    final iconColor = widget.isSelected ? CoconutColors.black : CoconutColors.gray600;
-    final border = widget.isSelected ? null : Border.all(color: CoconutColors.gray700, width: 1);
+    final colors = context.coconutColors;
+    final bgColor = widget.isSelected ? colors.chipSelectedBackground : Colors.transparent;
+    final textColor = widget.isSelected ? colors.chipSelectedText : colors.chipOutlinedUnselectedText;
+    final iconColor = widget.isSelected ? colors.chipSelectedText : colors.chipOutlinedUnselectedText;
+    final border = widget.isSelected ? null : Border.all(color: colors.chipOutlinedUnselectedBackground, width: 1);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -388,7 +391,7 @@ class UtxoTagSelectionBarDelegate extends SliverPersistentHeaderDelegate {
     return SizedBox(
       height: height,
       child: Material(
-        color: CoconutColors.black,
+        color: context.coconutColors.background,
         elevation: overlapsContent ? 4 : 0,
         child:
             isSelectionMode

@@ -1,4 +1,3 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
@@ -39,10 +38,9 @@ class SingleFieldFixedBottomSheetBody extends StatelessWidget {
         children: [
           Padding(padding: EdgeInsets.symmetric(horizontal: fieldHorizontalPadding), child: textField),
           FixedBottomButton(
-            backgroundColor: CoconutColors.white,
             isVisibleAboveKeyboard: false,
             isActive: isCompleteEnabled,
-            showGradient: true,
+            showSurroundings: false,
             bottomPadding: FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
             onButtonClicked: () {
               if (!isCompleteEnabled) return;

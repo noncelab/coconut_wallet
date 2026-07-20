@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -9,7 +10,7 @@ import 'package:flutter/material.dart';
 class SendConfirmViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
-  late WalletListItemBase _walletListItemBase;
+  late WalletItemBase _walletListItemBase;
   Psbt? _unsignedPsbt;
   int? _totalUsedAmount;
   late final double _totalSendAmount;
@@ -21,6 +22,7 @@ class SendConfirmViewModel extends ChangeNotifier {
 
   int? get estimatedFee => _unsignedPsbt?.fee;
   String get walletName => _walletListItemBase.name;
+  String? get txWaitingForSign => _sendInfoProvider.txWaitingForSign;
   int? get totalUsedAmount => _totalUsedAmount;
   Transaction? get transaction => _sendInfoProvider.transaction;
   List<int> get externalOutputAmounts =>
@@ -33,6 +35,13 @@ class SendConfirmViewModel extends ChangeNotifier {
       _unsignedPsbt?.inputs.map((input) => input.witnessUtxo?.amount).toList() ??
       List<int?>.filled(transaction?.inputs.length ?? 0, null);
   double? get totalSendAmount => _totalSendAmount; // BTC
+  WalletImportSource get walletImportSource => _walletListItemBase.walletImportSource;
+
+  String get walletFingerprint {
+    final wallet = _walletListItemBase.walletBase;
+    if (wallet is SingleSignatureWallet) return wallet.keyStore.masterFingerprint;
+    return '';
+  }
 
   void _setTotalSendAmount() {
     final externalOutputAmountSum = externalOutputAmounts.fold<int>(0, (sum, amount) => sum + amount);

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 
@@ -18,12 +19,12 @@ Future<void> showInfoDialog(
       return CoconutPopup(
         languageCode: languageCode,
         title: title,
-        backgroundColor: CoconutColors.black.withOpacity(0.7),
+        backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
         description: description,
         descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
         insetPadding: const EdgeInsets.symmetric(horizontal: 50),
         rightButtonText: buttonText ?? t.OK,
-        rightButtonColor: CoconutColors.white,
+        rightButtonColor: context.coconutColors.primaryText,
         onTapRight:
             onTapButton ??
             () {
@@ -52,14 +53,14 @@ Future<void> showConfirmDialog(
       return CoconutPopup(
         languageCode: languageCode,
         title: title,
-        backgroundColor: CoconutColors.black.withOpacity(0.7),
+        backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
         description: description,
         descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
         insetPadding: const EdgeInsets.symmetric(horizontal: 50),
         leftButtonText: leftButtonText ?? t.cancel,
-        leftButtonColor: CoconutColors.white,
+        leftButtonColor: context.coconutColors.primaryText,
         rightButtonText: rightButtonText ?? t.OK,
-        rightButtonColor: CoconutColors.white,
+        rightButtonColor: context.coconutColors.primaryText,
         onTapLeft:
             onTapLeft ??
             () {

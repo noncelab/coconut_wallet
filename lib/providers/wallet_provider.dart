@@ -6,15 +6,15 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/taproot_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_add/air-gapped/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -32,8 +32,8 @@ class WalletProvider extends ChangeNotifier {
   WalletLoadState _walletLoadState = WalletLoadState.never;
   WalletLoadState get walletLoadState => _walletLoadState;
 
-  List<WalletListItemBase> _walletItemList = [];
-  List<WalletListItemBase> get walletItemList => walletItemListNotifier.value;
+  List<WalletItemBase> _walletItemList = [];
+  List<WalletItemBase> get walletItemList => walletItemListNotifier.value;
 
   int gapLimit = 20;
 
@@ -47,10 +47,10 @@ class WalletProvider extends ChangeNotifier {
   late final Future<void> Function(int) _saveWalletCount;
 
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
-  late final ValueNotifier<List<WalletListItemBase>> walletItemListNotifier;
+  late final ValueNotifier<List<WalletItemBase>> walletItemListNotifier;
   late final ValueNotifier<BlockTimestamp?> currentBlockHeightNotifier;
 
-  void _setWalletItemList(List<WalletListItemBase> value) {
+  void _setWalletItemList(List<WalletItemBase> value) {
     _walletItemList = value;
     walletItemListNotifier.value = value;
   }
@@ -101,14 +101,14 @@ class WalletProvider extends ChangeNotifier {
     return {for (var wallet in _walletItemList) wallet.id: getWalletBalance(wallet.id)};
   }
 
-  WalletListItemBase getWalletById(int id) {
+  WalletItemBase getWalletById(int id) {
     if (_walletItemList.isEmpty) {
       throw Exception('WalletItem is Empty');
     }
     return _walletItemList.firstWhere((element) => element.id == id);
   }
 
-  Future<List<WalletListItemBase>> _fetchWalletListFromDB() async {
+  Future<List<WalletItemBase>> _fetchWalletListFromDB() async {
     return await _walletRepository.getWalletItemList();
   }
 
@@ -122,9 +122,9 @@ class WalletProvider extends ChangeNotifier {
     for (var index = 0; index < _walletItemList.length; index++) {
       final item = _walletItemList[index];
       final matches = switch (walletType) {
-        WalletType.multiSignature => item is MultisigWalletListItem,
-        WalletType.taproot => item is TaprootWalletListItem,
-        WalletType.singleSignature => item is SinglesigWalletListItem,
+        WalletType.multiSignature => item is MultisigWalletItem,
+        WalletType.taproot => item is TaprootWalletItem,
+        WalletType.singleSignature => item is SinglesigWalletItem,
       };
       if (matches && item.walletBase.getAddress(0) == newWalletAddress) {
         return index;
@@ -293,10 +293,10 @@ class WalletProvider extends ChangeNotifier {
     );
   }
 
-  List<String> _getMfps(WalletListItemBase wallet) {
-    if (wallet is SinglesigWalletListItem) {
+  List<String> _getMfps(WalletItemBase wallet) {
+    if (wallet is SinglesigWalletItem) {
       return [(wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint];
-    } else if (wallet is MultisigWalletListItem) {
+    } else if (wallet is MultisigWalletItem) {
       return (wallet.walletBase as MultisignatureWallet).keyStoreList.map((k) => k.masterFingerprint).toList();
     }
     return [];
@@ -343,8 +343,8 @@ class WalletProvider extends ChangeNotifier {
 
   // -----------------------------------------------------------------------------
 
-  Future<WalletListItemBase> _addNewWallet(WatchOnlyWallet wallet) async {
-    final WalletListItemBase newItem = switch (wallet.walletType) {
+  Future<WalletItemBase> _addNewWallet(WatchOnlyWallet wallet) async {
+    final WalletItemBase newItem = switch (wallet.walletType) {
       WalletType.multiSignature => await _walletRepository.addMultisigWallet(wallet),
       WalletType.taproot => await _walletRepository.addTaprootWallet(wallet),
       WalletType.singleSignature => await _walletRepository.addSinglesigWallet(wallet),
@@ -353,7 +353,7 @@ class WalletProvider extends ChangeNotifier {
     // 지갑 추가 후 receive, change 주소 각각 1개씩 생성
     await _addressRepository.ensureAddressesInit(walletItemBase: newItem);
 
-    List<WalletListItemBase> updatedList = List.from(_walletItemList);
+    List<WalletItemBase> updatedList = List.from(_walletItemList);
     updatedList.add(newItem); // 새로 추가된 지갑을 후순으로 변경 -> 대표 지갑 변경되는걸 막기 위함
     _setWalletItemList(updatedList);
 
@@ -362,7 +362,7 @@ class WalletProvider extends ChangeNotifier {
   }
 
   /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
-  bool _hasChangedOfUI(WalletListItemBase existingWallet, WatchOnlyWallet watchOnlyWallet) {
+  bool _hasChangedOfUI(WalletItemBase existingWallet, WatchOnlyWallet watchOnlyWallet) {
     bool hasChanged = false;
 
     if (existingWallet.name != watchOnlyWallet.name ||
@@ -371,11 +371,11 @@ class WalletProvider extends ChangeNotifier {
       hasChanged = true;
     }
 
-    if (existingWallet is SinglesigWalletListItem || existingWallet is TaprootWalletListItem) {
+    if (existingWallet is SinglesigWalletItem || existingWallet is TaprootWalletItem) {
       return hasChanged;
     }
 
-    var multisigWallet = existingWallet as MultisigWalletListItem;
+    var multisigWallet = existingWallet as MultisigWalletItem;
     for (int i = 0; i < multisigWallet.signers.length; i++) {
       if (multisigWallet.signers[i].name != watchOnlyWallet.signers![i].name ||
           multisigWallet.signers[i].colorIndex != watchOnlyWallet.signers![i].colorIndex ||
@@ -416,7 +416,7 @@ class WalletProvider extends ChangeNotifier {
   /// [싱글시그니처] 외부지갑 이름변경
   Future<void> updateWalletName(int id, String name) async {
     final index = _walletItemList.indexWhere((element) => element.id == id);
-    if (walletItemList[index] is! SinglesigWalletListItem) {
+    if (walletItemList[index] is! SinglesigWalletItem) {
       throw Exception('해당 지갑은 싱글시그가 아닙니다. 멀티시그의 이름은 변경할 수 없습니다.');
     }
 
@@ -439,7 +439,7 @@ class WalletProvider extends ChangeNotifier {
   Future<void> updateWalletPalette(int id, int iconIndex, int colorIndex) async {
     final wallet = getWalletById(id);
 
-    if (wallet is! SinglesigWalletListItem) {
+    if (wallet is! SinglesigWalletItem) {
       throw Exception('해당 지갑은 싱글시그가 아닙니다. 멀티시그의 색상/아이콘은 변경할 수 없습니다.');
     }
 
@@ -470,7 +470,7 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<List<WalletAddress>> getWalletAddressList(
-    WalletListItemBase wallet,
+    WalletItemBase wallet,
     int cursor,
     int count,
     bool isChange,
@@ -479,11 +479,11 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.getWalletAddressList(wallet, cursor, count, isChange, showOnlyUnusedAddresses);
   }
 
-  List<WalletAddress> searchWalletAddressList(WalletListItemBase wallet, String keyword) {
+  List<WalletAddress> searchWalletAddressList(WalletItemBase wallet, String keyword) {
     return _addressRepository.searchWalletAddressList(wallet, keyword);
   }
 
-  (int, int) getGeneratedIndexes(WalletListItemBase wallet) {
+  (int, int) getGeneratedIndexes(WalletItemBase wallet) {
     return _addressRepository.getGeneratedAddressIndexes(wallet);
   }
 
@@ -600,7 +600,7 @@ class WalletProvider extends ChangeNotifier {
 
   /// 백그라운드에서 미리 주소를 저장합니다.
   Future<void> addAddressesWithGapLimit({
-    required WalletListItemBase walletItemBase,
+    required WalletItemBase walletItemBase,
     required List<WalletAddress> newAddresses,
     required bool isChange,
   }) async {

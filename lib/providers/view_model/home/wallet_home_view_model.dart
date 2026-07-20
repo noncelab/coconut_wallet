@@ -8,7 +8,7 @@ import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -64,7 +64,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   int? _fakeBalanceTotalAmount;
   bool _isFirstLoaded = false;
   bool _isEmptyFavoriteWallet = false; // 즐겨찾기 설정된 지갑이 없는지 여부
-  List<WalletListItemBase> _favoriteWallets = [];
+  List<WalletItemBase> _favoriteWallets = [];
 
   late int _analysisPeriod;
   int get analysisPeriod => _analysisPeriod;
@@ -209,7 +209,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   bool get shouldShowLoadingIndicator =>
       (!_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing) || _isInErrorDisplayDelay;
-  List<WalletListItemBase> get walletItemList {
+  List<WalletItemBase> get walletItemList {
     // 지갑 목록을 가져오고, 순서가 설정되어 있다면 그 순서대로 정렬
     // 홈에서는 즐겨찾기가 되어있는 지갑만 보여야 하기 때문에 필터링 작업도 수행
     final walletList = _walletProvider.walletItemListNotifier.value;
@@ -219,11 +219,11 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
 
     final walletMap = {for (var wallet in walletList) wallet.id: wallet};
-    var orderedMap = order.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+    var orderedMap = order.map((id) => walletMap[id]).whereType<WalletItemBase>().toList();
     return orderedMap;
   }
 
-  List<WalletListItemBase> get favoriteWallets => _favoriteWallets;
+  List<WalletItemBase> get favoriteWallets => _favoriteWallets;
   List<HomeFeature> get homeFeatures => _preferenceProvider.homeFeatures;
 
   bool? get isNetworkOn => _connectivityProvider.isInternetOn;
@@ -278,7 +278,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     return NetworkStatus.online;
   }
 
-  WalletListItemBase getWalletById(int walletId) {
+  WalletItemBase getWalletById(int walletId) {
     return _walletProvider.getWalletById(walletId);
   }
 
@@ -476,8 +476,8 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   bool isWalletListChanged(
-    List<WalletListItemBase> oldList,
-    List<WalletListItemBase> newList,
+    List<WalletItemBase> oldList,
+    List<WalletItemBase> newList,
     Map<int, AnimatedBalanceData> walletBalanceMap,
   ) {
     if (oldList.length != newList.length) return true;
@@ -503,7 +503,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     final wallets =
         ids
             .map((id) => _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
-            .whereType<WalletListItemBase>()
+            .whereType<WalletItemBase>()
             .toList();
 
     _favoriteWallets = wallets;

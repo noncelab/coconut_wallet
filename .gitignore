@@ -164,6 +164,8 @@ default.realm.management
 *.g.dart
 */fastlane/report.xml
 /fastlane/report.xml
+*/fastlane_production/fastlane/report.xml
+/fastlane/store_metadata/generated/
 
 # Cursor IDE
 .cursor
@@ -176,3 +178,29 @@ GoogleService-Info.plist
 google-services.json
 firebase.json
 coconut-fastlane-supply.json
+
+# BitBox bridge generated artifacts
+# ```
+# $ make gomobile-bind
+# ```
+**/android/app/libs/bitboxbridge.aar
+**/android/app/libs/bitboxbridge-sources.jar
+**/ios/Runner/bitboxbridge.xcframework
+
+# Trezor bridge generated artifacts
+# ```
+# $ make trezor-ios / make trezor-android
+# ```
+**/ios/Runner/TrezorBridge.xcframework
+**/ios/Runner/TrezorBridgeFFI.swift
+**/ios/Runner/TrezorBridgeFFI.modulemap
+**/android/app/src/main/jniLibs/arm64-v8a/libtrezor_bridge.so
+**/android/app/src/main/jniLibs/armeabi-v7a/libtrezor_bridge.so
+**/android/app/src/main/jniLibs/x86_64/libtrezor_bridge.so
+**/android/app/src/main/kotlin/uniffi/trezor_bridge/
+rust/trezor-bridge/target/
+
+# CCOS
+docs/ccos/*
+
+/META-INF

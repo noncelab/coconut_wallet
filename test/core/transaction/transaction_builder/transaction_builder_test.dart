@@ -2,14 +2,14 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../mock/wallet_mock.dart';
 
 void main() {
-  SinglesigWalletListItem wallet = WalletMock.createSingleSigWalletItem();
+  SinglesigWalletItem wallet = WalletMock.createSingleSigWalletItem();
 
   /// utxo_selector에서 amount순으로 정렬됨
   late List<UtxoState> availableUtxos = [
@@ -831,7 +831,7 @@ void main() {
     });
   });
 
-  MultisigWalletListItem multisigWallet = WalletMock.createMultiSigWalletItem();
+  MultisigWalletItem multisigWallet = WalletMock.createMultiSigWalletItem();
 
   /// utxo_selector에서 amount순으로 정렬됨
   late List<UtxoState> mAvailableUtxos = [
