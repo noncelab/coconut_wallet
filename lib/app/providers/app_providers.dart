@@ -21,7 +21,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
+//import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
@@ -37,11 +37,11 @@ List<SingleChildWidget> buildAppProviders({
     ChangeNotifierProvider(create: (_) => AuthProvider()),
     ChangeNotifierProvider(create: (_) => FeatureSettingsProvider()),
     Provider.value(value: realmManager),
-    Provider<AnalyticsService>(
-      create:
-          (context) =>
-              AnalyticsService(isFirebaseAnalyticsUsed ? FirebaseAnalytics.instance : null, !isFirebaseAnalyticsUsed),
-    ),
+    // Provider<AnalyticsService>(
+    //   create:
+    //       (context) =>
+    //           AnalyticsService(isFirebaseAnalyticsUsed ? FirebaseAnalytics.instance : null, !isFirebaseAnalyticsUsed),
+    // ),
     // Repository providers must be registered before dependent providers.
     Provider<AddressRepository>(create: (context) => AddressRepository(context.read<RealmManager>())),
     Provider<TransactionRepository>(create: (context) => TransactionRepository(context.read<RealmManager>())),
