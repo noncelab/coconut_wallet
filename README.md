@@ -186,11 +186,25 @@ keytool -genkey -v -keystore android/app/local.jks \
 Create `key_regtest.properties` and `key_mainnet.properties` under the `android/` directory:
 
 ```properties
-storePassword=android
-keyPassword=android
 keyAlias=local
 storeFile=../app/local.jks
 ```
+
+Release signing passwords are not stored in these files. For local Android release builds, run:
+
+```bash
+./android/scripts/build_android_release.sh
+```
+
+The script prompts once for the keystore/key password and uses it for both `storePassword` and `keyPassword` during the build.
+
+For local Android release runs on a connected device, run:
+
+```bash
+./android/scripts/run_android_release.sh
+```
+
+This uses the Android debug keystore for the local release run only.
 
 ### Run
 
@@ -198,8 +212,8 @@ storeFile=../app/local.jks
 # Debug
 flutter run --flavor regtest
 
-# Release
-flutter run --release --flavor regtest
+# Release on a connected Android device
+./android/scripts/run_android_release.sh
 ```
 
 ### Flavors

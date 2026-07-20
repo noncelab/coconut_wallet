@@ -1,0 +1,4 @@
+interface:
+  display_name: "Store Release Notes"
+  short_description: "Translate Korean release notes into store metadata"
+  default_prompt: "Use $generate-store-release-notes to generate localized App Store and Play Store release-note metadata."

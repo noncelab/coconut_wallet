@@ -23,25 +23,28 @@ run-regtest-debug:
 	fvm flutter run --flavor regtest --debug
 
 run-regtest:
-	fvm flutter run --flavor regtest --profile -d iPhone
+	fvm flutter run --flavor regtest --profile
 
 run-regtest-release:
-	fvm flutter run --flavor regtest --release -d iPhone
+	fvm flutter run --flavor regtest --release
 
 run-mainnet-debug:
-	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --debug -d iPhone
+	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --debug
 
 run-mainnet:
-	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --profile -d iPhone
+	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --profile
 
 run-mainnet-release:
-	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --release -d iPhone
+	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --release
 
 ios-regtest:
 	fvm flutter build ios --flavor regtest --release
 
-aos-regtest:
-	fvm flutter build appbundle --flavor regtest --release
+aos-release:
+	./android/scripts/build_android_release.sh
+
+aos-run-release:
+	./android/scripts/run_android_release.sh
 
 # fastlane
 pre-deploy: 
@@ -70,6 +73,15 @@ fastlane-mainnet:
 
 fastlane-regtest:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
+
+# Production draft/App Store preparation (manual review submission remains required)
+fastlane-production-mainnet:
+	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production skip_prep:true
+	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true
+
+fastlane-production-regtest:
+	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production
+	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true
 	
 fastlane-mainnet-skipbridge:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_mainnet skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_bridge:true
