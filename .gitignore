@@ -164,6 +164,8 @@ default.realm.management
 *.g.dart
 */fastlane/report.xml
 /fastlane/report.xml
+*/fastlane_production/fastlane/report.xml
+/fastlane/store_metadata/generated/
 
 # Cursor IDE
 .cursor
