@@ -36,6 +36,9 @@ enum WalletLoadState { never, loadingFromDB, loadCompleted }
 /// 지갑이 트랜잭션에 서명하는 방식
 enum WalletSigningMethod { externalQr, connectedHardware, localSigner }
 
+/// 홈 화면 상단 지갑 추가 버튼의 동작 방식
+enum HomeAddWalletOption { all, watchOnly, hotWallet, hidden }
+
 enum WalletImportSource {
   coconutVault,
   keystone,

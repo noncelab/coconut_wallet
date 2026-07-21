@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/svg.dart';
 
 /// 자식을 long press 했을 때, 자식 근처에 dropdown(overlay)을 띄우는 위젯.
@@ -32,6 +33,15 @@ class LongPressedMenuWidget extends StatefulWidget {
   /// X 버튼 클릭 시 호출되는 콜백
   final VoidCallback? onRemove;
 
+  /// 선택된 child 영역을 제외한 화면에 블러와 딤 효과를 적용할지 여부
+  final bool useGlassOverlay;
+
+  /// 메뉴의 오른쪽 끝을 child의 오른쪽 끝에 맞출지 여부
+  final bool alignMenuToChildRight;
+
+  /// 메뉴에 사용할 고정 배경색. null이면 기존 glass 배경을 사용한다.
+  final Color? menuBackgroundColor;
+
   const LongPressedMenuWidget({
     super.key,
     required this.child,
@@ -41,6 +51,9 @@ class LongPressedMenuWidget extends StatefulWidget {
     this.spacing = 8.0,
     this.isEditMode = false,
     this.onRemove,
+    this.useGlassOverlay = false,
+    this.alignMenuToChildRight = false,
+    this.menuBackgroundColor,
   });
 
   @override
@@ -49,7 +62,10 @@ class LongPressedMenuWidget extends StatefulWidget {
 
 class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with TickerProviderStateMixin {
   final GlobalKey _childKey = GlobalKey();
+  final GlobalKey _childRepaintBoundaryKey = GlobalKey();
   OverlayEntry? _overlayEntry;
+  ui.Image? _capturedChildImage;
+  bool _isCapturingChild = false;
   late AnimationController _menuAnimationController;
   late AnimationController _shakeController;
   late AnimationController _closeButtonController;
@@ -134,6 +150,8 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
   void _removeOverlay() {
     _overlayEntry?.remove();
     _overlayEntry = null;
+    _capturedChildImage?.dispose();
+    _capturedChildImage = null;
   }
 
   void _startHideAnimation() {
@@ -145,10 +163,11 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     _menuAnimationController.forward(from: 0.0);
   }
 
-  void _showMenu() {
-    if (widget.isEditMode) {
+  Future<void> _showMenu() async {
+    if (widget.isEditMode || _isCapturingChild) {
       return;
     }
+    _isCapturingChild = true;
     vibrateExtraLight();
     widget.onMenuOpen?.call();
     // 이미 떠 있으면 제거
@@ -157,15 +176,41 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     }
 
     final RenderBox? childRenderBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderRepaintBoundary? childRepaintBoundary =
+        _childRepaintBoundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     final OverlayState overlay = Overlay.of(context);
 
-    if (childRenderBox == null) {
+    if (childRenderBox == null || childRepaintBoundary == null) {
+      _isCapturingChild = false;
       return;
     }
 
     final Size screenSize = MediaQuery.of(context).size;
     final Offset childGlobalPosition = childRenderBox.localToGlobal(Offset.zero);
     final Size childSize = childRenderBox.size;
+    final highlightedRect = Rect.fromLTWH(
+      childGlobalPosition.dx - childSize.width * 0.025,
+      childGlobalPosition.dy - childSize.height * 0.025,
+      childSize.width * 1.05,
+      childSize.height * 1.05,
+    ).inflate(widget.useGlassOverlay ? 6 : 0);
+
+    if (widget.useGlassOverlay) {
+      try {
+        _capturedChildImage = await childRepaintBoundary.toImage(
+          pixelRatio: MediaQuery.devicePixelRatioOf(context),
+        );
+      } catch (_) {
+        _isCapturingChild = false;
+        return;
+      }
+      if (!mounted) {
+        _capturedChildImage?.dispose();
+        _capturedChildImage = null;
+        _isCapturingChild = false;
+        return;
+      }
+    }
 
     _overlayEntry = OverlayEntry(
       builder: (context) {
@@ -174,18 +219,38 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
             if (widget.dismissOnTapOutside)
               Positioned.fill(
                 child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
+                  behavior: HitTestBehavior.opaque,
                   onTap: _startHideAnimation,
-                  child: CustomPaint(
-                    painter: _DimExceptRectPainter(
-                      highlightRect: Rect.fromLTWH(
-                        childGlobalPosition.dx - childSize.width * 0.025,
-                        childGlobalPosition.dy - childSize.height * 0.025,
-                        childSize.width * 1.05,
-                        childSize.height * 1.05,
-                      ),
-                      dimColor: Colors.transparent,
-                    ),
+                  child:
+                      widget.useGlassOverlay
+                          ? BackdropFilter(
+                            filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                            child: ColoredBox(color: Colors.black.withValues(alpha: 0.38)),
+                          )
+                          : CustomPaint(
+                            painter: _DimExceptRectPainter(
+                              highlightRect: highlightedRect,
+                              dimColor: Colors.transparent,
+                            ),
+                          ),
+                ),
+              ),
+            if (widget.useGlassOverlay && _capturedChildImage != null)
+              Positioned(
+                left: childGlobalPosition.dx,
+                top: childGlobalPosition.dy,
+                width: childSize.width,
+                height: childSize.height,
+                child: IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: _menuAnimationController,
+                    builder:
+                        (_, child) => Transform.scale(
+                          scale: _computeChildScale(),
+                          alignment: Alignment.center,
+                          child: child,
+                        ),
+                    child: RawImage(image: _capturedChildImage, fit: BoxFit.fill),
                   ),
                 ),
               ),
@@ -237,7 +302,8 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                     children: [
                       Positioned(
                         top: top,
-                        left: left,
+                        left: widget.alignMenuToChildRight ? null : left,
+                        right: widget.alignMenuToChildRight ? 10 : null,
                         child: AnimatedBuilder(
                           animation: _menuAnimationController,
                           builder: (context, child) {
@@ -249,13 +315,18 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                             borderRadius: BorderRadius.circular(12),
                             child: Material(
                               elevation: 4,
-                              color: context.coconutColors.surfaceCard.withValues(alpha: 0.68),
+                              color:
+                                  widget.menuBackgroundColor ??
+                                  context.coconutColors.surfaceCard.withValues(alpha: 0.68),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                                filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                                 child: Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
-                                    color: context.coconutColors.surfaceCard.withValues(alpha: 0.1),
+                                    color:
+                                        widget.menuBackgroundColor == null
+                                            ? context.coconutColors.surfaceCard.withValues(alpha: 0.1)
+                                            : Colors.transparent,
                                   ),
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                                   child: IntrinsicWidth(
@@ -284,7 +355,9 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                                   width: 16,
                                                   height: 16,
                                                   colorFilter: ColorFilter.mode(
-                                                    context.coconutColors.primaryText,
+                                                    widget.menuItems[index].isDanger
+                                                        ? context.coconutColors.danger
+                                                        : context.coconutColors.primaryText,
                                                     BlendMode.srcIn,
                                                   ),
                                                 ),
@@ -295,7 +368,9 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                                     maxLines: 1,
                                                     overflow: TextOverflow.ellipsis,
                                                     style: CoconutTypography.body2_14.setColor(
-                                                      context.coconutColors.primaryText,
+                                                      widget.menuItems[index].isDanger
+                                                          ? context.coconutColors.danger
+                                                          : context.coconutColors.primaryText,
                                                     ),
                                                   ),
                                                 ),
@@ -323,6 +398,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     );
 
     overlay.insert(_overlayEntry!);
+    _isCapturingChild = false;
 
     // 메뉴 등장 애니메이션: 30% -> 110% -> 100%
     _isClosing = false;
@@ -358,9 +434,11 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
       key: _childKey,
       behavior: HitTestBehavior.opaque,
       onLongPress: _showMenu,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_menuAnimationController, _shakeController, _closeButtonController]),
-        builder: (context, child) {
+      child: RepaintBoundary(
+        key: _childRepaintBoundaryKey,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_menuAnimationController, _shakeController, _closeButtonController]),
+          builder: (context, child) {
           final scale = _computeChildScale();
 
           // 전체 카드(메뉴+child)가 살짝 기울어지는 애니메이션
@@ -392,7 +470,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(60),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                                filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                                 child: Container(
                                   width: 24,
                                   height: 24,
@@ -416,8 +494,9 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
               ),
             ),
           );
-        },
-        child: widget.child,
+          },
+          child: widget.child,
+        ),
       ),
     );
   }
@@ -473,10 +552,15 @@ class _DimExceptRectPainter extends CustomPainter {
 class LongPressedMenuItem {
   final String title;
   final String iconPath;
+  final bool isDanger;
   final VoidCallback _onSelected;
 
-  LongPressedMenuItem({required this.title, required this.iconPath, required VoidCallback onSelected})
-    : _onSelected = onSelected;
+  LongPressedMenuItem({
+    required this.title,
+    required this.iconPath,
+    required VoidCallback onSelected,
+    this.isDanger = false,
+  }) : _onSelected = onSelected;
 
   void onSelected() => _onSelected();
 }

@@ -86,9 +86,7 @@ class WalletItemCard extends StatelessWidget {
       pressedColor: pressedColor ?? colors.surfacePressed,
       borderRadius: 12,
       onPressed: onPressed,
-      onLongPress: () {
-        onLongPressed?.call();
-      },
+      onLongPress: onLongPressed,
       child: _buildWalletItemContent(context, displayedFakeBalance, iconGradientColors: iconGradientColors),
     );
 

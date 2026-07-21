@@ -223,6 +223,21 @@ pin_check_screen:
 # lib/screens/home
 wallet_home_screen: 
   view_all_wallets: "내 지갑 전체보기"
+  wallet_filter:
+    all: "전체"
+    watch_only: "보기 전용"
+    hot: "핫월렛"
+  add_wallet_type_all: "지갑을 추가해 보세요!"
+  add_wallet_type_watch_only: "보기 전용 지갑을 추가해 보세요!"
+  add_wallet_type_hot: "핫월렛을 추가해 보세요!"
+  add_wallet: "지갑 추가"
+  view_all: "모두 보기"
+  wallet_menu:
+    rename: "이름 변경"
+    backup: "백업하기"
+    wallet_info: "지갑 정보"
+    remove_from_home: "홈에서 제거"
+    delete: "지갑 삭제"
   edit_home_screen: "홈 화면 편집하기"
   edit:
     title: "홈 화면에 기능을\n숨기거나 추가할 수 있어요"
@@ -236,6 +251,26 @@ wallet_home_screen:
       fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
     hide_fiat_price: "법정 화폐 잔액 숨기기"
     hide_fiat_price_on_home: "홈 화면에 법정 화폐 잔액을 표시하지 않아요."
+    home_add_wallet_button:
+      title: "홈 화면 상단 버튼"
+      sheet_title: "홈 화면 상단 버튼"
+      preview: "홈 화면 미리보기"
+      preview_all: "모든 지갑 추가 버튼"
+      preview_watch_only: "보기 전용 지갑 추가 버튼"
+      preview_hot_wallet: "핫월렛 추가 버튼"
+      preview_hidden: "지갑 추가 버튼 숨김"
+      all:
+        title: "전체"
+        description: "모든 종류의 지갑을 선택할 수 있도록 할게요."
+      watch_only:
+        title: "보기 전용"
+        description: "보안이 우수한 보기 전용 지갑을 추가할게요"
+      hot_wallet:
+        title: "핫월렛"
+        description: "바로 사용 가능한 핫월렛을 추가할게요"
+      hidden:
+        title: "표시 안 함"
+        description: "홈 상단에 지갑 추가 버튼을 표시하지 않아요"
     category:
       total_balance: "잔액 합계"
       wallet_list: "지갑 목록"

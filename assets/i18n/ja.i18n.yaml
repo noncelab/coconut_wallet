@@ -223,6 +223,21 @@ pin_check_screen:
 # lib/screens/home
 wallet_home_screen: 
   view_all_wallets: "マイウォレット一覧"
+  wallet_filter:
+    all: "すべて"
+    watch_only: "閲覧専用"
+    hot: "ホットウォレット"
+  add_wallet_type_all: "ウォレットを追加してみましょう！"
+  add_wallet_type_watch_only: "閲覧専用ウォレットを追加してみましょう！"
+  add_wallet_type_hot: "ホットウォレットを追加してみましょう！"
+  add_wallet: "ウォレットを追加"
+  view_all: "すべて表示"
+  wallet_menu:
+    rename: "名前を変更"
+    backup: "バックアップ"
+    wallet_info: "ウォレット情報"
+    remove_from_home: "ホームから削除"
+    delete: "ウォレットを削除"
   edit_home_screen: "ホーム画面を編集"
   edit:
     title: "ホーム画面で機能を\n非表示にしたり、追加したりできます"
@@ -236,6 +251,26 @@ wallet_home_screen:
       fake_balance_input_exceeds_error: "最大2100万BTCまで設定できます。"
     hide_fiat_price: "フィアット残高を非表示"
     hide_fiat_price_on_home: "ホーム画面にフィアット残高を表示しません。"
+    home_add_wallet_button:
+      title: "ホーム画面上部のボタン"
+      sheet_title: "ホーム画面上部のボタン"
+      preview: "ホーム画面のプレビュー"
+      preview_all: "すべてのウォレット追加ボタン"
+      preview_watch_only: "閲覧専用ウォレット追加ボタン"
+      preview_hot_wallet: "ホットウォレット追加ボタン"
+      preview_hidden: "ウォレット追加ボタンを非表示"
+      all:
+        title: "すべて"
+        description: "すべての種類のウォレットから選択できます。"
+      watch_only:
+        title: "閲覧専用"
+        description: "セキュリティに優れた閲覧専用ウォレットを追加します。"
+      hot_wallet:
+        title: "ホットウォレット"
+        description: "すぐに使えるホットウォレットを追加します。"
+      hidden:
+        title: "表示しない"
+        description: "ホーム上部にウォレット追加ボタンを表示しません。"
     category:
       total_balance: "残高合計"
       wallet_list: "ウォレット\n一覧"

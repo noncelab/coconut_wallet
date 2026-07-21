@@ -223,6 +223,21 @@ pin_check_screen:
 # lib/screens/home
 wallet_home_screen: 
   view_all_wallets: "View All Wallets"
+  wallet_filter:
+    all: "All"
+    watch_only: "Watch-only"
+    hot: "Hot wallet"
+  add_wallet_type_all: "Try adding a wallet!"
+  add_wallet_type_watch_only: "Try adding a watch-only wallet!"
+  add_wallet_type_hot: "Try adding a hot wallet!"
+  add_wallet: "Add wallet"
+  view_all: "View all"
+  wallet_menu:
+    rename: "Rename"
+    backup: "Back up"
+    wallet_info: "Wallet info"
+    remove_from_home: "Remove from Home"
+    delete: "Delete wallet"
   edit_home_screen: "Edit Home Screen"
   edit:
     title: "Choose which features appear\non the home screen."
@@ -236,6 +251,26 @@ wallet_home_screen:
       fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
     hide_fiat_price: "Hide Fiat Balance"
     hide_fiat_price_on_home: "Fiat balance will be hidden on the home screen."
+    home_add_wallet_button:
+      title: "Home screen top button"
+      sheet_title: "Home screen top button"
+      preview: "Home screen preview"
+      preview_all: "All wallet add button"
+      preview_watch_only: "Watch-only wallet add button"
+      preview_hot_wallet: "Hot wallet add button"
+      preview_hidden: "Add wallet button hidden"
+      all:
+        title: "All"
+        description: "Choose from all wallet types."
+      watch_only:
+        title: "Watch-only"
+        description: "Add a security-focused watch-only wallet."
+      hot_wallet:
+        title: "Hot wallet"
+        description: "Add a hot wallet that is ready to use."
+      hidden:
+        title: "Hide"
+        description: "Do not show the add-wallet button at the top of Home."
     category:
       total_balance: "Total\nBalance"
       wallet_list: "Wallet\nList"

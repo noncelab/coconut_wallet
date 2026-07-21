@@ -4,6 +4,7 @@ import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
@@ -45,6 +46,9 @@ class PreferenceProvider extends ChangeNotifier {
 
   late bool _isFiatBalanceHidden;
   bool get isFiatBalanceHidden => _isFiatBalanceHidden;
+
+  late HomeAddWalletOption _homeAddWalletOption;
+  HomeAddWalletOption get homeAddWalletOption => _homeAddWalletOption;
 
   /// 가짜 잔액 총량
   late int? _fakeBalanceTotalBtc;
@@ -89,6 +93,7 @@ class PreferenceProvider extends ChangeNotifier {
   /// 지갑 즐겨찾기 목록
   late List<int> _favoriteWalletIds;
   List<int> get favoriteWalletIds => _favoriteWalletIds;
+  late bool _hasInitializedFavoriteWalletIds;
 
   /// 총 잔액에서 제외할 지갑 목록
   late List<int> _excludedFromTotalBalanceWalletIds;
@@ -144,8 +149,13 @@ class PreferenceProvider extends ChangeNotifier {
     _isFiatBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsFiatBalanceHidden);
     _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
+    _homeAddWalletOption = HomeAddWalletOption.values.firstWhere(
+      (option) => option.name == _sharedPrefs.getString(SharedPrefKeys.kHomeAddWalletOption),
+      orElse: () => HomeAddWalletOption.all,
+    );
     _bitcoinUnit = _loadBitcoinUnit();
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
+    _hasInitializedFavoriteWalletIds = _walletPreferencesRepository.hasWalletPreferences();
     _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
     _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
     _excludedFromTotalBalanceWalletIds = _walletPreferencesRepository.getExcludedWalletIds().toList();
@@ -236,6 +246,14 @@ class PreferenceProvider extends ChangeNotifier {
     _isFiatBalanceHidden = isOn;
     await _sharedPrefs.setBool(SharedPrefKeys.kIsFiatBalanceHidden, isOn);
 
+    notifyListeners();
+  }
+
+  /// 홈 화면 상단 지갑 추가 버튼 설정
+  Future<void> changeHomeAddWalletOption(HomeAddWalletOption option) async {
+    if (_homeAddWalletOption == option) return;
+    _homeAddWalletOption = option;
+    await _sharedPrefs.setString(SharedPrefKeys.kHomeAddWalletOption, option.name);
     notifyListeners();
   }
 
@@ -437,6 +455,7 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> setFavoriteWalletIds(List<int> ids) async {
     _favoriteWalletIds = ids;
     await _walletPreferencesRepository.setFavoriteWalletIds(ids);
+    _hasInitializedFavoriteWalletIds = true;
     notifyListeners();
   }
 
@@ -490,7 +509,7 @@ class PreferenceProvider extends ChangeNotifier {
       walletOrder = List.from(walletItemList.map((w) => w.id));
       await setWalletOrder(walletOrder);
     }
-    if (favoriteWalletIds.isEmpty) {
+    if (!_hasInitializedFavoriteWalletIds) {
       favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
       await setFavoriteWalletIds(favoriteWalletIds);
     }

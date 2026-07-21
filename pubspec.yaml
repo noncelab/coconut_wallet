@@ -325,6 +325,8 @@ flutter:
     - assets/svg/dust.svg
     - assets/svg/parent.svg
     - assets/svg/child.svg
+    - assets/svg/wallet-add-default.svg
+    - assets/svg/wallet-add-hot.svg
 
   fonts:
     - family: SpaceGrotesk

@@ -223,6 +223,21 @@ pin_check_screen:
 # lib/screens/home
 wallet_home_screen:
   view_all_wallets: "Alle Wallets anzeigen"
+  wallet_filter:
+    all: "Alle"
+    watch_only: "Nur ansehen"
+    hot: "Hot Wallet"
+  add_wallet_type_all: "Füge eine Wallet hinzu!"
+  add_wallet_type_watch_only: "Füge eine Watch-only-Wallet hinzu!"
+  add_wallet_type_hot: "Füge eine Hot Wallet hinzu!"
+  add_wallet: "Wallet hinzufügen"
+  view_all: "Alle anzeigen"
+  wallet_menu:
+    rename: "Umbenennen"
+    backup: "Sichern"
+    wallet_info: "Wallet-Informationen"
+    remove_from_home: "Vom Startbildschirm entfernen"
+    delete: "Wallet löschen"
   edit_home_screen: "Startbildschirm bearbeiten"
   edit:
     title: "Wählen Sie aus, welche Funktionen\nauf dem Startbildschirm angezeigt werden."
@@ -236,6 +251,26 @@ wallet_home_screen:
       fake_balance_input_exceeds_error: "Sie können bis zu 21 Millionen BTC einstellen"
     hide_fiat_price: "Fiat-Guthaben verbergen"
     hide_fiat_price_on_home: "Fiat-Guthaben wird auf dem Startbildschirm verborgen."
+    home_add_wallet_button:
+      title: "Schaltfläche oben auf dem Startbildschirm"
+      sheet_title: "Schaltfläche oben auf dem Startbildschirm"
+      preview: "Vorschau des Startbildschirms"
+      preview_all: "Schaltfläche für alle Wallets"
+      preview_watch_only: "Nur beobachten – Wallet hinzufügen"
+      preview_hot_wallet: "Schaltfläche für Hot Wallets"
+      preview_hidden: "Wallet-Schaltfläche ausgeblendet"
+      all:
+        title: "Alle"
+        description: "Wähle aus allen Wallet-Typen aus."
+      watch_only:
+        title: "Nur beobachten"
+        description: "Füge eine besonders sichere Watch-only-Wallet hinzu."
+      hot_wallet:
+        title: "Hot Wallet"
+        description: "Füge eine sofort einsatzbereite Hot Wallet hinzu."
+      hidden:
+        title: "Ausblenden"
+        description: "Zeige oben auf dem Startbildschirm keine Schaltfläche zum Hinzufügen einer Wallet."
     category:
       total_balance: "Gesamt-\nguthaben"
       wallet_list: "Wallet-\nListe"

@@ -224,6 +224,21 @@ pin_check_screen:
 #lib/screens/home
 wallet_home_screen:
   view_all_wallets: "Ver todas mis billeteras"
+  wallet_filter:
+    all: "Todas"
+    watch_only: "Solo lectura"
+    hot: "Billetera caliente"
+  add_wallet_type_all: "¡Añade una billetera!"
+  add_wallet_type_watch_only: "¡Añade una billetera de solo lectura!"
+  add_wallet_type_hot: "¡Añade una billetera caliente!"
+  add_wallet: "Añadir billetera"
+  view_all: "Ver todas"
+  wallet_menu:
+    rename: "Cambiar nombre"
+    backup: "Crear copia de seguridad"
+    wallet_info: "Información de la billetera"
+    remove_from_home: "Quitar de Inicio"
+    delete: "Eliminar billetera"
   edit_home_screen: "Editar pantalla de inicio"
   edit:
     title: "Puedes ocultar o añadir funciones\nen la pantalla de inicio"
@@ -237,6 +252,26 @@ wallet_home_screen:
       fake_balance_input_exceeds_error: "Puedes establecer hasta 21 millones de BTC"
     hide_fiat_price: "Ocultar saldo en moneda fiduciaria"
     hide_fiat_price_on_home: "No mostrar el saldo en moneda fiduciaria en la pantalla de inicio."
+    home_add_wallet_button:
+      title: "Botón superior de Inicio"
+      sheet_title: "Botón superior de Inicio"
+      preview: "Vista previa de Inicio"
+      preview_all: "Botón para añadir cualquier cartera"
+      preview_watch_only: "Botón para añadir cartera de solo lectura"
+      preview_hot_wallet: "Botón para añadir cartera caliente"
+      preview_hidden: "Botón para añadir cartera oculto"
+      all:
+        title: "Todas"
+        description: "Elige entre todos los tipos de cartera."
+      watch_only:
+        title: "Solo lectura"
+        description: "Añade una cartera de solo lectura con mayor seguridad."
+      hot_wallet:
+        title: "Cartera caliente"
+        description: "Añade una cartera caliente lista para usar."
+      hidden:
+        title: "Ocultar"
+        description: "No mostrar el botón para añadir una cartera en la parte superior de Inicio."
     category:
       total_balance: "Saldo total"
       wallet_list: "Lista de billeteras"

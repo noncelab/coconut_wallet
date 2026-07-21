@@ -359,6 +359,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
     _walletProvider = walletProvider;
+    loadFavoriteWallets(notify: false);
     notifyListeners();
   }
 
@@ -495,9 +496,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     return walletListChanged || balanceChanged;
   }
 
-  Future<void> loadFavoriteWallets() async {
-    if (_walletProvider.walletItemListNotifier.value.isEmpty) return;
-
+  void loadFavoriteWallets({bool notify = true}) {
     final ids = _preferenceProvider.favoriteWalletIds;
 
     final wallets =
@@ -506,11 +505,16 @@ class WalletHomeViewModel extends ChangeNotifier {
             .whereType<WalletItemBase>()
             .toList();
 
+    final hasChanged = !const ListEquality<int>().equals(
+      _favoriteWallets.map((wallet) => wallet.id).toList(),
+      wallets.map((wallet) => wallet.id).toList(),
+    );
     _favoriteWallets = wallets;
-
     _isEmptyFavoriteWallet = wallets.isEmpty;
 
-    notifyListeners();
+    if (notify && hasChanged) {
+      notifyListeners();
+    }
   }
 
   void setReceiveAddress(int walletId) {

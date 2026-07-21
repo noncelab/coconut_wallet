@@ -25,8 +25,8 @@ class WalletIconSmall extends StatelessWidget {
     var isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
 
     return Container(
-      width: 30,
-      height: 30,
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         gradient:

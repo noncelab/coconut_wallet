@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -14,6 +15,7 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/fixed_text_scale.dart';
+import 'package:coconut_wallet/screens/settings/home_settings/home_add_wallet_option_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -285,6 +287,21 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                         },
                                       ),
                                     ),
+                                    SingleButton(
+                                      enableShrinkAnim: true,
+                                      isVerticalSubtitle: true,
+                                      title: t.wallet_home_screen.edit.home_add_wallet_button.title,
+                                      subtitle: _getHomeAddWalletOptionDescription(viewModel.tempHomeAddWalletOption),
+                                      subtitleStyle: CoconutTypography.body3_12.setColor(
+                                        context.coconutColors.secondaryText,
+                                      ),
+                                      customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                                      onPressed: () => _showHomeAddWalletOptionBottomSheet(viewModel),
+                                      backgroundColor: colors.background,
+                                      rightElement: _buildHomeAddWalletOptionRightElement(
+                                        viewModel.tempHomeAddWalletOption,
+                                      ),
+                                    ),
                                   ],
                                 );
                               },
@@ -364,6 +381,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
         _viewModel.tempIsFakeBalanceActive != _viewModel.isFakeBalanceActive || // 가짜잔액표시 변동
         _viewModel.tempIsBalanceHidden != _viewModel.isBalanceHidden || // 잔액숨기기 변동
         _viewModel.tempIsFiatBalanceHidden != _viewModel.isFiatBalanceHidden || // 법정화폐잔액숨기기 변동
+        _viewModel.tempHomeAddWalletOption != _viewModel.homeAddWalletOption || // 홈 상단 버튼 변동
         !_viewModel.tempHomeFeatures.every((tempFeature) {
           // 홈 화면 기능 변동
           final original = _viewModel.homeFeatures.firstWhere(
@@ -389,6 +407,58 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
   void _onComplete() async {
     if (_fakeBalanceController.text.isEmpty) {}
     await _viewModel.onComplete();
+  }
+
+  Future<void> _showHomeAddWalletOptionBottomSheet(WalletHomeEditViewModel viewModel) async {
+    final selectedOption = await showModalBottomSheet<HomeAddWalletOption>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
+      builder: (_) => HomeAddWalletOptionBottomSheet(initialOption: viewModel.tempHomeAddWalletOption),
+    );
+    if (selectedOption != null && mounted) {
+      viewModel.setTempHomeAddWalletOption(selectedOption);
+    }
+  }
+
+  String _getHomeAddWalletOptionDescription(HomeAddWalletOption option) {
+    switch (option) {
+      case HomeAddWalletOption.all:
+        return t.wallet_home_screen.edit.home_add_wallet_button.all.description;
+      case HomeAddWalletOption.watchOnly:
+        return t.wallet_home_screen.edit.home_add_wallet_button.watch_only.description;
+      case HomeAddWalletOption.hotWallet:
+        return t.wallet_home_screen.edit.home_add_wallet_button.hot_wallet.description;
+      case HomeAddWalletOption.hidden:
+        return t.wallet_home_screen.edit.home_add_wallet_button.hidden.description;
+    }
+  }
+
+  Widget _buildHomeAddWalletOptionRightElement(HomeAddWalletOption option) {
+    final iconPath = switch (option) {
+      HomeAddWalletOption.all => 'assets/svg/wallet-add-default.svg',
+      HomeAddWalletOption.watchOnly => 'assets/svg/wallet-eyes.svg',
+      HomeAddWalletOption.hotWallet => 'assets/svg/wallet-add-hot.svg',
+      HomeAddWalletOption.hidden => null,
+    };
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (iconPath != null) ...[
+          SvgPicture.asset(
+            iconPath,
+            width: 20,
+            height: 16,
+            fit: BoxFit.contain,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+          ),
+          CoconutLayout.spacing_200w,
+        ],
+        Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSubDefault),
+      ],
+    );
   }
 
   Widget _buildHomeWidgetSelector() {

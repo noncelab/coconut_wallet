@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:coconut_wallet/model/preference/home_feature.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/home_settings/wallet_home_edit_screen.dart';
@@ -12,6 +13,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   late bool _isBalanceHidden;
   late bool _isFiatBalanceHidden;
   late bool _isFakeBalanceActive;
+  late HomeAddWalletOption _homeAddWalletOption;
 
   late int minimumSatoshi;
   final int maximumAmount = 21000000;
@@ -27,6 +29,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   late bool _tempIsFiatBalanceHidden;
   late bool _tempIsFakeBalanceActive;
   late int? _tempFakeBalanceTotalAmount;
+  late HomeAddWalletOption _tempHomeAddWalletOption;
 
   WalletHomeEditViewModel(this._walletProvider, this._preferenceProvider) {
     // _walletBalance = _walletProvider
@@ -36,6 +39,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     _isBalanceHidden = _preferenceProvider.isBalanceHidden;
     _isFiatBalanceHidden = _preferenceProvider.isFiatBalanceHidden;
     _isFakeBalanceActive = _preferenceProvider.isFakeBalanceActive;
+    _homeAddWalletOption = _preferenceProvider.homeAddWalletOption;
     _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
     _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
 
@@ -50,6 +54,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     _tempIsFiatBalanceHidden = isFiatBalanceHidden;
     _tempIsFakeBalanceActive = isFakeBalanceActive;
     _tempFakeBalanceTotalAmount = fakeBalanceTotalAmount;
+    _tempHomeAddWalletOption = homeAddWalletOption;
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
@@ -60,12 +65,14 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   int get walletItemLength => _walletProvider.walletItemList.length;
   List<HomeFeature> get homeFeatures => _preferenceProvider.homeFeatures;
   FakeBalanceInputError get inputError => _inputError;
+  HomeAddWalletOption get homeAddWalletOption => _homeAddWalletOption;
 
   List<HomeFeature> get tempHomeFeatures => _tempHomeFeatures;
   bool get tempIsBalanceHidden => _tempIsBalanceHidden;
   bool get tempIsFiatBalanceHidden => _tempIsFiatBalanceHidden;
   bool get tempIsFakeBalanceActive => _tempIsFakeBalanceActive;
   int? get tempFakeBalanceTotalAmount => _tempFakeBalanceTotalAmount;
+  HomeAddWalletOption get tempHomeAddWalletOption => _tempHomeAddWalletOption;
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
     _walletProvider = walletProvider;
@@ -88,6 +95,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     if (_isFiatBalanceHidden != _preferenceProvider.isFiatBalanceHidden) {
       setIsFiatBalanceHidden(_preferenceProvider.isFiatBalanceHidden);
     }
+    _homeAddWalletOption = _preferenceProvider.homeAddWalletOption;
     notifyListeners();
   }
 
@@ -115,6 +123,11 @@ class WalletHomeEditViewModel extends ChangeNotifier {
 
   void setTempIsFiatBalanceHidden(bool value) {
     _tempIsFiatBalanceHidden = value;
+    notifyListeners();
+  }
+
+  void setTempHomeAddWalletOption(HomeAddWalletOption option) {
+    _tempHomeAddWalletOption = option;
     notifyListeners();
   }
 
@@ -175,6 +188,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   Future<void> onComplete() async {
     setIsBalanceHidden(_tempIsBalanceHidden);
     setIsFiatBalanceHidden(_tempIsFiatBalanceHidden);
+    await _preferenceProvider.changeHomeAddWalletOption(_tempHomeAddWalletOption);
     _setHomeFeatureEnabled();
     await _setFakeBalance();
   }
