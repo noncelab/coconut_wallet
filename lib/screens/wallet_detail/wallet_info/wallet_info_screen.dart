@@ -598,7 +598,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               title: t.wallet_info_screen.import_labels,
               onPressed: () {
                 Navigator.of(context).pop();
-                _importLabels(viewModel);
+                _showImportLabelsDialog(context, viewModel);
               },
             ),
             CoconutLayout.spacing_200h,
@@ -612,6 +612,26 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showImportLabelsDialog(BuildContext context, WalletInfoViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.wallet_info_screen.import_labels,
+          description: t.wallet_info_screen.import_labels_description,
+          onTapRight: () {
+            Navigator.of(dialogContext).pop();
+            _importLabels(viewModel);
+          },
+          rightButtonText: t.next,
+          onTapLeft: () => Navigator.of(dialogContext).pop(),
+          leftButtonText: t.cancel,
+        );
+      },
     );
   }
 
