@@ -411,6 +411,14 @@ wallet_connect_screen:
       add_wallet: "Añadir billetera"
       retry: "Reintentar"
       start_signing: "Iniciar firma"
+    transport_select:
+      title: "Seleccionar conexión Trezor"
+      description: "Elige cómo conectar tu dispositivo Trezor."
+      notice_ble: "Trezor Safe 7"
+      notice_usb: "Trezor Model One ~ Safe 5"
+      btn:
+        ble: "Safe 7 Bluetooth"
+        usb: "USB Connect"
     init:
       notice: "Solo se admite Trezor Safe 7."
       ble_step1: "Active el Bluetooth y mantenga Trezor Safe 7 cerca."

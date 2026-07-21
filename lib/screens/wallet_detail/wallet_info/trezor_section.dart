@@ -4,7 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -38,12 +38,12 @@ class _TrezorSectionState extends State<TrezorSection> {
   }
 
   Future<void> _checkAndSubscribe() async {
-    final physicallyConnected = await TrezorConnectivityService.isDeviceConnected();
+    final physicallyConnected = await TrezorBleConnectivityService.isDeviceConnected();
     if (!mounted) return;
     setState(() {
       _isConnected = physicallyConnected && _isWalletMatch();
     });
-    _sub = TrezorConnectivityService.onConnectionChanged.listen((connected) {
+    _sub = TrezorBleConnectivityService.onConnectionChanged.listen((connected) {
       if (!mounted) return;
       setState(() {
         _isConnected = connected && _isWalletMatch();

@@ -5,7 +5,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_connect_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_ble_connect_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
@@ -20,22 +20,22 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
-class TrezorConnectScreen extends StatefulWidget {
+class TrezorBleConnectScreen extends StatefulWidget {
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
 
-  const TrezorConnectScreen({super.key, this.psbtBase64, this.walletName, this.walletFingerprint});
+  const TrezorBleConnectScreen({super.key, this.psbtBase64, this.walletName, this.walletFingerprint});
 
   @override
-  State<TrezorConnectScreen> createState() => _TrezorConnectScreenState();
+  State<TrezorBleConnectScreen> createState() => _TrezorBleConnectScreenState();
 }
 
-class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
-  late TrezorConnectViewModel _viewModel;
+class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
+  late TrezorBleConnectViewModel _viewModel;
   bool _isAddingWallet = false;
   bool _isVerifyingPairingCode = false;
-  TrezorConnectStep? _lastStep;
+  TrezorBleConnectStep? _lastStep;
 
   static const int _codeLength = 6;
   static const List<String> _keypadKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '<'];
@@ -44,7 +44,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = TrezorConnectViewModel(Provider.of<WalletProvider>(context, listen: false));
+    _viewModel = TrezorBleConnectViewModel(Provider.of<WalletProvider>(context, listen: false));
     _viewModel.onPairingFailed = () {};
     _viewModel.addListener(_onViewModelChanged);
   }
@@ -152,7 +152,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     if (mounted) setState(() => _isAddingWallet = false);
   }
 
-  Future<void> _onAddWalletPressed(TrezorConnectViewModel vm) async {
+  Future<void> _onAddWalletPressed(TrezorBleConnectViewModel vm) async {
     if (_isAddingWallet) return;
     _showFullScreenLoading();
 
@@ -206,7 +206,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
       child: Scaffold(
         backgroundColor: context.coconutColors.background,
         appBar: CoconutAppBar.build(title: WalletImportSource.trezor.displayName, context: context, isBottom: true),
-        body: Consumer<TrezorConnectViewModel>(
+        body: Consumer<TrezorBleConnectViewModel>(
           builder: (context, vm, _) {
             return SafeArea(
               child: SizedBox(
@@ -219,9 +219,9 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
                         child: _buildStatusSection(vm),
                       ),
                     ),
-                    if (vm.step == TrezorConnectStep.idle ||
-                        vm.step == TrezorConnectStep.error ||
-                        (vm.step == TrezorConnectStep.paired && vm.xpub.isNotEmpty))
+                    if (vm.step == TrezorBleConnectStep.idle ||
+                        vm.step == TrezorBleConnectStep.error ||
+                        (vm.step == TrezorBleConnectStep.paired && vm.xpub.isNotEmpty))
                       Stack(alignment: Alignment.center, children: [_buildMainButton(vm)]),
                   ],
                 ),
@@ -233,9 +233,9 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     );
   }
 
-  Widget _buildStatusSection(TrezorConnectViewModel vm) {
+  Widget _buildStatusSection(TrezorBleConnectViewModel vm) {
     switch (vm.step) {
-      case TrezorConnectStep.idle:
+      case TrezorBleConnectStep.idle:
         return _buildInstructionToolTip([
           t.wallet_connect_screen.guide_trezor.init.ble_step1,
           [
@@ -256,18 +256,18 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
             btn: t.wallet_connect_screen.guide_trezor.btn.connect_via_ble,
           ),
         ], notice: t.wallet_connect_screen.guide_trezor.init.notice);
-      case TrezorConnectStep.connecting:
+      case TrezorBleConnectStep.connecting:
         return _buildProgressCard(t.wallet_connect_screen.guide_trezor.connecting.title, [
           t.wallet_connect_screen.guide_trezor.connecting.step1,
           t.wallet_connect_screen.guide_trezor.connecting.step2,
           t.wallet_connect_screen.guide_trezor.connecting.step3,
           t.wallet_connect_screen.guide_trezor.connecting.step4,
         ]);
-      case TrezorConnectStep.pairing:
+      case TrezorBleConnectStep.pairing:
         return _buildPairingCard(vm);
-      case TrezorConnectStep.paired:
+      case TrezorBleConnectStep.paired:
         return _buildSuccessCard(vm);
-      case TrezorConnectStep.error:
+      case TrezorBleConnectStep.error:
         return _buildErrorCard(vm, steps: vm.peerRemovedPairingSteps);
     }
   }
@@ -334,7 +334,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     );
   }
 
-  Widget _buildSuccessCard(TrezorConnectViewModel vm) {
+  Widget _buildSuccessCard(TrezorBleConnectViewModel vm) {
     final hasXpub = vm.xpub.isNotEmpty;
     final hasSilentError = !hasXpub && vm.errorMessage != null;
     return Container(
@@ -370,7 +370,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     );
   }
 
-  Widget _buildWalletMismatchWarning(TrezorConnectViewModel vm) {
+  Widget _buildWalletMismatchWarning(TrezorBleConnectViewModel vm) {
     final matchedName = vm.findMatchingTrezorWalletName(vm.xpub);
     final message =
         matchedName != null
@@ -404,7 +404,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     );
   }
 
-  Widget _buildXPubRetryCard(TrezorConnectViewModel vm) {
+  Widget _buildXPubRetryCard(TrezorBleConnectViewModel vm) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
@@ -432,7 +432,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     );
   }
 
-  Widget _buildWalletInfoCard(TrezorConnectViewModel vm) {
+  Widget _buildWalletInfoCard(TrezorBleConnectViewModel vm) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
@@ -528,7 +528,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     );
   }
 
-  Widget _buildErrorCard(TrezorConnectViewModel vm, {List<String>? steps}) {
+  Widget _buildErrorCard(TrezorBleConnectViewModel vm, {List<String>? steps}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
@@ -601,7 +601,7 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     );
   }
 
-  Widget _buildPairingCard(TrezorConnectViewModel vm) {
+  Widget _buildPairingCard(TrezorBleConnectViewModel vm) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
@@ -689,9 +689,9 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     );
   }
 
-  bool _isWalletMismatch(TrezorConnectViewModel vm) {
+  bool _isWalletMismatch(TrezorBleConnectViewModel vm) {
     if (widget.psbtBase64 == null) return false;
-    if (vm.step != TrezorConnectStep.paired) return false;
+    if (vm.step != TrezorBleConnectStep.paired) return false;
     if (vm.xpub.isEmpty) return false;
 
     final matchedName = vm.findMatchingTrezorWalletName(vm.xpub);
@@ -699,12 +699,12 @@ class _TrezorConnectScreenState extends State<TrezorConnectScreen> {
     return matchedName != (widget.walletName ?? '');
   }
 
-  Widget _buildMainButton(TrezorConnectViewModel vm) {
-    if (vm.step == TrezorConnectStep.pairing) return const SizedBox.shrink();
+  Widget _buildMainButton(TrezorBleConnectViewModel vm) {
+    if (vm.step == TrezorBleConnectStep.pairing) return const SizedBox.shrink();
 
-    final bool isRetry = vm.step == TrezorConnectStep.error;
+    final bool isRetry = vm.step == TrezorBleConnectStep.error;
     final bool hasXpub = vm.xpub.isNotEmpty;
-    final bool isPaired = vm.step == TrezorConnectStep.paired;
+    final bool isPaired = vm.step == TrezorBleConnectStep.paired;
     final bool isSignFlow = widget.psbtBase64 != null;
     final bool isMismatch = _isWalletMismatch(vm);
 

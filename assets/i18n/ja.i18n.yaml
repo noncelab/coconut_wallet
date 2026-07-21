@@ -436,6 +436,14 @@ wallet_connect_screen:
       add_wallet: "ウォレットを追加"
       retry: "再試行"
       start_signing: "署名開始"
+    transport_select:
+      title: "Trezor接続方法を選択"
+      description: "Trezorデバイスの接続方法を選択してください。"
+      notice_ble: "Trezor Safe 7"
+      notice_usb: "Trezor Model One ~ Safe 5"
+      btn:
+        ble: "Safe 7 Bluetooth"
+        usb: "USB接続"
     init:
       notice: "Trezor Safe 7のみ対応しています。"
       ble_step1: "Bluetoothをオンにして、Trezor Safe 7を近くに置いてください。"

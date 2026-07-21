@@ -1753,7 +1753,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   void _goToTrezorScreen() {
     Navigator.pop(context);
-    Navigator.pushNamed(context, '/trezor-connect', arguments: {'walletImportSource': WalletImportSource.trezor});
+    if (Platform.isAndroid) {
+      Navigator.pushNamed(context, '/trezor-transport-select');
+    } else {
+      Navigator.pushNamed(context, '/trezor-ble-connect', arguments: {'walletImportSource': WalletImportSource.trezor});
+    }
   }
 
   void _onAddWalletPressed() {

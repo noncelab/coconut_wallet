@@ -1,6 +1,8 @@
 import 'package:coconut_wallet/screens/home/wallet_add/air-gapped/airgap_wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_usb_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/trezor_sign_screen.dart';
@@ -153,7 +155,33 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           (args) => TransactionDraftScreen(isSignedTabActive: args['isSignedTabActive']),
         ),
     '/wallet-home-edit': (context) => const WalletHomeEditScreen(),
-    '/trezor-connect': (context) => const TrezorConnectScreen(),
+    '/trezor-transport-select':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => TrezorTransportSelectScreen(
+            psbtBase64: args['psbtBase64'],
+            walletName: args['walletName'],
+            walletFingerprint: args['walletFingerprint'],
+          ),
+        ),
+    '/trezor-ble-connect':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => TrezorBleConnectScreen(
+            psbtBase64: args['psbtBase64'],
+            walletName: args['walletName'],
+            walletFingerprint: args['walletFingerprint'],
+          ),
+        ),
+    '/trezor-usb-connect':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => TrezorUsbConnectScreen(
+            psbtBase64: args['psbtBase64'],
+            walletName: args['walletName'],
+            walletFingerprint: args['walletFingerprint'],
+          ),
+        ),
     '/bitbox02-connect':
         (context) => _buildScreenWithArgs(
           context,

@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:flutter/services.dart';
 
-/// Wraps Trezor BLE connectivity: live disconnect stream.
+/// Wraps Trezor Safe 7 BLE connectivity: live disconnect stream.
 ///
 /// iOS:     listens for BLE peripheral disconnect via CoreBluetooth.
 /// Android: listens for GATT connection state changes.
-class TrezorConnectivityService {
+class TrezorBleConnectivityService {
   static const MethodChannel _channel = MethodChannel('trezor');
   static const EventChannel _eventChannel = EventChannel('trezor/connectivity');
 

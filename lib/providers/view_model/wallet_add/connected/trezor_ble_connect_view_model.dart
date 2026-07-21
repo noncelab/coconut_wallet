@@ -11,14 +11,14 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/foundation.dart';
 
-enum TrezorConnectStep { idle, connecting, pairing, paired, error }
+enum TrezorBleConnectStep { idle, connecting, pairing, paired, error }
 
-class TrezorConnectViewModel extends ChangeNotifier {
+class TrezorBleConnectViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
 
-  TrezorConnectViewModel(this._walletProvider);
+  TrezorBleConnectViewModel(this._walletProvider);
 
-  TrezorConnectStep _step = TrezorConnectStep.idle;
+  TrezorBleConnectStep _step = TrezorBleConnectStep.idle;
   TrezorDevice? _device;
   String? _errorDescription;
   String? _errorMessage;
@@ -49,11 +49,11 @@ class TrezorConnectViewModel extends ChangeNotifier {
   // Called when pairing failed for other reasons.
   void Function()? onPairingFailed;
 
-  TrezorConnectStep get step => _step;
+  TrezorBleConnectStep get step => _step;
   String? get errorDescription => _errorDescription;
   String? get errorMessage => _errorMessage;
   List<String>? get peerRemovedPairingSteps => _peerRemovedPairingSteps;
-  bool get isPaired => _step == TrezorConnectStep.paired;
+  bool get isPaired => _step == TrezorBleConnectStep.paired;
   bool get isConnecting => _isConnecting;
   String get xpub => _xpub;
   String get fingerprint => _fingerprint;
@@ -70,7 +70,7 @@ class TrezorConnectViewModel extends ChangeNotifier {
     return null;
   }
 
-  void _setState(TrezorConnectStep step) {
+  void _setState(TrezorBleConnectStep step) {
     if (_disposed) return;
     _step = step;
     notifyListeners();
@@ -79,7 +79,7 @@ class TrezorConnectViewModel extends ChangeNotifier {
   Future<String> waitForPairingCode() async {
     _pairingErrorMessage = null;
     _pairingCodeCompleter = Completer<String>();
-    _setState(TrezorConnectStep.pairing);
+    _setState(TrezorBleConnectStep.pairing);
     final code = await _pairingCodeCompleter!.future;
     _pairingCodeCompleter = null;
     return code;
@@ -98,7 +98,7 @@ class TrezorConnectViewModel extends ChangeNotifier {
   }
 
   Future<void> connect() async {
-    if (_isConnecting || _step == TrezorConnectStep.paired) return;
+    if (_isConnecting || _step == TrezorBleConnectStep.paired) return;
 
     _isConnecting = true;
     _errorMessage = null;
@@ -113,11 +113,11 @@ class TrezorConnectViewModel extends ChangeNotifier {
       TrezorDevice.onPairingCodeRequested = () async {
         return await waitForPairingCode();
       };
-      _setState(TrezorConnectStep.connecting);
+      _setState(TrezorBleConnectStep.connecting);
       _device = await TrezorDevice.connect();
       _deviceLabel = _device!.label;
 
-      _setState(TrezorConnectStep.paired);
+      _setState(TrezorBleConnectStep.paired);
       TrezorDevice.lastConnected = _device;
       await _retrieveXPub(silent: true);
     } on TrezorPairingCodeWrongException catch (e) {
@@ -129,12 +129,12 @@ class TrezorConnectViewModel extends ChangeNotifier {
       if (e.code == 'PERMISSION_DENIED') {
         _errorMessage = e.message;
         _isPermissionDenied = true;
-        _step = TrezorConnectStep.idle;
+        _step = TrezorBleConnectStep.idle;
         if (!_disposed) notifyListeners();
       } else if (e.code == 'BLE_DISABLED') {
         _errorMessage = t.wallet_connect_screen.common.ble_off;
         onPairingFailed?.call();
-        _setState(TrezorConnectStep.error);
+        _setState(TrezorBleConnectStep.error);
       } else if (e.code == 'PEER_REMOVED_PAIRING') {
         // iOS only
         _errorDescription = t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.title;
@@ -145,27 +145,27 @@ class TrezorConnectViewModel extends ChangeNotifier {
           t.wallet_connect_screen.guide_trezor.ios_peer_removed_pairing.step3,
         ];
         onPairingFailed?.call();
-        _setState(TrezorConnectStep.error);
+        _setState(TrezorBleConnectStep.error);
       } else if (e.message.contains('Encryption is insufficient')) {
         // 페어링 중간에 중단된 경우
         _errorDescription = t.wallet_connect_screen.guide_trezor.pairing_aborted.title;
         _errorMessage = e.message;
         _peerRemovedPairingSteps = null;
         onPairingFailed?.call();
-        _setState(TrezorConnectStep.error);
+        _setState(TrezorBleConnectStep.error);
       } else {
         _errorMessage = e.message;
         onPairingFailed?.call();
-        _setState(TrezorConnectStep.error);
+        _setState(TrezorBleConnectStep.error);
       }
     } on TrezorPairingException catch (e) {
       _errorMessage = e.message;
       onPairingFailed?.call();
-      _setState(TrezorConnectStep.error);
+      _setState(TrezorBleConnectStep.error);
     } catch (e) {
       _errorMessage = e.toString();
       onPairingFailed?.call();
-      _setState(TrezorConnectStep.error);
+      _setState(TrezorBleConnectStep.error);
     } finally {
       _isConnecting = false;
       if (!_disposed) notifyListeners();
@@ -190,14 +190,14 @@ class TrezorConnectViewModel extends ChangeNotifier {
         _xpub = await _device!.getXPub(keypath: keypath, network: nt.toString());
         _fingerprint = await _device!.getFingerprint();
         _device!.cachedFingerprint = _fingerprint;
-        _setState(TrezorConnectStep.paired);
+        _setState(TrezorBleConnectStep.paired);
       } on Exception catch (e) {
         if (silent) {
           _errorMessage = e.toString();
-          _setState(TrezorConnectStep.paired);
+          _setState(TrezorBleConnectStep.paired);
         } else {
           _errorMessage = e.toString();
-          _setState(TrezorConnectStep.error);
+          _setState(TrezorBleConnectStep.error);
         }
       }
     } finally {
@@ -236,7 +236,9 @@ class TrezorConnectViewModel extends ChangeNotifier {
     }
     if (!takenNumbers.contains(1)) return baseName;
     int next = 2;
-    while (takenNumbers.contains(next)) next++;
+    while (takenNumbers.contains(next)) {
+      next++;
+    }
     return '$baseName $next';
   }
 
@@ -248,11 +250,11 @@ class TrezorConnectViewModel extends ChangeNotifier {
       _device = null;
     }
     TrezorDevice.lastConnected = null;
-    _setState(TrezorConnectStep.idle);
+    _setState(TrezorBleConnectStep.idle);
   }
 
   void reset() {
-    _step = TrezorConnectStep.idle;
+    _step = TrezorBleConnectStep.idle;
     _device = null;
     _errorMessage = null;
     _errorDescription = null;
@@ -269,7 +271,7 @@ class TrezorConnectViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    if (_step != TrezorConnectStep.paired) {
+    if (_step != TrezorBleConnectStep.paired) {
       TrezorDevice.cancel().catchError((_) {});
       if (_device != null) {
         _device!.disconnect().catchError((_) {});

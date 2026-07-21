@@ -4,7 +4,7 @@ import 'package:coconut_wallet/app/router/app_routes.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
@@ -44,13 +44,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   void initState() {
     super.initState();
     BitBox02ConnectivityService.startMonitoring();
-    TrezorConnectivityService.startMonitoring();
+    TrezorBleConnectivityService.startMonitoring();
   }
 
   @override
   void dispose() {
     BitBox02ConnectivityService.stopMonitoring();
-    TrezorConnectivityService.stopMonitoring();
+    TrezorBleConnectivityService.stopMonitoring();
     super.dispose();
   }
 
