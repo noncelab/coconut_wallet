@@ -1,11 +1,13 @@
 import 'dart:convert';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/model/wallet/local_signer_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -13,6 +15,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
+import 'package:coconut_wallet/repository/realm/converter/local_signer_metadata.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/taproot_wallet.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -37,6 +40,10 @@ class WalletRepository extends BaseRepository {
     var multisigWallets = realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id DESC)');
     var externalWallets = realm.all<RealmExternalWallet>().query('TRUEPREDICATE SORT(id DESC)');
     final taprootWalletMap = {for (var w in realm.all<RealmTaprootWallet>()) w.id: w};
+    final localSignerMetadataMap = {
+      for (final metadata in realm.all<RealmLocalSignerMetadata>())
+        metadata.walletId: mapRealmToLocalSignerMetadata(metadata),
+    };
 
     for (var i = 0; i < walletBases.length; i++) {
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
@@ -53,7 +60,14 @@ class WalletRepository extends BaseRepository {
             ),
           );
         } else {
-          walletList.add(mapRealmToSingleSigWalletItem(walletBases[i], walletBases[i].descriptor, null));
+          walletList.add(
+            mapRealmToSingleSigWalletItem(
+              walletBases[i],
+              walletBases[i].descriptor,
+              null,
+              localSignerMetadataMap[walletBases[i].id],
+            ),
+          );
         }
       } else if (walletBases[i].walletType == WalletType.taproot.name) {
         final realmTaprootWallet = taprootWalletMap[walletBases[i].id];
@@ -100,6 +114,72 @@ class WalletRepository extends BaseRepository {
       watchOnlyWallet.descriptor,
       watchOnlyWallet.walletImportSource,
     );
+  }
+
+  /// 새 싱글시그 핫월렛과 로컬 서명자 메타데이터를 함께 생성한다.
+  /// 기존 Watch-only 지갑에 로컬 서명자를 연결하는 용도로 사용할 수 없다.
+  Future<SinglesigWalletItem> addHotWallet(
+    WatchOnlyWallet wallet, {
+    required String secureStorageKey,
+    required bool backupVerified,
+    required DateTime createdAt,
+  }) async {
+    if (wallet.walletType != WalletType.singleSignature) {
+      throw ArgumentError.value(wallet.walletType, 'wallet.walletType', 'Hot wallet must be single-signature');
+    }
+    if (wallet.walletImportSource != WalletImportSource.coconutVault) {
+      throw ArgumentError.value(
+        wallet.walletImportSource,
+        'wallet.walletImportSource',
+        'External wallet cannot be hot',
+      );
+    }
+
+    final singlesigWallet = SingleSignatureWallet.fromDescriptor(wallet.descriptor);
+    final derivationPath = singlesigWallet.derivationPath;
+    final id = _getNextWalletId();
+    final realmWalletBase = RealmWalletBase(
+      id,
+      wallet.colorIndex,
+      wallet.iconIndex,
+      wallet.descriptor,
+      wallet.name,
+      WalletType.singleSignature.name,
+    );
+    final metadata = LocalSignerMetadata(
+      walletId: id,
+      secureStorageKey: secureStorageKey,
+      masterFingerprint: singlesigWallet.keyStore.masterFingerprint,
+      derivationPath: derivationPath,
+      accountIndex: _getAccountIndex(derivationPath),
+      backupVerified: backupVerified,
+      createdAt: createdAt,
+    );
+    final realmMetadata = RealmLocalSignerMetadata(
+      id,
+      metadata.secureStorageKey,
+      metadata.masterFingerprint,
+      metadata.derivationPath,
+      metadata.accountIndex,
+      metadata.backupVerified,
+      metadata.createdAt,
+    );
+
+    realm.write(() {
+      realm.add(realmWalletBase);
+      realm.add(realmMetadata);
+    });
+
+    _recordNextWalletId(id + 1);
+    return mapRealmToSingleSigWalletItem(realmWalletBase, wallet.descriptor, WalletImportSource.coconutVault, metadata);
+  }
+
+  int _getAccountIndex(String derivationPath) {
+    final segments = derivationPath.split('/');
+    if (segments.length < 4 || segments.first != 'm') {
+      throw FormatException('Invalid single-signature derivation path: $derivationPath');
+    }
+    return int.parse(segments[3].replaceAll(RegExp(r"['hH]"), ''));
   }
 
   /// 탭루트 지갑 추가
@@ -226,6 +306,7 @@ class WalletRepository extends BaseRepository {
     final realmTaprootWalletResults =
         walletBase.walletType == WalletType.taproot.name ? realm.query<RealmTaprootWallet>('id == $walletId') : null;
     final realmTaprootWallet = realmTaprootWalletResults?.firstOrNull;
+    final localSignerMetadata = realm.find<RealmLocalSignerMetadata>(walletId);
 
     await realm.writeAsync(() {
       realm.delete(walletBase);
@@ -240,6 +321,9 @@ class WalletRepository extends BaseRepository {
       }
       if (realmTaprootWallet != null) {
         realm.delete(realmTaprootWallet);
+      }
+      if (localSignerMetadata != null) {
+        realm.delete(localSignerMetadata);
       }
       if (walletBalance.isNotEmpty) {
         realm.deleteMany(walletBalance);

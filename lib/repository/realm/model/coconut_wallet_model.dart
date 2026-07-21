@@ -15,6 +15,7 @@ final realmAllSchemas = [
   RealmMultisigWallet.schema,
   RealmExternalWallet.schema,
   RealmTaprootWallet.schema,
+  RealmLocalSignerMetadata.schema,
   RealmTransaction.schema,
   RealmIntegerId.schema,
   RealmUtxoTag.schema,
@@ -76,6 +77,18 @@ class _RealmTaprootWallet {
   /// 키 패스/스크립트 패스 한쪽만 가능한 wallet 에서는 사용되지 않으며,
   /// 둘 다 가능한 wallet 에 한해 의미를 가진다.
   late String? defaultSpendTypeName;
+}
+
+@RealmModel()
+class _RealmLocalSignerMetadata {
+  @PrimaryKey()
+  late int walletId;
+  late String secureStorageKey;
+  late String masterFingerprint;
+  late String derivationPath;
+  late int accountIndex;
+  late bool backupVerified;
+  late DateTime createdAt;
 }
 
 @RealmModel()

@@ -112,7 +112,7 @@ class WalletProvider extends ChangeNotifier {
     return await _walletRepository.getWalletItemList();
   }
 
-  int _findSameWalletIndex(String descriptorString, WalletType walletType) {
+  int _findSameWalletIndex(String descriptorString, WalletType walletType, {bool isHotWallet = false}) {
     final WalletBase walletBase = switch (walletType) {
       WalletType.multiSignature => MultisignatureWallet.fromDescriptor(descriptorString),
       WalletType.taproot => TaprootWallet.fromDescriptor(descriptorString),
@@ -121,6 +121,9 @@ class WalletProvider extends ChangeNotifier {
     final newWalletAddress = walletBase.getAddress(0);
     for (var index = 0; index < _walletItemList.length; index++) {
       final item = _walletItemList[index];
+      if (walletType == WalletType.singleSignature && item.hasLocalKey != isHotWallet) {
+        continue;
+      }
       final matches = switch (walletType) {
         WalletType.multiSignature => item is MultisigWalletItem,
         WalletType.taproot => item is TaprootWalletItem,
@@ -246,6 +249,43 @@ class WalletProvider extends ChangeNotifier {
     _handleNewWalletAdded(newWallet.id);
 
     return ResultOfSyncFromVault(result: WalletSyncResult.newWalletAdded, walletId: newWallet.id);
+  }
+
+  /// 동일 descriptor의 Watch-only 지갑이 있어도 별도 지갑으로 생성한다.
+  Future<SinglesigWalletItem> addHotWallet(
+    WatchOnlyWallet wallet, {
+    required String secureStorageKey,
+    required bool backupVerified,
+    required DateTime createdAt,
+  }) async {
+    if (wallet.walletType != WalletType.singleSignature) {
+      throw ArgumentError.value(wallet.walletType, 'wallet.walletType', 'Hot wallet must be single-signature');
+    }
+    if (_findSameWalletIndex(wallet.descriptor, wallet.walletType, isHotWallet: true) != -1) {
+      throw StateError('The hot wallet has already been added');
+    }
+
+    final resolvedName = _resolveWalletNameConflict(
+      desiredName: wallet.name,
+      descriptor: wallet.descriptor,
+      isSingleSig: true,
+    );
+    if (resolvedName == null) {
+      throw StateError('A wallet with the same name already exists');
+    }
+
+    final hotWallet = await _walletRepository.addHotWallet(
+      _copyWithNewName(wallet, resolvedName),
+      secureStorageKey: secureStorageKey,
+      backupVerified: backupVerified,
+      createdAt: createdAt,
+    );
+    await _addressRepository.ensureAddressesInit(walletItemBase: hotWallet);
+    final updatedList = List<WalletItemBase>.from(_walletItemList)..add(hotWallet);
+    _setWalletItemList(updatedList);
+    _saveWalletCount(updatedList.length);
+    await _handleNewWalletAdded(hotWallet.id);
+    return hotWallet;
   }
 
   // MARK: - Name Conflict, MFP verification Helpers

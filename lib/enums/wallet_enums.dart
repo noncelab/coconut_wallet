@@ -33,6 +33,9 @@ enum WalletSyncResult {
 
 enum WalletLoadState { never, loadingFromDB, loadCompleted }
 
+/// 지갑이 트랜잭션에 서명하는 방식
+enum WalletSigningMethod { externalQr, connectedHardware, localSigner }
+
 enum WalletImportSource {
   coconutVault,
   keystone,

@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/local_signer_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
@@ -47,6 +48,9 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   int addSinglesigWalletCallCount = 0;
   late SinglesigWalletItem addSinglesigWalletResult;
 
+  int addHotWalletCallCount = 0;
+  late SinglesigWalletItem addHotWalletResult;
+
   int addMultisigWalletCallCount = 0;
   late MultisigWalletItem addMultisigWalletResult;
 
@@ -66,6 +70,17 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   Future<SinglesigWalletItem> addSinglesigWallet(WatchOnlyWallet watchOnlyWallet) async {
     addSinglesigWalletCallCount++;
     return addSinglesigWalletResult;
+  }
+
+  @override
+  Future<SinglesigWalletItem> addHotWallet(
+    WatchOnlyWallet wallet, {
+    required String secureStorageKey,
+    required bool backupVerified,
+    required DateTime createdAt,
+  }) async {
+    addHotWalletCallCount++;
+    return addHotWalletResult;
   }
 
   @override
@@ -124,6 +139,7 @@ SinglesigWalletItem _createSinglesigWalletListItem({
   String name = 'My Wallet',
   int colorIndex = 0,
   int iconIndex = 0,
+  bool isHotWallet = false,
 }) {
   return SinglesigWalletItem(
     id: id,
@@ -131,6 +147,18 @@ SinglesigWalletItem _createSinglesigWalletListItem({
     colorIndex: colorIndex,
     iconIndex: iconIndex,
     descriptor: _singlesigDescriptor,
+    localSignerMetadata:
+        isHotWallet
+            ? LocalSignerMetadata(
+              walletId: id,
+              secureStorageKey: 'local_wallet_seed_$id',
+              masterFingerprint: 'D45AA182',
+              derivationPath: "m/84'/1'/0'",
+              accountIndex: 0,
+              backupVerified: true,
+              createdAt: DateTime.utc(2026, 7, 20),
+            )
+            : null,
   );
 }
 
@@ -349,6 +377,20 @@ void main() {
       provider.dispose();
     });
 
+    test('같은 descriptor의 핫월렛이 있어도 Watch-only 지갑을 별도로 추가함', () async {
+      final existingHotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo = FakeWalletRepository()..walletItems = [existingHotWallet];
+      walletRepo.addSinglesigWalletResult = _createSinglesigWalletListItem(id: 2, name: 'My Wallet Account 0');
+
+      final provider = await _buildProvider(walletRepo);
+      final result = await provider.syncFromCoconutVault(_createSinglesigWatchOnlyWallet());
+
+      expect(result.result, WalletSyncResult.newWalletAdded);
+      expect(walletRepo.addSinglesigWalletCallCount, 1);
+
+      provider.dispose();
+    });
+
     test('기존 지갑 이름 변경 시 updateWalletUI 호출 및 existingWalletUpdated 반환', () async {
       final existingItem = _createSinglesigWalletListItem(name: 'Old Name');
       final walletRepo = FakeWalletRepository()..walletItems = [existingItem];
@@ -414,6 +456,52 @@ void main() {
       expect(result.result, WalletSyncResult.newWalletAdded);
       expect(walletRepo.addSinglesigWalletCallCount, 1);
       // 이름 충돌이 자동 해소되었음을 확인 (existingName이 아님)
+
+      provider.dispose();
+    });
+  });
+
+  group('WalletProvider - 핫월렛', () {
+    test('같은 descriptor의 Watch-only 지갑이 있어도 핫월렛을 별도로 추가함', () async {
+      final existingWatchOnly = _createSinglesigWalletListItem();
+      final walletRepo = FakeWalletRepository()..walletItems = [existingWatchOnly];
+      walletRepo.addHotWalletResult = _createSinglesigWalletListItem(
+        id: 2,
+        name: 'My Wallet Account 0',
+        isHotWallet: true,
+      );
+
+      final provider = await _buildProvider(walletRepo);
+      final result = await provider.addHotWallet(
+        _createSinglesigWatchOnlyWallet(),
+        secureStorageKey: 'local_wallet_seed_new',
+        backupVerified: true,
+        createdAt: DateTime.utc(2026, 7, 21),
+      );
+
+      expect(result.hasLocalKey, isTrue);
+      expect(walletRepo.addHotWalletCallCount, 1);
+      expect(provider.walletItemList, hasLength(2));
+
+      provider.dispose();
+    });
+
+    test('이미 같은 핫월렛이 있으면 중복 추가하지 않음', () async {
+      final existingHotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo = FakeWalletRepository()..walletItems = [existingHotWallet];
+
+      final provider = await _buildProvider(walletRepo);
+
+      expect(
+        () => provider.addHotWallet(
+          _createSinglesigWatchOnlyWallet(),
+          secureStorageKey: 'local_wallet_seed_new',
+          backupVerified: true,
+          createdAt: DateTime.utc(2026, 7, 21),
+        ),
+        throwsStateError,
+      );
+      expect(walletRepo.addHotWalletCallCount, 0);
 
       provider.dispose();
     });
