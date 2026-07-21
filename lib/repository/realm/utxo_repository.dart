@@ -189,7 +189,15 @@ class UtxoRepository extends BaseRepository {
         var tag = realm.query<RealmUtxoTag>(r'walletId == $0 AND name == $1', [walletId, tagName]).firstOrNull;
 
         if (tag == null) {
-          tag = RealmUtxoTag(Uuid.v4().toString(), walletId, tagName, 0, DateTime.now());
+          final existingTags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]);
+          final usedColorIndexes = existingTags.map((t) => t.colorIndex).toSet();
+
+          int newColorIndex = 0;
+          while (usedColorIndexes.contains(newColorIndex)) {
+            newColorIndex++;
+          }
+
+          tag = RealmUtxoTag(Uuid.v4().toString(), walletId, tagName, newColorIndex, DateTime.now());
           realm.add(tag);
         }
 
