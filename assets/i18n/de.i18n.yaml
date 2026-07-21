@@ -745,6 +745,8 @@ wallet_info_screen:
   target_set_21m: "Es ist das Sats-Rennen!!!"
   view_xpub: "Erweiterten öffentlichen Schlüssel anzeigen"
   duplicated_name: "Name bereits in Verwendung"
+  import_labels_success: "Memos erfolgreich importiert"
+  import_labels_fail: "Memo-Import fehlgeschlagen"
   import_labels: "Memos importieren"
   export_labels: "Memos exportieren"
   export_labels_description: "Sie können die in Ihrer Wallet gespeicherten Memos auch auf anderen Geräten anwenden.\n\nMöchten Sie mit dem Backup fortfahren?"
@@ -769,6 +771,7 @@ wallet_info_screen:
   error:
     delete: "Wallet konnte nicht gelöscht werden"
     no_memos: "Es gibt keine im Wallet aufgezeichneten Notizen."
+    invalid_file_type: "Ungültiger Dateityp. Bitte wählen Sie eine JSONL-Datei."
   bitbox02_device:
     title: "Geräteinformationen"
     connection_status: "Verbindungsstatus"

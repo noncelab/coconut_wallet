@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -28,6 +29,7 @@ import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -613,5 +615,51 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     );
   }
 
-  Future<void> _importLabels(WalletInfoViewModel viewModel) async {}
+  Future<void> _importLabels(WalletInfoViewModel viewModel) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.any);
+
+    if (result != null) {
+      final file = result.files.single;
+      if (file.extension?.toLowerCase() != 'jsonl') {
+        if (mounted) {
+          CoconutToast.showToast(
+            context: context,
+            text: t.wallet_info_screen.error.invalid_file_type,
+            level: CoconutToastLevel.warning,
+            isVisibleIcon: true,
+            iconPath: 'assets/svg/triangle-warning.svg',
+          );
+        }
+        return;
+      }
+
+      final filePath = file.path;
+      if (filePath == null) return;
+
+      _setOverlayLoading(true);
+      try {
+        final labelManager = LabelJsonLManager();
+        await labelManager.importLabelsFromJsonLFile(widget.id, context.read<WalletProvider>(), filePath);
+
+        _setOverlayLoading(false);
+        if (mounted) {
+          CoconutToast.showToast(
+            context: context,
+            text: t.wallet_info_screen.import_labels_success,
+            level: CoconutToastLevel.success,
+          );
+        }
+      } catch (e) {
+        _setOverlayLoading(false);
+        if (mounted) {
+          await showInfoDialog(
+            context,
+            context.read<PreferenceProvider>().language,
+            t.wallet_info_screen.import_labels_fail,
+            e.toString(),
+          );
+        }
+      }
+    }
+  }
 }

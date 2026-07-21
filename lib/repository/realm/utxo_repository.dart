@@ -183,6 +183,23 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
+  Future<Result<void>> addUtxoToTag(int walletId, String tagName, String utxoId) async {
+    return handleAsyncRealm(() async {
+      await realm.writeAsync(() {
+        var tag = realm.query<RealmUtxoTag>(r'walletId == $0 AND name == $1', [walletId, tagName]).firstOrNull;
+
+        if (tag == null) {
+          tag = RealmUtxoTag(Uuid.v4().toString(), walletId, tagName, 0, DateTime.now());
+          realm.add(tag);
+        }
+
+        if (!tag.utxoIdList.contains(utxoId)) {
+          tag.utxoIdList.add(utxoId);
+        }
+      });
+    });
+  }
+
   /// 모든 UTXO 추가
   Future<Result<bool>> addAllUtxos(int walletId, List<UtxoState> utxos) async {
     realm.refresh();

@@ -788,6 +788,8 @@ wallet_info_screen:
   target_set_21m: "¡Es la carrera por los sats!"
   view_xpub: "Ver clave pública extendida"
   duplicated_name: "Nombre ya en uso"
+  import_labels_success: "Memos importados correctamente"
+  import_labels_fail: "Error al importar memos"
   import_labels: "Importar Memos"
   export_labels: "Exportar Memos"
   export_labels_description: "Puede aplicar las notas guardadas en su billetera en otros dispositivos.\n\n¿Desea continuar con la copia de seguridad?"
@@ -812,6 +814,7 @@ wallet_info_screen:
   error:
     delete: "No se pudo eliminar la billetera"
     no_memos: "No hay notas registradas en la billetera."
+    invalid_file_type: "Tipo de archivo no válido. Por favor, seleccione un archivo JSONL."
   bitbox02_device:
     title: "Información del dispositivo"
     connection_status: "Estado de conexión"

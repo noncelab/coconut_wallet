@@ -786,6 +786,8 @@ wallet_info_screen:
   target_set_21m: "It’s the sats race!!!"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
+  import_labels_success: "Memos Imported Successfully"
+  import_labels_fail: "Memo Import Failed"
   import_labels: "Import Memos"
   export_labels: "Export Memos"
   export_labels_description: "You can apply the memos recorded in your wallet to other devices as well.\n\nWould you like to proceed with the backup?"
@@ -810,6 +812,7 @@ wallet_info_screen:
   error:
     delete: "Failed to delete wallet"
     no_memos: "There are no memos recorded in the wallet."
+    invalid_file_type: "Invalid file type. Please select a JSONL file."
   bitbox02_device:
     title: "Device Info"
     connection_status: "Connection Status"

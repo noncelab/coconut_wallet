@@ -674,6 +674,34 @@ class WalletProvider extends ChangeNotifier {
     return SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, _addressRepository.containsAddressInAnyWallet);
   }
 
+  Future<void> updateTransactionMemo(int walletId, String txHash, String memo) async {
+    final result = _transactionRepository.updateTransactionMemo(walletId, txHash, memo);
+    if (result.isSuccess) {
+      notifyListeners();
+    } else {
+      throw result.error;
+    }
+  }
+
+  Future<void> addUtxoToTag(int walletId, String tagName, String utxoId) async {
+    final result = await _utxoRepository.addUtxoToTag(walletId, tagName, utxoId);
+    if (result.isSuccess) {
+      notifyListeners();
+    } else {
+      throw result.error;
+    }
+  }
+
+  Future<void> lockUtxo(int walletId, String utxoId) async {
+    final utxo = getUtxoState(walletId, utxoId);
+    if (utxo != null && utxo.status != UtxoStatus.locked) {
+      final result = await _utxoRepository.toggleUtxoLockStatus(walletId, utxoId);
+      if (result.isFailure) {
+        throw result.error;
+      }
+    }
+  }
+
   @override
   void dispose() {
     // ValueNotifier들 해제
