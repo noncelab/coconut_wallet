@@ -109,7 +109,6 @@ account: "Account"
 merge_utxos: "Merge"
 split_utxo: "Split"
 apply: "Apply"
-manage_label: "Manage Memos"
 
 relative_time:
   just_now: "Just now"
@@ -1238,6 +1237,10 @@ estimated_fee_bottom_sheet:
   title: "Estimated Fee"
   estimated_fee: "Estimated Fee"
   fee_rate: "Fee Rate"
+
+manage_labels_bottom_sheet:
+  title: "Manage Notes"
+  subtitle: "You can import or export your recorded notes."
 
 long_pressed_menu:
   hide: "Hide"

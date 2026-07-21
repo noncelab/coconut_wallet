@@ -20,6 +20,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/bottom_sheet/manage_labels_bottom_sheet.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -262,6 +263,12 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           },
                         ),
                       ),
+                      SingleButton(
+                        title: t.manage_labels_bottom_sheet.title,
+                        subtitle: t.manage_labels_bottom_sheet.subtitle,
+                        isVerticalSubtitle: true,
+                        onPressed: () => _showManageLabelsBottomSheet(context),
+                      ),
                       _buildAnimatedButton(
                         title: t.log_viewer,
                         onPressed: () {
@@ -365,5 +372,17 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
       case AppLanguage.de:
         return t.settings_screen.locales.german;
     }
+  }
+
+  void _showManageLabelsBottomSheet(BuildContext context) {
+    ManageLabelsBottomSheet.show(
+      context: context,
+      onImportPressed: () {
+        // TODO: _showImportLabelsDialog(context, viewModel);
+      },
+      onExportPressed: () {
+        // TODO: _showExportLabelsDialog(context, viewModel);
+      },
+    );
   }
 }

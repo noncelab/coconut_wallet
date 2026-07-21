@@ -110,7 +110,6 @@ account: "Cuenta"
 merge_utxos: "Fusionar"
 split_utxo: "Dividir"
 apply: "Aplicar"
-manage_label: "Gestionar Memos"
 
 relative_time:
   just_now: "Justo ahora"
@@ -1240,6 +1239,10 @@ estimated_fee_bottom_sheet:
     title: "Comisión estimada"
     estimated_fee: "Comisión estimada"
     fee_rate: "Tasa de comisión"
+
+manage_labels_bottom_sheet:
+  title: "Gestionar notas"
+  subtitle: "Puedes importar o exportar tus notas guardadas."
 
 long_pressed_menu:
   hide: "Ocultar"

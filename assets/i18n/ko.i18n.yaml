@@ -109,7 +109,6 @@ account: "계정"
 merge_utxos: "합치기"
 split_utxo: "나누기"
 apply: "정리하기"
-manage_label: "메모 관리하기"
 
 relative_time:
   just_now: "방금 전"
@@ -1244,6 +1243,10 @@ estimated_fee_bottom_sheet:
     title: "예상 수수료"
     estimated_fee: "예상 수수료"
     fee_rate: "수수료율"
+
+manage_labels_bottom_sheet:
+  title: "메모 관리"
+  subtitle: "기록한 메모들을 가져오거나 내보낼 수 있습니다."
 
 long_pressed_menu:
   hide: "숨기기"

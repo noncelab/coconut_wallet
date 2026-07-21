@@ -109,7 +109,6 @@ account: "Konto"
 merge_utxos: "Zusammenführen"
 split_utxo: "Teilen"
 apply: "Anwenden"
-manage_label: "Memos verwalten"
 
 relative_time:
   just_now: "Gerade eben"
@@ -1197,6 +1196,10 @@ estimated_fee_bottom_sheet:
   title: "Geschätzte Gebühr"
   estimated_fee: "Geschätzte Gebühr"
   fee_rate: "Gebührenrate"
+
+manage_labels_bottom_sheet:
+  title: "Notizen verwalten"
+  subtitle: "Sie können Ihre gespeicherten Notizen importieren oder exportieren."
 
 long_pressed_menu:
   hide: "Verbergen"

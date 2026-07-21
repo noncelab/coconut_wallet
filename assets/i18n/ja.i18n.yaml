@@ -109,7 +109,6 @@ account: "アカウント"
 merge_utxos: "をまとめる"
 split_utxo: "を分割"
 apply: "適用する"
-manage_label: "メモを管理"
 
 relative_time:
   just_now: "たった今"
@@ -1238,6 +1237,10 @@ estimated_fee_bottom_sheet:
     title: "予想手数料"
     estimated_fee: "予想手数料"
     fee_rate: "手数料率"
+
+manage_labels_bottom_sheet:
+  title: "メモの管理"
+  subtitle: "記録したメモをインポートまたはエクスポートできます。"
 
 long_pressed_menu:
   hide: "非表示"
