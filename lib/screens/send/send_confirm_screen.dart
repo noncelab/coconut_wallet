@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
@@ -184,8 +185,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   }
 
   Future<void> _navigateToTrezorSign(SendConfirmViewModel viewModel) async {
-    final isPhysicallyConnected = await TrezorBleConnectivityService.isDeviceConnected();
-    final hasSession = TrezorDevice.lastConnected != null;
+    final lastConnected = TrezorDevice.lastConnected;
+    final isPhysicallyConnected = await TrezorBleConnectivityService.isDeviceConnected(
+      lastConnected?.transport ?? TrezorTransport.ble,
+    );
+    final hasSession = lastConnected != null;
     if (!context.mounted) return;
     if (isPhysicallyConnected && hasSession) {
       Navigator.pushNamed(
@@ -196,6 +200,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
           'walletName': viewModel.walletName,
           'walletFingerprint': viewModel.walletFingerprint,
           'isFromSendFlow': true,
+          'transport': lastConnected.transport.name,
         },
       );
     } else if (Platform.isIOS) {
@@ -209,14 +214,14 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         heightRatio: 0.9,
       );
     } else {
-      Navigator.pushNamed(
-        context,
-        '/trezor-transport-select',
-        arguments: {
-          'psbtBase64': viewModel.txWaitingForSign,
-          'walletName': viewModel.walletName,
-          'walletFingerprint': viewModel.walletFingerprint,
-        },
+      CommonBottomSheets.showCustomHeightBottomSheet(
+        context: context,
+        heightRatio: 0.9,
+        child: TrezorTransportSelectScreen(
+          psbtBase64: viewModel.txWaitingForSign,
+          walletName: viewModel.walletName,
+          walletFingerprint: viewModel.walletFingerprint,
+        ),
       );
     }
   }

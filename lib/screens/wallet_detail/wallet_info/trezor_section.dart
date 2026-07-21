@@ -38,7 +38,8 @@ class _TrezorSectionState extends State<TrezorSection> {
   }
 
   Future<void> _checkAndSubscribe() async {
-    final physicallyConnected = await TrezorBleConnectivityService.isDeviceConnected();
+    final transport = TrezorDevice.lastConnected?.transport ?? TrezorTransport.ble;
+    final physicallyConnected = await TrezorBleConnectivityService.isDeviceConnected(transport);
     if (!mounted) return;
     setState(() {
       _isConnected = physicallyConnected && _isWalletMatch();

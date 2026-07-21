@@ -432,6 +432,8 @@ wallet_connect_screen:
       master_fingerprint: "Master-Fingerabdruck"
       derivation_path: "Ableitungspfad"
       xpub: "Erweiterter öffentlicher Schlüssel"
+    keep_connection_title: "Verbindung beibehalten"
+    keep_connection_description: "Möchtest du die Trezor-Verbindung beibehalten?"
     error:
       title: "Verbindung fehlgeschlagen"
       ble_description: "Trezor Safe 7 wurde nicht gefunden. Bitte aktivieren Sie Bluetooth und bringen Sie das Gerät näher."
@@ -443,6 +445,18 @@ wallet_connect_screen:
       step3: "Wählen Sie 'Dieses Gerät vergessen' und versuchen Sie es erneut."
     pairing_aborted:
       title: "Pairing abgebrochen"
+    usb:
+      title: "Trezor über USB verbinden"
+      description: "Verbinde dein Trezor mit einem datenfähigen USB-Kabel mit diesem Android-Gerät."
+      connecting: "Verbindung mit Trezor"
+      connecting_description: "Erlaube den USB-Zugriff und folge den Anweisungen auf deinem Trezor."
+      connect: "Über USB verbinden"
+      pin_title: "PIN eingeben"
+      pin_description: "Sieh dir die Zahlenanordnung auf deinem Trezor an und gib deine PIN ein."
+      passphrase_title: "Passphrase eingeben"
+      passphrase_hint: "Passphrase der versteckten Wallet"
+      standard_wallet: "Standard-Wallet"
+      error: "Verbinde dein Trezor und versuche es erneut."
   common:
     ble_off: "Bitte aktivieren Sie Bluetooth auf Ihrem Gerät."
 
@@ -1296,6 +1310,7 @@ trezor_sign_screen:
   device_mismatch_other_wallet: "Das verbundene Gerät gehört zu '${wallet_name}'. Bitte verbinden Sie das richtige Gerät."
   btn:
     sign: "Mit Trezor signieren"
+    connect_other_trezor: "Anderes Trezor verbinden"
   state_label:
     idle: "Warten auf Signatur"
     signing: "Signieren"

@@ -19,12 +19,12 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use trezor_connect_rs::{
-    CallbackDeviceInfo, CallbackReadResult, CallbackResult, CallbackTransport, ConnectedDevice,
-    DeviceInfo, GetPublicKeyParams, TransportCallback,
-    psbt::{psbt_to_sign_tx_params, apply_signatures_to_psbt},
-};
 use trezor_connect_rs::types::Network;
+use trezor_connect_rs::{
+    psbt::{apply_signatures_to_psbt, psbt_to_sign_tx_params},
+    CallbackDeviceInfo, CallbackReadResult, CallbackResult, CallbackTransport, ConnectedDevice,
+    DeviceInfo, GetPublicKeyParams, PassphraseResponse, TransportCallback, TrezorUiCallback,
+};
 
 // ---------------------------------------------------------------------------
 // Error type — must match trezor.udl [Error] enum variants exactly
@@ -60,6 +60,13 @@ pub trait TrezorBleCallbacks: Send + Sync {
     fn get_pairing_code(&self) -> String;
 }
 
+pub trait TrezorUsbCallbacks: Send + Sync {
+    fn write(&self, data: Vec<u8>) -> bool;
+    fn read(&self) -> Option<Vec<u8>>;
+    fn get_pin(&self) -> String;
+    fn get_passphrase(&self, on_device: bool) -> String;
+}
+
 // ---------------------------------------------------------------------------
 // CallbackTransport adapter wrapping the UniFFI callback object
 // ---------------------------------------------------------------------------
@@ -87,7 +94,9 @@ impl NativeAdapter {
             Some(p) => p,
             None => return false,
         };
-        if let Ok(parent) = std::fs::canonicalize(path.parent().unwrap_or(std::path::Path::new("."))) {
+        if let Ok(parent) =
+            std::fs::canonicalize(path.parent().unwrap_or(std::path::Path::new(".")))
+        {
             let _ = std::fs::create_dir_all(&parent);
         } else if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
@@ -98,8 +107,8 @@ impl NativeAdapter {
         };
         #[cfg(unix)]
         {
-            use std::os::unix::fs::OpenOptionsExt;
             use std::io::Write;
+            use std::os::unix::fs::OpenOptionsExt;
             match std::fs::OpenOptions::new()
                 .write(true)
                 .create(true)
@@ -115,6 +124,108 @@ impl NativeAdapter {
         {
             std::fs::write(path, json).is_ok()
         }
+    }
+}
+
+struct UsbNativeAdapter {
+    device_path: String,
+    vendor_id: u16,
+    product_id: u16,
+    cbs: Arc<dyn TrezorUsbCallbacks>,
+}
+
+struct UsbUiAdapter {
+    cbs: Arc<dyn TrezorUsbCallbacks>,
+}
+
+fn parse_passphrase_response(response: &str) -> PassphraseResponse {
+    let value: serde_json::Value = match serde_json::from_str(response) {
+        Ok(value) => value,
+        Err(_) => return PassphraseResponse::Cancel,
+    };
+    match value.get("type").and_then(|value| value.as_str()) {
+        Some("standard") => PassphraseResponse::Standard,
+        Some("hidden") => PassphraseResponse::Hidden {
+            value: value
+                .get("value")
+                .and_then(|value| value.as_str())
+                .unwrap_or_default()
+                .to_string(),
+        },
+        Some("on_device") => PassphraseResponse::OnDevice,
+        _ => PassphraseResponse::Cancel,
+    }
+}
+
+impl TrezorUiCallback for UsbUiAdapter {
+    fn on_pin_request(&self) -> Option<String> {
+        let pin = self.cbs.get_pin();
+        if pin.is_empty() {
+            None
+        } else {
+            Some(pin)
+        }
+    }
+
+    fn on_passphrase_request(&self, on_device: bool) -> PassphraseResponse {
+        parse_passphrase_response(&self.cbs.get_passphrase(on_device))
+    }
+}
+
+impl TransportCallback for UsbNativeAdapter {
+    fn enumerate_devices(&self) -> Vec<CallbackDeviceInfo> {
+        vec![CallbackDeviceInfo {
+            path: self.device_path.clone(),
+            transport_type: "usb".to_string(),
+            name: Some("Trezor Model One".to_string()),
+            vendor_id: Some(self.vendor_id),
+            product_id: Some(self.product_id),
+        }]
+    }
+
+    fn open_device(&self, _path: &str) -> CallbackResult {
+        CallbackResult {
+            success: true,
+            error: String::new(),
+        }
+    }
+
+    fn close_device(&self, _path: &str) -> CallbackResult {
+        CallbackResult {
+            success: true,
+            error: String::new(),
+        }
+    }
+
+    fn read_chunk(&self, _path: &str) -> CallbackReadResult {
+        match self.cbs.read() {
+            Some(data) => CallbackReadResult {
+                success: true,
+                data,
+                error: String::new(),
+            },
+            None => CallbackReadResult {
+                success: false,
+                data: vec![],
+                error: "USB read timeout".to_string(),
+            },
+        }
+    }
+
+    fn write_chunk(&self, _path: &str, data: &[u8]) -> CallbackResult {
+        let success = self.cbs.write(data.to_vec());
+        CallbackResult {
+            success,
+            error: if success {
+                String::new()
+            } else {
+                "USB write failed".to_string()
+            },
+        }
+    }
+
+    fn get_chunk_size(&self, _path: &str) -> u32 {
+        64
     }
 }
 
@@ -173,16 +284,26 @@ impl TransportCallback for NativeAdapter {
     }
 
     fn open_device(&self, _path: &str) -> CallbackResult {
-        CallbackResult { success: true, error: String::new() }
+        CallbackResult {
+            success: true,
+            error: String::new(),
+        }
     }
 
     fn close_device(&self, _path: &str) -> CallbackResult {
-        CallbackResult { success: true, error: String::new() }
+        CallbackResult {
+            success: true,
+            error: String::new(),
+        }
     }
 
     fn read_chunk(&self, _path: &str) -> CallbackReadResult {
         match self.cbs.read() {
-            Some(data) => CallbackReadResult { success: true, data, error: String::new() },
+            Some(data) => CallbackReadResult {
+                success: true,
+                data,
+                error: String::new(),
+            },
             None => CallbackReadResult {
                 success: false,
                 data: vec![],
@@ -195,7 +316,11 @@ impl TransportCallback for NativeAdapter {
         let ok = self.cbs.write(data.to_vec());
         CallbackResult {
             success: ok,
-            error: if ok { String::new() } else { "BLE write failed".to_string() },
+            error: if ok {
+                String::new()
+            } else {
+                "BLE write failed".to_string()
+            },
         }
     }
 
@@ -216,20 +341,24 @@ struct PendingEntry {
     cbs: Arc<dyn TrezorBleCallbacks>,
 }
 
+struct PendingUsbEntry {
+    cbs: Arc<dyn TrezorUsbCallbacks>,
+}
+
 struct Session {
     device: ConnectedDevice,
 }
 
-static PENDING: Lazy<Mutex<HashMap<u64, PendingEntry>>> =
+static PENDING: Lazy<Mutex<HashMap<u64, PendingEntry>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+
+static PENDING_USB: Lazy<Mutex<HashMap<u64, PendingUsbEntry>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
-static SESSIONS: Lazy<Mutex<HashMap<String, Session>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+static SESSIONS: Lazy<Mutex<HashMap<String, Session>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 // In-memory THP credential store keyed by device_id (BLE peripheral UUID).
 // Survives for the lifetime of the process so re-connection skips fresh pairing.
-static THP_CREDS: Lazy<Mutex<HashMap<String, String>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+static THP_CREDS: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 // In-memory store of previous transaction hexes keyed by (device_id, input_index).
 // Populated by trezor_set_prev_tx_hex() before signing so that the PSBT can be
@@ -252,19 +381,119 @@ static RT: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
 /// Register native BLE I/O callbacks before calling `trezor_connect`.
 /// `callbacks` is implemented by the Swift/Kotlin native layer.
 pub fn trezor_register_callbacks(ble_handle: u64, callbacks: Arc<dyn TrezorBleCallbacks>) {
-    PENDING.lock().unwrap().insert(ble_handle, PendingEntry {
-        cbs: callbacks,
+    PENDING
+        .lock()
+        .unwrap()
+        .insert(ble_handle, PendingEntry { cbs: callbacks });
+}
+
+pub fn trezor_register_usb_callbacks(usb_handle: u64, callbacks: Arc<dyn TrezorUsbCallbacks>) {
+    PENDING_USB
+        .lock()
+        .unwrap()
+        .insert(usb_handle, PendingUsbEntry { cbs: callbacks });
+}
+
+pub fn trezor_connect_usb(
+    usb_handle: u64,
+    device_path: String,
+    vendor_id: u16,
+    product_id: u16,
+) -> Result<String, TrezorError> {
+    let entry = PENDING_USB
+        .lock()
+        .unwrap()
+        .remove(&usb_handle)
+        .ok_or_else(|| TrezorError::Connect(format!("No USB callbacks for handle {usb_handle}")))?;
+    if !matches!((vendor_id, product_id), (0x534c, 0x0001) | (0x1209, 0x53c1)) {
+        return Err(TrezorError::Connect(
+            "Unsupported Trezor USB device".to_string(),
+        ));
+    }
+
+    let device_id = format!("usb:{device_path}");
+    let adapter = Arc::new(UsbNativeAdapter {
+        device_path: device_id.clone(),
+        vendor_id,
+        product_id,
+        cbs: entry.cbs.clone(),
     });
+    let ui_adapter = Arc::new(UsbUiAdapter { cbs: entry.cbs });
+
+    RT.block_on(async move {
+        use trezor_connect_rs::Transport;
+
+        let mut transport = CallbackTransport::new(adapter as Arc<dyn TransportCallback>);
+        transport
+            .init()
+            .await
+            .map_err(|error| TrezorError::Connect(error.to_string()))?;
+        let session = transport
+            .acquire(&device_id, None)
+            .await
+            .map_err(|error| TrezorError::Connect(error.to_string()))?;
+        if transport.has_thp(&device_id).await {
+            return Err(TrezorError::Connect(
+                "Unexpected THP device on Model One USB path".to_string(),
+            ));
+        }
+
+        let info = DeviceInfo::new_usb(device_id.clone(), vendor_id, product_id);
+        let mut connected = ConnectedDevice::new(info, Box::new(transport), session);
+        connected.set_ui_callback(ui_adapter);
+        let features = connected
+            .initialize()
+            .await
+            .map_err(|error| TrezorError::Connect(error.to_string()))?;
+
+        if features.is_bootloader() || !features.is_initialized() {
+            return Err(TrezorError::Connect("UNSUPPORTED_DEVICE_STATE".to_string()));
+        }
+        let version = (
+            features.major_version.unwrap_or(0),
+            features.minor_version.unwrap_or(0),
+            features.patch_version.unwrap_or(0),
+        );
+        if version < (1, 8, 0) {
+            return Err(TrezorError::Connect(format!(
+                "UNSUPPORTED_FIRMWARE:{}",
+                features.version_string()
+            )));
+        }
+
+        let label = features
+            .label
+            .clone()
+            .filter(|label| !label.is_empty())
+            .unwrap_or_else(|| "Trezor Model One".to_string());
+        let model = features.model.clone().unwrap_or_else(|| "1".to_string());
+        SESSIONS
+            .lock()
+            .unwrap()
+            .insert(device_id.clone(), Session { device: connected });
+        Ok(serde_json::json!({
+            "device_id": device_id,
+            "label": label,
+            "model": model,
+            "transport": "usb"
+        })
+        .to_string())
+    })
 }
 
 /// Connect to a Trezor Safe 7 over BLE (THP v2 Noise XX handshake).
 /// Must be preceded by `trezor_register_callbacks()` with the same `ble_handle`.
 /// Returns a `device_id` string for subsequent calls.
-pub fn trezor_connect(ble_handle: u64, device_uuid: String, credential_path: String) -> Result<String, TrezorError> {
-    let entry = PENDING.lock().unwrap().remove(&ble_handle)
-        .ok_or_else(|| TrezorError::Connect(
-            format!("No callbacks for handle {ble_handle}. Call trezor_register_callbacks first.")
-        ))?;
+pub fn trezor_connect(
+    ble_handle: u64,
+    device_uuid: String,
+    credential_path: String,
+) -> Result<String, TrezorError> {
+    let entry = PENDING.lock().unwrap().remove(&ble_handle).ok_or_else(|| {
+        TrezorError::Connect(format!(
+            "No callbacks for handle {ble_handle}. Call trezor_register_callbacks first."
+        ))
+    })?;
 
     // Use the stable device UUID as the path so credentials persist across app restarts.
     let path = format!("ble:{}", device_uuid);
@@ -288,11 +517,15 @@ pub fn trezor_connect(ble_handle: u64, device_uuid: String, credential_path: Str
 
         // init() is a no-op for CallbackTransport but required by the trait
         use trezor_connect_rs::Transport;
-        transport.init().await
+        transport
+            .init()
+            .await
             .map_err(|e| TrezorError::Connect(e.to_string()))?;
 
         // acquire() triggers the full THP v2 handshake over BLE
-        let session = transport.acquire(&path, None).await
+        let session = transport
+            .acquire(&path, None)
+            .await
             .map_err(|e| TrezorError::Connect(e.to_string()))?;
 
         let uses_thp = transport.has_thp(&path).await;
@@ -300,24 +533,29 @@ pub fn trezor_connect(ble_handle: u64, device_uuid: String, credential_path: Str
 
         let dev_info = DeviceInfo::new_bluetooth(path.clone(), Some("Trezor Safe 7".to_string()));
 
-        let mut connected = ConnectedDevice::new(
-            dev_info,
-            Box::new(transport),
-            session,
-        );
+        let mut connected = ConnectedDevice::new(dev_info, Box::new(transport), session);
 
         // BLE connections always use THP v2 — set unconditionally.
         connected.set_uses_thp(true);
 
-        let features = connected.initialize().await
+        let features = connected
+            .initialize()
+            .await
             .map_err(|e| TrezorError::Connect(e.to_string()))?;
 
-        let label = features.label
+        let label = features
+            .label
             .filter(|s| !s.is_empty())
             .or_else(|| features.model.clone())
             .unwrap_or_default();
-        eprintln!("[TrezorBridge] initialize() label={:?} model={:?}", label, features.model);
-        SESSIONS.lock().unwrap().insert(device_id.clone(), Session { device: connected });
+        eprintln!(
+            "[TrezorBridge] initialize() label={:?} model={:?}",
+            label, features.model
+        );
+        SESSIONS
+            .lock()
+            .unwrap()
+            .insert(device_id.clone(), Session { device: connected });
         // Return JSON so Flutter can pick up label without a separate call
         Ok(serde_json::json!({"device_id": device_id, "label": label}).to_string())
     })
@@ -326,10 +564,15 @@ pub fn trezor_connect(ble_handle: u64, device_uuid: String, credential_path: Str
 /// Retrieve the extended public key at `keypath` (e.g. `"m/84'/0'/0'"`).
 /// `network` must be one of: "mainnet", "testnet", "regtest" (default: "mainnet").
 /// Returns JSON: `{"xpub": "..."}`.
-pub fn trezor_get_xpub(device_id: String, keypath: String, network: String) -> Result<String, TrezorError> {
+pub fn trezor_get_xpub(
+    device_id: String,
+    keypath: String,
+    network: String,
+) -> Result<String, TrezorError> {
     RT.block_on(async move {
         let mut sessions = SESSIONS.lock().unwrap();
-        let s = sessions.get_mut(&device_id)
+        let s = sessions
+            .get_mut(&device_id)
             .ok_or_else(|| TrezorError::InvalidArg(format!("Unknown device_id: {device_id}")))?;
 
         let net = match network.to_lowercase().as_str() {
@@ -338,12 +581,16 @@ pub fn trezor_get_xpub(device_id: String, keypath: String, network: String) -> R
             _ => Network::Bitcoin,
         };
 
-        let resp = s.device.get_public_key(GetPublicKeyParams {
-            path: keypath,
-            coin: Some(net),
-            show_on_trezor: false,
-            script_type: None,
-        }).await.map_err(|e| TrezorError::XPub(e.to_string()))?;
+        let resp = s
+            .device
+            .get_public_key(GetPublicKeyParams {
+                path: keypath,
+                coin: Some(net),
+                show_on_trezor: false,
+                script_type: None,
+            })
+            .await
+            .map_err(|e| TrezorError::XPub(e.to_string()))?;
 
         Ok(serde_json::json!({"xpub": resp.xpub}).to_string())
     })
@@ -353,22 +600,29 @@ pub fn trezor_get_xpub(device_id: String, keypath: String, network: String) -> R
 pub fn trezor_get_fingerprint(device_id: String) -> Result<String, TrezorError> {
     RT.block_on(async move {
         let mut sessions = SESSIONS.lock().unwrap();
-        let s = sessions.get_mut(&device_id)
+        let s = sessions
+            .get_mut(&device_id)
             .ok_or_else(|| TrezorError::InvalidArg(format!("Unknown device_id: {device_id}")))?;
 
         // Request xpub at depth 1 ("m/0'") — its serialized form contains
         // the parent (master) fingerprint at bytes [5..9] of the Base58Check payload.
-        let resp = s.device.get_public_key(GetPublicKeyParams {
-            path: "m/0'".to_string(),
-            coin: None,
-            show_on_trezor: false,
-            script_type: None,
-        }).await.map_err(|e| TrezorError::Fingerprint(e.to_string()))?;
+        let resp = s
+            .device
+            .get_public_key(GetPublicKeyParams {
+                path: "m/0'".to_string(),
+                coin: None,
+                show_on_trezor: false,
+                script_type: None,
+            })
+            .await
+            .map_err(|e| TrezorError::Fingerprint(e.to_string()))?;
 
         let decoded = bitcoin::base58::decode_check(&resp.xpub)
             .map_err(|e| TrezorError::Fingerprint(format!("xpub decode: {e}")))?;
         if decoded.len() < 9 {
-            return Err(TrezorError::Fingerprint("xpub payload too short".to_string()));
+            return Err(TrezorError::Fingerprint(
+                "xpub payload too short".to_string(),
+            ));
         }
         // Layout: version(4) + depth(1) + parent_fingerprint(4) + ...
         Ok(hex::encode(&decoded[5..9]))
@@ -378,9 +632,14 @@ pub fn trezor_get_fingerprint(device_id: String) -> Result<String, TrezorError> 
 /// Store a raw previous transaction hex for a specific PSBT input index.
 /// Must be called for each input before [trezor_sign_transaction].
 /// The hex is injected as NON_WITNESS_UTXO into the PSBT before signing.
-pub fn trezor_set_prev_tx_hex(device_id: String, input_index: u32, raw_tx_hex: String) -> Result<(), TrezorError> {
+pub fn trezor_set_prev_tx_hex(
+    device_id: String,
+    input_index: u32,
+    raw_tx_hex: String,
+) -> Result<(), TrezorError> {
     let mut store = PREV_TX_STORE.lock().unwrap();
-    store.entry(device_id)
+    store
+        .entry(device_id)
         .or_insert_with(HashMap::new)
         .insert(input_index as usize, raw_tx_hex);
     Ok(())
@@ -431,10 +690,15 @@ fn inject_prev_txs_into_psbt(device_id: &str, psbt_bytes: &[u8]) -> Result<Vec<u
 /// calls the device to sign, then applies the signatures back into the PSBT.
 /// Returns the signed PSBT bytes.
 /// `network` must be one of: "mainnet", "testnet", "regtest" (default: "mainnet").
-pub fn trezor_sign_transaction(device_id: String, psbt_bytes: Vec<u8>, network: String) -> Result<Vec<u8>, TrezorError> {
+pub fn trezor_sign_transaction(
+    device_id: String,
+    psbt_bytes: Vec<u8>,
+    network: String,
+) -> Result<Vec<u8>, TrezorError> {
     RT.block_on(async move {
         let mut sessions = SESSIONS.lock().unwrap();
-        let s = sessions.get_mut(&device_id)
+        let s = sessions
+            .get_mut(&device_id)
             .ok_or_else(|| TrezorError::InvalidArg(format!("Unknown device_id: {device_id}")))?;
 
         let net = match network.to_lowercase().as_str() {
@@ -449,7 +713,10 @@ pub fn trezor_sign_transaction(device_id: String, psbt_bytes: Vec<u8>, network: 
         let params = psbt_to_sign_tx_params(&enriched_psbt, net)
             .map_err(|e| TrezorError::Sign(format!("PSBT conversion: {e}")))?;
 
-        let signed = s.device.sign_transaction(params).await
+        let signed = s
+            .device
+            .sign_transaction(params)
+            .await
             .map_err(|e| TrezorError::Sign(e.to_string()))?;
 
         let signed_psbt = apply_signatures_to_psbt(&enriched_psbt, &signed)
@@ -467,4 +734,31 @@ pub fn trezor_disconnect(device_id: String) -> Result<(), TrezorError> {
         }
         Ok(())
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_usb_passphrase_responses() {
+        assert_eq!(
+            parse_passphrase_response(r#"{"type":"standard"}"#),
+            PassphraseResponse::Standard
+        );
+        assert_eq!(
+            parse_passphrase_response(r#"{"type":"hidden","value":"wallet"}"#),
+            PassphraseResponse::Hidden {
+                value: "wallet".to_string()
+            }
+        );
+        assert_eq!(
+            parse_passphrase_response(r#"{"type":"on_device"}"#),
+            PassphraseResponse::OnDevice
+        );
+        assert_eq!(
+            parse_passphrase_response("invalid"),
+            PassphraseResponse::Cancel
+        );
+    }
 }

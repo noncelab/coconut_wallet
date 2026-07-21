@@ -15,10 +15,10 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
+import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
-import 'package:shimmer/shimmer.dart';
 
 class TrezorBleConnectScreen extends StatefulWidget {
   final String? psbtBase64;
@@ -199,13 +199,56 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     showWalletSyncResultErrorDialog(context, result, walletProvider);
   }
 
+  Future<void> _handleClose() async {
+    if (_viewModel.step == TrezorBleConnectStep.pairing) {
+      _viewModel.cancelPairing();
+      Navigator.pop(context);
+      return;
+    }
+    if (!_viewModel.isPaired) {
+      Navigator.pop(context);
+      return;
+    }
+
+    bool? keepConnection;
+    await showConfirmDialog(
+      context,
+      context.read<PreferenceProvider>().language,
+      t.wallet_connect_screen.guide_trezor.keep_connection_title,
+      t.wallet_connect_screen.guide_trezor.keep_connection_description,
+      leftButtonText: t.no,
+      rightButtonText: t.yes,
+      barrierDismissible: false,
+      onTapLeft: () {
+        keepConnection = false;
+        Navigator.pop(context);
+      },
+      onTapRight: () {
+        keepConnection = true;
+        Navigator.pop(context);
+      },
+    );
+    if (!mounted || keepConnection == null) return;
+    if (keepConnection == false) {
+      await _viewModel.disconnect();
+    }
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _viewModel,
       child: Scaffold(
         backgroundColor: context.coconutColors.background,
-        appBar: CoconutAppBar.build(title: WalletImportSource.trezor.displayName, context: context, isBottom: true),
+        appBar: CoconutAppBar.build(
+          title: WalletImportSource.trezor.displayName,
+          context: context,
+          isBottom: true,
+          onBackPressed: _handleClose,
+        ),
         body: Consumer<TrezorBleConnectViewModel>(
           builder: (context, vm, _) {
             return SafeArea(
@@ -273,100 +316,32 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   }
 
   Widget _buildInstructionToolTip(List<Object> steps, {String? notice}) {
-    return CoconutToolTip(
-      backgroundColor: context.coconutColors.surface,
-      borderColor: context.coconutColors.surface,
-      icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
-        width: 20,
-        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-      ),
-      tooltipType: CoconutTooltipType.fixed,
-      richText: RichText(
-        text: TextSpan(
-          style: CoconutTypography.body2_14,
-          children: [
-            if (notice != null) ...[
-              TextSpan(
-                text: notice,
-                style: TextStyle(color: context.coconutColors.primaryText, fontWeight: FontWeight.bold),
-              ),
-              const TextSpan(text: '\n\n'),
-            ],
-            ...steps.asMap().entries.expand((e) {
-              final isLast = e.key == steps.length - 1;
-              final stepSpans =
-                  e.value is String
-                      ? [TextSpan(text: e.value as String, style: TextStyle(color: context.coconutColors.primaryText))]
-                      : e.value as List<TextSpan>;
-              return [
-                TextSpan(text: '${e.key + 1}. ', style: TextStyle(color: context.coconutColors.primaryText)),
-                ...stepSpans,
-                if (!isLast) const TextSpan(text: '\n'),
-              ];
-            }),
-          ],
-        ),
-      ),
-    );
+    return WalletConnectInstructionToolTip(steps: steps, notice: notice);
   }
 
   Widget _buildProgressCard(String title, List<String> steps) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 3),
-          ),
-          CoconutLayout.spacing_400h,
-          Text(
-            title,
-            style: CoconutTypography.body2_14.setColor(context.coconutColors.primary),
-            textAlign: TextAlign.center,
-          ),
-          CoconutLayout.spacing_400h,
-          _buildInstructionToolTip(steps),
-        ],
-      ),
-    );
+    return WalletConnectProgressCard(title: title, steps: steps);
   }
 
   Widget _buildSuccessCard(TrezorBleConnectViewModel vm) {
     final hasXpub = vm.xpub.isNotEmpty;
     final hasSilentError = !hasXpub && vm.errorMessage != null;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          SvgPicture.asset(
-            'assets/svg/circle-check.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
-            height: 48,
-            width: 48,
-          ),
-          CoconutLayout.spacing_200h,
-          Text(
-            t.wallet_connect_screen.guide_trezor.paired.title,
-            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.center,
-          ),
-          CoconutLayout.spacing_200h,
-          CoconutLayout.spacing_600h,
-          if (hasXpub) ...[
-            _buildWalletInfoCard(vm),
-            if (widget.psbtBase64 != null && _isWalletMismatch(vm)) ...[
-              CoconutLayout.spacing_400h,
-              _buildWalletMismatchWarning(vm),
-            ],
-          ] else if (hasSilentError)
-            _buildXPubRetryCard(vm)
-          else
-            _buildWalletInfoSkeleton(),
-        ],
-      ),
+    return WalletConnectSuccessCard(
+      title: t.wallet_connect_screen.guide_trezor.paired.title,
+      child:
+          hasXpub
+              ? Column(
+                children: [
+                  _buildWalletInfoCard(vm),
+                  if (widget.psbtBase64 != null && _isWalletMismatch(vm)) ...[
+                    CoconutLayout.spacing_400h,
+                    _buildWalletMismatchWarning(vm),
+                  ],
+                ],
+              )
+              : hasSilentError
+              ? _buildXPubRetryCard(vm)
+              : const WalletConnectWalletInfoSkeleton(),
     );
   }
 
@@ -433,171 +408,37 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   }
 
   Widget _buildWalletInfoCard(TrezorBleConnectViewModel vm) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      decoration: BoxDecoration(
-        color: context.coconutColors.surface,
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (vm.deviceLabel.isNotEmpty) ...[
-            _buildInfo(label: t.wallet_connect_screen.guide_trezor.paired.device_name, value: vm.deviceLabel),
-            CoconutLayout.spacing_300h,
-          ],
-          _buildInfo(
-            label: t.wallet_connect_screen.guide_trezor.paired.master_fingerprint,
-            value: vm.fingerprint.toUpperCase(),
-          ),
-          CoconutLayout.spacing_300h,
-          _buildInfo(
-            label: t.wallet_connect_screen.guide_trezor.paired.derivation_path,
-            value: NetworkType.currentNetworkType.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'",
-          ),
-          CoconutLayout.spacing_300h,
-          _buildInfo(label: t.wallet_connect_screen.guide_trezor.paired.xpub, value: vm.xpub, direction: Axis.vertical),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWalletInfoSkeleton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      decoration: BoxDecoration(
-        color: context.coconutColors.surface,
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildInfoRowSkeleton(labelWidth: 100, valueWidth: 90),
-          CoconutLayout.spacing_300h,
-          _buildInfoRowSkeleton(labelWidth: 90, valueWidth: 70),
-          CoconutLayout.spacing_300h,
-          _buildInfoColumnSkeleton(labelWidth: 120),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSkeletonBox({required double width, double height = 12}) {
-    return Shimmer.fromColors(
-      baseColor: context.coconutColors.surfaceSkeletonBase,
-      highlightColor: context.coconutColors.surfaceSkeletonHighlight,
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: context.coconutColors.surfaceSkeletonBase,
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRowSkeleton({required double labelWidth, required double valueWidth}) {
-    return Row(children: [_buildSkeletonBox(width: labelWidth), const Spacer(), _buildSkeletonBox(width: valueWidth)]);
-  }
-
-  Widget _buildInfoColumnSkeleton({required double labelWidth}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return WalletConnectWalletInfoCard(
       children: [
-        _buildSkeletonBox(width: labelWidth),
-        CoconutLayout.spacing_100h,
-        _buildSkeletonBox(width: double.infinity, height: 14),
+        if (vm.deviceLabel.isNotEmpty) ...[
+          WalletConnectInfoRow(label: t.wallet_connect_screen.guide_trezor.paired.device_name, value: vm.deviceLabel),
+          CoconutLayout.spacing_300h,
+        ],
+        WalletConnectInfoRow(
+          label: t.wallet_connect_screen.guide_trezor.paired.master_fingerprint,
+          value: vm.fingerprint.toUpperCase(),
+        ),
+        CoconutLayout.spacing_300h,
+        WalletConnectInfoRow(
+          label: t.wallet_connect_screen.guide_trezor.paired.derivation_path,
+          value: NetworkType.currentNetworkType.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'",
+        ),
+        CoconutLayout.spacing_300h,
+        WalletConnectInfoRow(
+          label: t.wallet_connect_screen.guide_trezor.paired.xpub,
+          value: vm.xpub,
+          direction: Axis.vertical,
+        ),
       ],
     );
   }
 
-  Widget _buildInfo({required String label, required String value, Axis direction = Axis.horizontal}) {
-    final labelStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText);
-    final valueStyle = CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText);
-
-    if (direction == Axis.horizontal) {
-      return Row(children: [Text(label, style: labelStyle), const Spacer(), Text(value, style: valueStyle)]);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [Text(label, style: labelStyle), CoconutLayout.spacing_100h, Text(value, style: valueStyle)],
-    );
-  }
-
   Widget _buildErrorCard(TrezorBleConnectViewModel vm, {List<String>? steps}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          SvgPicture.asset(
-            'assets/svg/circle-warning.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
-            height: 48,
-            width: 48,
-          ),
-          CoconutLayout.spacing_200h,
-          Text(
-            t.wallet_connect_screen.guide_trezor.error.title,
-            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.danger),
-          ),
-          CoconutLayout.spacing_400h,
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-            decoration: BoxDecoration(
-              color: context.coconutColors.surface,
-              borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  vm.errorDescription ?? t.wallet_connect_screen.guide_trezor.error.ble_description,
-                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-                  textAlign: TextAlign.center,
-                ),
-                CoconutLayout.spacing_200h,
-                Text(
-                  vm.errorMessage ?? 'Unknown error',
-                  style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
-                  textAlign: TextAlign.center,
-                ),
-                if (steps != null && steps.isNotEmpty) ...[
-                  CoconutLayout.spacing_300h,
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children:
-                        steps.asMap().entries.map((e) {
-                          final isLast = e.key == steps.length - 1;
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
-                            child: Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: '${e.key + 1}. ',
-                                    style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                                  ),
-                                  TextSpan(
-                                    text: e.value,
-                                    style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                                  ),
-                                ],
-                              ),
-                              textAlign: TextAlign.left,
-                            ),
-                          );
-                        }).toList(),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
+    return WalletConnectErrorCard(
+      title: t.wallet_connect_screen.guide_trezor.error.title,
+      description: vm.errorDescription ?? t.wallet_connect_screen.guide_trezor.error.ble_description,
+      errorMessage: vm.errorMessage,
+      steps: steps,
     );
   }
 

@@ -444,6 +444,8 @@ wallet_connect_screen:
       master_fingerprint: "Huella digital maestra"
       derivation_path: "Ruta de derivación"
       xpub: "Clave pública extendida"
+    keep_connection_title: "Mantener conexión"
+    keep_connection_description: "¿Quieres mantener el Trezor conectado?"
     error:
       title: "Error de conexión"
       ble_description: "No se encontró Trezor Safe 7. Encienda el Bluetooth y acerque el dispositivo."
@@ -455,6 +457,18 @@ wallet_connect_screen:
       step3: "Seleccione 'Olvidar este dispositivo' e inténtelo de nuevo."
     pairing_aborted:
       title: "Emparejamiento interrumpido."
+    usb:
+      title: "Conectar Trezor por USB"
+      description: "Conecta tu Trezor a este dispositivo Android con un cable USB compatible con datos."
+      connecting: "Conectando con Trezor"
+      connecting_description: "Permite el acceso USB y sigue las instrucciones de tu Trezor."
+      connect: "Conectar por USB"
+      pin_title: "Introducir PIN"
+      pin_description: "Mira la disposición numérica en tu Trezor e introduce tu PIN."
+      passphrase_title: "Introducir frase de contraseña"
+      passphrase_hint: "Frase de contraseña de la cartera oculta"
+      standard_wallet: "Cartera estándar"
+      error: "Conecta tu Trezor e inténtalo de nuevo."
   common:
     ble_off: "Por favor, encienda el Bluetooth de su dispositivo."
       
@@ -641,6 +655,7 @@ trezor_sign_screen:
   device_mismatch_other_wallet: "El dispositivo conectado pertenece a '${wallet_name}'. Por favor conecte el dispositivo correcto."
   btn:
     sign: "Firmar con Trezor"
+    connect_other_trezor: "Conectar otro Trezor"
   state_label:
     idle: "Esperando para firmar"
     signing: "Firmando"

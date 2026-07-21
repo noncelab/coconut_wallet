@@ -443,6 +443,8 @@ wallet_connect_screen:
       master_fingerprint: "마스터 핑거프린트"
       derivation_path: "파생 경로"
       xpub: "확장 공개키"
+    keep_connection_title: "연결 유지 여부"
+    keep_connection_description: "트레저 연결을 유지하시겠어요?"
     error:
       title: "연결 실패"
       ble_description: "Trezor Safe 7을 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
@@ -454,6 +456,18 @@ wallet_connect_screen:
       step3: "'이 기기 잊기'를 눌러 삭제한 후 다시 시도해 주세요."
     pairing_aborted:
       title: "페어링이 중단됐어요."
+    usb:
+      title: "Trezor USB 연결"
+      description: "데이터 전송이 가능한 USB 케이블로 Trezor를 Android 기기에 연결해 주세요."
+      connecting: "Trezor 연결 중"
+      connecting_description: "USB 권한을 허용하고 Trezor 화면의 안내를 확인해 주세요."
+      connect: "USB로 연결하기"
+      pin_title: "PIN 입력"
+      pin_description: "Trezor 화면의 숫자 배열을 보고 설정하신 PIN 번호를 입력해 주세요."
+      passphrase_title: "Passphrase 입력"
+      passphrase_hint: "숨김 지갑 passphrase"
+      standard_wallet: "표준 지갑"
+      error: "Trezor를 연결하고 다시 시도해 주세요."
   common:
     ble_off: "기기 블루투스를 켜주세요."
     
@@ -638,6 +652,7 @@ trezor_sign_screen:
   device_mismatch_other_wallet: "연결된 기기는 '${wallet_name}' 지갑의 키입니다. 올바른 기기를 연결해 주세요."
   btn:
     sign: "Trezor로 서명하기"
+    connect_other_trezor: "다른 Trezor 연결하기"
   state_label:
     idle: "서명 대기"
     signing: "서명 중"

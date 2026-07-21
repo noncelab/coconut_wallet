@@ -12,10 +12,9 @@ import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart'
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
-import 'package:shimmer/shimmer.dart';
 
 class BitBox02ConnectScreen extends StatefulWidget {
   final WalletImportSource importSource;
@@ -149,222 +148,51 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
   }
 
   Widget _buildInstructionToolTip(List<String> steps) {
-    return CoconutToolTip(
-      backgroundColor: context.coconutColors.surface,
-      borderColor: context.coconutColors.surface,
-      icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
-        width: 20,
-        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-      ),
-      tooltipType: CoconutTooltipType.fixed,
-      richText: RichText(
-        text: TextSpan(
-          style: CoconutTypography.body2_14,
-          children:
-              steps.asMap().entries.expand((e) {
-                final isLast = e.key == steps.length - 1;
-                return [
-                  TextSpan(text: '${e.key + 1}. ', style: TextStyle(color: context.coconutColors.primaryText)),
-                  TextSpan(text: e.value, style: TextStyle(color: context.coconutColors.primaryText)),
-                  if (!isLast) const TextSpan(text: '\n'),
-                ];
-              }).toList(),
-        ),
-      ),
-    );
+    return WalletConnectInstructionToolTip(steps: steps);
   }
 
   Widget _buildProgressCard(String title, List<String> steps) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 3),
-          ),
-          CoconutLayout.spacing_400h,
-          Text(
-            title,
-            style: CoconutTypography.body2_14.setColor(context.coconutColors.primary),
-            textAlign: TextAlign.center,
-          ),
-          CoconutLayout.spacing_400h,
-          _buildInstructionToolTip(steps),
-        ],
-      ),
-    );
+    return WalletConnectProgressCard(title: title, steps: steps);
   }
 
   Widget _buildSuccessCard(BitBox02ConnectViewModel vm) {
     final hasXpub = vm.xpub.isNotEmpty;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          SvgPicture.asset(
-            'assets/svg/circle-check.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
-            height: 48,
-            width: 48,
-          ),
-          CoconutLayout.spacing_200h,
-          Text(
-            t.wallet_connect_screen.guide_bitbox02.paired.title,
-            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.center,
-          ),
-          CoconutLayout.spacing_200h,
-          CoconutLayout.spacing_600h,
-          hasXpub ? _buildWalletInfoCard(vm) : _buildWalletInfoSkeleton(),
-        ],
-      ),
+    return WalletConnectSuccessCard(
+      title: t.wallet_connect_screen.guide_bitbox02.paired.title,
+      child: hasXpub ? _buildWalletInfoCard(vm) : const WalletConnectWalletInfoSkeleton(),
     );
   }
 
   Widget _buildWalletInfoCard(BitBox02ConnectViewModel vm) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      decoration: BoxDecoration(
-        color: context.coconutColors.surface,
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildInfo(
-            label: t.wallet_connect_screen.guide_bitbox02.paired.master_fingerprint,
-            value: vm.fingerprint.toUpperCase(),
-          ),
-          CoconutLayout.spacing_300h,
-          _buildInfo(
-            label: t.wallet_connect_screen.guide_bitbox02.paired.derivation_path,
-            value: NetworkType.currentNetworkType.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'",
-          ),
-          CoconutLayout.spacing_300h,
-          _buildInfo(
-            label: t.wallet_connect_screen.guide_bitbox02.paired.xpub,
-            value: vm.xpub,
-            direction: Axis.vertical,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWalletInfoSkeleton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      decoration: BoxDecoration(
-        color: context.coconutColors.surface,
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildInfoRowSkeleton(labelWidth: 100, valueWidth: 90),
-          CoconutLayout.spacing_300h,
-          _buildInfoRowSkeleton(labelWidth: 90, valueWidth: 70),
-          CoconutLayout.spacing_300h,
-          _buildInfoColumnSkeleton(labelWidth: 120),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSkeletonBox({required double width, double height = 12}) {
-    return Shimmer.fromColors(
-      baseColor: context.coconutColors.surfaceSkeletonBase,
-      highlightColor: context.coconutColors.surfaceSkeletonHighlight,
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: context.coconutColors.surfaceSkeletonBase,
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRowSkeleton({required double labelWidth, required double valueWidth}) {
-    return Row(children: [_buildSkeletonBox(width: labelWidth), const Spacer(), _buildSkeletonBox(width: valueWidth)]);
-  }
-
-  Widget _buildInfoColumnSkeleton({required double labelWidth}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return WalletConnectWalletInfoCard(
       children: [
-        _buildSkeletonBox(width: labelWidth),
-        CoconutLayout.spacing_100h,
-        _buildSkeletonBox(width: double.infinity, height: 14),
+        WalletConnectInfoRow(
+          label: t.wallet_connect_screen.guide_bitbox02.paired.master_fingerprint,
+          value: vm.fingerprint.toUpperCase(),
+        ),
+        CoconutLayout.spacing_300h,
+        WalletConnectInfoRow(
+          label: t.wallet_connect_screen.guide_bitbox02.paired.derivation_path,
+          value: NetworkType.currentNetworkType.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'",
+        ),
+        CoconutLayout.spacing_300h,
+        WalletConnectInfoRow(
+          label: t.wallet_connect_screen.guide_bitbox02.paired.xpub,
+          value: vm.xpub,
+          direction: Axis.vertical,
+        ),
       ],
     );
   }
 
-  Widget _buildInfo({required String label, required String value, Axis direction = Axis.horizontal}) {
-    TextStyle labelStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText);
-    TextStyle valueStyle = CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText);
-
-    if (direction == Axis.horizontal) {
-      return Row(children: [Text(label, style: labelStyle), const Spacer(), Text(value, style: valueStyle)]);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [Text(label, style: labelStyle), CoconutLayout.spacing_100h, Text(value, style: valueStyle)],
-    );
-  }
-
   Widget _buildErrorCard(BitBox02ConnectViewModel vm) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-
-      child: Column(
-        children: [
-          SvgPicture.asset(
-            'assets/svg/circle-warning.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
-            height: 48,
-            width: 48,
-          ),
-          CoconutLayout.spacing_200h,
-          Text(
-            t.wallet_connect_screen.guide_bitbox02.error.title,
-            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.danger),
-          ),
-          CoconutLayout.spacing_400h,
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-            decoration: BoxDecoration(
-              color: context.coconutColors.surface,
-              borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  Platform.isIOS
-                      ? t.wallet_connect_screen.guide_bitbox02.error.ble_description
-                      : t.wallet_connect_screen.guide_bitbox02.error.description,
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                  textAlign: TextAlign.center,
-                ),
-                CoconutLayout.spacing_200h,
-                Text(
-                  vm.errorMessage ?? 'Unknown error',
-                  style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return WalletConnectErrorCard(
+      title: t.wallet_connect_screen.guide_bitbox02.error.title,
+      description:
+          Platform.isIOS
+              ? t.wallet_connect_screen.guide_bitbox02.error.ble_description
+              : t.wallet_connect_screen.guide_bitbox02.error.description,
+      errorMessage: vm.errorMessage,
     );
   }
 

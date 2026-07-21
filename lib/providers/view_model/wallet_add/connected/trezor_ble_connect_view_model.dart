@@ -188,6 +188,7 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
 
       try {
         _xpub = await _device!.getXPub(keypath: keypath, network: nt.toString());
+        _device!.cachedXpub = _xpub;
         _fingerprint = await _device!.getFingerprint();
         _device!.cachedFingerprint = _fingerprint;
         _setState(TrezorBleConnectStep.paired);

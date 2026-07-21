@@ -29,11 +29,6 @@ class TrezorTransportSelectScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        strings.description,
-                        style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                      ),
-                      CoconutLayout.spacing_600h,
                       _TransportOptionCard(
                         iconPath: 'assets/svg/wallet-type/trezor.svg',
                         title: strings.btn.ble,
@@ -59,7 +54,8 @@ class TrezorTransportSelectScreen extends StatelessWidget {
   }
 
   void _selectBle(BuildContext context) {
-    Navigator.pushReplacementNamed(
+    Navigator.pop(context);
+    Navigator.pushNamed(
       context,
       '/trezor-ble-connect',
       arguments: {'psbtBase64': psbtBase64, 'walletName': walletName, 'walletFingerprint': walletFingerprint},
@@ -67,7 +63,8 @@ class TrezorTransportSelectScreen extends StatelessWidget {
   }
 
   void _selectUsb(BuildContext context) {
-    Navigator.pushReplacementNamed(
+    Navigator.pop(context);
+    Navigator.pushNamed(
       context,
       '/trezor-usb-connect',
       arguments: {'psbtBase64': psbtBase64, 'walletName': walletName, 'walletFingerprint': walletFingerprint},

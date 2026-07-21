@@ -4,6 +4,27 @@ import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+enum TrezorTransport { ble, usb }
+
+enum TrezorPassphraseType { cancel, standard, hidden, onDevice }
+
+class TrezorPassphraseResponse {
+  final TrezorPassphraseType type;
+  final String value;
+
+  const TrezorPassphraseResponse(this.type, {this.value = ''});
+
+  String encode() => jsonEncode({
+    'type': switch (type) {
+      TrezorPassphraseType.cancel => 'cancel',
+      TrezorPassphraseType.standard => 'standard',
+      TrezorPassphraseType.hidden => 'hidden',
+      TrezorPassphraseType.onDevice => 'on_device',
+    },
+    'value': value,
+  });
+}
+
 class TrezorDevice {
   static const MethodChannel _channel = MethodChannel('trezor');
 
@@ -11,15 +32,22 @@ class TrezorDevice {
   // The registered handler must show a dialog and return the entered code,
   // or null/empty to cancel.
   static Future<String> Function()? onPairingCodeRequested;
+  static Future<String?> Function()? onPinRequested;
+  static Future<TrezorPassphraseResponse> Function(bool onDevice)? onPassphraseRequested;
 
   static void _ensureHandlerRegistered() {
     _channel.setMethodCallHandler((call) async {
-      if (call.method == 'showPairingCodeDialog') {
-        final handler = onPairingCodeRequested;
-        if (handler != null) {
-          return await handler();
-        }
-        return '';
+      switch (call.method) {
+        case 'showPairingCodeDialog':
+          return await onPairingCodeRequested?.call() ?? '';
+        case 'showPinMatrix':
+          return await onPinRequested?.call() ?? '';
+        case 'showPassphraseDialog':
+          final onDevice = (call.arguments as Map?)?['onDevice'] == true;
+          final response =
+              await onPassphraseRequested?.call(onDevice) ??
+              const TrezorPassphraseResponse(TrezorPassphraseType.cancel);
+          return response.encode();
       }
       return null;
     });
@@ -27,6 +55,8 @@ class TrezorDevice {
 
   final String id;
   final String label;
+  final String model;
+  final TrezorTransport transport;
 
   /// Last successfully paired device, reused for signing to avoid re-pairing.
   static TrezorDevice? lastConnected;
@@ -34,12 +64,15 @@ class TrezorDevice {
   /// Fingerprint cached from [getFingerprint], may be set by callers.
   String? cachedFingerprint;
 
-  TrezorDevice._({required this.id, required this.label});
+  /// xpub cached from [getXPub] at the standard derivation path, may be set by callers.
+  String? cachedXpub;
 
-  static Future<TrezorDevice> connect() async {
+  TrezorDevice._({required this.id, required this.label, required this.model, required this.transport});
+
+  static Future<TrezorDevice> connect({TrezorTransport transport = TrezorTransport.ble}) async {
     _ensureHandlerRegistered();
     try {
-      final raw = await _channel.invokeMethod<String>('connect');
+      final raw = await _channel.invokeMethod<String>('connect', {'transport': transport.name});
       if (raw == null) {
         throw const TrezorConnectException('NULL_RESPONSE', 'Connect returned null');
       }
@@ -47,9 +80,18 @@ class TrezorDevice {
       // Fall back to treating raw string as plain device_id for backward compat.
       try {
         final json = jsonDecode(raw) as Map<String, dynamic>;
-        return TrezorDevice._(id: json['device_id'] as String? ?? raw, label: json['label'] as String? ?? '');
+        final parsedTransport = TrezorTransport.values.firstWhere(
+          (value) => value.name == json['transport'],
+          orElse: () => transport,
+        );
+        return TrezorDevice._(
+          id: json['device_id'] as String? ?? raw,
+          label: json['label'] as String? ?? '',
+          model: json['model'] as String? ?? '',
+          transport: parsedTransport,
+        );
       } catch (_) {
-        return TrezorDevice._(id: raw, label: '');
+        return TrezorDevice._(id: raw, label: '', model: '', transport: transport);
       }
     } on PlatformException catch (e) {
       if (e.code == 'PAIRING_CANCELLED') {
@@ -73,6 +115,14 @@ class TrezorDevice {
     //try {
     await _channel.invokeMethod('cancel');
     //} on PlatformException catch (_) {}
+  }
+
+  static Future<bool> isConnected(TrezorTransport transport) async {
+    try {
+      return await _channel.invokeMethod<bool>('isConnected', {'transport': transport.name}) ?? false;
+    } on PlatformException {
+      return false;
+    }
   }
 
   Future<String> getXPub({required String keypath, String network = 'mainnet'}) async {
@@ -138,7 +188,7 @@ class TrezorDevice {
 
   Future<void> disconnect() async {
     try {
-      await _channel.invokeMethod('disconnect', {'id': id});
+      await _channel.invokeMethod('disconnect', {'id': id, 'transport': transport.name});
     } on PlatformException catch (_) {}
   }
 }

@@ -99,6 +99,7 @@ class TrezorMethodHandler(
     private val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "trezor")
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val usbManager = TrezorUsbManager(context)
 
     private var connectivityEventSink: EventChannel.EventSink? = null
 
@@ -114,6 +115,10 @@ class TrezorMethodHandler(
     // Thread-safe BLE read queue (notifications from device)
     private val readQueue = java.util.concurrent.LinkedBlockingQueue<ByteArray>()
     private var pendingPairingFuture: CompletableFuture<String>? = null
+    private var pendingPinFuture: CompletableFuture<String>? = null
+    private var pendingPassphraseFuture: CompletableFuture<String>? = null
+    private var usbConnection: TrezorUsbConnection? = null
+    private var pendingUsbConnectResult: MethodChannel.Result? = null
 
     // Pending write future — completed by onCharacteristicWrite callback
     private var pendingWriteFuture: CompletableFuture<Boolean>? = null
@@ -126,6 +131,10 @@ class TrezorMethodHandler(
     // Blocking read used by Rust callback transport (called from executor thread)
     fun bleRead(timeoutMs: Long = 5000): ByteArray? =
         readQueue.poll(timeoutMs, TimeUnit.MILLISECONDS)
+
+    fun usbRead(): ByteArray? = usbConnection?.read()
+
+    fun usbWrite(data: ByteArray): Boolean = usbConnection?.write(data) == true
 
     // Write to device via RX characteristic.
     // Blocks until onCharacteristicWrite fires (or 5 s timeout) to prevent concurrent writes.
@@ -160,6 +169,24 @@ class TrezorMethodHandler(
     }
 
     init {
+        usbManager.setDetachCallback { device ->
+            if (usbConnection?.device?.deviceId != device.deviceId) return@setDetachCallback
+            usbConnection?.close()
+            usbConnection = null
+            val deviceId = activeDeviceId
+            activeDeviceId = null
+            activeHandle = 0UL
+            if (deviceId != null) {
+                executor.execute {
+                    try {
+                        if (TrezorBridge.tryLoad()) uniffi.trezor_bridge.trezorDisconnect(deviceId)
+                    } catch (_: Exception) {}
+                }
+            }
+            pendingPinFuture?.takeIf { !it.isDone }?.complete("")
+            pendingPassphraseFuture?.takeIf { !it.isDone }?.complete("{\"type\":\"cancel\"}")
+            mainHandler.post { connectivityEventSink?.success(false) }
+        }
         channel.setMethodCallHandler { call, result ->
             try {
                 handleMethod(call, result)
@@ -181,14 +208,17 @@ class TrezorMethodHandler(
 
     private fun handleMethod(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-            "connect" -> connect(result)
+            "connect" -> connect(call, result)
             "getXPub" -> getXPub(call, result)
             "getFingerprint" -> getFingerprint(call, result)
             "signTransaction" -> signTransaction(call, result)
             "setPrevTxHex" -> setPrevTxHex(call, result)
             "clearPrevTxHexes" -> clearPrevTxHexes(call, result)
             "disconnect" -> disconnect(call, result)
-            "isConnected" -> result.success(connectedDeviceId != null && gatt != null)
+            "isConnected" -> {
+                val transport = call.argument<String>("transport") ?: "ble"
+                result.success(if (transport == "usb") usbConnection?.isOpen() == true else connectedDeviceId != null && gatt != null)
+            }
             "cancel" -> cancel(result)
             else -> result.notImplemented()
         }
@@ -229,7 +259,7 @@ class TrezorMethodHandler(
         val pending = pendingConnectResult ?: return
         pendingConnectResult = null
         if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            connect(pending)
+            connectBle(pending)
         } else {
             pending.error(
                 "PERMISSION_DENIED",
@@ -239,7 +269,15 @@ class TrezorMethodHandler(
         }
     }
 
-    private fun connect(result: MethodChannel.Result) {
+    private fun connect(call: MethodCall, result: MethodChannel.Result) {
+        if (call.argument<String>("transport") == "usb") {
+            connectUsb(result)
+        } else {
+            connectBle(result)
+        }
+    }
+
+    private fun connectBle(result: MethodChannel.Result) {
         val result = SafeResult(result)
         pendingConnectResult = result
 
@@ -318,6 +356,70 @@ class TrezorMethodHandler(
     }
 
     private var scanCallback: ScanCallback? = null
+
+    private fun connectUsb(result: MethodChannel.Result) {
+        val safeResult = SafeResult(result)
+        val device = usbManager.findDevice()
+        if (device == null) {
+            safeResult.error("NO_DEVICE", "Trezor Model One을 찾을 수 없습니다.", null)
+            return
+        }
+        if (!usbManager.hasPermission(device)) {
+            pendingUsbConnectResult = safeResult
+            usbManager.requestPermission(device) { permittedDevice, granted ->
+                val pending = pendingUsbConnectResult ?: return@requestPermission
+                pendingUsbConnectResult = null
+                if (!granted) {
+                    pending.error("USB_PERMISSION_DENIED", "Trezor USB 접근 권한이 거부되었습니다.", null)
+                } else {
+                    openUsbAndConnect(permittedDevice, pending)
+                }
+            }
+            return
+        }
+        openUsbAndConnect(device, safeResult)
+    }
+
+    private fun openUsbAndConnect(device: android.hardware.usb.UsbDevice, result: MethodChannel.Result) {
+        executor.execute {
+            try {
+                usbConnection?.close()
+                val connection = usbManager.open(device)
+                    ?: throw IllegalStateException("USB_OPEN_FAILED")
+                usbConnection = connection
+                if (!TrezorBridge.tryLoad()) throw bridgeNotReady()
+                val handle = (nextHandle++).toULong()
+                val callbacks = KotlinUsbCallbacks(this)
+                uniffi.trezor_bridge.trezorRegisterUsbCallbacks(handle, callbacks)
+                val rustDeviceId = uniffi.trezor_bridge.trezorConnectUsb(
+                    handle,
+                    device.deviceName,
+                    device.vendorId.toUShort(),
+                    device.productId.toUShort(),
+                )
+                activeHandle = handle
+                activeDeviceId = rustDeviceId
+                mainHandler.post {
+                    connectivityEventSink?.success(true)
+                    result.success(rustDeviceId)
+                }
+            } catch (error: Exception) {
+                usbConnection?.close()
+                usbConnection = null
+                val message = error.message ?: "USB connection failed"
+                val code = when {
+                    message.contains("UNSUPPORTED_FIRMWARE") -> "UNSUPPORTED_FIRMWARE"
+                    message.contains("UNSUPPORTED_DEVICE_STATE") -> "UNSUPPORTED_DEVICE_STATE"
+                    message.contains("USB_OPEN_FAILED") -> "USB_OPEN_FAILED"
+                    message.contains("timeout", ignoreCase = true) -> "USB_TIMEOUT"
+                    message.contains("PIN", ignoreCase = true) -> "PIN_ERROR"
+                    message.contains("passphrase", ignoreCase = true) -> "PASSPHRASE_ERROR"
+                    else -> "CONNECT_FAILED"
+                }
+                mainHandler.post { result.error(code, message, null) }
+            }
+        }
+    }
 
     private fun connectToDevice(device: BluetoothDevice, deviceId: String, result: MethodChannel.Result) {
         // Close any stale GATT before starting a new connection
@@ -643,16 +745,39 @@ class TrezorMethodHandler(
                     uniffi.trezor_bridge.trezorDisconnect(deviceId)
                 }
             } catch (_: Exception) {}
-            gatt?.disconnect()
-            gatt?.close()
-            gatt = null
-            connectedDeviceId = null
+            if (deviceId.startsWith("usb:")) {
+                usbConnection?.close()
+                usbConnection = null
+            } else {
+                gatt?.disconnect()
+                gatt?.close()
+                gatt = null
+                connectedDeviceId = null
+            }
+            activeDeviceId = null
+            activeHandle = 0UL
             mainHandler.post { result.success(null) }
         }
     }
 
     private fun cancel(result: MethodChannel.Result) {
         pendingPairingFuture?.takeIf { !it.isDone }?.complete("")
+        pendingPinFuture?.takeIf { !it.isDone }?.complete("")
+        pendingPassphraseFuture?.takeIf { !it.isDone }?.complete("{\"type\":\"cancel\"}")
+        pendingUsbConnectResult?.error("CANCELLED", "Trezor USB connection was cancelled.", null)
+        pendingUsbConnectResult = null
+        usbConnection?.close()
+        usbConnection = null
+        val usbDeviceId = activeDeviceId?.takeIf { it.startsWith("usb:") }
+        if (usbDeviceId != null) {
+            activeDeviceId = null
+            activeHandle = 0UL
+            executor.execute {
+                try {
+                    if (TrezorBridge.tryLoad()) uniffi.trezor_bridge.trezorDisconnect(usbDeviceId)
+                } catch (_: Exception) {}
+            }
+        }
         scanCallback?.let { bluetoothAdapter?.bluetoothLeScanner?.stopScan(it) }
         scanCallback = null
         gatt?.disconnect()
@@ -707,9 +832,63 @@ class TrezorMethodHandler(
         }
     }
 
+    fun requestPin(): String {
+        val future = CompletableFuture<String>()
+        pendingPinFuture = future
+        mainHandler.post {
+            channel.invokeMethod("showPinMatrix", null, completerResult(future, ""))
+        }
+        return try {
+            future.get()
+        } catch (_: Exception) {
+            ""
+        } finally {
+            pendingPinFuture = null
+        }
+    }
+
+    fun requestPassphrase(onDevice: Boolean): String {
+        val future = CompletableFuture<String>()
+        pendingPassphraseFuture = future
+        mainHandler.post {
+            channel.invokeMethod(
+                "showPassphraseDialog",
+                mapOf("onDevice" to onDevice),
+                completerResult(future, "{\"type\":\"cancel\"}"),
+            )
+        }
+        return try {
+            future.get()
+        } catch (_: Exception) {
+            "{\"type\":\"cancel\"}"
+        } finally {
+            pendingPassphraseFuture = null
+        }
+    }
+
+    private fun completerResult(future: CompletableFuture<String>, fallback: String) =
+        object : MethodChannel.Result {
+            override fun success(result: Any?) {
+                future.complete(result as? String ?: fallback)
+            }
+
+            override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
+                future.complete(fallback)
+            }
+
+            override fun notImplemented() {
+                future.complete(fallback)
+            }
+        }
+
     fun dispose() {
         scanCallback?.let { bluetoothAdapter?.bluetoothLeScanner?.stopScan(it) }
         pendingPairingFuture?.takeIf { !it.isDone }?.complete("")
+        pendingPinFuture?.takeIf { !it.isDone }?.complete("")
+        pendingPassphraseFuture?.takeIf { !it.isDone }?.complete("{\"type\":\"cancel\"}")
+        usbConnection?.close()
+        usbConnection = null
+        usbManager.dispose()
         gatt?.close()
         gatt = null
         connectivityEventSink = null
@@ -743,4 +922,17 @@ class KotlinBleCallbacks(
         Log.d("TrezorBLE", "KotlinBleCallbacks.getPairingCode: Rust requested pairing code")
         return handler.requestPairingCode()
     }
+}
+
+class KotlinUsbCallbacks(
+    private val handler: TrezorMethodHandler,
+) : uniffi.trezor_bridge.TrezorUsbCallbacks {
+    override fun write(data: List<UByte>): Boolean =
+        handler.usbWrite(data.map { it.toByte() }.toByteArray())
+
+    override fun read(): List<UByte>? = handler.usbRead()?.map { it.toUByte() }
+
+    override fun getPin(): String = handler.requestPin()
+
+    override fun getPassphrase(onDevice: Boolean): String = handler.requestPassphrase(onDevice)
 }

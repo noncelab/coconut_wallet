@@ -469,6 +469,8 @@ wallet_connect_screen:
       master_fingerprint: "マスターフィンガープリント"
       derivation_path: "導出パス"
       xpub: "拡張公開鍵"
+    keep_connection_title: "接続の維持"
+    keep_connection_description: "Trezorとの接続を維持しますか？"
     error:
       title: "接続に失敗しました"
       ble_description: "Trezor Safe 7が見つかりません。Bluetoothをオンにして、デバイスを近づけてください。"
@@ -480,6 +482,18 @@ wallet_connect_screen:
       step3: "「このデバイスを忘れる」を選択して削除した後、もう一度お試しください。"
     pairing_aborted:
       title: "ペアリングが中断されました。"
+    usb:
+      title: "TrezorをUSB接続"
+      description: "データ転送対応のUSBケーブルでTrezorをAndroid端末に接続してください。"
+      connecting: "Trezorに接続中"
+      connecting_description: "USBアクセスを許可し、Trezor画面の案内に従ってください。"
+      connect: "USBで接続"
+      pin_title: "PINを入力"
+      pin_description: "Trezor画面の数字配置を確認し、設定したPINを入力してください。"
+      passphrase_title: "パスフレーズを入力"
+      passphrase_hint: "隠しウォレットのパスフレーズ"
+      standard_wallet: "標準ウォレット"
+      error: "Trezorを接続してもう一度お試しください。"
   common:
     ble_off: "デバイスのBluetoothをオンにしてください。"
 
@@ -639,6 +653,7 @@ trezor_sign_screen:
   device_mismatch_other_wallet: "接続されたデバイスは'${wallet_name}'のキーです。正しいデバイスを接続してください。"
   btn:
     sign: "Trezorで署名"
+    connect_other_trezor: "別のTrezorを接続"
   state_label:
     idle: "署名待機"
     signing: "署名中"

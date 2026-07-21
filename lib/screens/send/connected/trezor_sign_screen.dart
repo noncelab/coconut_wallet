@@ -7,9 +7,15 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/connected/trezor_sign_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_usb_connect_screen.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/trezor_usb_prompt.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -20,6 +26,7 @@ class TrezorSignScreen extends StatefulWidget {
   final String walletName;
   final String walletFingerprint;
   final bool isFromSendFlow;
+  final TrezorTransport transport;
 
   const TrezorSignScreen({
     super.key,
@@ -27,6 +34,7 @@ class TrezorSignScreen extends StatefulWidget {
     required this.walletName,
     this.walletFingerprint = '',
     this.isFromSendFlow = false,
+    this.transport = TrezorTransport.ble,
   });
 
   @override
@@ -44,6 +52,8 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
   String _pairingCode = '';
   bool _isVerifyingPairingCode = false;
   TrezorSignStep? _lastStep;
+  Future<String?> Function()? _pinHandler;
+  Future<TrezorPassphraseResponse> Function(bool)? _passphraseHandler;
 
   @override
   void initState() {
@@ -54,7 +64,14 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
       walletName: widget.walletName,
       walletFingerprint: widget.walletFingerprint,
       walletProvider: context.read<WalletProvider>(),
+      transport: widget.transport,
     );
+    if (widget.transport == TrezorTransport.usb) {
+      _pinHandler = _viewModel.requestPin;
+      _passphraseHandler = (onDevice) => TrezorUsbPrompt.requestPassphrase(context, onDevice);
+      TrezorDevice.onPinRequested = _pinHandler;
+      TrezorDevice.onPassphraseRequested = _passphraseHandler;
+    }
     _viewModel.addListener(_onStateChanged);
 
     _pulseController = AnimationController(duration: const Duration(milliseconds: 1200), vsync: this)
@@ -100,6 +117,8 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
 
   @override
   void dispose() {
+    if (TrezorDevice.onPinRequested == _pinHandler) TrezorDevice.onPinRequested = null;
+    if (TrezorDevice.onPassphraseRequested == _passphraseHandler) TrezorDevice.onPassphraseRequested = null;
     _pulseController.dispose();
     _viewModel.dispose();
     super.dispose();
@@ -133,8 +152,11 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
                     ),
                     if (vm.step != TrezorSignStep.signing &&
                         vm.step != TrezorSignStep.done &&
-                        vm.step != TrezorSignStep.pairing)
+                        vm.step != TrezorSignStep.pairing &&
+                        vm.step != TrezorSignStep.pinEntry)
                       Stack(alignment: Alignment.center, children: [_buildBottomButton(vm)]),
+                    if (vm.step == TrezorSignStep.pinEntry)
+                      Stack(alignment: Alignment.center, children: [_buildPinButtons(vm)]),
                   ],
                 ),
               ),
@@ -243,6 +265,9 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
   Widget _buildStatusSection(TrezorSignViewModel vm) {
     if (vm.step == TrezorSignStep.pairing) {
       return _buildPairingCard(vm);
+    }
+    if (vm.step == TrezorSignStep.pinEntry) {
+      return _buildPinCard(vm);
     }
 
     final bool isIdle = vm.step == TrezorSignStep.idle;
@@ -526,9 +551,122 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
     );
   }
 
+  void _onPinKeyTap(String value) {
+    vibrateExtraLight();
+    _viewModel.onPinKeyTap(value);
+  }
+
+  Widget _buildPinCard(TrezorSignViewModel vm) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          Text(
+            t.wallet_connect_screen.guide_trezor.usb.pin_title,
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            t.wallet_connect_screen.guide_trezor.usb.pin_description,
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 84,
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              children: List.generate(
+                vm.pin.length,
+                (_) => const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 2),
+                  child: Text('●', style: TextStyle(fontSize: 18)),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          GridView.count(
+            crossAxisCount: 3,
+            childAspectRatio: MediaQuery.of(context).size.width > 600 ? 2.5 : 1.6,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children:
+                _keypadKeys.map((key) {
+                  return Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: _buildPinKeyButton(key));
+                }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPinButtons(TrezorSignViewModel vm) {
+    return FixedBottomTweenButton(
+      leftButtonClicked: vm.cancelPin,
+      rightButtonClicked: vm.submitPin,
+      leftText: t.cancel,
+      rightText: t.OK,
+      isRightButtonActive: vm.pin.length >= 4,
+    );
+  }
+
+  Widget _buildPinKeyButton(String key) {
+    if (key.isEmpty) return const SizedBox.shrink();
+    if (key == '<') {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _onPinKeyTap('<'),
+        child: SizedBox.expand(
+          child: Center(child: Icon(Icons.backspace, color: context.coconutColors.primaryText, size: 20)),
+        ),
+      );
+    }
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _onPinKeyTap(key),
+      child: SizedBox.expand(
+        child: Center(
+          child: Text('●', style: CoconutTypography.heading3_21_Number.setColor(context.coconutColors.primaryText)),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBottomButton(TrezorSignViewModel vm) {
     final bool isError = vm.step == TrezorSignStep.error;
     final bool isBusy = vm.step == TrezorSignStep.signing;
+
+    if (vm.isWalletMismatch) {
+      return FixedBottomButton(
+        onButtonClicked: () async {
+          await vm.disconnectForReconnect();
+          if (!mounted) return;
+          final navigator = Navigator.of(context);
+          navigator.pop();
+          final isUsb = widget.transport == TrezorTransport.usb;
+          await CommonBottomSheets.showCustomHeightBottomSheet(
+            context: navigator.context,
+            heightRatio: 0.9,
+            child:
+                isUsb
+                    ? TrezorUsbConnectScreen(
+                      psbtBase64: widget.psbtBase64,
+                      walletName: widget.walletName,
+                      walletFingerprint: widget.walletFingerprint,
+                    )
+                    : TrezorBleConnectScreen(
+                      psbtBase64: widget.psbtBase64,
+                      walletName: widget.walletName,
+                      walletFingerprint: widget.walletFingerprint,
+                    ),
+          );
+        },
+        text: t.trezor_sign_screen.btn.connect_other_trezor,
+        isActive: true,
+      );
+    }
 
     final String buttonText = isError ? t.wallet_connect_screen.guide_trezor.btn.retry : t.trezor_sign_screen.btn.sign;
     final VoidCallback onPressed =
@@ -542,7 +680,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
     return FixedBottomButton(
       onButtonClicked: onPressed,
       text: buttonText,
-      isActive: !isBusy && !vm.isWalletMismatch,
+      isActive: !isBusy,
       subWidget:
           isError
               ? CoconutUnderlinedButton(

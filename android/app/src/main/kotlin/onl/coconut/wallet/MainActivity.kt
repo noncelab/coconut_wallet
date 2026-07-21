@@ -166,6 +166,12 @@ class MainActivity : FlutterFragmentActivity() {
         trezorHandler?.onRequestPermissionsResult(requestCode, grantResults)
     }
 
+    override fun onDestroy() {
+        trezorHandler?.dispose()
+        trezorHandler = null
+        super.onDestroy()
+    }
+
     private fun extractBitcoinUri(intent: Intent?): String? {
         if (intent?.action != Intent.ACTION_VIEW) return null
 

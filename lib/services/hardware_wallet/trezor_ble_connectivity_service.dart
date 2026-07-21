@@ -17,9 +17,9 @@ class TrezorBleConnectivityService {
   ///
   /// iOS:     BLE peripheral is in the connected state.
   /// Android: GATT connection is active.
-  static Future<bool> isDeviceConnected() async {
+  static Future<bool> isDeviceConnected([TrezorTransport transport = TrezorTransport.ble]) async {
     try {
-      final result = await _channel.invokeMethod<bool>('isConnected');
+      final result = await _channel.invokeMethod<bool>('isConnected', {'transport': transport.name});
       return result ?? false;
     } on PlatformException {
       return false;
