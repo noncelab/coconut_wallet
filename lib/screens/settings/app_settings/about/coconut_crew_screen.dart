@@ -278,7 +278,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                       message,
                                       overflow: TextOverflow.ellipsis,
                                       style: CoconutTypography.body2_14
-                                          .setColor(context.coconutColors.secondaryTextStrong)
+                                          .setColor(context.coconutColors.secondaryText)
                                           .copyWith(height: 1.2),
                                       maxLines: 2,
                                     ),

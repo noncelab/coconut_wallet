@@ -10,7 +10,6 @@ import 'package:coconut_wallet/widgets/icon/icon_palette_cell.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
@@ -223,7 +222,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                         if (isProcessing)
                           Positioned.fill(
                             child: Container(
-                              color: context.coconutColors.iconDefault.withValues(alpha: 0.6),
+                              color: context.coconutColors.iconPrimary.withValues(alpha: 0.6),
                               alignment: Alignment.center,
                               child: const CoconutCircularIndicator(size: 160),
                             ),
@@ -268,7 +267,6 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                     CoconutLayout.spacing_400w,
                     Expanded(
                       child: CoconutTextField(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                         controller: _textEditingController,
                         focusNode: _textFieldFocusNode,
                         onChanged: (text) {
@@ -277,13 +275,9 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                           }
                         },
                         placeholderText: t.name,
-                        backgroundColor: context.coconutColors.inputSurface,
-                        errorColor: context.coconutColors.danger,
-                        cursorColor: context.coconutColors.primaryText,
-                        activeColor: context.coconutColors.primaryText,
-                        placeholderColor: context.coconutColors.inputPlaceholder,
-                        borderColor: context.coconutColors.inputBorder,
                         maxLength: 20,
+                        clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                        onClear: _textEditingController.clear,
                         errorText:
                             _isFirst
                                 ? ''
@@ -292,20 +286,6 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                                 : '',
                         isError: _isFirst ? false : isError,
                         maxLines: 1,
-                        suffix:
-                            _textEditingController.text.isNotEmpty
-                                ? IconButton(
-                                  iconSize: 14,
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () {
-                                    _textEditingController.clear();
-                                  },
-                                  icon: SvgPicture.asset(
-                                    'assets/svg/text-field-clear.svg',
-                                    colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-                                  ),
-                                )
-                                : null,
                       ),
                     ),
                   ],

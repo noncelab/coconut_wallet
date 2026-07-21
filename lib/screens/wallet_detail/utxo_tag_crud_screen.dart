@@ -36,7 +36,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                     _handleAddTagPressed(context, model);
                   },
                   icon: const Icon(Icons.add_rounded),
-                  color: context.coconutColors.iconDefault,
+                  color: context.coconutColors.iconPrimary,
                 ),
               ],
             ),

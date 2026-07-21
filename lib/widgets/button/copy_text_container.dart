@@ -61,7 +61,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
     if (_didInitThemeColors) return;
     _textColor = context.coconutColors.primaryText;
     _buttonColor = context.coconutColors.surfaceMuted;
-    _iconColor = context.coconutColors.iconDefault;
+    _iconColor = context.coconutColors.iconPrimary;
     _didInitThemeColors = true;
   }
 
@@ -73,7 +73,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
         setState(() {
           _textColor = colors.primaryText;
           _buttonColor = colors.surfaceMuted;
-          _iconColor = colors.iconDefault;
+          _iconColor = colors.iconPrimary;
         });
 
         await ClipboardCopyUtil.copyWithToast(
@@ -86,14 +86,14 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
         setState(() {
           _textColor = colors.secondaryText;
           _buttonColor = colors.surfacePressed;
-          _iconColor = colors.iconSubDefault;
+          _iconColor = colors.iconSecondary;
         });
       },
       onTapCancel: () {
         setState(() {
           _textColor = colors.primaryText;
           _buttonColor = colors.surfaceMuted;
-          _iconColor = colors.iconDefault;
+          _iconColor = colors.iconPrimary;
         });
       },
       child: Container(

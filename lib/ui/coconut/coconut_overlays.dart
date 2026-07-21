@@ -523,7 +523,7 @@ class _CoconutToolTipState extends State<CoconutToolTip> {
       case CoconutTooltipState.info:
         return colors.primary;
       case CoconutTooltipState.normal:
-        return colors.secondaryTextStrong;
+        return colors.secondaryText;
       case CoconutTooltipState.success:
         return colors.success;
       case CoconutTooltipState.warning:
@@ -729,8 +729,8 @@ class _CoconutPopupState extends State<CoconutPopup> {
                 widget.description,
                 textAlign: widget.centerDescription ? TextAlign.center : null,
                 style:
-                    widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.secondaryTextStrong) ??
-                    CoconutTypography.heading4_18.setColor(widget.descriptionColor ?? colors.secondaryTextStrong),
+                    widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.secondaryText) ??
+                    CoconutTypography.heading4_18.setColor(widget.descriptionColor ?? colors.secondaryText),
               ),
             ),
             Row(

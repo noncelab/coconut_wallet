@@ -124,7 +124,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
             children: [
               Text(
                 t.settings_screen.block_explorer.default_explorer,
-                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryTextStrong),
+                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
               ),
               Text('Mempool.space', style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
             ],
@@ -185,22 +185,11 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
                         focusNode: _customExplorerFocusNode,
                         onChanged: (value) {},
                         placeholderText: t.settings_screen.block_explorer.custom_explorer_input_placeholder,
-                        borderColor: context.coconutColors.inputBorder,
-                        suffix:
-                            _customExplorerController.text.isNotEmpty
-                                ? IconButton(
-                                  iconSize: 14,
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () {
-                                    _customExplorerController.clear();
-                                    _viewModel.clearCustomUrl();
-                                  },
-                                  icon: SvgPicture.asset(
-                                    'assets/svg/text-field-clear.svg',
-                                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                                  ),
-                                )
-                                : null,
+                        clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                        onClear: () {
+                          _customExplorerController.clear();
+                          _viewModel.clearCustomUrl();
+                        },
                         onEditingComplete: () {
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             _clearFocus();
@@ -232,7 +221,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
               width: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(context.coconutColors.iconDefault),
+                valueColor: AlwaysStoppedAnimation<Color>(context.coconutColors.iconPrimary),
               ),
             )
           else if (_viewModel.isConnectionSuccessful)

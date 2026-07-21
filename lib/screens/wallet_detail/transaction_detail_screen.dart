@@ -696,7 +696,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               originalText: txMemo ?? '',
               completeButtonText: t.done,
               collapsedHeight: 300,
-              inputBorderColor: context.coconutColors.inputBorder,
               onComplete: (memo) {
                 if (!viewModel.updateTransactionMemo(memo)) {
                   CoconutToast.showToast(

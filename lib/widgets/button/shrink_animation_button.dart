@@ -2,7 +2,8 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:flutter/material.dart';
 
 class ShrinkAnimationButton extends StatefulWidget {
-  final Widget child;
+  final Widget? child;
+  final Widget Function(BuildContext context, bool isPressed)? childBuilder;
   final VoidCallback onPressed;
   final VoidCallback? onLongPress;
   final Color? pressedColor;
@@ -17,7 +18,8 @@ class ShrinkAnimationButton extends StatefulWidget {
 
   const ShrinkAnimationButton({
     super.key,
-    required this.child,
+    this.child,
+    this.childBuilder,
     required this.onPressed,
     this.onLongPress,
     this.pressedColor,
@@ -29,7 +31,7 @@ class ShrinkAnimationButton extends StatefulWidget {
     this.borderGradient,
     this.animationEndValue = 0.97,
     this.isActive = true,
-  });
+  }) : assert(child != null || childBuilder != null, 'Either child or childBuilder must be provided.');
 
   @override
   State<ShrinkAnimationButton> createState() => _ShrinkAnimationButtonState();
@@ -99,6 +101,7 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
     final disabledColor = widget.disabledColor ?? colors.surface;
     final Color solidColor = widget.isActive ? (_isPressed ? pressedColor : defaultColor) : disabledColor;
     final bool useGradientBorder = widget.borderGradient != null;
+    final child = widget.childBuilder != null ? widget.childBuilder!(context, _isPressed) : widget.child!;
 
     return GestureDetector(
       onTapDown: _onTapDown,
@@ -119,7 +122,7 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(widget.borderRadius)),
             child: Container(
               decoration: BoxDecoration(color: solidColor, borderRadius: BorderRadius.circular(widget.borderRadius)),
-              child: widget.child,
+              child: child,
             ),
           ),
         ),

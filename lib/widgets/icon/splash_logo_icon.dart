@@ -14,7 +14,7 @@ class SplashLogoIcon extends StatelessWidget {
     final logo = SvgPicture.asset(
       IconPath.coconut,
       width: size,
-      colorFilter: IconPath.isMainnet ? null : ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+      colorFilter: IconPath.isMainnet ? null : ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
     );
 
     if (!IconPath.isMainnet) {

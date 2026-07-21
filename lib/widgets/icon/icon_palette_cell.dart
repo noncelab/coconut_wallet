@@ -17,7 +17,7 @@ class IconPaletteCell extends StatelessWidget {
         colorIndex == null
             ? context.coconutColors.iconBackgroundSubtle
             : ColorUtil.getBackgroundColorByIndex(colorIndex!);
-    final iconColor = colorIndex == null ? context.coconutColors.iconDefault : ColorUtil.getColorByIndex(colorIndex!);
+    final iconColor = colorIndex == null ? context.coconutColors.iconPrimary : ColorUtil.getColorByIndex(colorIndex!);
 
     return Container(
       margin: const EdgeInsets.all(16.0),

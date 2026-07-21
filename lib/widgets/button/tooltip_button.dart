@@ -89,7 +89,7 @@ class _TooltipButtonState extends State<TooltipButton> {
                         : Icon(
                           Icons.info_outline_rounded,
                           color:
-                              widget.isSelected ? context.coconutColors.iconDefault : context.coconutColors.mutedText,
+                              widget.isSelected ? context.coconutColors.iconPrimary : context.coconutColors.mutedText,
                           size: 18,
                         ),
               ),

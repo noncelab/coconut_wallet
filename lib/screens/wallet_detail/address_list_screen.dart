@@ -169,7 +169,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           onPressed: () {
             Navigator.pushNamed(context, '/address-search', arguments: {'id': widget.id});
           },
-          icon: Icon(Icons.search_rounded, color: context.coconutColors.iconDefault),
+          icon: Icon(Icons.search_rounded, color: context.coconutColors.iconPrimary),
         ),
       ],
     );
@@ -332,7 +332,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           SvgPicture.asset(
             'assets/svg/circle-info.svg',
             width: 20,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
           Expanded(
@@ -435,7 +435,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 40, top: 20),
-                    child: Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault)),
+                    child: Center(child: CircularProgressIndicator(color: context.coconutColors.iconPrimary)),
                   ),
                 ),
             ],

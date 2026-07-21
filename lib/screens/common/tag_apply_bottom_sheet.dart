@@ -435,7 +435,7 @@ class TagChip extends StatelessWidget {
       return _ChipStyle(
         borderColor: foregroundColor,
         textColor: foregroundColor,
-        icon: Icon(Icons.close, key: const ValueKey('delete'), size: 16, color: context.coconutColors.iconDefault),
+        icon: Icon(Icons.close, key: const ValueKey('delete'), size: 16, color: context.coconutColors.iconPrimary),
       );
     }
 

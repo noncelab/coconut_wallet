@@ -127,7 +127,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
               const SizedBox(width: 4),
               SvgPicture.asset(
                 'assets/svg/arrow-down.svg',
-                colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
               ),
             ],
           ),
@@ -150,7 +150,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
                   ),
                   SvgPicture.asset(
                     'assets/svg/row-divider.svg',
-                    colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
                   ),
                   CustomUnderlinedButton(
                     padding: const EdgeInsets.symmetric(vertical: 8),

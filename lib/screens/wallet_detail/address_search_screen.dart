@@ -13,7 +13,6 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutTextFieldStyle;
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
-import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -21,12 +20,11 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_search_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
-import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
+import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 class AddressSearchScreen extends StatefulWidget {
@@ -41,8 +39,6 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   late final AddressSearchViewModel viewModel;
   final _addressController = TextEditingController();
   final _addressFocusNode = FocusNode();
-  MobileScannerController? _qrViewController;
-  bool _isQrDataHandling = false;
   String _addressOldText = "";
   Timer? _debounce;
   bool isSearched = false;
@@ -52,7 +48,6 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   @override
   void initState() {
     super.initState();
-    _qrViewController = MobileScannerController();
     _addressController.addListener(_onAddressChanged);
     viewModel = AddressSearchViewModel(Provider.of<WalletProvider>(context, listen: false), widget.id);
   }
@@ -85,81 +80,20 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   }
 
   void _showAddressScanner() async {
-    final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-    final String? scannedAddress = await CommonBottomSheets.showBottomSheet_100(
-      context: context,
-      child: Scaffold(
-        backgroundColor: context.coconutColors.background,
-        appBar: CoconutAppBar.build(
-          title: '',
-          context: context,
-          actionButtonList: [
-            IconButton(
-              icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
-              color: context.coconutColors.primaryText,
-              onPressed: () {
-                _qrViewController?.switchCamera();
-              },
-            ),
-          ],
-          onBackPressed: () {
-            _clearQrScanController();
-            Navigator.of(context).pop<String>('');
-          },
-        ),
-        body: AddressQrScannerBody(
-          qrKey: qrKey,
-          onDetect: _onQRViewCreated,
-          setMobileScannerController: (controller) {
-            _qrViewController = controller;
-          },
-        ),
-      ),
-    );
-    if (scannedAddress != null) {
-      _addressController.text = scannedAddress;
-      _onAddressChanged();
-    }
-    _clearQrScanController();
-  }
-
-  void _onQRViewCreated(BarcodeCapture capture) {
-    final codes = capture.barcodes;
-    if (codes.isEmpty) return;
-
-    final barcode = codes.first;
-    if (barcode.rawValue == null) return;
-
-    final scanData = barcode.rawValue;
-
-    if (_isQrDataHandling || scanData == null || scanData.isEmpty) {
+    final scannedAddress = await showAddressScannerBottomSheet(context, title: '');
+    if (scannedAddress == null || scannedAddress.isEmpty || !mounted) {
       return;
     }
 
-    _isQrDataHandling = true;
-    viewModel
-        .validateAddress(scanData)
-        .then((_) {
-          if (mounted) {
-            Navigator.pop(context, scanData);
-          }
-        })
-        .catchError((e) {
-          if (mounted) {
-            CoconutToast.showToast(isVisibleIcon: true, context: context, text: e.toString());
-          }
-        })
-        .whenComplete(() async {
-          // 하나의 QR 스캔으로, 동시에 여러번 호출되는 것을 방지하기 위해
-          await Future.delayed(const Duration(seconds: 1));
-          _isQrDataHandling = false;
-        });
-  }
-
-  void _clearQrScanController() {
-    // dispose는 MobileScanner에서 함 (or error occurred)
-    //_qrViewController?.dispose();
-    _qrViewController = null;
+    try {
+      await viewModel.validateAddress(scannedAddress);
+      if (!mounted) return;
+      _addressController.text = scannedAddress;
+      _onAddressChanged();
+    } catch (e) {
+      if (!mounted) return;
+      CoconutToast.showToast(isVisibleIcon: true, context: context, text: e.toString());
+    }
   }
 
   @override
@@ -182,7 +116,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                   leading: IconButton(
                     icon: SvgPicture.asset(
                       'assets/svg/arrow-back.svg',
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                       width: 24,
                       height: 24,
                     ),
@@ -196,9 +130,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                       controller: _addressController,
                       focusNode: _addressFocusNode,
                       onChanged: (_) {},
+                      size: CoconutTextFieldSize.search,
+                      backgroundColor: context.coconutColors.background,
                       maxLines: 1,
-                      padding: const EdgeInsets.only(),
-                      height: Sizes.size40,
                       prefix: IgnorePointer(
                         ignoring: true,
                         child: IconButton(
@@ -220,20 +154,11 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                                   _addressFocusNode.requestFocus();
                                   _addressController.clear();
                                 },
-                        icon:
-                            _addressController.text.isEmpty
-                                ? SvgPicture.asset('assets/svg/scan.svg')
-                                : SvgPicture.asset(
-                                  'assets/svg/text-field-clear.svg',
-                                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                                ),
+                        icon: SvgPicture.asset(
+                          _addressController.text.isEmpty ? 'assets/svg/scan.svg' : 'assets/svg/text-field-clear.svg',
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                        ),
                       ),
-                      placeholderText: t.address_search_screen.address_placeholder,
-                      activeColor: context.coconutColors.primaryText,
-                      cursorColor: context.coconutColors.primaryText,
-                      placeholderColor: context.coconutColors.inputPlaceholder,
-                      borderColor: context.coconutColors.inputBorder,
-                      backgroundColor: context.coconutColors.inputSurface,
                     ),
                   ),
                   titleSpacing: 0,

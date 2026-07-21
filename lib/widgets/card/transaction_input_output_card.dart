@@ -197,7 +197,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
                     'assets/svg/arrow-right-md.svg',
                     width: 24,
                     height: 24,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                   ),
                 ),
               ],

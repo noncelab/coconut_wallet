@@ -217,8 +217,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         maxLines: 1,
         maxLength: 11,
         isLengthVisible: false,
-        padding: const EdgeInsets.only(),
-        height: Sizes.size40,
+        size: CoconutTextFieldSize.search,
         prefix: IgnorePointer(
           ignoring: true,
           child: IconButton(
@@ -238,7 +237,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                   },
                   icon: SvgPicture.asset(
                     'assets/svg/text-field-clear.svg',
-                    colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
                   ),
                 )
                 : null,

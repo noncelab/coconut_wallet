@@ -142,5 +142,5 @@ class SingleButton extends StatelessWidget {
   }
 
   Widget _rightArrow(BuildContext context) =>
-      Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSubDefault);
+      Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary);
 }

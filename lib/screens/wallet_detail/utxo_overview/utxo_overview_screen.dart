@@ -534,7 +534,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                     label: t.utxo_list_screen.utxo_unlocked_button,
                     onTap: () => _updateSelectedUtxosLock(lock: false),
                     buttonLayout: BottomActionButtonLayout.horizontal,
-                    textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconDefault),
+                    textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconPrimary),
                   )
                   : Builder(
                     builder: (context) {
@@ -560,7 +560,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                               label: t.utxo_list_screen.utxo_locked_button,
                               onTap: () => _updateSelectedUtxosLock(lock: true),
                               buttonLayout: BottomActionButtonLayout.horizontal,
-                              textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconDefault),
+                              textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconPrimary),
                             ),
                           ),
                         ],

@@ -200,7 +200,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                   SvgPicture.asset(
                     'assets/svg/arrow-down.svg',
                     colorFilter: ColorFilter.mode(
-                      enableDropdown ? context.coconutColors.iconDefault : context.coconutColors.iconDisabled,
+                      enableDropdown ? context.coconutColors.iconPrimary : context.coconutColors.iconDisabled,
                       BlendMode.srcIn,
                     ),
                   ),

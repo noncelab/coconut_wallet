@@ -82,7 +82,7 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
               child: Container(
                 width: 100,
                 height: 100,
-                decoration: BoxDecoration(color: context.coconutColors.secondaryTextStrong),
+                decoration: BoxDecoration(color: context.coconutColors.secondaryText),
                 child: const CoconutLoadingOverlay(applyFullScreen: true),
               ),
             ),

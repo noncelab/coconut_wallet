@@ -70,7 +70,7 @@ class UtxoItemCard extends StatelessWidget {
                                       ? 'assets/svg/circle-check-filled.svg'
                                       : 'assets/svg/circle-check-outline.svg',
                                   colorFilter: ColorFilter.mode(
-                                    isSelected ? context.coconutColors.iconDefault : context.coconutColors.iconDisabled,
+                                    isSelected ? context.coconutColors.iconPrimary : context.coconutColors.iconDisabled,
                                     BlendMode.srcIn,
                                   ),
                                 ),
@@ -106,7 +106,7 @@ class UtxoItemCard extends StatelessWidget {
                             'assets/svg/lock_simple.svg',
                             width: 16,
                             height: 16,
-                            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                           ),
                           const SizedBox(width: 4),
                         ],

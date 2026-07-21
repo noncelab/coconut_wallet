@@ -37,7 +37,7 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
                 children: [
                   SvgPicture.asset(
                     'assets/svg/wallet-eyes.svg',
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                   ),
                   CoconutLayout.spacing_100w,
                   Text(

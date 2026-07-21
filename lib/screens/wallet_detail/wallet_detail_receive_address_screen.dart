@@ -103,7 +103,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                 ),
                 if (_walletCount > 1) ...[
                   CoconutLayout.spacing_50w,
-                  Icon(Icons.keyboard_arrow_down_sharp, color: context.coconutColors.iconDefault, size: 16),
+                  Icon(Icons.keyboard_arrow_down_sharp, color: context.coconutColors.iconPrimary, size: 16),
                 ],
               ],
             ),

@@ -1,4 +1,12 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -151,7 +159,15 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
 
   Widget _buildTransactionDraftList(List<TransactionDraft> transactionDraftList, TransactionDraftViewModel viewModel) {
     if (transactionDraftList.isEmpty) {
-      return Column(children: [CoconutLayout.spacing_2500h, Text(t.transaction_draft.empty_message)]);
+      return Column(
+        children: [
+          CoconutLayout.spacing_2500h,
+          Text(
+            t.transaction_draft.empty_message,
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+          ),
+        ],
+      );
     }
 
     return GestureDetector(

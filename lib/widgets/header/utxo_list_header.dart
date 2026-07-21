@@ -145,8 +145,8 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                       'assets/svg/arrow-down.svg',
                       colorFilter: ColorFilter.mode(
                         widget.isLoadComplete
-                            ? context.coconutColors.iconDefault
-                            : context.coconutColors.iconSubDefault,
+                            ? context.coconutColors.iconPrimary
+                            : context.coconutColors.iconSecondary,
                         BlendMode.srcIn,
                       ),
                     ),

@@ -73,7 +73,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.close, color: context.coconutColors.iconDefault),
+                      icon: Icon(Icons.close, color: context.coconutColors.iconPrimary),
                       onPressed: () {
                         Navigator.pop(context);
                       },
@@ -90,7 +90,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       maintainSemantics: false,
                       maintainInteractivity: false,
                       child: IconButton(
-                        icon: Icon(Icons.close, color: context.coconutColors.iconDefault),
+                        icon: Icon(Icons.close, color: context.coconutColors.iconPrimary),
                         onPressed: () {
                           Navigator.pop(context);
                         },
@@ -117,7 +117,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                             children: [
                               SvgPicture.asset(
                                 'assets/svg/circle-warning.svg',
-                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                               ),
                               CoconutLayout.spacing_100w,
                               Text(
@@ -161,12 +161,6 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       height: Sizes.size52,
                       padding: const EdgeInsets.only(bottom: 0, left: Sizes.size14, right: Sizes.size14),
                       textAlign: TextAlign.left,
-                      backgroundColor: context.coconutColors.inputSurface,
-                      errorColor: context.coconutColors.danger,
-                      cursorColor: context.coconutColors.primaryText,
-                      activeColor: context.coconutColors.primaryText,
-                      placeholderColor: context.coconutColors.inputPlaceholder,
-                      borderColor: context.coconutColors.inputBorder,
                       controller: _mfpController,
                       focusNode: _mfpFocusNode,
                       maxLines: 1,
@@ -178,26 +172,12 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       isLengthVisible: true,
                       errorText: t.wallet_add_scanner_screen.paste.format_error_text,
                       placeholderText: t.wallet_add_scanner_screen.paste.mfp_input_placeholder,
-                      suffix: IconButton(
-                        iconSize: 14,
-                        padding: EdgeInsets.zero,
-                        onPressed: () {
-                          setState(() {
-                            _mfpController.text = '';
-                          });
-                        },
-                        icon: SvgPicture.asset(
-                          'assets/svg/text-field-clear.svg',
-                          colorFilter: ColorFilter.mode(
-                            _isError
-                                ? context.coconutColors.danger
-                                : _mfpController.text.isNotEmpty
-                                ? context.coconutColors.primaryText
-                                : context.coconutColors.inputPlaceholder,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                      ),
+                      clearButtonVisibility: CoconutTextFieldClearButtonVisibility.always,
+                      onClear: () {
+                        setState(() {
+                          _mfpController.text = '';
+                        });
+                      },
                     ),
                     CoconutLayout.spacing_500h,
                     Row(

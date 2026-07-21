@@ -236,7 +236,7 @@ class WalletItemCard extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 8),
                     child: SvgPicture.asset(
                       'assets/svg/hamburger.svg',
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
                     ),
                   ),
                 ),

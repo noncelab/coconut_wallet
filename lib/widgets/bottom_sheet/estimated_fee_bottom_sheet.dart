@@ -260,7 +260,7 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
                   if (isFailed) ...[
                     SvgPicture.asset(
                       'assets/svg/triangle-warning.svg',
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                       width: 20,
                     ),
                     CoconutLayout.spacing_200w,
@@ -309,7 +309,7 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
             SvgPicture.asset(
               imagePath,
               height: 12,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
             CoconutLayout.spacing_100w,
             Text(

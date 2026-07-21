@@ -3,11 +3,15 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-enum CoconutTextFieldStyle {
-  bordered,
-  underline,
-}
+enum CoconutTextFieldStyle { bordered, underline }
+
+enum CoconutTextFieldClearButtonVisibility { never, whenNotEmpty, always }
+
+enum CoconutTextFieldSize { standard, compact, search }
+
+enum CoconutTextFieldUnderlineSpacing { standard, compact }
 
 class CoconutTextField extends StatefulWidget {
   final TextEditingController controller;
@@ -25,6 +29,8 @@ class CoconutTextField extends StatefulWidget {
   final int? maxLines;
   final Widget? prefix;
   final Widget? suffix;
+  final CoconutTextFieldClearButtonVisibility clearButtonVisibility;
+  final VoidCallback? onClear;
   final String? placeholderText;
   final String? errorText;
   final String? descriptionText;
@@ -50,6 +56,8 @@ class CoconutTextField extends StatefulWidget {
   final TextOverflow? textOverflow;
   final double fontHeight;
   final CoconutTextFieldStyle style;
+  final CoconutTextFieldSize size;
+  final CoconutTextFieldUnderlineSpacing underlineSpacing;
 
   const CoconutTextField({
     super.key,
@@ -68,6 +76,8 @@ class CoconutTextField extends StatefulWidget {
     this.maxLines,
     this.prefix,
     this.suffix,
+    this.clearButtonVisibility = CoconutTextFieldClearButtonVisibility.never,
+    this.onClear,
     this.placeholderText,
     this.errorText,
     this.descriptionText,
@@ -93,6 +103,8 @@ class CoconutTextField extends StatefulWidget {
     this.textOverflow = TextOverflow.ellipsis,
     this.fontHeight = 1.4,
     this.style = CoconutTextFieldStyle.bordered,
+    this.size = CoconutTextFieldSize.standard,
+    this.underlineSpacing = CoconutTextFieldUnderlineSpacing.standard,
   });
 
   @override
@@ -156,6 +168,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     if (text == _text) return;
     _text = text;
     setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureAffixes());
     widget.onChanged(_text);
   }
 
@@ -166,12 +179,12 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
 
   void _updateResolvedColors() {
     final colors = context.coconutColors;
-    _activeColor = widget.activeColor ?? colors.primary;
-    _cursorColor = widget.cursorColor ?? colors.primary;
+    _activeColor = widget.activeColor ?? colors.primaryText;
+    _cursorColor = widget.cursorColor ?? colors.primaryText;
     _placeholderColor = widget.placeholderColor ?? colors.inputPlaceholder;
     _errorColor = widget.errorColor ?? colors.danger;
     _borderColor = widget.borderColor ?? colors.inputBorder;
-    _backgroundColor = widget.backgroundColor ?? Colors.transparent;
+    _backgroundColor = widget.backgroundColor ?? colors.inputSurface;
     _text = widget.controller.text;
   }
 
@@ -193,17 +206,104 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     }
   }
 
+  bool get _showClearButton {
+    switch (widget.clearButtonVisibility) {
+      case CoconutTextFieldClearButtonVisibility.never:
+        return false;
+      case CoconutTextFieldClearButtonVisibility.whenNotEmpty:
+        return _text.isNotEmpty;
+      case CoconutTextFieldClearButtonVisibility.always:
+        return true;
+    }
+  }
+
+  Color _resolvedClearButtonColor(BuildContext context) {
+    final colors = context.coconutColors;
+    if (widget.isError) {
+      return _errorColor;
+    }
+    return _text.isNotEmpty ? colors.primaryText : colors.inputPlaceholder;
+  }
+
+  Widget _buildClearButton(BuildContext context) {
+    return IconButton(
+      iconSize: 14,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+      splashRadius: 12,
+      onPressed: widget.onClear,
+      icon: IconTheme(
+        data: const IconThemeData(size: 14),
+        child: SvgPicture.asset(
+          'assets/svg/text-field-clear.svg',
+          colorFilter: ColorFilter.mode(_resolvedClearButtonColor(context), BlendMode.srcIn),
+        ),
+      ),
+    );
+  }
+
+  Widget? _buildResolvedSuffix(BuildContext context) {
+    final children = <Widget>[];
+
+    if (widget.suffix != null) {
+      children.add(widget.suffix!);
+    }
+
+    if (_showClearButton && widget.onClear != null) {
+      if (children.isNotEmpty) {
+        children.add(const SizedBox(width: 4));
+      }
+      children.add(_buildClearButton(context));
+    }
+
+    if (children.isEmpty) {
+      return null;
+    }
+
+    return Row(mainAxisSize: MainAxisSize.min, children: children);
+  }
+
+  EdgeInsets _resolvedDefaultPadding(bool isUnderline) {
+    if (isUnderline) {
+      switch (widget.underlineSpacing) {
+        case CoconutTextFieldUnderlineSpacing.standard:
+          return const EdgeInsets.only(left: 4, right: 4, top: 6, bottom: 6);
+        case CoconutTextFieldUnderlineSpacing.compact:
+          return const EdgeInsets.only(left: 4, right: 4, top: 4, bottom: 4);
+      }
+    }
+
+    switch (widget.size) {
+      case CoconutTextFieldSize.standard:
+        return EdgeInsets.fromLTRB(widget.prefix != null ? 0 : 16, 16, 16, 16);
+      case CoconutTextFieldSize.compact:
+        return EdgeInsets.fromLTRB(widget.prefix != null ? 0 : 5, 7, 5, 7);
+      case CoconutTextFieldSize.search:
+        return EdgeInsets.zero;
+    }
+  }
+
+  double? _resolvedDefaultHeight(bool isUnderline) {
+    if (isUnderline) {
+      return null;
+    }
+
+    switch (widget.size) {
+      case CoconutTextFieldSize.standard:
+        return 52;
+      case CoconutTextFieldSize.compact:
+        return 30;
+      case CoconutTextFieldSize.search:
+        return 40;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isUnderline = widget.style == CoconutTextFieldStyle.underline;
-    final resolvedPadding =
-        widget.padding ??
-        EdgeInsets.fromLTRB(
-          widget.prefix != null ? 0 : (isUnderline ? 0 : 16),
-          isUnderline ? 12 : 20,
-          isUnderline ? 0 : 16,
-          isUnderline ? 12 : 20,
-        );
+    final resolvedSuffix = _buildResolvedSuffix(context);
+    final resolvedPadding = widget.padding ?? _resolvedDefaultPadding(isUnderline);
+    final resolvedHeight = widget.height ?? _resolvedDefaultHeight(isUnderline);
 
     final resolvedBorderColor =
         widget.isError
@@ -219,7 +319,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          height: widget.height,
+          height: resolvedHeight,
           decoration: BoxDecoration(
             border:
                 widget.isVisibleBorder
@@ -267,7 +367,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                   margin: EdgeInsets.only(
                     left: widget.prefix == null ? resolvedPadding.left : _prefixSize.width,
                     top: resolvedPadding.top,
-                    right: widget.suffix != null ? _suffixSize.width + resolvedPadding.right : resolvedPadding.right,
+                    right: resolvedSuffix != null ? _suffixSize.width + resolvedPadding.right : resolvedPadding.right,
                   ),
                   alignment: Alignment.centerLeft,
                   child:
@@ -294,7 +394,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                           ),
                 ),
               ),
-              if (widget.suffix != null)
+              if (resolvedSuffix != null)
                 Positioned(
                   right: 0,
                   top: 0,
@@ -302,7 +402,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                   child: Align(
                     alignment: Alignment.centerRight,
                     widthFactor: 1,
-                    child: KeyedSubtree(key: _suffixGlobalKey, child: widget.suffix!),
+                    child: KeyedSubtree(key: _suffixGlobalKey, child: resolvedSuffix),
                   ),
                 ),
             ],
@@ -330,9 +430,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     widget.descriptionText ?? '',
-                    style: CoconutTypography.body3_12.copyWith(
-                      color: _isFocus ? _activeColor : _placeholderColor,
-                    ),
+                    style: CoconutTypography.body3_12.copyWith(color: _isFocus ? _activeColor : _placeholderColor),
                     textScaler: const TextScaler.linear(1),
                   ),
                 ),
@@ -343,9 +441,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   '${_text.runes.length}/${widget.maxLength}',
-                  style: CoconutTypography.body3_12_Number.copyWith(
-                    color: _isFocus ? _activeColor : _placeholderColor,
-                  ),
+                  style: CoconutTypography.body3_12_Number.copyWith(color: _isFocus ? _activeColor : _placeholderColor),
                 ),
               ),
             ],

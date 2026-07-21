@@ -75,7 +75,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
         backgroundColor: colors.background.withValues(alpha: 0.95),
         actionButtonList: [
           IconButton(
-            icon: Icon(Icons.share, color: colors.iconDefault),
+            icon: Icon(Icons.share, color: colors.iconPrimary),
             onPressed: () async {
               try {
                 final logContent = await FileLogger.getLogContent();
@@ -105,7 +105,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
             icon: SvgPicture.asset(
               'assets/svg/trash.svg',
               width: 20,
-              colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
             ),
             onPressed: _clearLog,
           ),

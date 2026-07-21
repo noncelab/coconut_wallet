@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
+        CoconutTextField,
         CoconutToolTip,
         CoconutTooltipType,
         CoconutTooltipState,
@@ -11,6 +12,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
@@ -543,22 +545,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     backgroundColor: context.coconutColors.background,
                     borderColor: context.coconutColors.inputBorder,
                     maxLines: 1,
-                    suffix:
-                        _serverAddressController.text.isNotEmpty
-                            ? IconButton(
-                              iconSize: 14,
-                              padding: EdgeInsets.zero,
-                              onPressed: () {
-                                setState(() {
-                                  _serverAddressController.text = '';
-                                });
-                              },
-                              icon: SvgPicture.asset(
-                                'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                              ),
-                            )
-                            : null,
+                    clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                    onClear: () {
+                      setState(() {
+                        _serverAddressController.text = '';
+                      });
+                    },
                     onChanged: (text) {
                       _onServerInputChanged(); // 입력 변경 감지
                       setState(() {
@@ -626,22 +618,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     textInputType: TextInputType.number,
                     backgroundColor: context.coconutColors.background,
                     borderColor: context.coconutColors.inputBorder,
-                    suffix:
-                        _portController.text.isNotEmpty
-                            ? IconButton(
-                              iconSize: 14,
-                              padding: EdgeInsets.zero,
-                              onPressed: () {
-                                setState(() {
-                                  _portController.text = '';
-                                });
-                              },
-                              icon: SvgPicture.asset(
-                                'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                              ),
-                            )
-                            : null,
+                    clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                    onClear: () {
+                      setState(() {
+                        _portController.text = '';
+                      });
+                    },
                     onChanged: (text) {
                       _onServerInputChanged(); // 입력 변경 감지
                       setState(() {

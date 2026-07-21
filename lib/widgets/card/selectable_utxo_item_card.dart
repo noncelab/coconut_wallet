@@ -86,7 +86,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                     children: [
                       Text(
                         widget.currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                        style: CoconutTypography.heading4_18_NumberBold,
+                        style: CoconutTypography.heading4_18_NumberBold.setColor(context.coconutColors.primaryText),
                       ),
                       CoconutLayout.spacing_100w,
                       if (widget.utxo.status == UtxoStatus.incoming)

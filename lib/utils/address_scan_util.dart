@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -24,42 +24,58 @@ Future<String?> showAddressScannerBottomSheet(BuildContext context, {required St
 
   final scannedData = await CommonBottomSheets.showBottomSheet_100<String?>(
     context: context,
+    backgroundColor: Colors.transparent,
     child: Builder(
       builder:
           (sheetContext) => ClipRRect(
-            borderRadius: BorderRadius.circular(32),
-            child: Scaffold(
-              backgroundColor: context.coconutColors.surfaceBottomSheet,
-              appBar: CoconutAppBar.build(
-                title: title,
-                context: sheetContext,
-                backgroundColor: context.coconutColors.surfaceBottomSheet,
-                actionButtonList: [
-                  IconButton(
+            borderRadius: const BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+            child: Material(
+              color: sheetContext.coconutColors.surfaceBottomSheet,
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                extendBodyBehindAppBar: true,
+                // 앱바까지 투명하게 만든 후 아이콘, 화면 이름은 가독성을 위해 white로 색 고정
+                appBar: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  scrolledUnderElevation: 0,
+                  surfaceTintColor: Colors.transparent,
+                  centerTitle: true,
+                  leading: IconButton(
                     icon: SvgPicture.asset(
-                      'assets/svg/arrow-reload.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                      'assets/svg/arrow-back.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                     ),
-                    color: context.coconutColors.iconDefault,
                     onPressed: () {
-                      qrViewController?.switchCamera();
+                      qrViewController = null;
+                      isQrDataHandling = false;
+                      Navigator.of(sheetContext).pop<String?>(null);
                     },
                   ),
-                ],
-                onBackPressed: () {
-                  qrViewController = null;
-                  isQrDataHandling = false;
-                  Navigator.of(sheetContext).pop<String?>(null);
-                },
-              ),
-              body: AddressQrScannerBody(
-                qrKey: qrKey,
-                onDetect: onDetect,
-                setMobileScannerController: (controller) {
-                  qrViewController = controller;
-                },
+                  title: title.isEmpty ? null : Text(title, style: CoconutTypography.body1_16.setColor(Colors.white)),
+                  actions: [
+                    IconButton(
+                      icon: SvgPicture.asset(
+                        'assets/svg/arrow-reload.svg',
+                        width: 20,
+                        height: 20,
+                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      ),
+                      onPressed: () {
+                        qrViewController?.switchCamera();
+                      },
+                    ),
+                  ],
+                ),
+                body: AddressQrScannerBody(
+                  qrKey: qrKey,
+                  onDetect: onDetect,
+                  setMobileScannerController: (controller) {
+                    qrViewController = controller;
+                  },
+                ),
               ),
             ),
           ),

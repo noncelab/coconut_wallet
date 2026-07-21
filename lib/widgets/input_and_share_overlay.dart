@@ -217,7 +217,7 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
                                       children: [
                                         SvgPicture.asset(
                                           'assets/svg/export.svg',
-                                          colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
+                                          colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
                                         ),
                                         CoconutLayout.spacing_100w,
                                         Text(

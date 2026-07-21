@@ -86,7 +86,7 @@ class CommonBottomSheets {
                                   : null,
                           child:
                               showCloseButton
-                                  ? Icon(Icons.close_rounded, size: 24, color: context.coconutColors.iconDefault)
+                                  ? Icon(Icons.close_rounded, size: 24, color: context.coconutColors.iconPrimary)
                                   : const SizedBox(width: 24, height: 24),
                         ),
                       ),
@@ -125,6 +125,7 @@ class CommonBottomSheets {
     assert(child != null || childBuilder != null);
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
+    final sheetHeight = MediaQuery.of(context).size.height * heightRatio;
 
     return showModalBottomSheet<T>(
       context: context,
@@ -133,58 +134,58 @@ class CommonBottomSheets {
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child:
               childBuilder == null
-                  ? SizedBox(
-                    height: MediaQuery.of(context).size.height * heightRatio,
+                  ? SizedBox(height: sheetHeight, width: MediaQuery.of(context).size.width, child: child)
+                  : SizedBox(
+                    height: sheetHeight,
                     width: MediaQuery.of(context).size.width,
-                    child: child,
-                  )
-                  : DraggableScrollableSheet(
-                    controller: draggableController,
-                    expand: false,
-                    initialChildSize: heightRatio,
-                    minChildSize: 0.01,
-                    maxChildSize: heightRatio,
-                    shouldCloseOnMinExtent: true,
-                    builder: (context, scrollController) {
-                      void handleDragEnd() {
-                        if (isAnimating || !draggableController.isAttached) return;
+                    child: DraggableScrollableSheet(
+                      controller: draggableController,
+                      expand: false,
+                      initialChildSize: 1.0,
+                      minChildSize: 0.01,
+                      maxChildSize: 1.0,
+                      shouldCloseOnMinExtent: true,
+                      builder: (context, scrollController) {
+                        void handleDragEnd() {
+                          if (isAnimating || !draggableController.isAttached) return;
 
-                        final extent = draggableController.size;
-                        final closeThreshold = heightRatio * 0.7;
-                        if ((extent - heightRatio).abs() < 0.001) return;
+                          final extent = draggableController.size;
+                          const closeThreshold = 0.7;
+                          if ((extent - 1.0).abs() < 0.001) return;
 
-                        isAnimating = true;
-                        final animation =
-                            extent <= closeThreshold
-                                ? draggableController.animateTo(
-                                  0.01,
-                                  duration: const Duration(milliseconds: 180),
-                                  curve: Curves.easeOut,
-                                )
-                                : draggableController.animateTo(
-                                  heightRatio,
-                                  duration: const Duration(milliseconds: 180),
-                                  curve: Curves.easeOut,
-                                );
+                          isAnimating = true;
+                          final animation =
+                              extent <= closeThreshold
+                                  ? draggableController.animateTo(
+                                    0.01,
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOut,
+                                  )
+                                  : draggableController.animateTo(
+                                    1.0,
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOut,
+                                  );
 
-                        animation.whenComplete(() {
-                          if (extent <= closeThreshold && context.mounted) {
-                            // Navigator.of(context).pop();
-                          }
-                          isAnimating = false;
-                        });
-                      }
+                          animation.whenComplete(() {
+                            if (extent <= closeThreshold && context.mounted) {
+                              // Navigator.of(context).pop();
+                            }
+                            isAnimating = false;
+                          });
+                        }
 
-                      return NotificationListener<ScrollNotification>(
-                        onNotification: (notification) {
-                          if (notification is ScrollEndNotification) {
-                            handleDragEnd();
-                          }
-                          return false;
-                        },
-                        child: childBuilder(scrollController),
-                      );
-                    },
+                        return NotificationListener<ScrollNotification>(
+                          onNotification: (notification) {
+                            if (notification is ScrollEndNotification) {
+                              handleDragEnd();
+                            }
+                            return false;
+                          },
+                          child: childBuilder(scrollController),
+                        );
+                      },
+                    ),
                   ),
         );
       },

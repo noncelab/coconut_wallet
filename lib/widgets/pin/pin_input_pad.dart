@@ -74,13 +74,13 @@ class PinInputPadState extends State<PinInputPad> {
                     widget.step == 0
                         ? IconButton(
                           onPressed: widget.onClosePressed,
-                          icon: Icon(Icons.close, color: context.coconutColors.iconDefault, size: 22),
+                          icon: Icon(Icons.close, color: context.coconutColors.iconPrimary, size: 22),
                         )
                         : IconButton(
                           onPressed: widget.onBackPressed,
                           icon: SvgPicture.asset(
                             'assets/svg/back.svg',
-                            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                           ),
                         ),
               )

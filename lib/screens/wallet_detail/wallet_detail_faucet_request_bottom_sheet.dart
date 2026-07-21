@@ -130,7 +130,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.close, color: context.coconutColors.iconDefault),
+                      icon: Icon(Icons.close, color: context.coconutColors.iconPrimary),
                       onPressed: () {
                         Navigator.pop(context);
                       },
@@ -147,7 +147,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                       maintainSemantics: false,
                       maintainInteractivity: false,
                       child: IconButton(
-                        icon: Icon(Icons.close, color: context.coconutColors.iconDefault),
+                        icon: Icon(Icons.close, color: context.coconutColors.iconPrimary),
                         onPressed: () {
                           Navigator.pop(context);
                         },
@@ -181,12 +181,6 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                         },
                         maxLines: 2,
                         padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
-                        backgroundColor: context.coconutColors.inputSurface,
-                        activeColor: context.coconutColors.primaryText,
-                        cursorColor: context.coconutColors.primaryText,
-                        placeholderColor: context.coconutColors.inputPlaceholder,
-                        borderColor: context.coconutColors.inputBorder,
-                        errorColor: context.coconutColors.danger,
                         fontSize: 16,
                         fontFamily: 'SpaceGrotesk',
                       ),
@@ -228,7 +222,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                           ? SizedBox(
                             height: 28,
                             width: 28,
-                            child: CircularProgressIndicator(color: context.coconutColors.iconDefault),
+                            child: CircularProgressIndicator(color: context.coconutColors.iconPrimary),
                           )
                           : Text(
                             _isRequesting

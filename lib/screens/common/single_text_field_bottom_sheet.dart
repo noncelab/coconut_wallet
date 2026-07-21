@@ -6,7 +6,6 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 /// 단일 줄 입력 + [SingleFieldFixedBottomSheetBody].
 ///
@@ -28,12 +27,6 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     this.textInputFormatters,
     this.completeEnabledWhen,
     this.focusOnlyWhenOriginalNotEmpty = false,
-    this.fieldBackgroundColor,
-    this.errorColor,
-    this.placeholderColor,
-    this.inputBorderColor,
-    this.activeColor,
-    this.cursorColor,
     this.unfocusOnTapOutside = true,
     this.prefix,
     this.suffix,
@@ -60,13 +53,6 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
 
   /// true면 초기 문자열이 비어 있지 않을 때만 포커스
   final bool focusOnlyWhenOriginalNotEmpty;
-
-  final Color? fieldBackgroundColor;
-  final Color? errorColor;
-  final Color? placeholderColor;
-  final Color? inputBorderColor;
-  final Color? activeColor;
-  final Color? cursorColor;
 
   /// 바깥 탭 시 포커스 해제
   final bool unfocusOnTapOutside;
@@ -109,12 +95,6 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     List<TextInputFormatter>? textInputFormatters,
     bool Function(String currentText, String originalText)? completeEnabledWhen,
     bool focusOnlyWhenOriginalNotEmpty = false,
-    Color? fieldBackgroundColor,
-    Color? errorColor,
-    Color? placeholderColor,
-    Color? inputBorderColor,
-    Color? activeColor,
-    Color? cursorColor,
     bool unfocusOnTapOutside = true,
     Widget? prefix,
     Widget? suffix,
@@ -141,12 +121,6 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
         textInputFormatters: textInputFormatters,
         completeEnabledWhen: completeEnabledWhen,
         focusOnlyWhenOriginalNotEmpty: focusOnlyWhenOriginalNotEmpty,
-        fieldBackgroundColor: fieldBackgroundColor,
-        errorColor: errorColor,
-        placeholderColor: placeholderColor,
-        inputBorderColor: inputBorderColor,
-        activeColor: activeColor,
-        cursorColor: cursorColor,
         unfocusOnTapOutside: unfocusOnTapOutside,
         prefix: prefix,
         suffix: suffix,
@@ -171,12 +145,6 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     List<TextInputFormatter>? textInputFormatters,
     bool Function(String currentText, String originalText)? completeEnabledWhen,
     bool focusOnlyWhenOriginalNotEmpty = false,
-    Color? fieldBackgroundColor,
-    Color? errorColor,
-    Color? placeholderColor,
-    Color? inputBorderColor,
-    Color? activeColor,
-    Color? cursorColor,
     bool unfocusOnTapOutside = true,
     Widget? prefix,
     Widget? suffix,
@@ -201,12 +169,6 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
         textInputFormatters: textInputFormatters,
         completeEnabledWhen: completeEnabledWhen,
         focusOnlyWhenOriginalNotEmpty: focusOnlyWhenOriginalNotEmpty,
-        fieldBackgroundColor: fieldBackgroundColor,
-        errorColor: errorColor,
-        placeholderColor: placeholderColor,
-        inputBorderColor: inputBorderColor,
-        activeColor: activeColor,
-        cursorColor: cursorColor,
         unfocusOnTapOutside: unfocusOnTapOutside,
         prefix: prefix,
         suffix: suffix,
@@ -278,53 +240,28 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.coconutColors;
     final formatters = widget.textInputFormatters ?? _buildFormatters();
 
     final bool isAndroid = defaultTargetPlatform == TargetPlatform.android;
 
-    final clearIcon = IconButton(
-      iconSize: 14,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-      splashRadius: 12,
-      onPressed: _clearField,
-      icon: SvgPicture.asset(
-        'assets/svg/text-field-clear.svg',
-        colorFilter: ColorFilter.mode(
-          _controller.text.isNotEmpty ? colors.primaryText : colors.inputPlaceholder,
-          BlendMode.srcIn,
-        ),
-      ),
-    );
-
-    Widget? composedSuffix;
-    if (widget.suffix == null) {
-      composedSuffix = clearIcon;
-    } else {
-      composedSuffix = Row(mainAxisSize: MainAxisSize.min, children: [widget.suffix!, clearIcon]);
-    }
-
     final field = CoconutTextField(
       controller: _controller,
       focusNode: _focusNode,
-      padding: EdgeInsets.only(left: widget.prefix != null ? 8 : 16, top: 16, bottom: 16),
       onChanged: (_) => setState(() => _updateText = _controller.text),
+      height: 54,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       textInputType: widget.keyboardType,
       textInputFormatter: formatters,
       placeholderText: widget.placeholder,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       isLengthVisible: widget.visibleTextLimit,
       maxLength: widget.maxLength ?? 30,
       maxLines: 1,
       enableSuggestions: isAndroid, // Required for Android emoji input
-      backgroundColor: widget.fieldBackgroundColor,
-      errorColor: widget.errorColor,
-      placeholderColor: widget.placeholderColor,
-      borderColor: widget.inputBorderColor,
-      activeColor: widget.activeColor,
-      cursorColor: widget.cursorColor,
+      clearButtonVisibility: CoconutTextFieldClearButtonVisibility.always,
+      onClear: _clearField,
       prefix: widget.prefix,
-      suffix: composedSuffix,
+      suffix: widget.suffix,
     );
 
     final body = SingleFieldFixedBottomSheetBody(

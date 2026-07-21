@@ -425,12 +425,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         return currentText.isNotEmpty && currentText != original.trim();
       },
       focusOnlyWhenOriginalNotEmpty: true,
-      fieldBackgroundColor: context.coconutColors.inputSurface,
-      errorColor: context.coconutColors.danger,
-      placeholderColor: context.coconutColors.inputPlaceholder,
-      inputBorderColor: context.coconutColors.inputBorder,
-      activeColor: context.coconutColors.primaryText,
-      cursorColor: context.coconutColors.primaryText,
       suffix: Text(
         BitcoinUnit.btc.symbol,
         style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
@@ -639,7 +633,7 @@ class _StatCard extends StatelessWidget {
               Text(label, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText)),
               const SizedBox(width: 4),
               transparentBackground
-                  ? Icon(Icons.keyboard_arrow_right_rounded, size: 20, color: context.coconutColors.iconSubDefault)
+                  ? Icon(Icons.keyboard_arrow_right_rounded, size: 20, color: context.coconutColors.iconSecondary)
                   : const SizedBox.shrink(),
             ],
           ),

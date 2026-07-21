@@ -83,7 +83,7 @@ class _SendOutputDetailCardState extends State<SendOutputDetailCard> {
                     child: Icon(
                       _isExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
                       key: ValueKey(_isExpanded),
-                      color: context.coconutColors.iconDefault,
+                      color: context.coconutColors.iconPrimary,
                       size: 28,
                     ),
                   ),

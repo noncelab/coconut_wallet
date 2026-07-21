@@ -139,7 +139,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       // FIXME: CDN 백버튼 및 닫기 버튼 지정할 수 있어야 함.
-      // 예: iconColor: context.coconutColors.iconDefault,
+      // 예: iconColor: context.coconutColors.iconPrimary,
       entireWidgetKey: _appBarKey,
       backgroundColor: context.coconutColors.background,
       title: '',
@@ -153,7 +153,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               'assets/svg/faucet.svg',
               width: 18,
               height: 18,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
         IconButton(
@@ -162,7 +162,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             'assets/svg/coins.svg',
             width: 18,
             height: 18,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
         ),
         IconButton(
@@ -171,7 +171,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             'assets/svg/wallet-outlined.svg',
             width: 18,
             height: 18,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
         ),
       ],

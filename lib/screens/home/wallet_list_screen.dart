@@ -455,7 +455,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     'assets/svg/settings.svg',
                     width: 16,
                     height: 16,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                   ),
                 ),
               ),
@@ -475,11 +475,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             const Spacer(),
             BitcoinAmountUnit(
               currentUnit: currentUnit,
-              unitStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryTextStrong),
+              unitStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
               spacing: CoconutLayout.spacing_100w,
               child: Text(
                 currentUnit.displayBitcoinAmount(amount),
-                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryTextStrong),
+                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
               ),
             ),
           ],
@@ -567,7 +567,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             child: SvgPicture.asset(
               'assets/svg/trash.svg',
               width: 16,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
           onDismissed: (direction) {
@@ -675,7 +675,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             'assets/svg/arrow-right.svg',
             width: 6,
             height: 10,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
           ),
         );
       },

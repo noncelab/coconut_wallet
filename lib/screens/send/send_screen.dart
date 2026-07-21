@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
+        CoconutTextField,
         CoconutPulldownMenu,
         CoconutPulldownMenuItem,
         CoconutPulldownMenuGroup,
@@ -17,6 +18,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
@@ -1178,7 +1180,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeRowLabel(String label) {
-    return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong));
+    return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText));
   }
 
   Widget _buildPageView(BuildContext context) {

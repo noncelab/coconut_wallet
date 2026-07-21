@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
+        CoconutOptionPicker,
         CoconutToolTip,
         CoconutTooltipType,
         CoconutTooltipState,
@@ -11,6 +12,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutPopup,
         CoconutTextField,
         CoconutTextFieldStyle;
+import 'package:coconut_wallet/ui/coconut/coconut_option_picker.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -629,8 +631,9 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             CoconutOptionPicker(
               label: method != null ? t.split_utxo_screen.label_split_method : null,
               text: method?.getLabel(t) ?? t.split_utxo_screen.method_bottom_sheet.split_by_amount,
+              isExpanded: _isMethodBottomSheetOpen,
               textColor: context.coconutColors.primaryText,
-              dividerColor: _isMethodBottomSheetOpen ? null : _pickerDividerColor,
+              dividerColor: _pickerDividerColor,
               onTap: () => _showSplitMethodBottomSheet(context, viewModel),
             ),
             CoconutLayout.spacing_1000h,
@@ -700,11 +703,12 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
             CoconutOptionPicker(
               label: isSelected ? t.split_utxo_screen.label_selected_utxo : null,
               text: viewModel.getSelectedUtxoAmountText(t),
+              isExpanded: _isUtxoSelectionBottomSheetOpen,
               guideText: guideText,
               textColor: isSelected ? context.coconutColors.primaryText : context.coconutColors.mutedText,
               inlineWidgets: inlineWidgets,
               coconutOptionStateEnum: optionState,
-              dividerColor: _isUtxoSelectionBottomSheetOpen ? null : _pickerDividerColor,
+              dividerColor: _pickerDividerColor,
               onTap: () => _showUtxoSelectionBottomSheet(context, viewModel),
             ),
             CoconutLayout.spacing_1000h,
@@ -805,12 +809,13 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CoconutOptionPicker(
+              isExpanded: _isFeeBottomSheetOpen,
               label: t.split_utxo_screen.label_estimated_fee,
               text: _getFeePickerText(t, hasFeeRate, previewFeeText),
               textColor: hasFeeRate ? context.coconutColors.primaryText : context.coconutColors.mutedText,
               coconutOptionStateEnum: viewModel.feeOptionState,
               guideText: feeExceedsAmountErrorText,
-              dividerColor: _isFeeBottomSheetOpen ? null : _pickerDividerColor,
+              dividerColor: _pickerDividerColor,
               onTap: () {
                 setState(() {
                   _isFeeBottomSheetOpen = true;
@@ -913,12 +918,10 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               controller: viewModel.amountController,
               focusNode: viewModel.amountFocusNode,
               style: CoconutTextFieldStyle.underline,
+              underlineSpacing: CoconutTextFieldUnderlineSpacing.standard,
+              backgroundColor: context.coconutColors.background,
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              activeColor: context.coconutColors.primaryText,
-              placeholderColor: context.coconutColors.inputPlaceholder,
-              borderColor: context.coconutColors.inputBorder,
-              errorColor: context.coconutColors.danger,
               isError: data.splitAmountErrorText != null,
               errorText: data.splitAmountErrorText ?? '',
               onChanged: (_) {},
@@ -934,7 +937,6 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               placeholderText: t.split_utxo_screen.placeholder_split_amount,
               maxLines: 1,
               unfocusOnTapOutside: true,
-              padding: const EdgeInsets.only(left: 4, right: 4, top: 6, bottom: 6),
               suffix: Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Text(
@@ -1051,7 +1053,6 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                             focusNode: viewModel.splitCountFocusNode,
                             textAlign: TextAlign.center,
                             activeColor: textColor,
-                            placeholderColor: context.coconutColors.inputPlaceholder,
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
                             isVisibleBorder: false,
@@ -1944,11 +1945,8 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 controller: widget.item.amountController,
                                 focusNode: widget.item.amountFocusNode,
                                 style: CoconutTextFieldStyle.underline,
+                                underlineSpacing: CoconutTextFieldUnderlineSpacing.compact,
                                 fontSize: 18,
-                                activeColor: context.coconutColors.primaryText,
-                                placeholderColor: context.coconutColors.inputPlaceholder,
-                                borderColor: context.coconutColors.inputBorder,
-                                errorColor: context.coconutColors.danger,
                                 onChanged: (_) {},
                                 onEditingComplete: () => widget.item.amountFocusNode.unfocus(),
                                 textInputAction: TextInputAction.done,
@@ -1966,7 +1964,6 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                         ? "0${NumberFormatConfig.instance.decimalSeparator}00"
                                         : '0',
                                 maxLines: 1,
-                                padding: const EdgeInsets.only(left: 4, right: 4, top: 4, bottom: 4),
                                 unfocusOnTapOutside: true,
                                 suffix: Padding(
                                   padding: const EdgeInsets.only(right: 4),
@@ -2147,7 +2144,7 @@ class _SplitCountStepButton extends StatelessWidget {
           shape: BoxShape.circle,
           border: Border.all(color: isActive ? context.coconutColors.iconDisabled : context.coconutColors.iconDisabled),
         ),
-        child: Icon(icon, color: isActive ? context.coconutColors.iconDefault : context.coconutColors.iconDisabled),
+        child: Icon(icon, color: isActive ? context.coconutColors.iconPrimary : context.coconutColors.iconDisabled),
       ),
     );
   }

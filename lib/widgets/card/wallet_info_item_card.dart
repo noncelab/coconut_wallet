@@ -270,7 +270,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                                             key: widget.tooltipKey,
                                             icon: Icon(
                                               Icons.info_outline_rounded,
-                                              color: context.coconutColors.iconSubDefault,
+                                              color: context.coconutColors.iconSecondary,
                                               size: 18,
                                             ),
                                             onTap: widget.onTooltipClicked,
@@ -376,7 +376,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                 child: SvgPicture.asset(
                   'assets/svg/edit-outlined.svg',
                   width: 10,
-                  colorFilter: ColorFilter.mode(colors.iconSubDefault, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
                 ),
               ),
             ),

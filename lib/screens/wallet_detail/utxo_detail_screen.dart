@@ -232,7 +232,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           key: _utxoTooltipIconKey,
           icon: SvgPicture.asset(
             'assets/svg/question-mark.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
           onPressed: _toggleUtxoTooltip,
         ),

@@ -109,7 +109,8 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       backgroundColor: resolvedBackgroundColor,
                       customTitle: Text(
                         titleText,
-                        style: widget.isSplitMode ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14,
+                        style: (widget.isSplitMode ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14)
+                            .setColor(context.coconutColors.primaryText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,

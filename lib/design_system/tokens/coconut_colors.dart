@@ -100,7 +100,6 @@ class CoconutColors {
   final Color surfaceRaised;
   final Color surfaceDisabled;
   final Color surfaceBottomSheet;
-  final Color surfaceSectionBreak;
   final Color surfaceSkeletonBase;
   final Color surfaceSkeletonHighlight;
   final Color surfaceSelected;
@@ -140,7 +139,6 @@ class CoconutColors {
 
   final Color primaryText;
   final Color secondaryText;
-  final Color secondaryTextStrong;
   final Color tertiaryText;
   final Color mutedText;
 
@@ -155,8 +153,8 @@ class CoconutColors {
   final Color borderStrong;
   final Color iconBackground;
   final Color iconBackgroundSubtle;
-  final Color iconDefault;
-  final Color iconSubDefault;
+  final Color iconPrimary;
+  final Color iconSecondary;
   final Color iconHighlight;
   final Color iconDisabled;
   final Color iconOnDanger;
@@ -261,7 +259,6 @@ class CoconutColors {
     required this.surfaceRaised,
     required this.surfaceDisabled,
     required this.surfaceBottomSheet,
-    required this.surfaceSectionBreak,
     required this.infoChipBackground,
     required this.chipUnselectedBackground,
     required this.chipUnselectedText,
@@ -292,7 +289,6 @@ class CoconutColors {
     required this.secondaryButtonText,
     required this.primaryText,
     required this.secondaryText,
-    required this.secondaryTextStrong,
     required this.tertiaryText,
     required this.mutedText,
     required this.segmentedControlSelected,
@@ -305,8 +301,8 @@ class CoconutColors {
     required this.borderStrong,
     required this.iconBackground,
     required this.iconBackgroundSubtle,
-    required this.iconDefault,
-    required this.iconSubDefault,
+    required this.iconPrimary,
+    required this.iconSecondary,
     required this.iconHighlight,
     required this.iconDisabled,
     required this.iconOnDanger,
@@ -394,7 +390,6 @@ class CoconutColors {
       surfaceRaised: ds.CoconutColors.gray900,
       surfaceDisabled: ds.CoconutColors.gray850,
       surfaceBottomSheet: ds.CoconutColors.gray900,
-      surfaceSectionBreak: ds.CoconutColors.gray900,
 
       infoChipBackground: ds.CoconutColors.gray850,
 
@@ -433,7 +428,6 @@ class CoconutColors {
 
       primaryText: ds.CoconutColors.white,
       secondaryText: ds.CoconutColors.gray400,
-      secondaryTextStrong: ds.CoconutColors.gray300,
       tertiaryText: ds.CoconutColors.gray600,
       mutedText: ds.CoconutColors.gray500,
 
@@ -447,8 +441,8 @@ class CoconutColors {
       borderStrong: ds.CoconutColors.white,
       iconBackground: ds.CoconutColors.gray800,
       iconBackgroundSubtle: ds.CoconutColors.gray600,
-      iconDefault: ds.CoconutColors.white,
-      iconSubDefault: ds.CoconutColors.gray400,
+      iconPrimary: ds.CoconutColors.white,
+      iconSecondary: ds.CoconutColors.gray400,
       iconHighlight: ds.CoconutColors.gray850,
       iconDisabled: ds.CoconutColors.gray600,
       iconOnDanger: ds.CoconutColors.white,
@@ -541,7 +535,6 @@ class CoconutColors {
       surfaceRaised: ds.CoconutColors.white,
       surfaceDisabled: ds.CoconutColors.gray300,
       surfaceBottomSheet: ds.CoconutColors.white,
-      surfaceSectionBreak: ds.CoconutColors.gray200,
 
       infoChipBackground: ds.CoconutColors.gray300,
 
@@ -582,7 +575,6 @@ class CoconutColors {
 
       primaryText: ds.CoconutColors.black,
       secondaryText: ds.CoconutColors.gray700,
-      secondaryTextStrong: ds.CoconutColors.gray800,
       tertiaryText: ds.CoconutColors.gray600,
       mutedText: ds.CoconutColors.gray500,
 
@@ -596,8 +588,8 @@ class CoconutColors {
       borderStrong: ds.CoconutColors.black,
       iconBackground: ds.CoconutColors.gray300,
       iconBackgroundSubtle: ds.CoconutColors.gray200,
-      iconDefault: ds.CoconutColors.black,
-      iconSubDefault: ds.CoconutColors.gray600,
+      iconPrimary: ds.CoconutColors.black,
+      iconSecondary: ds.CoconutColors.gray600,
       iconHighlight: ds.CoconutColors.gray600,
       iconDisabled: ds.CoconutColors.gray350,
       iconOnDanger: ds.CoconutColors.white,
@@ -670,7 +662,7 @@ class CoconutColors {
   }
 
   factory CoconutColors.coconutPulp() {
-    const ivory = Color(0xFFFFEFCC);
+    const pulp = Color(0xFFFFFDE9);
     const cream = Color(0xFFFFF4DD);
     const shell = Color(0xFFFFFEFA);
     const sand = Color(0xFFF1C998);
@@ -682,14 +674,15 @@ class CoconutColors {
     const lagoon = Color(0xFF71C0D2);
     const lagoonSoft = Color(0xFFF2FBFC);
     //const lagoonSoft = Color(0xFFB9E0E4);
+    const leaf = Color(0xFFADC178);
     const line = Color(0xFFE2CCAA);
     const dim = Color(0xFFF2DFC0);
 
     return CoconutColors(
-      homeBackground: lagoonSoft,
+      homeBackground: pulp,
       homeSurfaceCard: cream,
-      homeSurfaceCardPressed: ivory,
-      background: ivory,
+      homeSurfaceCardPressed: sand.withAlpha(60),
+      background: pulp,
       backgroundSubtle: dim,
       backgroundHighlight: lagoon,
       backgroundHighlightText: huskDeep,
@@ -705,7 +698,6 @@ class CoconutColors {
       surfaceRaised: shell,
       surfaceDisabled: line,
       surfaceBottomSheet: shell,
-      surfaceSectionBreak: dim,
 
       infoChipBackground: lagoonSoft,
 
@@ -719,7 +711,7 @@ class CoconutColors {
       surfaceSkeletonBase: cream,
       surfaceSkeletonHighlight: shell,
       surfaceSelected: dim,
-      surfacePressed: ivory,
+      surfacePressed: sand.withAlpha(60),
 
       chartSurface: shell,
       coinSurface: shell,
@@ -744,10 +736,9 @@ class CoconutColors {
       secondaryButtonText: huskDeep,
 
       primaryText: huskDeep,
-      secondaryText: husk,
-      secondaryTextStrong: husk,
+      secondaryText: husk.withAlpha(160),
       tertiaryText: caramel,
-      mutedText: caramel,
+      mutedText: sand,
 
       segmentedControlSelected: huskDeep,
       segmentedControlBackground: dim,
@@ -759,8 +750,8 @@ class CoconutColors {
       borderStrong: huskDeep,
       iconBackground: sand,
       iconBackgroundSubtle: dim,
-      iconDefault: huskDeep,
-      iconSubDefault: huskSoft,
+      iconPrimary: huskDeep,
+      iconSecondary: husk,
       iconHighlight: husk,
       iconDisabled: caramel,
       iconOnDanger: ds.CoconutColors.white,
@@ -788,7 +779,7 @@ class CoconutColors {
       shadowDefault: huskDeep.withValues(alpha: 0.18),
       shadowSubtle: huskSoft.withValues(alpha: 0.12),
       popupBackground: shell,
-      dimOverlay: ivory.withValues(alpha: 0.92),
+      dimOverlay: pulp.withValues(alpha: 0.92),
       pageIndicatorActive: husk,
       pageIndicatorInactive: sand,
       sendingColor: husk,
@@ -800,7 +791,7 @@ class CoconutColors {
       loadingOverlay: huskDeep.withValues(alpha: 0.18),
       glossaryKeywordBackground: lagoonSoft,
       glossaryKeywordText: huskDeep,
-      divider: line,
+      divider: leaf.withAlpha(100),
       txFlowLine: caramel,
       feeBumpingHistoryLine: sand,
       mainnetLogoGradient: const LinearGradient(
@@ -816,7 +807,7 @@ class CoconutColors {
       switchThumbDisabled: caramel,
       linkText: lagoon,
       nodeConnected: lagoon,
-      nodeFailed: ds.CoconutColors.red,
+      nodeFailed: ds.CoconutColors.hotPink,
       popoverBackground: huskDeep,
       popoverText: ds.CoconutColors.white,
       faucetPopoverBackground: lagoonSoft,

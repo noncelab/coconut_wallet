@@ -109,7 +109,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                         isChecked
                             ? SvgPicture.asset(
                               'assets/svg/check.svg',
-                              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                             )
                             : Container(),
                     onPressed: () => setState(() => _selectedWalletId = walletId),
@@ -245,7 +245,7 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
                       isLastItem: index == _walletList.length - 1,
                       currentUnit: widget.currentUnit,
                       backgroundColor: context.coconutColors.surfaceBottomSheet,
-                      pressedColor: context.coconutColors.surfaceSectionBreak,
+                      pressedColor: context.coconutColors.divider,
                       rightWidget: Container(),
                       onPressed: () => widget.onWalletSelected(walletId),
                     );

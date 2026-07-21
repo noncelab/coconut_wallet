@@ -288,7 +288,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 child: Column(
                                   children: [
                                     CoconutLayout.spacing_600h,
-                                    Divider(thickness: 12, color: context.coconutColors.surfaceSectionBreak),
+                                    Divider(thickness: 12, color: context.coconutColors.divider),
                                     CoconutLayout.spacing_600h,
                                   ],
                                 ),
@@ -529,7 +529,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
               child: _buildHeaderActions(isActive: false),
             ),
-            Divider(thickness: 12, color: context.coconutColors.surfaceSectionBreak),
+            Divider(thickness: 12, color: context.coconutColors.divider),
           ],
         ),
       );
@@ -702,7 +702,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               ],
             ),
           ),
-          Divider(thickness: 12, color: context.coconutColors.surfaceSectionBreak),
+          Divider(thickness: 12, color: context.coconutColors.divider),
         ],
       ),
     );
@@ -952,7 +952,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           'assets/svg/arrow-right.svg',
                           width: 6,
                           height: 10,
-                          colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
                         ),
                       ],
                     ),
@@ -1055,7 +1055,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             'assets/svg/arrow-right.svg',
             width: 6,
             height: 10,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
           ),
         );
       },
@@ -1227,7 +1227,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       final iconColor = switch (status) {
         TransactionStatus.sent || TransactionStatus.sending => context.coconutColors.sendingColor,
         TransactionStatus.received || TransactionStatus.receiving => context.coconutColors.receivingColor,
-        _ => context.coconutColors.iconDefault,
+        _ => context.coconutColors.iconPrimary,
       };
 
       return Row(
@@ -1398,7 +1398,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SvgPicture.asset('assets/svg/search-not-found.svg', width: 16, height: 16),
+                    SvgPicture.asset(
+                      'assets/svg/search-not-found.svg',
+                      width: 16,
+                      height: 16,
+                      colorFilter: ColorFilter.mode(textColor, BlendMode.srcIn),
+                    ),
                     CoconutLayout.spacing_200w,
                     Text(t.tx_not_found, style: CoconutTypography.body3_12.setColor(textColor)),
                   ],
@@ -1582,7 +1587,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildAnalysisFilterButton() {
     final textColor = context.coconutColors.secondaryText;
-    final iconColor = context.coconutColors.iconSubDefault;
+    final iconColor = context.coconutColors.iconSecondary;
 
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -1634,7 +1639,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     final iconColor = switch (type) {
       TransactionType.sent => context.coconutColors.sendingColor,
       TransactionType.received => context.coconutColors.receivingColor,
-      _ => context.coconutColors.iconDefault,
+      _ => context.coconutColors.iconPrimary,
     };
 
     return Column(
@@ -1707,7 +1712,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   CoconutLayout.spacing_100w,
                   SvgPicture.asset(
                     'assets/svg/caret-down.svg',
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
                   ),
                 ],
               ),
@@ -1895,7 +1900,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             padding: EdgeInsets.zero,
                             icon: SvgPicture.asset(
                               'assets/svg/close-bold.svg',
-                              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                               width: 14,
                               height: 14,
                             ),
@@ -1980,7 +1985,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           key: GlobalKey(),
           icon: SvgPicture.asset(
             'assets/svg/wallet-eyes.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
           onPressed: () {
             _onAddWalletPressed();
@@ -1991,7 +1996,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           key: _dropdownButtonKey,
           icon: SvgPicture.asset(
             'assets/svg/kebab.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
           onPressed: () {
             _setDropdownMenuVisiblility(true);
@@ -2006,7 +2011,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       key: key,
       height: 40,
       width: 40,
-      child: IconButton(icon: icon, onPressed: onPressed, color: context.coconutColors.iconDefault),
+      child: IconButton(icon: icon, onPressed: onPressed, color: context.coconutColors.iconPrimary),
     );
   }
 
@@ -2133,7 +2138,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   children: [
                     SvgPicture.asset(
                       scanType.externalWalletIconPath,
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                     ),
                     CoconutLayout.spacing_400w,
                     Expanded(
@@ -2166,7 +2171,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   children: [
                     SvgPicture.asset(
                       scanType.externalWalletIconPath,
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                     ),
                     CoconutLayout.spacing_100h,
                     Text(

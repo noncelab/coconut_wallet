@@ -43,7 +43,7 @@ class WalletBackupDataScreen extends StatelessWidget {
                 icon: SvgPicture.asset(
                   'assets/svg/circle-info.svg',
                   width: 20,
-                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                 ),
                 tooltipType: CoconutTooltipType.fixed,
                 richText: RichText(

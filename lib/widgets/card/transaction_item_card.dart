@@ -71,7 +71,7 @@ class TransactionItemCard extends StatelessWidget {
                 assetPath,
                 width: 24,
                 height: 24,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
               ),
             )
             : SvgPicture.asset(
@@ -127,7 +127,7 @@ class TransactionItemCard extends StatelessWidget {
       children: [
         SvgPicture.asset(
           'assets/svg/pen.svg',
-          colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
           width: Sizes.size12,
         ),
         CoconutLayout.spacing_100w,

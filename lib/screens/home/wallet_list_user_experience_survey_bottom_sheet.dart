@@ -34,7 +34,7 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                   toolbarHeight: Platform.isAndroid ? 100 : 120,
                   leading: IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close, color: context.coconutColors.iconDefault, size: 22),
+                    icon: Icon(Icons.close, color: context.coconutColors.iconPrimary, size: 22),
                   ),
                 ),
         backgroundColor: context.coconutColors.background,

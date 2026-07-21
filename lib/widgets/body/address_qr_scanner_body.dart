@@ -41,7 +41,7 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
     // 스캔 영역을 상단으로 이동 (상단 여백 120px 추가)
     final statusBarHeight = MediaQuery.of(context).padding.top;
     final isFoldScreen = MediaQuery.of(context).size.width > 600;
-    final topMargin = statusBarHeight + (isFoldScreen ? 0 : 120.0);
+    final topMargin = statusBarHeight + (isFoldScreen ? 0 : 100.0);
     return LayoutBuilder(
       builder: (context, constraints) {
         final Size layoutSize = constraints.biggest;

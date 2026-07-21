@@ -181,7 +181,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault));
+          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconPrimary));
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {
@@ -334,7 +334,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       width: 24,
       height: 24,
       fit: BoxFit.cover,
-      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
     );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -445,7 +445,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault));
+          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconPrimary));
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {

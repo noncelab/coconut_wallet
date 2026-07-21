@@ -56,7 +56,7 @@ class UtxoSummaryChart extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [colors.background, colors.surfaceSectionBreak],
+          colors: [colors.background, colors.divider],
         ),
         borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
@@ -253,7 +253,7 @@ class _BarChartState extends State<_BarChart> {
                             borderRadius: BorderRadius.circular(20),
                             child: Padding(
                               padding: const EdgeInsets.all(8),
-                              child: Icon(Icons.palette_outlined, size: 22, color: context.coconutColors.iconDefault),
+                              child: Icon(Icons.palette_outlined, size: 22, color: context.coconutColors.iconPrimary),
                             ),
                           ),
                         ),
@@ -339,7 +339,7 @@ class _BarChartState extends State<_BarChart> {
                   final isTapped = _tappedBucketIndex == index;
                   var color = widget.tierTheme.colorForSats(bucket.maxSats, dustThreshold: widget.dustThreshold);
                   if (!isTapped) {
-                    color = Color.lerp(color, colors.surfaceSectionBreak, _overlayOpacity)!;
+                    color = Color.lerp(color, colors.divider, _overlayOpacity)!;
                   }
 
                   return Expanded(

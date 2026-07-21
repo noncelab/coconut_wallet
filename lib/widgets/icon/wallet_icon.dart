@@ -28,7 +28,7 @@ class WalletIcon extends StatelessWidget {
         decoration: BoxDecoration(color: context.coconutColors.iconBackground, borderRadius: BorderRadius.circular(12)),
         child: SvgPicture.asset(
           'assets/svg/puzzle-piece.svg',
-          colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
           width: 18.0,
         ),
       );
@@ -44,7 +44,7 @@ class WalletIcon extends StatelessWidget {
           isExternalWallet
               ? SvgPicture.asset(
                 walletImportSource!.externalWalletIconPath,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                 width: 18.0,
               )
               : SvgPicture.asset(
