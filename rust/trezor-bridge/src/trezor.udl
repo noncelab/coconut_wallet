@@ -16,7 +16,7 @@ namespace trezor_bridge {
     void trezor_register_usb_callbacks(u64 usb_handle, TrezorUsbCallbacks callbacks);
 
     [Throws=TrezorError]
-    string trezor_connect_usb(u64 usb_handle, string device_path, u16 vendor_id, u16 product_id);
+    string trezor_connect_usb(u64 usb_handle, string device_path, u16 vendor_id, u16 product_id, string credential_path);
 
     // Retrieve the BIP-84 extended public key at the given derivation path.
     // Returns JSON: {"xpub": "zpub..."}
@@ -70,6 +70,7 @@ interface TrezorUsbCallbacks {
     sequence<u8>? read();
     string get_pin();
     string get_passphrase(boolean on_device);
+    string get_pairing_code();
 };
 
 [Error]

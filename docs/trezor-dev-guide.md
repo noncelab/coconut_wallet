@@ -437,6 +437,10 @@ let is_retryable = !error_str.contains("Pairing cancelled by user")  // 사용�
 
 **보안 고려사항**: 파일 저장은 앱 샌드박스(iOS)/앱 전용 영역(Android) 내에 저장되어 다른 앱이 접근할 수 없습니다. credential이 유출되더라도 BLE 물리적 근접(~10m), Trezor 기기 잠금 해제, 트랜잭션 서명 시 기기 화면 확인이 모두 필요하므로 실질적인 공격 위험은 낮습니다.
 
+#### 패치 3 — Model One ~ Safe 7 전 모델 USB Connect 연결/서명 지원
+
+Trezor 제품군의 USB 연결 및 서명 흐름이 모델별로 차이가 있어, Model One부터 Safe 7까지 모든 모델에서 USB를 통한 연결과 트랜잭션 서명이 정상 동작하도록 `rust/trezor-connect-rs`를 패치했습니다. 이 패치는 Trezor Bridge 기반 USB 통신에서 모델별 프로토콜/메시지 차이를 처리합니다.
+
 ### trezor-connect-rs 버전 업그레이드 방법
 
 새 버전이 crates.io에 배포됐을 때 로컬 소스를 교체하고 패치를 재적용하는 절차입니다.
@@ -496,6 +500,14 @@ Trezor Bridge에서 PSBT 서명 API를 노출하고, 서명에 필요한 이전 
 - GitHub commit: `https://github.com/noncelab/coconut_wallet/commit/75aed8b062bcc62db9a4517a19c73ed4ddc45d16`
 
 > 새 버전 소스로 `rust/trezor-connect-rs`를 교체하면 `src/psbt.rs` 변경은 사라지므로 반드시 다시 적용합니다. `trezor-bridge`의 `lib.rs`와 `trezor.udl`도 패치 2의 API와 구현이 유지되는지 함께 확인합니다.
+
+**패치 3** — PSBT 트랜잭션 서명 처리 보완:
+
+변경 대상 파일:
+- `rust/trezor-bridge/src/lib.rs`
+- `rust/trezor-bridge/src/trezor.udl`
+
+- GitHub commit: <추가 예정>
 
 **4. Cargo.toml 버전 업데이트**
 

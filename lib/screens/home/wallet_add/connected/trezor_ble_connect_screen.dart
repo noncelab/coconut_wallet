@@ -12,6 +12,7 @@ import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/trezor_digit_box.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
@@ -265,7 +266,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
                     if (vm.step == TrezorBleConnectStep.idle ||
                         vm.step == TrezorBleConnectStep.error ||
                         (vm.step == TrezorBleConnectStep.paired && vm.xpub.isNotEmpty))
-                      Stack(alignment: Alignment.center, children: [_buildMainButton(vm)]),
+                      Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
                   ],
                 ),
               ),
@@ -467,7 +468,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
                 Flexible(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 40),
-                    child: _DigitBox(
+                    child: TrezorDigitBox(
                       digit: index < _pairingCode.length ? _pairingCode[index] : '',
                       hasError: vm.pairingErrorMessage != null,
                       isVerifying: _isVerifyingPairingCode,
@@ -540,7 +541,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     return matchedName != (widget.walletName ?? '');
   }
 
-  Widget _buildMainButton(TrezorBleConnectViewModel vm) {
+  Widget _buildPrimaryActionButton(TrezorBleConnectViewModel vm) {
     if (vm.step == TrezorBleConnectStep.pairing) return const SizedBox.shrink();
 
     final bool isRetry = vm.step == TrezorBleConnectStep.error;
@@ -570,6 +571,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
             'walletName': widget.walletName ?? '',
             'walletFingerprint': widget.walletFingerprint ?? '',
             'isFromSendFlow': true,
+            'transport': 'ble',
           },
         );
       };
@@ -588,46 +590,6 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       onButtonClicked: onPressed,
       text: buttonText,
       isActive: !_isAddingWallet && !vm.isConnecting,
-    );
-  }
-}
-
-class _DigitBox extends StatelessWidget {
-  final String digit;
-  final bool hasError;
-  final bool isVerifying;
-
-  const _DigitBox({required this.digit, required this.hasError, this.isVerifying = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final filled = digit.isNotEmpty;
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: context.coconutColors.inputPlaceholder,
-          border: hasError && filled ? Border.all(color: context.coconutColors.danger, width: 1.5) : null,
-        ),
-        alignment: Alignment.center,
-        child:
-            filled
-                ? Text(
-                  digit,
-                  style: CoconutTypography.heading3_21_Number.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color:
-                        hasError
-                            ? context.coconutColors.danger
-                            : isVerifying
-                            ? context.coconutColors.mutedText
-                            : context.coconutColors.primaryText,
-                  ),
-                )
-                : null,
-      ),
     );
   }
 }

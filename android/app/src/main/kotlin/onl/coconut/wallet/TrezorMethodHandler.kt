@@ -361,7 +361,7 @@ class TrezorMethodHandler(
         val safeResult = SafeResult(result)
         val device = usbManager.findDevice()
         if (device == null) {
-            safeResult.error("NO_DEVICE", "Trezor Model One을 찾을 수 없습니다.", null)
+            safeResult.error("NO_DEVICE", "Trezor를 찾을 수 없습니다.", null)
             return
         }
         if (!usbManager.hasPermission(device)) {
@@ -396,6 +396,7 @@ class TrezorMethodHandler(
                     device.deviceName,
                     device.vendorId.toUShort(),
                     device.productId.toUShort(),
+                    "", // credential_path: in-memory only for USB
                 )
                 activeHandle = handle
                 activeDeviceId = rustDeviceId
@@ -414,6 +415,7 @@ class TrezorMethodHandler(
                     message.contains("timeout", ignoreCase = true) -> "USB_TIMEOUT"
                     message.contains("PIN", ignoreCase = true) -> "PIN_ERROR"
                     message.contains("passphrase", ignoreCase = true) -> "PASSPHRASE_ERROR"
+                    message.contains("airing", ignoreCase = true) || message.contains("pairing", ignoreCase = true) -> "PAIRING_FAILED"
                     else -> "CONNECT_FAILED"
                 }
                 mainHandler.post { result.error(code, message, null) }
@@ -935,4 +937,6 @@ class KotlinUsbCallbacks(
     override fun getPin(): String = handler.requestPin()
 
     override fun getPassphrase(onDevice: Boolean): String = handler.requestPassphrase(onDevice)
+
+    override fun getPairingCode(): String = handler.requestPairingCode()
 }

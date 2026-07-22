@@ -170,18 +170,16 @@ class TrezorSignViewModel extends ChangeNotifier {
         _device = null;
         TrezorDevice.lastConnected = null;
 
-        if (transport == TrezorTransport.ble) {
-          TrezorDevice.onPairingCodeRequested = () async {
-            _pairingCodeCompleter = Completer<String>();
-            _setState(TrezorSignStep.pairing);
-            _cancelTimeout();
-            final code = await _pairingCodeCompleter!.future;
-            _pairingCodeCompleter = null;
-            _setState(TrezorSignStep.signing, subStatus: TrezorSignSubStatus.connectingDevice);
-            _startTimeout(const Duration(seconds: 30), 'Connection timed out');
-            return code;
-          };
-        }
+        TrezorDevice.onPairingCodeRequested = () async {
+          _pairingCodeCompleter = Completer<String>();
+          _setState(TrezorSignStep.pairing);
+          _cancelTimeout();
+          final code = await _pairingCodeCompleter!.future;
+          _pairingCodeCompleter = null;
+          _setState(TrezorSignStep.signing, subStatus: TrezorSignSubStatus.connectingDevice);
+          _startTimeout(const Duration(seconds: 30), 'Connection timed out');
+          return code;
+        };
 
         _device = await TrezorDevice.connect(transport: transport);
         _fingerprint = await _device!.getFingerprint();
@@ -247,6 +245,8 @@ class TrezorSignViewModel extends ChangeNotifier {
       _errorMessage = e.toString();
       TrezorDevice.lastConnected = null;
       _setState(TrezorSignStep.error);
+    } finally {
+      TrezorDevice.onPairingCodeRequested = null;
     }
 
     _isSigning = false;

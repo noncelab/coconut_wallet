@@ -439,7 +439,7 @@ wallet_connect_screen:
       title: "Select Trezor Connection"
       description: "Choose how to connect your Trezor device."
       notice_ble: "Trezor Safe 7"
-      notice_usb: "Trezor Model One ~ Safe 5"
+      notice_usb: "All Trezor models"
       btn:
         ble: "Safe 7 Bluetooth"
         usb: "USB Connect"
@@ -483,9 +483,11 @@ wallet_connect_screen:
       title: "Pairing Aborted"
     usb:
       title: "Connect Trezor via USB"
-      description: "Connect your Trezor to this Android device with a data-capable USB cable."
+      idle_step1: "Connect your Trezor to this Android device with a data-capable USB cable."
+      idle_step2: "Allow Coconut Wallet to handle Trezor."
+      idle_step3: "Allow the USB connection request when prompted."
       connecting: "Connecting to Trezor"
-      connecting_description: "Allow USB access and follow the instructions on your Trezor."
+      connecting_step1: "Check the instructions on your Trezor screen."
       connect: "Connect via USB"
       pin_title: "Enter PIN"
       pin_description: "Look at the number layout on your Trezor screen and enter your PIN."
@@ -493,6 +495,13 @@ wallet_connect_screen:
       passphrase_hint: "Hidden wallet passphrase"
       standard_wallet: "Standard wallet"
       error: "Connect your Trezor and try again."
+      suite_app_notice: "The Trezor Suite app may open automatically when connected via USB."
+      suite_app_setting_guide:
+        title: "· Remove the default app setting"
+        descriptions:
+          - "1. On your phone, go to 'Settings - Apps - Trezor Suite'"
+          - "2. Clear defaults under 'Set as default' or 'Open with default app'"
+          - "3. When reconnecting USB, select 'Cancel' in the 'Open Trezor Suite app to handle TREZOR?' dialog"
   common:
     ble_off: "Please turn on Bluetooth on your device."
 

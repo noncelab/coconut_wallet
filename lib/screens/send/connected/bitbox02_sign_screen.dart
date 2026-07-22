@@ -104,7 +104,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
                       ),
                     ),
                     if (vm.step != BitBox02SignStep.signing && vm.step != BitBox02SignStep.done)
-                      Stack(alignment: Alignment.center, children: [_buildBottomButton(vm)]),
+                      Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
                   ],
                 ),
               ),
@@ -338,7 +338,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     }
   }
 
-  Widget _buildBottomButton(BitBox02SignViewModel vm) {
+  Widget _buildPrimaryActionButton(BitBox02SignViewModel vm) {
     final bool isError = vm.step == BitBox02SignStep.error;
     final bool isBusy = vm.step == BitBox02SignStep.signing;
 

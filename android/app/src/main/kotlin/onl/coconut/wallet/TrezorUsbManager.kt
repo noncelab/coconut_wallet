@@ -46,7 +46,7 @@ class TrezorUsbManager(private val context: Context) {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action != UsbManager.ACTION_USB_DEVICE_DETACHED) return
             val device = intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE) ?: return
-            if (isModelOne(device)) detachCallback?.invoke(device)
+            if (isSupportedTrezor(device)) detachCallback?.invoke(device)
         }
     }
 
@@ -65,7 +65,7 @@ class TrezorUsbManager(private val context: Context) {
         )
     }
 
-    fun findDevice(): UsbDevice? = usbManager.deviceList.values.firstOrNull(::isModelOne)
+    fun findDevice(): UsbDevice? = usbManager.deviceList.values.firstOrNull(::isSupportedTrezor)
 
     fun hasPermission(device: UsbDevice): Boolean = usbManager.hasPermission(device)
 
@@ -104,7 +104,7 @@ class TrezorUsbManager(private val context: Context) {
         context.unregisterReceiver(detachReceiver)
     }
 
-    private fun isModelOne(device: UsbDevice): Boolean =
+    private fun isSupportedTrezor(device: UsbDevice): Boolean =
         device.vendorId to device.productId in SUPPORTED_DEVICE_IDS
 
     private fun findInterface(device: UsbDevice): UsbInterface? {

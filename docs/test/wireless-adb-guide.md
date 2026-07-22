@@ -10,6 +10,7 @@ USB 케이블 없이 Wi-Fi를 통해 Android 기기에 앱을 빌드·실행하�
 - Android 기기에서 **개발자 옵션 → USB 디버깅**이 활성화되어 있어야 합니다.
 - Android 11 이상에서는 **무선 디버깅** 옵션을 별도로 켜야 합니다.
   - 설정 → 개발자 옵션 → **무선 디버깅** 토글 ON
+- 일부 Android 14 기기에는 **무선 디버깅** 메뉴가 노출되지 않을 수 있습니다. 이 경우 아래 [Android 14 대안](#android-14-대안) 절차를 사용하세요.
 
 ---
 
@@ -79,6 +80,48 @@ fvm flutter run --flavor regtest --debug
 
 > Flutter가 연결된 기기를 자동으로 감지하여 빌드·설치·실행합니다.
 > 기기가 여러 대 연결된 경우 `fvm flutter run --flavor regtest --debug -d <기기ID>` 로 지정합니다.
+
+---
+
+## Android 14 대안
+
+일부 Android 14 기기에서는 **무선 디버깅** 메뉴가 보이지 않습니다. 이 경우 USB 케이블로 초기 연결 후 `adb tcpip` 방식을 사용하세요.
+
+1. Android 기기를 USB 케이블로 PC에 연결
+2. 연결된 기기 확인:
+
+```bash
+adb devices
+```
+
+3. 여러 기기가 연결된 경우 기기 ID를 지정해 ADB를 TCP 모드로 전환:
+
+```bash
+adb -s <기기ID> tcpip 5555
+```
+
+기기가 한 대만 연결된 경우:
+
+```bash
+adb tcpip 5555
+```
+
+4. USB 케이블 분리
+5. 기기의 Wi-Fi IP 주소 확인:
+   - 설정 → Wi-Fi → 연결된 네트워크 → IP 주소
+6. IP 주소로 연결:
+
+```bash
+adb connect <기기IP>:5555
+```
+
+예시:
+
+```bash
+adb connect 192.168.1.100:5555
+```
+
+> 기기를 재부팅하면 TCP 모드가 해제되므로, 다시 USB로 연결해 `adb tcpip 5555` (또는 `adb -s <기기ID> tcpip 5555`)를 실행해야 합니다.
 
 ---
 

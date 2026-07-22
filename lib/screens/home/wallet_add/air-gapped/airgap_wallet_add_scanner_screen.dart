@@ -20,7 +20,7 @@ import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/card/wallet_expandable_info_card.dart';
+import 'package:coconut_wallet/widgets/card/expandable_info_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -386,7 +386,24 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             ),
             child:
                 widget.importSource == WalletImportSource.extendedPublicKey
-                    ? const WalletExpandableInfoCard()
+                    ? ExpandableInfoCard(
+                      descriptionText: t.wallet_add_scanner_screen.paste.wallet_description_text,
+                      sections: [
+                        ExpandableInfo(
+                          titleText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[0],
+                          descriptionList: [...t.wallet_add_scanner_screen.paste.blue_wallet_texts.getRange(1, 3)],
+                          addressText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[3],
+                        ),
+                        ExpandableInfo(
+                          titleText: t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[0],
+                          descriptionList: [...t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts.getRange(1, 2)],
+                          addressText:
+                              Platform.isAndroid
+                                  ? t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[2]
+                                  : t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[3],
+                        ),
+                      ],
+                    )
                     : _buildDefaultToolTip(),
           ),
           if (widget.importSource == WalletImportSource.extendedPublicKey && _clipboardContentAvailable)

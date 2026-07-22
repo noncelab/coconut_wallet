@@ -159,7 +159,8 @@ class WalletConnectInstructionToolTip extends StatelessWidget {
                       ? [TextSpan(text: e.value as String, style: TextStyle(color: context.coconutColors.primaryText))]
                       : e.value as List<TextSpan>;
               return [
-                TextSpan(text: '${e.key + 1}. ', style: TextStyle(color: context.coconutColors.primaryText)),
+                if (steps.length > 1)
+                  TextSpan(text: '${e.key + 1}. ', style: TextStyle(color: context.coconutColors.primaryText)),
                 ...stepSpans,
                 if (!isLast) const TextSpan(text: '\n'),
               ];

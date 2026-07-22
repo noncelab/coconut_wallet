@@ -65,6 +65,7 @@ pub trait TrezorUsbCallbacks: Send + Sync {
     fn read(&self) -> Option<Vec<u8>>;
     fn get_pin(&self) -> String;
     fn get_passphrase(&self, on_device: bool) -> String;
+    fn get_pairing_code(&self) -> String;
 }
 
 // ---------------------------------------------------------------------------
@@ -132,6 +133,53 @@ struct UsbNativeAdapter {
     vendor_id: u16,
     product_id: u16,
     cbs: Arc<dyn TrezorUsbCallbacks>,
+    credential_path: Option<PathBuf>,
+}
+
+impl UsbNativeAdapter {
+    fn load_creds_file(&self) -> HashMap<String, String> {
+        let path = match &self.credential_path {
+            Some(p) => p,
+            None => return HashMap::new(),
+        };
+        match std::fs::read_to_string(path) {
+            Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+            Err(_) => HashMap::new(),
+        }
+    }
+
+    fn save_creds_file(&self, creds: &HashMap<String, String>) -> bool {
+        let path = match &self.credential_path {
+            Some(p) => p,
+            None => return false,
+        };
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let json = match serde_json::to_string(creds) {
+            Ok(j) => j,
+            Err(_) => return false,
+        };
+        #[cfg(unix)]
+        {
+            use std::io::Write;
+            use std::os::unix::fs::OpenOptionsExt;
+            match std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .mode(0o600)
+                .open(path)
+            {
+                Ok(mut file) => file.write_all(json.as_bytes()).is_ok(),
+                Err(_) => false,
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            std::fs::write(path, json).is_ok()
+        }
+    }
 }
 
 struct UsbUiAdapter {
@@ -177,7 +225,7 @@ impl TransportCallback for UsbNativeAdapter {
         vec![CallbackDeviceInfo {
             path: self.device_path.clone(),
             transport_type: "usb".to_string(),
-            name: Some("Trezor Model One".to_string()),
+            name: Some("Trezor".to_string()),
             vendor_id: Some(self.vendor_id),
             product_id: Some(self.product_id),
         }]
@@ -226,6 +274,53 @@ impl TransportCallback for UsbNativeAdapter {
 
     fn get_chunk_size(&self, _path: &str) -> u32 {
         64
+    }
+
+    fn get_pairing_code(&self) -> String {
+        self.cbs.get_pairing_code()
+    }
+
+    fn save_thp_credential(&self, device_id: &str, credential_json: &str) -> bool {
+        if self.credential_path.is_some() {
+            let mut creds = self.load_creds_file();
+            if credential_json.is_empty() {
+                creds.remove(device_id);
+            } else {
+                creds.insert(device_id.to_string(), credential_json.to_string());
+            }
+            self.save_creds_file(&creds)
+        } else {
+            let mut store = THP_CREDS.lock().unwrap();
+            if credential_json.is_empty() {
+                store.remove(device_id);
+            } else {
+                store.insert(device_id.to_string(), credential_json.to_string());
+            }
+            true
+        }
+    }
+
+    fn load_thp_credential(&self, device_id: &str) -> Option<String> {
+        if self.credential_path.is_some() {
+            let creds = self.load_creds_file();
+            creds.get(device_id).cloned()
+        } else {
+            THP_CREDS.lock().unwrap().get(device_id).cloned()
+        }
+    }
+
+    fn clear_thp_credential(&self, device_id: &str) {
+        if self.credential_path.is_some() {
+            let mut creds = self.load_creds_file();
+            creds.remove(device_id);
+            self.save_creds_file(&creds);
+        } else {
+            THP_CREDS.lock().unwrap().remove(device_id);
+        }
+    }
+
+    fn log_debug(&self, tag: &str, message: &str) {
+        eprintln!("[TrezorBridge][{}] {}", tag, message);
     }
 }
 
@@ -399,6 +494,7 @@ pub fn trezor_connect_usb(
     device_path: String,
     vendor_id: u16,
     product_id: u16,
+    credential_path: String,
 ) -> Result<String, TrezorError> {
     let entry = PENDING_USB
         .lock()
@@ -411,12 +507,19 @@ pub fn trezor_connect_usb(
         ));
     }
 
+    let cred_path = if credential_path.is_empty() {
+        None
+    } else {
+        Some(PathBuf::from(credential_path))
+    };
+
     let device_id = format!("usb:{device_path}");
     let adapter = Arc::new(UsbNativeAdapter {
         device_path: device_id.clone(),
         vendor_id,
         product_id,
         cbs: entry.cbs.clone(),
+        credential_path: cred_path,
     });
     let ui_adapter = Arc::new(UsbUiAdapter { cbs: entry.cbs });
 
@@ -432,14 +535,16 @@ pub fn trezor_connect_usb(
             .acquire(&device_id, None)
             .await
             .map_err(|error| TrezorError::Connect(error.to_string()))?;
-        if transport.has_thp(&device_id).await {
-            return Err(TrezorError::Connect(
-                "Unexpected THP device on Model One USB path".to_string(),
-            ));
-        }
+        // THP devices (Safe 3/5/7) are now supported via USB — the
+        // CallbackTransport::acquire() call above already performed the
+        // THP handshake if needed. Check if THP was negotiated so we can
+        // tell ConnectedDevice to use GetFeatures instead of Initialize.
+        let uses_thp = transport.has_thp(&device_id).await;
+        eprintln!("[TrezorBridge] USB has_thp={}", uses_thp);
 
         let info = DeviceInfo::new_usb(device_id.clone(), vendor_id, product_id);
         let mut connected = ConnectedDevice::new(info, Box::new(transport), session);
+        connected.set_uses_thp(uses_thp);
         connected.set_ui_callback(ui_adapter);
         let features = connected
             .initialize()
@@ -465,7 +570,7 @@ pub fn trezor_connect_usb(
             .label
             .clone()
             .filter(|label| !label.is_empty())
-            .unwrap_or_else(|| "Trezor Model One".to_string());
+            .unwrap_or_else(|| "Trezor".to_string());
         let model = features.model.clone().unwrap_or_else(|| "1".to_string());
         SESSIONS
             .lock()

@@ -15,6 +15,7 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/trezor_digit_box.dart';
 import 'package:coconut_wallet/widgets/trezor_usb_prompt.dart';
 
 import 'package:flutter/material.dart';
@@ -154,9 +155,9 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
                         vm.step != TrezorSignStep.done &&
                         vm.step != TrezorSignStep.pairing &&
                         vm.step != TrezorSignStep.pinEntry)
-                      Stack(alignment: Alignment.center, children: [_buildBottomButton(vm)]),
+                      Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
                     if (vm.step == TrezorSignStep.pinEntry)
-                      Stack(alignment: Alignment.center, children: [_buildPinButtons(vm)]),
+                      Stack(alignment: Alignment.center, children: [_buildPinActionButtons(vm)]),
                   ],
                 ),
               ),
@@ -455,7 +456,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
                 Flexible(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 40),
-                    child: _DigitBox(
+                    child: TrezorDigitBox(
                       digit: index < _pairingCode.length ? _pairingCode[index] : '',
                       hasError: vm.errorMessage != null,
                       isVerifying: _isVerifyingPairingCode,
@@ -602,7 +603,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildPinButtons(TrezorSignViewModel vm) {
+  Widget _buildPinActionButtons(TrezorSignViewModel vm) {
     return FixedBottomTweenButton(
       leftButtonClicked: vm.cancelPin,
       rightButtonClicked: vm.submitPin,
@@ -634,7 +635,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildBottomButton(TrezorSignViewModel vm) {
+  Widget _buildPrimaryActionButton(TrezorSignViewModel vm) {
     final bool isError = vm.step == TrezorSignStep.error;
     final bool isBusy = vm.step == TrezorSignStep.signing;
 
@@ -701,44 +702,4 @@ class _PsbtSummary {
   final int fee;
   final List<String> recipientAddresses;
   const _PsbtSummary({required this.amount, required this.fee, required this.recipientAddresses});
-}
-
-class _DigitBox extends StatelessWidget {
-  final String digit;
-  final bool hasError;
-  final bool isVerifying;
-
-  const _DigitBox({required this.digit, required this.hasError, this.isVerifying = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final filled = digit.isNotEmpty;
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: context.coconutColors.inputPlaceholder,
-          border: hasError && filled ? Border.all(color: context.coconutColors.danger, width: 1.5) : null,
-        ),
-        alignment: Alignment.center,
-        child:
-            filled
-                ? Text(
-                  digit,
-                  style: CoconutTypography.heading3_21_Number.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color:
-                        hasError
-                            ? context.coconutColors.danger
-                            : isVerifying
-                            ? context.coconutColors.mutedText
-                            : context.coconutColors.primaryText,
-                  ),
-                )
-                : null,
-      ),
-    );
-  }
 }

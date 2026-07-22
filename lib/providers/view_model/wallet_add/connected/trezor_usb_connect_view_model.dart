@@ -5,11 +5,12 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/foundation.dart';
 
-enum TrezorUsbConnectStep { idle, connecting, pinEntry, connected, error }
+enum TrezorUsbConnectStep { idle, connecting, pinEntry, pairing, connected, error }
 
 class TrezorUsbConnectViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
@@ -23,7 +24,9 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   String? _errorMessage;
   bool _disposed = false;
   Completer<String?>? _pinCompleter;
+  Completer<String>? _pairingCodeCompleter;
   String _pin = '';
+  bool _isPairingCodeWrong = false;
 
   TrezorUsbConnectStep get step => _step;
   String get xpub => _xpub;
@@ -33,11 +36,20 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isConnected => _step == TrezorUsbConnectStep.connected;
   String get pin => _pin;
+  bool get isPairingCodeWrong => _isPairingCodeWrong;
 
   Future<void> connect() async {
     if (_step == TrezorUsbConnectStep.connecting) return;
     _setState(TrezorUsbConnectStep.connecting);
     _errorMessage = null;
+    TrezorDevice.onPairingCodeRequested = () async {
+      _pairingCodeCompleter = Completer<String>();
+      _setState(TrezorUsbConnectStep.pairing);
+      final code = await _pairingCodeCompleter!.future;
+      _pairingCodeCompleter = null;
+      _setState(TrezorUsbConnectStep.connecting);
+      return code;
+    };
     try {
       _device = await TrezorDevice.connect(transport: TrezorTransport.usb);
       TrezorDevice.lastConnected = _device;
@@ -48,10 +60,21 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
       _fingerprint = await _device!.getFingerprint();
       _device!.cachedFingerprint = _fingerprint;
       _setState(TrezorUsbConnectStep.connected);
+    } on TrezorPairingCodeWrongException catch (e) {
+      _errorMessage = e.message;
+      _isPairingCodeWrong = true;
+      await _disconnectDevice();
+      _setState(TrezorUsbConnectStep.error);
+    } on TrezorPairingException catch (e) {
+      _errorMessage = e.message;
+      await _disconnectDevice();
+      _setState(TrezorUsbConnectStep.error);
     } catch (error) {
       _errorMessage = error.toString();
       await _disconnectDevice();
       _setState(TrezorUsbConnectStep.error);
+    } finally {
+      TrezorDevice.onPairingCodeRequested = null;
     }
   }
 
@@ -78,6 +101,22 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
       walletImportSource: WalletImportSource.trezor,
     );
     return _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  void consumePairingCodeWrong() {
+    _isPairingCodeWrong = false;
+  }
+
+  void submitPairingCode(String code) {
+    if (_pairingCodeCompleter != null && !_pairingCodeCompleter!.isCompleted) {
+      _pairingCodeCompleter!.complete(code);
+    }
+  }
+
+  void cancelPairing() {
+    if (_pairingCodeCompleter != null && !_pairingCodeCompleter!.isCompleted) {
+      _pairingCodeCompleter!.complete('');
+    }
   }
 
   Future<String?> requestPin() {
@@ -127,6 +166,8 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
 
   void reset() {
     _errorMessage = null;
+    _isPairingCodeWrong = false;
+    _pairingCodeCompleter = null;
     _setState(TrezorUsbConnectStep.idle);
   }
 
@@ -163,6 +204,12 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
     _disposed = true;
     _pinCompleter?.complete('');
     _pinCompleter = null;
+    final pairingCompleter = _pairingCodeCompleter;
+    if (pairingCompleter != null && !pairingCompleter.isCompleted) {
+      pairingCompleter.complete('');
+    }
+    _pairingCodeCompleter = null;
+    TrezorDevice.onPairingCodeRequested = null;
     if (_step != TrezorUsbConnectStep.connected) {
       TrezorDevice.cancel().catchError((_) {});
       _device?.disconnect().catchError((_) {});

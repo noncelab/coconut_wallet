@@ -414,7 +414,7 @@ wallet_connect_screen:
       title: "Trezor 연결 방식 선택"
       description: "연결할 Trezor 기기의 방식을 선택해주세요."
       notice_ble: "Trezor Safe 7"
-      notice_usb: "Trezor Model One ~ Safe 5"
+      notice_usb: "모든 Trezor 모델"
       btn:
         ble: "Safe 7 Bluetooth"
         usb: "USB Connect"
@@ -458,9 +458,11 @@ wallet_connect_screen:
       title: "페어링이 중단됐어요."
     usb:
       title: "Trezor USB 연결"
-      description: "데이터 전송이 가능한 USB 케이블로 Trezor를 Android 기기에 연결해 주세요."
+      idle_step1: "데이터 전송이 가능한 USB 케이블로 Trezor를 Android 기기에 연결해 주세요."
+      idle_step2: "코코넛 월렛에서 Trezor를 처리할 수 있도록 허용해 주세요."
+      idle_step3: "USB 연결 요청 시 허용해 주세요."
       connecting: "Trezor 연결 중"
-      connecting_description: "USB 권한을 허용하고 Trezor 화면의 안내를 확인해 주세요."
+      connecting_step1: "Trezor 화면의 안내를 확인해 주세요."
       connect: "USB로 연결하기"
       pin_title: "PIN 입력"
       pin_description: "Trezor 화면의 숫자 배열을 보고 설정하신 PIN 번호를 입력해 주세요."
@@ -468,6 +470,13 @@ wallet_connect_screen:
       passphrase_hint: "숨김 지갑 passphrase"
       standard_wallet: "표준 지갑"
       error: "Trezor를 연결하고 다시 시도해 주세요."
+      suite_app_notice: "USB 연결 시 Trezor Suite 앱이 자동 실행돼요."
+      suite_app_setting_guide:
+        title: "· 기본 앱 설정을 제거하세요"
+        descriptions:
+          - "1. 휴대폰에서 '설정 - 애플리케이션 - Trezor Suite'"
+          - "2. '기본으로 설정' 또는 '기본 앱으로 열기'에서 기본값 삭제"
+          - "3. USB 연결 해제 후 재연결 시 'Trezor Suite 앱을 열어 TREZOR을(를) 처리하시겠습니까?' 다이얼로그창에서 '취소' 선택"
   common:
     ble_off: "기기 블루투스를 켜주세요."
     

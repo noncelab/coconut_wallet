@@ -10,10 +10,13 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_scr
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/trezor_digit_box.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/trezor_usb_prompt.dart';
+import 'package:coconut_wallet/widgets/card/expandable_info_card.dart';
 import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -34,8 +37,14 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   late final Future<String?> Function() _pinHandler;
   late final Future<TrezorPassphraseResponse> Function(bool) _passphraseHandler;
   bool _isAddingWallet = false;
+  bool _isVerifyingPairingCode = false;
+  TrezorUsbConnectStep? _lastStep;
 
-  static const List<String> _pinKeys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '', '', '<'];
+  static const int _codeLength = 6;
+  static const List<String> _keypadKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '<'];
+  String _pairingCode = '';
+
+  static const List<String> _modelOnePinKeys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '', '', '<'];
 
   @override
   void initState() {
@@ -45,6 +54,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     _passphraseHandler = (onDevice) => TrezorUsbPrompt.requestPassphrase(context, onDevice);
     TrezorDevice.onPinRequested = _pinHandler;
     TrezorDevice.onPassphraseRequested = _passphraseHandler;
+    _viewModel.addListener(_onViewModelChanged);
   }
 
   @override
@@ -57,6 +67,60 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     }
     _viewModel.dispose();
     super.dispose();
+  }
+
+  void _onPairingKeyTap(String value) {
+    if (value == '<') {
+      if (_pairingCode.isNotEmpty) {
+        setState(() => _pairingCode = _pairingCode.substring(0, _pairingCode.length - 1));
+      }
+      return;
+    }
+    if (value.isEmpty) return;
+    if (_pairingCode.length >= _codeLength) return;
+
+    setState(() => _pairingCode += value);
+    vibrateExtraLight();
+
+    if (_pairingCode.length == _codeLength) {
+      final code = _pairingCode;
+      setState(() => _isVerifyingPairingCode = true);
+      _viewModel.submitPairingCode(code);
+    }
+  }
+
+  void _onViewModelChanged() {
+    final step = _viewModel.step;
+    if (_lastStep != step) {
+      _lastStep = step;
+      if (_isVerifyingPairingCode) {
+        _isVerifyingPairingCode = false;
+        _pairingCode = '';
+      }
+      if (mounted) setState(() {});
+    }
+    if (_viewModel.isPairingCodeWrong && mounted) {
+      _viewModel.consumePairingCodeWrong();
+      _showPairingCodeWrongDialog();
+    }
+  }
+
+  void _showPairingCodeWrongDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            title: t.wallet_connect_screen.guide_trezor.pairing_dialog.error_wrong_code,
+            description: t.wallet_connect_screen.guide_trezor.pairing_dialog.error_wrong_code_dialog,
+            onTapRight: () {
+              _viewModel.reset();
+              Navigator.pop(context);
+            },
+            rightButtonText: t.OK,
+          ),
+    );
   }
 
   Future<void> _addWallet() async {
@@ -95,6 +159,11 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   Future<void> _handleClose() async {
     if (_viewModel.step == TrezorUsbConnectStep.pinEntry) {
       _viewModel.cancelPin();
+      Navigator.pop(context);
+      return;
+    }
+    if (_viewModel.step == TrezorUsbConnectStep.pairing) {
+      _viewModel.cancelPairing();
       Navigator.pop(context);
       return;
     }
@@ -173,9 +242,9 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
                       if (vm.step == TrezorUsbConnectStep.idle ||
                           vm.step == TrezorUsbConnectStep.error ||
                           (vm.step == TrezorUsbConnectStep.connected && vm.xpub.isNotEmpty))
-                        Stack(alignment: Alignment.center, children: [_buildMainButton(vm)]),
+                        Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
                       if (vm.step == TrezorUsbConnectStep.pinEntry)
-                        Stack(alignment: Alignment.center, children: [_buildPinButtons(vm)]),
+                        Stack(alignment: Alignment.center, children: [_buildPinActionButtons(vm)]),
                     ],
                   ),
                 ),
@@ -188,23 +257,57 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   Widget _buildStatusSection(TrezorUsbConnectViewModel vm) {
     switch (vm.step) {
       case TrezorUsbConnectStep.idle:
-        return WalletConnectInstructionToolTip(steps: [t.wallet_connect_screen.guide_trezor.usb.description]);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            WalletConnectInstructionToolTip(
+              steps: [
+                t.wallet_connect_screen.guide_trezor.usb.idle_step1,
+                t.wallet_connect_screen.guide_trezor.usb.idle_step2,
+                t.wallet_connect_screen.guide_trezor.usb.idle_step3,
+              ],
+            ),
+            CoconutLayout.spacing_400h,
+            _buildInfoCardForTrezorSuite(),
+          ],
+        );
       case TrezorUsbConnectStep.connecting:
         return WalletConnectProgressCard(
           title: t.wallet_connect_screen.guide_trezor.usb.connecting,
-          steps: [t.wallet_connect_screen.guide_trezor.usb.connecting_description],
+          steps: [t.wallet_connect_screen.guide_trezor.usb.connecting_step1],
         );
       case TrezorUsbConnectStep.pinEntry:
         return _buildPinCard(vm);
+      case TrezorUsbConnectStep.pairing:
+        return _buildPairingCard(vm);
       case TrezorUsbConnectStep.connected:
         return _buildSuccessCard(vm);
       case TrezorUsbConnectStep.error:
-        return WalletConnectErrorCard(
-          title: t.wallet_connect_screen.guide_trezor.error.title,
-          description: t.wallet_connect_screen.guide_trezor.usb.error,
-          errorMessage: vm.errorMessage,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            WalletConnectErrorCard(
+              title: t.wallet_connect_screen.guide_trezor.error.title,
+              description: t.wallet_connect_screen.guide_trezor.usb.error,
+              errorMessage: vm.errorMessage,
+            ),
+            CoconutLayout.spacing_400h,
+            _buildInfoCardForTrezorSuite(),
+          ],
         );
     }
+  }
+
+  Widget _buildInfoCardForTrezorSuite() {
+    return ExpandableInfoCard(
+      descriptionText: t.wallet_connect_screen.guide_trezor.usb.suite_app_notice,
+      sections: [
+        ExpandableInfo(
+          titleText: t.wallet_connect_screen.guide_trezor.usb.suite_app_setting_guide.title,
+          descriptionList: t.wallet_connect_screen.guide_trezor.usb.suite_app_setting_guide.descriptions,
+        ),
+      ],
+    );
   }
 
   Widget _buildSuccessCard(TrezorUsbConnectViewModel vm) {
@@ -241,7 +344,9 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     );
   }
 
-  Widget _buildMainButton(TrezorUsbConnectViewModel vm) {
+  Widget _buildPrimaryActionButton(TrezorUsbConnectViewModel vm) {
+    if (vm.step == TrezorUsbConnectStep.pairing) return const SizedBox.shrink();
+
     final bool isRetry = vm.step == TrezorUsbConnectStep.error;
     final bool isPaired = vm.step == TrezorUsbConnectStep.connected;
     final bool hasXpub = vm.xpub.isNotEmpty;
@@ -271,7 +376,98 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       onButtonClicked: onPressed,
       text: buttonText,
       isActive:
-          vm.step != TrezorUsbConnectStep.connecting && vm.step != TrezorUsbConnectStep.pinEntry && !_isAddingWallet,
+          vm.step != TrezorUsbConnectStep.connecting &&
+          vm.step != TrezorUsbConnectStep.pinEntry &&
+          vm.step != TrezorUsbConnectStep.pairing &&
+          !_isAddingWallet,
+    );
+  }
+
+  Widget _buildPairingCard(TrezorUsbConnectViewModel vm) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          Text(
+            t.wallet_connect_screen.guide_trezor.pairing_dialog.title,
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            t.wallet_connect_screen.guide_trezor.pairing_dialog.description,
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (int index = 0; index < _codeLength; index++) ...[
+                if (index > 0) SizedBox(width: index == 3 ? 12 : 4),
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 40),
+                    child: TrezorDigitBox(
+                      digit: index < _pairingCode.length ? _pairingCode[index] : '',
+                      hasError: vm.isPairingCodeWrong,
+                      isVerifying: _isVerifyingPairingCode,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (_isVerifyingPairingCode)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    t.wallet_connect_screen.guide_trezor.pairing_dialog.verifying,
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                  ),
+                ],
+              ),
+            )
+          else
+            Visibility(
+              visible: vm.isPairingCodeWrong,
+              maintainSize: true,
+              maintainAnimation: true,
+              maintainState: true,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  t.wallet_connect_screen.guide_trezor.pairing_dialog.error_wrong_code,
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          const SizedBox(height: 24),
+          GridView.count(
+            crossAxisCount: 3,
+            childAspectRatio: MediaQuery.of(context).size.width > 600 ? 2.5 : 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children:
+                _keypadKeys.map((key) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: KeyButton(keyValue: key, onKeyTap: _isVerifyingPairingCode ? (_) {} : _onPairingKeyTap),
+                  );
+                }).toList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -317,7 +513,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children:
-                _pinKeys.map((key) {
+                _modelOnePinKeys.map((key) {
                   return Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: _buildPinKeyButton(key));
                 }).toList(),
           ),
@@ -326,7 +522,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     );
   }
 
-  Widget _buildPinButtons(TrezorUsbConnectViewModel vm) {
+  Widget _buildPinActionButtons(TrezorUsbConnectViewModel vm) {
     return FixedBottomTweenButton(
       leftButtonClicked: vm.cancelPin,
       rightButtonClicked: vm.submitPin,

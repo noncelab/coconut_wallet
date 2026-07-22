@@ -104,7 +104,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
                     if (vm.step == BitBox02ConnectStep.idle ||
                         vm.step == BitBox02ConnectStep.error ||
                         vm.step == BitBox02ConnectStep.paired)
-                      Stack(alignment: Alignment.center, children: [_buildMainButton(vm)]),
+                      Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
                     if (_isAddingWallet) const CoconutLoadingOverlay(applyFullScreen: true),
                   ],
                 ),
@@ -196,7 +196,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     );
   }
 
-  Widget _buildMainButton(BitBox02ConnectViewModel vm) {
+  Widget _buildPrimaryActionButton(BitBox02ConnectViewModel vm) {
     final bool isRetry = vm.step == BitBox02ConnectStep.error;
     final bool hasXpub = vm.xpub.isNotEmpty;
     final bool isPaired = vm.step == BitBox02ConnectStep.paired;

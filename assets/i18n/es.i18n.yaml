@@ -415,7 +415,7 @@ wallet_connect_screen:
       title: "Seleccionar conexión Trezor"
       description: "Elige cómo conectar tu dispositivo Trezor."
       notice_ble: "Trezor Safe 7"
-      notice_usb: "Trezor Model One ~ Safe 5"
+      notice_usb: "Todos los modelos Trezor"
       btn:
         ble: "Safe 7 Bluetooth"
         usb: "USB Connect"
@@ -459,9 +459,11 @@ wallet_connect_screen:
       title: "Emparejamiento interrumpido."
     usb:
       title: "Conectar Trezor por USB"
-      description: "Conecta tu Trezor a este dispositivo Android con un cable USB compatible con datos."
+      idle_step1: "Conecta tu Trezor a este dispositivo Android con un cable USB compatible con datos."
+      idle_step2: "Permite que Coconut Wallet gestione Trezor."
+      idle_step3: "Permite la solicitud de conexión USB cuando aparezca."
       connecting: "Conectando con Trezor"
-      connecting_description: "Permite el acceso USB y sigue las instrucciones de tu Trezor."
+      connecting_step1: "Sigue las instrucciones en la pantalla de tu Trezor."
       connect: "Conectar por USB"
       pin_title: "Introducir PIN"
       pin_description: "Mira la disposición numérica en tu Trezor e introduce tu PIN."
@@ -469,6 +471,13 @@ wallet_connect_screen:
       passphrase_hint: "Frase de contraseña de la cartera oculta"
       standard_wallet: "Cartera estándar"
       error: "Conecta tu Trezor e inténtalo de nuevo."
+      suite_app_notice: "La aplicación Trezor Suite puede abrirse automáticamente al conectar por USB."
+      suite_app_setting_guide:
+        title: "· Elimina la configuración de aplicación predeterminada"
+        descriptions:
+          - "1. En tu teléfono: 'Configuración - Aplicaciones - Trezor Suite'"
+          - "2. Elimina los valores predeterminados en 'Establecer como predeterminada' o 'Abrir con la app predeterminada'"
+          - "3. Desconecta y vuelve a conectar el USB. En el diálogo '¿Abrir la aplicación Trezor Suite para gestionar TREZOR?', selecciona Cancelar"
   common:
     ble_off: "Por favor, encienda el Bluetooth de su dispositivo."
       

@@ -403,7 +403,7 @@ wallet_connect_screen:
       title: "Trezor-Verbindung auswählen"
       description: "Wählen Sie, wie Sie Ihr Trezor-Gerät verbinden möchten."
       notice_ble: "Trezor Safe 7"
-      notice_usb: "Trezor Model One ~ Safe 5"
+      notice_usb: "Alle Trezor-Modelle"
       btn:
         ble: "Safe 7 Bluetooth"
         usb: "USB Connect"
@@ -447,9 +447,11 @@ wallet_connect_screen:
       title: "Pairing abgebrochen"
     usb:
       title: "Trezor über USB verbinden"
-      description: "Verbinde dein Trezor mit einem datenfähigen USB-Kabel mit diesem Android-Gerät."
+      idle_step1: "Verbinde dein Trezor mit einem datenfähigen USB-Kabel mit diesem Android-Gerät."
+      idle_step2: "Erlaube Coconut Wallet, den Trezor zu verarbeiten."
+      idle_step3: "Erlaube die USB-Verbindungsanfrage, wenn sie angezeigt wird."
       connecting: "Verbindung mit Trezor"
-      connecting_description: "Erlaube den USB-Zugriff und folge den Anweisungen auf deinem Trezor."
+      connecting_step1: "Befolge die Anweisungen auf deinem Trezor-Bildschirm."
       connect: "Über USB verbinden"
       pin_title: "PIN eingeben"
       pin_description: "Sieh dir die Zahlenanordnung auf deinem Trezor an und gib deine PIN ein."
@@ -457,6 +459,13 @@ wallet_connect_screen:
       passphrase_hint: "Passphrase der versteckten Wallet"
       standard_wallet: "Standard-Wallet"
       error: "Verbinde dein Trezor und versuche es erneut."
+      suite_app_notice: "Bei USB-Verbindung wird die Trezor Suite-App möglicherweise automatisch gestartet."
+      suite_app_setting_guide:
+        title: "· Entfernen Sie die Standard-App-Einstellung"
+        descriptions:
+          - "1. Auf dem Telefon: 'Einstellungen - Apps - Trezor Suite'"
+          - "2. Löschen Sie die Standardwerte unter 'Als Standard festlegen' oder 'Mit Standard-App öffnen'"
+          - "3. Trennen Sie USB und verbinden Sie ihn erneut. Wählen Sie im Dialog 'Trezor Suite-App öffnen, um TREZOR zu verarbeiten?' 'Abbrechen'"
   common:
     ble_off: "Bitte aktivieren Sie Bluetooth auf Ihrem Gerät."
 
