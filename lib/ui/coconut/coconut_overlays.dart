@@ -3,7 +3,7 @@ import 'dart:math' show pi;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
+import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -729,8 +729,8 @@ class _CoconutPopupState extends State<CoconutPopup> {
                 widget.description,
                 textAlign: widget.centerDescription ? TextAlign.center : null,
                 style:
-                    widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.secondaryText) ??
-                    CoconutTypography.heading4_18.setColor(widget.descriptionColor ?? colors.secondaryText),
+                    widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.primaryText) ??
+                    CoconutTypography.body1_16.setColor(widget.descriptionColor ?? colors.primaryText),
               ),
             ),
             Row(

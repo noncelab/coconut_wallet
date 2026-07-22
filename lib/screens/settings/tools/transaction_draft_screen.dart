@@ -17,7 +17,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/transaction_draft/transaction_draft_view_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/card/transaction_draft_card.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_draft_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

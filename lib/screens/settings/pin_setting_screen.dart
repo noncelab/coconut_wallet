@@ -4,9 +4,9 @@ import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/animated_dialog.dart';
-import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
-import 'package:coconut_wallet/widgets/pin/pin_length_toggle_button.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/animated_dialog.dart';
+import 'package:coconut_wallet/widgets/features/auth/pin/pin_input_pad.dart';
+import 'package:coconut_wallet/widgets/features/auth/pin/pin_length_toggle_button.dart';
 import 'package:provider/provider.dart';
 
 class PinSettingScreen extends StatefulWidget {

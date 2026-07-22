@@ -25,15 +25,15 @@ import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_item_setting_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/animated_balance.dart';
-import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
+import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -41,7 +41,7 @@ import 'package:provider/provider.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
 import 'package:tuple/tuple.dart';
 
 class WalletListScreen extends StatefulWidget {
@@ -701,11 +701,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   description: t.wallet_list.edit.unsaved_changes_confirm_exit,
                   leftButtonText: t.no,
                   rightButtonText: t.yes,
-                  onTapRight: () {
-                    _viewModel.setEditMode(false);
+                  onTapLeft: () {
                     Navigator.pop(context);
                   },
-                  onTapLeft: () {
+                  onTapRight: () {
+                    _viewModel.setEditMode(false);
                     Navigator.pop(context);
                   },
                 );
@@ -746,7 +746,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   child: Padding(
                     key: ValueKey("loading"),
                     padding: EdgeInsets.only(bottom: 20.0),
-                    child: LoadingIndicator(),
+                    child: InlineLoadingIndicator(),
                   ),
                 )
                 : null,

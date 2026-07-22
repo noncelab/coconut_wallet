@@ -9,10 +9,11 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/settings/app_info_license_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/button/button_group.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -181,7 +182,9 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconPrimary));
+          return Center(
+            child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.iconPrimary),
+          );
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {
@@ -445,7 +448,9 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconPrimary));
+          return Center(
+            child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.iconPrimary),
+          );
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {

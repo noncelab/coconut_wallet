@@ -7,7 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 
-import '../../oss_licenses.dart';
+import '../../generated/licenses/oss_licenses.dart';
 
 class LicenseBottomSheet extends StatefulWidget {
   const LicenseBottomSheet({super.key});

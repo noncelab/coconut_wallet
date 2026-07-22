@@ -12,7 +12,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/icon/splash_logo_icon.dart';
+import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_capture_event/screen_capture_event.dart';
@@ -186,7 +186,7 @@ class _AppGuardState extends State<AppGuard> {
       children: [
         widget.child,
         if (_isPaused && AppGuard._isPrivacyEnabled)
-          ColoredBox(color: context.coconutColors.background, child: const Center(child: SplashLogoIcon())),
+          ColoredBox(color: context.coconutColors.background, child: const Center(child: CoconutLogoIcon())),
       ],
     );
   }

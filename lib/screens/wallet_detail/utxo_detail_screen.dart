@@ -20,17 +20,18 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_vi
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
-import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
-import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
-import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
+import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
+import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_input_output_card.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/underline_button_item_card.dart';
+import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
+import 'package:coconut_wallet/widgets/common/info/highlighted_info_area.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
+import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -179,7 +180,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                 children: [
                   _buildSuspiciousDustUtxoWarning(isSuspiciousDustUtxo, utxoStatus == UtxoStatus.locked),
                   if (tx == null)
-                    const Center(child: CircularProgressIndicator())
+                    const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero))
                   else ...{
                     _buildDateTime(dateString),
                     _buildAmount(),

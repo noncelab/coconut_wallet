@@ -39,9 +39,6 @@ Main objectives:
 Proposed directories:
 - lib/design_system/
   - coconut_colors.dart
-  - coconut_typography.dart
-  - coconut_spacing.dart
-  - coconut_radius.dart
   - coconut_theme.dart
   - coconut_theme_extension.dart
 - lib/widgets/coconut/
@@ -58,8 +55,7 @@ Expose tokens through BuildContext extensions.
 Example:
 context.coconutColors.primary
 context.coconutColors.background
-context.coconutTypography.body
-context.coconutSpacing.md
+// typography/layout use coconut_design_system primitives directly
 
 Migration target for Phase 0A:
 Prioritize only the minimum screens needed to prove theme readiness:

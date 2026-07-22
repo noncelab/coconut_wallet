@@ -29,6 +29,10 @@ class CoconutTextField extends StatefulWidget {
   final int? maxLines;
   final Widget? prefix;
   final Widget? suffix;
+  final String? suffixIconAsset;
+  final VoidCallback? onSuffixPressed;
+  final Color? suffixIconColor;
+  final double suffixIconSize;
   final CoconutTextFieldClearButtonVisibility clearButtonVisibility;
   final VoidCallback? onClear;
   final String? placeholderText;
@@ -76,6 +80,10 @@ class CoconutTextField extends StatefulWidget {
     this.maxLines,
     this.prefix,
     this.suffix,
+    this.suffixIconAsset,
+    this.onSuffixPressed,
+    this.suffixIconColor,
+    this.suffixIconSize = 16,
     this.clearButtonVisibility = CoconutTextFieldClearButtonVisibility.never,
     this.onClear,
     this.placeholderText,
@@ -222,21 +230,51 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     if (widget.isError) {
       return _errorColor;
     }
-    return _text.isNotEmpty ? colors.primaryText : colors.inputPlaceholder;
+    return colors.inputPlaceholder;
   }
 
   Widget _buildClearButton(BuildContext context) {
-    return IconButton(
-      iconSize: 14,
+    return Padding(
+      padding: EdgeInsets.only(left: 6, right: _hasTrailingSuffix ? 4 : 0),
+      child: CupertinoButton(
+        padding: EdgeInsets.zero,
+        minSize: 16,
+        onPressed: widget.onClear,
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: Center(
+            child: SvgPicture.asset(
+              'assets/svg/text-field-clear.svg',
+              width: 14,
+              height: 14,
+              colorFilter: ColorFilter.mode(_resolvedClearButtonColor(context), BlendMode.srcIn),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool get _hasTrailingSuffix => widget.suffixIconAsset != null || widget.suffix != null;
+
+  Widget _buildSuffixIconButton(BuildContext context) {
+    final colors = context.coconutColors;
+
+    return CupertinoButton(
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-      splashRadius: 12,
-      onPressed: widget.onClear,
-      icon: IconTheme(
-        data: const IconThemeData(size: 14),
-        child: SvgPicture.asset(
-          'assets/svg/text-field-clear.svg',
-          colorFilter: ColorFilter.mode(_resolvedClearButtonColor(context), BlendMode.srcIn),
+      minSize: 20,
+      onPressed: widget.onSuffixPressed,
+      child: SizedBox(
+        width: 20,
+        height: 20,
+        child: Center(
+          child: SvgPicture.asset(
+            widget.suffixIconAsset!,
+            width: widget.suffixIconSize,
+            height: widget.suffixIconSize,
+            colorFilter: ColorFilter.mode(widget.suffixIconColor ?? colors.iconPrimary, BlendMode.srcIn),
+          ),
         ),
       ),
     );
@@ -245,22 +283,29 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   Widget? _buildResolvedSuffix(BuildContext context) {
     final children = <Widget>[];
 
-    if (widget.suffix != null) {
-      children.add(widget.suffix!);
+    if (_showClearButton && widget.onClear != null) {
+      children.add(_buildClearButton(context));
     }
 
-    if (_showClearButton && widget.onClear != null) {
+    if (widget.suffixIconAsset != null) {
       if (children.isNotEmpty) {
         children.add(const SizedBox(width: 4));
       }
-      children.add(_buildClearButton(context));
+      children.add(_buildSuffixIconButton(context));
+    }
+
+    if (widget.suffix != null) {
+      if (children.isNotEmpty) {
+        children.add(const SizedBox(width: 4));
+      }
+      children.add(widget.suffix!);
     }
 
     if (children.isEmpty) {
       return null;
     }
 
-    return Row(mainAxisSize: MainAxisSize.min, children: children);
+    return Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: children);
   }
 
   EdgeInsets _resolvedDefaultPadding(bool isUnderline) {
@@ -283,6 +328,18 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     }
   }
 
+  double _resolvedSuffixEdgePadding(bool isUnderline) {
+    if (widget.suffixIconAsset != null) {
+      return 16;
+    }
+
+    if (widget.padding != null) {
+      return widget.padding!.right;
+    }
+
+    return _resolvedDefaultPadding(isUnderline).right;
+  }
+
   double? _resolvedDefaultHeight(bool isUnderline) {
     if (isUnderline) {
       return null;
@@ -298,12 +355,36 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     }
   }
 
+  double _resolvedTextHeight(int? resolvedMaxLines) {
+    final isSingleLine = resolvedMaxLines == null || resolvedMaxLines == 1;
+    return isSingleLine ? 1.0 : widget.fontHeight;
+  }
+
+  double _resolvedClearFadeWidth() {
+    if (!_showClearButton || widget.onClear == null) {
+      return 0;
+    }
+
+    return 20;
+  }
+
+  double _resolvedSuffixBackgroundWidth(double resolvedSuffixEdgePadding) {
+    if (_suffixSize.width == 0) {
+      return 0;
+    }
+
+    return _suffixSize.width + resolvedSuffixEdgePadding;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isUnderline = widget.style == CoconutTextFieldStyle.underline;
     final resolvedSuffix = _buildResolvedSuffix(context);
     final resolvedPadding = widget.padding ?? _resolvedDefaultPadding(isUnderline);
     final resolvedHeight = widget.height ?? _resolvedDefaultHeight(isUnderline);
+    final resolvedSuffixEdgePadding = _resolvedSuffixEdgePadding(isUnderline);
+    final resolvedMaxLines = widget.obscureText ? 1 : widget.maxLines;
+    final resolvedTextHeight = _resolvedTextHeight(resolvedMaxLines);
 
     final resolvedBorderColor =
         widget.isError
@@ -313,6 +394,11 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
             : _borderColor;
 
     final resolvedTextColor = widget.enabled ? context.coconutColors.primaryText : context.coconutColors.secondaryText;
+    final placeholderLeftInset = widget.prefix == null ? resolvedPadding.left : _prefixSize.width;
+    final placeholderRightInset =
+        resolvedSuffix != null ? _suffixSize.width + resolvedSuffixEdgePadding : resolvedPadding.right;
+    final clearFadeWidth = _resolvedClearFadeWidth();
+    final suffixBackgroundWidth = _resolvedSuffixBackgroundWidth(resolvedSuffixEdgePadding);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -344,13 +430,20 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                   fontSize: widget.fontSize,
                   fontFamily: widget.fontFamily,
                   fontWeight: widget.fontWeight,
-                  height: widget.fontHeight,
+                  height: resolvedTextHeight,
+                ),
+                strutStyle: StrutStyle(
+                  fontSize: widget.fontSize,
+                  height: resolvedTextHeight,
+                  fontFamily: widget.fontFamily,
+                  fontWeight: widget.fontWeight,
+                  forceStrutHeight: true,
                 ),
                 cursorColor: _cursorColor,
                 decoration: const BoxDecoration(color: Colors.transparent),
                 maxLength: widget.maxLength,
-                maxLines: widget.obscureText ? 1 : widget.maxLines,
-                prefix: Container(key: _prefixGlobalKey, child: widget.prefix),
+                maxLines: resolvedMaxLines,
+                prefix: Container(key: _prefixGlobalKey, alignment: Alignment.center, child: widget.prefix),
                 suffix: null,
                 keyboardType: widget.textInputType,
                 textInputAction: widget.textInputAction,
@@ -362,38 +455,83 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                 onTapOutside: widget.unfocusOnTapOutside ? (_) => widget.focusNode.unfocus() : null,
                 enabled: widget.enabled,
               ),
-              IgnorePointer(
-                child: Container(
-                  margin: EdgeInsets.only(
-                    left: widget.prefix == null ? resolvedPadding.left : _prefixSize.width,
-                    top: resolvedPadding.top,
-                    right: resolvedSuffix != null ? _suffixSize.width + resolvedPadding.right : resolvedPadding.right,
-                  ),
-                  alignment: Alignment.centerLeft,
-                  child:
-                      widget.placeholderText == null || _isFocus || _text.isNotEmpty
-                          ? Text(
-                            '',
-                            style: CoconutTypography.body2_14.copyWith(
-                              color: _placeholderColor,
-                              fontSize: widget.fontSize,
-                              fontWeight: widget.fontWeight,
-                            ),
-                          )
-                          : FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              _placeholderText,
-                              style: CoconutTypography.body2_14.copyWith(
-                                color: _placeholderColor,
-                                fontSize: widget.fontSize,
-                                fontWeight: widget.fontWeight,
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: placeholderLeftInset,
+                      right: placeholderRightInset,
+                      top: resolvedPadding.top,
+                      bottom: resolvedPadding.bottom,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child:
+                          widget.placeholderText == null || _isFocus || _text.isNotEmpty
+                              ? Text(
+                                '',
+                                style: CoconutTypography.body2_14.copyWith(
+                                  color: _placeholderColor,
+                                  fontSize: widget.fontSize,
+                                  fontWeight: widget.fontWeight,
+                                  height: resolvedTextHeight,
+                                ),
+                              )
+                              : FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  _placeholderText,
+                                  style: CoconutTypography.body2_14.copyWith(
+                                    color: _placeholderColor,
+                                    fontSize: widget.fontSize,
+                                    fontWeight: widget.fontWeight,
+                                    height: resolvedTextHeight,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
+                    ),
+                  ),
                 ),
               ),
+              if (resolvedSuffix != null && suffixBackgroundWidth > 0)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: suffixBackgroundWidth,
+                      decoration: BoxDecoration(
+                        color: _backgroundColor,
+                        borderRadius: isUnderline ? null : BorderRadius.circular(widget.borderRadius),
+                      ),
+                    ),
+                  ),
+                ),
+              if (resolvedSuffix != null && clearFadeWidth > 0)
+                Positioned(
+                  top: 0,
+                  right: suffixBackgroundWidth,
+                  bottom: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: clearFadeWidth,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            _backgroundColor.withValues(alpha: 0),
+                            _backgroundColor.withValues(alpha: 0.78),
+                            _backgroundColor,
+                          ],
+                          stops: const [0, 0.55, 1],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               if (resolvedSuffix != null)
                 Positioned(
                   right: 0,
@@ -402,7 +540,10 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                   child: Align(
                     alignment: Alignment.centerRight,
                     widthFactor: 1,
-                    child: KeyedSubtree(key: _suffixGlobalKey, child: resolvedSuffix),
+                    child: Padding(
+                      padding: EdgeInsets.only(right: resolvedSuffixEdgePadding),
+                      child: KeyedSubtree(key: _suffixGlobalKey, child: resolvedSuffix),
+                    ),
                   ),
                 ),
             ],

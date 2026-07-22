@@ -8,7 +8,8 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/connected/bitbox02_sign_viewmodel.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -247,7 +248,15 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     } else if (isBusy) {
       final color = context.coconutColors.warning;
       stateColor = color;
-      stateIcon = SizedBox(width: 12, height: 12, child: CircularProgressIndicator(color: color, strokeWidth: 2.5));
+      stateIcon = SizedBox(
+        width: 12,
+        height: 12,
+        child: InlineLoadingIndicator(
+          padding: EdgeInsets.zero,
+          color: color,
+          radius: 6,
+        ),
+      );
       stateLabel = t.bitbox02_sign_screen.state_label.signing;
       detailText = _subStatusText(vm.subStatus);
     } else if (isDone) {

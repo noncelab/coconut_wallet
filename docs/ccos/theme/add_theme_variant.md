@@ -111,17 +111,14 @@ factory CoconutColors.sepia() {
 factory CoconutThemeExtension.sepia() {
   return CoconutThemeExtension(
     colors: CoconutColors.sepia(),
-    typography: CoconutTypography.dark(),
-    spacing: const CoconutSpacing.base(),
-    radius: const CoconutRadius.base(),
   );
 }
 ```
 
 원칙:
 
-- spacing/radius/typography를 임의로 분기하지 않는다.
-- 정말 variant-specific change가 필요한 경우에만 바꾼다.
+- Theme variant는 semantic color set 전체를 일관되게 정의하는 데 집중한다.
+- spacing/radius/typography는 현재 host-owned theme extension 필드가 아니므로 여기서 분기하지 않는다.
 
 ## 3.3 variant enum 및 resolver 수정
 

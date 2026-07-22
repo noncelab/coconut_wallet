@@ -1,4 +1,5 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
@@ -191,9 +192,7 @@ class TransactionUtil {
           languageCode: context.read<PreferenceProvider>().language,
           title: t.transaction_fee_bumping_screen.dialog.confirmed_alert_title,
           description: t.transaction_fee_bumping_screen.dialog.confirmed_alert_description,
-          backgroundColor: context.coconutColors.popupBackground,
           rightButtonText: t.view_tx_details,
-          rightButtonColor: context.coconutColors.primaryText,
           onTapRight: () {
             Navigator.popUntil(context, (route) {
               return route.settings.name == '/transaction-detail';

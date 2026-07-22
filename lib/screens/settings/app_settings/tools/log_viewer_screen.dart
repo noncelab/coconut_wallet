@@ -8,6 +8,7 @@ import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -113,7 +114,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
       ),
       body:
           _isLoading
-              ? const Center(child: CoconutCircularIndicator())
+              ? const Center(child: FullscreenLoadingIndicator(padding: EdgeInsets.zero))
               : SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(

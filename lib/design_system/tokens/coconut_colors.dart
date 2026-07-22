@@ -665,16 +665,14 @@ class CoconutColors {
     const pulp = Color(0xFFFFFDE9);
     const cream = Color(0xFFFFF4DD);
     const shell = Color(0xFFFFFEFA);
-    const sand = Color(0xFFF1C998);
+    const sand = Color(0xFFEDCCA4);
     const caramel = Color(0xFFE3A567);
     const husk = Color(0xFFC57723);
     const huskDeep = Color(0xFF6E3D18);
     const huskSoft = Color(0xFFE5C09B);
-    // const huskSoft = Color(0xFFA36B36);
     const lagoon = Color(0xFF71C0D2);
     const lagoonSoft = Color(0xFFF2FBFC);
-    //const lagoonSoft = Color(0xFFB9E0E4);
-    const leaf = Color(0xFFADC178);
+    const leaf = Color(0xFF8FC178);
     const line = Color(0xFFE2CCAA);
     const dim = Color(0xFFF2DFC0);
 
@@ -723,7 +721,7 @@ class CoconutColors {
       inputPlaceholder: caramel,
       inputBorder: line,
 
-      primary: lagoon,
+      primary: leaf,
       primaryButtonText: huskDeep,
 
       actionButtonBackground: huskDeep,
@@ -757,8 +755,8 @@ class CoconutColors {
       iconOnDanger: ds.CoconutColors.white,
       warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
-      success: lagoon,
-      rbfAccent: husk,
+      success: leaf,
+      rbfAccent: leaf,
       cpfpAccent: lagoon,
       recommendFeeAnimStart: huskDeep,
       recommendFeeAnimHighlight: caramel,
@@ -782,7 +780,7 @@ class CoconutColors {
       dimOverlay: pulp.withValues(alpha: 0.92),
       pageIndicatorActive: husk,
       pageIndicatorInactive: sand,
-      sendingColor: husk,
+      sendingColor: leaf,
       receivingColor: lagoon,
       bottomActionBarBackground: shell,
       bottomSheetKeyboardToolbar: dim,
@@ -791,7 +789,7 @@ class CoconutColors {
       loadingOverlay: huskDeep.withValues(alpha: 0.18),
       glossaryKeywordBackground: lagoonSoft,
       glossaryKeywordText: huskDeep,
-      divider: leaf.withAlpha(100),
+      divider: line.withAlpha(100),
       txFlowLine: caramel,
       feeBumpingHistoryLine: sand,
       mainnetLogoGradient: const LinearGradient(

@@ -6,9 +6,10 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
-import 'package:coconut_wallet/widgets/icon/icon_palette_cell.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/icon/icon_palette_cell.dart';
+import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
@@ -105,7 +106,6 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     return Selector<WalletInfoEditViewModel, Tuple3<bool, bool, String>>(
       selector: (_, viewModel) => Tuple3(viewModel.canUpdateName, viewModel.isProcessing, viewModel.walletName),
       builder: (context, data, child) {
-        final typography = context.coconutTypography;
         final canUpdateName = data.item1;
         final isProcessing = data.item2;
         final walletName = data.item3;
@@ -178,7 +178,9 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                                   Expanded(
                                     child: Text(
                                       walletName,
-                                      style: typography.bodyBold.copyWith(color: context.coconutColors.primaryText),
+                                      style: CoconutTypography.body2_14_Bold.setColor(
+                                        context.coconutColors.primaryText,
+                                      ),
                                       textAlign: TextAlign.center,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -224,7 +226,10 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                             child: Container(
                               color: context.coconutColors.iconPrimary.withValues(alpha: 0.6),
                               alignment: Alignment.center,
-                              child: const CoconutCircularIndicator(size: 160),
+                              child: const FullscreenLoadingIndicator(
+                                size: 160,
+                                padding: EdgeInsets.zero,
+                              ),
                             ),
                           ),
                       ],

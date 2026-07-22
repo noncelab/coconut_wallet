@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/app_guard.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -13,13 +12,15 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
-import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
+import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/qrcode_info.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -41,8 +42,6 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   late int _walletCount;
   final GlobalKey _qrCaptureKey = GlobalKey();
   final GlobalKey _shareButtonKey = GlobalKey();
-
-  ImageProvider get _qrEmbedImage => AssetImage(IconPath.qrEmbedLogo);
 
   String get derivationPath {
     if (_receiveAddress == null) return "";
@@ -198,8 +197,9 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                                     ),
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: _onAddressListButtonPressed,
+                                ShrinkAnimationButton(
+                                  onPressed: _onAddressListButtonPressed,
+                                  borderRadius: 8,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                     decoration: BoxDecoration(
@@ -216,7 +216,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                             ),
                           ),
                           qrData: qrData,
-                          embedImage: _qrEmbedImage,
+                          embedWidget: const CoconutLogoIcon(size: 16),
                           isAddress: true,
                         ),
                       ],

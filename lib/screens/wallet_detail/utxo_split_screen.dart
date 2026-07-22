@@ -33,20 +33,20 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet/estimated_fee_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/utxo/bottom_sheet/estimated_fee_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/foundation.dart';
-import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
+import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:coconut_wallet/widgets/card/animated_summary_card.dart';
+import 'package:coconut_wallet/widgets/features/utxo/summary/animated_summary_card.dart';
 import 'package:provider/provider.dart';
-import 'package:coconut_wallet/widgets/ripple_effect.dart';
+import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:coconut_wallet/widgets/fixed_text_scale.dart';
+import 'package:coconut_wallet/widgets/common/text/fixed_text_scale.dart';
 
 import '../../utils/logger.dart';
 

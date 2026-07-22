@@ -12,7 +12,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/material.dart';
 
 class FaucetRequestBottomSheet extends StatefulWidget {
@@ -222,7 +223,11 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                           ? SizedBox(
                             height: 28,
                             width: 28,
-                            child: CircularProgressIndicator(color: context.coconutColors.iconPrimary),
+                            child: InlineLoadingIndicator(
+                              padding: EdgeInsets.zero,
+                              color: context.coconutColors.iconPrimary,
+                              radius: 14,
+                            ),
                           )
                           : Text(
                             _isRequesting

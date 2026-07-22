@@ -22,11 +22,11 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -438,7 +438,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                               ),
                               if (serverConnectionStatus == NodeConnectionStatus.connecting) ...[
                                 CoconutLayout.spacing_100w,
-                                const CupertinoActivityIndicator(radius: 6),
+                                const InlineLoadingIndicator(
+                                  padding: EdgeInsets.zero,
+                                  radius: 6,
+                                ),
                               ],
                               if (serverConnectionStatus == NodeConnectionStatus.connected ||
                                   serverConnectionStatus == NodeConnectionStatus.failed) ...[
@@ -727,7 +730,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
         }
       case NodeConnectionStatus.connecting:
         {
-          return const CupertinoActivityIndicator(radius: 10);
+          return const InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 10);
         }
       case NodeConnectionStatus.connected:
         {

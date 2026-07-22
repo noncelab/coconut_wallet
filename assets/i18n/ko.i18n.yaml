@@ -244,7 +244,7 @@ wallet_home_screen:
       analysis: "분석"
     alert: 
       empty_fake_balance: "가짜 잔액 입력"
-      empty_fake_balance_description: "금액이 설정되지 않았어요.\n다시 입력하시거나 0 BTC로 설정할까요?"
+      empty_fake_balance_description: "금액이 설정되지 않았어요.\n금액을 다시 입력하거나,\n 0 BTC로 설정할 수 있어요."
       set_to_0: "0 BTC로 설정"
       enter_again: "다시 입력"
   last_24_hours_transactions: "지난 24시간 거래"

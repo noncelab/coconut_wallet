@@ -13,8 +13,9 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/wallet/address/address_list_address_item_card.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -357,7 +358,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   Widget _buildAddressList(List<WalletAddress> addressList, Tuple2<bool, bool> isTooltipDisabled) {
     return _isInitializing
-        ? const Center(child: CircularProgressIndicator())
+        ? const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero))
         : NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification notification) {
             if (_controller.hasClients &&
@@ -435,7 +436,13 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 40, top: 20),
-                    child: Center(child: CircularProgressIndicator(color: context.coconutColors.iconPrimary)),
+                    child: Center(
+                      child: InlineLoadingIndicator(
+                        padding: EdgeInsets.zero,
+                        color: context.coconutColors.iconPrimary,
+                        radius: 14,
+                      ),
+                    ),
                   ),
                 ),
             ],

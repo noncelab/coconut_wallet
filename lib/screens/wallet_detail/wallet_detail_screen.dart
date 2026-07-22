@@ -25,13 +25,13 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
-import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
-import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
-import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_header.dart';
+import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_sticky_header.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/tooltip/faucet_tooltip.dart';
+import 'package:coconut_wallet/widgets/features/wallet/tooltip/faucet_tooltip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -278,7 +278,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         CoconutLayout.spacing_100w,
                         ColorFiltered(
                           colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcATop),
-                          child: LottieBuilder.asset('assets/files/status_loading.json', width: 16, height: 16),
+                          child: LottieBuilder.asset('assets/lottie/status_loading.json', width: 16, height: 16),
                         ),
                       ],
                     ),

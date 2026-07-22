@@ -23,10 +23,10 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/fixed_text_scale.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/common/text/fixed_text_scale.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -602,15 +602,10 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                   focusNode: _fakeBalanceFocusNode,
                   onChanged: (text) {},
                   backgroundColor: context.coconutColors.background,
-                  errorColor: context.coconutColors.danger,
-                  placeholderColor: context.coconutColors.tertiaryText,
-                  borderColor: context.coconutColors.inputBorder,
-                  activeColor: context.coconutColors.primaryText,
-                  cursorColor: context.coconutColors.primaryText,
                   maxLength: viewModel.maxInputLength,
-                  suffix: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text(t.btc, style: CoconutTypography.body2_14_Bold),
+                  suffix: Text(
+                    t.btc,
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                   ),
                   errorText:
                       _viewModel.inputError == FakeBalanceInputError.exceedsTotalSupply
@@ -618,6 +613,12 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                           : '',
                   isError: _viewModel.inputError != FakeBalanceInputError.none,
                   maxLines: 1,
+                  clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                  onClear: () {
+                    setState(() {
+                      _fakeBalanceController.clear();
+                    });
+                  },
                 ),
               ),
               CoconutLayout.spacing_400h,

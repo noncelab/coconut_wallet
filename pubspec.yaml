@@ -132,7 +132,7 @@ flutter:
   assets:
     - assets/files/glossary_details_ko.json
     - assets/files/glossary_details_ja.json
-    - assets/files/status_loading.json
+    - assets/lottie/status_loading.json
     - assets/files/coconut_crew.json
     - assets/images/splash_logo_mainnet.png
     - assets/images/splash_logo_regtest.png
@@ -234,9 +234,7 @@ flutter:
     - assets/lottie/online-offline-switch.json
     - assets/lottie/fireworks.json
     - assets/lottie/three-stars-growing.json
-    - assets/images/hand-with-laid-heart.png
     - assets/images/x-logo.jpg
-    - assets/images/discord-logo.png
     - assets/images/discord-full-logo.png
     - assets/images/mail-icon.png
     - assets/images/laurel-wreath.png

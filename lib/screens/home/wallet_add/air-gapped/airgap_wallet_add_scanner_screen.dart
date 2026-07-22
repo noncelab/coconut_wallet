@@ -1,7 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -20,9 +28,9 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
-import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/card/wallet_expandable_info_card.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/coconut_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_expandable_info_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -656,13 +664,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           languageCode: context.read<PreferenceProvider>().language,
           title: t.alert.wallet_add.add_failed,
           description: errorMessage,
+          rightButtonText: t.OK,
           onTapRight: () {
             FileLogger.log(className, methodName, 'Error dialog confirmed');
             _isProcessing = false;
 
             Navigator.pop(context);
           },
-          rightButtonText: t.OK,
         );
       },
     );

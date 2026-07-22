@@ -117,15 +117,16 @@ The app currently mixes:
 
 This creates ambiguity about which styling layer is authoritative.
 
-### Legacy widget structure
+### Widget ownership ambiguity
 
-`lib/widgets/**` contains many reusable widgets, but it does not clearly distinguish:
+Historically, `lib/widgets/**` mixed several different responsibilities:
 
-- official host primitives
-- screen-specific components
-- transitional legacy widgets
+- app-specific design-system wrappers
+- cross-feature reusable UI compositions
+- feature-owned composed widgets
+- app-shell behavior that was not really a widget primitive
 
-That ambiguity makes contribution rules harder to document.
+That ambiguity made contribution rules harder to document.
 
 ## 7. Target Architecture Overview
 
@@ -185,6 +186,31 @@ This layer contains approved host primitives such as:
 
 Its job is to make new UI work consistent and easy to review.
 
+#### Concrete repository rule
+
+The repository now distinguishes UI ownership using the following boundaries:
+
+- `lib/ui/**`
+  - app-specific wrapper layer around `coconut_design_system`
+  - use this when adapting design-system limitations, injecting app theme semantics, or exposing approved host-facing primitives
+  - examples: app bars, text fields, overlays, option pickers, underlined buttons
+- `lib/widgets/common/**`
+  - cross-feature reusable compositions that are not design-system wrappers
+  - use this for shared amount display widgets, shared button compositions, shared bottom-sheet bodies, shared overlays, shared motion/effect helpers, shared clippers, and similar host-approved building blocks
+- `lib/widgets/features/<feature>/**`
+  - feature-owned composed widgets
+  - use this when the widget is mainly meaningful inside one domain such as wallet, utxo, transaction, send, qr, settings, or auth
+- `lib/app/**`
+  - app shell and host behavior
+  - use this for wiring and lifecycle ownership that should not live in reusable widget folders, such as deep-link listeners
+
+The key distinction is:
+
+- `ui/` adapts the design system for this app
+- `widgets/common/` composes reusable app UI building blocks
+- `widgets/features/` contains domain-specific composed UI
+- `app/` owns application behavior and shell concerns
+
 ### 7.5 Screen Layer
 
 Screen code should consume:
@@ -195,15 +221,15 @@ Screen code should consume:
 
 Screen code should not define its own competing design system.
 
-### 7.6 Legacy Compatibility Layer
+### 7.6 Compatibility and Residual Migration
 
-Some legacy widgets and style utilities will remain temporarily during migration.
+Some residual files may temporarily remain outside their ideal folder while refactors are in progress.
 
 They should be:
 
-- isolated
-- documented as transitional
-- gradually reduced over time
+- explicitly reviewed for ownership
+- moved into `ui/`, `widgets/common/`, `widgets/features/`, or `app/`
+- treated as migration debt rather than a stable long-term pattern
 
 ## 8. Proposed Directory Structure
 
@@ -237,16 +263,37 @@ lib/
     utility/
 
   widgets/
-    legacy/
+    common/
+      amount/
+      bottom_sheet/
+      buttons/
+      clipper/
+      dialogs/
+      effects/
+      icon/
+      info/
+      loading/
+      overlays/
+      panel/
+      text/
+    features/
+      auth/
+      qr/
+      send/
+      settings/
+      transaction/
+      utxo/
+      wallet/
 ```
 
 This structure defines clear responsibilities:
 
 - `app/` is host-owned application wiring.
 - `design_system/` defines the theme abstraction layer.
-- `ui/coconut/` contains official UI primitives.
+- `ui/coconut/` contains app-specific design-system wrappers and approved host-facing primitives.
 - `screens/` contains feature and flow screens.
-- `widgets/legacy/` is transitional and should not be the default for new work.
+- `widgets/common/` contains cross-feature reusable compositions.
+- `widgets/features/` contains domain-owned composed widgets.
 
 Phase 0A does not require all files to move immediately, but this should be the target direction for refactoring.
 
@@ -258,11 +305,9 @@ Phase 0A should use Flutter `ThemeData` and `ThemeExtension` to express Coconut-
 
 Recommended token groups:
 
-- `CoconutColors`
-- `CoconutTypography`
-- `CoconutSpacing`
-- `CoconutRadius`
-- optional `CoconutMotion`
+- host-owned `CoconutColors`
+- optional host-owned motion or other semantic extensions when the app truly needs them
+- typography, layout spacing, and radius should prefer `coconut_design_system` primitives unless the host has a strong reason to own a separate semantic layer
 
 ### 9.2 Semantic Tokens
 
@@ -297,8 +342,6 @@ Examples:
 ```dart
 context.coconutColors.primary
 context.coconutColors.background
-context.coconutTypography.body
-context.coconutSpacing.md
 ```
 
 This keeps call sites small and makes theme injection explicit.
@@ -607,14 +650,13 @@ Once Phase 0A is complete, Theme can serve as a valid reference category for CCO
 
 ```dart
 final colors = context.coconutColors;
-final spacing = context.coconutSpacing;
 
 return Container(
   color: colors.background,
-  padding: EdgeInsets.all(spacing.md),
+  padding: const EdgeInsets.all(16),
   child: Text(
     'Wallet',
-    style: context.coconutTypography.body,
+    style: CoconutTypography.body1_16.setColor(colors.primaryText),
   ),
 );
 ```

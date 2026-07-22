@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/providers/view_model/settings/realm_debug_view_model.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
-import 'package:coconut_wallet/widgets/realm_debug/query_input_section.dart';
-import 'package:coconut_wallet/widgets/realm_debug/results_area.dart';
+import 'package:coconut_wallet/widgets/features/settings/realm_debug/query_input_section.dart';
+import 'package:coconut_wallet/widgets/features/settings/realm_debug/results_area.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

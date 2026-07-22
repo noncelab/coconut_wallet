@@ -21,8 +21,8 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/address_search
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:coconut_wallet/utils/address_scan_util.dart';
-import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/wallet/address/address_list_address_item_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -133,6 +133,11 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                       size: CoconutTextFieldSize.search,
                       backgroundColor: context.coconutColors.background,
                       maxLines: 1,
+                      clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                      onClear: () {
+                        _addressFocusNode.requestFocus();
+                        _addressController.clear();
+                      },
                       prefix: IgnorePointer(
                         ignoring: true,
                         child: IconButton(
@@ -141,24 +146,12 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                           iconSize: Sizes.size22,
                         ),
                       ),
-                      suffix: IconButton(
-                        iconSize: 14,
-                        padding: EdgeInsets.zero,
-                        onPressed:
-                            _addressController.text.isEmpty
-                                ? () {
-                                  _addressFocusNode.requestFocus();
-                                  _showAddressScanner();
-                                }
-                                : () {
-                                  _addressFocusNode.requestFocus();
-                                  _addressController.clear();
-                                },
-                        icon: SvgPicture.asset(
-                          _addressController.text.isEmpty ? 'assets/svg/scan.svg' : 'assets/svg/text-field-clear.svg',
-                          colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                        ),
-                      ),
+                      onSuffixPressed: () {
+                        _addressFocusNode.requestFocus();
+                        _showAddressScanner();
+                      },
+                      suffixIconAsset: 'assets/svg/scan.svg',
+                      suffixIconColor: context.coconutColors.iconPrimary,
                     ),
                   ),
                   titleSpacing: 0,

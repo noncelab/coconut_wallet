@@ -34,11 +34,11 @@ import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.da
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
+import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/panel/custom_expansion_panel.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';

@@ -22,6 +22,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -29,16 +30,16 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
-import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
-import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
-import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
+import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_input_output_card.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/underline_button_item_card.dart';
+import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
+import 'package:coconut_wallet/widgets/common/info/highlighted_info_area.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
+import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -100,7 +101,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         builder: (_, viewModel, child) {
           final txList = viewModel.transactionList;
           if (txList == null || txList.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero));
           }
           final tx = viewModel.transactionList![viewModel.selectedTransactionIndex];
           final txMemo = viewModel.fetchTransactionMemo();

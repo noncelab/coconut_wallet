@@ -31,13 +31,13 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
-import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
-import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
-import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
-import 'package:coconut_wallet/widgets/dropdown/utxo_filter_dropdown.dart';
-import 'package:coconut_wallet/widgets/header/utxo_tag_list_widget.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
+import 'package:coconut_wallet/widgets/features/utxo/card/utxo_item_card.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_header.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_sticky_header.dart';
+import 'package:coconut_wallet/widgets/features/utxo/dropdown/utxo_filter_dropdown.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_tag_list_widget.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -167,7 +167,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 semanticChildCount: isEmpty ? 1 : utxos.length,
                 slivers: [
-                  if (isSyncing) const SliverToBoxAdapter(child: LoadingIndicator()),
+                  if (isSyncing) const SliverToBoxAdapter(child: InlineLoadingIndicator()),
                   CupertinoSliverRefreshControl(
                     onRefresh: () async => context.read<UtxoListViewModel>().refetchFromDB(),
                   ),

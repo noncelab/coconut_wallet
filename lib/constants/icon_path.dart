@@ -2,7 +2,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 
 class IconPath {
   static const String _svgAppIconsBase = 'assets/svg/app-icons';
-  static const String _imageBase = 'assets/images';
 
   static bool get isTestnet => NetworkType.currentNetworkType.isTestnet;
   static bool get isMainnet => !isTestnet;
@@ -10,7 +9,6 @@ class IconPath {
 
   static String get coconut => '$_svgAppIconsBase/coconut-$_networkSuffix.svg';
   static String get coconutVault => '$_svgAppIconsBase/coconut-vault-$_networkSuffix.svg';
-  static String get qrEmbedLogo => '$_imageBase/splash_logo_$_networkSuffix.png';
 }
 
 String get kCoconutVaultIconPath => IconPath.coconutVault;

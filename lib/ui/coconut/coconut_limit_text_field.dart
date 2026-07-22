@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +35,6 @@ class CoconutLimitTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -52,7 +52,7 @@ class CoconutLimitTextField extends StatelessWidget {
             keyboardType: keyboardType,
             placeholder: placeholder,
             padding: EdgeInsets.fromLTRB(prefix != null ? 0 : 16, 20, 16, 20),
-            style: typography.body.copyWith(color: colors.primaryText),
+            style: CoconutTypography.body1_16.setColor(colors.primaryText),
             cursorColor: cursorColor,
             decoration: const BoxDecoration(color: Colors.transparent),
             maxLength: maxLength,
@@ -90,9 +90,8 @@ class CoconutLimitTextField extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4, right: 4),
               child: Text(
                 '${controller.text.runes.length}/$maxLength',
-                style: typography.caption.copyWith(
+                style: CoconutTypography.body3_12_Number.copyWith(
                   color: controller.text.runes.length == maxLength ? colors.primaryText : colors.tertiaryText,
-                  fontFamily: 'SpaceGrotesk',
                 ),
               ),
             ),

@@ -8,7 +8,7 @@ import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
-import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
+import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,7 +17,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:coconut_wallet/widgets/qrcode_info.dart';
+import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;

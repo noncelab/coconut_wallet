@@ -1,6 +1,14 @@
 import 'dart:io' show Platform;
 
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_lib/coconut_lib.dart';
@@ -12,8 +20,9 @@ import 'package:coconut_wallet/providers/view_model/wallet_add/connected/bitbox0
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -206,7 +215,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
           SizedBox(
             width: 40,
             height: 40,
-            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 3),
+            child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.primary, radius: 20),
           ),
           CoconutLayout.spacing_400h,
           Text(

@@ -22,19 +22,20 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/utxo_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
-import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/utxo/card/locked_utxo_item_card.dart';
+import 'package:coconut_wallet/widgets/features/utxo/card/selectable_utxo_item_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
+import 'package:coconut_wallet/widgets/features/utxo/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:coconut_wallet/widgets/header/selected_utxo_amount_header.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/selected_utxo_amount_header.dart';
 
 class UtxoSelectionScreen extends StatefulWidget {
   final List<UtxoState> selectedUtxoList;
@@ -218,7 +219,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                             ),
                                           ],
                                         )
-                                        : const Center(child: CircularProgressIndicator()),
+                                        : const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero)),
                               ),
                             ],
                           ),

@@ -40,7 +40,6 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
-import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -51,13 +50,13 @@ import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_tap_wrapper.dart';
-import 'package:coconut_wallet/widgets/card/transaction_draft_card.dart';
-import 'package:coconut_wallet/widgets/dialog.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/ripple_effect.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_tap_wrapper.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_draft_card.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -1132,7 +1131,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       textAlign: TextAlign.end,
                       controller: _feeRateController,
                       focusNode: _feeRateFocusNode,
-                      backgroundColor: context.coconutColors.inputSurface,
+                      backgroundColor: context.coconutColors.background,
                       onEditingComplete: () {
                         _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
                         FocusScope.of(context).unfocus();
@@ -1161,11 +1160,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       activeColor: context.coconutColors.primaryText,
                       fontWeight: FontWeight.bold,
                       borderRadius: 8,
-                      suffix: Container(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Text(
-                          t.send_screen.fee_rate_suffix,
-                          style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
+                      suffix: Align(
+                        alignment: Alignment.center,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Text(
+                            t.send_screen.fee_rate_suffix,
+                            style: CoconutTypography.body2_14_NumberBold.copyWith(
+                              color: context.coconutColors.primaryText,
+                              height: 1.0,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1457,11 +1462,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                             CoconutLayout.spacing_100w,
                                             Text(
                                               maxButtonText,
-                                              style: Styles.caption.merge(
-                                                TextStyle(
-                                                  color: context.coconutColors.primaryText,
-                                                  fontFamily: CustomFonts.text.getFontFamily,
-                                                ),
+                                              style: CoconutTypography.body3_12.setColor(
+                                                context.coconutColors.primaryText,
                                               ),
                                             ),
                                           ],
@@ -1518,11 +1520,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                                           CoconutLayout.spacing_100w,
                                                           Text(
                                                             t.send_screen.utxo_auto_selection,
-                                                            style: Styles.caption.merge(
-                                                              TextStyle(
-                                                                color: context.coconutColors.primaryText,
-                                                                fontFamily: CustomFonts.text.getFontFamily,
-                                                              ),
+                                                            style: CoconutTypography.body3_12.setColor(
+                                                              context.coconutColors.primaryText,
                                                             ),
                                                           ),
                                                         ],
@@ -1557,47 +1556,24 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
                     backgroundColor: context.coconutColors.background,
-                    placeholderColor: context.coconutColors.border,
-                    borderColor: context.coconutColors.inputBorder,
-                    height: 52,
                     padding: const EdgeInsets.only(left: 16, right: 0),
                     onChanged: (text) {},
                     maxLines: 1,
-                    suffix: IconButton(
-                      iconSize: 14,
-                      padding: EdgeInsets.zero,
-                      onPressed: () async {
-                        _setDropdownMenuVisiblility(false);
-                        bool needToValidateAllFields = true;
-                        if (controller.text.isEmpty) {
-                          final String? scannedData = await showAddressScannerBottomSheet(context, title: t.send);
-                          if (scannedData != null) {
-                            _applyIncomingBitcoinUri(scannedData, index);
-                          }
-                          if (scannedData == null) {
-                            needToValidateAllFields = false;
-                          }
-                        } else {
-                          controller.clear();
-                        }
-                        if (needToValidateAllFields) {
-                          _viewModel.validateAllFieldsOnFocusLost();
-                        }
-                      },
-                      icon:
-                          controller.text.isEmpty
-                              ? SvgPicture.asset(
-                                'assets/svg/scan.svg',
-                                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-                              )
-                              : SvgPicture.asset(
-                                'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(
-                                  isAddressError ? context.coconutColors.danger : context.coconutColors.primaryText,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                    ),
+                    clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                    onClear: () {
+                      controller.clear();
+                      _viewModel.validateAllFieldsOnFocusLost();
+                    },
+                    onSuffixPressed: () async {
+                      _setDropdownMenuVisiblility(false);
+                      final String? scannedData = await showAddressScannerBottomSheet(context, title: t.send);
+                      if (scannedData != null) {
+                        _applyIncomingBitcoinUri(scannedData, index);
+                      }
+                    },
+                    suffixIconAsset: 'assets/svg/scan.svg',
+                    suffixIconColor: context.coconutColors.primaryText,
+                    suffixIconSize: 18,
                     placeholderText: t.send_screen.address_placeholder,
                     isError: isAddressError,
                   );

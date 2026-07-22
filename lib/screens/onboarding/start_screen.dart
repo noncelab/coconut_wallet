@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -8,7 +7,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/widgets/icon/splash_logo_icon.dart';
+import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -26,7 +25,7 @@ class _StartScreenState extends State<StartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(color: context.coconutColors.background, child: const Center(child: SplashLogoIcon()));
+    return ColoredBox(color: context.coconutColors.background, child: const Center(child: CoconutLogoIcon()));
   }
 
   @override
@@ -63,15 +62,15 @@ class _StartScreenState extends State<StartScreen> {
                 languageCode: context.read<PreferenceProvider>().language,
                 title: t.alert.update.title,
                 description: t.alert.update.description,
-                rightButtonText: t.alert.update.btn_update,
-                rightButtonColor: context.coconutColors.primary,
                 leftButtonText: t.alert.update.btn_do_later,
+                rightButtonText: t.alert.update.btn_update,
                 onTapRight: () async {
                   await _viewModel.launchUpdate();
                   if (!context.mounted) return;
                   Navigator.pop(context, true);
                 },
                 onTapLeft: () => Navigator.pop(context, false),
+                rightButtonColor: context.coconutColors.primary,
               ),
         )) ??
         false;

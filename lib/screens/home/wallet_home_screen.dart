@@ -40,14 +40,14 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_scr
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/animated_balance.dart';
-import 'package:coconut_wallet/widgets/animated_dots_text.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/icon/transaction_status_gradient_mask.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
-import 'package:coconut_wallet/widgets/long_pressed_menu_widget.dart';
+import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
+import 'package:coconut_wallet/widgets/common/text/animated_dots_text.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_list_add_guide_card.dart';
+import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
+import 'package:coconut_wallet/widgets/common/icon/transaction_status_gradient_mask.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/features/wallet/menu/long_pressed_menu_widget.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -58,8 +58,8 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
-import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/settings/tools/glossary_bottom_sheet.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
@@ -105,14 +105,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       builder:
           (context) => CoconutPopup(
             languageCode: context.read<PreferenceProvider>().language,
-            backgroundColor: context.coconutColors.popupBackground,
             title: t.long_pressed_menu.hide_home_widget_title(widgetName: _getWidgetName(type)),
             description: t.long_pressed_menu.hide_home_widget_description,
-            rightButtonText: t.OK,
-            onTapRight: () => Navigator.pop(context, true),
-            onTapLeft: () => Navigator.pop(context, false),
             leftButtonText: t.cancel,
-            titlePadding: const EdgeInsets.only(top: 24, bottom: 12, left: 16, right: 16),
+            rightButtonText: t.OK,
+            onTapLeft: () => Navigator.pop(context, false),
+            onTapRight: () => Navigator.pop(context, true),
           ),
     );
 
@@ -365,16 +363,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 languageCode: context.read<PreferenceProvider>().language,
                 title: t.alert.tutorial.title,
                 description: t.alert.tutorial.description,
+                leftButtonText: t.close,
+                rightButtonText: t.alert.tutorial.btn_view,
+                onTapLeft: () {
+                  Navigator.of(context).pop();
+                },
                 onTapRight: () async {
                   launchURL(TUTORIAL_URL, defaultMode: false);
                   Navigator.of(context).pop();
                 },
-                onTapLeft: () {
-                  Navigator.of(context).pop();
-                },
-                rightButtonText: t.alert.tutorial.btn_view,
                 rightButtonColor: context.coconutColors.success,
-                leftButtonText: t.close,
               );
             },
           ),
@@ -1787,10 +1785,19 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               right: 0,
               child: SlideTransition(
                 position: offsetTween.animate(slideDownAnimation),
-                child: Material(
-                  elevation: 4,
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                  color: context.coconutColors.homeBackground,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: context.coconutColors.homeBackground,
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.coconutColors.shadowDefault,
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -2028,7 +2035,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   child: Padding(
                     key: ValueKey("loading"),
                     padding: EdgeInsets.only(bottom: 20.0),
-                    child: LoadingIndicator(),
+                    child: InlineLoadingIndicator(),
                   ),
                 )
                 : null,

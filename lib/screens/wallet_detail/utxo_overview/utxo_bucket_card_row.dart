@@ -9,7 +9,7 @@ import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
+import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 
 class UtxoBucketCardRow extends StatelessWidget {

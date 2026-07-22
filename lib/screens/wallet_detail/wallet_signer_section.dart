@@ -3,9 +3,9 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
-import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
-import 'package:coconut_wallet/widgets/card/role_description_card.dart';
-import 'package:coconut_wallet/widgets/card/taproot_setup_summary_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/signer/multisig_signer_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/taproot/role_description_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/taproot/taproot_setup_summary_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

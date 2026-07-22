@@ -21,8 +21,8 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_c
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_scroll_rail.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/utxo_tier_theme_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_filter_bar.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_summary_chart.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_tag_chart.dart';

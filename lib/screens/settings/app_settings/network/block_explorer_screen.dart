@@ -10,7 +10,8 @@ import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dar
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/block_explorer_view_model.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -219,9 +220,10 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
             SizedBox(
               height: 20,
               width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(context.coconutColors.iconPrimary),
+              child: InlineLoadingIndicator(
+                padding: EdgeInsets.zero,
+                color: context.coconutColors.iconPrimary,
+                radius: 10,
               ),
             )
           else if (_viewModel.isConnectionSuccessful)

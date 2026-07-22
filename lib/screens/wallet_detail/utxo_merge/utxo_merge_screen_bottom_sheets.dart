@@ -589,42 +589,24 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                 padding: const EdgeInsets.only(left: 16, right: 0),
                 onChanged: onChanged,
                 maxLines: 1,
-                suffix: IconButton(
-                  iconSize: 14,
-                  padding: EdgeInsets.zero,
-                  onPressed: () async {
-                    if (controller.text.isEmpty) {
-                      final scannedData = await showAddressScannerBottomSheet(context, title: '');
-                      if (scannedData == null) return;
-                      final normalized =
-                          scannedData.startsWith('bitcoin:')
-                              ? normalizeAddress(parseBip21Uri(scannedData).address)
-                              : normalizeAddress(scannedData);
-                      controller.text = normalized;
-                      controller.selection = TextSelection.collapsed(offset: controller.text.length);
-                      onChanged(normalized);
-                      return;
-                    }
-
-                    controller.clear();
-                    onChanged('');
-                  },
-                  icon:
-                      controller.text.isEmpty
-                          ? SvgPicture.asset(
-                            'assets/svg/scan.svg',
-                            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-                          )
-                          : SvgPicture.asset(
-                            'assets/svg/text-field-clear.svg',
-                            colorFilter: ColorFilter.mode(
-                              controller.text.isNotEmpty && !_viewModel.isCustomReceiveAddressValidFormat
-                                  ? context.coconutColors.danger
-                                  : context.coconutColors.primaryText,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                ),
+                clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                onClear: () {
+                  controller.clear();
+                  onChanged('');
+                },
+                onSuffixPressed: () async {
+                  final scannedData = await showAddressScannerBottomSheet(context, title: '');
+                  if (scannedData == null) return;
+                  final normalized =
+                      scannedData.startsWith('bitcoin:')
+                          ? normalizeAddress(parseBip21Uri(scannedData).address)
+                          : normalizeAddress(scannedData);
+                  controller.text = normalized;
+                  controller.selection = TextSelection.collapsed(offset: controller.text.length);
+                  onChanged(normalized);
+                },
+                suffixIconAsset: 'assets/svg/scan.svg',
+                suffixIconColor: context.coconutColors.primaryText,
                 placeholderText: t.send_screen.address_placeholder,
                 isError: controller.text.isNotEmpty && !_viewModel.isCustomReceiveAddressValidFormat,
               ),
