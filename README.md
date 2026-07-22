@@ -118,7 +118,7 @@ gomobile init
 # 4. Sync Go dependencies
 cd go && go mod tidy && cd ..
 
-# 5. Build native bindings
+# 5. Build native bindings (16KB page-aligned for Android 15+)
 make gomobile-bind   # both iOS and Android
 # make gomobile-ios
 # make gomobile-android
