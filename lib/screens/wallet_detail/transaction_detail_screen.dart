@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -430,7 +431,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         CoconutToast.showToast(
                           context: context,
                           isVisibleIcon: true,
-                          iconPath: 'assets/svg/triangle-warning.svg',
+                          iconPath: CommonStateIconPath.triangleWarning,
                           text: ErrorCodes.networkError.message,
                           level: CoconutToastLevel.warning,
                         );
@@ -702,7 +703,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                   CoconutToast.showToast(
                     context: context,
                     isVisibleIcon: true,
-                    iconPath: 'assets/svg/triangle-warning.svg',
+                    iconPath: CommonStateIconPath.triangleWarning,
                     text: t.toast.memo_update_failed,
                     level: CoconutToastLevel.warning,
                   );

@@ -10,6 +10,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_total_ba
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -121,7 +122,7 @@ class UtxoSummaryChart extends StatelessWidget {
                             padding: const EdgeInsets.fromLTRB(4, 4, 4, 5),
                             decoration: BoxDecoration(color: colors.danger, shape: BoxShape.circle),
                             child: SvgPicture.asset(
-                              'assets/svg/triangle-warning.svg',
+                              CommonStateIconPath.triangleWarning,
                               width: 10,
                               height: 10,
                               colorFilter: ColorFilter.mode(colors.iconOnDanger, BlendMode.srcIn),

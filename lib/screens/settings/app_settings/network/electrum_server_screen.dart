@@ -23,7 +23,7 @@ import 'package:coconut_wallet/providers/preferences/electrum_server_provider.da
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
@@ -32,6 +32,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class ElectrumServerScreen extends StatefulWidget {
   const ElectrumServerScreen({super.key});
@@ -723,7 +724,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       case NodeConnectionStatus.failed:
         {
           return SvgPicture.asset(
-            CustomIcons.triangleWarning,
+            CustomWalletIcons.triangleWarning,
             height: 20,
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           );
@@ -735,7 +736,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       case NodeConnectionStatus.connected:
         {
           return SvgPicture.asset(
-            'assets/svg/circle-check.svg',
+            CommonFormIconPath.circleCheck,
             height: 20,
             colorFilter: ColorFilter.mode(CoconutColors.colorPalette[3], BlendMode.srcIn),
           );

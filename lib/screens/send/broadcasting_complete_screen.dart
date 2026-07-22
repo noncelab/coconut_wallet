@@ -11,6 +11,7 @@ import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class BroadcastingCompleteScreen extends StatefulWidget {
   final int id;
@@ -60,7 +61,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                           ? MediaQuery.of(context).size.height * 0.1
                           : MediaQuery.of(context).size.height * 0.3,
                 ),
-                SvgPicture.asset('assets/svg/completion-check.svg'),
+                SvgPicture.asset(CommonStateIconPath.completionCheck),
                 CoconutLayout.spacing_400h,
                 Text(
                   t.broadcasting_complete_screen.complete,
@@ -128,7 +129,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: t.toast.memo_update_failed,
         level: CoconutToastLevel.warning,
       );
@@ -188,7 +189,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                'assets/svg/pen.svg',
+                CommonActionIconPath.pen,
                 colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
@@ -227,7 +228,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                'assets/svg/pen.svg',
+                CommonActionIconPath.pen,
                 colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),

@@ -605,7 +605,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                   controller.selection = TextSelection.collapsed(offset: controller.text.length);
                   onChanged(normalized);
                 },
-                suffixIconAsset: 'assets/svg/scan.svg',
+                suffixIconAsset: CommonActionIconPath.scan,
                 suffixIconColor: context.coconutColors.primaryText,
                 placeholderText: t.send_screen.address_placeholder,
                 isError: controller.text.isNotEmpty && !_viewModel.isCustomReceiveAddressValidFormat,

@@ -42,6 +42,7 @@ import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 enum FeeBumpingType { rbf, cpfp }
 
@@ -122,7 +123,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             IconButton(
                               key: _tooltipIconKey,
                               icon: SvgPicture.asset(
-                                'assets/svg/question-mark.svg',
+                                CommonStateIconPath.questionMark,
                                 colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                               ),
                               onPressed: _toggleTooltip,
@@ -613,7 +614,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               turns: _isRecommendFeePannelExpanded ? -0.5 : 0,
               duration: const Duration(milliseconds: 200),
               child: SvgPicture.asset(
-                'assets/svg/caret-down.svg',
+                CommonNavigationIconPath.caretDown,
                 colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
               ),
             ),
@@ -650,7 +651,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                 Padding(
                   padding: const EdgeInsets.all(1.5),
                   child: SvgPicture.asset(
-                    'assets/svg/circle-info.svg',
+                    CommonStateIconPath.circleInfo,
                     colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                   ),
                 ),
@@ -827,7 +828,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SvgPicture.asset(
-            'assets/svg/triangle-warning.svg',
+            CommonStateIconPath.triangleWarning,
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,

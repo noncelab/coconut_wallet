@@ -9,6 +9,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class CommonBottomSheets {
   static Future<T?> showBottomSheet<T>({
@@ -543,7 +544,7 @@ class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTex
                     child:
                         widget.isSelected
                             ? SvgPicture.asset(
-                              'assets/svg/check.svg',
+                              CommonActionIconPath.check,
                               width: 16,
                               height: 16,
                               colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),

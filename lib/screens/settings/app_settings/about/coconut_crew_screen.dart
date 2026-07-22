@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -261,7 +262,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                       if (link != null) ...[
                                         CoconutLayout.spacing_100w,
                                         SvgPicture.asset(
-                                          'assets/svg/clip.svg',
+                                          CommonCommunicationIconPath.clip,
                                           width: 12,
                                           height: 12,
                                           colorFilter: ColorFilter.mode(

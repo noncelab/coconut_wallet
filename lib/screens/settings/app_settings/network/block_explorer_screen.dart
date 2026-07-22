@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutTextField, CoconutTextFieldStyle;
@@ -9,7 +10,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/block_explorer_view_model.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/material.dart';
@@ -228,13 +229,13 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
             )
           else if (_viewModel.isConnectionSuccessful)
             SvgPicture.asset(
-              'assets/svg/circle-check.svg',
+              CommonFormIconPath.circleCheck,
               height: 24,
               colorFilter: ColorFilter.mode(CoconutColors.colorPalette[3], BlendMode.srcIn),
             )
           else
             SvgPicture.asset(
-              CustomIcons.triangleWarning,
+              CustomWalletIcons.triangleWarning,
               height: 24,
               colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
             ),
@@ -267,7 +268,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SvgPicture.asset(
-            'assets/svg/circle-warning.svg',
+            CommonStateIconPath.circleWarning,
             height: 24,
             colorFilter: const ColorFilter.mode(CoconutColors.yellow, BlendMode.srcIn),
           ),

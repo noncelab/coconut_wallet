@@ -3,6 +3,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class ErrorTooltip extends StatelessWidget {
   final bool isShown;
@@ -30,7 +31,7 @@ class ErrorTooltip extends StatelessWidget {
           tooltipType: CoconutTooltipType.fixed,
           tooltipState: CoconutTooltipState.error,
           icon: SvgPicture.asset(
-            'assets/svg/triangle-warning.svg',
+            CommonStateIconPath.triangleWarning,
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           ),
         ),

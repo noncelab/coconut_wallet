@@ -8,6 +8,7 @@ import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class SelectableUtxoItemCard extends StatefulWidget {
   final UtxoState utxo;
@@ -144,7 +145,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
               ),
             ),
             SvgPicture.asset(
-              'assets/svg/circle-check.svg',
+              CommonFormIconPath.circleCheck,
               colorFilter: ColorFilter.mode(
                 widget.isSelected ? context.coconutColors.primaryText : context.coconutColors.primaryText.withAlpha(40),
                 BlendMode.srcIn,

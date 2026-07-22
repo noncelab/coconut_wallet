@@ -25,6 +25,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UnsignedTransactionQrScreen extends StatefulWidget {
   final String walletName;
@@ -203,7 +204,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
       backgroundColor: context.coconutColors.tooltipBackground,
       borderColor: context.coconutColors.tooltipBackground,
       icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
+        CommonStateIconPath.circleInfo,
         width: 20,
         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),

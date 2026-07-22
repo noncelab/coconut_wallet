@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -387,7 +388,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
             children: [
               Expanded(
                 child: _buildSelectionActionButton(
-                  iconPath: 'assets/svg/send.svg',
+                  iconPath: FeatureTransactionIconPath.send,
                   text: t.send,
                   enabled: !hasLockedUtxo,
                   onTap:
@@ -424,14 +425,14 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               ),
               Expanded(
                 child: _buildSelectionActionButton(
-                  iconPath: 'assets/svg/tag.svg',
+                  iconPath: FeatureTagIconPath.tag,
                   text: t.utxo_list_screen.tag_apply,
                   onTap: () => _handleActionUtxoSelected(showTagBottomSheet),
                 ),
               ),
               Expanded(
                 child: _buildSelectionActionButton(
-                  iconPath: 'assets/svg/lock_simple.svg',
+                  iconPath: CommonSecurityIconPath.lockSimple,
                   text: t.utxo_list_screen.utxo_locked_button,
                   onTap:
                       () => _handleActionUtxoSelected(() {
@@ -441,7 +442,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               ),
               Expanded(
                 child: _buildSelectionActionButton(
-                  iconPath: 'assets/svg/unlock_simple.svg',
+                  iconPath: CommonSecurityIconPath.unlockSimple,
                   text: t.utxo_list_screen.utxo_unlocked_button,
                   onTap:
                       () => _handleActionUtxoSelected(() {
@@ -528,7 +529,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
+          iconPath: CommonStateIconPath.circleInfo,
           text: t.utxo_list_screen.utxo_tag_updated,
         );
       }
@@ -804,7 +805,7 @@ class _UtxoListState extends State<UtxoList> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/triangle-warning.svg',
+          iconPath: CommonStateIconPath.triangleWarning,
           text: toastText,
           level: CoconutToastLevel.warning,
         );
@@ -812,7 +813,7 @@ class _UtxoListState extends State<UtxoList> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
+          iconPath: CommonStateIconPath.circleInfo,
           text: toastText,
         );
       }

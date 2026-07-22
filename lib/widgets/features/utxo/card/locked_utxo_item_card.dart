@@ -8,6 +8,7 @@ import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class LockedUtxoItemCard extends StatefulWidget {
   final UtxoState utxo;
@@ -114,7 +115,7 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
             ),
           ),
           SvgPicture.asset(
-            'assets/svg/lock_simple.svg',
+            CommonSecurityIconPath.lockSimple,
             width: 24,
             height: 24,
             colorFilter: ColorFilter.mode(CoconutColors.white.withValues(alpha: 0.3), BlendMode.srcIn),

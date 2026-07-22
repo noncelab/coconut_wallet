@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UtxoBucketCardRow extends StatelessWidget {
   final UtxoBucket bucket;
@@ -411,7 +412,7 @@ class UtxoCoinCard extends StatefulWidget {
             child: Opacity(
               opacity: isFocused ? 0.2 : 0.1,
               child: SvgPicture.asset(
-                isSuspiciousDust ? 'assets/svg/dust.svg' : 'assets/svg/bitcoin.svg',
+                isSuspiciousDust ? FeatureUtxoIconPath.dust : FeatureWalletIconPath.bitcoin,
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
               ),
             ),
@@ -598,7 +599,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(color: context.coconutColors.primaryText, shape: BoxShape.circle),
                   child: SvgPicture.asset(
-                    'assets/svg/check.svg',
+                    CommonActionIconPath.check,
                     width: isLarge ? 16 : 8,
                     height: isLarge ? 16 : 8,
                     colorFilter: ColorFilter.mode(context.coconutColors.background, BlendMode.srcIn),
@@ -616,7 +617,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                     shape: BoxShape.circle,
                   ),
                   child: SvgPicture.asset(
-                    'assets/svg/lock_simple.svg',
+                    CommonSecurityIconPath.lockSimple,
                     width: isLarge ? 16 : 12,
                     height: isLarge ? 16 : 12,
                     colorFilter: ColorFilter.mode(context.coconutColors.dimOverlay, BlendMode.srcIn),
@@ -634,7 +635,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                     shape: BoxShape.circle,
                   ),
                   child: SvgPicture.asset(
-                    'assets/svg/triangle-warning.svg',
+                    CommonStateIconPath.triangleWarning,
                     width: isLarge ? 12 : 10,
                     height: isLarge ? 12 : 10,
                     colorFilter: ColorFilter.mode(context.coconutColors.iconOnDanger, BlendMode.srcIn),

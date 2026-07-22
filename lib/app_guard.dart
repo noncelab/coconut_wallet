@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -70,7 +71,7 @@ class _AppGuardState extends State<AppGuard> {
         text: t.toast.screen_capture,
         seconds: 4,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         iconSize: Sizes.size16,
       );
     });

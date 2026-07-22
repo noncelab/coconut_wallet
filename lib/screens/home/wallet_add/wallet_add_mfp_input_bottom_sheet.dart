@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutTextField, CoconutTextFieldStyle;
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
@@ -116,7 +117,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                           Row(
                             children: [
                               SvgPicture.asset(
-                                'assets/svg/circle-warning.svg',
+                                CommonStateIconPath.circleWarning,
                                 colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                               ),
                               CoconutLayout.spacing_100w,

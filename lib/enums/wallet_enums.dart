@@ -89,24 +89,24 @@ extension WalletImportSourceExtension on WalletImportSource {
   String get externalWalletIconPath {
     switch (this) {
       case WalletImportSource.coconutVault:
-        return kCoconutVaultIconPath;
+        return ThirdPartyWalletTypeIconPath.coconutVault;
       case WalletImportSource.keystone:
-        return kKeystoneIconPath;
+        return ThirdPartyWalletTypeIconPath.keystone;
       case WalletImportSource.jade:
-        return kJadeIconPath;
+        return ThirdPartyWalletTypeIconPath.jade;
       case WalletImportSource.seedSigner:
-        return kSeedSignerIconPath;
+        return ThirdPartyWalletTypeIconPath.seedSigner;
       case WalletImportSource.coldCard:
-        return kColdCardIconPath;
+        return ThirdPartyWalletTypeIconPath.coldCard;
       case WalletImportSource.krux:
-        return kKruxIconPath;
+        return ThirdPartyWalletTypeIconPath.krux;
       case WalletImportSource.passport:
-        return kPassportIconPath;
+        return ThirdPartyWalletTypeIconPath.passport;
       case WalletImportSource.bitbox02:
-        return kBitBox02IconPath;
+        return ThirdPartyWalletTypeIconPath.bitBox02;
       case WalletImportSource.extendedPublicKey:
       case WalletImportSource.descriptor:
-        return kZpubIconPath;
+        return ThirdPartyWalletTypeIconPath.zpub;
     }
   }
 }

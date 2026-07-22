@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -570,7 +571,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       CoconutToast.showToast(
         context: context,
         text: t.utility.p2p_calculator.enter_amount_first,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         level: CoconutToastLevel.warning,
         isVisibleIcon: true,
       );
@@ -730,7 +731,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       onPressed: () => Navigator.of(context).pop(),
                       color: context.coconutColors.primaryText,
                       icon: SvgPicture.asset(
-                        'assets/svg/close.svg',
+                        CommonActionIconPath.close,
                         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                       ),
                     ),
@@ -822,7 +823,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SvgPicture.asset(
-                          'assets/svg/send-plane.svg',
+                          FeatureTransactionIconPath.sendPlane,
                           colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                           width: 14,
                           height: 14,
@@ -851,7 +852,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SvgPicture.asset(
-                          'assets/svg/export.svg',
+                          CommonActionIconPath.export,
                           colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                           width: 14,
                           height: 14,
@@ -927,7 +928,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               IconButton(
                 onPressed: _onShowTransactionBill,
                 icon: SvgPicture.asset(
-                  'assets/svg/hand-shake.svg',
+                  FeatureSettingsIconPath.handShake,
                   width: 24,
                   height: 24,
                   colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
@@ -1233,7 +1234,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             height: buttonSize,
             child: Center(
               child: SvgPicture.asset(
-                'assets/svg/arrow-top-down.svg',
+                CommonNavigationIconPath.arrowTopDown,
                 width: iconSize,
                 height: iconSize,
                 colorFilter: ColorFilter.mode(
@@ -1733,7 +1734,7 @@ class _CopyableTextState extends State<_CopyableText> {
             ),
             CoconutLayout.spacing_100w,
             SvgPicture.asset(
-              'assets/svg/copy.svg',
+              CommonActionIconPath.copy,
               colorFilter: ColorFilter.mode(
                 _isPressed ? context.coconutColors.secondaryText : context.coconutColors.primaryText,
                 BlendMode.srcIn,

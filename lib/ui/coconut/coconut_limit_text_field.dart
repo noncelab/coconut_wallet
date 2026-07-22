@@ -3,6 +3,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class CoconutLimitTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -64,7 +65,7 @@ class CoconutLimitTextField extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
                         child: SvgPicture.asset(
-                          'assets/svg/text-field-clear.svg',
+                          CommonFormIconPath.textFieldClear,
                           colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                           width: 15,
                           height: 15,

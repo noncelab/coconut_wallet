@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 enum CoconutTextFieldStyle { bordered, underline }
 
@@ -245,7 +246,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
           height: 16,
           child: Center(
             child: SvgPicture.asset(
-              'assets/svg/text-field-clear.svg',
+              CommonFormIconPath.textFieldClear,
               width: 14,
               height: 14,
               colorFilter: ColorFilter.mode(_resolvedClearButtonColor(context), BlendMode.srcIn),

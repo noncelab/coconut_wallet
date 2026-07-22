@@ -5,6 +5,7 @@ import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 Future<String?> showAddressScannerBottomSheet(BuildContext context, {required String title}) async {
   MobileScannerController? qrViewController;
@@ -43,7 +44,7 @@ Future<String?> showAddressScannerBottomSheet(BuildContext context, {required St
                   centerTitle: true,
                   leading: IconButton(
                     icon: SvgPicture.asset(
-                      'assets/svg/arrow-back.svg',
+                      CommonNavigationIconPath.arrowBack,
                       width: 24,
                       height: 24,
                       colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
@@ -58,7 +59,7 @@ Future<String?> showAddressScannerBottomSheet(BuildContext context, {required St
                   actions: [
                     IconButton(
                       icon: SvgPicture.asset(
-                        'assets/svg/arrow-reload.svg',
+                        CommonActionIconPath.arrowReload,
                         width: 20,
                         height: 20,
                         colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),

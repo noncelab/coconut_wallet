@@ -12,6 +12,7 @@ import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.da
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class WalletItemCard extends StatelessWidget {
   final WalletItemBase walletItem;
@@ -129,7 +130,7 @@ class WalletItemCard extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: SvgPicture.asset(
-                    'assets/svg/${isFavorite ? 'star-filled' : 'star-outlined'}.svg',
+                    isFavorite ? CommonStateIconPath.starFilled : CommonStateIconPath.starOutlined,
                     colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
                   ),
                 ),
@@ -235,7 +236,7 @@ class WalletItemCard extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: SvgPicture.asset(
-                      'assets/svg/hamburger.svg',
+                      CommonMenuIconPath.hamburger,
                       colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
                     ),
                   ),

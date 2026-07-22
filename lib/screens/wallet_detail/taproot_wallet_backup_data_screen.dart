@@ -8,6 +8,7 @@ import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class TaprootWalletBackupDataScreen extends StatelessWidget {
   final int id;
@@ -39,7 +40,7 @@ class TaprootWalletBackupDataScreen extends StatelessWidget {
                 backgroundColor: context.coconutColors.surface,
                 borderColor: context.coconutColors.surface,
                 icon: SvgPicture.asset(
-                  'assets/svg/circle-info.svg',
+                  CommonStateIconPath.circleInfo,
                   width: 20,
                   colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                 ),

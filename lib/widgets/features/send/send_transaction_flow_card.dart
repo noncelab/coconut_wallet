@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -793,7 +794,7 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
                         ),
                         const SizedBox(width: 4),
                         SvgPicture.asset(
-                          'assets/svg/arrow-right.svg',
+                          CommonNavigationIconPath.arrowRight,
                           width: 6,
                           height: 10,
                           colorFilter: ColorFilter.mode(titleColor, BlendMode.srcIn),

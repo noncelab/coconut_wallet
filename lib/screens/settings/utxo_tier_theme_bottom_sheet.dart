@@ -8,6 +8,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UtxoTierThemeBottomSheet extends StatelessWidget {
   const UtxoTierThemeBottomSheet({super.key});
@@ -74,7 +75,7 @@ class UtxoTierThemeBottomSheet extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(right: Sizes.size8),
                 child: SvgPicture.asset(
-                  'assets/svg/check.svg',
+                  CommonActionIconPath.check,
                   colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                 ),
               ),

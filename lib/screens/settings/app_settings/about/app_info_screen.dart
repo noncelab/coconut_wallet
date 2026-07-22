@@ -210,7 +210,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 ),
                 // TODO: mainnet인 경우 gradient 적용 필요
                 child: SvgPicture.asset(
-                  IconPath.coconut,
+                  AppIconPath.coconut,
                   colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                 ),
               ),
@@ -333,7 +333,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
 
   Widget githubWidget() {
     Widget githubLogo = SvgPicture.asset(
-      'assets/svg/github-logo-white.svg',
+      CommonCommunicationIconPath.githubLogoWhite,
       width: 24,
       height: 24,
       fit: BoxFit.cover,

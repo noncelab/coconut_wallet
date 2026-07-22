@@ -17,6 +17,7 @@ import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.da
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class TransactionDraftCard extends StatefulWidget {
   final TransactionDraft transactionDraft;
@@ -223,7 +224,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                   width: screenWidth * _swipeStopPosition,
                   child: Center(
                     child: SvgPicture.asset(
-                      'assets/svg/trash.svg',
+                      CommonActionIconPath.trash,
                       width: 24,
                       colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                     ),

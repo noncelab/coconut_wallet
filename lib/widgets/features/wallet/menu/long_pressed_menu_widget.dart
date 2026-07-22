@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -402,7 +403,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                     shape: BoxShape.circle,
                                   ),
                                   child: SvgPicture.asset(
-                                    'assets/svg/remove-minus.svg',
+                                    CommonActionIconPath.removeMinus,
                                     colorFilter: ColorFilter.mode(context.coconutColors.iconHighlight, BlendMode.srcIn),
                                   ),
                                 ),

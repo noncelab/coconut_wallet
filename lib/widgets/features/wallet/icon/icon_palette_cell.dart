@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -26,7 +26,7 @@ class IconPaletteCell extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(8.0), // 내부 여백 추가
         child: SvgPicture.asset(
-          CustomIcons.getPathByIndex(index),
+          CustomWalletIcons.getPathByIndex(index),
           width: 32,
           height: 32,
           fit: BoxFit.scaleDown,

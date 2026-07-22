@@ -43,6 +43,7 @@ import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
 import 'package:tuple/tuple.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class WalletListScreen extends StatefulWidget {
   const WalletListScreen({super.key});
@@ -232,19 +233,19 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   Widget _buildEditModeHeader() {
     SvgPicture starIcon = SvgPicture.asset(
-      'assets/svg/star-small.svg',
+      CommonStateIconPath.starSmall,
       width: 16,
       height: 16,
       colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
     );
     SvgPicture hamburgerIcon = SvgPicture.asset(
-      'assets/svg/hamburger.svg',
+      CommonMenuIconPath.hamburger,
       width: 16,
       height: 16,
       colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
     );
     SvgPicture deleteIcon = SvgPicture.asset(
-      'assets/svg/delete.svg',
+      CommonActionIconPath.delete,
       width: 16,
       height: 16,
       colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
@@ -452,7 +453,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     );
                   },
                   icon: SvgPicture.asset(
-                    'assets/svg/settings.svg',
+                    FeatureSettingsIconPath.settings,
                     width: 16,
                     height: 16,
                     colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
@@ -565,7 +566,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             padding: const EdgeInsets.symmetric(horizontal: 20),
             color: context.coconutColors.danger,
             child: SvgPicture.asset(
-              'assets/svg/trash.svg',
+              CommonActionIconPath.trash,
               width: 16,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
@@ -672,7 +673,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             );
           },
           rightWidget: SvgPicture.asset(
-            'assets/svg/arrow-right.svg',
+            CommonNavigationIconPath.arrowRight,
             width: 6,
             height: 10,
             colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),

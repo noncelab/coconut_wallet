@@ -11,6 +11,7 @@ import 'package:coconut_wallet/widgets/common/buttons/custom_underlined_button.d
 import 'package:coconut_wallet/widgets/features/utxo/selector/custom_tag_vertical_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UtxoTagCrudScreen extends StatelessWidget {
   final int id;
@@ -138,7 +139,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
               CoconutToast.showToast(
                 context: context,
                 isVisibleIcon: true,
-                iconPath: 'assets/svg/triangle-warning.svg',
+                iconPath: CommonStateIconPath.triangleWarning,
                 text: t.toast.tag_delete_failed,
                 level: CoconutToastLevel.warning,
               );
@@ -170,7 +171,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                 CoconutToast.showToast(
                   context: context,
                   isVisibleIcon: true,
-                  iconPath: 'assets/svg/triangle-warning.svg',
+                  iconPath: CommonStateIconPath.triangleWarning,
                   text: t.toast.tag_update_failed,
                   level: CoconutToastLevel.warning,
                 );
@@ -197,7 +198,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                   CoconutToast.showToast(
                     context: context,
                     isVisibleIcon: true,
-                    iconPath: 'assets/svg/triangle-warning.svg',
+                    iconPath: CommonStateIconPath.triangleWarning,
                     text: t.toast.tag_add_failed,
                     level: CoconutToastLevel.warning,
                   );

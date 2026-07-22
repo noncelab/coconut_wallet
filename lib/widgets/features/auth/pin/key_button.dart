@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -94,12 +95,12 @@ class _KeyButtonState extends State<KeyButton> {
                   : widget.keyValue == 'bio'
                   ? _isFaceRecognition
                       ? SvgPicture.asset(
-                        'assets/svg/face-id.svg',
+                        CommonSecurityIconPath.faceId,
                         width: 20,
                         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                       )
                       : SvgPicture.asset(
-                        'assets/svg/fingerprint.svg',
+                        CommonSecurityIconPath.fingerprint,
                         width: 20,
                         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                       )

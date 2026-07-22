@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -844,7 +845,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/circle-info.svg',
+        iconPath: CommonStateIconPath.circleInfo,
         text: t.can_use_after_add_wallet,
       );
       return;
@@ -947,7 +948,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         ),
                         CoconutLayout.spacing_200w,
                         SvgPicture.asset(
-                          'assets/svg/arrow-right.svg',
+                          CommonNavigationIconPath.arrowRight,
                           width: 6,
                           height: 10,
                           colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
@@ -1050,7 +1051,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             );
           },
           rightWidget: SvgPicture.asset(
-            'assets/svg/arrow-right.svg',
+            CommonNavigationIconPath.arrowRight,
             width: 6,
             height: 10,
             colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
@@ -1083,12 +1084,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           menuItems: [
             LongPressedMenuItem(
               title: t.long_pressed_menu.go_to_home_screen_settings,
-              iconPath: 'assets/svg/settings.svg',
+              iconPath: FeatureSettingsIconPath.settings,
               onSelected: _navigateToWalletHomeEdit,
             ),
             LongPressedMenuItem(
               title: t.long_pressed_menu.edit_home_widget,
-              iconPath: 'assets/svg/widget.svg',
+              iconPath: FeatureSettingsIconPath.widget,
               onSelected: () {
                 _viewModel.setEditWidgetMode(true);
               },
@@ -1397,7 +1398,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SvgPicture.asset(
-                      'assets/svg/search-not-found.svg',
+                      CommonStateIconPath.searchNotFound,
                       width: 16,
                       height: 16,
                       colorFilter: ColorFilter.mode(textColor, BlendMode.srcIn),
@@ -1423,12 +1424,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           menuItems: [
             LongPressedMenuItem(
               title: t.long_pressed_menu.go_to_home_screen_settings,
-              iconPath: 'assets/svg/settings.svg',
+              iconPath: FeatureSettingsIconPath.settings,
               onSelected: _navigateToWalletHomeEdit,
             ),
             LongPressedMenuItem(
               title: t.long_pressed_menu.edit_home_widget,
-              iconPath: 'assets/svg/widget.svg',
+              iconPath: FeatureSettingsIconPath.widget,
               onSelected: () {
                 _viewModel.setEditWidgetMode(true);
               },
@@ -1609,7 +1610,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           Padding(
             padding: const EdgeInsets.only(top: 2.0),
             child: SvgPicture.asset(
-              'assets/svg/caret-down.svg',
+              CommonNavigationIconPath.caretDown,
               colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
             ),
           ),
@@ -1622,13 +1623,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     String getIconPath() {
       switch (type) {
         case TransactionType.received:
-          return 'assets/svg/tx-received.svg';
+          return FeatureTransactionIconPath.txReceived;
         case TransactionType.sent:
-          return 'assets/svg/tx-sent.svg';
+          return FeatureTransactionIconPath.txSent;
         case TransactionType.self:
-          return 'assets/svg/tx-self.svg';
+          return FeatureTransactionIconPath.txSelf;
         default:
-          return 'assets/svg/tx-received.svg';
+          return FeatureTransactionIconPath.txReceived;
       }
     }
 
@@ -1709,7 +1710,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   Text('최근 30일 • 보내기', style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText)),
                   CoconutLayout.spacing_100w,
                   SvgPicture.asset(
-                    'assets/svg/caret-down.svg',
+                    CommonNavigationIconPath.caretDown,
                     colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
                   ),
                 ],
@@ -1906,7 +1907,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             splashRadius: 20,
                             padding: EdgeInsets.zero,
                             icon: SvgPicture.asset(
-                              'assets/svg/close-bold.svg',
+                              CommonActionIconPath.closeBold,
                               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                               width: 14,
                               height: 14,
@@ -1968,7 +1969,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   key: const ValueKey('error_message'),
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    SvgPicture.asset('assets/svg/cloud-disconnected.svg', width: 16),
+                    SvgPicture.asset(FeatureConnectivityIconPath.cloudDisconnected, width: 16),
                     CoconutLayout.spacing_100w,
                     SizedBox(
                       width: MediaQuery.of(context).size.width - 160,
@@ -1991,7 +1992,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         _buildAppBarIconButton(
           key: GlobalKey(),
           icon: SvgPicture.asset(
-            'assets/svg/wallet-eyes.svg',
+            FeatureWalletIconPath.walletEyes,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
           onPressed: () {
@@ -2002,7 +2003,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         _buildAppBarIconButton(
           key: _dropdownButtonKey,
           icon: SvgPicture.asset(
-            'assets/svg/kebab.svg',
+            CommonMenuIconPath.kebab,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
           onPressed: () {

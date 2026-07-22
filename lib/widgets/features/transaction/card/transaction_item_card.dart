@@ -11,6 +11,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:coconut_wallet/widgets/common/icon/transaction_status_gradient_mask.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class TransactionItemCard extends StatelessWidget {
   final TransactionRecord tx;
@@ -126,7 +127,7 @@ class TransactionItemCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         SvgPicture.asset(
-          'assets/svg/pen.svg',
+          CommonActionIconPath.pen,
           colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
           width: Sizes.size12,
         ),

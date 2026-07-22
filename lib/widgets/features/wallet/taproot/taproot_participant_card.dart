@@ -5,6 +5,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 enum TaprootParticipantRole { parent, child }
 
@@ -184,8 +185,8 @@ class TaprootParticipantCard extends StatelessWidget {
 
   String get _iconAssetPath {
     return switch (role) {
-      TaprootParticipantRole.parent => 'assets/svg/parent.svg',
-      TaprootParticipantRole.child => 'assets/svg/child.svg',
+      TaprootParticipantRole.parent => FeatureTaprootIconPath.parent,
+      TaprootParticipantRole.child => FeatureTaprootIconPath.child,
     };
   }
 
@@ -195,7 +196,7 @@ class TaprootParticipantCard extends StatelessWidget {
     }
 
     return SvgPicture.asset(
-      'assets/svg/lock.svg',
+      CommonSecurityIconPath.lock,
       width: 16,
       height: 16,
       colorFilter: const ColorFilter.mode(CoconutColors.sky, BlendMode.srcIn),

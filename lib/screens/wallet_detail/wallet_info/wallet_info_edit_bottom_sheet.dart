@@ -5,7 +5,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/icon_palette_cell.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
@@ -322,7 +322,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5),
-      itemCount: _colorCount + CustomIcons.totalCount,
+      itemCount: _colorCount + CustomWalletIcons.totalCount,
       itemBuilder: (context, index) {
         final isColorItem = index < _colorCount;
         final backgroundColor = context.coconutColors.surfaceBottomSheet;

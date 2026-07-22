@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutUnderlinedButton;
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
@@ -59,7 +60,7 @@ class CoconutAppBar {
 
     final leading = _AppBarLeading(
       iconKey: faucetIconKey,
-      assetName: isBottom && !isBackButton ? 'assets/svg/close.svg' : 'assets/svg/arrow-back.svg',
+      assetName: isBottom && !isBackButton ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
       iconColor: colors.primaryText,
       onPressed: () {
         if (onBackPressed != null) {
@@ -135,7 +136,7 @@ class CoconutAppBar {
       leading:
           Navigator.canPop(context)
               ? _AppBarLeading(
-                assetName: isBottom ? 'assets/svg/close.svg' : 'assets/svg/arrow-back.svg',
+                assetName: isBottom ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
                 iconColor: colors.primaryText,
                 onPressed: () {
                   if (onBackPressed != null) {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -568,7 +569,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           width: 40,
           child: IconButton(
             icon: SvgPicture.asset(
-              'assets/svg/kebab.svg',
+              CommonMenuIconPath.kebab,
               colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
             ),
             onPressed: () {
@@ -826,7 +827,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 return Row(
                   children: [
                     SvgPicture.asset(
-                      'assets/svg/check.svg',
+                      CommonActionIconPath.check,
                       colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                       width: 10,
                       height: 10,
@@ -866,7 +867,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           children: [
             if (isFailed) ...[
               SvgPicture.asset(
-                'assets/svg/triangle-warning.svg',
+                CommonStateIconPath.triangleWarning,
                 colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                 width: 20,
               ),
@@ -886,11 +887,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 ],
               ),
             ] else ...[
-              _buildFeeItem('assets/svg/fee-rate/low.svg', _viewModel.feeInfos[2].satsPerVb, isFetching),
+              _buildFeeItem(FeatureTransactionIconPath.feeRateLow, _viewModel.feeInfos[2].satsPerVb, isFetching),
               CoconutLayout.spacing_150w,
-              _buildFeeItem('assets/svg/fee-rate/medium.svg', _viewModel.feeInfos[1].satsPerVb, isFetching),
+              _buildFeeItem(FeatureTransactionIconPath.feeRateMedium, _viewModel.feeInfos[1].satsPerVb, isFetching),
               CoconutLayout.spacing_150w,
-              _buildFeeItem('assets/svg/fee-rate/high.svg', _viewModel.feeInfos[0].satsPerVb, isFetching),
+              _buildFeeItem(FeatureTransactionIconPath.feeRateHigh, _viewModel.feeInfos[0].satsPerVb, isFetching),
             ],
           ],
         );
@@ -916,7 +917,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         key: const ValueKey('batch_tooltip'),
                         padding: EdgeInsets.only(bottom: kTooltipPadding),
                         child: _buildTooltip(
-                          iconPath: 'assets/svg/receipt.svg',
+                          iconPath: FeatureTransactionIconPath.receipt,
                           text: t.send_screen.tooltip_text(
                             count: _viewModel.recipientList.length,
                             amount: _viewModel.amountSumText,
@@ -934,7 +935,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   _viewModel.isMaxMode
                       ? _buildTooltip(
                         key: const ValueKey('max_tooltip'),
-                        iconPath: 'assets/svg/broom.svg',
+                        iconPath: FeatureSettingsIconPath.broom,
                         text: t.send_screen.tooltip_max_mode_text,
                       )
                       : const SizedBox.shrink(key: ValueKey('max_empty')),
@@ -1295,7 +1296,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                'assets/svg/plus.svg',
+                CommonActionIconPath.plus,
                 colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
               ),
               CoconutLayout.spacing_100w,
@@ -1451,7 +1452,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             SvgPicture.asset(
-                                              'assets/svg/broom.svg',
+                                              FeatureSettingsIconPath.broom,
                                               colorFilter: ColorFilter.mode(
                                                 context.coconutColors.primaryText.withValues(
                                                   alpha: isMaxMode ? 1.0 : 0.3,
@@ -1510,7 +1511,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                                         mainAxisSize: MainAxisSize.min,
                                                         children: [
                                                           SvgPicture.asset(
-                                                            'assets/svg/arrow-reload.svg',
+                                                            CommonActionIconPath.arrowReload,
                                                             width: 16,
                                                             colorFilter: ColorFilter.mode(
                                                               context.coconutColors.primaryText.withValues(alpha: 0.3),
@@ -1571,7 +1572,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         _applyIncomingBitcoinUri(scannedData, index);
                       }
                     },
-                    suffixIconAsset: 'assets/svg/scan.svg',
+                    suffixIconAsset: CommonActionIconPath.scan,
                     suffixIconColor: context.coconutColors.primaryText,
                     suffixIconSize: 18,
                     placeholderText: t.send_screen.address_placeholder,

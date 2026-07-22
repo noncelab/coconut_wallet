@@ -6,6 +6,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class CoconutOpenStoreScreen extends StatefulWidget {
   const CoconutOpenStoreScreen({super.key});
@@ -407,7 +408,7 @@ class _HeaderSceneState extends State<_HeaderScene> with SingleTickerProviderSta
                                 alignment: Alignment.center,
                                 scale: disableAnimations ? 1.0 : logoScale.value,
                                 child: SvgPicture.asset(
-                                  'assets/svg/coconut-planet.svg',
+                                  BrandIconPath.coconutPlanet,
                                   width: 64,
                                   height: 64,
                                   colorFilter: ColorFilter.mode(colors.backgroundHighlight, BlendMode.srcIn),
@@ -751,7 +752,7 @@ class _ThemeCardSceneState extends State<_ThemeCardScene> with SingleTickerProvi
       context: context,
       text: '${widget.offer.title} 테마가 테마 화면에 추가되었어요',
       isVisibleIcon: true,
-      iconPath: 'assets/svg/circle-info.svg',
+      iconPath: CommonStateIconPath.circleInfo,
     );
   }
 

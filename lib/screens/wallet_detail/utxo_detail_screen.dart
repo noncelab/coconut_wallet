@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -232,7 +233,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         IconButton(
           key: _utxoTooltipIconKey,
           icon: SvgPicture.asset(
-            'assets/svg/question-mark.svg',
+            CommonStateIconPath.questionMark,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
           onPressed: _toggleUtxoTooltip,
@@ -501,7 +502,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
+          iconPath: CommonStateIconPath.circleInfo,
           text: t.utxo_list_screen.utxo_tag_updated,
         );
       }
@@ -514,7 +515,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: lock ? t.errors.utxo_lock_error : t.errors.utxo_unlock_error,
         level: CoconutToastLevel.warning,
       );
@@ -526,7 +527,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/circle-info.svg',
+        iconPath: CommonStateIconPath.circleInfo,
         text: lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg,
       );
     }
@@ -552,7 +553,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 2.0),
               child: SvgPicture.asset(
-                'assets/svg/dust.svg',
+                FeatureUtxoIconPath.dust,
                 width: 14,
                 height: 14,
                 colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
@@ -615,7 +616,7 @@ class _UtxoLockStatusChip extends State<UtxoLockStatusChip> {
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/svg/${widget.isLocked ? 'lock_simple' : 'unlock_simple'}.svg',
+                  widget.isLocked ? CommonSecurityIconPath.lockSimple : CommonSecurityIconPath.unlockSimple,
                   width: 14,
                   height: 14,
                   colorFilter: ColorFilter.mode(color, BlendMode.srcIn),

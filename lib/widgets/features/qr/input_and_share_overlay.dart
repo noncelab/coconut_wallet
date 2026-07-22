@@ -5,6 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 /// 스크롤 가능한 본문 위에 하단 액션 버튼을 오버레이로 띄워주는 위젯입니다.
 ///
@@ -216,7 +217,7 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         SvgPicture.asset(
-                                          'assets/svg/export.svg',
+                                          CommonActionIconPath.export,
                                           colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
                                         ),
                                         CoconutLayout.spacing_100w,

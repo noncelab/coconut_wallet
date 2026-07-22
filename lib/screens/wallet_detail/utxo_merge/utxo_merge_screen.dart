@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutUnderlinedButton, CoconutOptionPicker, CoconutTextField, CoconutTextFieldStyle;
@@ -639,7 +640,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                       _viewModel.excludeDustUtxos
                           ? Center(
                             child: SvgPicture.asset(
-                              'assets/svg/check.svg',
+                              CommonActionIconPath.check,
                               width: 12,
                               height: 12,
                               colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
@@ -684,7 +685,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                   _viewModel.excludeDustUtxos
                       ? Center(
                         child: SvgPicture.asset(
-                          'assets/svg/check.svg',
+                          CommonActionIconPath.check,
                           width: 14,
                           height: 14,
                           colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),

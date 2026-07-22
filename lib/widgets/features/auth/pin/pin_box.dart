@@ -27,7 +27,7 @@ class PinBox extends StatelessWidget {
                   ? Padding(
                     padding: const EdgeInsets.all(Sizes.size12),
                     child: SvgPicture.asset(
-                      IconPath.coconut,
+                      AppIconPath.coconut,
                       colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                     ),
                   )

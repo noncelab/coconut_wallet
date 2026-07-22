@@ -5,6 +5,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -104,7 +105,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
           ),
           IconButton(
             icon: SvgPicture.asset(
-              'assets/svg/trash.svg',
+              CommonActionIconPath.trash,
               width: 20,
               colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
             ),

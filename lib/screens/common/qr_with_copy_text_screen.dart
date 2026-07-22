@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -235,7 +236,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
             Navigator.canPop(context)
                 ? IconButton(
                   icon: SvgPicture.asset(
-                    widget.isBottom ? 'assets/svg/close.svg' : 'assets/svg/arrow-back.svg',
+                    widget.isBottom ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
                     width: 24,
                     height: 24,
                     colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),

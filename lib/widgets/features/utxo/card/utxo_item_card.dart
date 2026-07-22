@@ -9,6 +9,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
@@ -67,8 +68,8 @@ class UtxoItemCard extends StatelessWidget {
                                 height: 16,
                                 child: SvgPicture.asset(
                                   isSelected
-                                      ? 'assets/svg/circle-check-filled.svg'
-                                      : 'assets/svg/circle-check-outline.svg',
+                                      ? CommonFormIconPath.circleCheckFilled
+                                      : CommonFormIconPath.circleCheckOutline,
                                   colorFilter: ColorFilter.mode(
                                     isSelected ? context.coconutColors.iconPrimary : context.coconutColors.iconDisabled,
                                     BlendMode.srcIn,
@@ -103,7 +104,7 @@ class UtxoItemCard extends StatelessWidget {
                           const SizedBox(width: 4),
                         ] else if (utxo.status == UtxoStatus.locked) ...[
                           SvgPicture.asset(
-                            'assets/svg/lock_simple.svg',
+                            CommonSecurityIconPath.lockSimple,
                             width: 16,
                             height: 16,
                             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),

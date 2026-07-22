@@ -63,7 +63,7 @@ extension _SendScreenDraft on _SendScreenState {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: toastMessage,
         level: CoconutToastLevel.warning,
       );

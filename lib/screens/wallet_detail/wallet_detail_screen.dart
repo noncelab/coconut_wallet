@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -150,7 +151,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             key: _faucetIconKey,
             onPressed: () => _onFaucetIconPressed(),
             icon: SvgPicture.asset(
-              'assets/svg/faucet.svg',
+              FeatureUtxoIconPath.faucet,
               width: 18,
               height: 18,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
@@ -159,7 +160,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         IconButton(
           onPressed: () => _navigateToUtxoList(context),
           icon: SvgPicture.asset(
-            'assets/svg/coins.svg',
+            FeatureWalletIconPath.coins,
             width: 18,
             height: 18,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
@@ -168,7 +169,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         IconButton(
           onPressed: () => _navigateToWalletInfo(context),
           icon: SvgPicture.asset(
-            'assets/svg/wallet-outlined.svg',
+            FeatureWalletIconPath.walletOutlined,
             width: 18,
             height: 18,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
@@ -414,7 +415,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: ErrorCodes.networkError.message,
         level: CoconutToastLevel.warning,
       );
@@ -425,7 +426,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: t.errors.electrum_connection_failed,
         level: CoconutToastLevel.warning,
       );
@@ -579,7 +580,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       child: Opacity(
                         opacity: canMerge ? 1.0 : 0.3,
                         child: _buildBottomActionBarButton(
-                          iconPath: 'assets/svg/merge-utxos.svg',
+                          iconPath: FeatureUtxoIconPath.mergeUtxos,
                           label: t.merge_utxos,
                           onTap: () => _onTapMerge(canMerge: canMerge, availableUtxoCount: availableUtxoCount),
                         ),
@@ -589,7 +590,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       child: Opacity(
                         opacity: canSplit ? 1.0 : 0.3,
                         child: _buildBottomActionBarButton(
-                          iconPath: 'assets/svg/split-utxo.svg',
+                          iconPath: FeatureUtxoIconPath.splitUtxo,
                           label: t.split_utxo,
                           onTap: () => _onTapSplit(canSplit: canSplit, availableUtxoCount: availableUtxoCount),
                         ),
@@ -597,14 +598,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     ),
                     Expanded(
                       child: _buildBottomActionBarButton(
-                        iconPath: 'assets/svg/receive-plane.svg',
+                        iconPath: FeatureTransactionIconPath.receivePlane,
                         label: t.receive,
                         onTap: _onTapReceive,
                       ),
                     ),
                     Expanded(
                       child: _buildBottomActionBarButton(
-                        iconPath: 'assets/svg/send-plane.svg',
+                        iconPath: FeatureTransactionIconPath.sendPlane,
                         label: t.send,
                         onTap: _onTapSend,
                       ),
@@ -623,7 +624,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     CoconutToast.showToast(
       context: context,
       isVisibleIcon: true,
-      iconPath: 'assets/svg/circle-info.svg',
+      iconPath: CommonStateIconPath.circleInfo,
       text: text,
       level: CoconutToastLevel.info,
     );
@@ -670,7 +671,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               CoconutToast.showToast(
                 context: context,
                 isVisibleIcon: true,
-                iconPath: 'assets/svg/triangle-warning.svg',
+                iconPath: CommonStateIconPath.triangleWarning,
                 text: message,
                 level: CoconutToastLevel.warning,
               );

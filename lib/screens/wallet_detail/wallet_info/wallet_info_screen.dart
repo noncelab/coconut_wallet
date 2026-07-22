@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -241,7 +242,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: SvgPicture.asset(
-                                'assets/svg/trash.svg',
+                                CommonActionIconPath.trash,
                                 width: 16,
                                 colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
                               ),
@@ -436,7 +437,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             CoconutToast.showToast(
               context: parentContext,
               isVisibleIcon: true,
-              iconPath: 'assets/svg/triangle-warning.svg',
+              iconPath: CommonStateIconPath.triangleWarning,
               text: t.wallet_info_screen.target_set_invalid,
               level: CoconutToastLevel.warning,
             );
@@ -449,7 +450,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             context: parentContext,
             text: t.wallet_info_screen.target_set_21m,
             isVisibleIcon: true,
-            iconPath: 'assets/svg/pie.svg',
+            iconPath: FeatureWalletIconPath.pie,
             iconSize: 16,
             iconRightPadding: 8,
           );
@@ -464,7 +465,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         CoconutToast.showToast(
           context: parentContext,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/triangle-warning.svg',
+          iconPath: CommonStateIconPath.triangleWarning,
           text: t.wallet_info_screen.target_set_invalid,
           level: CoconutToastLevel.warning,
         );
@@ -693,7 +694,7 @@ class _TargetQuantityCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   SvgPicture.asset(
-                    'assets/svg/edit-outlined.svg',
+                    CommonActionIconPath.editOutlined,
                     width: 12,
                     height: 12,
                     colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutUnderlinedButton;
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
@@ -210,7 +211,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/svg/check.svg',
+                  CommonActionIconPath.check,
                   colorFilter: ColorFilter.mode(
                     showOnlyUnusedAddresses ? context.coconutColors.primaryText : context.coconutColors.iconDisabled,
                     BlendMode.srcIn,
@@ -331,7 +332,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SvgPicture.asset(
-            'assets/svg/circle-info.svg',
+            CommonStateIconPath.circleInfo,
             width: 20,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),

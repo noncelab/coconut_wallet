@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class EstimatedFeeBottomSheet extends StatefulWidget {
   final ScrollController scrollController;
@@ -259,7 +260,7 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
                 children: [
                   if (isFailed) ...[
                     SvgPicture.asset(
-                      'assets/svg/triangle-warning.svg',
+                      CommonStateIconPath.triangleWarning,
                       colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                       width: 20,
                     ),
@@ -279,11 +280,11 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
                       ],
                     ),
                   ] else ...[
-                    _buildFeeItem(context, 'assets/svg/fee-rate/low.svg', feeInfos[2].satsPerVb, isFetching),
+                    _buildFeeItem(context, FeatureTransactionIconPath.feeRateLow, feeInfos[2].satsPerVb, isFetching),
                     CoconutLayout.spacing_150w,
-                    _buildFeeItem(context, 'assets/svg/fee-rate/medium.svg', feeInfos[1].satsPerVb, isFetching),
+                    _buildFeeItem(context, FeatureTransactionIconPath.feeRateMedium, feeInfos[1].satsPerVb, isFetching),
                     CoconutLayout.spacing_150w,
-                    _buildFeeItem(context, 'assets/svg/fee-rate/high.svg', feeInfos[0].satsPerVb, isFetching),
+                    _buildFeeItem(context, FeatureTransactionIconPath.feeRateHigh, feeInfos[0].satsPerVb, isFetching),
                   ],
                 ],
               ),

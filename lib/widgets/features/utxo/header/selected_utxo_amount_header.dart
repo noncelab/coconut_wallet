@@ -5,6 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/common/buttons/custom_underlined_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class SelectedUtxoAmountHeader extends StatelessWidget {
   final GlobalKey orderDropdownButtonKey;
@@ -126,7 +127,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
               Text(orderText, style: CoconutTypography.caption_10.setColor(colors.primaryText)),
               const SizedBox(width: 4),
               SvgPicture.asset(
-                'assets/svg/arrow-down.svg',
+                CommonNavigationIconPath.arrowDown,
                 colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
               ),
             ],
@@ -149,7 +150,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
                     onTap: onUnselectAll,
                   ),
                   SvgPicture.asset(
-                    'assets/svg/row-divider.svg',
+                    CommonDividerIconPath.rowDivider,
                     colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
                   ),
                   CustomUnderlinedButton(

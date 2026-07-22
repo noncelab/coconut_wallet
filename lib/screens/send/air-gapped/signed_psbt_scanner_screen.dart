@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -54,7 +55,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           actionButtonList: [
             IconButton(
               icon: SvgPicture.asset(
-                'assets/svg/arrow-reload.svg',
+                CommonActionIconPath.arrowReload,
                 width: 20,
                 height: 20,
                 colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
@@ -308,7 +309,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       backgroundColor: context.coconutColors.surface,
       borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
+        CommonStateIconPath.circleInfo,
         width: 20,
         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),

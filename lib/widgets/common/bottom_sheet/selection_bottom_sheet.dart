@@ -4,6 +4,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class SelectionItem<T> {
   final String title;
@@ -98,7 +99,7 @@ class SelectionBottomSheet<T> extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(right: Sizes.size8),
                 child: SvgPicture.asset(
-                  'assets/svg/check.svg',
+                  CommonActionIconPath.check,
                   colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                 ),
               ),

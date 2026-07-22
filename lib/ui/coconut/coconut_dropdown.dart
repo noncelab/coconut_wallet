@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class CoconutDropdown extends StatefulWidget {
   final List<String> buttons;
@@ -129,7 +130,7 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (_selectedIndex == index) SvgPicture.asset('assets/svg/check.svg'),
+                if (_selectedIndex == index) SvgPicture.asset(CommonActionIconPath.check),
               ],
             ),
           ),

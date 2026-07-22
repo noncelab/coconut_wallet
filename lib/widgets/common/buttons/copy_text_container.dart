@@ -5,6 +5,7 @@ import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class CopyTextContainer extends StatefulWidget {
   final String text;
@@ -126,7 +127,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
                       color: _buttonColor,
                     ),
                     child: SvgPicture.asset(
-                      'assets/svg/copy.svg',
+                      CommonActionIconPath.copy,
                       colorFilter: ColorFilter.mode(_iconColor, BlendMode.srcIn),
                     ),
                   ),

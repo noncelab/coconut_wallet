@@ -27,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class BitBox02ConnectScreen extends StatefulWidget {
   final WalletImportSource importSource;
@@ -185,7 +186,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       backgroundColor: context.coconutColors.surface,
       borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
+        CommonStateIconPath.circleInfo,
         width: 20,
         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
@@ -237,7 +238,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       child: Column(
         children: [
           SvgPicture.asset(
-            'assets/svg/circle-check.svg',
+            CommonFormIconPath.circleCheck,
             colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
             height: 48,
             width: 48,
@@ -359,7 +360,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       child: Column(
         children: [
           SvgPicture.asset(
-            'assets/svg/circle-warning.svg',
+            CommonStateIconPath.circleWarning,
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
             height: 48,
             width: 48,

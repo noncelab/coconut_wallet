@@ -12,6 +12,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class TransactionUtil {
   static TransactionStatus? getStatus(TransactionRecord tx) {
@@ -41,19 +42,19 @@ class TransactionUtil {
   static String getStatusIconAsset(TransactionStatus? status) {
     switch (status) {
       case TransactionStatus.received:
-        return 'assets/svg/tx-received.svg';
+        return FeatureTransactionIconPath.txReceived;
       case TransactionStatus.receiving:
-        return 'assets/svg/tx-receiving.svg';
+        return FeatureTransactionIconPath.txReceiving;
       case TransactionStatus.sent:
-        return 'assets/svg/tx-sent.svg';
+        return FeatureTransactionIconPath.txSent;
       case TransactionStatus.sending:
-        return 'assets/svg/tx-sending.svg';
+        return FeatureTransactionIconPath.txSending;
       case TransactionStatus.self:
-        return 'assets/svg/tx-self.svg';
+        return FeatureTransactionIconPath.txSelf;
       case TransactionStatus.selfsending:
-        return 'assets/svg/tx-self-sending.svg';
+        return FeatureTransactionIconPath.txSelfSending;
       default:
-        return 'assets/svg/tx-receiving.svg';
+        return FeatureTransactionIconPath.txReceiving;
     }
   }
 

@@ -29,6 +29,7 @@ import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dar
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class BroadcastingScreen extends StatefulWidget {
   final int? signedTransactionDraftId;
@@ -249,7 +250,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: ErrorCodes.networkError.message,
         level: CoconutToastLevel.warning,
       );

@@ -14,6 +14,7 @@ import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/tooltip_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon.dart';
 import 'package:flutter/material.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'dart:math' as math;
 
@@ -253,7 +254,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                                 defaultIconBuilder:
                                     _isWithoutMfp() || _isExtendedPublicKey()
                                         ? (isPressed) => SvgPicture.asset(
-                                          'assets/svg/edit-outlined.svg',
+                                          CommonActionIconPath.editOutlined,
                                           width: 14,
                                           colorFilter: ColorFilter.mode(
                                             isPressed
@@ -374,7 +375,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                   shape: BoxShape.circle,
                 ),
                 child: SvgPicture.asset(
-                  'assets/svg/edit-outlined.svg',
+                  CommonActionIconPath.editOutlined,
                   width: 10,
                   colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
                 ),

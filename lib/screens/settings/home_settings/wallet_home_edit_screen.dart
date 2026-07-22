@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -524,7 +525,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                                   ),
                                                   child: Center(
                                                     child: SvgPicture.asset(
-                                                      'assets/svg/check.svg',
+                                                      CommonActionIconPath.check,
                                                       width: 6,
                                                       height: 6,
                                                       colorFilter: ColorFilter.mode(

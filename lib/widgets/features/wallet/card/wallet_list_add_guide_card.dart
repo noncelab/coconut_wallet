@@ -5,6 +5,7 @@ import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class WalletAdditionGuideCard extends StatefulWidget {
   final VoidCallback onPressed;
@@ -36,7 +37,7 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SvgPicture.asset(
-                    'assets/svg/wallet-eyes.svg',
+                    FeatureWalletIconPath.walletEyes,
                     colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                   ),
                   CoconutLayout.spacing_100w,

@@ -10,6 +10,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_tap_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class ThemeBottomSheet extends StatelessWidget {
   const ThemeBottomSheet({super.key});
@@ -49,7 +50,7 @@ class ThemeBottomSheet extends StatelessWidget {
               IconButton(
                 onPressed: () => _openThemeStore(context),
                 icon: SvgPicture.asset(
-                  'assets/svg/coconut-planet.svg',
+                  BrandIconPath.coconutPlanet,
                   width: Sizes.size24,
                   height: Sizes.size24,
                   colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
@@ -91,7 +92,7 @@ class ThemeBottomSheet extends StatelessWidget {
                 ),
                 if (isSelected)
                   SvgPicture.asset(
-                    'assets/svg/check.svg',
+                    CommonActionIconPath.check,
                     colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                   ),
               ],
@@ -117,7 +118,7 @@ class ThemeBottomSheet extends StatelessWidget {
           Row(
             children: [
               SvgPicture.asset(
-                'assets/svg/coconut-planet.svg',
+                BrandIconPath.coconutPlanet,
                 width: Sizes.size18,
                 height: Sizes.size18,
                 colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
@@ -134,7 +135,7 @@ class ThemeBottomSheet extends StatelessWidget {
               GestureDetector(
                 onTap: () => context.read<PreferenceProvider>().hideOpenStoreIntroCardForOneMonth(),
                 child: SvgPicture.asset(
-                  'assets/svg/close.svg',
+                  CommonActionIconPath.close,
                   width: Sizes.size20,
                   height: Sizes.size20,
                   colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
@@ -160,7 +161,7 @@ class ThemeBottomSheet extends StatelessWidget {
                   Text(_intro.ctaLabel, style: CoconutTypography.caption_10_Bold.setColor(colors.primaryText)),
                   CoconutLayout.spacing_300w,
                   SvgPicture.asset(
-                    'assets/svg/arrow-right.svg',
+                    CommonNavigationIconPath.arrowRight,
                     width: Sizes.size10,
                     height: Sizes.size10,
                     colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),

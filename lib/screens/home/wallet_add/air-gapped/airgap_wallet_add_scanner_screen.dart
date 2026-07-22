@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -369,7 +370,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               }
             },
             icon: SvgPicture.asset(
-              'assets/svg/arrow-reload.svg',
+              CommonActionIconPath.arrowReload,
               width: 20,
               height: 20,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
@@ -509,7 +510,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       backgroundColor: context.coconutColors.surface,
       borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
+        CommonStateIconPath.circleInfo,
         width: 20,
         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),

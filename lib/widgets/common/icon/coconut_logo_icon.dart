@@ -12,12 +12,12 @@ class CoconutLogoIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final logo = SvgPicture.asset(
-      IconPath.coconut,
+      AppIconPath.coconut,
       width: size,
-      colorFilter: IconPath.isMainnet ? null : ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+      colorFilter: AppIconPath.isMainnet ? null : ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
     );
 
-    if (!IconPath.isMainnet) {
+    if (!AppIconPath.isMainnet) {
       return logo;
     }
 

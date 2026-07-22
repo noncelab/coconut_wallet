@@ -10,6 +10,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class TagSelectResult {
   final String? selectedTagName;
@@ -223,7 +224,7 @@ class _SelectableTagChip extends StatelessWidget {
         textColor: foregroundColor,
         fontWeight: FontWeight.w700,
         icon: SvgPicture.asset(
-          'assets/svg/circle-check.svg',
+          CommonFormIconPath.circleCheck,
           key: const ValueKey('selected'),
           width: 16,
           height: 16,
@@ -237,7 +238,7 @@ class _SelectableTagChip extends StatelessWidget {
       borderColor: inactiveColor,
       textColor: inactiveColor,
       icon: SvgPicture.asset(
-        'assets/svg/circle.svg',
+        CommonFormIconPath.circle,
         key: const ValueKey('unselected'),
         width: 16,
         height: 16,

@@ -14,6 +14,7 @@ import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 enum BalanceMode {
   includingPending,
@@ -108,7 +109,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                     rightWidget:
                         isChecked
                             ? SvgPicture.asset(
-                              'assets/svg/check.svg',
+                              CommonActionIconPath.check,
                               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                             )
                             : Container(),

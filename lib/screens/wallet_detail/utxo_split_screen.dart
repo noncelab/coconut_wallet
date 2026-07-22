@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -1140,7 +1141,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SvgPicture.asset(
-                        'assets/svg/plus.svg',
+                        CommonActionIconPath.plus,
                         width: 12,
                         height: 12,
                         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
@@ -2102,7 +2103,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                     ),
                                     alignment: Alignment.center,
                                     child: SvgPicture.asset(
-                                      'assets/svg/trash.svg',
+                                      CommonActionIconPath.trash,
                                       width: 20,
                                       height: 20,
                                       colorFilter: ColorFilter.mode(context.coconutColors.background, BlendMode.srcIn),

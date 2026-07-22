@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/widgets/features/auth/pin/key_button.dart';
 import 'package:coconut_wallet/widgets/features/auth/pin/pin_box.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class PinInputPad extends StatefulWidget {
   final String title;
@@ -79,7 +80,7 @@ class PinInputPadState extends State<PinInputPad> {
                         : IconButton(
                           onPressed: widget.onBackPressed,
                           icon: SvgPicture.asset(
-                            'assets/svg/back.svg',
+                            CommonNavigationIconPath.back,
                             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                           ),
                         ),

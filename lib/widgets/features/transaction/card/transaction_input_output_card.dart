@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -194,7 +195,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
                   turns: _isTxHashExpanded ? 0.25 : 0,
                   duration: const Duration(milliseconds: 200),
                   child: SvgPicture.asset(
-                    'assets/svg/arrow-right-md.svg',
+                    CommonNavigationIconPath.arrowRightMd,
                     width: 24,
                     height: 24,
                     colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
@@ -221,7 +222,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
                           children: [
                             CoconutLayout.spacing_100h,
                             SvgPicture.asset(
-                              'assets/svg/triangle-warning.svg',
+                              CommonStateIconPath.triangleWarning,
                               width: 14,
                               colorFilter: ColorFilter.mode(context.coconutColors.warning, BlendMode.srcIn),
                             ),

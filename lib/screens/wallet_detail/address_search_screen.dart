@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -115,7 +116,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                   backgroundColor: context.coconutColors.background,
                   leading: IconButton(
                     icon: SvgPicture.asset(
-                      'assets/svg/arrow-back.svg',
+                      CommonNavigationIconPath.arrowBack,
                       colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                       width: 24,
                       height: 24,
@@ -150,7 +151,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                         _addressFocusNode.requestFocus();
                         _showAddressScanner();
                       },
-                      suffixIconAsset: 'assets/svg/scan.svg',
+                      suffixIconAsset: CommonActionIconPath.scan,
                       suffixIconColor: context.coconutColors.iconPrimary,
                     ),
                   ),
@@ -236,7 +237,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SvgPicture.asset(
-                  'assets/svg/circle-info.svg',
+                  CommonStateIconPath.circleInfo,
                   colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                 ),
                 CoconutLayout.spacing_100w,

@@ -47,7 +47,7 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SvgPicture.asset(
-                    IconPath.coconut,
+                    AppIconPath.coconut,
                     colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                   ),
                   const SizedBox(height: 30),

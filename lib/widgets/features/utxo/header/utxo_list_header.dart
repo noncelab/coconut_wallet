@@ -10,6 +10,7 @@ import 'package:coconut_wallet/widgets/features/utxo/header/selected_utxo_amount
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UtxoListHeader extends StatefulWidget {
   final GlobalKey headerGlobalKey;
@@ -146,7 +147,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     ),
                     CoconutLayout.spacing_200w,
                     SvgPicture.asset(
-                      'assets/svg/arrow-down.svg',
+                      CommonNavigationIconPath.arrowDown,
                       colorFilter: ColorFilter.mode(
                         widget.isLoadComplete
                             ? context.coconutColors.iconPrimary

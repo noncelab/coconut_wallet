@@ -5,6 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class _SelectionSummaryBar extends StatelessWidget {
   final int selectedCount;
@@ -33,7 +34,7 @@ class _SelectionSummaryBar extends StatelessWidget {
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(color: context.coconutColors.chipSelectedBackground, shape: BoxShape.circle),
                 child: SvgPicture.asset(
-                  'assets/svg/check.svg',
+                  CommonActionIconPath.check,
                   width: 8,
                   height: 8,
                   colorFilter: ColorFilter.mode(context.coconutColors.chipSelectedText, BlendMode.srcIn),
@@ -49,7 +50,7 @@ class _SelectionSummaryBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        _FilterChip(iconPath: 'assets/svg/close.svg', label: t.cancel, isSelected: true, onTap: onCancel),
+        _FilterChip(iconPath: CommonActionIconPath.close, label: t.cancel, isSelected: true, onTap: onCancel),
       ],
     );
   }
@@ -223,14 +224,14 @@ class _StickyFilterBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _FilterChip(
-            iconPath: 'assets/svg/unlock_simple.svg',
+            iconPath: CommonSecurityIconPath.unlockSimple,
             label: t.utxo_detail_screen.utxo_unlocked,
             isSelected: lockFilterIndex == 0,
             onTap: () => onLockFilterSelected(0),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            iconPath: 'assets/svg/lock_simple.svg',
+            iconPath: CommonSecurityIconPath.lockSimple,
             label: t.utxo_detail_screen.utxo_locked,
             isSelected: lockFilterIndex == 1,
             onTap: () => onLockFilterSelected(1),

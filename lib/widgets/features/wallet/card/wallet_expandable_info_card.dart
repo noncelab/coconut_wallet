@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class WalletExpandableInfoCard extends StatefulWidget {
   const WalletExpandableInfoCard({super.key});
@@ -73,7 +74,7 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
                       Padding(
                         padding: EdgeInsets.only(top: isSingleLine ? 0 : firstLineCenterOffset),
                         child: SvgPicture.asset(
-                          _isExpanded ? 'assets/svg/circle-warning.svg' : 'assets/svg/circle-help.svg',
+                          _isExpanded ? CommonStateIconPath.circleWarning : CommonStateIconPath.circleHelp,
                           width: 20,
                           colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                         ),

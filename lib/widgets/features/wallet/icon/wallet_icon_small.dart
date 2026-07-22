@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -68,7 +68,7 @@ class WalletIconSmall extends StatelessWidget {
                         colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                       )
                       : SvgPicture.asset(
-                        CustomIcons.getPathByIndex(iconIndex),
+                        CustomWalletIcons.getPathByIndex(iconIndex),
                         colorFilter: ColorFilter.mode(ColorUtil.getColor(colorIndex).color, BlendMode.srcIn),
                         //width: 18.0,
                       ),

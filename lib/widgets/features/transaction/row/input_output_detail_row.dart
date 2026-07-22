@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart' as app_tokens;
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
@@ -149,11 +150,11 @@ class InputOutputDetailRow extends StatelessWidget {
     Color rightItemColor = colors.mutedText;
     Color svgColor = colors.mutedText;
 
-    String svgPath = 'assets/svg/circle-arrow-right.svg';
+    String svgPath = CommonNavigationIconPath.circleArrowRight;
 
     if (rowType == InputOutputRowType.fee) {
       // UTXO 화면인 경우
-      svgPath = 'assets/svg/circle-pick.svg';
+      svgPath = CommonFormIconPath.circlePick;
       if (transactionStatus == null) {
         return RowProperty(
           leftItemColor: leftItemColor,

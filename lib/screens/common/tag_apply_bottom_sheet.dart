@@ -18,6 +18,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_tag_crud_view_model.dart';
 import 'package:coconut_wallet/screens/common/tag_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -445,7 +446,7 @@ class TagChip extends StatelessWidget {
           borderColor: Colors.white,
           textColor: Colors.white,
           icon: SvgPicture.asset(
-            'assets/svg/circle-minus.svg',
+            CommonFormIconPath.circleMinus,
             key: const ValueKey('original'),
             width: 16,
             height: 16,
@@ -462,7 +463,7 @@ class TagChip extends StatelessWidget {
           borderColor: foregroundColor,
           textColor: foregroundColor,
           icon: SvgPicture.asset(
-            'assets/svg/circle-check.svg',
+            CommonFormIconPath.circleCheck,
             key: const ValueKey('check'),
             width: 16,
             height: 16,
@@ -475,7 +476,7 @@ class TagChip extends StatelessWidget {
           borderColor: opacColor,
           textColor: opacColor,
           icon: SvgPicture.asset(
-            'assets/svg/circle.svg',
+            CommonFormIconPath.circle,
             key: const ValueKey('unchecked'),
             width: 16,
             height: 16,

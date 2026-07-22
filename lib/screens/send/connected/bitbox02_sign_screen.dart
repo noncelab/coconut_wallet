@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/connected/bitbox02_sign_viewmodel.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -263,7 +264,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       final color = context.coconutColors.success;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        'assets/svg/circle-check-outline.svg',
+        CommonFormIconPath.circleCheckOutline,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         width: 16,
         height: 16,
@@ -274,7 +275,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       final color = context.coconutColors.danger;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        'assets/svg/triangle-warning.svg',
+        CommonStateIconPath.triangleWarning,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         width: 16,
         height: 16,

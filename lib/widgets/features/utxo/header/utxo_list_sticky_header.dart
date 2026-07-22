@@ -10,6 +10,7 @@ import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UtxoListStickyHeader extends StatelessWidget {
   final GlobalKey stickyHeaderGlobalKey;
@@ -202,7 +203,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                   ),
                   CoconutLayout.spacing_200w,
                   SvgPicture.asset(
-                    'assets/svg/arrow-down.svg',
+                    CommonNavigationIconPath.arrowDown,
                     colorFilter: ColorFilter.mode(
                       enableDropdown ? context.coconutColors.iconPrimary : context.coconutColors.iconDisabled,
                       BlendMode.srcIn,
