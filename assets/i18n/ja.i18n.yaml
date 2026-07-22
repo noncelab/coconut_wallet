@@ -230,6 +230,20 @@ wallet_home_screen:
   add_wallet_type_all: "ウォレットを追加してみましょう！"
   add_wallet_type_watch_only: "閲覧専用ウォレットを追加してみましょう！"
   add_wallet_type_hot: "ホットウォレットを追加してみましょう！"
+  wallet_type_selection:
+    watch_only:
+      title: "閲覧専用ウォレットを追加"
+      description: "安全な閲覧用"
+    hot_wallet:
+      title: "ホットウォレットを追加"
+      description: "すぐに送金可能"
+  hot_wallet_add:
+    create:
+      title: "新しいウォレットを作成"
+      description: "自動で安全に"
+    restore:
+      title: "ニーモニックから復元"
+      description: "既存のウォレットをそのまま"
   add_wallet: "ウォレットを追加"
   view_all: "すべて表示"
   wallet_menu:

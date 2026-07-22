@@ -230,6 +230,20 @@ wallet_home_screen:
   add_wallet_type_all: "Füge eine Wallet hinzu!"
   add_wallet_type_watch_only: "Füge eine Watch-only-Wallet hinzu!"
   add_wallet_type_hot: "Füge eine Hot Wallet hinzu!"
+  wallet_type_selection:
+    watch_only:
+      title: "Watch-only-Wallet hinzufügen"
+      description: "Zum sicheren Anzeigen"
+    hot_wallet:
+      title: "Hot Wallet hinzufügen"
+      description: "Sofort sendebereit"
+  hot_wallet_add:
+    create:
+      title: "Neue Wallet erstellen"
+      description: "Automatisch und sicher"
+    restore:
+      title: "Mit Mnemonik wiederherstellen"
+      description: "Bestehende Wallet beibehalten"
   add_wallet: "Wallet hinzufügen"
   view_all: "Alle anzeigen"
   wallet_menu:

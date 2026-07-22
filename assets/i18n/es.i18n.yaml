@@ -231,6 +231,20 @@ wallet_home_screen:
   add_wallet_type_all: "¡Añade una billetera!"
   add_wallet_type_watch_only: "¡Añade una billetera de solo lectura!"
   add_wallet_type_hot: "¡Añade una billetera caliente!"
+  wallet_type_selection:
+    watch_only:
+      title: "Añadir billetera de solo lectura"
+      description: "Para consultar con seguridad"
+    hot_wallet:
+      title: "Añadir billetera caliente"
+      description: "Lista para enviar al instante"
+  hot_wallet_add:
+    create:
+      title: "Crear una billetera nueva"
+      description: "De forma automática y segura"
+    restore:
+      title: "Restaurar con mnemónico"
+      description: "Conservar la billetera existente"
   add_wallet: "Añadir billetera"
   view_all: "Ver todas"
   wallet_menu:

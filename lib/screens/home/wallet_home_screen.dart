@@ -58,11 +58,13 @@ import 'package:collection/collection.dart';
 
 enum _WalletFilter { all, watchOnly, hot }
 
+enum _AddWalletMenuMode { walletType, watchOnlySource, hotWalletAction }
+
 class WalletHomeScreen extends StatefulWidget {
   const WalletHomeScreen({super.key});
 
   /// P2P 등 외부에서 홈의 "지갑 추가" 바텀시트를 띄울 때 호출.
-  static void openAddWalletIfActive() => _currentState?._showAddWalletMenu(showTypeSelection: true);
+  static void openAddWalletIfActive() => _currentState?._showAddWalletMenu(_AddWalletMenuMode.walletType);
 
   static _WalletHomeScreenState? _currentState;
 
@@ -1124,7 +1126,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           Expanded(
             child: ShrinkAnimationButton(
               defaultColor: context.coconutColors.homeSurfaceCard,
-              pressedColor: context.coconutColors.homeSurfaceCardPressed,
               onPressed: _onAddWalletPressed,
               child: Center(
                 child: Text(
@@ -1138,7 +1139,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           Expanded(
             child: ShrinkAnimationButton(
               defaultColor: context.coconutColors.homeSurfaceCard,
-              pressedColor: context.coconutColors.homeSurfaceCardPressed,
               onPressed: () => Navigator.pushNamed(context, '/wallet-list'),
               child: Center(
                 child: Text(
@@ -1187,7 +1187,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         return LongPressedMenuWidget(
           useGlassOverlay: true,
           alignMenuToChildRight: true,
-          spacing: 30,
+          spacing: 16,
           menuBackgroundColor: context.coconutColors.surfacePressed,
           menuItems: _buildWalletMenuItems(walletItem),
           child: WalletItemCard(
@@ -2030,30 +2030,28 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   void _onAddWalletPressed() {
     switch (_walletFilter) {
       case _WalletFilter.all:
-        _showAddWalletMenu(showTypeSelection: true);
+        _showAddWalletMenu(_AddWalletMenuMode.walletType);
       case _WalletFilter.watchOnly:
-        _showAddWalletMenu(showTypeSelection: false);
+        _showAddWalletMenu(_AddWalletMenuMode.watchOnlySource);
       case _WalletFilter.hot:
-        // TODO: 핫월렛 생성 화면 연결
-        break;
+        _showAddWalletMenu(_AddWalletMenuMode.hotWalletAction);
     }
   }
 
   void _onAppBarAddWalletPressed() {
     switch (context.read<PreferenceProvider>().homeAddWalletOption) {
       case HomeAddWalletOption.all:
-        _showAddWalletMenu(showTypeSelection: true);
+        _showAddWalletMenu(_AddWalletMenuMode.walletType);
       case HomeAddWalletOption.watchOnly:
-        _showAddWalletMenu(showTypeSelection: false);
+        _showAddWalletMenu(_AddWalletMenuMode.watchOnlySource);
       case HomeAddWalletOption.hotWallet:
-        // TODO: 핫월렛 생성 화면 연결
-        break;
+        _showAddWalletMenu(_AddWalletMenuMode.hotWalletAction);
       case HomeAddWalletOption.hidden:
         break;
     }
   }
 
-  void _showAddWalletMenu({required bool showTypeSelection}) {
+  void _showAddWalletMenu(_AddWalletMenuMode mode) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -2082,19 +2080,20 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (showTypeSelection) ...[
+                        if (mode == _AddWalletMenuMode.walletType) ...[
                           Row(
                             children: [
                               Expanded(
                                 child: _buildWalletTypeShrinkButton(
                                   iconPath: 'assets/svg/wallet-eyes.svg',
-                                  title: t.wallet_home_screen.wallet_filter.watch_only,
-                                  description: t.wallet_home_screen.add_wallet_type_watch_only,
+                                  title: t.wallet_home_screen.wallet_type_selection.watch_only.title,
+                                  description: t.wallet_home_screen.wallet_type_selection.watch_only.description,
+                                  descriptionFirst: true,
                                   onPressed: () {
                                     Navigator.pop(context);
                                     WidgetsBinding.instance.addPostFrameCallback((_) {
                                       if (mounted) {
-                                        _showAddWalletMenu(showTypeSelection: false);
+                                        _showAddWalletMenu(_AddWalletMenuMode.watchOnlySource);
                                       }
                                     });
                                   },
@@ -2107,16 +2106,22 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               Expanded(
                                 child: _buildWalletTypeShrinkButton(
                                   iconPath: 'assets/svg/wallet-add-hot.svg',
-                                  title: t.wallet_home_screen.wallet_filter.hot,
-                                  description: t.wallet_home_screen.add_wallet_type_hot,
+                                  title: t.wallet_home_screen.wallet_type_selection.hot_wallet.title,
+                                  description: t.wallet_home_screen.wallet_type_selection.hot_wallet.description,
+                                  descriptionFirst: true,
                                   onPressed: () {
-                                    // TODO: 핫월렛 생성 화면 연결
+                                    Navigator.pop(context);
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      if (mounted) {
+                                        _showAddWalletMenu(_AddWalletMenuMode.hotWalletAction);
+                                      }
+                                    });
                                   },
                                 ),
                               ),
                             ],
                           ),
-                        ] else ...[
+                        ] else if (mode == _AddWalletMenuMode.watchOnlySource) ...[
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
@@ -2190,6 +2195,33 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               ),
                             ],
                           ),
+                        ] else ...[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildWalletTypeShrinkButton(
+                                  iconPath: 'assets/svg/wallet-add-hot.svg',
+                                  title: t.wallet_home_screen.hot_wallet_add.create.title,
+                                  description: t.wallet_home_screen.hot_wallet_add.create.description,
+                                  descriptionFirst: true,
+                                  onPressed: _onCreateHotWalletPressed,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildWalletTypeShrinkButton(
+                                  iconPath: 'assets/svg/wallet-import-hot.svg',
+                                  title: t.wallet_home_screen.hot_wallet_add.restore.title,
+                                  description: t.wallet_home_screen.hot_wallet_add.restore.description,
+                                  descriptionFirst: true,
+                                  onPressed: _onRestoreHotWalletPressed,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ],
                     ),
@@ -2248,6 +2280,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         return child;
       },
     );
+  }
+
+  void _onCreateHotWalletPressed() {
+    Navigator.pop(context);
+    // TODO: 핫월렛 신규 생성 화면 연결
+  }
+
+  void _onRestoreHotWalletPressed() {
+    Navigator.pop(context);
+    // TODO: 핫월렛 니모닉 복원 화면 연결
   }
 
   SliverAppBar _buildAppBar(NetworkStatus networkStatus) {
@@ -2519,6 +2561,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     required String title,
     required String description,
     required VoidCallback onPressed,
+    bool descriptionFirst = false,
   }) {
     return ShrinkAnimationButton(
       defaultColor: context.coconutColors.homeBackground,
@@ -2540,19 +2583,35 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    title,
-                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                  CoconutLayout.spacing_50h,
-                  Text(
-                    description,
-                    style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
+                  if (descriptionFirst) ...[
+                    Text(
+                      description,
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    CoconutLayout.spacing_50h,
+                    Text(
+                      title,
+                      style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ] else ...[
+                    Text(
+                      title,
+                      style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    CoconutLayout.spacing_50h,
+                    Text(
+                      description,
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                  ],
                 ],
               ),
             ),
