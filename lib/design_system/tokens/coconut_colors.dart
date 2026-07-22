@@ -114,6 +114,13 @@ class CoconutColors {
   final Color chipSelectedText;
   final Color chipOutlinedUnselectedBackground;
   final Color chipOutlinedUnselectedText;
+  final Color chipMovingBorder;
+  final Color chipMovingBackground;
+  final Color chipMovingText;
+  final Color chipEditModeBackground;
+  final Color chipEditModeText;
+  final Color chipDisabledText;
+  final Color chipDisabledBackground;
 
   final Color chartSurface;
   final Color coinSurface;
@@ -268,6 +275,13 @@ class CoconutColors {
     required this.chipSelectedText,
     required this.chipOutlinedUnselectedBackground,
     required this.chipOutlinedUnselectedText,
+    required this.chipMovingBorder,
+    required this.chipMovingBackground,
+    required this.chipMovingText,
+    required this.chipEditModeBackground,
+    required this.chipEditModeText,
+    required this.chipDisabledText,
+    required this.chipDisabledBackground,
     required this.surfaceSkeletonBase,
     required this.surfaceSkeletonHighlight,
     required this.chartSurface,
@@ -402,6 +416,13 @@ class CoconutColors {
       chipSelectedText: ds.CoconutColors.black,
       chipOutlinedUnselectedBackground: ds.CoconutColors.gray800,
       chipOutlinedUnselectedText: ds.CoconutColors.gray700,
+      chipMovingBorder: ds.CoconutColors.gray350,
+      chipMovingBackground: ds.CoconutColors.gray750,
+      chipMovingText: ds.CoconutColors.white,
+      chipEditModeBackground: ds.CoconutColors.gray800,
+      chipEditModeText: ds.CoconutColors.gray300,
+      chipDisabledText: ds.CoconutColors.gray600,
+      chipDisabledBackground: ds.CoconutColors.gray850,
 
       surfaceSkeletonBase: ds.CoconutColors.gray850,
       surfaceSkeletonHighlight: ds.CoconutColors.gray750,
@@ -544,6 +565,13 @@ class CoconutColors {
       chipSelectedText: ds.CoconutColors.white,
       chipOutlinedUnselectedBackground: ds.CoconutColors.gray150,
       chipOutlinedUnselectedText: ds.CoconutColors.gray350,
+      chipMovingBorder: ds.CoconutColors.gray350,
+      chipMovingBackground: ds.CoconutColors.gray200,
+      chipMovingText: ds.CoconutColors.gray800,
+      chipEditModeBackground: ds.CoconutColors.gray150,
+      chipEditModeText: ds.CoconutColors.gray350,
+      chipDisabledText: ds.CoconutColors.gray300,
+      chipDisabledBackground: ds.CoconutColors.gray100,
 
       surfaceSkeletonBase: ds.CoconutColors.gray200,
       surfaceSkeletonHighlight: ds.CoconutColors.gray100,

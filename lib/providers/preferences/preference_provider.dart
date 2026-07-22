@@ -50,6 +50,13 @@ class PreferenceProvider extends ChangeNotifier {
   late HomeAddWalletOption _homeAddWalletOption;
   HomeAddWalletOption get homeAddWalletOption => _homeAddWalletOption;
 
+  late List<WalletFilter> _walletFilterOrder;
+  List<WalletFilter> get walletFilterOrder => List.unmodifiable(_walletFilterOrder);
+  late Set<WalletFilter> _visibleWalletFilters;
+  Set<WalletFilter> get visibleWalletFilters => Set.unmodifiable(_visibleWalletFilters);
+  bool isWalletFilterVisible(WalletFilter filter) =>
+      filter == WalletFilter.all || _visibleWalletFilters.contains(filter);
+
   /// 가짜 잔액 총량
   late int? _fakeBalanceTotalBtc;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalBtc;
@@ -153,6 +160,8 @@ class PreferenceProvider extends ChangeNotifier {
       (option) => option.name == _sharedPrefs.getString(SharedPrefKeys.kHomeAddWalletOption),
       orElse: () => HomeAddWalletOption.all,
     );
+    _walletFilterOrder = _loadWalletFilterOrder();
+    _visibleWalletFilters = _loadVisibleWalletFilters();
     _bitcoinUnit = _loadBitcoinUnit();
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
     _hasInitializedFavoriteWalletIds = _walletPreferencesRepository.hasWalletPreferences();
@@ -254,6 +263,65 @@ class PreferenceProvider extends ChangeNotifier {
     if (_homeAddWalletOption == option) return;
     _homeAddWalletOption = option;
     await _sharedPrefs.setString(SharedPrefKeys.kHomeAddWalletOption, option.name);
+    notifyListeners();
+  }
+
+  List<WalletFilter> _loadWalletFilterOrder() {
+    final storedNames = _sharedPrefs.getString(SharedPrefKeys.kWalletFilterOrder).split(',');
+    final storedFilters =
+        storedNames
+            .map((name) => WalletFilter.values.where((filter) => filter.name == name).firstOrNull)
+            .whereType<WalletFilter>()
+            .where((filter) => filter != WalletFilter.all)
+            .toSet()
+            .toList();
+    final movableFilters = WalletFilter.values.where((filter) => filter != WalletFilter.all);
+    return [WalletFilter.all, ...storedFilters, ...movableFilters.where((filter) => !storedFilters.contains(filter))];
+  }
+
+  Future<void> setWalletFilterOrder(List<WalletFilter> order) async {
+    final movableFilters =
+        order.where((filter) => filter != WalletFilter.all).toSet().toList()
+          ..addAll(WalletFilter.values.where((filter) => filter != WalletFilter.all && !order.contains(filter)));
+    _walletFilterOrder = [WalletFilter.all, ...movableFilters];
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kWalletFilterOrder,
+      _walletFilterOrder.map((filter) => filter.name).join(','),
+    );
+    notifyListeners();
+  }
+
+  Set<WalletFilter> _loadVisibleWalletFilters() {
+    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kVisibleWalletFilters);
+    if (stored == null) return {WalletFilter.watchOnly, WalletFilter.hot};
+    return stored
+        .split(',')
+        .map((name) => WalletFilter.values.where((filter) => filter.name == name).firstOrNull)
+        .whereType<WalletFilter>()
+        .where((filter) => filter != WalletFilter.all)
+        .toSet();
+  }
+
+  Future<void> setWalletFilterVisible(WalletFilter filter, bool isVisible) async {
+    if (filter == WalletFilter.all) return;
+    if (isVisible) {
+      _visibleWalletFilters.add(filter);
+    } else {
+      _visibleWalletFilters.remove(filter);
+    }
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kVisibleWalletFilters,
+      _visibleWalletFilters.map((filter) => filter.name).join(','),
+    );
+    notifyListeners();
+  }
+
+  Future<void> setVisibleWalletFilters(Set<WalletFilter> filters) async {
+    _visibleWalletFilters = filters.where((filter) => filter != WalletFilter.all).toSet();
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kVisibleWalletFilters,
+      _visibleWalletFilters.map((filter) => filter.name).join(','),
+    );
     notifyListeners();
   }
 

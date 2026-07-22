@@ -39,6 +39,9 @@ enum WalletSigningMethod { externalQr, connectedHardware, localSigner }
 /// 홈 화면 상단 지갑 추가 버튼의 동작 방식
 enum HomeAddWalletOption { all, watchOnly, hotWallet, hidden }
 
+/// 홈과 지갑 목록 화면에서 사용하는 지갑 필터
+enum WalletFilter { all, watchOnly, hot }
+
 enum WalletImportSource {
   coconutVault,
   keystone,

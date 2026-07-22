@@ -456,6 +456,8 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
+  empty_watch_only: "보기 전용 지갑이 없어요"
+  empty_hot_wallet: "핫월렛이 없어요"
   primary_wallet: "대표 지갑"
   exclude_from_total_amount: "홈 화면 총액에서 제외"
   home_balance: "홈 화면 총액"
@@ -474,6 +476,11 @@ wallet_list:
     finish: "편집 종료"
     unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
   bottom_sheet:
+    tab_display_settings: "탭 표시 설정"
+    show_watch_only_tab: "보기 전용 지갑 탭 표시"
+    show_watch_only_tab_description: "홈 화면에 보기 전용 지갑 탭을 표시해요"
+    show_hot_wallet_tab: "핫월렛 탭 표시"
+    show_hot_wallet_tab_description: "홈 화면에 핫월렛 탭을 표시해요"
     hide_fiat_price: "법정 화폐 잔액 숨기기"
     hide_fiat_price_description: "이 화면에 법정 화폐 잔액을 표시하지 않아요."
     visible: "표시 중"

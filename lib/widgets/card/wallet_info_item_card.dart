@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
@@ -199,13 +200,21 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                     _buildIcon(),
 
                     CoconutLayout.spacing_200w,
-                    // 이름
+                    // 지갑 유형 및 이름
                     Expanded(
-                      child: Text(
-                        nameText,
-                        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildWalletTypeBadge(),
+                          CoconutLayout.spacing_100h,
+                          Text(
+                            nameText,
+                            style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -338,6 +347,39 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
 
   void _onMfpEditTap() {
     widget.onShowMfpInputBottomSheet();
+  }
+
+  Widget _buildWalletTypeBadge() {
+    final isHotWallet = walletItem.hasLocalKey;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: context.coconutColors.chipUnselectedBackground,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: Center(
+              child: SvgPicture.asset(
+                isHotWallet ? 'assets/svg/hot-wallet-fire.svg' : 'assets/svg/watch-only-eyes.svg',
+                width: isHotWallet ? 10 : 14,
+                height: isHotWallet ? 10 : 9,
+                colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
+              ),
+            ),
+          ),
+          CoconutLayout.spacing_100w,
+          Text(
+            isHotWallet ? t.wallet_home_screen.wallet_filter.hot : t.wallet_home_screen.wallet_filter.watch_only,
+            style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildIcon() {

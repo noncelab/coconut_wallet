@@ -427,6 +427,8 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Items"
+  empty_watch_only: "No watch-only wallets"
+  empty_hot_wallet: "No hot wallets"
   primary_wallet: "Primary Wallet"
   exclude_from_total_amount: "Excluded from Home Total"
   home_balance: "Home Balance"
@@ -445,6 +447,11 @@ wallet_list:
     finish: "Finish Editing"
     unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"
   bottom_sheet:
+    tab_display_settings: "Tab Display Settings"
+    show_watch_only_tab: "Show Watch-only Wallet Tab"
+    show_watch_only_tab_description: "Show the watch-only wallet tab on the home screen"
+    show_hot_wallet_tab: "Show Hot Wallet Tab"
+    show_hot_wallet_tab_description: "Show the hot wallet tab on the home screen"
     hide_fiat_price: "Hide Fiat Balance"
     hide_fiat_price_description: "This screen will not display the fiat balance."
     visible: "Visible"

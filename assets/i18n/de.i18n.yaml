@@ -445,6 +445,8 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elemente"
+  empty_watch_only: "Keine Watch-only-Wallets"
+  empty_hot_wallet: "Keine Hot Wallets"
   primary_wallet: "Primäre Wallet"
   exclude_from_total_amount: "Von der Gesamtsumme ausgeschlossen"
   home_balance: "Startseiten-Guthaben"
@@ -463,6 +465,11 @@ wallet_list:
     finish: "Bearbeitung beenden"
     unsaved_changes_confirm_exit: "Sie haben ungespeicherte Änderungen.\nSind Sie sicher, dass Sie beenden möchten?"
   bottom_sheet:
+    tab_display_settings: "Tab-Anzeigeeinstellungen"
+    show_watch_only_tab: "Watch-only-Wallet-Tab anzeigen"
+    show_watch_only_tab_description: "Zeigt den Watch-only-Wallet-Tab auf der Startseite an"
+    show_hot_wallet_tab: "Hot-Wallet-Tab anzeigen"
+    show_hot_wallet_tab_description: "Zeigt den Hot-Wallet-Tab auf der Startseite an"
     hide_fiat_price: "Fiat-Guthaben verbergen"
     hide_fiat_price_description: "Dieser Bildschirm zeigt das Fiat-Guthaben nicht an."
     visible: "Sichtbar"

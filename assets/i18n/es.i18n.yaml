@@ -457,6 +457,8 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elementos"
+  empty_watch_only: "No hay billeteras de solo lectura"
+  empty_hot_wallet: "No hay billeteras calientes"
   view_all_wallets: "View All My Wallets"
   primary_wallet: "Cartera Principal"
   exclude_from_total_amount: "Excluido del Total"
@@ -476,6 +478,11 @@ wallet_list:
     finish: "Finalizar Edición"
     unsaved_changes_confirm_exit: "Tienes cambios sin guardar.\n¿Estás seguro de que quieres salir?"
   bottom_sheet:
+    tab_display_settings: "Configuración de visualización de pestañas"
+    show_watch_only_tab: "Mostrar pestaña de billeteras de solo lectura"
+    show_watch_only_tab_description: "Muestra la pestaña de billeteras de solo lectura en la pantalla de inicio"
+    show_hot_wallet_tab: "Mostrar pestaña de billeteras calientes"
+    show_hot_wallet_tab_description: "Muestra la pestaña de billeteras calientes en la pantalla de inicio"
     hide_fiat_price: "Ocultar saldo en moneda fiduciaria"
     hide_fiat_price_description: "No mostrar el saldo en moneda fiduciaria en la pantalla de inicio."
     visible: "Visible"

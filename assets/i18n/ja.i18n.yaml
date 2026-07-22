@@ -427,6 +427,8 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
+  empty_watch_only: "閲覧専用ウォレットがありません"
+  empty_hot_wallet: "ホットウォレットがありません"
   view_all_wallets: "すべてのウォレットを表示"
   primary_wallet: "プライマリウォレット"
   exclude_from_total_amount: "ホーム合計から除外"
@@ -446,6 +448,11 @@ wallet_list:
     finish: "編集完了"
     unsaved_changes_confirm_exit: "未保存の変更があります。\n本当に終了しますか？"
   bottom_sheet:
+    tab_display_settings: "タブ表示設定"
+    show_watch_only_tab: "閲覧専用ウォレットタブを表示"
+    show_watch_only_tab_description: "ホーム画面に閲覧専用ウォレットタブを表示します"
+    show_hot_wallet_tab: "ホットウォレットタブを表示"
+    show_hot_wallet_tab_description: "ホーム画面にホットウォレットタブを表示します"
     hide_fiat_price: "法定通貨残高を非表示"
     hide_fiat_price_description: "この画面に法定通貨残高を表示しません。"
     visible: "表示中"
