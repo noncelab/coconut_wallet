@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 // import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
@@ -8,6 +9,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/settings_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
@@ -17,13 +19,16 @@ import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
 // import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/manage_labels_bottom_sheet.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 class AppSettingsScreen extends StatefulWidget {
@@ -377,42 +382,97 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
   void _showManageLabelsBottomSheet(BuildContext context) {
     ManageLabelsBottomSheet.show(
       context: context,
-      onImportPressed: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext dialogContext) {
-            return CoconutPopup(
-              languageCode: context.read<PreferenceProvider>().language,
-              title: t.settings_screen.import_labels,
-              description: t.settings_screen.import_all_labels_description,
-              onTapRight: () {
-                Navigator.of(dialogContext).pop();
-              },
-              rightButtonText: t.next,
-              onTapLeft: () => Navigator.of(dialogContext).pop(),
-              leftButtonText: t.cancel,
-            );
-          },
-        );
-      },
-      onExportPressed: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext dialogContext) {
-            return CoconutPopup(
-              languageCode: context.read<PreferenceProvider>().language,
-              title: t.settings_screen.export_labels,
-              description: t.settings_screen.export_all_labels_description,
-              onTapRight: () {
-                Navigator.of(dialogContext).pop();
-              },
-              rightButtonText: t.next,
-              onTapLeft: () => Navigator.of(dialogContext).pop(),
-              leftButtonText: t.cancel,
-            );
-          },
-        );
-      },
+      onImportPressed:
+          () => _showLabelActionDialog(
+            title: t.settings_screen.import_labels,
+            description: t.settings_screen.import_all_labels_description,
+            onConfirm: _importLabelsForAllWallets,
+          ),
+      onExportPressed:
+          () => _showLabelActionDialog(
+            title: t.settings_screen.export_labels,
+            description: t.settings_screen.export_all_labels_description,
+            onConfirm: () {
+              // TODO: Implement export labels for all wallets
+            },
+          ),
     );
+  }
+
+  void _showLabelActionDialog({required String title, required String description, required VoidCallback onConfirm}) {
+    showDialog(
+      context: context,
+      builder:
+          (BuildContext dialogContext) => CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            title: title,
+            description: description,
+            onTapRight: () {
+              Navigator.of(dialogContext).pop();
+              onConfirm();
+            },
+            rightButtonText: t.next,
+            onTapLeft: () => Navigator.of(dialogContext).pop(),
+            leftButtonText: t.cancel,
+          ),
+    );
+  }
+
+  void _setOverlayLoading(bool value) {
+    if (!mounted) return;
+    if (value) {
+      context.loaderOverlay.show();
+    } else {
+      context.loaderOverlay.hide();
+    }
+  }
+
+  Future<void> _importLabelsForAllWallets() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.any);
+
+    if (result != null) {
+      final file = result.files.single;
+      if (file.extension?.toLowerCase() != 'jsonl') {
+        if (mounted) {
+          CoconutToast.showToast(
+            context: context,
+            text: t.wallet_info_screen.error.invalid_file_type,
+            level: CoconutToastLevel.warning,
+            isVisibleIcon: true,
+            iconPath: 'assets/svg/triangle-warning.svg',
+          );
+        }
+        return;
+      }
+
+      final filePath = file.path;
+      if (filePath == null) return;
+
+      _setOverlayLoading(true);
+      try {
+        final labelManager = LabelJsonLManager();
+        await labelManager.importLabelsForAllWallets(context.read<WalletProvider>(), filePath);
+
+        _setOverlayLoading(false);
+        if (mounted) {
+          CoconutToast.showToast(
+            context: context,
+            text: t.wallet_info_screen.import_labels_success,
+            level: CoconutToastLevel.success,
+          );
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      } catch (e) {
+        _setOverlayLoading(false);
+        if (mounted) {
+          await showInfoDialog(
+            context,
+            context.read<PreferenceProvider>().language,
+            t.wallet_info_screen.import_labels_fail,
+            e.toString(),
+          );
+        }
+      }
+    }
   }
 }

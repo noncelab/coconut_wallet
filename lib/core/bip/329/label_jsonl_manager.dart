@@ -25,13 +25,13 @@ class LabelJsonLManager {
 
     final utxoStateMap = {for (var utxo in utxoStates) utxo.utxoId: utxo};
 
-    // 거래 메모
+    // Transaction Memos
     for (final memo in txMemosWithLabels) {
       final data = {"type": "tx", "ref": memo.transactionHash, "label": memo.memo};
       jsonLines.add(jsonEncode(data));
     }
 
-    // UTXO 태그
+    // Utxo Tags
     for (final tag in utxoTagsWithLabels) {
       for (final utxoId in tag.utxoIdList) {
         final parsedId = _parseUtxoId(utxoId);
@@ -48,6 +48,8 @@ class LabelJsonLManager {
           "ref": "${parsedId.txid}:${parsedId.vout}",
           "label": tag.name,
         };
+
+        // Spendable
         if (!isSpendable) {
           data['spendable'] = false;
         }
@@ -100,6 +102,9 @@ class LabelJsonLManager {
         }
 
         if (type == 'tx') {
+          if (walletProvider.getTransactionRecord(walletId, ref) == null) {
+            continue;
+          }
           await walletProvider.updateTransactionMemo(walletId, ref, label);
         } else if (type == 'output') {
           final parsedId = _parseRefToUtxoId(ref);
@@ -109,6 +114,10 @@ class LabelJsonLManager {
           }
 
           final utxoId = parsedId;
+          if (walletProvider.getUtxoState(walletId, utxoId) == null) {
+            continue;
+          }
+
           await walletProvider.addUtxoToTag(walletId, label, utxoId);
 
           final spendable = data['spendable'] as bool?;
@@ -121,6 +130,14 @@ class LabelJsonLManager {
         debugPrint('Error: $e');
         debugPrint('StackTrace: $stackTrace');
       }
+    }
+  }
+
+  Future<void> importLabelsForAllWallets(WalletProvider walletProvider, String filePath) async {
+    final allWallets = walletProvider.walletItemList;
+
+    for (final wallet in allWallets) {
+      await importLabelsFromJsonLFile(wallet.id, walletProvider, filePath);
     }
   }
 
