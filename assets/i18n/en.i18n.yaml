@@ -649,6 +649,10 @@ settings_screen:
   language: "Language"
   utxo_manual_selection: "UTXO Manual Selection"
   utxo_manual_selection_description: "Select UTXOs manually for sending"
+  import_labels: "Import Notes"
+  import_all_labels_description: "Applies notes recorded on other devices\nto Coconut Wallet.\n\nDo you want to proceed with the import?"
+  export_labels: "Export Notes"
+  export_all_labels_description: "Notes recorded in Coconut Wallet can be applied\nthe same way on other devices.\n\nDo you want to proceed with the export?"
   utxo_tier_theme: "Coin Color"
   electrum_server: 
     server_address: "Server Address"

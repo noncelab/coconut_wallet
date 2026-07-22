@@ -602,6 +602,10 @@ settings_screen:
   language: "Sprache"
   utxo_manual_selection: "Manuelle UTXO-Auswahl"
   utxo_manual_selection_description: "UTXOs manuell zum Senden auswählen"
+  import_labels: "Notizen importieren"
+  import_all_labels_description: "Wendet auf anderen Geräten aufgezeichnete Notizen\nauf Coconut Wallet an.\n\nMöchten Sie mit dem Import fortfahren?"
+  export_labels: "Notizen exportieren"
+  export_all_labels_description: "In Coconut Wallet aufgezeichnete Notizen können\nauf die gleiche Weise auf anderen Geräten\nangewendet werden.\n\nMöchten Sie mit dem Export fortfahren?"
   utxo_tier_theme: "Münzfarbe"
   locales:
     korean: "한국어"

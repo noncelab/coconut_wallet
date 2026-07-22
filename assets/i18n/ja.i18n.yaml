@@ -648,6 +648,10 @@ settings_screen:
   language: "言語"
   utxo_manual_selection: "UTXO 数手動選択"
   utxo_manual_selection_description: "送金に使用するUTXOを手動で選択します"
+  import_labels: "メモをインポート"
+  import_all_labels_description: "他のデバイスで記録したメモを\nCoconut Walletに適用します。\n\nインポートを続行しますか？"
+  export_labels: "メモをエクスポート"
+  export_all_labels_description: "Coconut Walletで記録したメモは、\n他のデバイスでも同じように\n適用できます。\n\nエクスポートを続行しますか？"
   utxo_tier_theme: "コインの色"
   electrum_server: 
     server_address: "サーバーアドレス"

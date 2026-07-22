@@ -646,6 +646,10 @@ settings_screen:
   language: "언어"
   utxo_manual_selection: "UTXO 수동 선택"
   utxo_manual_selection_description: "송금에 사용할 UTXO를 직접 선택합니다"
+  import_labels: "메모 가져오기"
+  import_all_labels_description: "다른 기기에서 기록한 메모들을\n코코넛 월렛에 적용합니다.\n\n가져오기를 진행하시겠습니까?"
+  export_labels: "메모 내보내기"
+  export_all_labels_description: "코코넛 월렛에 기록한 메모들을\n다른 기기에서도 똑같이\n적용할 수 있습니다.\n\n내보내기를 진행하시겠습니까?"
   utxo_tier_theme: "코인 색상"
   locales:
     korean: "한국어"

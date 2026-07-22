@@ -378,10 +378,40 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     ManageLabelsBottomSheet.show(
       context: context,
       onImportPressed: () {
-        // TODO: _showImportLabelsDialog(context, viewModel);
+        showDialog(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return CoconutPopup(
+              languageCode: context.read<PreferenceProvider>().language,
+              title: t.settings_screen.import_labels,
+              description: t.settings_screen.import_all_labels_description,
+              onTapRight: () {
+                Navigator.of(dialogContext).pop();
+              },
+              rightButtonText: t.next,
+              onTapLeft: () => Navigator.of(dialogContext).pop(),
+              leftButtonText: t.cancel,
+            );
+          },
+        );
       },
       onExportPressed: () {
-        // TODO: _showExportLabelsDialog(context, viewModel);
+        showDialog(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return CoconutPopup(
+              languageCode: context.read<PreferenceProvider>().language,
+              title: t.settings_screen.export_labels,
+              description: t.settings_screen.export_all_labels_description,
+              onTapRight: () {
+                Navigator.of(dialogContext).pop();
+              },
+              rightButtonText: t.next,
+              onTapLeft: () => Navigator.of(dialogContext).pop(),
+              leftButtonText: t.cancel,
+            );
+          },
+        );
       },
     );
   }
