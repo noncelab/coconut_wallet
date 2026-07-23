@@ -1,3 +1,13 @@
+## mainnet 0.14.0, regtest 3.14.0
+### Added
+* 패스포트 지원
+* 법정 통화 - 유로화 추가
+* 언어 - 독일어 추가
+### Fixed
+* Fee bumping 시 locked utxo가 사용되는 현상 수정
+### Enhancement
+* Theme 적용을 위한 리팩토링
+
 ## mainnet 0.13.1, regtest 3.13.1
 • 코코넛 라이브러리 변경사항 적용
 

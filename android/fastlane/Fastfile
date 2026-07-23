@@ -3,6 +3,7 @@
 # android/fastlane/Fastfile
 default_platform(:android)
 
+require "open3"
 require_relative "../../fastlane/shared/pubspec_helper"
 require_relative "../../fastlane/shared/util_helper"
 
@@ -12,6 +13,64 @@ ROOT_DIR     = File.expand_path(File.join(__dir__, "..", ".."))
 # ---------- Helpers ----------
 def find_latest_aab(flavor:)
   Dir[File.join(ROOT_DIR, "build/app/outputs/bundle/#{flavor}Release/*.aab")].max_by { |f| File.mtime(f) }
+end
+
+def android_signing_property(properties_file, key)
+  line = File.readlines(properties_file, chomp: true).find do |candidate|
+    candidate.match?(/^\s*#{Regexp.escape(key)}\s*=/)
+  end
+  line&.split("=", 2)&.last&.strip
+end
+
+def validate_android_signing_password(flavor:, password:)
+  properties_file = File.join(ROOT_DIR, "android", "key_#{flavor}.properties")
+  UI.user_error!("Keystore properties file not found: #{properties_file}") unless File.file?(properties_file)
+
+  key_alias = android_signing_property(properties_file, "keyAlias")
+  store_file = android_signing_property(properties_file, "storeFile")
+  UI.user_error!("keyAlias and storeFile are required in #{properties_file}") if key_alias.to_s.empty? || store_file.to_s.empty?
+
+  resolved_store_file = File.expand_path(store_file, File.join(ROOT_DIR, "android", "app"))
+  UI.user_error!("Keystore file not found: #{resolved_store_file}") unless File.file?(resolved_store_file)
+
+  format_command = [
+    "keytool", "-J-Duser.language=en", "-J-Duser.country=US",
+    "-list",
+    "-keystore", resolved_store_file,
+    "-storepass", password
+  ]
+  stdout, stderr, status = Open3.capture3(*format_command)
+  UI.user_error!("Invalid keystore password for #{flavor}.") unless status.success?
+  UI.user_error!("The #{flavor} keystore must use the PKCS12 format.") unless "#{stdout}\n#{stderr}".match?(/^Keystore type: PKCS12\s*$/i)
+
+  alias_command = [
+    "keytool", "-J-Duser.language=en", "-J-Duser.country=US",
+    "-list",
+    "-keystore", resolved_store_file,
+    "-alias", key_alias,
+    "-storepass", password
+  ]
+  _, _, alias_status = Open3.capture3(*alias_command)
+  UI.user_error!("Key alias #{key_alias} was not found for #{flavor}.") unless alias_status.success?
+
+  UI.success("PKCS12 keystore password and key alias verified for #{flavor}.")
+rescue Errno::ENOENT
+  UI.user_error!("keytool was not found. Install a JDK and try again.")
+end
+
+def prompt_for_android_signing_password(flavor:)
+  password = UI.password(prompt: "Keystore/key password: ")
+  UI.user_error!("Keystore/key password cannot be empty.") if password.empty?
+
+  validate_android_signing_password(flavor: flavor, password: password)
+
+  ENV["ANDROID_SIGNING_STORE_PASSWORD"] = password
+  ENV["ANDROID_SIGNING_KEY_PASSWORD"] = password
+end
+
+def clear_android_signing_passwords
+  ENV.delete("ANDROID_SIGNING_STORE_PASSWORD")
+  ENV.delete("ANDROID_SIGNING_KEY_PASSWORD")
 end
 
 # ---------- Lanes ----------
@@ -33,6 +92,7 @@ platform :android do
     UI.message("Android/#{flavor} -> versionName=#{marketing}, versionCode=#{new_build}")
 
     begin
+      prompt_for_android_signing_password(flavor: flavor)
       ENV["SUPPLY_PACKAGE_NAME"] = package
 
       prep_cmds = []
@@ -71,6 +131,8 @@ platform :android do
       UI.error("❌ Android build/upload failed: #{e.message}")
       UI.important("pubspec.yaml was not updated because build failed.")
       raise
+    ensure
+      clear_android_signing_passwords
     end
   end
 
@@ -92,6 +154,7 @@ platform :android do
     UI.message("Android/#{flavor} -> versionName=#{marketing}, versionCode=#{new_build}")
 
     begin
+      prompt_for_android_signing_password(flavor: flavor)
       ENV["SUPPLY_PACKAGE_NAME"] = package
 
       prep_cmds = []
@@ -130,6 +193,8 @@ platform :android do
       UI.error("❌ Android build/upload failed: #{e.message}")
       UI.important("pubspec.yaml was not updated because build failed.")
       raise
+    ensure
+      clear_android_signing_passwords
     end
   end
 end  # ← 여기서 단 한 번 platform 블록을 닫음
