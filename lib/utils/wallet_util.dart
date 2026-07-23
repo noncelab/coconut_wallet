@@ -1,4 +1,3 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';

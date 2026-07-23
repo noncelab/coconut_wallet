@@ -199,13 +199,11 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                                 ),
                                 ShrinkAnimationButton(
                                   onPressed: _onAddressListButtonPressed,
+                                  defaultColor: context.coconutColors.surface,
+                                  pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                                   borderRadius: 8,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      color: context.coconutColors.surfaceCard,
-                                    ),
                                     child: Text(
                                       t.view_all_addresses,
                                       style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),

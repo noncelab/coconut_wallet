@@ -3,6 +3,7 @@ import 'dart:math' show pi;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -536,7 +537,7 @@ class _CoconutToolTipState extends State<CoconutToolTip> {
   Color _resolveTooltipFillColor(dynamic colors) {
     switch (widget.tooltipState) {
       case CoconutTooltipState.info:
-        return colors.infoChipBackground;
+        return colors.surfaceInfoChip;
       case CoconutTooltipState.normal:
         return colors.surfaceMuted;
       case CoconutTooltipState.success:
@@ -623,7 +624,7 @@ class _CoconutToolTipState extends State<CoconutToolTip> {
                     Positioned(
                       right: 0,
                       top: 0,
-                      child: IconButton(
+                      child: CoconutIconButton(
                         iconSize: 16,
                         onPressed: widget.onTapRemove,
                         icon: SvgPicture.asset(
@@ -746,7 +747,7 @@ class _CoconutPopupState extends State<CoconutPopup> {
                       onTapDown: (_) => setState(() => _isLeftButtonPressing = true),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        color: _isLeftButtonPressing ? colors.surfacePressed : Colors.transparent,
+                        color: _isLeftButtonPressing ? colors.surfacePressOverlay : Colors.transparent,
                         alignment: Alignment.center,
                         child: Text(
                           widget.leftButtonText ?? _getLeftButtonText(),
@@ -767,7 +768,7 @@ class _CoconutPopupState extends State<CoconutPopup> {
                     onTapDown: (_) => setState(() => _isRightButtonPressing = true),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      color: _isRightButtonPressing ? colors.surfacePressed : Colors.transparent,
+                      color: _isRightButtonPressing ? colors.surfacePressOverlay : Colors.transparent,
                       alignment: Alignment.center,
                       child: Text(
                         widget.rightButtonText ?? _getRightButtonText(),

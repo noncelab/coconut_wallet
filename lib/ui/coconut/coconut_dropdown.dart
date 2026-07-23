@@ -135,7 +135,11 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
             ),
           ),
         ),
-        if (!isLast) Container(height: dividerHeight, color: dividerHeight == 1 ? dividerColor : colors.surfacePressed),
+        if (!isLast)
+          Container(
+            height: dividerHeight,
+            color: dividerHeight == 1 ? dividerColor : colors.surfacePressOverlay,
+          ),
       ],
     );
   }

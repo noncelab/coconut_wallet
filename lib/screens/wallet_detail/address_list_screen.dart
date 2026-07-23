@@ -14,6 +14,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/address/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
@@ -167,7 +168,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
       backgroundColor: _isScrollOverTitleHeight ? backgroundColor.withValues(alpha: 0.5) : backgroundColor,
       title: t.address_list_screen.wallet_name(name: viewModel.walletBaseItem!.name),
       actionButtonList: [
-        IconButton(
+        CoconutAppBarActionButton(
           onPressed: () {
             Navigator.pushNamed(context, '/address-search', arguments: {'id': widget.id});
           },

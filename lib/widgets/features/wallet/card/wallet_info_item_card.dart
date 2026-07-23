@@ -9,7 +9,7 @@ import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/tooltip_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon.dart';
@@ -145,7 +145,9 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   Widget build(BuildContext context) {
     final taprootStyle = TaprootCardStyle.from(widget.walletItem);
     final List<Color>? gradientColors =
-        signers != null ? ColorUtil.getGradientColors(signers!, lighten: true) : taprootStyle?.iconGradientColors;
+        signers != null
+            ? WalletVisualStyleUtil.getGradientColors(signers!, lighten: true)
+            : taprootStyle?.iconGradientColors;
     final bool hasGradient = gradientColors != null;
 
     return Container(
@@ -168,7 +170,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
         decoration:
             hasGradient
                 ? BoxDecoration(
-                  color: context.coconutColors.surfaceCard,
+                  color: context.coconutColors.surface,
                   borderRadius: BorderRadius.circular(22), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
                 )
                 : null,
@@ -258,8 +260,8 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                                           width: 14,
                                           colorFilter: ColorFilter.mode(
                                             isPressed
-                                                ? context.coconutColors.tertiaryText
-                                                : context.coconutColors.mutedText,
+                                                ? context.coconutColors.mutedText
+                                                : context.coconutColors.iconSecondary,
                                             BlendMode.srcIn,
                                           ),
                                         )
@@ -362,7 +364,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             child: Container(
               padding: const EdgeInsets.all(1),
               decoration: BoxDecoration(
-                color: isItemTapped ? colors.surfacePressed : colors.iconBackgroundSubtle,
+                color: isItemTapped ? colors.surfacePressOverlay : colors.iconBackgroundSubtle,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(color: colors.shadowDefault, offset: const Offset(1, 1), blurRadius: 6, spreadRadius: 0),
@@ -371,7 +373,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
               child: Container(
                 padding: const EdgeInsets.all(3.3),
                 decoration: BoxDecoration(
-                  color: isItemTapped ? colors.surfacePressed : colors.iconBackgroundSubtle,
+                  color: isItemTapped ? colors.surfacePressOverlay : colors.iconBackgroundSubtle,
                   shape: BoxShape.circle,
                 ),
                 child: SvgPicture.asset(

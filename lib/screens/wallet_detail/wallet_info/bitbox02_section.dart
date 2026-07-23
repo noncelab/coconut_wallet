@@ -74,7 +74,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(color: context.coconutColors.surfaceCard, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(color: context.coconutColors.surface, borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -95,7 +95,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _isConnected ? context.coconutColors.textHighlight : context.coconutColors.surfaceDisabled,
+                    color: _isConnected ? context.coconutColors.accentForeground : context.coconutColors.surfaceDisabled,
                   ),
                 ),
                 CoconutLayout.spacing_100w,
@@ -104,7 +104,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                       ? t.wallet_info_screen.bitbox02_device.connected
                       : t.wallet_info_screen.bitbox02_device.disconnected,
                   style: CoconutTypography.body3_12_Bold.setColor(
-                    _isConnected ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
+                    _isConnected ? context.coconutColors.accentForeground : context.coconutColors.secondaryText,
                   ),
                 ),
                 if (_isConnected) ...[

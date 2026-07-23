@@ -69,8 +69,7 @@ class _TooltipButtonState extends State<TooltipButton> {
         padding: widget.containerPadding,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color:
-              widget.isSelected ? context.coconutColors.primaryButtonText.withValues(alpha: 0.5) : Colors.transparent,
+          color: widget.isSelected ? context.coconutColors.surfaceMuted.withValues(alpha: 0.5) : Colors.transparent,
         ),
         child: Center(
           child: Row(

@@ -475,19 +475,16 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     final result = await showModalBottomSheet(
       context: context,
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: WalletAddMfpInputBottomSheet(
-            onSkip: () {
-              Navigator.pop(context, null);
-            },
-            onComplete: (text) {
-              Navigator.pop(context, text);
-            },
-          ),
+        return WalletAddMfpInputBottomSheet(
+          onSkip: () {
+            Navigator.pop(context, null);
+          },
+          onComplete: (text) {
+            Navigator.pop(context, text);
+          },
         );
       },
-      backgroundColor: context.coconutColors.background,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,

@@ -1,26 +1,27 @@
+import 'dart:math' as math;
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 
 const defaultIconColor = Color.fromRGBO(218, 216, 228, 1);
 const defaultBackgroundColor = Color.fromRGBO(255, 255, 255, 0.1);
 
-// FIXME: deprecated
-class ColorSet {
+// Internal value object. Prefer accessing it only through WalletVisualStyleUtil.
+class WalletVisualColorSet {
   final Color color;
   final Color backgroundColor;
 
-  const ColorSet({required this.color, required this.backgroundColor});
+  const WalletVisualColorSet({required this.color, required this.backgroundColor});
 
-  ColorSet withOpacity(double opacity) {
-    return ColorSet(color: color, backgroundColor: backgroundColor.withValues(alpha: opacity));
+  WalletVisualColorSet withOpacity(double opacity) {
+    return WalletVisualColorSet(color: color, backgroundColor: backgroundColor.withValues(alpha: opacity));
   }
 }
 
-enum CustomColor { purple, tangerine, yellow, green, blue, pink, red, orange, lightgrey, mint }
+enum WalletVisualColor { purple, tangerine, yellow, green, blue, pink, red, orange, lightgrey, mint }
 
 const List<Color> colorPalette = [
   CoconutColors.purple,
@@ -48,18 +49,7 @@ final List<Color> backgroundColorPalette = [
   CoconutColors.mint.withValues(alpha: 0.18),
 ];
 
-const List<Color> tagColorPalette = [
-  CoconutColors.purple,
-  CoconutColors.tangerine,
-  CoconutColors.yellow,
-  CoconutColors.green,
-  CoconutColors.sky,
-  CoconutColors.pink,
-  CoconutColors.red,
-  CoconutColors.orange,
-  CoconutColors.gray400,
-  CoconutColors.mint,
-];
+const List<Color> tagColorPalette = colorPalette;
 
 class TaprootCardStyle {
   final Gradient borderGradient;
@@ -100,39 +90,37 @@ class TaprootCardStyle {
   }
 }
 
-class ColorUtil {
-  static ColorSet getColor(int index) {
+class WalletVisualStyleUtil {
+  static WalletVisualColorSet getColor(int index) {
     if (index < 0 || index >= colorPalette.length) {
-      return const ColorSet(color: defaultIconColor, backgroundColor: defaultBackgroundColor);
+      return const WalletVisualColorSet(color: defaultIconColor, backgroundColor: defaultBackgroundColor);
     }
 
-    return ColorSet(color: colorPalette[index], backgroundColor: backgroundColorPalette[index]);
+    return WalletVisualColorSet(color: colorPalette[index], backgroundColor: backgroundColorPalette[index]);
   }
 
-  static int getIntFromColor(CustomColor color) {
+  static int getIntFromColor(WalletVisualColor color) {
     switch (color) {
-      case CustomColor.purple:
+      case WalletVisualColor.purple:
         return 0;
-      case CustomColor.tangerine:
+      case WalletVisualColor.tangerine:
         return 1;
-      case CustomColor.yellow:
+      case WalletVisualColor.yellow:
         return 2;
-      case CustomColor.green:
+      case WalletVisualColor.green:
         return 3;
-      case CustomColor.blue:
+      case WalletVisualColor.blue:
         return 4;
-      case CustomColor.pink:
+      case WalletVisualColor.pink:
         return 5;
-      case CustomColor.red:
+      case WalletVisualColor.red:
         return 6;
-      case CustomColor.orange:
+      case WalletVisualColor.orange:
         return 7;
-      case CustomColor.lightgrey:
+      case WalletVisualColor.lightgrey:
         return 8;
-      case CustomColor.mint:
+      case WalletVisualColor.mint:
         return 9;
-      default:
-        throw Exception('Invalid color enum: $color');
     }
   }
 
@@ -162,11 +150,13 @@ class ColorUtil {
     }
 
     Color getColor(MultisigSigner item) {
-      final base = item.innerVaultId != null ? ColorUtil.getColorByIndex(item.colorIndex ?? 0) : CoconutColors.gray300;
+      final base =
+          item.innerVaultId != null
+              ? WalletVisualStyleUtil.getColorByIndex(item.colorIndex ?? 0)
+              : CoconutColors.gray300;
       return lighten ? lightenColor(base) : base;
     }
 
-    // 2개인 경우
     if (list.length == 2) {
       return [getColor(list[0]), getColor(list[1])];
     }

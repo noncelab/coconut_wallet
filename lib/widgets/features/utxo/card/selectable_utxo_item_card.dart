@@ -4,7 +4,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -67,14 +67,25 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: _isPressing ? context.coconutColors.surfacePressed : context.coconutColors.surfaceCard,
+          color:
+              _isPressing
+                  ? context.coconutColors.surfacePressOverlay
+                  : context.coconutColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             width: 1,
-            color: widget.isSelected ? context.coconutColors.borderStrong : context.coconutColors.border,
+            color:
+                widget.isSelected
+                    ? context.coconutColors.borderStrong
+                    : context.coconutColors.border,
           ),
         ),
-        padding: const EdgeInsets.only(top: 23, bottom: 22, left: 18, right: 23),
+        padding: const EdgeInsets.only(
+          top: 23,
+          bottom: 22,
+          left: 18,
+          right: 23,
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -86,13 +97,16 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        widget.currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                        style: CoconutTypography.heading4_18_NumberBold.setColor(context.coconutColors.primaryText),
+                        widget.currentUnit.displayBitcoinAmount(
+                          widget.utxo.amount,
+                        ),
+                        style: CoconutTypography.heading4_18_NumberBold
+                            .setColor(context.coconutColors.primaryText),
                       ),
                       CoconutLayout.spacing_100w,
                       if (widget.utxo.status == UtxoStatus.incoming)
                         CoconutChip(
-                          color: context.coconutColors.infoChipBackground,
+                          color: context.coconutColors.surfaceInfoChip,
                           label: t.status_receiving,
                           labelColor: context.coconutColors.receivingColor,
                           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -104,7 +118,9 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                     children: [
                       Text(
                         dateString[0],
-                        style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                        style: CoconutTypography.body3_12_Number.setColor(
+                          context.coconutColors.secondaryText,
+                        ),
                       ),
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -114,7 +130,9 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                       ),
                       Text(
                         dateString[1],
-                        style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                        style: CoconutTypography.body3_12_Number.setColor(
+                          context.coconutColors.secondaryText,
+                        ),
                       ),
                     ],
                   ),
@@ -125,12 +143,23 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                       child: Wrap(
                         spacing: 4,
                         runSpacing: 4,
-                        children: List.generate(widget.utxoTags?.length ?? 0, (index) {
-                          Color foregroundColor = tagColorPalette[widget.utxoTags?[index].colorIndex ?? 0];
+                        children: List.generate(widget.utxoTags?.length ?? 0, (
+                          index,
+                        ) {
+                          Color foregroundColor =
+                              tagColorPalette[widget
+                                      .utxoTags?[index]
+                                      .colorIndex ??
+                                  0];
                           return IntrinsicWidth(
                             child: CoconutChip(
                               minWidth: 40,
-                              color: CoconutColors.backgroundColorPaletteDark[widget.utxoTags?[index].colorIndex ?? 0],
+                              color:
+                                  CoconutColors
+                                      .backgroundColorPaletteDark[widget
+                                          .utxoTags?[index]
+                                          .colorIndex ??
+                                      0],
                               borderColor: foregroundColor,
                               label: '#${widget.utxoTags?[index].name ?? ''}',
                               labelSize: 12,
@@ -147,7 +176,9 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
             SvgPicture.asset(
               CommonFormIconPath.circleCheck,
               colorFilter: ColorFilter.mode(
-                widget.isSelected ? context.coconutColors.primaryText : context.coconutColors.primaryText.withAlpha(40),
+                widget.isSelected
+                    ? context.coconutColors.primaryText
+                    : context.coconutColors.primaryText.withAlpha(40),
                 BlendMode.srcIn,
               ),
             ),

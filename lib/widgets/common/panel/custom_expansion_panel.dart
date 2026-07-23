@@ -57,7 +57,7 @@ class _CustomExpansionPanelState extends State<CustomExpansionPanel> {
           child: Container(
             color:
                 (isPressed || widget.isChildPressed)
-                    ? context.coconutColors.surfacePressed
+                    ? context.coconutColors.surfacePressOverlay
                     : context.coconutColors.surface,
             padding: widget.padding,
             child: widget.unExpansionWidget,

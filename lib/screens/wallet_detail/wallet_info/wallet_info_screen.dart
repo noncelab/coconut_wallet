@@ -356,16 +356,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     final result = await showModalBottomSheet<String>(
       context: context,
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: WalletAddMfpInputBottomSheet(
-            onComplete: (text) {
-              Navigator.pop(context, text);
-            },
-          ),
+        return WalletAddMfpInputBottomSheet(
+          onComplete: (text) {
+            Navigator.pop(context, text);
+          },
         );
       },
-      backgroundColor: context.coconutColors.background,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
@@ -580,8 +577,9 @@ class _WalletInfoStatsSection extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ShrinkAnimationButton(
-                  defaultColor: colors.surfaceCard,
-                  pressedColor: colors.surfacePressed,
+                  defaultColor: colors.surface,
+                  pressedOverlayColor: colors.surfacePressOverlay,
+                  pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
                   borderRadius: 24,
                   onPressed: () {
                     Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
@@ -593,8 +591,9 @@ class _WalletInfoStatsSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ShrinkAnimationButton(
-            defaultColor: colors.surfaceCard,
-            pressedColor: colors.surfacePressed,
+            defaultColor: colors.surface,
+            pressedOverlayColor: colors.surfacePressOverlay,
+            pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
             borderRadius: 24,
             onPressed: onEditTargetTap,
             child: _TargetQuantityCard(
@@ -623,7 +622,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 16, 20),
       decoration: BoxDecoration(
-        color: transparentBackground ? Colors.transparent : context.coconutColors.surfaceCard,
+        color: transparentBackground ? Colors.transparent : context.coconutColors.surface,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -680,7 +679,7 @@ class _TargetQuantityCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
           decoration: BoxDecoration(
-            color: transparentBackground ? Colors.transparent : context.coconutColors.tertiaryText,
+            color: transparentBackground ? Colors.transparent : context.coconutColors.surfaceInfoChip,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(

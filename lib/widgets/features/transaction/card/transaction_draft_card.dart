@@ -10,7 +10,7 @@ import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
@@ -43,7 +43,8 @@ class TransactionDraftCard extends StatefulWidget {
   State<TransactionDraftCard> createState() => _TransactionDraftCardState();
 }
 
-class _TransactionDraftCardState extends State<TransactionDraftCard> with SingleTickerProviderStateMixin {
+class _TransactionDraftCardState extends State<TransactionDraftCard>
+    with SingleTickerProviderStateMixin {
   late double _dragOffset;
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -56,11 +57,13 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
   void initState() {
     super.initState();
     _dragOffset = 0;
-    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
-    _animation = Tween<double>(
-      begin: 0,
-      end: 0,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _animation = Tween<double>(begin: 0, end: 0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -88,14 +91,14 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     _animationController.stop();
     _animationController.reset();
 
-    _animation = Tween<double>(
-      begin: _dragOffset,
-      end: 0,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+    _animation = Tween<double>(begin: _dragOffset, end: 0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
     _animation.addListener(_animationListener);
     _animation.addStatusListener((status) {
-      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
+      if (status == AnimationStatus.completed ||
+          status == AnimationStatus.dismissed) {
         _animation.removeListener(_animationListener);
         _isAnimating = false;
       }
@@ -117,7 +120,9 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     _animation = Tween<double>(
       begin: _dragOffset,
       end: -screenWidth * _swipeStopPosition,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
     _animation.addListener(_animationListener);
     _animation.addStatusListener((status) {
@@ -145,14 +150,19 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     final screenWidth = MediaQuery.of(context).size.width;
     final walletId = widget.transactionDraft.walletId;
     // recipientListJson에서 amount 합산 (BTC 단위)
-    final int totalAmountSats = widget.transactionDraft.recipients.fold<int>(0, (sum, recipient) {
-      return sum + recipient.amount;
-    });
+    final int totalAmountSats = widget.transactionDraft.recipients.fold<int>(
+      0,
+      (sum, recipient) {
+        return sum + recipient.amount;
+      },
+    );
     final feeRate = widget.transactionDraft.feeRate;
     final isMaxMode = widget.transactionDraft.isMaxMode;
     final recipients = widget.transactionDraft.recipients;
     final createdAt = widget.transactionDraft.createdAt;
-    final formattedCreatedAt = DateTimeUtil.formatTimestamp(createdAt.toLocal());
+    final formattedCreatedAt = DateTimeUtil.formatTimestamp(
+      createdAt.toLocal(),
+    );
 
     String walletName;
     int iconIndex;
@@ -226,7 +236,10 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                     child: SvgPicture.asset(
                       CommonActionIconPath.trash,
                       width: 24,
-                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                      colorFilter: const ColorFilter.mode(
+                        CoconutColors.white,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                 ),
@@ -236,12 +249,18 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                   if (details.delta.dx < 0) {
                     // 왼쪽으로 드래그
                     setState(() {
-                      _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth, 0);
+                      _dragOffset = (_dragOffset + details.delta.dx).clamp(
+                        -screenWidth,
+                        0,
+                      );
                     });
                   } else if (details.delta.dx > 0 && _dragOffset < 0) {
                     // 오른쪽으로 드래그 (복원)
                     setState(() {
-                      _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth, 0);
+                      _dragOffset = (_dragOffset + details.delta.dx).clamp(
+                        -screenWidth,
+                        0,
+                      );
                     });
                   }
                 },
@@ -268,10 +287,13 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                   offset: Offset(_dragOffset, 0),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: context.coconutColors.surfaceCard,
+                      color: context.coconutColors.surface,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Sizes.size24,
+                      vertical: Sizes.size16,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -300,7 +322,10 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: context.coconutColors.secondaryText, width: 1),
+                      border: Border.all(
+                        color: context.coconutColors.secondaryText,
+                        width: 1,
+                      ),
                     ),
                   ),
                 ),
@@ -311,20 +336,32 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     );
   }
 
-  Widget _buildTimestampAndMax(List<String> transactionTimeStamp, bool isMaxMode) {
+  Widget _buildTimestampAndMax(
+    List<String> transactionTimeStamp,
+    bool isMaxMode,
+  ) {
     if (transactionTimeStamp.isEmpty) {
       return const SizedBox.shrink();
     }
-    final textStyle = CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText);
+    final textStyle = CoconutTypography.body3_12_Number.setColor(
+      context.coconutColors.secondaryText,
+    );
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(transactionTimeStamp[0], style: textStyle),
         CoconutLayout.spacing_200w,
-        Container(width: 1, height: 10, color: context.coconutColors.tertiaryText),
+        Container(
+          width: 1,
+          height: 10,
+          color: context.coconutColors.divider,
+        ),
         CoconutLayout.spacing_200w,
         Text(transactionTimeStamp[1], style: textStyle),
-        if (isMaxMode) ...[const Spacer(), Text(t.transaction_draft.max, style: textStyle)],
+        if (isMaxMode) ...[
+          const Spacer(),
+          Text(t.transaction_draft.max, style: textStyle),
+        ],
       ],
     );
   }
@@ -338,7 +375,10 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     List<MultisigSigner>? signers,
     BitcoinUnit currentUnit,
   ) {
-    String amountString = currentUnit.displayBitcoinAmount(amountSats, withUnit: true);
+    String amountString = currentUnit.displayBitcoinAmount(
+      amountSats,
+      withUnit: true,
+    );
     if (amountString != '0 BTC') {
       amountString = '- $amountString';
     } else {
@@ -354,13 +394,18 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                 walletImportSource: walletImportSource,
                 iconIndex: iconIndex,
                 colorIndex: colorIndex,
-                gradientColors: signers != null ? ColorUtil.getGradientColors(signers) : null,
+                gradientColors:
+                    signers != null
+                        ? WalletVisualStyleUtil.getGradientColors(signers)
+                        : null,
               ),
               CoconutLayout.spacing_150w,
               Expanded(
                 child: Text(
                   walletName,
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                  style: CoconutTypography.body2_14.setColor(
+                    context.coconutColors.primaryText,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -375,7 +420,9 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
             alignment: Alignment.centerRight,
             child: Text(
               amountString,
-              style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+              style: CoconutTypography.body1_16_Number.setColor(
+                context.coconutColors.primaryText,
+              ),
             ),
           ),
         ),
@@ -396,9 +443,16 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
             address: firstRecipientAddress,
             count: recipientListJson.length - 1,
           ),
-          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+          style: CoconutTypography.body3_12.setColor(
+            context.coconutColors.primaryText,
+          ),
         )
-        : Text(firstRecipientAddress, style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText));
+        : Text(
+          firstRecipientAddress,
+          style: CoconutTypography.body3_12.setColor(
+            context.coconutColors.primaryText,
+          ),
+        );
   }
 
   Widget _buildFeeRate(double feeRate) {
@@ -406,23 +460,32 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
       children: [
         Text(
           t.transaction_draft.fee_rate,
-          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+          style: CoconutTypography.body3_12.setColor(
+            context.coconutColors.secondaryText,
+          ),
         ),
         CoconutLayout.spacing_100w,
         Text(
           _formatFeeRateForDisplay(feeRate),
-          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+          style: CoconutTypography.body3_12.setColor(
+            context.coconutColors.primaryText,
+          ),
         ),
         CoconutLayout.spacing_100w,
         Text(
           t.transaction_draft.sats_per_vbyte,
-          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+          style: CoconutTypography.body3_12.setColor(
+            context.coconutColors.primaryText,
+          ),
         ),
       ],
     );
   }
 
   String _formatFeeRateForDisplay(double feeRate) {
-    return feeRate.toString().replaceAll('.', NumberFormatConfig.instance.decimalSeparator);
+    return feeRate.toString().replaceAll(
+      '.',
+      NumberFormatConfig.instance.decimalSeparator,
+    );
   }
 }

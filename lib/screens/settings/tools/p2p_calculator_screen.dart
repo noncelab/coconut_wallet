@@ -35,6 +35,7 @@ import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
@@ -813,7 +814,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               Expanded(
                 child: ShrinkAnimationButton(
                   borderRadius: 8,
-                  pressedColor: context.coconutColors.surfacePressed,
+                  pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                   onPressed: () {
                     _onSendButtonPressed(satsAmount);
                   },
@@ -825,8 +826,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                         SvgPicture.asset(
                           FeatureTransactionIconPath.sendPlane,
                           colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                          width: 14,
-                          height: 14,
+                          width: 16,
+                          height: 16,
                         ),
                         CoconutLayout.spacing_200w,
                         Text(
@@ -842,7 +843,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               Expanded(
                 child: ShrinkAnimationButton(
                   borderRadius: 8,
-                  pressedColor: context.coconutColors.surfacePressed,
+                  pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                   onPressed: () {
                     _captureAndShareBill();
                   },
@@ -854,8 +855,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                         SvgPicture.asset(
                           CommonActionIconPath.export,
                           colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                          width: 14,
-                          height: 14,
+                          width: 16,
+                          height: 16,
                         ),
                         CoconutLayout.spacing_200w,
                         Text(
@@ -897,7 +898,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             context: context,
             title: t.utility.p2p_calculator.calculator,
             actionButtonList: [
-              IconButton(
+              CoconutAppBarActionButton(
                 onPressed: () {
                   _viewModel.toggleP2PMode();
                   if (_viewModel.isOfflineMode) {
@@ -925,7 +926,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                   },
                 ),
               ),
-              IconButton(
+              CoconutAppBarActionButton(
                 onPressed: _onShowTransactionBill,
                 icon: SvgPicture.asset(
                   FeatureSettingsIconPath.handShake,
@@ -991,7 +992,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         _buildCurrentPriceWidget(isVisible),
         if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
-            pressedColor: context.coconutColors.surfacePressed,
+            pressedOverlayColor: context.coconutColors.surfacePressOverlay,
             onPressed: () async {
               await _viewModel.onFiatUnitChange();
               _resetCalculator();
@@ -1226,7 +1227,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     return ShrinkAnimationButton(
       onPressed: _changeInputAsset,
       defaultColor: context.coconutColors.surfaceButton,
-      pressedColor: context.coconutColors.surfacePressed,
+      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
       borderRadius: borderRadius,
       childBuilder:
           (context, isPressed) => SizedBox(
@@ -1277,10 +1278,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               curve: Curves.easeInOut,
               constraints: BoxConstraints(minHeight: fixedHeight ?? 175),
               height: fixedHeight,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: context.coconutColors.inputSurface,
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
               child: Center(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -1422,7 +1420,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           constraints: BoxConstraints(minHeight: fixedHeight),
           height: fixedHeight,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.inputSurface),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
           child: child,
         ),
       ),
@@ -1552,7 +1550,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         child: Container(
           width: MediaQuery.of(context).size.width,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          color: context.coconutColors.surfaceCard,
+          color: context.coconutColors.surface,
           child: Row(
             children: [
               for (int i = 0; i < buttonData.length; i++) ...[

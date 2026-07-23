@@ -275,7 +275,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
       useSafeArea: true,
       isScrollControlled: true,
       enableDrag: true,
-      backgroundColor: context.coconutColors.backgroundSubtle,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       context: context,
       child:
           details != null

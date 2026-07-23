@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/widgets/features/utxo/selector/custom_tag_vertical_selector.dart';
+import 'package:coconut_wallet/widgets/features/utxo/card/utxo_tag_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -12,9 +12,7 @@ void main() {
     ];
 
     testWidgets('태그 리스트 렌더링', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: CustomTagVerticalSelector(tags: tags, onSelectedTag: (tag) {}))),
-      );
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: UtxoTagCard(tags: tags, onSelectedTag: (tag) {}))));
 
       expect(find.text('#Tag1'), findsOneWidget);
       expect(find.text('#Tag2'), findsOneWidget);
@@ -27,7 +25,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CustomTagVerticalSelector(
+            body: UtxoTagCard(
               tags: tags,
               onSelectedTag: (tag) {
                 selectedTag = tag;
@@ -71,17 +69,13 @@ void main() {
     });*/
 
     testWidgets('usedCount = 0일 경우 subtitle 표시 제한', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: CustomTagVerticalSelector(tags: tags, onSelectedTag: (tag) {}))),
-      );
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: UtxoTagCard(tags: tags, onSelectedTag: (tag) {}))));
 
       expect(find.text('0개에 적용'), findsNothing);
     });
 
     testWidgets('usedCount > 0일 경우 subtitle 표시', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: CustomTagVerticalSelector(tags: tags, onSelectedTag: (tag) {}))),
-      );
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: UtxoTagCard(tags: tags, onSelectedTag: (tag) {}))));
 
       expect(find.text('5개에 적용'), findsOneWidget);
       expect(find.text('2개에 적용'), findsOneWidget);

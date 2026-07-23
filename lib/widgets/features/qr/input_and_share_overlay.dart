@@ -209,7 +209,7 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
                                   key: widget.shareButtonKey,
                                   onPressed: widget.onShareTap,
                                   borderRadius: 8,
-                                  pressedColor: colors.surfacePressed,
+                                  pressedOverlayColor: colors.surfacePressOverlay,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
                                     child: Row(
@@ -218,6 +218,8 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> with Widget
                                       children: [
                                         SvgPicture.asset(
                                           CommonActionIconPath.export,
+                                          width: 16,
+                                          height: 16,
                                           colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
                                         ),
                                         CoconutLayout.spacing_100w,

@@ -4,7 +4,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -15,7 +15,12 @@ class LockedUtxoItemCard extends StatefulWidget {
   final List<UtxoTag>? utxoTags;
   final BitcoinUnit currentUnit;
 
-  const LockedUtxoItemCard({super.key, required this.utxo, this.utxoTags, required this.currentUnit});
+  const LockedUtxoItemCard({
+    super.key,
+    required this.utxo,
+    this.utxoTags,
+    required this.currentUnit,
+  });
 
   @override
   State<LockedUtxoItemCard> createState() => _UtxoSelectableCardState();
@@ -50,9 +55,13 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      widget.currentUnit.displayBitcoinAmount(widget.utxo.amount),
+                      widget.currentUnit.displayBitcoinAmount(
+                        widget.utxo.amount,
+                      ),
                       style: CoconutTypography.heading4_18_NumberBold.setColor(
-                        context.coconutColors.primaryText.withValues(alpha: 0.3),
+                        context.coconutColors.primaryText.withValues(
+                          alpha: 0.3,
+                        ),
                       ),
                     ),
                     CoconutLayout.spacing_100w,
@@ -71,19 +80,25 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                     Text(
                       dateString[0],
                       style: CoconutTypography.body3_12_Number.setColor(
-                        context.coconutColors.primaryText.withValues(alpha: 0.3),
+                        context.coconutColors.primaryText.withValues(
+                          alpha: 0.3,
+                        ),
                       ),
                     ),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
-                      color: context.coconutColors.primaryText.withValues(alpha: 0.3),
+                      color: context.coconutColors.primaryText.withValues(
+                        alpha: 0.3,
+                      ),
                       width: 1,
                       height: 10,
                     ),
                     Text(
                       dateString[1],
                       style: CoconutTypography.body3_12_Number.setColor(
-                        context.coconutColors.primaryText.withValues(alpha: 0.3),
+                        context.coconutColors.primaryText.withValues(
+                          alpha: 0.3,
+                        ),
                       ),
                     ),
                   ],
@@ -95,12 +110,22 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                     child: Wrap(
                       spacing: 4,
                       runSpacing: 4,
-                      children: List.generate(widget.utxoTags?.length ?? 0, (index) {
-                        Color foregroundColor = tagColorPalette[widget.utxoTags?[index].colorIndex ?? 0];
+                      children: List.generate(widget.utxoTags?.length ?? 0, (
+                        index,
+                      ) {
+                        Color foregroundColor =
+                            tagColorPalette[widget
+                                    .utxoTags?[index]
+                                    .colorIndex ??
+                                0];
                         return IntrinsicWidth(
                           child: CoconutChip(
                             minWidth: 40,
-                            color: CoconutColors.backgroundColorPaletteDark[widget.utxoTags?[index].colorIndex ?? 0],
+                            color:
+                                CoconutColors.backgroundColorPaletteDark[widget
+                                        .utxoTags?[index]
+                                        .colorIndex ??
+                                    0],
                             borderColor: foregroundColor,
                             label: '#${widget.utxoTags?[index].name ?? ''}',
                             labelSize: 12,
@@ -118,7 +143,10 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
             CommonSecurityIconPath.lockSimple,
             width: 24,
             height: 24,
-            colorFilter: ColorFilter.mode(CoconutColors.white.withValues(alpha: 0.3), BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(
+              CoconutColors.white.withValues(alpha: 0.3),
+              BlendMode.srcIn,
+            ),
           ),
         ],
       ),

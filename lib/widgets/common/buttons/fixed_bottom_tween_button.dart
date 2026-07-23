@@ -133,9 +133,9 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                           widget.leftButtonClicked();
                         },
                         isActive: widget.isLeftButtonActive,
-                        defaultColor: widget.leftButtonBackgroundColor ?? colors.secondaryButtonBackground,
-                        pressedColor: getDarkerColor(
-                          widget.leftButtonBackgroundColor ?? colors.secondaryButtonBackground,
+                        defaultColor: widget.leftButtonBackgroundColor ?? colors.buttonSecondaryBackground,
+                        pressedOverlayColor: getDarkerColor(
+                          widget.leftButtonBackgroundColor ?? colors.buttonSecondaryBackground,
                         ),
                         disabledColor: colors.surfaceDisabled,
                         borderRadius: 12,
@@ -149,8 +149,8 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                                 widget.leftText,
                                 style: CoconutTypography.body1_16_Bold.setColor(
                                   widget.isLeftButtonActive
-                                      ? (widget.leftButtonTextColor ?? colors.secondaryButtonText)
-                                      : colors.tertiaryText,
+                                      ? (widget.leftButtonTextColor ?? colors.buttonSecondaryForeground)
+                                      : colors.mutedText,
                                 ),
                               ),
                             ),
@@ -169,12 +169,16 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                             widget.rightButtonClicked();
                           },
                           isActive: widget.isRightButtonActive,
-                          defaultColor: widget.rightButtonBackgroundColor ?? colors.actionButtonBackground,
-                          pressedColor:
+                          defaultColor: widget.rightButtonBackgroundColor ?? colors.buttonPrimaryBackground,
+                          pressedOverlayColor:
                               widget.rightButtonBackgroundColor != null
                                   ? getDarkerColor(widget.rightButtonBackgroundColor!)
-                                  : colors.actionButtonPressed,
-                          disabledColor: colors.actionButtonDisabled,
+                                  : colors.buttonPrimaryPressOverlay,
+                          pressedOverlayOpacity:
+                              widget.rightButtonBackgroundColor == null
+                                  ? colors.buttonPrimaryPressOverlayOpacity
+                                  : null,
+                          disabledColor: colors.buttonPrimaryDisabledBackground,
                           borderRadius: 12,
                           child: SizedBox(
                             width: rightButtonWidth,
@@ -188,8 +192,8 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                                   style: CoconutTypography.body2_14_Bold
                                       .setColor(
                                         widget.isRightButtonActive
-                                            ? (widget.rightButtonTextColor ?? colors.actionButtonText)
-                                            : colors.actionButtonDisabledText,
+                                            ? (widget.rightButtonTextColor ?? colors.buttonPrimaryForeground)
+                                            : colors.buttonPrimaryDisabledForeground,
                                       )
                                       .copyWith(height: 1.0),
                                 ),

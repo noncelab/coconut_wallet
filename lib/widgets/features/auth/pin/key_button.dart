@@ -3,7 +3,6 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart' show MyColors;
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -86,7 +85,7 @@ class _KeyButtonState extends State<KeyButton> {
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          color: _isPressed ? MyColors.defaultBackground : Colors.transparent, // 버튼의 상태에 따라 색상 변경
+          color: _isPressed ? context.coconutColors.buttonPrimaryPressOverlay : Colors.transparent,
         ),
         child: Center(
           child:

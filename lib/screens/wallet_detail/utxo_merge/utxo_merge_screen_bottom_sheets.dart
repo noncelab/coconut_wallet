@@ -21,37 +21,47 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     vibrateExtraLight();
 
     try {
-      final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<UtxoMergeMethod>(
-        context: context,
-        backgroundColor: context.coconutColors.surfaceBottomSheet,
-        title: t.merge_utxos_screen.merge_method_bottomsheet.title,
-        items: const [UtxoMergeMethod.smallAmounts, UtxoMergeMethod.sameTag, UtxoMergeMethod.sameAddress],
-        showSurroundings: false,
-        initiallySelectedId: _viewModel.currentMethod,
-        allowConfirmWhenSelectionUnchanged: _viewModel.mergeState == MergeState.idle,
-        getItemId: (item) => item,
-        initialChildSize: 0.5,
-        minChildSize: 0.499,
-        maxChildSize: 0.9,
-        confirmText: t.done,
-        itemBuilder: (context, item, isSelected, onTap) {
-          final isTagMergeItem = item == UtxoMergeMethod.sameTag;
-          final isAddressMergeItem = item == UtxoMergeMethod.sameAddress;
-          final isDisabled =
-              (isTagMergeItem && !_viewModel.hasMergeableTaggedUtxos) ||
-              (isAddressMergeItem && !_viewModel.hasSameAddressUtxos);
+      final selectedItem =
+          await CommonBottomSheets.showSelectableDraggableSheet<
+            UtxoMergeMethod
+          >(
+            context: context,
+            backgroundColor: context.coconutColors.surfaceBottomSheet,
+            title: t.merge_utxos_screen.merge_method_bottomsheet.title,
+            items: const [
+              UtxoMergeMethod.smallAmounts,
+              UtxoMergeMethod.sameTag,
+              UtxoMergeMethod.sameAddress,
+            ],
+            showSurroundings: false,
+            initiallySelectedId: _viewModel.currentMethod,
+            allowConfirmWhenSelectionUnchanged:
+                _viewModel.mergeState == MergeState.idle,
+            getItemId: (item) => item,
+            initialChildSize: 0.5,
+            minChildSize: 0.499,
+            maxChildSize: 0.9,
+            confirmText: t.done,
+            itemBuilder: (context, item, isSelected, onTap) {
+              final isTagMergeItem = item == UtxoMergeMethod.sameTag;
+              final isAddressMergeItem = item == UtxoMergeMethod.sameAddress;
+              final isDisabled =
+                  (isTagMergeItem && !_viewModel.hasMergeableTaggedUtxos) ||
+                  (isAddressMergeItem && !_viewModel.hasSameAddressUtxos);
 
-          return SelectableBottomSheetTextItem(
-            isSelected: isSelected,
-            onTap: onTap,
-            isDisabled: isDisabled,
-            child: Text(
-              _getCurrentMethodText(item)!,
-              style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
-            ),
+              return SelectableBottomSheetTextItem(
+                isSelected: isSelected,
+                onTap: onTap,
+                isDisabled: isDisabled,
+                child: Text(
+                  _getCurrentMethodText(item)!,
+                  style: CoconutTypography.body2_14_Bold.setColor(
+                    context.coconutColors.primaryText,
+                  ),
+                ),
+              );
+            },
           );
-        },
-      );
 
       if (selectedItem != null && context.mounted) {
         final nextStep = _nextStepForMergeMethod(selectedItem);
@@ -82,20 +92,30 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
 
     vibrateExtraLight();
 
-    final firstAvailableRecommendedRange = _viewModel.firstAvailableRecommendedAmountRange;
+    final firstAvailableRecommendedRange =
+        _viewModel.firstAvailableRecommendedAmountRange;
     final hasRecommendedCandidates = firstAvailableRecommendedRange != null;
     final currentAmountRange = _viewModel.currentAmountRange;
     const amountRecommendedExtent = 0.75;
     const amountCustomExtent = 0.9;
-    var selectedTabIndex = !hasRecommendedCandidates || currentAmountRange == UtxoAmountRange.custom ? 1 : 0;
+    var selectedTabIndex =
+        !hasRecommendedCandidates ||
+                currentAmountRange == UtxoAmountRange.custom
+            ? 1
+            : 0;
     DraggableScrollableController? draggableController;
     UtxoAmountRange? selectedRecommendedRange =
-        UtxoMergeViewModel.recommendedAmountRangeItems.contains(currentAmountRange) &&
+        UtxoMergeViewModel.recommendedAmountRangeItems.contains(
+                  currentAmountRange,
+                ) &&
                 _viewModel.hasCandidateUtxosForAmountRange(currentAmountRange)
             ? currentAmountRange
             : firstAvailableRecommendedRange;
     final customAmountController = TextEditingController(
-      text: _viewModel.customAmountRangeText == null ? '' : _viewModel.customAmountRangeText!.toBtcDisplayString(),
+      text:
+          _viewModel.customAmountRangeText == null
+              ? ''
+              : _viewModel.customAmountRangeText!.toBtcDisplayString(),
     );
     final customAmountFocusNode = FocusNode();
     var isCustomAmountLessThan = _viewModel.isCustomAmountLessThan;
@@ -109,128 +129,155 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     }
 
     try {
-      final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<_AmountRangeSelectionResult>(
-        context: context,
-        backgroundColor: context.coconutColors.surfaceBottomSheet,
-        title: t.merge_utxos_screen.amount_range_bottomsheet.title,
-        initialChildSize: 0.75,
-        minChildSize: 0.749,
-        maxChildSize: 0.9,
-        adjustForKeyboardInset: false,
-        onControllerReady: (controller) {
-          draggableController = controller;
-        },
-        childBuilder:
-            (scrollController) => StatefulBuilder(
-              builder: (context, modalSetState) {
-                final customAmountText = normalizeNumTextForNumParsing(customAmountController.text.trim());
-                final customAmountValue = double.tryParse(customAmountText);
-                final hasCustomAmountInput =
-                    customAmountText.isNotEmpty && customAmountValue != null && customAmountValue != 0;
-                final matchingCustomAmountUtxoCount =
-                    hasCustomAmountInput
-                        ? _viewModel.candidateUtxoCountForCustomAmountText(
-                          customAmountText,
-                          isLessThan: isCustomAmountLessThan,
-                        )
-                        : 0;
-                final hasMatchingCustomAmountUtxos = matchingCustomAmountUtxoCount >= 2;
-                final customAmountErrorText =
-                    !hasCustomAmountInput
-                        ? null
-                        : matchingCustomAmountUtxoCount == 0
-                        ? t.merge_utxos_screen.no_utxos_for_amount_range
-                        : matchingCustomAmountUtxoCount == 1
-                        ? t.merge_utxos_screen.single_utxo_for_amount_range
-                        : null;
-
-                return _SegmentedBottomSheetBody(
-                  scrollController: scrollController,
-                  selectedTabIndex: selectedTabIndex,
-                  confirmText: t.done,
-                  isConfirmEnabled:
-                      selectedTabIndex == 0 ? selectedRecommendedRange != null : hasMatchingCustomAmountUtxos,
-                  onConfirm: () {
-                    if (selectedTabIndex == 0) {
-                      if (selectedRecommendedRange == null) return;
-                      Navigator.pop(context, _AmountRangeSelectionResult(range: selectedRecommendedRange!));
-                      return;
-                    }
-
-                    if (customAmountText.isEmpty) return;
-                    Navigator.pop(
-                      context,
-                      _AmountRangeSelectionResult(
-                        range: UtxoAmountRange.custom,
-                        customAmountText: customAmountText,
-                        isLessThan: isCustomAmountLessThan,
-                      ),
+      final selectedItem =
+          await CommonBottomSheets.showSelectableDraggableSheet<
+            _AmountRangeSelectionResult
+          >(
+            context: context,
+            backgroundColor: context.coconutColors.surfaceBottomSheet,
+            title: t.merge_utxos_screen.amount_range_bottomsheet.title,
+            initialChildSize: 0.75,
+            minChildSize: 0.749,
+            maxChildSize: 0.9,
+            adjustForKeyboardInset: false,
+            onControllerReady: (controller) {
+              draggableController = controller;
+            },
+            childBuilder:
+                (scrollController) => StatefulBuilder(
+                  builder: (context, modalSetState) {
+                    final customAmountText = normalizeNumTextForNumParsing(
+                      customAmountController.text.trim(),
                     );
-                  },
-                  onTabSelected: (index) {
-                    modalSetState(() {
-                      selectedTabIndex = index;
-                    });
-                    final targetExtent = index == 1 ? amountCustomExtent : amountRecommendedExtent;
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      final controller = draggableController;
-                      if (controller != null && controller.isAttached) {
-                        unawaited(
-                          controller.animateTo(
-                            targetExtent,
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOutCubic,
+                    final customAmountValue = double.tryParse(customAmountText);
+                    final hasCustomAmountInput =
+                        customAmountText.isNotEmpty &&
+                        customAmountValue != null &&
+                        customAmountValue != 0;
+                    final matchingCustomAmountUtxoCount =
+                        hasCustomAmountInput
+                            ? _viewModel.candidateUtxoCountForCustomAmountText(
+                              customAmountText,
+                              isLessThan: isCustomAmountLessThan,
+                            )
+                            : 0;
+                    final hasMatchingCustomAmountUtxos =
+                        matchingCustomAmountUtxoCount >= 2;
+                    final customAmountErrorText =
+                        !hasCustomAmountInput
+                            ? null
+                            : matchingCustomAmountUtxoCount == 0
+                            ? t.merge_utxos_screen.no_utxos_for_amount_range
+                            : matchingCustomAmountUtxoCount == 1
+                            ? t.merge_utxos_screen.single_utxo_for_amount_range
+                            : null;
+
+                    return _SegmentedBottomSheetBody(
+                      scrollController: scrollController,
+                      selectedTabIndex: selectedTabIndex,
+                      confirmText: t.done,
+                      isConfirmEnabled:
+                          selectedTabIndex == 0
+                              ? selectedRecommendedRange != null
+                              : hasMatchingCustomAmountUtxos,
+                      onConfirm: () {
+                        if (selectedTabIndex == 0) {
+                          if (selectedRecommendedRange == null) return;
+                          Navigator.pop(
+                            context,
+                            _AmountRangeSelectionResult(
+                              range: selectedRecommendedRange!,
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (customAmountText.isEmpty) return;
+                        Navigator.pop(
+                          context,
+                          _AmountRangeSelectionResult(
+                            range: UtxoAmountRange.custom,
+                            customAmountText: customAmountText,
+                            isLessThan: isCustomAmountLessThan,
                           ),
                         );
-                      }
-                    });
-                    if (index == 1) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          customAmountFocusNode.requestFocus();
+                      },
+                      onTabSelected: (index) {
+                        modalSetState(() {
+                          selectedTabIndex = index;
+                        });
+                        final targetExtent =
+                            index == 1
+                                ? amountCustomExtent
+                                : amountRecommendedExtent;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          final controller = draggableController;
+                          if (controller != null && controller.isAttached) {
+                            unawaited(
+                              controller.animateTo(
+                                targetExtent,
+                                duration: const Duration(milliseconds: 220),
+                                curve: Curves.easeOutCubic,
+                              ),
+                            );
+                          }
+                        });
+                        if (index == 1) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              customAmountFocusNode.requestFocus();
+                            }
+                          });
+                        } else {
+                          customAmountFocusNode.unfocus();
                         }
-                      });
-                    } else {
-                      customAmountFocusNode.unfocus();
-                    }
+                      },
+                      tabs: [
+                        _BottomSheetTab(
+                          label:
+                              t
+                                  .merge_utxos_screen
+                                  .amount_range_bottomsheet
+                                  .recommendation_range,
+                          child: _buildAmountRangeRecommendationTab(
+                            scrollController: scrollController,
+                            selectedRecommendedRange: selectedRecommendedRange,
+                            onSelectionChanged: (selected) {
+                              modalSetState(() {
+                                selectedRecommendedRange = selected;
+                              });
+                            },
+                          ),
+                        ),
+                        _BottomSheetTab(
+                          label:
+                              t
+                                  .merge_utxos_screen
+                                  .amount_range_bottomsheet
+                                  .custom,
+                          child: _buildCustomAmountTab(
+                            scrollController: scrollController,
+                            controller: customAmountController,
+                            focusNode: customAmountFocusNode,
+                            isLessThan: isCustomAmountLessThan,
+                            errorText: customAmountErrorText,
+                            onAmountChanged: () {
+                              modalSetState(() {});
+                            },
+                            onLessThanToggle: () {
+                              vibrateExtraLight();
+                              modalSetState(() {
+                                isCustomAmountLessThan =
+                                    !isCustomAmountLessThan;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    );
                   },
-                  tabs: [
-                    _BottomSheetTab(
-                      label: t.merge_utxos_screen.amount_range_bottomsheet.recommendation_range,
-                      child: _buildAmountRangeRecommendationTab(
-                        scrollController: scrollController,
-                        selectedRecommendedRange: selectedRecommendedRange,
-                        onSelectionChanged: (selected) {
-                          modalSetState(() {
-                            selectedRecommendedRange = selected;
-                          });
-                        },
-                      ),
-                    ),
-                    _BottomSheetTab(
-                      label: t.merge_utxos_screen.amount_range_bottomsheet.custom,
-                      child: _buildCustomAmountTab(
-                        scrollController: scrollController,
-                        controller: customAmountController,
-                        focusNode: customAmountFocusNode,
-                        isLessThan: isCustomAmountLessThan,
-                        errorText: customAmountErrorText,
-                        onAmountChanged: () {
-                          modalSetState(() {});
-                        },
-                        onLessThanToggle: () {
-                          vibrateExtraLight();
-                          modalSetState(() {
-                            isCustomAmountLessThan = !isCustomAmountLessThan;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-      );
+                ),
+          );
 
       if (selectedItem != null && context.mounted) {
         const nextStep = UtxoMergeStep.selectReceiveAddress;
@@ -264,25 +311,28 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     vibrateExtraLight();
 
     try {
-      final selectedItem = await CommonBottomSheets.showDraggableBottomSheet<TagSelectResult>(
-        context: context,
-        title: t.merge_utxos_screen.select_tag_bottomsheet_title,
-        minChildSize: 0.45,
-        maxChildSize: 0.8,
-        initialChildSize: 0.45,
-        backgroundColor: context.coconutColors.background,
-        adjustForKeyboardInset: false,
-        childBuilder:
-            (scrollController) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-              child: TagSelectBottomSheet(
-                walletId: widget.id,
-                initialSelectedTagName: _viewModel.effectiveSelectedTagName,
-                scrollController: scrollController,
-                useSheetContainer: false,
-              ),
-            ),
-      );
+      final selectedItem =
+          await CommonBottomSheets.showDraggableBottomSheet<TagSelectResult>(
+            context: context,
+            title: t.merge_utxos_screen.select_tag_bottomsheet_title,
+            minChildSize: 0.45,
+            maxChildSize: 0.8,
+            initialChildSize: 0.45,
+            backgroundColor: context.coconutColors.background,
+            adjustForKeyboardInset: false,
+            childBuilder:
+                (scrollController) => MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(textScaler: const TextScaler.linear(1.0)),
+                  child: TagSelectBottomSheet(
+                    walletId: widget.id,
+                    initialSelectedTagName: _viewModel.effectiveSelectedTagName,
+                    scrollController: scrollController,
+                    useSheetContainer: false,
+                  ),
+                ),
+          );
 
       if (selectedItem != null && context.mounted) {
         _setScreenState(() {
@@ -339,11 +389,14 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
 
     final isUsingDirectInput =
         _viewModel.customReceiveAddressText != null &&
-        _viewModel.selectedReceiveAddress == _viewModel.customReceiveAddressText;
+        _viewModel.selectedReceiveAddress ==
+            _viewModel.customReceiveAddressText;
     var selectedTabIndex = isUsingDirectInput ? 1 : 0;
-    String? selectedOwnedAddress = isUsingDirectInput ? null : _viewModel.selectedReceiveAddress;
+    String? selectedOwnedAddress =
+        isUsingDirectInput ? null : _viewModel.selectedReceiveAddress;
     final directInputController = TextEditingController(
-      text: isUsingDirectInput ? (_viewModel.customReceiveAddressText ?? '') : '',
+      text:
+          isUsingDirectInput ? (_viewModel.customReceiveAddressText ?? '') : '',
     );
     final directInputFocusNode = FocusNode();
     _viewModel.validateCustomReceiveAddress(directInputController.text);
@@ -358,14 +411,19 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
 
     const receiveOwnedExtent = 0.6;
     const receiveDirectInputExtent = 0.9;
-    final initialReceiveExtent = selectedTabIndex == 1 ? receiveDirectInputExtent : receiveOwnedExtent;
+    final initialReceiveExtent =
+        selectedTabIndex == 1 ? receiveDirectInputExtent : receiveOwnedExtent;
     DraggableScrollableController? draggableController;
     void animateReceiveSheetTo(double targetExtent) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final controller = draggableController;
         if (controller != null && controller.isAttached) {
           unawaited(
-            controller.animateTo(targetExtent, duration: const Duration(milliseconds: 220), curve: Curves.easeOutCubic),
+            controller.animateTo(
+              targetExtent,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+            ),
           );
         }
       });
@@ -380,7 +438,9 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
 
     _ReceivingAddressSelectionResult? selectedItem;
     try {
-      selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<_ReceivingAddressSelectionResult>(
+      selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<
+        _ReceivingAddressSelectionResult
+      >(
         context: context,
         backgroundColor: context.coconutColors.surfaceBottomSheet,
         title: t.merge_utxos_screen.receive_address,
@@ -404,7 +464,9 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                   confirmText: t.done,
                   confirmSubWidget:
                       selectedTabIndex == 1
-                          ? _buildReceiveAddressValidationSubWidget(directInputController.text.trim())
+                          ? _buildReceiveAddressValidationSubWidget(
+                            directInputController.text.trim(),
+                          )
                           : null,
                   isConfirmEnabled:
                       selectedTabIndex == 0
@@ -416,18 +478,24 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                       if (selectedOwnedAddress == null) return;
                       Navigator.pop(
                         context,
-                        _ReceivingAddressSelectionResult(address: selectedOwnedAddress!, isDirectInput: false),
+                        _ReceivingAddressSelectionResult(
+                          address: selectedOwnedAddress!,
+                          isDirectInput: false,
+                        ),
                       );
                       return;
                     }
 
-                    if (directInputController.text.trim().isEmpty || !_viewModel.isCustomReceiveAddressValidFormat) {
+                    if (directInputController.text.trim().isEmpty ||
+                        !_viewModel.isCustomReceiveAddressValidFormat) {
                       return;
                     }
                     Navigator.pop(
                       context,
                       _ReceivingAddressSelectionResult(
-                        address: normalizeAddress(directInputController.text.trim()),
+                        address: normalizeAddress(
+                          directInputController.text.trim(),
+                        ),
                         isDirectInput: true,
                       ),
                     );
@@ -436,7 +504,10 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                     modalSetState(() {
                       selectedTabIndex = index;
                     });
-                    final targetExtent = index == 1 ? receiveDirectInputExtent : receiveOwnedExtent;
+                    final targetExtent =
+                        index == 1
+                            ? receiveDirectInputExtent
+                            : receiveOwnedExtent;
                     animateReceiveSheetTo(targetExtent);
                     if (index == 1) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -450,7 +521,11 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                   },
                   tabs: [
                     _BottomSheetTab(
-                      label: t.merge_utxos_screen.receive_address_bottomsheet.my_address,
+                      label:
+                          t
+                              .merge_utxos_screen
+                              .receive_address_bottomsheet
+                              .my_address,
                       child: _buildReceiveAddressOwnedTab(
                         scrollController: scrollController,
                         addresses: _viewModel.nextReceiveAddressesOfAllWallets,
@@ -463,7 +538,11 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                       ),
                     ),
                     _BottomSheetTab(
-                      label: t.merge_utxos_screen.receive_address_bottomsheet.custom,
+                      label:
+                          t
+                              .merge_utxos_screen
+                              .receive_address_bottomsheet
+                              .custom,
                       child: _buildReceiveAddressDirectInputTab(
                         scrollController: scrollController,
                         controller: directInputController,
@@ -493,7 +572,9 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
       final confirmedSelection = selectedItem;
       _setScreenState(() {
         _viewModel.setSelectedReceiveAddress(confirmedSelection.address);
-        _viewModel.setCustomReceiveAddressText(confirmedSelection.isDirectInput ? confirmedSelection.address : null);
+        _viewModel.setCustomReceiveAddressText(
+          confirmedSelection.isDirectInput ? confirmedSelection.address : null,
+        );
       });
       unawaited(_viewModel.prepareMergeTransaction());
       return;
@@ -506,7 +587,9 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     if (!_viewModel.isCustomReceiveAddressValidFormat) {
       return Text(
         t.errors.address_error.invalid,
-        style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
+        style: CoconutTypography.body3_12.setColor(
+          context.coconutColors.danger,
+        ),
         textAlign: TextAlign.center,
       );
     }
@@ -514,7 +597,9 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     if (!_viewModel.isCustomReceiveAddressOwnedByAnyWallet) {
       return Text(
         t.merge_utxos_screen.receive_address_bottomsheet.not_your_owned_wallet,
-        style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
+        style: CoconutTypography.body3_12.setColor(
+          context.coconutColors.danger,
+        ),
         textAlign: TextAlign.center,
       );
     }
@@ -551,11 +636,15 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
             children: [
               Text(
                 item.address,
-                style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.primaryText),
+                style: CoconutTypography.body2_14_NumberBold.setColor(
+                  context.coconutColors.primaryText,
+                ),
               ),
               Text(
                 '${item.walletName} • ${item.derivationPath}',
-                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                style: CoconutTypography.body3_12.setColor(
+                  context.coconutColors.secondaryText,
+                ),
               ),
             ],
           ),
@@ -589,26 +678,34 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                 padding: const EdgeInsets.only(left: 16, right: 0),
                 onChanged: onChanged,
                 maxLines: 1,
-                clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                clearButtonVisibility:
+                    CoconutTextFieldClearButtonVisibility.whenNotEmpty,
                 onClear: () {
                   controller.clear();
                   onChanged('');
                 },
                 onSuffixPressed: () async {
-                  final scannedData = await showAddressScannerBottomSheet(context, title: '');
+                  final scannedData = await showAddressScannerBottomSheet(
+                    context,
+                    title: '',
+                  );
                   if (scannedData == null) return;
                   final normalized =
                       scannedData.startsWith('bitcoin:')
                           ? normalizeAddress(parseBip21Uri(scannedData).address)
                           : normalizeAddress(scannedData);
                   controller.text = normalized;
-                  controller.selection = TextSelection.collapsed(offset: controller.text.length);
+                  controller.selection = TextSelection.collapsed(
+                    offset: controller.text.length,
+                  );
                   onChanged(normalized);
                 },
                 suffixIconAsset: CommonActionIconPath.scan,
                 suffixIconColor: context.coconutColors.primaryText,
                 placeholderText: t.send_screen.address_placeholder,
-                isError: controller.text.isNotEmpty && !_viewModel.isCustomReceiveAddressValidFormat,
+                isError:
+                    controller.text.isNotEmpty &&
+                    !_viewModel.isCustomReceiveAddressValidFormat,
               ),
             ),
           ),
@@ -645,12 +742,16 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
             children: [
               Text(
                 _amountRangeText(item),
-                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                style: CoconutTypography.body2_14_Bold.setColor(
+                  context.coconutColors.primaryText,
+                ),
               ),
               if (_amountRangeDescription(item) != null)
                 Text(
                   _amountRangeDescription(item)!,
-                  style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                  style: CoconutTypography.body3_12.setColor(
+                    context.coconutColors.secondaryText,
+                  ),
                 ),
             ],
           ),
@@ -688,11 +789,18 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       style: CoconutTextFieldStyle.underline,
-                      padding: const EdgeInsets.only(left: 5, right: 0, top: 16, bottom: 6),
+                      padding: const EdgeInsets.only(
+                        left: 5,
+                        right: 0,
+                        top: 16,
+                        bottom: 6,
+                      ),
                       onChanged: (_) => onAmountChanged(),
                       errorText: errorText ?? '',
                       isError: errorText != null,
-                      textInputType: const TextInputType.numberWithOptions(decimal: true),
+                      textInputType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       isErrorTextMultiline: true,
                       textInputFormatter: const [BtcAmountInputFormatter()],
                       placeholderText: '',
@@ -715,16 +823,27 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                     child: ShrinkAnimationButton(
                       onPressed: onLessThanToggle,
                       defaultColor: context.coconutColors.surfaceButton,
-                      pressedColor: context.coconutColors.surfacePressed,
+                      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                       borderRadius: 8,
                       borderWidth: 0,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
                         child: Text(
                           isLessThan
-                              ? t.merge_utxos_screen.amount_range_bottomsheet.less_than
-                              : t.merge_utxos_screen.amount_range_bottomsheet.or_less,
-                          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
+                              ? t
+                                  .merge_utxos_screen
+                                  .amount_range_bottomsheet
+                                  .less_than
+                              : t
+                                  .merge_utxos_screen
+                                  .amount_range_bottomsheet
+                                  .or_less,
+                          style: CoconutTypography.body3_12_Bold.setColor(
+                            context.coconutColors.primaryText,
+                          ),
                         ),
                       ),
                     ),

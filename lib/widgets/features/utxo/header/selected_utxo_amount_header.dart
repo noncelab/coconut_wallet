@@ -58,7 +58,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
     final colors = context.coconutColors;
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(color: colors.surfaceCard, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(24)),
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
       child: Row(
         children: [

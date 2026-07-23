@@ -36,7 +36,7 @@ class AnimatedSummaryCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: context.coconutColors.surfaceCard,
+          color: context.coconutColors.surface,
           border: Border.all(color: context.coconutColors.borderStrong, width: 1),
           borderRadius: BorderRadius.circular(12),
         ),

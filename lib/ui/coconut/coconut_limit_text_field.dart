@@ -92,7 +92,7 @@ class CoconutLimitTextField extends StatelessWidget {
               child: Text(
                 '${controller.text.runes.length}/$maxLength',
                 style: CoconutTypography.body3_12_Number.copyWith(
-                  color: controller.text.runes.length == maxLength ? colors.primaryText : colors.tertiaryText,
+                  color: controller.text.runes.length == maxLength ? colors.primaryText : colors.mutedText,
                 ),
               ),
             ),

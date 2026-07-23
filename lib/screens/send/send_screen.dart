@@ -51,6 +51,7 @@ import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_tap_wrapper.dart';
@@ -564,22 +565,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context: context,
       isBottom: true,
       actionButtonList: [
-        SizedBox(
-          height: 40,
-          width: 40,
-          child: IconButton(
-            icon: SvgPicture.asset(
-              CommonMenuIconPath.kebab,
-              colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-            ),
-            onPressed: () {
-              if (_isDropdownMenuVisible) {
-                _setDropdownMenuVisiblility(false);
-              } else {
-                _setDropdownMenuVisiblility(true);
-              }
-            },
+        CoconutAppBarActionButton(
+          icon: SvgPicture.asset(
+            CommonMenuIconPath.kebab,
+            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
           ),
+          onPressed: () {
+            if (_isDropdownMenuVisible) {
+              _setDropdownMenuVisiblility(false);
+            } else {
+              _setDropdownMenuVisiblility(true);
+            }
+          },
         ),
       ],
       onBackPressed: () {
@@ -617,15 +614,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     int selectedUtxoListLength,
   ) {
     final colors = context.coconutColors;
-    final bgColor =
-        isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButtonSecondary : colors.backgroundHighlight;
+    // TODO:
+    // final bgColor =
+    //     isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButtonSecondary : colors.brandAccentBackground;
+    final bgColor = isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButton : colors.brandAccentBackground;
     final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
     final textColor =
         isUtxoSelectionAuto
-            ? colors.surfaceButtonSecondaryText
+            ? colors.surfaceButtonText
+            // ? colors.surfaceButtonSecondaryText
             : selectedUtxoListLength == 0
             ? colors.surfaceButtonText
-            : colors.primaryButtonText;
+            : colors.primaryText;
     final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
 
     return !isUtxoSelectionAuto
@@ -804,7 +804,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         child: Container(
           width: MediaQuery.of(context).size.width,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-          color: context.coconutColors.surfaceCard,
+          color: context.coconutColors.surface,
           child:
               _amountFocusNode.hasFocus ? _buildAmountKeyboardToolbar(context) : _buildFeeRateKeyboardToolbar(context),
         ),
@@ -1283,7 +1283,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return Padding(
       padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 25),
       child: ShrinkAnimationButton(
-        defaultColor: context.coconutColors.surfaceCard,
+        defaultColor: context.coconutColors.surface,
         onPressed: () {
           _viewModel.addRecipient();
           _amountController.text = '';
@@ -1291,7 +1291,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           _setDropdownMenuVisiblility(false);
         },
         child: CustomPaint(
-          painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: context.coconutColors.tertiaryText),
+          painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: context.coconutColors.border),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1442,8 +1442,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                         _viewModel.setMaxMode(!isMaxMode);
                                         _clearFocus();
                                       },
-                                      defaultColor: context.coconutColors.surfaceCard,
-                                      pressedColor: context.coconutColors.surfaceCard.withValues(alpha: 0.8),
+                                      defaultColor: context.coconutColors.surface,
+                                      pressedOverlayColor: context.coconutColors.surface,
+                                      pressedOverlayOpacity: 0.8,
                                       borderRadius: 4.0,
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
@@ -1496,10 +1497,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                                       _viewModel.setIsUtxoSelectionAuto(true);
                                                       _clearFocus();
                                                     },
-                                                    defaultColor: context.coconutColors.surfaceCard,
-                                                    pressedColor: context.coconutColors.surfaceCard.withValues(
-                                                      alpha: 0.8,
-                                                    ),
+                                                    defaultColor: context.coconutColors.surface,
+                                                    pressedOverlayColor: context.coconutColors.surface,
+                                                    pressedOverlayOpacity: 0.8,
                                                     borderRadius: 4.0,
                                                     child: Container(
                                                       padding: const EdgeInsets.symmetric(
@@ -1632,7 +1632,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: context.coconutColors.infoChipBackground,
+              color: context.coconutColors.surfaceInfoChip,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1688,7 +1688,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         });
       },
       defaultColor: Colors.transparent,
-      pressedColor: context.coconutColors.surfacePressed,
+      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
       borderRadius: 12.0,
       child: SizedBox(
         width: double.infinity,
@@ -1726,7 +1726,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           if (isCurrentWallet) ...[
             TextSpan(
               text: ' • ${t.send_screen.current_wallet_label}',
-              style: fontStyle.setColor(context.coconutColors.textHighlight),
+              style: fontStyle.setColor(context.coconutColors.accentForeground),
             ),
           ],
           TextSpan(text: ' • $derivationPath', style: fontStyle),

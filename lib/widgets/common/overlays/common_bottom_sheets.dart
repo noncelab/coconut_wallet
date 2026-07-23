@@ -354,7 +354,7 @@ class CommonBottomSheets {
                             ),
                             subLabel: Text(
                               subLabel ?? '',
-                              style: CoconutTypography.body3_12.setColor(context.coconutColors.backgroundSubtle),
+                              style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                             ),
                             backgroundColor: resolvedBackgroundColor,
                             showSubLabel: subLabel != null,
@@ -519,7 +519,7 @@ class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTex
             if (widget.onTap != null) widget.onTap!();
           },
           defaultColor: context.coconutColors.surfaceBottomSheet,
-          pressedColor: Color.alphaBlend(
+          pressedOverlayColor: Color.alphaBlend(
             Colors.black.withValues(alpha: 0.08),
             context.coconutColors.surfaceBottomSheet,
           ),

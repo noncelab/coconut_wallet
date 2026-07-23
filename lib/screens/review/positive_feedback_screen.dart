@@ -42,9 +42,7 @@ class PositiveFeedbackScreen extends StatelessWidget {
                 children: [
                   Text(
                     t.positive_feedback_screen.text1,
-                    style: CoconutTypography.heading2_28_NumberBold.copyWith(
-                      color: colors.primaryText,
-                    ),
+                    style: CoconutTypography.heading2_28_NumberBold.copyWith(color: colors.primaryText),
                   ),
                   const SizedBox(height: 20),
                   FittedBox(
@@ -60,13 +58,10 @@ class PositiveFeedbackScreen extends StatelessWidget {
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        color: colors.backgroundHighlight,
-                      ),
+                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: colors.brandAccentBackground),
                       child: Text(
                         t.positive_feedback_screen.text3,
-                        style: CoconutTypography.body2_14_Bold.setColor(colors.backgroundHighlightText),
+                        style: CoconutTypography.body2_14_Bold.setColor(colors.brandAccentForeground),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -79,11 +74,11 @@ class PositiveFeedbackScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: colors.actionButtonBackground,
+                        color: colors.buttonPrimaryBackground,
                       ),
                       child: Text(
                         t.positive_feedback_screen.text4,
-                        style: CoconutTypography.body2_14_Bold.setColor(colors.actionButtonText),
+                        style: CoconutTypography.body2_14_Bold.setColor(colors.buttonPrimaryForeground),
                         textAlign: TextAlign.center,
                       ),
                     ),

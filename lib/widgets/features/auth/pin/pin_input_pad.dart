@@ -1,11 +1,10 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/widgets/features/auth/pin/key_button.dart';
 import 'package:coconut_wallet/widgets/features/auth/pin/pin_box.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 
 class PinInputPad extends StatefulWidget {
   final String title;
@@ -68,22 +67,15 @@ class PinInputPadState extends State<PinInputPad> {
       backgroundColor: context.coconutColors.background,
       appBar:
           widget.appBarVisible
-              ? AppBar(
+              ? CoconutAppBar.build(
+                context: context,
+                title: '',
+                customTitle: const SizedBox.shrink(),
                 backgroundColor: Colors.transparent,
-                toolbarHeight: 62,
-                leading:
-                    widget.step == 0
-                        ? IconButton(
-                          onPressed: widget.onClosePressed,
-                          icon: Icon(Icons.close, color: context.coconutColors.iconPrimary, size: 22),
-                        )
-                        : IconButton(
-                          onPressed: widget.onBackPressed,
-                          icon: SvgPicture.asset(
-                            CommonNavigationIconPath.back,
-                            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                          ),
-                        ),
+                isBottom: widget.step == 0,
+                isBackButton: widget.step != 0,
+                height: 62,
+                onBackPressed: widget.step == 0 ? widget.onClosePressed : widget.onBackPressed,
               )
               : null,
       body: Column(
@@ -165,7 +157,7 @@ class PinInputPadState extends State<PinInputPad> {
                       },
                       child: Text(
                         t.forgot_password,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.tertiaryText),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.mutedText),
                         textAlign: TextAlign.center,
                       ),
                     ),

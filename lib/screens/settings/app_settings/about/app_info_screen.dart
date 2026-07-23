@@ -206,7 +206,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.rectangle,
                   borderRadius: BorderRadius.circular(20),
-                  color: colors.backgroundSubtle,
+                  color: colors.surfaceMuted,
                 ),
                 // TODO: mainnet인 경우 gradient 적용 필요
                 child: SvgPicture.asset(
@@ -242,8 +242,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: ShrinkAnimationButton(
-        defaultColor: context.coconutColors.surfaceCard,
-        pressedColor: context.coconutColors.surfacePressed,
+        defaultColor: context.coconutColors.surface,
+        pressedOverlayColor: context.coconutColors.surfacePressOverlay,
         onPressed: () {
           Navigator.pushNamed(context, '/coconut-crew');
         },

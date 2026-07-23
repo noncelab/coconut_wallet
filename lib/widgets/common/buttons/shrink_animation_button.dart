@@ -6,7 +6,8 @@ class ShrinkAnimationButton extends StatefulWidget {
   final Widget Function(BuildContext context, bool isPressed)? childBuilder;
   final VoidCallback onPressed;
   final VoidCallback? onLongPress;
-  final Color? pressedColor;
+  final Color? pressedOverlayColor;
+  final double? pressedOverlayOpacity;
   final Color? defaultColor;
   final Color? disabledColor;
   final double borderRadius;
@@ -22,7 +23,8 @@ class ShrinkAnimationButton extends StatefulWidget {
     this.childBuilder,
     required this.onPressed,
     this.onLongPress,
-    this.pressedColor,
+    this.pressedOverlayColor,
+    this.pressedOverlayOpacity,
     this.defaultColor,
     this.disabledColor,
     this.borderRadius = 24.0,
@@ -93,13 +95,30 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
     widget.onLongPress!();
   }
 
+  double _clampOpacity(double value) => value.clamp(0.0, 1.0);
+
+  double _resolveOverlayOpacity(Color color) {
+    if (widget.pressedOverlayOpacity != null) {
+      return _clampOpacity(widget.pressedOverlayOpacity!);
+    }
+    if (color.a > 0 && color.a < 1) {
+      return color.a;
+    }
+    return 0.12;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final pressedColor = widget.pressedColor ?? colors.surfacePressed;
+    final overlayColor = (widget.pressedOverlayColor ?? colors.surfacePressOverlay).withValues(alpha: 1.0);
+    final overlayOpacity =
+        widget.pressedOverlayOpacity ??
+        ((widget.pressedOverlayColor == null || widget.pressedOverlayColor == colors.surfacePressOverlay)
+            ? colors.surfacePressOverlayOpacity
+            : _resolveOverlayOpacity(widget.pressedOverlayColor!));
     final defaultColor = widget.defaultColor ?? colors.surface;
     final disabledColor = widget.disabledColor ?? colors.surface;
-    final Color solidColor = widget.isActive ? (_isPressed ? pressedColor : defaultColor) : disabledColor;
+    final Color baseColor = widget.isActive ? defaultColor : disabledColor;
     final bool useGradientBorder = widget.borderGradient != null;
     final child = widget.childBuilder != null ? widget.childBuilder!(context, _isPressed) : widget.child!;
 
@@ -114,15 +133,39 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(widget.borderRadius + 2),
             gradient: useGradientBorder ? widget.borderGradient : null,
-            border: useGradientBorder ? null : Border.all(color: solidColor),
+            border: useGradientBorder ? null : widget.border,
           ),
           child: AnimatedContainer(
             margin: EdgeInsets.all(useGradientBorder ? widget.borderWidth : 0),
             duration: const Duration(milliseconds: 100),
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(widget.borderRadius)),
-            child: Container(
-              decoration: BoxDecoration(color: solidColor, borderRadius: BorderRadius.circular(widget.borderRadius)),
-              child: child,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(widget.borderRadius),
+                    ),
+                    child: child,
+                  ),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 100),
+                        opacity: widget.isActive && _isPressed ? overlayOpacity : 0,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: overlayColor,
+                            borderRadius: BorderRadius.circular(widget.borderRadius),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

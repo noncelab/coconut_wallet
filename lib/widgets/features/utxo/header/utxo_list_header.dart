@@ -142,7 +142,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     Text(
                       widget.activeOption,
                       style: CoconutTypography.body3_12.setColor(
-                        widget.isLoadComplete ? context.coconutColors.primaryText : context.coconutColors.tertiaryText,
+                        widget.isLoadComplete ? context.coconutColors.primaryText : context.coconutColors.mutedText,
                       ),
                     ),
                     CoconutLayout.spacing_200w,

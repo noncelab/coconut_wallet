@@ -6,6 +6,7 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/settings/coconut_open_store_screen.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_tap_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -47,7 +48,7 @@ class ThemeBottomSheet extends StatelessWidget {
             onBackPressed: null,
             isBottom: true,
             actionButtonList: [
-              IconButton(
+              CoconutAppBarActionButton(
                 onPressed: () => _openThemeStore(context),
                 icon: SvgPicture.asset(
                   BrandIconPath.coconutPlanet,

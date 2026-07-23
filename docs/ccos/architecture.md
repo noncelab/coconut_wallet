@@ -295,6 +295,13 @@ This structure defines clear responsibilities:
 - `widgets/common/` contains cross-feature reusable compositions.
 - `widgets/features/` contains domain-owned composed widgets.
 
+Button guideline:
+
+- Prefer `widgets/common/buttons/coconut_icon_button.dart` over raw `IconButton`.
+- Use `CoconutAppBarActionButton` for app-bar and top action icons.
+- Use `CoconutIconButton` for generic icon actions outside app bars.
+- Only use raw `IconButton` when Flutter's default behavior is intentionally required and document that choice nearby.
+
 Phase 0A does not require all files to move immediately, but this should be the target direction for refactoring.
 
 ## 9. Theme and Token Architecture

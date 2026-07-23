@@ -333,7 +333,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           style:
               isSelected
                   ? CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)
-                  : CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                  : CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
         ),
       ),
     );
@@ -361,7 +361,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
               ShrinkAnimationButton(
                 key: i == 0 ? _defaultServerButtonKey : null,
                 defaultColor: context.coconutColors.background,
-                pressedColor: context.coconutColors.primaryText.withValues(alpha: 0.08),
+                pressedOverlayColor: context.coconutColors.primaryText,
+                pressedOverlayOpacity: 0.08,
                 borderRadius: 12,
                 onPressed: () {
                   _serverAddressController.text = serverList[i].host;
@@ -515,7 +516,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     margin: const EdgeInsets.only(bottom: 4),
                     decoration: BoxDecoration(
-                      border: Border.all(color: context.coconutColors.tertiaryText),
+                      border: Border.all(color: context.coconutColors.border),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                     ),
@@ -523,7 +524,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       children: [
                         Text(
                           _serverAddressController.text,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
                         ),
                       ],
                     ),
@@ -594,7 +595,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     margin: const EdgeInsets.only(bottom: 4),
                     decoration: BoxDecoration(
-                      border: Border.all(color: context.coconutColors.tertiaryText),
+                      border: Border.all(color: context.coconutColors.border),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                     ),
@@ -602,7 +603,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       children: [
                         Text(
                           _portController.text,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
                         ),
                       ],
                     ),
@@ -703,7 +704,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 34),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
       child: Row(
         children: [
           _buildAlertIcon(status),

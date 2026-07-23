@@ -113,6 +113,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                 backgroundColor: context.coconutColors.background,
                 appBar: AppBar(
                   scrolledUnderElevation: 0,
+                  toolbarHeight: 56,
                   backgroundColor: context.coconutColors.background,
                   leading: IconButton(
                     icon: SvgPicture.asset(
@@ -143,7 +144,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                         ignoring: true,
                         child: IconButton(
                           onPressed: null,
-                          icon: Icon(Icons.search_rounded, color: context.coconutColors.tertiaryText),
+                          icon: Icon(Icons.search_rounded, color: context.coconutColors.iconSecondary),
                           iconSize: Sizes.size22,
                         ),
                       ),
@@ -222,7 +223,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.all(Radius.circular(Sizes.size12)),
-        color: context.coconutColors.surfaceCard,
+        color: context.coconutColors.surface,
       ),
       padding: const EdgeInsets.only(top: Sizes.size20, bottom: Sizes.size28),
       child: Column(

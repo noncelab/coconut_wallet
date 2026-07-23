@@ -32,7 +32,7 @@ class AddressItemCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       pressedOpacity: 0.8,
       child: Container(
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: context.coconutColors.surfaceCard),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: context.coconutColors.surface),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         margin: const EdgeInsets.only(bottom: 8),
         child: Row(
@@ -43,9 +43,12 @@ class AddressItemCard extends StatelessWidget {
               margin: const EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: context.coconutColors.surfaceDeep,
+                color: context.coconutColors.surfaceInset,
               ),
-              child: Text(index, style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText)),
+              child: Text(
+                index,
+                style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+              ),
             ),
             Expanded(
               child: FittedBox(
@@ -75,12 +78,12 @@ class AddressItemCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: context.coconutColors.infoChipBackground,
+                color: context.coconutColors.surfaceInfoChip,
               ),
               child: Text(
                 isUsed ? t.status_used : t.status_unused,
                 style: CoconutTypography.caption_10.setColor(
-                  isUsed ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
+                  isUsed ? context.coconutColors.accentForeground : context.coconutColors.secondaryText,
                 ),
               ),
             ),

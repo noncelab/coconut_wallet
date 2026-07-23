@@ -143,10 +143,14 @@ class TransactionItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<String>? transactionTimeStamp = DateTimeUtil.formatTimestamp(tx.getDateTimeToDisplay()!.toLocal());
+    final colors = context.coconutColors;
     return ShrinkAnimationButton(
       onPressed: () {
         onPressed();
       },
+      defaultColor: colors.surface,
+      pressedOverlayColor: colors.surfacePressOverlay,
+      pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
       borderWidth: 0,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),

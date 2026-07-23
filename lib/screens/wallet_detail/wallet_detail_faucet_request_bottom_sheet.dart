@@ -13,7 +13,6 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/material.dart';
 
 class FaucetRequestBottomSheet extends StatefulWidget {
@@ -122,135 +121,141 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
     return SafeArea(
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.close, color: context.coconutColors.iconPrimary),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                    Text(
-                      t.faucet_request_bottom_sheet.title,
-                      style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-                    ),
-                    Visibility(
-                      visible: false,
-                      maintainSize: true,
-                      maintainAnimation: true,
-                      maintainState: true,
-                      maintainSemantics: false,
-                      maintainInteractivity: false,
-                      child: IconButton(
-                        icon: Icon(Icons.close, color: context.coconutColors.iconPrimary),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 30),
-                    MediaQuery(
-                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                      child: Text(
-                        t.faucet_request_bottom_sheet.recipient,
-                        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    MediaQuery(
-                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                      child: CoconutTextField(
-                        controller: textController,
-                        focusNode: _addressFocusNode,
-                        placeholderText: t.faucet_request_bottom_sheet.placeholder,
-                        onChanged: (text) {
-                          _validateAddress(text.toLowerCase());
-                        },
-                        maxLines: 2,
-                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
-                        fontSize: 16,
-                        fontFamily: 'SpaceGrotesk',
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const SizedBox(height: 2),
-                    MediaQuery(
-                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                      child: Visibility(
-                        visible: !_isErrorInAddress,
-                        maintainSize: true,
-                        maintainAnimation: true,
-                        maintainState: true,
-                        maintainSemantics: false,
-                        maintainInteractivity: false,
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            t.faucet_request_bottom_sheet.my_address(name: _walletName, index: _walletIndex),
-                            style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: InlineActionButton(
-                  onPressed: () {
-                    widget.onRequest.call(_walletAddress, _requestAmount);
-                    FocusScope.of(context).unfocus();
-                  },
-                  isActive: canRequestFaucet(),
-                  child:
-                      _state == _AvailabilityState.checking
-                          ? SizedBox(
-                            height: 28,
-                            width: 28,
-                            child: InlineLoadingIndicator(
-                              padding: EdgeInsets.zero,
-                              color: context.coconutColors.iconPrimary,
-                              radius: 14,
-                            ),
-                          )
-                          : Text(
-                            _isRequesting
-                                ? t.faucet_request_bottom_sheet.requesting
-                                : t.faucet_request_bottom_sheet.request_amount(
-                                  bitcoin: _requestAmount.toTrimmedString(),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SizedBox(
+              width: double.infinity,
+              height: constraints.maxHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.only(bottom: 140),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.close, color: context.coconutColors.iconPrimary),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
                                 ),
-                            style: CoconutTypography.body2_14_Bold
-                                .setColor(context.coconutColors.actionButtonText)
-                                .copyWith(letterSpacing: -0.1, height: 1.0),
+                                Text(
+                                  t.faucet_request_bottom_sheet.title,
+                                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                                ),
+                                Visibility(
+                                  visible: false,
+                                  maintainSize: true,
+                                  maintainAnimation: true,
+                                  maintainState: true,
+                                  maintainSemantics: false,
+                                  maintainInteractivity: false,
+                                  child: IconButton(
+                                    icon: Icon(Icons.close, color: context.coconutColors.iconPrimary),
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 30),
+                                MediaQuery(
+                                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                                  child: Text(
+                                    t.faucet_request_bottom_sheet.recipient,
+                                    style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                MediaQuery(
+                                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                                  child: CoconutTextField(
+                                    controller: textController,
+                                    focusNode: _addressFocusNode,
+                                    placeholderText: t.faucet_request_bottom_sheet.placeholder,
+                                    onChanged: (text) {
+                                      _validateAddress(text.toLowerCase());
+                                    },
+                                    maxLines: 1,
+                                    fontFamily: 'SpaceGrotesk',
+                                    clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                                    onClear: () {
+                                      _validateAddress('');
+                                    },
+                                    isError: _isErrorInAddress,
+                                    errorText: _isErrorInAddress ? t.alert.faucet.check_address : null,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                MediaQuery(
+                                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                                  child: Visibility(
+                                    visible: !_isErrorInAddress,
+                                    maintainSize: true,
+                                    maintainAnimation: true,
+                                    maintainState: true,
+                                    maintainSemantics: false,
+                                    maintainInteractivity: false,
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        t.faucet_request_bottom_sheet.my_address(
+                                          name: _walletName,
+                                          index: _walletIndex,
+                                        ),
+                                        style: CoconutTypography.body2_14_Number.setColor(
+                                          context.coconutColors.primaryText,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                if (_state == _AvailabilityState.bad) ...{
+                                  _buildWarningMessage(t.alert.faucet.no_test_bitcoin),
+                                } else if (_state == _AvailabilityState.dailyLimitReached) ...{
+                                  _buildWarningMessage(t.alert.faucet.try_again(count: _remainingTimeString)),
+                                },
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  FixedBottomButton(
+                    onButtonClicked: () {
+                      widget.onRequest.call(_walletAddress, _requestAmount);
+                      FocusScope.of(context).unfocus();
+                    },
+                    isVisibleAboveKeyboard: false,
+                    isActive: canRequestFaucet(),
+                    text:
+                        _state == _AvailabilityState.checking
+                            ? t.faucet_request_bottom_sheet.requesting
+                            : _isRequesting
+                            ? t.faucet_request_bottom_sheet.requesting
+                            : t.faucet_request_bottom_sheet.request_amount(bitcoin: _requestAmount.toTrimmedString()),
+                    surroundingsColor: context.coconutColors.surfaceBottomSheet,
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              if (_state == _AvailabilityState.bad) ...{
-                _buildWarningMessage(t.alert.faucet.no_test_bitcoin),
-              } else if (_state == _AvailabilityState.dailyLimitReached) ...{
-                _buildWarningMessage(t.alert.faucet.try_again(count: _remainingTimeString)),
-              } else if (_isErrorInAddress) ...{
-                _buildWarningMessage(t.alert.faucet.check_address),
-              },
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

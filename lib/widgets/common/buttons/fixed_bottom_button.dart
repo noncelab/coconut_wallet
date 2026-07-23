@@ -54,8 +54,8 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final resolvedBackgroundColor = widget.backgroundColor ?? colors.actionButtonBackground;
-    final resolvedTextColor = widget.textColor ?? colors.actionButtonText;
+    final resolvedBackgroundColor = widget.backgroundColor ?? colors.buttonPrimaryBackground;
+    final resolvedTextColor = widget.textColor ?? colors.buttonPrimaryForeground;
     final resolvedSurroundingsColor = widget.surroundingsColor ?? colors.background;
 
     final mediaQuery = MediaQuery.of(context);
@@ -118,12 +118,16 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                     },
                     isActive: widget.isActive,
                     defaultColor: resolvedBackgroundColor,
-                    pressedColor:
+                    pressedOverlayColor:
                         widget.pressedBackgroundColor ??
-                        (resolvedBackgroundColor == colors.actionButtonBackground
-                            ? colors.actionButtonPressed
+                        (resolvedBackgroundColor == colors.buttonPrimaryBackground
+                            ? colors.buttonPrimaryPressOverlay
                             : getDarkerColor(resolvedBackgroundColor)),
-                    disabledColor: colors.actionButtonDisabled,
+                    pressedOverlayOpacity:
+                        widget.pressedBackgroundColor == null && resolvedBackgroundColor == colors.buttonPrimaryBackground
+                            ? colors.buttonPrimaryPressOverlayOpacity
+                            : null,
+                    disabledColor: colors.buttonPrimaryDisabledBackground,
                     borderRadius: 12,
                     child: SizedBox(
                       width: MediaQuery.sizeOf(context).width,
@@ -135,7 +139,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                             widget.text,
                             textAlign: TextAlign.center,
                             style: CoconutTypography.body2_14_Bold
-                                .setColor(widget.isActive ? resolvedTextColor : colors.actionButtonDisabledText)
+                                .setColor(widget.isActive ? resolvedTextColor : colors.buttonPrimaryDisabledForeground)
                                 .copyWith(height: 1.0),
                           ),
                         ),
@@ -182,8 +186,8 @@ class InlineActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final resolvedBackgroundColor = backgroundColor ?? colors.actionButtonBackground;
-    final resolvedTextColor = textColor ?? colors.actionButtonText;
+    final resolvedBackgroundColor = backgroundColor ?? colors.buttonPrimaryBackground;
+    final resolvedTextColor = textColor ?? colors.buttonPrimaryForeground;
     final resolvedHeight =
         buttonHeight ?? (Platform.isAndroid ? InlineActionButton.defaultHeight : InlineActionButton.defaultHeight + 3);
 
@@ -193,12 +197,16 @@ class InlineActionButton extends StatelessWidget {
         onPressed: onPressed,
         isActive: isActive,
         defaultColor: resolvedBackgroundColor,
-        pressedColor:
+        pressedOverlayColor:
             pressedBackgroundColor ??
-            (resolvedBackgroundColor == colors.actionButtonBackground
-                ? colors.actionButtonPressed
+            (resolvedBackgroundColor == colors.buttonPrimaryBackground
+                ? colors.buttonPrimaryPressOverlay
                 : getDarkerColor(resolvedBackgroundColor)),
-        disabledColor: colors.actionButtonDisabled,
+        pressedOverlayOpacity:
+            pressedBackgroundColor == null && resolvedBackgroundColor == colors.buttonPrimaryBackground
+                ? colors.buttonPrimaryPressOverlayOpacity
+                : null,
+        disabledColor: colors.buttonPrimaryDisabledBackground,
         borderRadius: 12,
         child: SizedBox(
           width: double.infinity,
@@ -212,7 +220,7 @@ class InlineActionButton extends StatelessWidget {
                     text!,
                     textAlign: TextAlign.center,
                     style: CoconutTypography.body2_14_Bold
-                        .setColor(isActive ? resolvedTextColor : colors.actionButtonDisabledText)
+                        .setColor(isActive ? resolvedTextColor : colors.buttonPrimaryDisabledForeground)
                         .copyWith(height: 1.0),
                   ),
                 ),

@@ -1,4 +1,12 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ccos/theme/ccos_theme_catalog.dart';
@@ -120,7 +128,7 @@ class _CoconutOpenStoreScreenState extends State<CoconutOpenStoreScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [colors.background, colors.background, colors.backgroundHighlight.withValues(alpha: 0.10)],
+                colors: [colors.background, colors.background, colors.brandAccentBackground.withValues(alpha: 0.10)],
                 stops: const [0, 0.72, 1],
               ),
             ),
@@ -411,7 +419,7 @@ class _HeaderSceneState extends State<_HeaderScene> with SingleTickerProviderSta
                                   BrandIconPath.coconutPlanet,
                                   width: 64,
                                   height: 64,
-                                  colorFilter: ColorFilter.mode(colors.backgroundHighlight, BlendMode.srcIn),
+                                  colorFilter: ColorFilter.mode(colors.brandAccentBackground, BlendMode.srcIn),
                                 ),
                               ),
                             ),
@@ -541,7 +549,7 @@ class _ContributionSceneState extends State<_ContributionScene>
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: colors.surfaceRaised,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(color: colors.shadowSubtle.withValues(alpha: 0.08), blurRadius: 18, offset: const Offset(0, 8)),
@@ -699,10 +707,7 @@ class _DeveloperCtaSceneState extends State<_DeveloperCtaScene>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              colors.backgroundHighlight.withValues(alpha: 0.12),
-              colors.backgroundHighlight.withValues(alpha: 0.24),
-            ],
+            colors: [colors.brandAccentBackground.withValues(alpha: 0.12), colors.brandAccentBackground.withValues(alpha: 0.24)],
           ),
         ),
         child: Column(
@@ -785,14 +790,8 @@ class _ThemeCardSceneState extends State<_ThemeCardScene> with SingleTickerProvi
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colors.backgroundHighlight,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    '첫 번째 예시',
-                    style: CoconutTypography.caption_10_Bold.setColor(colors.backgroundHighlightText),
-                  ),
+                  decoration: BoxDecoration(color: colors.brandAccentBackground, borderRadius: BorderRadius.circular(999)),
+                  child: Text('첫 번째 예시', style: CoconutTypography.caption_10_Bold.setColor(colors.brandAccentForeground)),
                 ),
               ],
             ),
@@ -804,7 +803,7 @@ class _ThemeCardSceneState extends State<_ThemeCardScene> with SingleTickerProvi
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colors.surfaceRaised,
+                color: colors.surface,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -902,7 +901,7 @@ class _FeatureCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: colors.surfaceRaised,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(color: colors.shadowSubtle.withValues(alpha: 0.06), blurRadius: 14, offset: const Offset(0, 6)),

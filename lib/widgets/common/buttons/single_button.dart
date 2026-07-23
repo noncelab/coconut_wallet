@@ -78,7 +78,7 @@ class SingleButton extends StatelessWidget {
         ? ShrinkAnimationButton(
           onPressed: onPressed ?? () {},
           defaultColor: resolvedBackgroundColor,
-          pressedColor: colors.surfacePressed,
+          pressedOverlayColor: colors.surfacePressOverlay,
           borderRadius: 24,
           animationEndValue: animationEndValue,
           child: Container(

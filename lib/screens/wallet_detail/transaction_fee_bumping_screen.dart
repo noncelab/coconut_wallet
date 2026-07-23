@@ -638,7 +638,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             });
           },
           child: Container(
-            color: _isRecommendFeePannelPressed ? context.coconutColors.surfacePressed : context.coconutColors.surface,
+            color:
+                _isRecommendFeePannelPressed
+                    ? context.coconutColors.surfacePressOverlay
+                    : context.coconutColors.surface,
             padding: const EdgeInsets.only(
               left: CoconutLayout.defaultPadding,
               right: CoconutLayout.defaultPadding,
@@ -861,7 +864,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       }
 
       Color textColor =
-          viewModel.selectedUtxoList.isNotEmpty ? context.coconutColors.textHighlight : context.coconutColors.danger;
+          viewModel.selectedUtxoList.isNotEmpty ? context.coconutColors.accentForeground : context.coconutColors.danger;
 
       child = Container(
         key: const ValueKey('content'),
@@ -869,7 +872,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 27),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-          color: context.coconutColors.surfaceCard,
+          color: context.coconutColors.surface,
         ),
         child: Column(
           children: [

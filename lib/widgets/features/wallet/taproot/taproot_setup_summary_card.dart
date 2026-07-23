@@ -46,8 +46,8 @@ class TaprootSetupSummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(6),
       child: Container(
         decoration: BoxDecoration(
-          color: context.coconutColors.surfaceCard,
-          border: Border.all(color: context.coconutColors.surfaceCard, width: 1),
+          color: context.coconutColors.surface,
+          border: Border.all(color: context.coconutColors.surface, width: 1),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(

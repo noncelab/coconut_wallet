@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -26,10 +26,16 @@ class WalletIcon extends StatelessWidget {
     if (walletImportSource == null) {
       return Container(
         padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: context.coconutColors.iconBackground, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          color: context.coconutColors.iconBackground,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: SvgPicture.asset(
           FeatureSettingsIconPath.puzzlePiece,
-          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(
+            context.coconutColors.iconSecondary,
+            BlendMode.srcIn,
+          ),
           width: 18.0,
         ),
       );
@@ -38,19 +44,28 @@ class WalletIcon extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: isExternalWallet ? context.coconutColors.iconBackground : ColorUtil.getColor(colorIndex).backgroundColor,
+        color:
+            isExternalWallet
+                ? context.coconutColors.iconBackground
+                : WalletVisualStyleUtil.getColor(colorIndex).backgroundColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child:
           isExternalWallet
               ? SvgPicture.asset(
                 walletImportSource!.externalWalletIconPath,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(
+                  context.coconutColors.iconPrimary,
+                  BlendMode.srcIn,
+                ),
                 width: 18.0,
               )
               : SvgPicture.asset(
                 CustomWalletIcons.getPathByIndex(iconIndex),
-                colorFilter: ColorFilter.mode(ColorUtil.getColor(colorIndex).color, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(
+                  WalletVisualStyleUtil.getColor(colorIndex).color,
+                  BlendMode.srcIn,
+                ),
                 width: 18.0,
               ),
     );

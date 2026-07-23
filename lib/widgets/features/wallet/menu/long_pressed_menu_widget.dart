@@ -250,13 +250,13 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                             borderRadius: BorderRadius.circular(12),
                             child: Material(
                               elevation: 4,
-                              color: context.coconutColors.surfaceCard.withValues(alpha: 0.68),
+                              color: context.coconutColors.surface.withValues(alpha: 0.68),
                               child: BackdropFilter(
                                 filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                                 child: Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
-                                    color: context.coconutColors.surfaceCard.withValues(alpha: 0.1),
+                                    color: context.coconutColors.surface.withValues(alpha: 0.1),
                                   ),
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                                   child: IntrinsicWidth(
@@ -267,7 +267,8 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                         widget.menuItems.length,
                                         (index) => ShrinkAnimationButton(
                                           defaultColor: Colors.transparent,
-                                          pressedColor: context.coconutColors.primaryText.withValues(alpha: 0.1),
+                                          pressedOverlayColor: context.coconutColors.primaryText,
+                                          pressedOverlayOpacity: 0.1,
                                           onPressed: () {
                                             _startHideAnimation();
                                             widget.menuItems[index].onSelected();
@@ -399,12 +400,12 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                   height: 24,
                                   padding: const EdgeInsets.all(2),
                                   decoration: BoxDecoration(
-                                    color: context.coconutColors.tertiaryText.withValues(alpha: 0.35),
+                                    color: context.coconutColors.iconSecondary.withValues(alpha: 0.35),
                                     shape: BoxShape.circle,
                                   ),
                                   child: SvgPicture.asset(
                                     CommonActionIconPath.removeMinus,
-                                    colorFilter: ColorFilter.mode(context.coconutColors.iconHighlight, BlendMode.srcIn),
+                                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                                   ),
                                 ),
                               ),

@@ -86,7 +86,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       onTapDown: (details) {
         setState(() {
           _textColor = colors.secondaryText;
-          _buttonColor = colors.surfacePressed;
+          _buttonColor = colors.surfacePressOverlay;
           _iconColor = colors.iconSecondary;
         });
       },
@@ -102,7 +102,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
         padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
-          color: colors.surfaceCard,
+          color: colors.surface,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

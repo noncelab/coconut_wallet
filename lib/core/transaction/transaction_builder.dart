@@ -187,10 +187,10 @@ class TransactionBuilder {
       recipients: recipients ?? this.recipients,
       feeRate: feeRate ?? this.feeRate,
       changeDerivationPath: changeDerivationPath ?? this.changeDerivationPath,
-      walletItemBase: walletListItemBase ?? this.walletItemBase,
+      walletItemBase: walletListItemBase ?? walletItemBase,
       isFeeSubtractedFromAmount: isFeeSubtractedFromAmount ?? this.isFeeSubtractedFromAmount,
       isUtxoFixed: isUtxoFixed ?? this.isUtxoFixed,
-      scriptPathPolicy: taprootPolicy ?? this.scriptPathPolicy,
+      scriptPathPolicy: taprootPolicy ?? scriptPathPolicy,
     );
   }
 

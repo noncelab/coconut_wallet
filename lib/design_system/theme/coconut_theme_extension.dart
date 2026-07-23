@@ -5,35 +5,23 @@ import 'package:flutter/material.dart';
 class CoconutThemeExtension extends ThemeExtension<CoconutThemeExtension> {
   final CoconutColors colors;
 
-  const CoconutThemeExtension({
-    required this.colors,
-  });
+  const CoconutThemeExtension({required this.colors});
 
   factory CoconutThemeExtension.dark() {
-    return CoconutThemeExtension(
-      colors: CoconutColors.dark(),
-    );
+    return CoconutThemeExtension(colors: CoconutColors.dark());
   }
 
   factory CoconutThemeExtension.light() {
-    return CoconutThemeExtension(
-      colors: CoconutColors.light(),
-    );
+    return CoconutThemeExtension(colors: CoconutColors.light());
   }
 
   factory CoconutThemeExtension.coconutPulp() {
-    return CoconutThemeExtension(
-      colors: CoconutColors.coconutPulp(),
-    );
+    return CoconutThemeExtension(colors: CoconutColors.coconutPulp());
   }
 
   @override
-  ThemeExtension<CoconutThemeExtension> copyWith({
-    CoconutColors? colors,
-  }) {
-    return CoconutThemeExtension(
-      colors: colors ?? this.colors,
-    );
+  ThemeExtension<CoconutThemeExtension> copyWith({CoconutColors? colors}) {
+    return CoconutThemeExtension(colors: colors ?? this.colors);
   }
 
   @override

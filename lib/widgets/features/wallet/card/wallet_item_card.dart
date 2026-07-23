@@ -6,7 +6,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +22,8 @@ class WalletItemCard extends StatelessWidget {
   final int? fakeBalance;
   final BitcoinUnit currentUnit;
   final Color? backgroundColor;
-  final Color? pressedColor;
+  final Color? pressedOverlayColor;
+  final double? pressedOverlayOpacity;
   final bool? isPrimaryWallet;
   final bool? isExcludeFromTotalBalance;
   final bool isEditMode;
@@ -43,7 +44,8 @@ class WalletItemCard extends StatelessWidget {
     this.isBalanceHidden = false,
     this.fakeBalance,
     this.backgroundColor,
-    this.pressedColor,
+    this.pressedOverlayColor,
+    this.pressedOverlayOpacity,
     this.isPrimaryWallet,
     this.isExcludeFromTotalBalance,
     this.isEditMode = false,
@@ -61,7 +63,7 @@ class WalletItemCard extends StatelessWidget {
     List<Color>? iconGradientColors;
     if (walletItem.walletType == WalletType.multiSignature) {
       final signers = (walletItem as MultisigWalletItem).signers;
-      iconGradientColors = ColorUtil.getGradientColors(signers);
+      iconGradientColors = WalletVisualStyleUtil.getGradientColors(signers);
     } else if (walletItem.walletType == WalletType.taproot) {
       final taprootStyle = TaprootCardStyle.from(walletItem);
       iconGradientColors = taprootStyle?.iconGradientColors;
@@ -83,8 +85,9 @@ class WalletItemCard extends StatelessWidget {
       );
     }
     final row = ShrinkAnimationButton(
-      defaultColor: backgroundColor ?? colors.surfaceCard,
-      pressedColor: pressedColor ?? colors.surfacePressed,
+      defaultColor: backgroundColor ?? colors.surface,
+      pressedOverlayColor: pressedOverlayColor ?? colors.surfacePressOverlay,
+      pressedOverlayOpacity: pressedOverlayOpacity ?? colors.surfacePressOverlayOpacity,
       borderRadius: 12,
       onPressed: onPressed,
       onLongPress: () {
@@ -150,7 +153,7 @@ class WalletItemCard extends StatelessWidget {
                 isBalanceHidden
                     ? Text(
                       t.view_balance,
-                      style: CoconutTypography.body2_14_Bold.copyWith(color: context.coconutColors.tertiaryText),
+                      style: CoconutTypography.body2_14_Bold.copyWith(color: context.coconutColors.mutedText),
                     )
                     : fakeBalance != null
                     ? FittedBox(

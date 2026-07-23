@@ -6,6 +6,7 @@ import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutUn
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -192,25 +193,21 @@ class _AppBarLeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        CoconutLayout.spacing_100h,
-        Row(
-          children: [
-            CoconutLayout.spacing_100w,
-            IconButton(
-              key: iconKey,
-              icon: SvgPicture.asset(
-                assetName,
-                width: 24,
-                height: 24,
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-              ),
-              onPressed: onPressed,
-            ),
-          ],
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 4),
+        child: CoconutAppBarActionButton(
+          buttonKey: iconKey,
+          onPressed: onPressed,
+          icon: SvgPicture.asset(
+            assetName,
+            width: 24,
+            height: 24,
+            colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+          ),
         ),
-      ],
+      ),
     );
   }
 }

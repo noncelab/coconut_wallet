@@ -205,8 +205,8 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: ShrinkAnimationButton(
-                      defaultColor: context.coconutColors.surfaceCard,
-                      pressedColor: context.coconutColors.surfacePressed,
+                      defaultColor: context.coconutColors.surface,
+                      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                       borderRadius: 12,
                       onPressed: () {
                         if (link != null) {

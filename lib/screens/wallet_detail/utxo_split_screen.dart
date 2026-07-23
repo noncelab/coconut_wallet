@@ -32,7 +32,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_split/utx
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/widgets/features/utxo/bottom_sheet/estimated_fee_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
@@ -90,7 +90,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   bool _isMethodBottomSheetOpen = false;
   bool _isFeeBottomSheetOpen = false;
 
-  Color get _pickerDividerColor => context.coconutColors.inputPlaceholder;
+  Color get _pickerDividerColor => context.coconutColors.divider;
 
   /// manual input 삭제 버튼은 딱 1개만 노출되어야 함
   ManualSplitItem? _visibleDeleteButtonItem;
@@ -1133,7 +1133,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: context.coconutColors.surfaceCard,
+                    color: context.coconutColors.surface,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   alignment: Alignment.center,

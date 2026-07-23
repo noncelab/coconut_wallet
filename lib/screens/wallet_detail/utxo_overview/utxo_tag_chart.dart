@@ -7,7 +7,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_chart_bubble.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_total_balance_header.dart';
@@ -49,7 +49,12 @@ class UtxoTagChart extends StatelessWidget {
     this.onBalanceTap,
   });
 
-  static ({List<_TagSegment> segments, int coinCount, int uniqueTaggedCount, int actualTotalSats})
+  static ({
+    List<_TagSegment> segments,
+    int coinCount,
+    int uniqueTaggedCount,
+    int actualTotalSats,
+  })
   _computeTagSegmentsForDonut(List<UtxoState> utxos, List<UtxoTag> tags) {
     final utxoMap = {for (var u in utxos) u.utxoId: u};
     final actualTotalSats = utxos.fold<int>(0, (s, u) => s + u.amount);
@@ -62,8 +67,16 @@ class UtxoTagChart extends StatelessWidget {
       }
     }
 
-    final multiTaggedIds = tagCountByUtxo.entries.where((e) => e.value >= 2).map((e) => e.key).toSet();
-    final singleTaggedIds = tagCountByUtxo.entries.where((e) => e.value == 1).map((e) => e.key).toSet();
+    final multiTaggedIds =
+        tagCountByUtxo.entries
+            .where((e) => e.value >= 2)
+            .map((e) => e.key)
+            .toSet();
+    final singleTaggedIds =
+        tagCountByUtxo.entries
+            .where((e) => e.value == 1)
+            .map((e) => e.key)
+            .toSet();
     final allTaggedUtxoIds = tagCountByUtxo.keys.toSet();
 
     final segments = <_TagSegment>[];
@@ -76,7 +89,15 @@ class UtxoTagChart extends StatelessWidget {
         final sats = ids
             .where((id) => singleTaggedIds.contains(id))
             .fold<int>(0, (s, id) => s + (utxoMap[id]?.amount ?? 0));
-        segments.add(_TagSegment(tag: tag, sats: sats, count: count, isMultiTag: false, multiTags: null));
+        segments.add(
+          _TagSegment(
+            tag: tag,
+            sats: sats,
+            count: count,
+            isMultiTag: false,
+            multiTags: null,
+          ),
+        );
       }
     }
 
@@ -86,7 +107,9 @@ class UtxoTagChart extends StatelessWidget {
         if (u.tags != null && u.tags!.isNotEmpty) {
           return u.tags!;
         }
-        return tags.where((t) => t.utxoIdList?.contains(u.utxoId) == true).toList();
+        return tags
+            .where((t) => t.utxoIdList?.contains(u.utxoId) == true)
+            .toList();
       }
 
       final allMultiTags = <UtxoTag>{};
@@ -98,7 +121,8 @@ class UtxoTagChart extends StatelessWidget {
           allMultiTags.addAll(getTagsForUtxo(u));
         }
       }
-      final multiTagsList = allMultiTags.toList()..sort((a, b) => a.name.compareTo(b.name));
+      final multiTagsList =
+          allMultiTags.toList()..sort((a, b) => a.name.compareTo(b.name));
       segments.add(
         _TagSegment(
           tag: null,
@@ -111,7 +135,8 @@ class UtxoTagChart extends StatelessWidget {
     }
 
     // 3. 미적용
-    final untagged = utxos.where((u) => !allTaggedUtxoIds.contains(u.utxoId)).toList();
+    final untagged =
+        utxos.where((u) => !allTaggedUtxoIds.contains(u.utxoId)).toList();
     if (untagged.isNotEmpty) {
       segments.add(
         _TagSegment(
@@ -202,7 +227,9 @@ class UtxoTagChart extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             t.utxo_overview_screen.no_tag_applied,
-            style: CoconutTypography.body1_16_Bold.setColor(colors.secondaryText),
+            style: CoconutTypography.body1_16_Bold.setColor(
+              colors.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
@@ -312,11 +339,15 @@ class _DonutChartState extends State<_DonutChart> {
     for (var i = 0; i < orderedSegments.length; i++) {
       final seg = orderedSegments[i];
       final ratio = seg.count / widget.segmentTotalCount;
-      final sweepAngle = 2 * math.pi * ratio - (i < orderedSegments.length - 1 ? _gap / radius : 0);
+      final sweepAngle =
+          2 * math.pi * ratio -
+          (i < orderedSegments.length - 1 ? _gap / radius : 0);
       final midAngle = startAngle + sweepAngle / 2;
       final hitStart = i > 0 ? startAngle - gapAngle : startAngle;
       final hitEnd = startAngle + sweepAngle + (seg.isUntagged ? 0 : gapAngle);
-      final matches = (angle >= hitStart && angle < hitEnd) || (hitEnd > 2 * math.pi && angle < hitEnd - 2 * math.pi);
+      final matches =
+          (angle >= hitStart && angle < hitEnd) ||
+          (hitEnd > 2 * math.pi && angle < hitEnd - 2 * math.pi);
       if (matches && !seg.isUntagged) {
         candidates.add(i);
         midAngles.add(midAngle);
@@ -359,7 +390,9 @@ class _DonutChartState extends State<_DonutChart> {
     for (var i = 0; i < orderedSegments.length; i++) {
       final seg = orderedSegments[i];
       final ratio = seg.count / widget.segmentTotalCount;
-      final sweepAngle = 2 * math.pi * ratio - (i < orderedSegments.length - 1 ? _gap / radius : 0);
+      final sweepAngle =
+          2 * math.pi * ratio -
+          (i < orderedSegments.length - 1 ? _gap / radius : 0);
       final midAngle = startAngle + sweepAngle / 2;
       const labelDist = radius + _strokeWidth / 2 + _labelOffset;
       final dx = _size / 2 + labelDist * math.cos(midAngle);
@@ -367,7 +400,14 @@ class _DonutChartState extends State<_DonutChart> {
       final arcCenterX = _size / 2 + radius * math.cos(startAngle);
       final arcCenterY = _size / 2 + radius * math.sin(startAngle);
       labelPositions.add(
-        _LabelPosition(seg: seg, dx: dx, dy: dy, arcCenterX: arcCenterX, arcCenterY: arcCenterY, index: i),
+        _LabelPosition(
+          seg: seg,
+          dx: dx,
+          dy: dy,
+          arcCenterX: arcCenterX,
+          arcCenterY: arcCenterY,
+          index: i,
+        ),
       );
       startAngle += sweepAngle + _gap / radius;
     }
@@ -399,7 +439,8 @@ class _DonutChartState extends State<_DonutChart> {
               behavior: HitTestBehavior.opaque,
               onTapUp: (details) {
                 final hit = _hitTestSegment(details.localPosition);
-                final newIndex = hit != null && hit == _selectedIndex ? null : hit;
+                final newIndex =
+                    hit != null && hit == _selectedIndex ? null : hit;
                 setState(() => _selectedIndex = newIndex);
                 _scheduleBubbleDismiss(newIndex);
               },
@@ -418,9 +459,9 @@ class _DonutChartState extends State<_DonutChart> {
                         gap: _gap,
                         selectedIndex: _selectedIndex,
                         overlayOpacity: _overlayOpacity,
-                        untaggedColor: colors.chartSurface,
+                        untaggedColor: colors.utxoOverviewChartSurface,
                         overlayBlendColor: colors.divider,
-                        multiTagFallbackColor: colors.tertiaryText,
+                        multiTagFallbackColor: colors.iconSecondary,
                         tagBlendColor: colors.secondaryText,
                       ),
                     ),
@@ -430,12 +471,15 @@ class _DonutChartState extends State<_DonutChart> {
                         children: [
                           Text(
                             t.utxo_overview_screen.tagged,
-                            style: CoconutTypography.caption_10.setColor(colors.mutedText),
+                            style: CoconutTypography.caption_10.setColor(
+                              colors.mutedText,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${widget.uniqueTaggedCount} / ${widget.totalCount}',
-                            style: CoconutTypography.body1_16_NumberBold.setColor(colors.primaryText),
+                            style: CoconutTypography.body1_16_NumberBold
+                                .setColor(colors.primaryText),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -449,7 +493,10 @@ class _DonutChartState extends State<_DonutChart> {
           if (selectedLp != null && !selectedLp.seg.isUntagged)
             Positioned(
               left: padding + selectedLp.arcCenterX - 60,
-              top: padding + selectedLp.arcCenterY - (UtxoChartBubble.height + UtxoChartBubble.arrowHeight),
+              top:
+                  padding +
+                  selectedLp.arcCenterY -
+                  (UtxoChartBubble.height + UtxoChartBubble.arrowHeight),
               width: 120,
               height: UtxoChartBubble.height + UtxoChartBubble.arrowHeight,
               child: IgnorePointer(
@@ -539,7 +586,9 @@ class _DonutChartPainter extends CustomPainter {
     const minSweepAngle = 0.1; // ~5.7도, gap 차감 후 1/54(≈5.2°)가 되어도 시각적 표현 보장
     for (var i = 0; i < orderedSegments.length; i++) {
       final seg = orderedSegments[i];
-      var sweepAngle = 2 * math.pi * (seg.count / totalCount) - (i < orderedSegments.length - 1 ? gap / radius : 0);
+      var sweepAngle =
+          2 * math.pi * (seg.count / totalCount) -
+          (i < orderedSegments.length - 1 ? gap / radius : 0);
       sweepAngle = math.max(minSweepAngle, sweepAngle);
 
       final paint =
@@ -555,11 +604,21 @@ class _DonutChartPainter extends CustomPainter {
         var colors =
             multiTags.isEmpty
                 ? [multiTagFallbackColor]
-                : multiTags.map((t) => _pastelForTag(t, tagBlendColor)).toList();
+                : multiTags
+                    .map((t) => _pastelForTag(t, tagBlendColor))
+                    .toList();
         if (overlayOpacity > 0 && selectedIndex != i) {
-          colors = colors.map((c) => Color.lerp(c, overlayBlendColor, overlayOpacity)!).toList();
-        } else if (overlayOpacity > 0 && selectedIndex == i && multiTags.isNotEmpty) {
-          colors = multiTags.map((t) => _pastelForTag(t, tagBlendColor, 0.0)).toList();
+          colors =
+              colors
+                  .map((c) => Color.lerp(c, overlayBlendColor, overlayOpacity)!)
+                  .toList();
+        } else if (overlayOpacity > 0 &&
+            selectedIndex == i &&
+            multiTags.isNotEmpty) {
+          colors =
+              multiTags
+                  .map((t) => _pastelForTag(t, tagBlendColor, 0.0))
+                  .toList();
         }
         if (colors.length == 1) {
           paint.color = colors.first;
@@ -583,7 +642,13 @@ class _DonutChartPainter extends CustomPainter {
         paint.color = color;
       }
 
-      canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startAngle, sweepAngle, false, paint);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle,
+        false,
+        paint,
+      );
       startAngle += sweepAngle + gap / radius;
     }
   }
@@ -627,7 +692,7 @@ class _TagSectionChip extends StatelessWidget {
     return IntrinsicWidth(
       child: CoconutChip(
         minWidth: 44,
-        color: colors.infoChipBackground,
+        color: colors.surfaceInfoChip,
         label: name,
         labelSize: 11,
         labelColor: colors.primaryText,
@@ -686,7 +751,9 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
   /// UTXO 정렬: 1. pending 2. unspent 3. locked 마지막, 동일 상태 내 큰 금액 순
   static void _sortUtxosForTagGrid(List<UtxoState> utxos) {
     int statusOrder(UtxoState u) {
-      if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) return 0;
+      if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
+        return 0;
+      }
       if (u.status == UtxoStatus.unspent) return 1;
       return 2; // locked
     }
@@ -731,8 +798,16 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
       }
     }
 
-    final multiTaggedIds = tagCountByUtxo.entries.where((e) => e.value >= 2).map((e) => e.key).toSet();
-    final singleTaggedIds = tagCountByUtxo.entries.where((e) => e.value == 1).map((e) => e.key).toSet();
+    final multiTaggedIds =
+        tagCountByUtxo.entries
+            .where((e) => e.value >= 2)
+            .map((e) => e.key)
+            .toSet();
+    final singleTaggedIds =
+        tagCountByUtxo.entries
+            .where((e) => e.value == 1)
+            .map((e) => e.key)
+            .toSet();
     final allTaggedUtxoIds = tagCountByUtxo.keys.toSet();
 
     final result =
@@ -750,21 +825,36 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
     for (final tag in widget.utxoTagList) {
       final ids = List<String>.from(tag.utxoIdList ?? []);
       final utxos =
-          ids.where((id) => singleTaggedIds.contains(id)).map((id) => utxoMap[id]).whereType<UtxoState>().toList();
+          ids
+              .where((id) => singleTaggedIds.contains(id))
+              .map((id) => utxoMap[id])
+              .whereType<UtxoState>()
+              .toList();
       if (utxos.isNotEmpty) {
         _sortUtxosForTagGrid(utxos);
-        result.add((tag: tag, utxos: utxos, isMultiTag: false, multiTagNames: null, multiTags: null, subGroups: null));
+        result.add((
+          tag: tag,
+          utxos: utxos,
+          isMultiTag: false,
+          multiTagNames: null,
+          multiTags: null,
+          subGroups: null,
+        ));
       }
     }
 
-    final multiTagged = multiTaggedIds.map((id) => utxoMap[id]).whereType<UtxoState>().toList();
+    final multiTagged =
+        multiTaggedIds.map((id) => utxoMap[id]).whereType<UtxoState>().toList();
     if (multiTagged.isNotEmpty) {
       List<String> getTagNamesForUtxo(UtxoState u) {
         final tagsFromUtxo = u.tags;
         if (tagsFromUtxo != null && tagsFromUtxo.isNotEmpty) {
           return tagsFromUtxo.map((t) => t.name).toList()..sort();
         }
-        return widget.utxoTagList.where((tag) => tag.utxoIdList?.contains(u.utxoId) == true).map((t) => t.name).toList()
+        return widget.utxoTagList
+            .where((tag) => tag.utxoIdList?.contains(u.utxoId) == true)
+            .map((t) => t.name)
+            .toList()
           ..sort();
       }
 
@@ -802,7 +892,10 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
       ));
     }
 
-    final untagged = displayableUtxos.where((u) => !allTaggedUtxoIds.contains(u.utxoId)).toList();
+    final untagged =
+        displayableUtxos
+            .where((u) => !allTaggedUtxoIds.contains(u.utxoId))
+            .toList();
     if (untagged.isNotEmpty) {
       _sortUtxosForTagGrid(untagged);
       result.add((
@@ -825,7 +918,10 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
     if (groups.isEmpty) return const SizedBox.shrink();
 
     if (_expanded.length != groups.length) {
-      _expanded = List.generate(groups.length, (i) => i < _expanded.length ? _expanded[i] : true);
+      _expanded = List.generate(
+        groups.length,
+        (i) => i < _expanded.length ? _expanded[i] : true,
+      );
     }
 
     return Padding(
@@ -857,20 +953,32 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                         children: [
                           // 여러 태그: 미적용과 동일한 스타일의 단일 칩으로 표시 (overflow 방지)
                           if (g.isMultiTag)
-                            _TagSectionChip(name: t.utxo_overview_screen.multi_tag, tag: null)
+                            _TagSectionChip(
+                              name: t.utxo_overview_screen.multi_tag,
+                              tag: null,
+                            )
                           else
-                            _TagSectionChip(name: g.tag?.name ?? t.utxo_overview_screen.untagged, tag: g.tag),
+                            _TagSectionChip(
+                              name:
+                                  g.tag?.name ??
+                                  t.utxo_overview_screen.untagged,
+                              tag: g.tag,
+                            ),
                           const SizedBox(width: 8),
                           Text(
                             '${g.utxos.length} coins',
-                            style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText),
+                            style: CoconutTypography.body3_12_Number.setColor(
+                              colors.secondaryText,
+                            ),
                           ),
                           const Spacer(),
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: Icon(
                               key: ValueKey(isExpanded),
-                              isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
+                              isExpanded
+                                  ? Icons.keyboard_arrow_down
+                                  : Icons.keyboard_arrow_right,
                               size: 24,
                               color: colors.iconSecondary,
                             ),
@@ -888,66 +996,116 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                                 padding: const EdgeInsets.only(top: 12),
                                 child: Builder(
                                   builder: (context) {
-                                    final width = MediaQuery.of(context).size.width - 2 * _padding;
-                                    final crossAxisCount = (width / (_gridMaxCoinExtent + _crossAxisSpacing))
+                                    final width =
+                                        MediaQuery.of(context).size.width -
+                                        2 * _padding;
+                                    final crossAxisCount = (width /
+                                            (_gridMaxCoinExtent +
+                                                _crossAxisSpacing))
                                         .floor()
                                         .clamp(1, 10);
                                     final cellSize =
-                                        (width - (crossAxisCount - 1) * _crossAxisSpacing) / crossAxisCount;
+                                        (width -
+                                            (crossAxisCount - 1) *
+                                                _crossAxisSpacing) /
+                                        crossAxisCount;
                                     final coinSize = cellSize * 0.9;
 
-                                    if (g.isMultiTag && (g.subGroups?.isNotEmpty ?? false)) {
+                                    if (g.isMultiTag &&
+                                        (g.subGroups?.isNotEmpty ?? false)) {
                                       return Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children:
                                             g.subGroups!.map((sg) {
                                               return Padding(
-                                                padding: const EdgeInsets.only(bottom: 16),
+                                                padding: const EdgeInsets.only(
+                                                  bottom: 16,
+                                                ),
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Padding(
-                                                      padding: const EdgeInsets.only(bottom: 8),
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            bottom: 8,
+                                                          ),
                                                       child: Wrap(
                                                         spacing: 6,
                                                         runSpacing: 6,
                                                         children:
                                                             sg.tags
-                                                                .map((tag) => _TagSectionChip(name: tag.name, tag: tag))
+                                                                .map(
+                                                                  (
+                                                                    tag,
+                                                                  ) => _TagSectionChip(
+                                                                    name:
+                                                                        tag.name,
+                                                                    tag: tag,
+                                                                  ),
+                                                                )
                                                                 .toList(),
                                                       ),
                                                     ),
                                                     Wrap(
-                                                      spacing: _crossAxisSpacing,
-                                                      runSpacing: _mainAxisSpacing,
+                                                      spacing:
+                                                          _crossAxisSpacing,
+                                                      runSpacing:
+                                                          _mainAxisSpacing,
                                                       children:
                                                           sg.utxos.map((utxo) {
-                                                            final isSelected = widget.selectedUtxoIds.contains(
-                                                              utxo.utxoId,
-                                                            );
+                                                            final isSelected = widget
+                                                                .selectedUtxoIds
+                                                                .contains(
+                                                                  utxo.utxoId,
+                                                                );
                                                             return SizedBox(
                                                               width: cellSize,
-                                                              height: cellSize / 0.95,
+                                                              height:
+                                                                  cellSize /
+                                                                  0.95,
                                                               child: Center(
                                                                 child: UtxoCoinCard(
                                                                   utxo: utxo,
-                                                                  size: coinSize,
+                                                                  size:
+                                                                      coinSize,
                                                                   compact: true,
-                                                                  isFocused: true,
-                                                                  isSelected: isSelected,
-                                                                  isSelectionMode: widget.isSelectionMode,
-                                                                  currentUnit: widget.currentUnit,
-                                                                  dustThreshold: widget.dustThreshold,
-                                                                  isAddressReused: widget.reusedAddresses.contains(
-                                                                    utxo.to,
-                                                                  ),
-                                                                  isSuspiciousDust: widget.suspiciousUtxoIds.contains(
-                                                                    utxo.utxoId,
-                                                                  ),
-                                                                  onTap: () => widget.onUtxoTap(utxo),
+                                                                  isFocused:
+                                                                      true,
+                                                                  isSelected:
+                                                                      isSelected,
+                                                                  isSelectionMode:
+                                                                      widget
+                                                                          .isSelectionMode,
+                                                                  currentUnit:
+                                                                      widget
+                                                                          .currentUnit,
+                                                                  dustThreshold:
+                                                                      widget
+                                                                          .dustThreshold,
+                                                                  isAddressReused: widget
+                                                                      .reusedAddresses
+                                                                      .contains(
+                                                                        utxo.to,
+                                                                      ),
+                                                                  isSuspiciousDust: widget
+                                                                      .suspiciousUtxoIds
+                                                                      .contains(
+                                                                        utxo.utxoId,
+                                                                      ),
+                                                                  onTap:
+                                                                      () => widget
+                                                                          .onUtxoTap(
+                                                                            utxo,
+                                                                          ),
                                                                   onLongPress:
-                                                                      widget.onUtxoLongPress != null
-                                                                          ? () => widget.onUtxoLongPress!(utxo)
+                                                                      widget.onUtxoLongPress !=
+                                                                              null
+                                                                          ? () => widget
+                                                                              .onUtxoLongPress!(
+                                                                            utxo,
+                                                                          )
                                                                           : null,
                                                                 ),
                                                               ),
@@ -966,7 +1124,9 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                                       runSpacing: _mainAxisSpacing,
                                       children:
                                           g.utxos.map((utxo) {
-                                            final isSelected = widget.selectedUtxoIds.contains(utxo.utxoId);
+                                            final isSelected = widget
+                                                .selectedUtxoIds
+                                                .contains(utxo.utxoId);
                                             return SizedBox(
                                               width: cellSize,
                                               height: cellSize / 0.95,
@@ -977,15 +1137,29 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                                                   compact: true,
                                                   isFocused: true,
                                                   isSelected: isSelected,
-                                                  isSelectionMode: widget.isSelectionMode,
-                                                  currentUnit: widget.currentUnit,
-                                                  dustThreshold: widget.dustThreshold,
-                                                  isAddressReused: widget.reusedAddresses.contains(utxo.to),
-                                                  isSuspiciousDust: widget.suspiciousUtxoIds.contains(utxo.utxoId),
-                                                  onTap: () => widget.onUtxoTap(utxo),
+                                                  isSelectionMode:
+                                                      widget.isSelectionMode,
+                                                  currentUnit:
+                                                      widget.currentUnit,
+                                                  dustThreshold:
+                                                      widget.dustThreshold,
+                                                  isAddressReused: widget
+                                                      .reusedAddresses
+                                                      .contains(utxo.to),
+                                                  isSuspiciousDust: widget
+                                                      .suspiciousUtxoIds
+                                                      .contains(utxo.utxoId),
+                                                  onTap:
+                                                      () => widget.onUtxoTap(
+                                                        utxo,
+                                                      ),
                                                   onLongPress:
-                                                      widget.onUtxoLongPress != null
-                                                          ? () => widget.onUtxoLongPress!(utxo)
+                                                      widget.onUtxoLongPress !=
+                                                              null
+                                                          ? () => widget
+                                                              .onUtxoLongPress!(
+                                                            utxo,
+                                                          )
                                                           : null,
                                                 ),
                                               ),

@@ -27,7 +27,7 @@ import 'package:coconut_wallet/screens/common/tag_select_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/address_scan_util.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
@@ -88,7 +88,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   bool _isReceiveAddressBottomSheetOpen = false;
   bool _isFeeBottomSheetOpen = false;
 
-  Color get _pickerDividerColor => context.coconutColors.inputPlaceholder;
+  Color get _pickerDividerColor => context.coconutColors.divider;
 
   @override
   void initState() {
@@ -620,7 +620,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
         ShrinkAnimationButton(
           onPressed: _toggleDustExclusion,
           defaultColor: Colors.transparent,
-          pressedColor: context.coconutColors.surfacePressed,
+          pressedOverlayColor: context.coconutColors.surfacePressOverlay,
           borderRadius: 8,
           borderWidth: 0,
           child: Padding(
@@ -665,7 +665,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     return ShrinkAnimationButton(
       onPressed: _toggleDustExclusion,
       defaultColor: Colors.transparent,
-      pressedColor: context.coconutColors.surfacePressed,
+      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
       borderRadius: 8,
       borderWidth: 0,
       child: Padding(

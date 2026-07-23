@@ -125,7 +125,7 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureAnchors());
 
     return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: context.coconutColors.surface),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: SizedBox(
         key: _paintAreaKey,
@@ -716,7 +716,7 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
           widget.isOutputToMyWallet!(widget.walletId!, address)) {
         return colors.receivingColor;
       }
-      return colors.tertiaryText;
+      return colors.mutedText;
     } else if (isOutgoing) {
       if (node.type == _FlowNodeType.input) return colors.primaryText;
       if (node.type == _FlowNodeType.fee) return colors.sendingColor;

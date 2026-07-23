@@ -239,7 +239,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
         children: [
           SvgPicture.asset(
             CommonFormIconPath.circleCheck,
-            colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.accentForeground, BlendMode.srcIn),
             height: 48,
             width: 48,
           ),

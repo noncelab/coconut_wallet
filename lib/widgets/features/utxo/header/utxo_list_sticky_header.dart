@@ -198,7 +198,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                   Text(
                     activeOption,
                     style: CoconutTypography.body3_12.setColor(
-                      enableDropdown ? context.coconutColors.primaryText : context.coconutColors.tertiaryText,
+                      enableDropdown ? context.coconutColors.primaryText : context.coconutColors.mutedText,
                     ),
                   ),
                   CoconutLayout.spacing_200w,

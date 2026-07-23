@@ -51,7 +51,7 @@ class _SendOutputDetailCardState extends State<SendOutputDetailCard> {
     }
 
     return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: context.coconutColors.surface),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       child: Column(
         children: [

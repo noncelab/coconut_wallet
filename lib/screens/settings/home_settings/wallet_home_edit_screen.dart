@@ -476,8 +476,8 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                   // homeFeatureTypeString을 통해 토글
                                   _viewModel.toggleTempHomeFeatureEnabled(widget['homeFeatureTypeString'].toString());
                                 },
-                                defaultColor: context.coconutColors.surfaceCard,
-                                pressedColor: context.coconutColors.surfacePressed,
+                                defaultColor: context.coconutColors.surface,
+                                pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                                 child: FixedTextScale(
                                   child: Container(
                                     height: 100,

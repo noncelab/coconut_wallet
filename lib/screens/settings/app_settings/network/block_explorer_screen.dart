@@ -214,7 +214,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 34),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
       child: Row(
         children: [
           if (_viewModel.isConnecting)
@@ -263,7 +263,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

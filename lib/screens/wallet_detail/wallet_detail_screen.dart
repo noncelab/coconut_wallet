@@ -1,7 +1,15 @@
 import 'dart:io';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -27,6 +35,7 @@ import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_sticky_header.dart';
@@ -147,9 +156,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       context: context,
       actionButtonList: [
         if (NetworkType.currentNetworkType.isTestnet)
-          IconButton(
-            key: _faucetIconKey,
-            onPressed: () => _onFaucetIconPressed(),
+          CoconutAppBarActionButton(
+            buttonKey: _faucetIconKey,
+            onPressed: _onFaucetIconPressed,
             icon: SvgPicture.asset(
               FeatureUtxoIconPath.faucet,
               width: 18,
@@ -157,16 +166,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
-        IconButton(
+        CoconutAppBarActionButton(
           onPressed: () => _navigateToUtxoList(context),
           icon: SvgPicture.asset(
             FeatureWalletIconPath.coins,
             width: 18,
             height: 18,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+            ),
           ),
-        ),
-        IconButton(
+        CoconutAppBarActionButton(
           onPressed: () => _navigateToWalletInfo(context),
           icon: SvgPicture.asset(
             FeatureWalletIconPath.walletOutlined,
@@ -278,7 +287,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         ),
                         CoconutLayout.spacing_100w,
                         ColorFiltered(
-                          colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcATop),
+                          colorFilter: ColorFilter.mode(context.coconutColors.accentForeground, BlendMode.srcATop),
                           child: LottieBuilder.asset('assets/lottie/status_loading.json', width: 16, height: 16),
                         ),
                       ],

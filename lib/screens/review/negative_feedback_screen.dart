@@ -60,11 +60,11 @@ class NegativeFeedbackScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: context.coconutColors.backgroundHighlight,
+                        color: context.coconutColors.brandAccentBackground,
                       ),
                       child: Text(
                         t.negative_feedback_screen.text3,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.backgroundHighlightText),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.brandAccentForeground),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -77,11 +77,11 @@ class NegativeFeedbackScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: context.coconutColors.actionButtonBackground,
+                        color: context.coconutColors.buttonPrimaryBackground,
                       ),
                       child: Text(
                         t.negative_feedback_screen.text4,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.actionButtonText),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.buttonPrimaryForeground),
                         textAlign: TextAlign.center,
                       ),
                     ),

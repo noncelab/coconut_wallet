@@ -215,7 +215,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                               isActive: _viewModel.hasSelectionChanged,
                                               showSurroundings: true,
                                               horizontalPadding: 16,
-                                              surroundingsColor: context.coconutColors.surfaceBottomSheet,
+                                              surroundingsColor: context.coconutColors.bottomActionBarBackground,
                                             ),
                                           ],
                                         )

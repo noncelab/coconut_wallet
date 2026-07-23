@@ -174,7 +174,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 20, 12, 20),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: context.coconutColors.surface),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

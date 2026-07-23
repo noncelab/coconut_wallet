@@ -221,7 +221,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           ignoring: true,
           child: IconButton(
             onPressed: null,
-            icon: Icon(Icons.search_rounded, color: colors.tertiaryText),
+            icon: Icon(Icons.search_rounded, color: colors.iconSecondary),
             iconSize: Sizes.size22,
           ),
         ),

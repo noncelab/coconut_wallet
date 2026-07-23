@@ -144,7 +144,7 @@ class _BottomActionButtonState extends State<BottomActionButton> {
           : BottomActionButton.verticalHeight;
 
   Color get _foregroundColor {
-    if (!widget.enabled) return context.coconutColors.tertiaryText;
+    if (!widget.enabled) return context.coconutColors.mutedText;
     return _isPressed ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
   }
 

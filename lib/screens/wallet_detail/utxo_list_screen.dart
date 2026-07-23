@@ -498,6 +498,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
     final mode = result.mode;
     final tagStates = result.tagStates;
+    final hasChanges = result.hasChanges;
 
     if (mode == UtxoTagApplyEditMode.add ||
         mode == UtxoTagApplyEditMode.update ||
@@ -508,6 +509,25 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     }
 
     if (mode == UtxoTagApplyEditMode.changeAppliedTags) {
+      if (!hasChanges) {
+        viewModel.deselectTaggedUtxo();
+
+        setState(() {
+          _utxoListKey.currentState?._selectedUtxoIds.clear();
+          _isSelectionMode = false;
+        });
+
+        if (mounted) {
+          CoconutToast.showToast(
+            context: context,
+            isVisibleIcon: true,
+            iconPath: CommonStateIconPath.circleInfo,
+            text: t.utxo_list_screen.utxo_tag_no_changes,
+          );
+        }
+        return;
+      }
+
       final tagProvider = context.read<UtxoTagProvider>();
 
       await tagProvider.applyTagsToUtxos(

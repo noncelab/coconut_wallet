@@ -18,10 +18,7 @@ class PinBox extends StatelessWidget {
       child: AspectRatio(
         aspectRatio: 1.0,
         child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            color: context.coconutColors.inputPlaceholder,
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: context.coconutColors.surfaceMuted),
           child:
               isSet
                   ? Padding(

@@ -246,7 +246,7 @@ class _P2PSelectWalletBottomSheetState extends State<P2PSelectWalletBottomSheet>
                       isLastItem: index == _walletList.length - 1,
                       currentUnit: widget.currentUnit,
                       backgroundColor: context.coconutColors.surfaceBottomSheet,
-                      pressedColor: context.coconutColors.divider,
+                      pressedOverlayColor: context.coconutColors.divider,
                       rightWidget: Container(),
                       onPressed: () => widget.onWalletSelected(walletId),
                     );
