@@ -246,6 +246,7 @@ wallet_home_screen:
       title: "Restaurar con mnemónico"
       description: "Conservar la billetera existente"
   add_wallet: "Añadir billetera"
+  add_wallet_action: "Añadir billetera"
   view_all: "Ver todas"
   wallet_menu:
     rename: "Cambiar nombre"
@@ -271,9 +272,11 @@ wallet_home_screen:
       sheet_title: "Botón superior de Inicio"
       preview: "Vista previa de Inicio"
       preview_all: "Botón para añadir cualquier cartera"
+      preview_all_emphasis: "cualquier"
       preview_watch_only: "Botón para añadir cartera de solo lectura"
       preview_hot_wallet: "Botón para añadir cartera caliente"
       preview_hidden: "Botón para añadir cartera oculto"
+      preview_hidden_emphasis: "oculto"
       all:
         title: "Todas"
         description: "Elige entre todos los tipos de cartera."
@@ -456,6 +459,25 @@ wallet_connect_screen:
       
 # lib/screens/wallet_list
 wallet_list:
+  header:
+    total_amount: "Tenencias totales"
+    balance_history: "Cambio de saldo"
+    converted_amount: "Importe convertido"
+    than_yesterday: "Desde ayer"
+    than_a_week_ago: "Hace 7 días"
+    than_a_month_ago: "Hace 30 días"
+    tooltip:
+      title: "Detalles del precio"
+      price_source(source): "Precio de 1 BTC: $source"
+      fiat_price_source(fiat, source): "Precio en $fiat: $source"
+      closing_time: "El precio diario cierra a las 00:00 UTC."
+      yesterday_basis: "Desde ayer: Último precio de cierre"
+      week_basis: "Desde hace una semana: Cierre de hace 7 días"
+      month_basis: "Desde hace un mes: Cierre de hace 30 días"
+      historical_price_unavailable: "bitFlyer no ofrece velas diarias oficiales, por lo que no se muestran cambios en JPY."
+  menu:
+    edit_order: "Editar orden"
+    display_settings: "Ajustes de visualización"
   wallet_count: "$count Elementos"
   empty_watch_only: "No hay billeteras de solo lectura"
   empty_hot_wallet: "No hay billeteras calientes"
@@ -471,20 +493,26 @@ wallet_list:
     exclude_from_total_amount: "Excluir del Total"
     exclude_from_total_amount_description: "Esta cartera será excluida del cálculo del saldo total en la pantalla principal."
   edit:
-    wallet_list: "Editar Lista de Carteras"
-    star_description: "hasta 5 carteras para mostrar en la pantalla principal."
+    order: "Editar orden"
     order_description: "para cambiar el orden de las carteras."
+    tab_order_description: "para cambiar el orden de las pestañas."
     delete_description: "Desliza hacia la izquierda en una cartera para eliminarla."
     finish: "Finalizar Edición"
     unsaved_changes_confirm_exit: "Tienes cambios sin guardar.\n¿Estás seguro de que quieres salir?"
   bottom_sheet:
     tab_display_settings: "Configuración de visualización de pestañas"
+    wallet_list_settings: "Lista de billeteras"
+    home_screen_settings: "Pantalla de inicio"
     show_watch_only_tab: "Mostrar pestaña de billeteras de solo lectura"
     show_watch_only_tab_description: "Muestra la pestaña de billeteras de solo lectura en la pantalla de inicio"
     show_hot_wallet_tab: "Mostrar pestaña de billeteras calientes"
     show_hot_wallet_tab_description: "Muestra la pestaña de billeteras calientes en la pantalla de inicio"
-    hide_fiat_price: "Ocultar saldo en moneda fiduciaria"
-    hide_fiat_price_description: "No mostrar el saldo en moneda fiduciaria en la pantalla de inicio."
+    show_fiat_price: "Mostrar saldo en moneda fiduciaria"
+    show_fiat_price_description: "Muestra el saldo en moneda fiduciaria en esta pantalla."
+    show_bitcoin_price: "Mostrar información del precio de 1 BTC"
+    show_bitcoin_price_description: "Muestra el precio de 1 BTC y sus cambios en el tiempo."
+    show_balance_chart: "Mostrar gráfico del saldo"
+    show_balance_chart_description: "Muestra los cambios del saldo total de todas las billeteras."
     visible: "Visible"
 
 # lib/screens/review

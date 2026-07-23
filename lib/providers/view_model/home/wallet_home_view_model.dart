@@ -387,7 +387,10 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
 
     /// 지갑 즐겨찾기 변동 체크
-    if (_favoriteWallets.map((w) => w.id).toList().toString() != _preferenceProvider.favoriteWalletIds.toString() &&
+    if (!const ListEquality<int>().equals(
+          _favoriteWallets.map((wallet) => wallet.id).toList(),
+          _getOrderedFavoriteWalletIds(),
+        ) &&
         walletItemList.isNotEmpty) {
       loadFavoriteWallets();
     }
@@ -497,7 +500,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   void loadFavoriteWallets({bool notify = true}) {
-    final ids = _preferenceProvider.favoriteWalletIds;
+    final ids = _getOrderedFavoriteWalletIds();
 
     final wallets =
         ids
@@ -515,6 +518,21 @@ class WalletHomeViewModel extends ChangeNotifier {
     if (notify && hasChanged) {
       notifyListeners();
     }
+  }
+
+  List<int> _getOrderedFavoriteWalletIds() {
+    final favoriteIds = _preferenceProvider.favoriteWalletIds;
+    final favoriteIdSet = favoriteIds.toSet();
+    final walletOrder = _preferenceProvider.walletOrder;
+
+    if (walletOrder.isEmpty) {
+      return List<int>.from(favoriteIds);
+    }
+
+    return [
+      ...walletOrder.where(favoriteIdSet.contains),
+      ...favoriteIds.where((id) => !walletOrder.contains(id)),
+    ];
   }
 
   void setReceiveAddress(int walletId) {

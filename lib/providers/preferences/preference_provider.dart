@@ -128,9 +128,17 @@ class PreferenceProvider extends ChangeNotifier {
   /// UTXO 구간별 색상 테마
   late UtxoTierTheme _utxoTierTheme;
   UtxoTierTheme get utxoTierTheme => _utxoTierTheme;
-  // 지갑 목록 화면 - 법정화폐 숨기기 여부
+  // 지갑 목록 화면 - 법정화폐 표시 여부
   late bool _isWalletListFiatHidden;
-  bool get isWalletListFiatHidden => _isWalletListFiatHidden;
+  bool get isWalletListFiatVisible => !_isWalletListFiatHidden;
+
+  // 지갑 목록 화면 - 1 BTC 가격 정보 표시 여부
+  late bool _isWalletListBitcoinPriceHidden;
+  bool get isWalletListBitcoinPriceVisible => !_isWalletListBitcoinPriceHidden;
+
+  // 지갑 목록 화면 - 총 보유 수량 변화 그래프 표시 여부
+  late bool _isWalletListBalanceChartHidden;
+  bool get isWalletListBalanceChartVisible => !_isWalletListBalanceChartHidden;
 
   // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록
   late List<FiatCode> _walletListVisibleFiats;
@@ -185,6 +193,8 @@ class PreferenceProvider extends ChangeNotifier {
     _utxoTierTheme = UtxoTierThemes.fromId(_sharedPrefs.getString(SharedPrefKeys.kUtxoTierThemeId));
 
     _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
+    _isWalletListBitcoinPriceHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListBitcoinPriceHidden);
+    _isWalletListBalanceChartHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListBalanceChartHidden);
     _walletListVisibleFiats = _loadWalletListVisibleFiats();
     _themeVariant = _loadThemeVariant();
   }
@@ -638,10 +648,27 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 지갑 목록 화면 법정화폐 숨기기 설정
-  Future<void> setWalletListFiatHidden(bool isHidden) async {
-    _isWalletListFiatHidden = isHidden;
-    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListFiatHidden, isHidden);
+  // 지갑 목록 화면 법정화폐 표시 설정
+  Future<void> setWalletListFiatVisible(bool isVisible) async {
+    _isWalletListFiatHidden = !isVisible;
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListFiatHidden, !isVisible);
+    notifyListeners();
+  }
+
+  // 지갑 목록 화면 1 BTC 가격 정보 표시 설정
+  Future<void> setWalletListBitcoinPriceVisible(bool isVisible) async {
+    _isWalletListBitcoinPriceHidden = !isVisible;
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListBitcoinPriceHidden, !isVisible);
+    notifyListeners();
+  }
+
+  // 지갑 목록 화면 총 보유 수량 변화 그래프 표시 설정
+  Future<void> setWalletListBalanceChartVisible(bool isVisible) async {
+    _isWalletListBalanceChartHidden = !isVisible;
+    await _sharedPrefs.setBool(
+      SharedPrefKeys.kWalletListBalanceChartHidden,
+      !isVisible,
+    );
     notifyListeners();
   }
 

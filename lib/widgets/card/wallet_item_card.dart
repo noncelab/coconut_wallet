@@ -87,7 +87,12 @@ class WalletItemCard extends StatelessWidget {
       borderRadius: 12,
       onPressed: onPressed,
       onLongPress: onLongPressed,
-      child: _buildWalletItemContent(context, displayedFakeBalance, iconGradientColors: iconGradientColors),
+      child: _buildWalletItemContent(
+        context,
+        displayedFakeBalance,
+        onTapStar: onTapStar,
+        iconGradientColors: iconGradientColors,
+      ),
     );
 
     if (isLastItem) {
@@ -110,26 +115,23 @@ class WalletItemCard extends StatelessWidget {
       if (isPrimaryWallet == true) t.wallet_list.primary_wallet,
       if (isExcludeFromTotalBalance == true) t.wallet_list.exclude_from_total_amount,
     ];
+    final hasStarButton = isStarVisible && onTapStar != null;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isEditMode ? 8 : 20, vertical: 12),
+      padding: EdgeInsets.fromLTRB(hasStarButton ? 0 : 20, 12, isEditMode ? 8 : 20, 12),
       child: Row(
         children: [
-          if (isEditMode)
-            Opacity(
-              opacity: isStarVisible ? 1 : 0,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  if (!isStarVisible) return;
-                  onTapStar?.call((!isFavorite, walletItem.id));
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SvgPicture.asset(
-                    'assets/svg/${isFavorite ? 'star-filled' : 'star-outlined'}.svg',
-                    colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
-                  ),
+          if (hasStarButton)
+            GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () {
+                onTapStar((!isFavorite, walletItem.id));
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SvgPicture.asset(
+                  'assets/svg/${isFavorite ? 'star-filled' : 'star-outlined'}.svg',
+                  colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
                 ),
               ),
             ),

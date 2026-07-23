@@ -245,6 +245,7 @@ wallet_home_screen:
       title: "ニーモニックから復元"
       description: "既存のウォレットをそのまま"
   add_wallet: "ウォレットを追加"
+  add_wallet_action: "ウォレットを追加"
   view_all: "すべて表示"
   wallet_menu:
     rename: "名前を変更"
@@ -270,9 +271,11 @@ wallet_home_screen:
       sheet_title: "ホーム画面上部のボタン"
       preview: "ホーム画面のプレビュー"
       preview_all: "すべてのウォレット追加ボタン"
+      preview_all_emphasis: "すべて"
       preview_watch_only: "閲覧専用ウォレット追加ボタン"
       preview_hot_wallet: "ホットウォレット追加ボタン"
       preview_hidden: "ウォレット追加ボタンを非表示"
+      preview_hidden_emphasis: "非表示"
       all:
         title: "すべて"
         description: "すべての種類のウォレットから選択できます。"
@@ -426,6 +429,25 @@ wallet_add_scanner_screen:
   
 # lib/screens/wallet_list
 wallet_list:
+  header:
+    total_amount: "総保有量"
+    balance_history: "保有量の推移"
+    converted_amount: "換算額"
+    than_yesterday: "昨日比"
+    than_a_week_ago: "1週間前比"
+    than_a_month_ago: "1か月前比"
+    tooltip:
+      title: "価格の基準"
+      price_source(source): "1 BTC価格：$source"
+      fiat_price_source(fiat, source): "$fiat価格：$source"
+      closing_time: "毎日UTC 00:00の終値を基準にします。"
+      yesterday_basis: "昨日比：直近の終値"
+      week_basis: "1週間前比：7日前の終値"
+      month_basis: "1か月前比：30日前の終値"
+      historical_price_unavailable: "bitFlyerは公式の日足を提供していないため、JPYの騰落率は表示しません。"
+  menu:
+    edit_order: "並び順を編集"
+    display_settings: "表示設定"
   wallet_count: "$count 項目"
   empty_watch_only: "閲覧専用ウォレットがありません"
   empty_hot_wallet: "ホットウォレットがありません"
@@ -441,20 +463,26 @@ wallet_list:
     exclude_from_total_amount: "合計から除外"
     exclude_from_total_amount_description: "このウォレットはホーム画面の合計残高計算から除外されます。"
   edit:
-    wallet_list: "ウォレット一覧編集"
-    star_description: "ホーム画面に表示するウォレットを最大5つまで選択できます。"
+    order: "順序を編集"
     order_description: "タップしてウォレットの順序を変更できます。"
+    tab_order_description: "タップしてタブの順序を変更できます。"
     delete_description: "ウォレットを左にスワイプして削除できます。"
     finish: "編集完了"
     unsaved_changes_confirm_exit: "未保存の変更があります。\n本当に終了しますか？"
   bottom_sheet:
     tab_display_settings: "タブ表示設定"
+    wallet_list_settings: "ウォレット一覧"
+    home_screen_settings: "ホーム画面"
     show_watch_only_tab: "閲覧専用ウォレットタブを表示"
     show_watch_only_tab_description: "ホーム画面に閲覧専用ウォレットタブを表示します"
     show_hot_wallet_tab: "ホットウォレットタブを表示"
     show_hot_wallet_tab_description: "ホーム画面にホットウォレットタブを表示します"
-    hide_fiat_price: "法定通貨残高を非表示"
-    hide_fiat_price_description: "この画面に法定通貨残高を表示しません。"
+    show_fiat_price: "法定通貨残高を表示"
+    show_fiat_price_description: "この画面に法定通貨残高を表示します。"
+    show_bitcoin_price: "1 BTCの価格情報を表示"
+    show_bitcoin_price_description: "1 BTCの価格と期間ごとの変化率を表示します。"
+    show_balance_chart: "保有量推移グラフを表示"
+    show_balance_chart_description: "すべてのウォレットの総保有量の推移を表示します。"
     visible: "表示中"
 
 wallet_connect_screen:

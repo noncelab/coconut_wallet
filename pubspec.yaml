@@ -293,6 +293,7 @@ flutter:
     - assets/svg/cloud-disconnected.svg
     - assets/svg/star-small.svg
     - assets/svg/star-outlined.svg
+    - assets/svg/star-outlined-bold.svg
     - assets/svg/star-filled.svg
     - assets/svg/hamburger.svg
     - assets/svg/plus.svg

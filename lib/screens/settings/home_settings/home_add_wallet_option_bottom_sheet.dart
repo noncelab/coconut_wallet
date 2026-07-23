@@ -117,7 +117,7 @@ class _HomeScreenPreview extends StatelessWidget {
               Expanded(
                 child: Text(
                   t.wallet_home_screen.edit.home_add_wallet_button.preview,
-                  style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
+                  style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                 ),
               ),
               FittedBox(
@@ -158,7 +158,7 @@ class _HomeScreenPreview extends StatelessWidget {
                         'assets/svg/kebab.svg',
                         width: 18,
                         height: 18,
-                        colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                        colorFilter: ColorFilter.mode(context.coconutColors.tertiaryText, BlendMode.srcIn),
                       ),
                       CoconutLayout.spacing_500w,
                     ],
@@ -180,7 +180,7 @@ class _HomeScreenPreview extends StatelessWidget {
                           Expanded(
                             child: Text(
                               '12.3456 7890 BTC',
-                              style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.tertiaryText),
+                              style: CoconutTypography.body1_16_NumberBold.setColor(context.coconutColors.tertiaryText),
                             ),
                           ),
                           Container(
@@ -221,15 +221,13 @@ class _HomeScreenPreview extends StatelessWidget {
   }
 
   TextSpan _buildPreviewTitleSpan(BuildContext context) {
-    final normalStyle = CoconutTypography.caption_10.setColor(context.coconutColors.primaryText);
-    if (option != HomeAddWalletOption.watchOnly && option != HomeAddWalletOption.hotWallet) {
-      return TextSpan(text: _previewTitle, style: normalStyle);
-    }
-
-    final emphasizedText =
-        option == HomeAddWalletOption.watchOnly
-            ? t.wallet_home_screen.edit.home_add_wallet_button.watch_only.title
-            : t.wallet_home_screen.edit.home_add_wallet_button.hot_wallet.title;
+    final normalStyle = CoconutTypography.body3_12.setColor(context.coconutColors.primaryText);
+    final emphasizedText = switch (option) {
+      HomeAddWalletOption.all => t.wallet_home_screen.edit.home_add_wallet_button.preview_all_emphasis,
+      HomeAddWalletOption.watchOnly => t.wallet_home_screen.edit.home_add_wallet_button.watch_only.title,
+      HomeAddWalletOption.hotWallet => t.wallet_home_screen.edit.home_add_wallet_button.hot_wallet.title,
+      HomeAddWalletOption.hidden => t.wallet_home_screen.edit.home_add_wallet_button.preview_hidden_emphasis,
+    };
     final emphasizedStart = _previewTitle.toLowerCase().indexOf(emphasizedText.toLowerCase());
     if (emphasizedStart == -1) {
       return TextSpan(text: _previewTitle, style: normalStyle);
@@ -242,7 +240,7 @@ class _HomeScreenPreview extends StatelessWidget {
         if (emphasizedStart > 0) TextSpan(text: _previewTitle.substring(0, emphasizedStart)),
         TextSpan(
           text: _previewTitle.substring(emphasizedStart, emphasizedEnd),
-          style: CoconutTypography.caption_10_Bold.setColor(context.coconutColors.primaryText),
+          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
         ),
         if (emphasizedEnd < _previewTitle.length) TextSpan(text: _previewTitle.substring(emphasizedEnd)),
       ],

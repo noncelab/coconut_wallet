@@ -245,6 +245,7 @@ wallet_home_screen:
       title: "Mit Mnemonik wiederherstellen"
       description: "Bestehende Wallet beibehalten"
   add_wallet: "Wallet hinzufügen"
+  add_wallet_action: "Wallet hinzufügen"
   view_all: "Alle anzeigen"
   wallet_menu:
     rename: "Umbenennen"
@@ -270,9 +271,11 @@ wallet_home_screen:
       sheet_title: "Schaltfläche oben auf dem Startbildschirm"
       preview: "Vorschau des Startbildschirms"
       preview_all: "Schaltfläche für alle Wallets"
+      preview_all_emphasis: "alle"
       preview_watch_only: "Nur beobachten – Wallet hinzufügen"
       preview_hot_wallet: "Schaltfläche für Hot Wallets"
       preview_hidden: "Wallet-Schaltfläche ausgeblendet"
+      preview_hidden_emphasis: "ausgeblendet"
       all:
         title: "Alle"
         description: "Wähle aus allen Wallet-Typen aus."
@@ -444,6 +447,25 @@ wallet_connect_screen:
 
 # lib/screens/wallet_list
 wallet_list:
+  header:
+    total_amount: "Gesamtbestand"
+    balance_history: "Bestandsverlauf"
+    converted_amount: "Umgerechneter Betrag"
+    than_yesterday: "Seit gestern"
+    than_a_week_ago: "Vor 7 Tagen"
+    than_a_month_ago: "Vor 30 Tagen"
+    tooltip:
+      title: "Preisdetails"
+      price_source(source): "1-BTC-Preis: $source"
+      fiat_price_source(fiat, source): "$fiat-Preis: $source"
+      closing_time: "Der Tagespreis schließt um 00:00 UTC."
+      yesterday_basis: "Seit gestern: Letzter Schlusskurs"
+      week_basis: "Seit einer Woche: Schlusskurs vor 7 Tagen"
+      month_basis: "Seit einem Monat: Schlusskurs vor 30 Tagen"
+      historical_price_unavailable: "bitFlyer bietet keine offiziellen Tageskerzen an, daher werden JPY-Änderungen nicht angezeigt."
+  menu:
+    edit_order: "Reihenfolge bearbeiten"
+    display_settings: "Anzeigeeinstellungen"
   wallet_count: "$count Elemente"
   empty_watch_only: "Keine Watch-only-Wallets"
   empty_hot_wallet: "Keine Hot Wallets"
@@ -458,20 +480,26 @@ wallet_list:
     exclude_from_total_amount: "Von der Gesamtsumme ausschließen"
     exclude_from_total_amount_description: "Diese Wallet wird von der Berechnung des Gesamtguthabens auf dem Startbildschirm ausgeschlossen."
   edit:
-    wallet_list: "Wallet-Liste bearbeiten"
-    star_description: "bis zu 5 Wallets zur Anzeige auf dem Startbildschirm."
+    order: "Reihenfolge bearbeiten"
     order_description: "um die Reihenfolge der Wallets zu ändern."
+    tab_order_description: "um die Reihenfolge der Tabs zu ändern."
     delete_description: "Wischen Sie auf einer Wallet nach links, um sie zu löschen."
     finish: "Bearbeitung beenden"
     unsaved_changes_confirm_exit: "Sie haben ungespeicherte Änderungen.\nSind Sie sicher, dass Sie beenden möchten?"
   bottom_sheet:
     tab_display_settings: "Tab-Anzeigeeinstellungen"
+    wallet_list_settings: "Wallet-Liste"
+    home_screen_settings: "Startseite"
     show_watch_only_tab: "Watch-only-Wallet-Tab anzeigen"
     show_watch_only_tab_description: "Zeigt den Watch-only-Wallet-Tab auf der Startseite an"
     show_hot_wallet_tab: "Hot-Wallet-Tab anzeigen"
     show_hot_wallet_tab_description: "Zeigt den Hot-Wallet-Tab auf der Startseite an"
-    hide_fiat_price: "Fiat-Guthaben verbergen"
-    hide_fiat_price_description: "Dieser Bildschirm zeigt das Fiat-Guthaben nicht an."
+    show_fiat_price: "Fiat-Guthaben anzeigen"
+    show_fiat_price_description: "Zeigt das Fiat-Guthaben auf diesem Bildschirm an."
+    show_bitcoin_price: "1-BTC-Preisinformationen anzeigen"
+    show_bitcoin_price_description: "Zeigt den Preis von 1 BTC und dessen zeitliche Veränderung an."
+    show_balance_chart: "Bestandsverlauf anzeigen"
+    show_balance_chart_description: "Zeigt die Entwicklung des Gesamtbestands aller Wallets an."
     visible: "Sichtbar"
 
 # lib/screens/review

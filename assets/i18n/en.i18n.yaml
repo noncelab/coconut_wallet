@@ -245,6 +245,7 @@ wallet_home_screen:
       title: "Restore with mnemonic"
       description: "Keep your existing wallet"
   add_wallet: "Add wallet"
+  add_wallet_action: "Add wallet"
   view_all: "View all"
   wallet_menu:
     rename: "Rename"
@@ -270,9 +271,11 @@ wallet_home_screen:
       sheet_title: "Home screen top button"
       preview: "Home screen preview"
       preview_all: "All wallet add button"
+      preview_all_emphasis: "All"
       preview_watch_only: "Watch-only wallet add button"
       preview_hot_wallet: "Hot wallet add button"
       preview_hidden: "Add wallet button hidden"
+      preview_hidden_emphasis: "hidden"
       all:
         title: "All"
         description: "Choose from all wallet types."
@@ -426,6 +429,25 @@ wallet_add_scanner_screen:
   
 # lib/screens/wallet_list
 wallet_list:
+  header:
+    total_amount: "Total holdings"
+    balance_history: "Balance change"
+    converted_amount: "Converted Amount"
+    than_yesterday: "Since yesterday"
+    than_a_week_ago: "Since a week ago"
+    than_a_month_ago: "Since a month ago"
+    tooltip:
+      title: "Price details"
+      price_source(source): "1 BTC price: $source"
+      fiat_price_source(fiat, source): "$fiat price: $source"
+      closing_time: "Daily prices close at 00:00 UTC."
+      yesterday_basis: "Since yesterday: Latest closing price"
+      week_basis: "Since a week ago: Closing price 7 days ago"
+      month_basis: "Since a month ago: Closing price 30 days ago"
+      historical_price_unavailable: "bitFlyer does not provide official daily candles, so JPY changes are not shown."
+  menu:
+    edit_order: "Edit Order"
+    display_settings: "Display Settings"
   wallet_count: "$count Items"
   empty_watch_only: "No watch-only wallets"
   empty_hot_wallet: "No hot wallets"
@@ -440,20 +462,26 @@ wallet_list:
     exclude_from_total_amount: "Exclude from Total"
     exclude_from_total_amount_description: "This wallet will be excluded from the total balance calculation on the home screen."
   edit:
-    wallet_list: "Edit Wallet List"
-    star_description: "up to 5 wallets to display on the home screen."
+    order: "Edit Order"
     order_description: "to change the order of wallets."
+    tab_order_description: "to change the order of tabs."
     delete_description: "Swipe left on a wallet to delete it."
     finish: "Finish Editing"
     unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"
   bottom_sheet:
     tab_display_settings: "Tab Display Settings"
+    wallet_list_settings: "Wallet List"
+    home_screen_settings: "Home Screen"
     show_watch_only_tab: "Show Watch-only Wallet Tab"
     show_watch_only_tab_description: "Show the watch-only wallet tab on the home screen"
     show_hot_wallet_tab: "Show Hot Wallet Tab"
     show_hot_wallet_tab_description: "Show the hot wallet tab on the home screen"
-    hide_fiat_price: "Hide Fiat Balance"
-    hide_fiat_price_description: "This screen will not display the fiat balance."
+    show_fiat_price: "Show Fiat Balance"
+    show_fiat_price_description: "Display the fiat balance on this screen."
+    show_bitcoin_price: "Show 1 BTC Price Information"
+    show_bitcoin_price_description: "Display the 1 BTC price and changes over time."
+    show_balance_chart: "Show Balance Change Chart"
+    show_balance_chart_description: "Display changes in the total balance across all wallets."
     visible: "Visible"
 
 wallet_connect_screen:

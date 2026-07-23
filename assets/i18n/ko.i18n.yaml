@@ -245,6 +245,7 @@ wallet_home_screen:
       title: "니모닉으로 복원하기"
       description: "기존 지갑을 그대로"
   add_wallet: "지갑 추가"
+  add_wallet_action: "지갑 추가하기"
   view_all: "모두 보기"
   wallet_menu:
     rename: "이름 변경"
@@ -270,21 +271,23 @@ wallet_home_screen:
       sheet_title: "홈 화면 상단 버튼"
       preview: "홈 화면 미리보기"
       preview_all: "모든 지갑 추가 버튼"
+      preview_all_emphasis: "모든"
       preview_watch_only: "보기 전용 지갑 추가 버튼"
       preview_hot_wallet: "핫월렛 추가 버튼"
       preview_hidden: "지갑 추가 버튼 숨김"
+      preview_hidden_emphasis: "숨김"
       all:
         title: "전체"
         description: "모든 종류의 지갑을 선택할 수 있도록 할게요."
       watch_only:
         title: "보기 전용"
-        description: "보안이 우수한 보기 전용 지갑을 추가할게요"
+        description: "보안이 우수한 보기 전용 지갑을 추가할게요."
       hot_wallet:
         title: "핫월렛"
-        description: "바로 사용 가능한 핫월렛을 추가할게요"
+        description: "바로 사용 가능한 핫월렛을 추가할게요."
       hidden:
         title: "표시 안 함"
-        description: "홈 상단에 지갑 추가 버튼을 표시하지 않아요"
+        description: "홈 상단에 지갑 추가 버튼을 표시하지 않아요."
     category:
       total_balance: "잔액 합계"
       wallet_list: "지갑 목록"
@@ -455,6 +458,25 @@ wallet_connect_screen:
 
 # lib/screens/wallet_list
 wallet_list:
+  header:
+    total_amount: "총 보유 수량"
+    balance_history: "보유 수량 변화"
+    converted_amount: "환산 금액"
+    than_yesterday: "어제보다"
+    than_a_week_ago: "일주일 전보다"
+    than_a_month_ago: "한 달 전보다"
+    tooltip:
+      title: "가격 기준"
+      price_source(source): "1 BTC 가격: $source"
+      fiat_price_source(fiat, source): "$fiat 가격: $source"
+      closing_time: "매일 오전 9시(KST)에 마감된 가격을 기준으로 해요."
+      yesterday_basis: "어제보다: 최근 마감 가격"
+      week_basis: "일주일 전보다: 7일 전 마감 가격"
+      month_basis: "한 달 전보다: 30일 전 마감 가격"
+      historical_price_unavailable: "bitFlyer는 공식 일봉을 제공하지 않아 JPY 변화율은 표시하지 않아요."
+  menu:
+    edit_order: "순서 편집"
+    display_settings: "표시 설정"
   wallet_count: "$count개"
   empty_watch_only: "보기 전용 지갑이 없어요"
   empty_hot_wallet: "핫월렛이 없어요"
@@ -469,20 +491,26 @@ wallet_list:
     exclude_from_total_amount: "총액에서 제외"
     exclude_from_total_amount_description: "홈 화면 총 잔액 계산에서 제외돼요."
   edit:
-    wallet_list: "지갑 목록 편집"
-    star_description: "을 최대 5개 선택하여 홈 화면에 보이는 지갑을 선택할 수 있어요."
+    order: "순서 편집"
     order_description: "을 눌러 지갑 순서를 변경할 수 있어요."
+    tab_order_description: "을 눌러 탭 순서를 변경할 수 있어요."
     delete_description: "지갑을 왼쪽으로 스와이프하면 삭제할 수 있어요."
     finish: "편집 종료"
     unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
   bottom_sheet:
     tab_display_settings: "탭 표시 설정"
+    wallet_list_settings: "지갑 목록"
+    home_screen_settings: "홈 화면"
     show_watch_only_tab: "보기 전용 지갑 탭 표시"
     show_watch_only_tab_description: "홈 화면에 보기 전용 지갑 탭을 표시해요"
     show_hot_wallet_tab: "핫월렛 탭 표시"
     show_hot_wallet_tab_description: "홈 화면에 핫월렛 탭을 표시해요"
-    hide_fiat_price: "법정 화폐 잔액 숨기기"
-    hide_fiat_price_description: "이 화면에 법정 화폐 잔액을 표시하지 않아요."
+    show_fiat_price: "법정 화폐 잔액 표시"
+    show_fiat_price_description: "이 화면에 법정 화폐 잔액을 표시해요."
+    show_bitcoin_price: "1 BTC 가격 정보 표시"
+    show_bitcoin_price_description: "1 BTC 가격과 기간별 변화율을 표시해요."
+    show_balance_chart: "보유 수량 변화 그래프 표시"
+    show_balance_chart_description: "전체 지갑의 보유 수량 변화를 표시해요."
     visible: "표시 중"
 
 # lib/screens/review
