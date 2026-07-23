@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
@@ -11,7 +12,19 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/foundation.dart';
 
-enum TrezorBleConnectStep { idle, connecting, pairing, paired, error }
+enum TrezorBleConnectStep {
+  idle,
+  connecting,
+  pairing,
+  passphraseUseQuestion,
+  passphraseSourceSelection,
+  passphraseInput,
+  passphraseOnDevice,
+  passphraseConfirm,
+  passphraseProcessing,
+  paired,
+  error,
+}
 
 class TrezorBleConnectViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
@@ -58,6 +71,9 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   String get xpub => _xpub;
   String get fingerprint => _fingerprint;
   String get deviceLabel => _deviceLabel;
+  bool get supportsPassphraseEntry => _device?.supportsPassphraseEntry ?? false;
+  bool get passphraseAlwaysOnDevice => _device?.passphraseAlwaysOnDevice ?? false;
+  bool get usesThp => _device?.usesThp ?? false;
 
   String? findMatchingTrezorWalletName(String xpub) {
     for (final wallet in _walletProvider.walletItemList) {
@@ -110,16 +126,30 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
     if (!_disposed) notifyListeners();
 
     try {
+      // Disconnect any previously active BLE session before starting a new one.
+      final lastConnected = TrezorDevice.lastConnected;
+      if (lastConnected != null) {
+        final stillConnected = await TrezorBleConnectivityService.isDeviceConnected(lastConnected.transport);
+        if (stillConnected) {
+          await lastConnected.disconnect();
+        }
+        TrezorDevice.lastConnected = null;
+      }
+
       TrezorDevice.onPairingCodeRequested = () async {
         return await waitForPairingCode();
       };
       _setState(TrezorBleConnectStep.connecting);
       _device = await TrezorDevice.connect();
       _deviceLabel = _device!.label;
-
-      _setState(TrezorBleConnectStep.paired);
       TrezorDevice.lastConnected = _device;
-      await _retrieveXPub(silent: true);
+
+      if (_device!.passphraseProtection) {
+        _setState(TrezorBleConnectStep.passphraseUseQuestion);
+      } else {
+        await _device!.createSession(type: TrezorPassphraseType.standard);
+        await _retrieveXPub(silent: true);
+      }
     } on TrezorPairingCodeWrongException catch (e) {
       _errorMessage = e.message;
       _pairingCodeCompleter = null;
@@ -241,6 +271,58 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
       next++;
     }
     return '$baseName $next';
+  }
+
+  Future<TrezorPassphraseResponse> requestPassphrase(bool onDevice) {
+    return Future.value(const TrezorPassphraseResponse(TrezorPassphraseType.standard));
+  }
+
+  // -- New passphrase flow step methods --
+
+  /// Step 1: User chose not to use passphrase.
+  Future<void> selectNoPassphrase() async {
+    await _createSessionAndProceed(TrezorPassphraseType.standard);
+  }
+
+  /// Step 1: User chose to use passphrase → go to step 2/3.
+  void selectUsePassphrase() {
+    if (_device!.passphraseAlwaysOnDevice) {
+      _setState(TrezorBleConnectStep.passphraseOnDevice);
+    } else if (!_device!.supportsPassphraseEntry) {
+      _setState(TrezorBleConnectStep.passphraseInput);
+    } else {
+      _setState(TrezorBleConnectStep.passphraseSourceSelection);
+    }
+  }
+
+  /// Step 3: User chose app entry → go to step 4-1.
+  void selectAppEntry() {
+    _setState(TrezorBleConnectStep.passphraseInput);
+  }
+
+  /// Step 3: User chose device entry → go to step 4-2.
+  Future<void> selectDeviceEntry() async {
+    _setState(TrezorBleConnectStep.passphraseOnDevice);
+    await _createSessionAndProceed(TrezorPassphraseType.onDevice);
+  }
+
+  /// Step 4-1: User submitted passphrase from app.
+  Future<void> submitPassphraseValue(String value) async {
+    _setState(TrezorBleConnectStep.passphraseConfirm);
+    await _createSessionAndProceed(TrezorPassphraseType.hidden, value: value);
+  }
+
+  /// Internal: call createSession then proceed to getXPub.
+  Future<void> _createSessionAndProceed(TrezorPassphraseType type, {String value = ''}) async {
+    try {
+      await _device!.createSession(type: type, value: value);
+    } catch (error) {
+      _errorMessage = error.toString();
+      _setState(TrezorBleConnectStep.error);
+      return;
+    }
+    _setState(TrezorBleConnectStep.passphraseProcessing);
+    await _retrieveXPub(silent: true);
   }
 
   Future<void> disconnect() async {

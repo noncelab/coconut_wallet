@@ -1360,12 +1360,10 @@ impl CallbackTransport {
             }
         }
 
-        // Create THP session
-        self.callback.log_debug("THP", "Creating THP session...");
-        self.create_thp_session(path, &channel).await?;
-
-        self.callback.log_debug("THP", "THP handshake COMPLETE!");
-        log::info!("[Callback] THP handshake complete!");
+        // THP session creation is deferred to create_session() so the caller
+        // can supply a passphrase after reading device features.
+        self.callback.log_debug("THP", "THP handshake COMPLETE (session creation deferred)");
+        log::info!("[Callback] THP handshake complete (session creation deferred)!");
 
         // Mark handshake as complete
         {
@@ -1792,8 +1790,19 @@ impl CallbackTransport {
         Ok(())
     }
 
-    /// Create THP session
-    async fn create_thp_session(&self, path: &str, channel: &[u8; 2]) -> Result<()> {
+    /// Create THP session with the given passphrase.
+    ///
+    /// `passphrase` is `Some("")` for the standard wallet, `Some(value)` for a
+    /// hidden wallet, or `None` for on-device entry (with `on_device = true`).
+    /// The passphrase is NFKD-normalized inside `encode_create_new_session`'s
+    /// caller — here we normalize before encoding.
+    async fn create_thp_session(
+        &self,
+        path: &str,
+        channel: &[u8; 2],
+        passphrase: Option<&str>,
+        on_device: bool,
+    ) -> Result<()> {
         use crate::constants::thp_message_type::THP_CREATE_NEW_SESSION;
 
         log::info!("[Callback] Creating new THP session...");
@@ -1807,21 +1816,22 @@ impl CallbackTransport {
             }
         }
 
-        // Bind the configured passphrase to the session. For on-device entry the
-        // passphrase field is omitted (firmware rejects empty-passphrase +
-        // on_device); the Trezor then prompts on its own screen. Otherwise an
-        // empty passphrase opens the standard wallet and a non-empty one a hidden
-        // wallet.
-        let passphrase_opt = if self.session_on_device {
+        // Normalize the passphrase (NFKD) before encoding. For on-device entry
+        // the passphrase field is omitted (firmware rejects empty-passphrase +
+        // on_device); the Trezor then prompts on its own screen.
+        let normalized = passphrase.map(|p| {
+            Zeroizing::new(crate::passphrase::normalize_passphrase(p))
+        });
+        let passphrase_opt = if on_device {
             None
         } else {
-            Some(self.session_passphrase.as_str())
+            normalized.as_deref().map(|s| s.as_str())
         };
-        let session_payload = encode_create_new_session(passphrase_opt, self.session_on_device);
+        let session_payload = encode_create_new_session(passphrase_opt, on_device);
         log::info!(
             "[Callback] ThpCreateNewSession (passphrase_len={}, on_device={})",
-            self.session_passphrase.len(),
-            self.session_on_device,
+            normalized.as_ref().map(|p| p.len()).unwrap_or(0),
+            on_device,
         );
 
         let (mut resp_type, mut resp_data) = self
@@ -2168,6 +2178,35 @@ impl Transport for CallbackTransport {
         if let Ok(mut locks) = self.call_locks.lock() {
             locks.clear();
         }
+    }
+
+    async fn create_session(
+        &self,
+        session: &str,
+        passphrase: Option<&str>,
+        on_device: bool,
+    ) -> Result<()> {
+        let path = self
+            .sessions
+            .get_path(session)
+            .ok_or(TransportError::DeviceNotFound)?;
+
+        // V1 devices: no-op (passphrase handled via PassphraseRequest at call time)
+        if !self.needs_thp(&path).await {
+            log::debug!("[Callback] create_session: V1 device, skipping");
+            return Ok(());
+        }
+
+        // Retrieve the channel from the THP state
+        let channel = {
+            let states = self.ble_states.read().await;
+            let state = states.get(&path).ok_or(TransportError::DeviceNotFound)?;
+            *state.protocol.state().channel()
+        };
+
+        log::info!("[Callback] create_session: creating THP session");
+        self.create_thp_session(&path, &channel, passphrase, on_device)
+            .await
     }
 }
 

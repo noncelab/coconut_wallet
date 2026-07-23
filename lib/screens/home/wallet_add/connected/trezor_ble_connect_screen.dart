@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'dart:io';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -13,8 +12,10 @@ import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/trezor_digit_box.dart';
+import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
@@ -37,15 +38,21 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   bool _isAddingWallet = false;
   bool _isVerifyingPairingCode = false;
   TrezorBleConnectStep? _lastStep;
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _passphraseFocusNode = FocusNode();
 
   static const int _codeLength = 6;
   static const List<String> _keypadKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '<'];
   String _pairingCode = '';
+  final TextEditingController _passphraseController = TextEditingController();
+  late final Future<TrezorPassphraseResponse> Function(bool) _passphraseHandler;
 
   @override
   void initState() {
     super.initState();
     _viewModel = TrezorBleConnectViewModel(Provider.of<WalletProvider>(context, listen: false));
+    _passphraseHandler = _viewModel.requestPassphrase;
+    TrezorDevice.onPassphraseRequested = _passphraseHandler;
     _viewModel.onPairingFailed = () {};
     _viewModel.addListener(_onViewModelChanged);
   }
@@ -74,6 +81,9 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     final step = _viewModel.step;
     if (_lastStep != step) {
       _lastStep = step;
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
       if (_isVerifyingPairingCode) {
         _isVerifyingPairingCode = false;
         _pairingCode = '';
@@ -133,6 +143,12 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   @override
   void dispose() {
     _viewModel.removeListener(_onViewModelChanged);
+    if (TrezorDevice.onPassphraseRequested == _passphraseHandler) {
+      TrezorDevice.onPassphraseRequested = null;
+    }
+    _passphraseController.dispose();
+    _passphraseFocusNode.dispose();
+    _scrollController.dispose();
     _loadingOverlayEntry?.remove();
     _loadingOverlayEntry = null;
     _viewModel.dispose();
@@ -206,6 +222,12 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       Navigator.pop(context);
       return;
     }
+    if (_viewModel.step == TrezorBleConnectStep.passphraseUseQuestion ||
+        _viewModel.step == TrezorBleConnectStep.passphraseSourceSelection ||
+        _viewModel.step == TrezorBleConnectStep.passphraseInput) {
+      Navigator.pop(context);
+      return;
+    }
     if (!_viewModel.isPaired) {
       Navigator.pop(context);
       return;
@@ -240,38 +262,57 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
-      child: Scaffold(
-        backgroundColor: context.coconutColors.background,
-        appBar: CoconutAppBar.build(
-          title: WalletImportSource.trezor.displayName,
-          context: context,
-          isBottom: true,
-          onBackPressed: _handleClose,
-        ),
-        body: Consumer<TrezorBleConnectViewModel>(
-          builder: (context, vm, _) {
-            return SafeArea(
-              child: SizedBox(
-                height: MediaQuery.sizeOf(context).height,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
-                        child: _buildStatusSection(vm),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _handleClose();
+        }
+      },
+      child: ChangeNotifierProvider.value(
+        value: _viewModel,
+        child: Scaffold(
+          backgroundColor: context.coconutColors.background,
+          appBar: CoconutAppBar.build(
+            title: WalletImportSource.trezor.displayName,
+            context: context,
+            isBottom: true,
+            onBackPressed: _handleClose,
+          ),
+          body: Consumer<TrezorBleConnectViewModel>(
+            builder: (context, vm, _) {
+              return SafeArea(
+                child: SizedBox(
+                  height: MediaQuery.sizeOf(context).height,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: SingleChildScrollView(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+                          child: _buildStatusSection(vm),
+                        ),
                       ),
-                    ),
-                    if (vm.step == TrezorBleConnectStep.idle ||
-                        vm.step == TrezorBleConnectStep.error ||
-                        (vm.step == TrezorBleConnectStep.paired && vm.xpub.isNotEmpty))
-                      Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
-                  ],
+                      if (vm.step == TrezorBleConnectStep.idle ||
+                          vm.step == TrezorBleConnectStep.error ||
+                          (vm.step == TrezorBleConnectStep.paired && vm.xpub.isNotEmpty))
+                        Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
+                      if (vm.step == TrezorBleConnectStep.passphraseInput)
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            TrezorPassphraseInputActionButton(
+                              onSubmit: () => vm.submitPassphraseValue(_passphraseController.text),
+                              passphraseController: _passphraseController,
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -309,6 +350,25 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
         ]);
       case TrezorBleConnectStep.pairing:
         return _buildPairingCard(vm);
+      case TrezorBleConnectStep.passphraseUseQuestion:
+        return TrezorPassphraseUseQuestionCard(
+          onUsePassphrase: vm.selectUsePassphrase,
+          onNoPassphrase: vm.selectNoPassphrase,
+        );
+      case TrezorBleConnectStep.passphraseSourceSelection:
+        return TrezorPassphraseSourceSelectionCard(onAppEntry: vm.selectAppEntry, onDeviceEntry: vm.selectDeviceEntry);
+      case TrezorBleConnectStep.passphraseInput:
+        return TrezorPassphraseInputCard(
+          passphraseController: _passphraseController,
+          passphraseFocusNode: _passphraseFocusNode,
+          onChanged: (_) => setState(() {}),
+        );
+      case TrezorBleConnectStep.passphraseOnDevice:
+        return const TrezorPassphraseOnDeviceCard();
+      case TrezorBleConnectStep.passphraseConfirm:
+        return const TrezorPassphraseConfirmCard();
+      case TrezorBleConnectStep.passphraseProcessing:
+        return const TrezorPassphraseProcessingCard();
       case TrezorBleConnectStep.paired:
         return _buildSuccessCard(vm);
       case TrezorBleConnectStep.error:
@@ -333,7 +393,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
           hasXpub
               ? Column(
                 children: [
-                  _buildWalletInfoCard(vm),
+                  TrezorWalletInfoCard(deviceLabel: vm.deviceLabel, fingerprint: vm.fingerprint, xpub: vm.xpub),
                   if (widget.psbtBase64 != null && _isWalletMismatch(vm)) ...[
                     CoconutLayout.spacing_400h,
                     _buildWalletMismatchWarning(vm),
@@ -405,32 +465,6 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildWalletInfoCard(TrezorBleConnectViewModel vm) {
-    return WalletConnectWalletInfoCard(
-      children: [
-        if (vm.deviceLabel.isNotEmpty) ...[
-          WalletConnectInfoRow(label: t.wallet_connect_screen.guide_trezor.paired.device_name, value: vm.deviceLabel),
-          CoconutLayout.spacing_300h,
-        ],
-        WalletConnectInfoRow(
-          label: t.wallet_connect_screen.guide_trezor.paired.master_fingerprint,
-          value: vm.fingerprint.toUpperCase(),
-        ),
-        CoconutLayout.spacing_300h,
-        WalletConnectInfoRow(
-          label: t.wallet_connect_screen.guide_trezor.paired.derivation_path,
-          value: NetworkType.currentNetworkType.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'",
-        ),
-        CoconutLayout.spacing_300h,
-        WalletConnectInfoRow(
-          label: t.wallet_connect_screen.guide_trezor.paired.xpub,
-          value: vm.xpub,
-          direction: Axis.vertical,
-        ),
-      ],
     );
   }
 

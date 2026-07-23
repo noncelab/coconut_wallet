@@ -57,6 +57,8 @@ pub enum TrezorError {
 pub trait TrezorBleCallbacks: Send + Sync {
     fn write(&self, data: Vec<u8>) -> bool;
     fn read(&self) -> Option<Vec<u8>>;
+    fn get_pin(&self) -> String;
+    fn get_passphrase(&self, on_device: bool) -> String;
     fn get_pairing_code(&self) -> String;
 }
 
@@ -179,6 +181,25 @@ impl UsbNativeAdapter {
         {
             std::fs::write(path, json).is_ok()
         }
+    }
+}
+
+struct BleUiAdapter {
+    cbs: Arc<dyn TrezorBleCallbacks>,
+}
+
+impl TrezorUiCallback for BleUiAdapter {
+    fn on_pin_request(&self) -> Option<String> {
+        let pin = self.cbs.get_pin();
+        if pin.is_empty() {
+            None
+        } else {
+            Some(pin)
+        }
+    }
+
+    fn on_passphrase_request(&self, on_device: bool) -> PassphraseResponse {
+        parse_passphrase_response(&self.cbs.get_passphrase(on_device))
     }
 }
 
@@ -580,7 +601,11 @@ pub fn trezor_connect_usb(
             "device_id": device_id,
             "label": label,
             "model": model,
-            "transport": "usb"
+            "transport": "usb",
+            "passphrase_protection": features.passphrase_protection.unwrap_or(false),
+            "passphrase_always_on_device": features.passphrase_always_on_device.unwrap_or(false),
+            "passphrase_entry": features.capabilities.contains(&17),
+            "uses_thp": uses_thp
         })
         .to_string())
     })
@@ -612,9 +637,10 @@ pub fn trezor_connect(
 
     let adapter = Arc::new(NativeAdapter {
         device_uuid: device_uuid.clone(),
-        cbs: entry.cbs,
+        cbs: entry.cbs.clone(),
         credential_path: cred_path,
     });
+    let ui_adapter = Arc::new(BleUiAdapter { cbs: entry.cbs });
 
     RT.block_on(async move {
         let mut transport = CallbackTransport::new(adapter as Arc<dyn TransportCallback>)
@@ -642,6 +668,7 @@ pub fn trezor_connect(
 
         // BLE connections always use THP v2 — set unconditionally.
         connected.set_uses_thp(true);
+        connected.set_ui_callback(ui_adapter);
 
         let features = connected
             .initialize()
@@ -661,8 +688,17 @@ pub fn trezor_connect(
             .lock()
             .unwrap()
             .insert(device_id.clone(), Session { device: connected });
-        // Return JSON so Flutter can pick up label without a separate call
-        Ok(serde_json::json!({"device_id": device_id, "label": label}).to_string())
+        Ok(serde_json::json!({
+            "device_id": device_id,
+            "label": label,
+            "model": features.model,
+            "transport": "ble",
+            "passphrase_protection": features.passphrase_protection.unwrap_or(false),
+            "passphrase_always_on_device": features.passphrase_always_on_device.unwrap_or(false),
+            "passphrase_entry": features.capabilities.contains(&17),
+            "uses_thp": true
+        })
+        .to_string())
     })
 }
 
@@ -837,6 +873,39 @@ pub fn trezor_disconnect(device_id: String) -> Result<(), TrezorError> {
         if let Some(mut s) = SESSIONS.lock().unwrap().remove(&device_id) {
             let _ = s.device.disconnect().await;
         }
+        Ok(())
+    })
+}
+
+/// Create a THP session with the given passphrase.
+///
+/// Must be called after `trezor_connect` / `trezor_connect_usb` and before
+/// `trezor_get_xpub` / `trezor_sign_transaction` for THP devices (Safe 3/5/7).
+///
+/// `passphrase_type` is one of: "standard", "hidden", "on_device".
+/// `passphrase_value` is the passphrase string (used only for "hidden").
+pub fn trezor_create_session(
+    device_id: String,
+    passphrase_type: String,
+    passphrase_value: String,
+) -> Result<(), TrezorError> {
+    RT.block_on(async move {
+        let mut sessions = SESSIONS.lock().unwrap();
+        let s = sessions
+            .get_mut(&device_id)
+            .ok_or_else(|| TrezorError::Connect(format!("Unknown device_id: {device_id}")))?;
+
+        let (passphrase, on_device) = match passphrase_type.as_str() {
+            "standard" => (Some(""), false),
+            "hidden" => (Some(passphrase_value.as_str()), false),
+            "on_device" => (None, true),
+            _ => return Err(TrezorError::InvalidArg("Invalid passphrase_type".to_string())),
+        };
+
+        s.device
+            .create_session(passphrase, on_device)
+            .await
+            .map_err(|e| TrezorError::Connect(e.to_string()))?;
         Ok(())
     })
 }

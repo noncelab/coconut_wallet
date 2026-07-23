@@ -252,7 +252,7 @@ wallet_home_screen:
   cannot_modify_fixed_widget: "No puedes mostrar u ocultar este elemento."
   no_change_in_amount: "No hay cambio en la cantidad!"
   analysis_period: "Últimos ${days} días • ${transaction_type}"
-  analysis_period_cutsom: "Personalizado • ${transaction_type}"
+  analysis_period_custom: "Personalizado • ${transaction_type}"
   analysis_period_bottom_sheet:
     period_for_analysis: "Periodo de análisis"
     days_15: "15 días"
@@ -449,6 +449,7 @@ wallet_connect_screen:
     error:
       title: "Error de conexión"
       ble_description: "No se encontró Trezor Safe 7. Encienda el Bluetooth y acerque el dispositivo."
+      usb_description: "No se encontró Trezor. Vuelva a conectar el dispositivo e inténtelo de nuevo."
     ios_peer_removed_pairing:
       title: "Información de emparejamiento Bluetooth existente eliminada"
       description: "El Trezor ha eliminado su información de emparejamiento Bluetooth anterior."
@@ -469,8 +470,17 @@ wallet_connect_screen:
       pin_description: "Mira la disposición numérica en tu Trezor e introduce tu PIN."
       passphrase_title: "Introducir frase de contraseña"
       passphrase_hint: "Frase de contraseña de la cartera oculta"
+      passphrase_entry_source_description: "Elige dónde introducir tu frase de contraseña."
+      enter_in_app: "Introducir en la aplicación"
+      enter_on_trezor: "Introducir en Trezor"
+      enter_on_trezor_description: "Completa la introducción de tu frase de contraseña en tu dispositivo Trezor."
+      do_not_use_passphrase: "No usar frase de contraseña"
       standard_wallet: "Cartera estándar"
-      error: "Conecta tu Trezor e inténtalo de nuevo."
+      passphrase_use_question: "¿Quieres usar una frase de contraseña?"
+      passphrase_use_yes: "Usar frase de contraseña"
+      passphrase_use_no: "No usar"
+      passphrase_where_to_enter: "¿Dónde quieres introducir tu frase de contraseña?"
+      passphrase_confirm_on_device: "Confirma la frase de contraseña en tu Trezor."
       suite_app_notice: "La aplicación Trezor Suite puede abrirse automáticamente al conectar por USB."
       suite_app_setting_guide:
         title: "· Elimina la configuración de aplicación predeterminada"
@@ -480,6 +490,7 @@ wallet_connect_screen:
           - "3. Desconecta y vuelve a conectar el USB. En el diálogo '¿Abrir la aplicación Trezor Suite para gestionar TREZOR?', selecciona Cancelar"
   common:
     ble_off: "Por favor, encienda el Bluetooth de su dispositivo."
+    loading_wallet_info: "Cargando información de la cartera"
       
 # lib/screens/wallet_list
 wallet_list:
@@ -1367,3 +1378,8 @@ taproot:
   setup_summary_card:
     signer_configuration: "Configuración de firmantes"
     inheritance_condition: "Condición de herencia"
+
+passphrase_input_text_field:
+  passphrase_visible: "Mostrar frase de contraseña"
+  passphrase_hidden: "Ocultar frase de contraseña"
+  placeholder: "Introducir frase de contraseña"

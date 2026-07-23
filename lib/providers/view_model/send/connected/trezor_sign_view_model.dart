@@ -3,14 +3,13 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/transaction/prev_tx_fetcher.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:flutter/foundation.dart';
 
-enum TrezorSignStep { idle, signing, pairing, pinEntry, done, error }
+enum TrezorSignStep { idle, signing, done, error }
 
 enum TrezorSignSubStatus { waiting, connectingDevice, confirmOnDevice }
 
@@ -25,11 +24,8 @@ class TrezorSignViewModel extends ChangeNotifier {
   bool _isSigning = false;
   String? _fingerprint;
   Timer? _timeoutTimer;
-  Completer<String>? _pairingCodeCompleter;
-  Completer<String?>? _pinCompleter;
-  String _pin = '';
-  bool _isPairingCodeWrong = false;
   bool _disposed = false;
+  bool _isConnectionError = false;
 
   final String psbtBase64;
   final String walletName;
@@ -57,61 +53,10 @@ class TrezorSignViewModel extends ChangeNotifier {
   String get signedPsbt => _signedPsbt;
   bool get isSigning => _isSigning;
   String? get fingerprint => _fingerprint;
-  bool get isPairingCodeWrong => _isPairingCodeWrong;
-  String get pin => _pin;
   String? get matchedWalletName => _matchedWalletName;
   bool get isWalletMismatch => _isWalletMismatch;
   String? get mismatchedWalletName => _mismatchedWalletName;
-
-  void consumePairingCodeWrong() {
-    _isPairingCodeWrong = false;
-  }
-
-  void submitPairingCode(String code) {
-    if (_pairingCodeCompleter != null && !_pairingCodeCompleter!.isCompleted) {
-      _pairingCodeCompleter!.complete(code);
-    }
-  }
-
-  void cancelPairing() {
-    if (_pairingCodeCompleter != null && !_pairingCodeCompleter!.isCompleted) {
-      _pairingCodeCompleter!.complete('');
-    }
-  }
-
-  Future<String?> requestPin() {
-    _pin = '';
-    _pinCompleter = Completer<String?>();
-    _setState(TrezorSignStep.pinEntry);
-    return _pinCompleter!.future;
-  }
-
-  void onPinKeyTap(String key) {
-    if (key == '<') {
-      if (_pin.isNotEmpty) {
-        _pin = _pin.substring(0, _pin.length - 1);
-        notifyListeners();
-      }
-      return;
-    }
-    if (key.isEmpty) return;
-    _pin += key;
-    notifyListeners();
-  }
-
-  void submitPin() {
-    if (_pinCompleter != null && !_pinCompleter!.isCompleted) {
-      _pinCompleter!.complete(_pin);
-    }
-    _pin = '';
-  }
-
-  void cancelPin() {
-    if (_pinCompleter != null && !_pinCompleter!.isCompleted) {
-      _pinCompleter!.complete(null);
-    }
-    _pin = '';
-  }
+  bool get isConnectionError => _isConnectionError;
 
   void _probeDeviceStatus() {
     final last = TrezorDevice.lastConnected;
@@ -155,6 +100,7 @@ class TrezorSignViewModel extends ChangeNotifier {
 
     _isSigning = true;
     _errorMessage = null;
+    _isConnectionError = false;
     _cancelTimeout();
 
     try {
@@ -166,40 +112,6 @@ class TrezorSignViewModel extends ChangeNotifier {
       if (_device != null) {
         _cancelTimeout();
         _fingerprint = _device!.cachedFingerprint;
-      } else {
-        _device = null;
-        TrezorDevice.lastConnected = null;
-
-        TrezorDevice.onPairingCodeRequested = () async {
-          _pairingCodeCompleter = Completer<String>();
-          _setState(TrezorSignStep.pairing);
-          _cancelTimeout();
-          final code = await _pairingCodeCompleter!.future;
-          _pairingCodeCompleter = null;
-          _setState(TrezorSignStep.signing, subStatus: TrezorSignSubStatus.connectingDevice);
-          _startTimeout(const Duration(seconds: 30), 'Connection timed out');
-          return code;
-        };
-
-        _device = await TrezorDevice.connect(transport: transport);
-        _fingerprint = await _device!.getFingerprint();
-        _device!.cachedFingerprint = _fingerprint;
-
-        final isTestnet = nt.isTestnet;
-        final keypath = isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'";
-        final deviceXpub = await _device!.getXPub(keypath: keypath, network: nt.toString());
-
-        final matchedName = _findMatchingTrezorWalletName(deviceXpub);
-        if (matchedName != null && matchedName != walletName) {
-          _matchedWalletName = matchedName;
-          throw TrezorSignException(
-            'WALLET_MISMATCH',
-            t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: matchedName),
-          );
-        }
-        if (matchedName == null) {
-          throw TrezorSignException('FINGERPRINT_MISMATCH', t.trezor_sign_screen.device_mismatch);
-        }
       }
 
       final network = nt.toString();
@@ -223,21 +135,17 @@ class TrezorSignViewModel extends ChangeNotifier {
     } on TrezorConnectException catch (e) {
       _cancelTimeout();
       _errorMessage = e.message;
+      _isConnectionError = true;
       TrezorDevice.lastConnected = null;
       _setState(TrezorSignStep.error);
     } on TrezorSignException catch (e) {
       _cancelTimeout();
       _errorMessage = e.message;
       _setState(TrezorSignStep.error);
-    } on TrezorPairingCodeWrongException catch (e) {
-      _cancelTimeout();
-      _errorMessage = e.message;
-      _pairingCodeCompleter = null;
-      _isPairingCodeWrong = true;
-      _setState(TrezorSignStep.error);
     } on TrezorPairingException catch (e) {
       _cancelTimeout();
       _errorMessage = e.message;
+      _isConnectionError = true;
       TrezorDevice.lastConnected = null;
       _setState(TrezorSignStep.error);
     } catch (e) {
@@ -245,8 +153,6 @@ class TrezorSignViewModel extends ChangeNotifier {
       _errorMessage = e.toString();
       TrezorDevice.lastConnected = null;
       _setState(TrezorSignStep.error);
-    } finally {
-      TrezorDevice.onPairingCodeRequested = null;
     }
 
     _isSigning = false;
@@ -264,6 +170,7 @@ class TrezorSignViewModel extends ChangeNotifier {
       if (!_isSigning) return;
       debugPrint('TREZOR_SIGN timeout: $message');
       _errorMessage = message;
+      _isConnectionError = true;
       TrezorDevice.lastConnected = null;
       _setState(TrezorSignStep.error);
       _isSigning = false;
@@ -277,13 +184,6 @@ class TrezorSignViewModel extends ChangeNotifier {
 
   void reset() {
     _cancelTimeout();
-    _pairingCodeCompleter = null;
-    if (_pinCompleter != null && !_pinCompleter!.isCompleted) {
-      _pinCompleter!.complete(null);
-    }
-    _pinCompleter = null;
-    _pin = '';
-    _isPairingCodeWrong = false;
     _step = TrezorSignStep.idle;
     _subStatus = TrezorSignSubStatus.waiting;
     _errorMessage = null;
@@ -293,6 +193,7 @@ class TrezorSignViewModel extends ChangeNotifier {
     _matchedWalletName = null;
     _isWalletMismatch = false;
     _mismatchedWalletName = null;
+    _isConnectionError = false;
     _probeDeviceStatus();
     notifyListeners();
   }
@@ -321,9 +222,6 @@ class TrezorSignViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _cancelTimeout();
-    if (_pinCompleter != null && !_pinCompleter!.isCompleted) {
-      _pinCompleter!.complete(null);
-    }
     _disposed = true;
     _device = null;
     super.dispose();

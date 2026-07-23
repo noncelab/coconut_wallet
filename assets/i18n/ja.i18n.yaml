@@ -251,7 +251,7 @@ wallet_home_screen:
   cannot_modify_fixed_widget: "この項目は表示／非表示を変更できません。"
   no_change_in_amount: "金額に変化がありません！"
   analysis_period: "直近${days}日 • ${transaction_type}"
-  analysis_period_cutsom: "直接設定 • ${transaction_type}"
+  analysis_period_custom: "直接設定 • ${transaction_type}"
   analysis_period_bottom_sheet:
     period_for_analysis: "照会期間"
     days_15: "15日"
@@ -474,6 +474,7 @@ wallet_connect_screen:
     error:
       title: "接続に失敗しました"
       ble_description: "Trezor Safe 7が見つかりません。Bluetoothをオンにして、デバイスを近づけてください。"
+      usb_description: "Trezorが見つかりません。デバイスを再接続して再度お試しください。"
     ios_peer_removed_pairing:
       title: "既存のBluetoothペアリング情報が削除されました"
       description: "Trezorで以前のBluetoothペアリング情報が削除されました。"
@@ -494,8 +495,17 @@ wallet_connect_screen:
       pin_description: "Trezor画面の数字配置を確認し、設定したPINを入力してください。"
       passphrase_title: "パスフレーズを入力"
       passphrase_hint: "隠しウォレットのパスフレーズ"
+      passphrase_entry_source_description: "パスフレーズを入力する場所を選択してください。"
+      enter_in_app: "アプリで入力"
+      enter_on_trezor: "Trezorで入力"
+      enter_on_trezor_description: "Trezorデバイスでパスフレーズの入力を完了してください。"
+      do_not_use_passphrase: "パスフレーズを使用しない"
       standard_wallet: "標準ウォレット"
-      error: "Trezorを接続してもう一度お試しください。"
+      passphrase_use_question: "パスフレーズを使用しますか？"
+      passphrase_use_yes: "使用する"
+      passphrase_use_no: "使用しない"
+      passphrase_where_to_enter: "パスフレーズをどこで入力しますか？"
+      passphrase_confirm_on_device: "Trezorで入力したパスフレーズを確認してください。"
       suite_app_notice: "USB接続時、Trezor Suiteアプリが自動で起動することがあります。"
       suite_app_setting_guide:
         title: "· デフォルトアプリの設定を解除してください"
@@ -505,6 +515,7 @@ wallet_connect_screen:
           - "3. USBを外して再接続し、『Trezor SuiteアプリでTREZORを処理しますか？』ダイアログで「キャンセル」を選択"
   common:
     ble_off: "デバイスのBluetoothをオンにしてください。"
+    loading_wallet_info: "ウォレット情報を取得中"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -1365,3 +1376,8 @@ taproot:
   setup_summary_card:
     signer_configuration: "署名構成"
     inheritance_condition: "相続条件"
+
+passphrase_input_text_field:
+  passphrase_visible: "パスフレーズを表示"
+  passphrase_hidden: "パスフレーズを非表示"
+  placeholder: "パスフレーズを入力"

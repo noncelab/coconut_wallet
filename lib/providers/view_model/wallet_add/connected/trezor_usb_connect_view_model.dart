@@ -10,7 +10,20 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/foundation.dart';
 
-enum TrezorUsbConnectStep { idle, connecting, pinEntry, pairing, connected, error }
+enum TrezorUsbConnectStep {
+  idle,
+  connecting,
+  pinEntry,
+  pairing,
+  passphraseUseQuestion, // 1: use passphrase?
+  passphraseSourceSelection, // 3: where to enter?
+  passphraseInput, // 4-1: enter passphrase in app
+  passphraseOnDevice, // 4-2: enter on Trezor
+  passphraseConfirm, // 5: confirm on device (loading)
+  passphraseProcessing, // 6: loading + getXPub
+  connected,
+  error,
+}
 
 class TrezorUsbConnectViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
@@ -27,6 +40,7 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   Completer<String>? _pairingCodeCompleter;
   String _pin = '';
   bool _isPairingCodeWrong = false;
+  TrezorPassphraseResponse? _pendingPassphraseResponse;
 
   TrezorUsbConnectStep get step => _step;
   String get xpub => _xpub;
@@ -37,6 +51,10 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   bool get isConnected => _step == TrezorUsbConnectStep.connected;
   String get pin => _pin;
   bool get isPairingCodeWrong => _isPairingCodeWrong;
+  bool get passphraseAlwaysOnDevice => _device?.passphraseAlwaysOnDevice ?? false;
+  bool get supportsPassphraseEntry => _device?.supportsPassphraseEntry ?? false;
+  bool get passphraseProtection => _device?.passphraseProtection ?? false;
+  bool get usesThp => _device?.usesThp ?? false;
 
   Future<void> connect() async {
     if (_step == TrezorUsbConnectStep.connecting) return;
@@ -53,13 +71,18 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
     try {
       _device = await TrezorDevice.connect(transport: TrezorTransport.usb);
       TrezorDevice.lastConnected = _device;
-      final network = NetworkType.currentNetworkType;
-      final keypath = network.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'";
-      _xpub = await _device!.getXPub(keypath: keypath, network: network.toString());
-      _device!.cachedXpub = _xpub;
-      _fingerprint = await _device!.getFingerprint();
-      _device!.cachedFingerprint = _fingerprint;
-      _setState(TrezorUsbConnectStep.connected);
+      debugPrint(
+        'TREZOR_USB connected passphraseProtection=${_device!.passphraseProtection} '
+        'alwaysOnDevice=${_device!.passphraseAlwaysOnDevice} '
+        'supportsOnDeviceEntry=${_device!.supportsPassphraseEntry} '
+        'usesThp=${_device!.usesThp}',
+      );
+
+      if (_device!.passphraseProtection) {
+        _setState(TrezorUsbConnectStep.passphraseUseQuestion);
+      } else {
+        await _proceedToXpub();
+      }
     } on TrezorPairingCodeWrongException catch (e) {
       _errorMessage = e.message;
       _isPairingCodeWrong = true;
@@ -75,6 +98,86 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
       _setState(TrezorUsbConnectStep.error);
     } finally {
       TrezorDevice.onPairingCodeRequested = null;
+    }
+  }
+
+  // -- New passphrase flow step methods --
+
+  /// Step 1: User chose not to use passphrase.
+  Future<void> selectNoPassphrase() async {
+    if (_device!.usesThp) {
+      await _createSessionAndProceed(TrezorPassphraseType.standard);
+    } else {
+      _pendingPassphraseResponse = const TrezorPassphraseResponse(TrezorPassphraseType.standard);
+      await _proceedToXpub();
+    }
+  }
+
+  /// Step 1: User chose to use passphrase → go to step 2/3.
+  void selectUsePassphrase() {
+    if (_device!.passphraseAlwaysOnDevice) {
+      _setState(TrezorUsbConnectStep.passphraseOnDevice);
+    } else if (!_device!.supportsPassphraseEntry) {
+      _setState(TrezorUsbConnectStep.passphraseInput);
+    } else {
+      _setState(TrezorUsbConnectStep.passphraseSourceSelection);
+    }
+  }
+
+  /// Step 3: User chose app entry → go to step 4-1.
+  void selectAppEntry() {
+    _setState(TrezorUsbConnectStep.passphraseInput);
+  }
+
+  /// Step 3: User chose device entry → go to step 4-2.
+  Future<void> selectDeviceEntry() async {
+    _setState(TrezorUsbConnectStep.passphraseOnDevice);
+    if (_device!.usesThp) {
+      await _createSessionAndProceed(TrezorPassphraseType.onDevice);
+    } else {
+      _pendingPassphraseResponse = const TrezorPassphraseResponse(TrezorPassphraseType.onDevice);
+      await _proceedToXpub();
+    }
+  }
+
+  /// Step 4-1: User submitted passphrase from app.
+  Future<void> submitPassphraseValue(String value) async {
+    if (_device!.usesThp) {
+      _setState(TrezorUsbConnectStep.passphraseConfirm);
+      await _createSessionAndProceed(TrezorPassphraseType.hidden, value: value);
+    } else {
+      _pendingPassphraseResponse = TrezorPassphraseResponse(TrezorPassphraseType.hidden, value: value);
+      await _proceedToXpub();
+    }
+  }
+
+  /// Internal: call createSession (THP only) then proceed to getXPub.
+  Future<void> _createSessionAndProceed(TrezorPassphraseType type, {String value = ''}) async {
+    try {
+      await _device!.createSession(type: type, value: value);
+      await _proceedToXpub();
+    } catch (error) {
+      _errorMessage = error.toString();
+      await _disconnectDevice();
+      _setState(TrezorUsbConnectStep.error);
+    }
+  }
+
+  /// Step 6: getXPub + getFingerprint → connected.
+  Future<void> _proceedToXpub() async {
+    _setState(TrezorUsbConnectStep.passphraseProcessing);
+    try {
+      final network = NetworkType.currentNetworkType;
+      final keypath = network.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'";
+      _xpub = await _device!.getXPub(keypath: keypath, network: network.toString());
+      _device!.cachedXpub = _xpub;
+      _fingerprint = await _device!.getFingerprint();
+      _device!.cachedFingerprint = _fingerprint;
+      _setState(TrezorUsbConnectStep.connected);
+    } catch (error) {
+      _errorMessage = error.toString();
+      await _disconnectDevice();
+      _setState(TrezorUsbConnectStep.error);
     }
   }
 
@@ -117,6 +220,15 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
     if (_pairingCodeCompleter != null && !_pairingCodeCompleter!.isCompleted) {
       _pairingCodeCompleter!.complete('');
     }
+  }
+
+  Future<TrezorPassphraseResponse> requestPassphrase(bool onDevice) {
+    if (_pendingPassphraseResponse != null) {
+      final response = _pendingPassphraseResponse!;
+      _pendingPassphraseResponse = null;
+      return Future.value(response);
+    }
+    return Future.value(const TrezorPassphraseResponse(TrezorPassphraseType.standard));
   }
 
   Future<String?> requestPin() {

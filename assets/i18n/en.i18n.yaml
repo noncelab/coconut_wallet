@@ -473,6 +473,7 @@ wallet_connect_screen:
     error:
       title: "Connection Failed"
       ble_description: "Trezor Safe 7 not found. Please turn on Bluetooth and bring the device closer."
+      usb_description: "Trezor not found. Reconnect the device and try again."
     ios_peer_removed_pairing:
       title: "Existing Bluetooth Pairing Information Removed"
       description: "The Trezor has removed its previous Bluetooth pairing information."
@@ -493,8 +494,17 @@ wallet_connect_screen:
       pin_description: "Look at the number layout on your Trezor screen and enter your PIN."
       passphrase_title: "Enter passphrase"
       passphrase_hint: "Hidden wallet passphrase"
+      passphrase_entry_source_description: "Choose where to enter your passphrase."
+      enter_in_app: "Enter in app"
+      enter_on_trezor: "Enter on Trezor"
+      enter_on_trezor_description: "Please complete entering your passphrase on your Trezor device."
+      do_not_use_passphrase: "Don't use a passphrase"
       standard_wallet: "Standard wallet"
-      error: "Connect your Trezor and try again."
+      passphrase_use_question: "Do you want to use a passphrase?"
+      passphrase_use_yes: "Use passphrase"
+      passphrase_use_no: "Don't use"
+      passphrase_where_to_enter: "Where do you want to enter your passphrase?"
+      passphrase_confirm_on_device: "Please confirm the passphrase on your Trezor device."
       suite_app_notice: "The Trezor Suite app may open automatically when connected via USB."
       suite_app_setting_guide:
         title: "· Remove the default app setting"
@@ -504,6 +514,7 @@ wallet_connect_screen:
           - "3. When reconnecting USB, select 'Cancel' in the 'Open Trezor Suite app to handle TREZOR?' dialog"
   common:
     ble_off: "Please turn on Bluetooth on your device."
+    loading_wallet_info: "Loading wallet info"
 
 
 # lib/screens/review
@@ -1365,3 +1376,8 @@ taproot:
   setup_summary_card:
     signer_configuration: "Signer Configuration"
     inheritance_condition: "Inheritance Condition"
+
+passphrase_input_text_field:
+  passphrase_visible: "Show passphrase"
+  passphrase_hidden: "Hide passphrase"
+  placeholder: "Enter passphrase"

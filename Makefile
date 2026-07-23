@@ -8,7 +8,7 @@ slang:
 	fvm dart pub run slang
 
 ios-build-profile:
-	fvm flutter build ios --flavor regtest --profile
+	fvm flutter build ios --flavor regtest --profile --dart-define=USE_FIREBASE=false
 
 ios-mainnet:
 	fvm flutter build ios --flavor mainnet --release --dart-define=USE_FIREBASE=true
@@ -28,6 +28,9 @@ run-regtest:
 run-regtest-release:
 	fvm flutter run --flavor regtest --release
 
+run-regtest-release-debug-signing:
+	ANDROID_USE_DEBUG_SIGNING_FOR_RELEASE_RUN=true fvm flutter run --flavor regtest --release
+
 run-mainnet-debug:
 	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --debug
 
@@ -38,7 +41,7 @@ run-mainnet-release:
 	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --release
 
 ios-regtest:
-	fvm flutter build ios --flavor regtest --release
+	fvm flutter build ios --flavor regtest --profile
 
 aos-release:
 	./android/scripts/build_android_release.sh

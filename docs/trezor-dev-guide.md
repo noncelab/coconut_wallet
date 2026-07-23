@@ -507,7 +507,7 @@ Trezor Bridge에서 PSBT 서명 API를 노출하고, 서명에 필요한 이전 
 - `rust/trezor-bridge/src/lib.rs`
 - `rust/trezor-bridge/src/trezor.udl`
 
-- GitHub commit: <추가 예정>
+- GitHub commit: `https://github.com/noncelab/coconut_wallet/commit/1b90f54100d2ae309f62c978d720203aa5f092c2`
 
 **4. Cargo.toml 버전 업데이트**
 

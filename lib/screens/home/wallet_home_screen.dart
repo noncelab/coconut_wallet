@@ -1586,7 +1586,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   days: _viewModel.analysisPeriod.toString(),
                   transaction_type: _viewModel.selectedAnalysisTransactionTypeName,
                 )
-                : t.wallet_home_screen.analysis_period_cutsom(
+                : t.wallet_home_screen.analysis_period_custom(
                   transaction_type: _viewModel.selectedAnalysisTransactionTypeName,
                 ),
             style: CoconutTypography.body3_12.setColor(textColor),

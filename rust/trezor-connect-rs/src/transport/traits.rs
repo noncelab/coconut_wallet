@@ -58,6 +58,26 @@ pub trait Transport: Send + Sync {
     /// Call a method on the device
     async fn call(&self, session: &str, message_type: u16, data: &[u8]) -> Result<(u16, Vec<u8>)>;
 
+    /// Create a session with the given passphrase (THP devices only).
+    ///
+    /// `passphrase` is `Some("")` for the standard wallet, `Some(value)` for a
+    /// hidden wallet, or `None` for on-device entry (with `on_device = true`).
+    ///
+    /// V1 devices: no-op (passphrase is handled per-API-call via
+    /// `PassphraseRequest`/`PassphraseAck`). THP devices: sends
+    /// `ThpCreateNewSession` with the passphrase bound to the session.
+    ///
+    /// Must be called after `acquire()` and before any API calls for THP
+    /// devices. Safe to call unconditionally (no-op for V1).
+    async fn create_session(
+        &self,
+        _session: &str,
+        _passphrase: Option<&str>,
+        _on_device: bool,
+    ) -> Result<()> {
+        Ok(())
+    }
+
     /// Stop the transport
     fn stop(&mut self);
 }

@@ -58,6 +58,22 @@ class TrezorDevice {
   final String model;
   final TrezorTransport transport;
 
+  /// Whether passphrase protection is enabled on the device.
+  /// True if the user has turned on passphrase in Trezor settings;
+  /// the device can open passphrase (hidden) wallets, not just the standard wallet.
+  final bool passphraseProtection;
+
+  /// Whether the device is configured to always require passphrase entry on the device itself.
+  final bool passphraseAlwaysOnDevice;
+
+  /// Whether the device supports entering a passphrase on its own screen.
+  /// True for Trezor Safe 3/5/7 (has a keypad); false for Trezor One (two buttons, no keypad).
+  final bool supportsPassphraseEntry;
+
+  /// Whether the device uses the THP (Trezor Hardware Protocol).
+  /// True for Safe 3/5/7; false for legacy models (Trezor One, Model T).
+  final bool usesThp;
+
   /// Last successfully paired device, reused for signing to avoid re-pairing.
   static TrezorDevice? lastConnected;
 
@@ -67,7 +83,16 @@ class TrezorDevice {
   /// xpub cached from [getXPub] at the standard derivation path, may be set by callers.
   String? cachedXpub;
 
-  TrezorDevice._({required this.id, required this.label, required this.model, required this.transport});
+  TrezorDevice._({
+    required this.id,
+    required this.label,
+    required this.model,
+    required this.transport,
+    this.passphraseProtection = false,
+    this.passphraseAlwaysOnDevice = false,
+    this.supportsPassphraseEntry = false,
+    this.usesThp = false,
+  });
 
   static Future<TrezorDevice> connect({TrezorTransport transport = TrezorTransport.ble}) async {
     _ensureHandlerRegistered();
@@ -84,11 +109,23 @@ class TrezorDevice {
           (value) => value.name == json['transport'],
           orElse: () => transport,
         );
+        final usesThp = json['uses_thp'] as bool? ?? false;
+        debugPrint(
+          'TREZOR_CONNECT transport=${parsedTransport.name} '
+          'passphraseProtection=${json['passphrase_protection']} '
+          'passphraseAlwaysOnDevice=${json['passphrase_always_on_device']} '
+          'passphraseEntry=${json['passphrase_entry']} '
+          'usesThp=$usesThp',
+        );
         return TrezorDevice._(
           id: json['device_id'] as String? ?? raw,
           label: json['label'] as String? ?? '',
           model: json['model'] as String? ?? '',
           transport: parsedTransport,
+          passphraseProtection: json['passphrase_protection'] as bool? ?? false,
+          passphraseAlwaysOnDevice: json['passphrase_always_on_device'] as bool? ?? false,
+          supportsPassphraseEntry: json['passphrase_entry'] as bool? ?? false,
+          usesThp: usesThp,
         );
       } catch (_) {
         return TrezorDevice._(id: raw, label: '', model: '', transport: transport);
@@ -151,6 +188,29 @@ class TrezorDevice {
       return result;
     } on PlatformException catch (e) {
       throw TrezorXPubException(e.code, e.message ?? 'getFingerprint failed');
+    }
+  }
+
+  /// Create a THP session with the given passphrase.
+  ///
+  /// Only meaningful for THP devices (Safe 3/5/7). For V1 devices this is a no-op.
+  /// Must be called after [connect] and before [getXPub] / [signTransaction].
+  ///
+  /// [type] determines the passphrase mode:
+  /// - [TrezorPassphraseType.standard] → standard wallet (no passphrase)
+  /// - [TrezorPassphraseType.hidden] → hidden wallet with [value]
+  /// - [TrezorPassphraseType.onDevice] → enter passphrase on device
+  Future<void> createSession({TrezorPassphraseType type = TrezorPassphraseType.standard, String value = ''}) async {
+    try {
+      final typeStr = switch (type) {
+        TrezorPassphraseType.cancel => 'cancel',
+        TrezorPassphraseType.standard => 'standard',
+        TrezorPassphraseType.hidden => 'hidden',
+        TrezorPassphraseType.onDevice => 'on_device',
+      };
+      await _channel.invokeMethod('createSession', {'id': id, 'passphraseType': typeStr, 'passphraseValue': value});
+    } on PlatformException catch (e) {
+      throw TrezorConnectException(e.code, e.message ?? 'createSession failed');
     }
   }
 

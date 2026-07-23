@@ -251,7 +251,7 @@ wallet_home_screen:
   cannot_modify_fixed_widget: "이 요소는 표시/숨김을 변경할 수 없어요."
   no_change_in_amount: "수량 변화가 없어요!"
   analysis_period: "최근 ${days}일 • ${transaction_type}"
-  analysis_period_cutsom: "직접 설정 • ${transaction_type}"
+  analysis_period_custom: "직접 설정 • ${transaction_type}"
   analysis_period_bottom_sheet:
     period_for_analysis: "조회 기간"
     days_15: "15일"
@@ -448,6 +448,7 @@ wallet_connect_screen:
     error:
       title: "연결 실패"
       ble_description: "Trezor Safe 7을 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
+      usb_description: "Trezor을 찾을 수 없어요. 기기를 다시 연결한 후 시도해 주세요."
     ios_peer_removed_pairing:
       title: "기존 블루투스 페어링 정보 삭제됨"
       description: "Trezor에서 이전 블루투스 페어링 정보가 삭제되었어요."
@@ -468,8 +469,17 @@ wallet_connect_screen:
       pin_description: "Trezor 화면의 숫자 배열을 보고 설정하신 PIN 번호를 입력해 주세요."
       passphrase_title: "Passphrase 입력"
       passphrase_hint: "숨김 지갑 passphrase"
+      passphrase_entry_source_description: "Passphrase를 입력할 위치를 선택해 주세요."
+      enter_in_app: "앱에서 입력"
+      enter_on_trezor: "기기에서 입력"
+      enter_on_trezor_description: "Trezor 기기에서 passphrase 입력을 완료해 주세요."
+      do_not_use_passphrase: "패스프레이즈 사용 안함"
       standard_wallet: "표준 지갑"
-      error: "Trezor를 연결하고 다시 시도해 주세요."
+      passphrase_use_question: "패스프레이즈를 사용하시겠어요?"
+      passphrase_use_yes: "사용하기"
+      passphrase_use_no: "사용 안함"
+      passphrase_where_to_enter: "패스프레이즈를 어디에서 입력하시겠어요?"
+      passphrase_confirm_on_device: "Trezor에서 입력하신 패스프레이즈를 확인해 주세요."
       suite_app_notice: "USB 연결 시 Trezor Suite 앱이 자동 실행돼요."
       suite_app_setting_guide:
         title: "· 기본 앱 설정을 제거하세요"
@@ -479,6 +489,7 @@ wallet_connect_screen:
           - "3. USB 연결 해제 후 재연결 시 'Trezor Suite 앱을 열어 TREZOR을(를) 처리하시겠습니까?' 다이얼로그창에서 '취소' 선택"
   common:
     ble_off: "기기 블루투스를 켜주세요."
+    loading_wallet_info: "지갑 정보 가져오는 중"
     
 # lib/screens/wallet_list
 wallet_list:
@@ -1371,3 +1382,8 @@ taproot:
   setup_summary_card:
     signer_configuration: "서명자 구성"
     inheritance_condition: "상속 조건"
+
+passphrase_input_text_field:
+  passphrase_visible: "패스프레이즈 보기"
+  passphrase_hidden: "패스프레이즈 숨기기"
+  placeholder: "패스프레이즈 입력"

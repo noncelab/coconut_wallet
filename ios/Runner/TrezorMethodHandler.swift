@@ -41,6 +41,8 @@ class TrezorMethodHandler: NSObject {
         switch call.method {
         case "connect":
             connect(result: result)
+        case "createSession":
+            createSession(call, result: result)
         case "getXPub":
             getXPub(call, result: result)
         case "getFingerprint":
@@ -188,6 +190,33 @@ class TrezorMethodHandler: NSObject {
             } catch {
                 DispatchQueue.main.async {
                     result(FlutterError(code: "FINGERPRINT_FAILED", message: error.localizedDescription, details: nil))
+                }
+            }
+        }
+    }
+
+    // MARK: - createSession
+    private func createSession(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        let passphraseType = (args["passphraseType"] as? String) ?? "standard"
+        let passphraseValue = (args["passphraseValue"] as? String) ?? ""
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+#if canImport(trezor_bridgeFFI)
+                try trezorCreateSession(deviceId: deviceId, passphraseType: passphraseType, passphraseValue: passphraseValue)
+                DispatchQueue.main.async { result(nil) }
+#else
+                throw NSError(domain: "TrezorBridge", code: -99,
+                    userInfo: [NSLocalizedDescriptionKey: "TrezorBridgeFFI not linked"])
+#endif
+            } catch {
+                DispatchQueue.main.async {
+                    result(FlutterError(code: "CREATE_SESSION_FAILED", message: error.localizedDescription, details: nil))
                 }
             }
         }
@@ -695,24 +724,41 @@ fileprivate class SwiftBleCallbacks: TrezorBleCallbacks {
         return Array(data)
     }
 
+    func getPin() -> String {
+        return requestFlutterString(method: "showPinMatrix", arguments: nil)
+    }
+
+    func getPassphrase(onDevice: Bool) -> String {
+        return requestFlutterString(
+            method: "showPassphraseDialog",
+            arguments: ["onDevice": onDevice],
+            fallback: "{\"type\":\"cancel\"}"
+        )
+    }
+
     func getPairingCode() -> String {
         // Trezor Safe 7 shows a 6-digit code on the device screen.
         // Ask Flutter to show an input dialog and block until the user submits.
+        let code = requestFlutterString(method: "showPairingCodeDialog", arguments: nil)
+        // Flush any BLE packets that arrived while the dialog was open.
+        // These are stale notifications unrelated to the current handshake step.
+        manager.flushReadQueue()
+        return code
+    }
+
+    private func requestFlutterString(method: String, arguments: Any?, fallback: String = "") -> String {
         let sema = DispatchSemaphore(value: 0)
-        var code = ""
+        var value = fallback
         DispatchQueue.main.async {
-            self.channel.invokeMethod("showPairingCodeDialog", arguments: nil) { result in
-                if let entered = result as? String, !entered.isEmpty {
-                    code = entered
+            self.channel.invokeMethod(method, arguments: arguments) { result in
+                if let result = result as? String {
+                    value = result
                 }
                 sema.signal()
             }
         }
         sema.wait()
-        // Flush any BLE packets that arrived while the dialog was open.
-        // These are stale notifications unrelated to the current handshake step.
-        manager.flushReadQueue()
-        return code
+        return value
     }
 }
 #endif

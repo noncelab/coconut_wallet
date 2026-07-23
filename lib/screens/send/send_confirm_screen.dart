@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -10,13 +8,12 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
@@ -203,25 +200,12 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
           'transport': lastConnected.transport.name,
         },
       );
-    } else if (Platform.isIOS) {
-      CommonBottomSheets.showCustomHeightBottomSheet(
-        context: context,
-        child: TrezorBleConnectScreen(
-          psbtBase64: viewModel.txWaitingForSign,
-          walletName: viewModel.walletName,
-          walletFingerprint: viewModel.walletFingerprint,
-        ),
-        heightRatio: 0.9,
-      );
     } else {
-      CommonBottomSheets.showCustomHeightBottomSheet(
+      TrezorNavigator.showConnectScreen(
         context: context,
-        heightRatio: 0.9,
-        child: TrezorTransportSelectScreen(
-          psbtBase64: viewModel.txWaitingForSign,
-          walletName: viewModel.walletName,
-          walletFingerprint: viewModel.walletFingerprint,
-        ),
+        psbtBase64: viewModel.txWaitingForSign,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
       );
     }
   }

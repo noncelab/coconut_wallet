@@ -209,6 +209,7 @@ class TrezorMethodHandler(
     private fun handleMethod(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "connect" -> connect(call, result)
+            "createSession" -> createSession(call, result)
             "getXPub" -> getXPub(call, result)
             "getFingerprint" -> getFingerprint(call, result)
             "signTransaction" -> signTransaction(call, result)
@@ -380,6 +381,13 @@ class TrezorMethodHandler(
         openUsbAndConnect(device, safeResult)
     }
 
+    private fun usbCredentialDeviceId(device: android.hardware.usb.UsbDevice): String =
+        try {
+            device.serialNumber?.takeIf { it.isNotBlank() } ?: device.deviceName
+        } catch (_: SecurityException) {
+            device.deviceName
+        }
+
     private fun openUsbAndConnect(device: android.hardware.usb.UsbDevice, result: MethodChannel.Result) {
         executor.execute {
             try {
@@ -393,10 +401,10 @@ class TrezorMethodHandler(
                 uniffi.trezor_bridge.trezorRegisterUsbCallbacks(handle, callbacks)
                 val rustDeviceId = uniffi.trezor_bridge.trezorConnectUsb(
                     handle,
-                    device.deviceName,
+                    usbCredentialDeviceId(device),
                     device.vendorId.toUShort(),
                     device.productId.toUShort(),
-                    "", // credential_path: in-memory only for USB
+                    credentialFilePath(),
                 )
                 activeHandle = handle
                 activeDeviceId = rustDeviceId
@@ -650,6 +658,28 @@ class TrezorMethodHandler(
                 mainHandler.post { result.success(fp) }
             } catch (e: Exception) {
                 mainHandler.post { result.error("FINGERPRINT_FAILED", e.message, null) }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // createSession
+    // -------------------------------------------------------------------------
+    private fun createSession(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        val passphraseType = call.argument<String>("passphraseType") ?: "standard"
+        val passphraseValue = call.argument<String>("passphraseValue") ?: ""
+
+        executor.execute {
+            try {
+                if (!TrezorBridge.tryLoad()) throw bridgeNotReady()
+                uniffi.trezor_bridge.trezorCreateSession(deviceId, passphraseType, passphraseValue)
+                mainHandler.post { result.success(null) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("CREATE_SESSION_FAILED", e.message, null) }
             }
         }
     }
@@ -919,6 +949,10 @@ class KotlinBleCallbacks(
         val bytes = handler.bleRead() ?: return null
         return bytes.map { it.toUByte() }
     }
+
+    override fun getPin(): String = handler.requestPin()
+
+    override fun getPassphrase(onDevice: Boolean): String = handler.requestPassphrase(onDevice)
 
     override fun getPairingCode(): String {
         Log.d("TrezorBLE", "KotlinBleCallbacks.getPairingCode: Rust requested pairing code")

@@ -15,3 +15,4 @@
 
 # App package
 -keep class onl.coconut.wallet.** { *; }
+-keep class uniffi.** { *; }

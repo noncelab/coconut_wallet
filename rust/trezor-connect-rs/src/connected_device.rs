@@ -63,6 +63,28 @@ impl ConnectedDevice {
         self.uses_thp = uses_thp;
     }
 
+    /// Create a session with the given passphrase.
+    ///
+    /// For THP devices, this sends `ThpCreateNewSession` with the passphrase
+    /// bound to the session. Must be called after `initialize()` and before
+    /// any API calls (e.g. `get_xpub`).
+    ///
+    /// - `passphrase = Some("")` → standard wallet (no passphrase)
+    /// - `passphrase = Some(value)` → hidden wallet
+    /// - `passphrase = None` + `on_device = true` → enter on device
+    ///
+    /// For V1 devices this is a no-op (passphrase is handled per-API-call
+    /// via `PassphraseRequest`/`PassphraseAck`).
+    pub async fn create_session(
+        &self,
+        passphrase: Option<&str>,
+        on_device: bool,
+    ) -> Result<()> {
+        self.transport
+            .create_session(&self.session, passphrase, on_device)
+            .await
+    }
+
     /// Set the UI callback for handling PIN and passphrase requests.
     pub fn set_ui_callback(&mut self, cb: Arc<dyn TrezorUiCallback>) {
         self.ui_callback = Some(cb);

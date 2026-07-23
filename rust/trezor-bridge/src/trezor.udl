@@ -46,6 +46,13 @@ namespace trezor_bridge {
     // Disconnect and clean up device state.
     [Throws=TrezorError]
     void trezor_disconnect(string device_id);
+
+    // Create a THP session with the given passphrase.
+    // Must be called after connect and before getXPub/signTransaction for THP devices.
+    // passphrase_type: "standard", "hidden", or "on_device"
+    // passphrase_value: passphrase string (used only for "hidden")
+    [Throws=TrezorError]
+    void trezor_create_session(string device_id, string passphrase_type, string passphrase_value);
 };
 
 // Callback interface implemented by the native layer (Swift / Kotlin).
@@ -58,6 +65,9 @@ interface TrezorBleCallbacks {
     // Blocking read of one BLE notification packet (max 5 s).
     // Returns null on timeout.
     sequence<u8>? read();
+
+    string get_pin();
+    string get_passphrase(boolean on_device);
 
     // Prompt the user for the 6-digit numeric comparison code shown on Trezor.
     // Returns empty string to cancel pairing.

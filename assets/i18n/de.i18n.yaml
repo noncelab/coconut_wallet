@@ -437,6 +437,7 @@ wallet_connect_screen:
     error:
       title: "Verbindung fehlgeschlagen"
       ble_description: "Trezor Safe 7 wurde nicht gefunden. Bitte aktivieren Sie Bluetooth und bringen Sie das Gerät näher."
+      usb_description: "Trezor wurde nicht gefunden. Bitte verbinden Sie das Gerät erneut und versuchen Sie es noch einmal."
     ios_peer_removed_pairing:
       title: "Vorhandene Bluetooth-Pairing-Informationen entfernt"
       description: "Der Trezor hat seine vorherigen Bluetooth-Pairing-Informationen entfernt."
@@ -457,8 +458,17 @@ wallet_connect_screen:
       pin_description: "Sieh dir die Zahlenanordnung auf deinem Trezor an und gib deine PIN ein."
       passphrase_title: "Passphrase eingeben"
       passphrase_hint: "Passphrase der versteckten Wallet"
+      passphrase_entry_source_description: "Wähle, wo du deine Passphrase eingeben möchtest."
+      enter_in_app: "In der App eingeben"
+      enter_on_trezor: "Auf dem Trezor eingeben"
+      enter_on_trezor_description: "Bitte schließe die Eingabe deiner Passphrase auf deinem Trezor ab."
+      do_not_use_passphrase: "Keine Passphrase verwenden"
       standard_wallet: "Standard-Wallet"
-      error: "Verbinde dein Trezor und versuche es erneut."
+      passphrase_use_question: "Möchtest du eine Passphrase verwenden?"
+      passphrase_use_yes: "Passphrase verwenden"
+      passphrase_use_no: "Nicht verwenden"
+      passphrase_where_to_enter: "Wo möchtest du deine Passphrase eingeben?"
+      passphrase_confirm_on_device: "Bitte bestätige die Passphrase auf deinem Trezor."
       suite_app_notice: "Bei USB-Verbindung wird die Trezor Suite-App möglicherweise automatisch gestartet."
       suite_app_setting_guide:
         title: "· Entfernen Sie die Standard-App-Einstellung"
@@ -468,6 +478,7 @@ wallet_connect_screen:
           - "3. Trennen Sie USB und verbinden Sie ihn erneut. Wählen Sie im Dialog 'Trezor Suite-App öffnen, um TREZOR zu verarbeiten?' 'Abbrechen'"
   common:
     ble_off: "Bitte aktivieren Sie Bluetooth auf Ihrem Gerät."
+    loading_wallet_info: "Wallet-Informationen werden geladen"
 
 # lib/screens/wallet_list
 wallet_list:
@@ -1323,3 +1334,8 @@ trezor_sign_screen:
   state_label:
     idle: "Warten auf Signatur"
     signing: "Signieren"
+
+passphrase_input_text_field:
+  passphrase_visible: "Passphrase anzeigen"
+  passphrase_hidden: "Passphrase verbergen"
+  placeholder: "Passphrase eingeben"
