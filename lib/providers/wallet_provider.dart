@@ -392,7 +392,7 @@ class WalletProvider extends ChangeNotifier {
 
   Future<void> deleteWallet(int walletId) async {
     await _walletRepository.deleteWallet(walletId);
-    _setWalletItemList(await _fetchWalletListFromDB());
+    _walletItemList.removeWhere((wallet) => wallet.id == walletId);
     _saveWalletCount(_walletItemList.length);
     await _preferenceProvider.removeWalletOrder(walletId);
     await _preferenceProvider.removeFavoriteWalletId(walletId);
@@ -411,6 +411,7 @@ class WalletProvider extends ChangeNotifier {
       );
     }
 
+    _setWalletItemList(List.from(_walletItemList));
     notifyListeners();
   }
 
