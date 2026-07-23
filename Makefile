@@ -28,7 +28,7 @@ pre-deploy:
 
 # gomobile bind targets
 gomobile-android:
-	cd go && gomobile bind -target=android -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
+	cd go && CGO_LDFLAGS="-Wl,-z,max-page-size=16384" gomobile bind -target=android -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
 
 gomobile-ios:
 	cd go && gomobile bind -target=ios -o ../ios/Runner/bitboxbridge.xcframework .

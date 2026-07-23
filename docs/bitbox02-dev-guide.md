@@ -106,12 +106,15 @@ Recommended order for a clean machine: clone the `bitbox02-api-go` fork → `gom
 
 ```bash
 cd go
+export CGO_LDFLAGS="-Wl,-z,max-page-size=16384"
 gomobile bind \
   -target=android \
-  -androidapi 21 \
+  -androidapi 23 \
   -o ../android/app/libs/bitboxbridge.aar \
   .
 ```
+
+**16KB page alignment:** `CGO_LDFLAGS="-Wl,-z,max-page-size=16384"` is required for Android 15+ (API 35+) compatibility. Without it, the Play Store rejects the app with "app is not compliant with 16KB page size" error.
 
 **Output:** `bitboxbridge.aar` (~23MB) + `bitboxbridge-sources.jar` (~7KB)
 
@@ -144,8 +147,8 @@ flutter run --flavor regtest
 ### 3.4 Full Rebuild Workflow
 
 ```bash
-# 1. Rebuild Go bridge
-cd go && gomobile bind -target=android -androidapi 21 -o ../android/app/libs/bitboxbridge.aar . && cd ..
+# 1. Rebuild Go bridge (with 16KB page alignment)
+cd go && export CGO_LDFLAGS="-Wl,-z,max-page-size=16384" && gomobile bind -target=android -androidapi 23 -o ../android/app/libs/bitboxbridge.aar . && cd ..
 
 # 2. Clean + build Flutter
 flutter clean && flutter pub get && flutter run --flavor regtest
@@ -613,8 +616,8 @@ Uses `CoconutDesignSystem` widgets and styles:
 ## 10. Quick Reference Card
 
 ```bash
-# Build AAR
-cd go && gomobile bind -target=android -androidapi 21 -o ../android/app/libs/bitboxbridge.aar .
+# Build AAR (with 16KB page alignment for Android 15+)
+cd go && export CGO_LDFLAGS="-Wl,-z,max-page-size=16384" && gomobile bind -target=android -androidapi 23 -o ../android/app/libs/bitboxbridge.aar .
 
 # Build & run Flutter
 export JAVA_HOME=$(/usr/libexec/java_home -v 17)
