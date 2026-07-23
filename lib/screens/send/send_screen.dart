@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -1253,7 +1254,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Lottie.asset(
-                      'assets/lottie/swipe-left.json',
+                      CommonLottiePath.swipeLeft,
                       width: 60,
                       height: 60,
                       delegates: LottieDelegates(

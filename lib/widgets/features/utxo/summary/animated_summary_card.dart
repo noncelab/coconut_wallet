@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -46,7 +47,7 @@ class AnimatedSummaryCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 0),
               child: Lottie.asset(
-                'assets/lottie/three-stars-growing.json',
+                UtxoLottiePath.threeStarsGrowing,
                 controller: lottieController,
                 onLoaded: onLottieLoaded,
                 width: 24,

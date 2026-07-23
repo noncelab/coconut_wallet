@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -288,7 +289,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         CoconutLayout.spacing_100w,
                         ColorFiltered(
                           colorFilter: ColorFilter.mode(context.coconutColors.accentForeground, BlendMode.srcATop),
-                          child: LottieBuilder.asset('assets/lottie/status_loading.json', width: 16, height: 16),
+                          child: LottieBuilder.asset(CommonLottiePath.statusLoading, width: 16, height: 16),
                         ),
                       ],
                     ),

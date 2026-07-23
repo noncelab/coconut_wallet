@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -58,7 +59,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
         return AnimatedDialog(
           context: buildContext,
-          lottieAddress: 'assets/lottie/pin-locked-success.json',
+          lottieAddress: AuthLottiePath.pinLockedSuccess,
           duration: 400,
         );
       },

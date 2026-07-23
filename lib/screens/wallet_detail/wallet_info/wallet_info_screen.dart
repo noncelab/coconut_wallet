@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -751,7 +752,7 @@ class _TargetQuantityCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(topRight: Radius.circular(24)),
                 child: Lottie.asset(
-                  'assets/lottie/fireworks.json',
+                  CommonLottiePath.fireworks,
                   width: 140,
                   height: 120,
                   fit: BoxFit.contain,

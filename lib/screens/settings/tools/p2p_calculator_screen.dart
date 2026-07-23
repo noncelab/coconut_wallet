@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -910,7 +911,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                   }
                 },
                 icon: Lottie.asset(
-                  'assets/lottie/online-offline-switch.json',
+                  SettingsLottiePath.onlineOfflineSwitch,
                   width: 24,
                   height: 24,
                   controller: _lottieController,

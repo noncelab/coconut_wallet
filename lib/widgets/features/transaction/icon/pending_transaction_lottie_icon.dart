@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -33,7 +34,7 @@ class PendingTransactionLottieIcon extends StatelessWidget {
       child: ColorFiltered(
         colorFilter: ColorFilter.mode(iconColor, BlendMode.srcATop),
         child: Lottie.asset(
-          isIncoming ? 'assets/lottie/arrow-down.json' : 'assets/lottie/arrow-up.json',
+          isIncoming ? TransactionLottiePath.arrowDown : TransactionLottiePath.arrowUp,
           width: size,
           height: size,
           fit: fit,
