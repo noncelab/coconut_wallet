@@ -406,7 +406,9 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
           (BuildContext dialogContext) => CoconutPopup(
             languageCode: context.read<PreferenceProvider>().language,
             title: title,
+            titleTextStyle: CoconutTypography.heading4_18_Bold,
             description: description,
+            descriptionTextStyle: CoconutTypography.body1_16,
             onTapRight: () {
               Navigator.of(dialogContext).pop();
               onConfirm();

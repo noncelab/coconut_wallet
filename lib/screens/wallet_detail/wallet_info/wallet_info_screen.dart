@@ -600,7 +600,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
           title: t.wallet_info_screen.import_labels,
+          titleTextStyle: CoconutTypography.heading4_18_Bold,
           description: t.wallet_info_screen.import_labels_description,
+          descriptionTextStyle: CoconutTypography.body1_16,
           onTapRight: () {
             Navigator.of(dialogContext).pop();
             _importLabels(viewModel);
