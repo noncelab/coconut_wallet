@@ -1,0 +1,89 @@
+# frozen_string_literal: true
+
+default_platform(:ios)
+
+require "shellwords"
+require_relative "../../../fastlane/shared/pubspec_helper"
+require_relative "../../../fastlane/shared/util_helper"
+require_relative "../../../fastlane/production/release_helper"
+
+ROOT_DIR = File.expand_path("../../..", __dir__)
+IOS_APP_IDENTIFIERS = {
+  "mainnet" => "onl.coconut.wallet",
+  "regtest" => "onl.coconut.wallet.regtest"
+}.freeze
+
+def prepare_ios_production(flavor:, opts:)
+  platform_ = "ios"
+  skip_prep = UtilHelper.truthy?(opts[:skip_prep] || ENV["SKIP_PREP"])
+  skip_clean = UtilHelper.truthy?(opts[:skip_clean] || ENV["SKIP_CLEAN"])
+  skip_pubget = UtilHelper.truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
+
+  marketing, old_build = PubspecHelper.version_tuple_for(platform: platform_, flavor: flavor)
+  new_build = old_build + 1
+  metadata_path = ProductionReleaseHelper.validate_metadata!(
+    root: ROOT_DIR,
+    platform: "ios",
+    flavor: flavor
+  )
+  review_attachment = ProductionReleaseHelper.review_attachment!(root: ROOT_DIR, flavor: flavor)
+
+  begin
+    prep_cmds = []
+    prep_cmds << "fvm flutter clean" unless skip_prep || skip_clean
+    prep_cmds << "fvm flutter pub get" unless skip_prep || skip_pubget
+    dart_define = flavor == "mainnet" ? " --dart-define=USE_FIREBASE=true" : ""
+
+    sh <<~SHELL
+      cd #{Shellwords.escape(ROOT_DIR)} &&
+      #{prep_cmds.empty? ? "true" : prep_cmds.join(" &&\n") } &&
+      fvm flutter build ipa \
+        --flavor #{flavor} \
+        --release#{dart_define} \
+        --export-method app-store \
+        --build-name=#{Shellwords.escape(marketing)} \
+        --build-number=#{new_build}
+    SHELL
+
+    ipa_path = Dir[File.join(ROOT_DIR, "build", "ios", "ipa", "*.ipa")].max_by { |path| File.mtime(path) }
+    UI.user_error!("IPA not found for #{flavor}.") unless ipa_path
+
+    upload_to_app_store(
+      ipa: ipa_path,
+      app_identifier: IOS_APP_IDENTIFIERS.fetch(flavor),
+      username: ENV["FASTLANE_USER"],
+      team_id: ENV["APP_STORE_CONNECT_TEAM_ID"],
+      app_version: marketing,
+      metadata_path: metadata_path,
+      app_review_attachment_file: review_attachment,
+      submit_for_review: false,
+      skip_screenshots: true,
+      force: true,
+      run_precheck_before_submit: false
+    )
+
+    PubspecHelper.update_pubspec_build_number(
+      platform: platform_,
+      flavor: flavor,
+      marketing: marketing,
+      old_build: old_build,
+      new_build: new_build
+    )
+  rescue => error
+    UI.error("iOS production preparation failed: #{error.message}")
+    UI.important("pubspec.yaml was not updated because production preparation failed.")
+    raise
+  end
+end
+
+platform :ios do
+  desc "Build iOS MAINNET and prepare App Store Connect metadata without submitting for review"
+  lane :prepare_ios_mainnet_production do |opts|
+    prepare_ios_production(flavor: "mainnet", opts: opts || {})
+  end
+
+  desc "Build iOS REGTEST and prepare App Store Connect metadata without submitting for review"
+  lane :prepare_ios_regtest_production do |opts|
+    prepare_ios_production(flavor: "regtest", opts: opts || {})
+  end
+end

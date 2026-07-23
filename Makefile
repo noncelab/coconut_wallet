@@ -28,7 +28,7 @@ pre-deploy:
 
 # gomobile bind targets
 gomobile-android:
-	cd go && gomobile bind -target=android -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
+	cd go && CGO_LDFLAGS="-Wl,-z,max-page-size=16384" gomobile bind -target=android -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
 
 gomobile-ios:
 	cd go && gomobile bind -target=ios -o ../ios/Runner/bitboxbridge.xcframework .
@@ -40,4 +40,13 @@ fastlane-mainnet:
 
 fastlane-regtest:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
+
+# Production draft/App Store preparation (manual review submission remains required)
+fastlane-production-mainnet:
+	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production skip_prep:true
+	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true
+
+fastlane-production-regtest:
+	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production
+	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true
 	

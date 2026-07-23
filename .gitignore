@@ -164,6 +164,8 @@ default.realm.management
 *.g.dart
 */fastlane/report.xml
 /fastlane/report.xml
+*/fastlane_production/fastlane/report.xml
+/fastlane/store_metadata/generated/
 
 # Cursor IDE
 .cursor
@@ -197,6 +199,7 @@ coconut-fastlane-supply.json
 **/android/app/src/main/jniLibs/x86_64/libtrezor_bridge.so
 **/android/app/src/main/kotlin/uniffi/trezor_bridge/
 rust/trezor-bridge/target/
+rust/trezor-connect-rs/target/
 
 # CCOS
 docs/ccos/*
