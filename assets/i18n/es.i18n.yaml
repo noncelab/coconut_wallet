@@ -655,6 +655,7 @@ settings_screen:
   import_all_labels_description: "Aplica las notas grabadas en otros dispositivos\na Coconut Wallet.\n\n¿Desea continuar con la importación?"
   export_labels: "Exportar Notas"
   export_all_labels_description: "Las notas grabadas en Coconut Wallet se pueden aplicar\nde la misma manera en otros dispositivos.\n\n¿Desea continuar con la exportación?"
+  export_labels_failed: "Error al exportar memos"
   utxo_tier_theme: "Color de moneda"
   electrum_server: 
     server_address: "Dirección del servidor"

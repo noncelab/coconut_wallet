@@ -394,9 +394,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
           () => _showLabelActionDialog(
             title: t.settings_screen.export_labels,
             description: t.settings_screen.export_all_labels_description,
-            onConfirm: () {
-              // TODO: Implement export labels for all wallets
-            },
+            onConfirm: _exportLabelsForAllWallets,
           ),
     );
   }
@@ -474,6 +472,48 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
             e.toString(),
           );
         }
+      }
+    }
+  }
+
+  Future<void> _exportLabelsForAllWallets() async {
+    _setOverlayLoading(true);
+    final startTime = DateTime.now();
+
+    try {
+      final labelManager = LabelJsonLManager();
+      final walletProvider = context.read<WalletProvider>();
+      final file = await labelManager.createLabelsJsonLFileForAllWallets(walletProvider);
+
+      final duration = DateTime.now().difference(startTime);
+      if (duration < const Duration(seconds: 1)) {
+        await Future.delayed(const Duration(seconds: 1) - duration);
+      }
+      _setOverlayLoading(false);
+
+      if (!mounted) return;
+
+      if (file != null) {
+        await labelManager.shareFile(file);
+      } else {
+        CoconutToast.showToast(
+          context: context,
+          text: t.wallet_info_screen.error.no_memos,
+          level: CoconutToastLevel.info,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/circle-info.svg',
+        );
+      }
+    } catch (e) {
+      _setOverlayLoading(false);
+      // 에러 처리
+      if (mounted) {
+        await showInfoDialog(
+          context,
+          context.read<PreferenceProvider>().language,
+          t.settings_screen.export_labels_failed,
+          e.toString(),
+        );
       }
     }
   }

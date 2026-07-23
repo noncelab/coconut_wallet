@@ -11,51 +11,10 @@ import 'package:share_plus/share_plus.dart';
 class LabelJsonLManager {
   Future<XFile?> createLabelsJsonLFile(int walletId, WalletProvider walletProvider) async {
     final txMemos = walletProvider.getAllTransactionMemos(walletId);
-    final utxoTags = walletProvider.getUtxoTags(walletId);
     final utxoStates = walletProvider.getUtxoList(walletId);
+    final utxoTags = walletProvider.getUtxoTags(walletId);
 
-    final txMemosWithLabels = txMemos.where((memo) => memo.memo.isNotEmpty).toList();
-    final utxoTagsWithLabels = utxoTags.where((tag) => tag.name.isNotEmpty && tag.utxoIdList.isNotEmpty).toList();
-
-    if (txMemosWithLabels.isEmpty && utxoTagsWithLabels.isEmpty) {
-      return null;
-    }
-
-    final List<String> jsonLines = [];
-
-    final utxoStateMap = {for (var utxo in utxoStates) utxo.utxoId: utxo};
-
-    // Transaction Memos
-    for (final memo in txMemosWithLabels) {
-      final data = {"type": "tx", "ref": memo.transactionHash, "label": memo.memo};
-      jsonLines.add(jsonEncode(data));
-    }
-
-    // Utxo Tags
-    for (final tag in utxoTagsWithLabels) {
-      for (final utxoId in tag.utxoIdList) {
-        final parsedId = _parseUtxoId(utxoId);
-        if (parsedId == null) {
-          debugPrint('Could not parse utxoId: $utxoId');
-          continue;
-        }
-
-        final utxoState = utxoStateMap[utxoId];
-        final bool isSpendable = utxoState?.status != UtxoStatus.locked;
-
-        final Map<String, dynamic> data = {
-          "type": "output",
-          "ref": "${parsedId.txid}:${parsedId.vout}",
-          "label": tag.name,
-        };
-
-        // Spendable
-        if (!isSpendable) {
-          data['spendable'] = false;
-        }
-        jsonLines.add(jsonEncode(data));
-      }
-    }
+    final jsonLines = _generateJsonLinesForWallet(txMemos: txMemos, utxoTags: utxoTags, utxoStates: utxoStates);
 
     if (jsonLines.isEmpty) {
       return null;
@@ -73,6 +32,26 @@ class LabelJsonLManager {
     await file.writeAsString(jsonlString);
 
     return XFile(file.path, name: fileName, mimeType: 'application/jsonl');
+  }
+
+  Future<XFile?> createLabelsJsonLFileForAllWallets(WalletProvider walletProvider) async {
+    final allWallets = walletProvider.walletItemList;
+    final List<String> jsonLines = [];
+
+    for (final wallet in allWallets) {
+      final walletId = wallet.id;
+      jsonLines.addAll(
+        _generateJsonLinesForWallet(
+          txMemos: walletProvider.getAllTransactionMemos(walletId),
+          utxoTags: walletProvider.getUtxoTags(walletId),
+          utxoStates: walletProvider.getUtxoList(walletId),
+        ),
+      );
+    }
+
+    if (jsonLines.isEmpty) return null;
+
+    return _createFileFromString(jsonLines.join('\n'));
   }
 
   Future<void> shareFile(XFile xFile) async {
@@ -156,5 +135,66 @@ class LabelJsonLManager {
 
     if (vout == null) return null;
     return (txid: txid, vout: vout);
+  }
+
+  Future<XFile> _createFileFromString(String content) async {
+    debugPrint('--- Exporting Labels as JSONL ---');
+    debugPrint(content);
+    debugPrint('---------------------------------');
+
+    final directory = await getTemporaryDirectory();
+    final fileName = 'coconut-labels-all-${DateTime.now().millisecondsSinceEpoch}.jsonl';
+    final file = File('${directory.path}/$fileName');
+    await file.writeAsString(content);
+    return XFile(file.path, name: fileName, mimeType: 'application/jsonl');
+  }
+
+  List<String> _generateJsonLinesForWallet({
+    required List<dynamic> txMemos,
+    required List<dynamic> utxoTags,
+    required List<UtxoState> utxoStates,
+  }) {
+    final txMemosWithLabels = txMemos.where((memo) => memo.memo.isNotEmpty).toList();
+    final utxoTagsWithLabels = utxoTags.where((tag) => tag.name.isNotEmpty && tag.utxoIdList.isNotEmpty).toList();
+
+    if (txMemosWithLabels.isEmpty && utxoTagsWithLabels.isEmpty) {
+      return [];
+    }
+
+    final List<String> jsonLines = [];
+    final utxoStateMap = {for (var utxo in utxoStates) utxo.utxoId: utxo};
+
+    // Transaction Memos
+    for (final memo in txMemosWithLabels) {
+      final data = {"type": "tx", "ref": memo.transactionHash, "label": memo.memo};
+      jsonLines.add(jsonEncode(data));
+    }
+
+    // Utxo Tags
+    for (final tag in utxoTagsWithLabels) {
+      for (final utxoId in tag.utxoIdList) {
+        final parsedId = _parseUtxoId(utxoId);
+        if (parsedId == null) {
+          debugPrint('Could not parse utxoId: $utxoId');
+          continue;
+        }
+
+        final utxoState = utxoStateMap[utxoId];
+        final bool isSpendable = utxoState?.status != UtxoStatus.locked;
+
+        final Map<String, dynamic> data = {
+          "type": "output",
+          "ref": "${parsedId.txid}:${parsedId.vout}",
+          "label": tag.name,
+        };
+
+        if (!isSpendable) {
+          data['spendable'] = false;
+        }
+        jsonLines.add(jsonEncode(data));
+      }
+    }
+
+    return jsonLines;
   }
 }
