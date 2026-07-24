@@ -339,12 +339,7 @@ class _CoconutToastWidgetState extends State<_CoconutToastWidget> with SingleTic
                 gradient: widget.borderColor != null ? null : widget.level.borderGradient(widget.context),
                 color: widget.borderColor,
                 boxShadow: [
-                  BoxShadow(
-                    color: colors.shadowDefault.withValues(alpha: 0.18),
-                    blurRadius: 16,
-                    spreadRadius: 0,
-                    offset: const Offset(0, 4),
-                  ),
+                  BoxShadow(color: colors.shadowDefault, blurRadius: 16, spreadRadius: 0, offset: const Offset(0, 4)),
                 ],
               ),
               padding: const EdgeInsets.all(0.5),

@@ -114,7 +114,7 @@ class CoconutPulldownMenu extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: shadowColor ?? colors.shadowDefault.withValues(alpha: 0.12),
+              color: shadowColor ?? colors.shadowDefault,
               spreadRadius: spreadRadius,
               blurRadius: blurRadius,
               offset: Offset.zero,

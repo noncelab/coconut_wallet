@@ -51,7 +51,7 @@ class TaprootSetupSummaryCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: context.coconutColors.shadowSubtle.withValues(alpha: 0.02),
+              color: context.coconutColors.shadowSubtle,
               offset: const Offset(2, 2),
               blurRadius: 4,
               spreadRadius: 6,

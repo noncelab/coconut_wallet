@@ -35,7 +35,7 @@ class UtxoOrderDropdown extends StatelessWidget {
                 CoconutPulldownMenuItem(title: UtxoOrder.byTimestampAsc.text),
               ],
               backgroundColor: context.coconutColors.pulldownMenuBackground,
-              shadowColor: context.coconutColors.shadowDefault.withValues(alpha: 0.06),
+              shadowColor: context.coconutColors.shadowDefault,
               dividerColor: context.coconutColors.pulldownMenuDividerColor,
               splashColor: context.coconutColors.pulldownMenuPressedColor,
               onSelected: (index, filterName) {

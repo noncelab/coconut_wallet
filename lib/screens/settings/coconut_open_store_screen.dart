@@ -551,9 +551,7 @@ class _ContributionSceneState extends State<_ContributionScene>
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(color: colors.shadowSubtle.withValues(alpha: 0.08), blurRadius: 18, offset: const Offset(0, 8)),
-          ],
+          boxShadow: [BoxShadow(color: colors.shadowSubtle, blurRadius: 18, offset: const Offset(0, 8))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -707,7 +705,10 @@ class _DeveloperCtaSceneState extends State<_DeveloperCtaScene>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [colors.brandAccentBackground.withValues(alpha: 0.12), colors.brandAccentBackground.withValues(alpha: 0.24)],
+            colors: [
+              colors.brandAccentBackground.withValues(alpha: 0.12),
+              colors.brandAccentBackground.withValues(alpha: 0.24),
+            ],
           ),
         ),
         child: Column(
@@ -790,8 +791,14 @@ class _ThemeCardSceneState extends State<_ThemeCardScene> with SingleTickerProvi
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: colors.brandAccentBackground, borderRadius: BorderRadius.circular(999)),
-                  child: Text('첫 번째 예시', style: CoconutTypography.caption_10_Bold.setColor(colors.brandAccentForeground)),
+                  decoration: BoxDecoration(
+                    color: colors.brandAccentBackground,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '첫 번째 예시',
+                    style: CoconutTypography.caption_10_Bold.setColor(colors.brandAccentForeground),
+                  ),
                 ),
               ],
             ),
@@ -805,13 +812,7 @@ class _ThemeCardSceneState extends State<_ThemeCardScene> with SingleTickerProvi
               decoration: BoxDecoration(
                 color: colors.surface,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.shadowSubtle.withValues(alpha: 0.10),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+                boxShadow: [BoxShadow(color: colors.shadowSubtle, blurRadius: 20, offset: const Offset(0, 8))],
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -903,9 +904,7 @@ class _FeatureCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(color: colors.shadowSubtle.withValues(alpha: 0.06), blurRadius: 14, offset: const Offset(0, 6)),
-        ],
+        boxShadow: [BoxShadow(color: colors.shadowSubtle, blurRadius: 14, offset: const Offset(0, 6))],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

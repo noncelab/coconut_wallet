@@ -1771,11 +1771,22 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   void _onAddWalletPressed() {
+    final topSheetWalletOptions = [
+      WalletImportSource.coconutVault,
+      WalletImportSource.keystone,
+      WalletImportSource.seedSigner,
+      WalletImportSource.jade,
+      WalletImportSource.coldCard,
+      WalletImportSource.krux,
+      WalletImportSource.passport,
+      WalletImportSource.bitbox02,
+    ];
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: "Dismiss",
-      barrierColor: context.coconutColors.homeBackground.withValues(alpha: 0.5),
+      barrierColor: context.coconutColors.surface.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
         final offsetTween = Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero);
@@ -1804,79 +1815,43 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     ],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 24.0),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Expanded(
-                              child: _buildWalletIconShrinkButton(
-                                () => _goToScannerScreen(WalletImportSource.coconutVault),
-                                WalletImportSource.coconutVault,
-                              ),
-                            ),
-                            Expanded(
-                              child: _buildWalletIconShrinkButton(
-                                () => _goToScannerScreen(WalletImportSource.keystone),
-                                WalletImportSource.keystone,
-                              ),
-                            ),
-                            Expanded(
-                              child: _buildWalletIconShrinkButton(
-                                () => _goToScannerScreen(WalletImportSource.seedSigner),
-                                WalletImportSource.seedSigner,
-                              ),
-                            ),
-                          ],
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: topSheetWalletOptions.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 0,
+                            crossAxisSpacing: 0,
+                            childAspectRatio: 1.2,
+                          ),
+                          itemBuilder: (context, index) {
+                            if (index >= topSheetWalletOptions.length) {
+                              return const SizedBox.expand();
+                            }
+
+                            final scanType = topSheetWalletOptions[index];
+                            final onPressed =
+                                scanType == WalletImportSource.bitbox02
+                                    ? _goToBitBox02Screen
+                                    : () => _goToScannerScreen(scanType);
+
+                            return _buildWalletIconShrinkButton(onPressed, scanType);
+                          },
                         ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildWalletIconShrinkButton(
-                                () => _goToScannerScreen(WalletImportSource.jade),
-                                WalletImportSource.jade,
-                              ),
-                            ),
-                            Expanded(
-                              child: _buildWalletIconShrinkButton(
-                                () => _goToScannerScreen(WalletImportSource.coldCard),
-                                WalletImportSource.coldCard,
-                              ),
-                            ),
-                            Expanded(
-                              child: _buildWalletIconShrinkButton(
-                                () => _goToScannerScreen(WalletImportSource.krux),
-                                WalletImportSource.krux,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildWalletIconShrinkButton(
-                                () => _goToScannerScreen(WalletImportSource.passport),
-                                WalletImportSource.passport,
-                              ),
-                            ),
-                            Expanded(
-                              child: _buildWalletIconShrinkButton(
-                                () => _goToBitBox02Screen(),
-                                WalletImportSource.bitbox02,
-                              ),
-                            ),
-                            const Expanded(child: SizedBox()),
-                          ],
-                        ),
-                        CoconutLayout.spacing_400h,
+                        CoconutLayout.spacing_200h,
                         Row(
                           children: [
                             Expanded(
                               child: _buildWalletIconShrinkButton(
                                 () => _goToScannerScreen(WalletImportSource.extendedPublicKey),
                                 WalletImportSource.extendedPublicKey,
+                                isWide: true,
                               ),
                             ),
                           ],
@@ -2078,7 +2053,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             visible: isVisible,
             child: CoconutPulldownMenu(
               backgroundColor: context.coconutColors.pulldownMenuBackground,
-              shadowColor: context.coconutColors.shadowDefault.withValues(alpha: 0.06),
+              shadowColor: context.coconutColors.shadowDefault,
               dividerColor: context.coconutColors.pulldownMenuDividerColor,
               splashColor: context.coconutColors.pulldownMenuPressedColor,
               entries: [
@@ -2137,20 +2112,35 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     return '';
   }
 
-  Widget _buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType) {
+  Widget _buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType, {bool isWide = false}) {
     return ShrinkAnimationButton(
+      // top sheet의 background 색상과 동일하게 homeBackground로 지정
       defaultColor: context.coconutColors.homeBackground,
-      pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+      // defaultColor가 homeBackground 이기 때문에 press는 homeSurface여야 대비가 보임
+      pressedOverlayColor: context.coconutColors.homeSurface,
+      pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
       onPressed: () => onPressed(),
+      borderRadius: isWide ? 12 : 24,
       child:
-          scanType == WalletImportSource.extendedPublicKey
+          isWide
               ? Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                padding: const EdgeInsets.all(8),
                 child: Row(
                   children: [
-                    SvgPicture.asset(
-                      scanType.externalWalletIconPath,
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: context.coconutColors.border.withAlpha(60)),
+                        borderRadius: const BorderRadius.all(Radius.circular(6.0)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: SvgPicture.asset(
+                          scanType.externalWalletIconPath,
+                          width: 20,
+                          height: 20,
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                        ),
+                      ),
                     ),
                     CoconutLayout.spacing_400w,
                     Expanded(
@@ -2178,20 +2168,25 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 ),
               )
               : Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-                child: Column(
-                  children: [
-                    SvgPicture.asset(
-                      scanType.externalWalletIconPath,
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                    ),
-                    CoconutLayout.spacing_100h,
-                    Text(
-                      scanType.displayName,
-                      style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                padding: const EdgeInsets.all(8),
+                child: SizedBox.expand(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SvgPicture.asset(
+                        scanType.externalWalletIconPath,
+                        colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                      ),
+                      CoconutLayout.spacing_100h,
+                      Text(
+                        scanType.displayName,
+                        style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ),
     );

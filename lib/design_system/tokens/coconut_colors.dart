@@ -426,7 +426,7 @@ class CoconutColors {
       accentForeground: ds.CoconutColors.primary,
       border: ds.CoconutColors.gray700,
       borderStrong: ds.CoconutColors.white,
-      shadowDefault: ds.CoconutColors.black.withValues(alpha: 0.3),
+      shadowDefault: ds.CoconutColors.gray700.withValues(alpha: 0.12),
       shadowSubtle: ds.CoconutColors.gray900.withValues(alpha: 0.3),
       iconBackground: ds.CoconutColors.gray800,
       iconBackgroundSubtle: ds.CoconutColors.gray600,
