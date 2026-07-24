@@ -183,22 +183,31 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  Future<Result<void>> addUtxoToTag(int walletId, String tagName, String utxoId) async {
+  Future<Result<void>> addUtxoToTag(int walletId, String tagName, String utxoId, {int? colorIndex}) async {
     return handleAsyncRealm(() async {
       await realm.writeAsync(() {
         var tag = realm.query<RealmUtxoTag>(r'walletId == $0 AND name == $1', [walletId, tagName]).firstOrNull;
 
         if (tag == null) {
-          final existingTags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]);
-          final usedColorIndexes = existingTags.map((t) => t.colorIndex).toSet();
+          int newColorIndex;
+          if (colorIndex != null) {
+            newColorIndex = colorIndex;
+          } else {
+            final existingTags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]);
+            final usedColorIndexes = existingTags.map((t) => t.colorIndex).toSet();
 
-          int newColorIndex = 0;
-          while (usedColorIndexes.contains(newColorIndex)) {
-            newColorIndex++;
+            newColorIndex = 0;
+            while (usedColorIndexes.contains(newColorIndex)) {
+              newColorIndex++;
+            }
           }
 
           tag = RealmUtxoTag(Uuid.v4().toString(), walletId, tagName, newColorIndex, DateTime.now());
           realm.add(tag);
+        }
+
+        if (colorIndex != null && tag.colorIndex != colorIndex) {
+          tag.colorIndex = colorIndex;
         }
 
         if (!tag.utxoIdList.contains(utxoId)) {

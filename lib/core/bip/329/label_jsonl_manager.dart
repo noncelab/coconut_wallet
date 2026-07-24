@@ -97,7 +97,8 @@ class LabelJsonLManager {
             continue;
           }
 
-          await walletProvider.addUtxoToTag(walletId, label, utxoId);
+          final colorIndex = data['color'] as int?;
+          await walletProvider.addUtxoToTag(walletId, label, utxoId, colorIndex: colorIndex);
 
           final spendable = data['spendable'] as bool?;
           if (spendable == false) {
@@ -186,6 +187,7 @@ class LabelJsonLManager {
           "type": "output",
           "ref": "${parsedId.txid}:${parsedId.vout}",
           "label": tag.name,
+          "tag_color": tag.colorIndex,
         };
 
         if (!isSpendable) {

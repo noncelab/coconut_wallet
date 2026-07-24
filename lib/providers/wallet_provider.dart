@@ -684,8 +684,8 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addUtxoToTag(int walletId, String tagName, String utxoId) async {
-    final result = await _utxoRepository.addUtxoToTag(walletId, tagName, utxoId);
+  Future<void> addUtxoToTag(int walletId, String tagName, String utxoId, {int? colorIndex}) async {
+    final result = await _utxoRepository.addUtxoToTag(walletId, tagName, utxoId, colorIndex: colorIndex);
     if (result.isSuccess) {
       notifyListeners();
     } else {
