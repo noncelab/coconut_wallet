@@ -10,11 +10,18 @@ import 'package:share_plus/share_plus.dart';
 
 class LabelJsonLManager {
   Future<XFile?> createLabelsJsonLFile(int walletId, WalletProvider walletProvider) async {
+    final wallet = walletProvider.getWalletById(walletId);
+
     final txMemos = walletProvider.getAllTransactionMemos(walletId);
     final utxoStates = walletProvider.getUtxoList(walletId);
     final utxoTags = walletProvider.getUtxoTags(walletId);
 
-    final jsonLines = _generateJsonLinesForWallet(txMemos: txMemos, utxoTags: utxoTags, utxoStates: utxoStates);
+    final jsonLines = _generateJsonLinesForWallet(
+      descriptor: wallet.descriptor,
+      txMemos: txMemos,
+      utxoTags: utxoTags,
+      utxoStates: utxoStates,
+    );
 
     if (jsonLines.isEmpty) {
       return null;
@@ -42,6 +49,7 @@ class LabelJsonLManager {
       final walletId = wallet.id;
       jsonLines.addAll(
         _generateJsonLinesForWallet(
+          descriptor: wallet.descriptor,
           txMemos: walletProvider.getAllTransactionMemos(walletId),
           utxoTags: walletProvider.getUtxoTags(walletId),
           utxoStates: walletProvider.getUtxoList(walletId),
@@ -64,6 +72,9 @@ class LabelJsonLManager {
       throw ErrorCodes.withMessage(ErrorCodes.storageReadError, 'File not found: $filePath');
     }
 
+    final currentWallet = walletProvider.getWalletById(walletId);
+    final currentWalletOrigin = _getOriginFromDescriptor(currentWallet.descriptor);
+
     final lines = await file.readAsLines();
 
     for (final line in lines) {
@@ -74,9 +85,15 @@ class LabelJsonLManager {
         final type = data['type'] as String?;
         final ref = data['ref'] as String?;
         final label = data['label'] as String?;
+        final origin = data['origin'] as String?;
 
         if (type == null || ref == null || label == null || label.isEmpty) {
           debugPrint('Invalid or empty label in line: $line');
+          continue;
+        }
+
+        if (origin != null && currentWalletOrigin != null && origin != currentWalletOrigin) {
+          debugPrint('Skipping label from different origin: $line');
           continue;
         }
 
@@ -97,7 +114,7 @@ class LabelJsonLManager {
             continue;
           }
 
-          final colorIndex = data['color'] as int?;
+          final colorIndex = data['tag_color'] as int?;
           await walletProvider.addUtxoToTag(walletId, label, utxoId, colorIndex: colorIndex);
 
           final spendable = data['spendable'] as bool?;
@@ -151,11 +168,13 @@ class LabelJsonLManager {
   }
 
   List<String> _generateJsonLinesForWallet({
+    required String descriptor,
     required List<dynamic> txMemos,
     required List<dynamic> utxoTags,
     required List<UtxoState> utxoStates,
   }) {
     final txMemosWithLabels = txMemos.where((memo) => memo.memo.isNotEmpty).toList();
+    final origin = _getOriginFromDescriptor(descriptor);
     final utxoTagsWithLabels = utxoTags.where((tag) => tag.name.isNotEmpty && tag.utxoIdList.isNotEmpty).toList();
 
     if (txMemosWithLabels.isEmpty && utxoTagsWithLabels.isEmpty) {
@@ -167,7 +186,7 @@ class LabelJsonLManager {
 
     // Transaction Memos
     for (final memo in txMemosWithLabels) {
-      final data = {"type": "tx", "ref": memo.transactionHash, "label": memo.memo};
+      final data = {"type": "tx", "ref": memo.transactionHash, "label": memo.memo, "origin": origin};
       jsonLines.add(jsonEncode(data));
     }
 
@@ -187,6 +206,8 @@ class LabelJsonLManager {
           "type": "output",
           "ref": "${parsedId.txid}:${parsedId.vout}",
           "label": tag.name,
+          "origin": origin,
+          // Coconut
           "tag_color": tag.colorIndex,
         };
 
@@ -198,5 +219,25 @@ class LabelJsonLManager {
     }
 
     return jsonLines;
+  }
+
+  String? _getOriginFromDescriptor(String descriptor) {
+    final mfpAndPathMatch = RegExp(r'\[([0-9a-fA-F]{8})/([m|M]?[^\]]+)\]').firstMatch(descriptor);
+    if (mfpAndPathMatch == null) {
+      return null;
+    }
+
+    final mfp = mfpAndPathMatch.group(1)!.toLowerCase();
+    String path = mfpAndPathMatch.group(2)!;
+
+    if (path.startsWith('m/')) {
+      path = path.substring(2);
+    }
+    path = path.replaceAll("h", "'");
+
+    final type = descriptor.split('(').first;
+    final identifier = '[$mfp/$path]';
+
+    return '$type($identifier)';
   }
 }
