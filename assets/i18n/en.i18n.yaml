@@ -1246,6 +1246,8 @@ estimated_fee_bottom_sheet:
 manage_labels_bottom_sheet:
   title: "Manage Notes"
   subtitle: "You can import or export your recorded notes."
+  feature: "feature:"
+  description: "Allows users to easily manage their funds by adding custom notes.\n\nCreated notes can be easily imported or exported as a single file based on the Bitcoin BIP 329 standard backup format.\nEven if you switch devices or reinstall the app, loading the backup file will restore all your previously saved notes."
 
 long_pressed_menu:
   hide: "Hide"

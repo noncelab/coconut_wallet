@@ -147,7 +147,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                               fit: BoxFit.scaleDown,
                               child: Text(
                                 widget.leftText,
-                                style: CoconutTypography.body1_16_Bold.setColor(
+                                style: CoconutTypography.body2_14_Bold.setColor(
                                   widget.isLeftButtonActive
                                       ? (widget.leftButtonTextColor ?? colors.secondaryButtonText)
                                       : colors.tertiaryText,

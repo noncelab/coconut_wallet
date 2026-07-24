@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 
@@ -25,28 +26,49 @@ class ManageLabelsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SingleButton(
-            title: t.wallet_info_screen.import_labels,
-            onPressed: () {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    t.manage_labels_bottom_sheet.title,
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                  ),
+                  CoconutLayout.spacing_50w,
+                  Text(t.manage_labels_bottom_sheet.feature, style: CoconutTypography.body3_12_Bold),
+                ],
+              ),
+              CoconutLayout.spacing_100h,
+              Text(
+                t.manage_labels_bottom_sheet.description,
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 100,
+          child: FixedBottomTweenButton(
+            leftText: t.wallet_info_screen.import_labels,
+            rightText: t.wallet_info_screen.export_labels,
+            leftButtonClicked: () {
               Navigator.of(context).pop();
               onImportPressed();
             },
-          ),
-          CoconutLayout.spacing_200h,
-          SingleButton(
-            title: t.wallet_info_screen.export_labels,
-            onPressed: () {
+            rightButtonClicked: () {
               Navigator.of(context).pop();
               onExportPressed();
             },
+            showSurroundings: true,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

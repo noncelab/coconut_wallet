@@ -1205,6 +1205,8 @@ estimated_fee_bottom_sheet:
 manage_labels_bottom_sheet:
   title: "Notizen verwalten"
   subtitle: "Sie können Ihre gespeicherten Notizen importieren oder exportieren."
+  feature: "Funktion:"
+  description: "Ermöglicht es Benutzern, ihre Gelder durch Hinzufügen eigener Notizen einfach zu verwalten.\n\nErstellte Notizen können basierend auf dem Bitcoin BIP 329 Standard-Backup-Format einfach in einer einzigen Datei importiert oder exportiert werden.\nSelbst wenn Sie das Gerät wechseln oder die App neu installieren, werden Ihre zuvor gespeicherten Notizen durch das Laden der Backup-Datei vollständig wiederhergestellt."
 
 long_pressed_menu:
   hide: "Verbergen"

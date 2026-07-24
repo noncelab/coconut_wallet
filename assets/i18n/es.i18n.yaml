@@ -1248,6 +1248,8 @@ estimated_fee_bottom_sheet:
 manage_labels_bottom_sheet:
   title: "Gestionar notas"
   subtitle: "Puedes importar o exportar tus notas guardadas."
+  feature: "función:"
+  description: "Permite a los usuarios gestionar fácilmente sus fondos agregando notas personalizadas.\n\nLas notas creadas se pueden importar o exportar fácilmente en un solo archivo según el estándar de respaldo Bitcoin BIP 329.\nIncluso si cambia de dispositivo o reinstala la aplicación, al cargar el archivo de respaldo se restaurarán exactamente todas sus notas guardadas anteriormente."
 
 long_pressed_menu:
   hide: "Ocultar"
