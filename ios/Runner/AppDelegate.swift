@@ -1,5 +1,6 @@
 import UIKit
 import Flutter
+import LocalAuthentication
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -62,6 +63,29 @@ import Flutter
       if call.method == "getInitialBitcoinUri" || call.method == "getPendingBitcoinUri" {
         result(self?.pendingBitcoinUri)
         self?.pendingBitcoinUri = nil
+      } else if call.method == "isDevicePasscodeSet" {
+        let context = LAContext()
+        var error: NSError?
+        result(context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error))
+      } else if call.method == "openDeviceSecuritySettings" {
+        // iOS는 화면 잠금 설정으로 이동하는 공식 URL을 제공하지 않는다.
+        // 지원되는 기기에서는 암호 설정 화면을 열고, 실패하면 앱 설정 화면을 연다.
+        let passcodeSettingsURL = URL(string: "App-Prefs:root=TOUCHID_PASSCODE")
+        let fallbackURL = URL(string: UIApplication.openSettingsURLString)
+        guard let passcodeSettingsURL else {
+          result(false)
+          return
+        }
+
+        UIApplication.shared.open(passcodeSettingsURL, options: [:]) { success in
+          guard !success, let fallbackURL else {
+            result(success)
+            return
+          }
+          UIApplication.shared.open(fallbackURL, options: [:]) { fallbackSuccess in
+            result(fallbackSuccess)
+          }
+        }
       } else {
         result(FlutterMethodNotImplemented)
       }

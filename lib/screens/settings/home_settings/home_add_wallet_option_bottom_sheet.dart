@@ -277,8 +277,8 @@ class _HomeAddWalletOptionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isHiddenOption = option == HomeAddWalletOption.hidden;
-    final iconWidth = isHiddenOption ? (isSelected ? 36.0 : 24.0) : (isSelected ? 34.0 : 22.0);
-    final iconHeight = isHiddenOption ? (isSelected ? 36.0 : 24.0) : (isSelected ? 27.0 : 19.0);
+    final iconWidth = isHiddenOption ? (isSelected ? 32.0 : 20.0) : (isSelected ? 34.0 : 22.0);
+    final iconHeight = isHiddenOption ? (isSelected ? 32.0 : 20.0) : (isSelected ? 27.0 : 19.0);
 
     return Semantics(
       button: true,

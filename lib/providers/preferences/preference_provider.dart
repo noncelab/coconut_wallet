@@ -55,7 +55,7 @@ class PreferenceProvider extends ChangeNotifier {
   late Set<WalletFilter> _visibleWalletFilters;
   Set<WalletFilter> get visibleWalletFilters => Set.unmodifiable(_visibleWalletFilters);
   bool isWalletFilterVisible(WalletFilter filter) =>
-      filter == WalletFilter.all || _visibleWalletFilters.contains(filter);
+      filter == WalletFilter.all || filter == WalletFilter.watchOnly || _visibleWalletFilters.contains(filter);
 
   /// 가짜 잔액 총량
   late int? _fakeBalanceTotalBtc;
@@ -304,16 +304,18 @@ class PreferenceProvider extends ChangeNotifier {
   Set<WalletFilter> _loadVisibleWalletFilters() {
     final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kVisibleWalletFilters);
     if (stored == null) return {WalletFilter.watchOnly, WalletFilter.hot};
-    return stored
-        .split(',')
-        .map((name) => WalletFilter.values.where((filter) => filter.name == name).firstOrNull)
-        .whereType<WalletFilter>()
-        .where((filter) => filter != WalletFilter.all)
-        .toSet();
+    return {
+      WalletFilter.watchOnly,
+      ...stored
+          .split(',')
+          .map((name) => WalletFilter.values.where((filter) => filter.name == name).firstOrNull)
+          .whereType<WalletFilter>()
+          .where((filter) => filter != WalletFilter.all),
+    };
   }
 
   Future<void> setWalletFilterVisible(WalletFilter filter, bool isVisible) async {
-    if (filter == WalletFilter.all) return;
+    if (filter == WalletFilter.all || filter == WalletFilter.watchOnly) return;
     if (isVisible) {
       _visibleWalletFilters.add(filter);
     } else {
@@ -327,7 +329,10 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   Future<void> setVisibleWalletFilters(Set<WalletFilter> filters) async {
-    _visibleWalletFilters = filters.where((filter) => filter != WalletFilter.all).toSet();
+    _visibleWalletFilters = {
+      WalletFilter.watchOnly,
+      ...filters.where((filter) => filter != WalletFilter.all && filter != WalletFilter.watchOnly),
+    };
     await _sharedPrefs.setString(
       SharedPrefKeys.kVisibleWalletFilters,
       _visibleWalletFilters.map((filter) => filter.name).join(','),

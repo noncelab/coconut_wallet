@@ -1166,10 +1166,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     bool isEditMode = _viewModel.isEditMode;
     bool hasWalletOrderChanged = _viewModel.hasWalletOrderChanged;
     return CoconutAppBar.build(
-      title:
-          isEditMode
-              ? t.wallet_list.edit.order
-              : t.wallet_home_screen.view_all_wallets,
+      title: isEditMode ? t.wallet_list.edit.order : t.wallet_home_screen.view_all_wallets,
       context: context,
       onBackPressed: () {
         if (isEditMode) {
@@ -1581,7 +1578,7 @@ class _BitcoinPriceInfoButtonState extends State<_BitcoinPriceInfoButton> with S
                 showWhenUnlinked: false,
                 targetAnchor: Alignment.bottomRight,
                 followerAnchor: Alignment.topRight,
-                offset: const Offset(10, 4),
+                offset: const Offset(10, -5),
                 child: FadeTransition(
                   opacity: _tooltipOpacityAnimation,
                   child: ScaleTransition(
@@ -1593,6 +1590,7 @@ class _BitcoinPriceInfoButtonState extends State<_BitcoinPriceInfoButton> with S
                         width: tooltipWidth,
                         child: CoconutToolTip(
                           width: tooltipWidth,
+                          padding: const EdgeInsets.only(top: 30, left: 20, right: 20, bottom: 20),
                           tooltipType: CoconutTooltipType.placement,
                           isBubbleClipperSideLeft: false,
                           isPlacementTooltipVisible: true,
@@ -1902,13 +1900,6 @@ class _WalletListSettingsBottomSheetState extends State<WalletListSettingsBottom
       key: const ValueKey('home_screen_display_settings'),
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        buildTabSwitchButton(
-          filter: WalletFilter.watchOnly,
-          title: t.wallet_list.bottom_sheet.show_watch_only_tab,
-          description: t.wallet_list.bottom_sheet.show_watch_only_tab_description,
-        ),
-        Divider(color: context.coconutColors.divider, height: 1),
-        CoconutLayout.spacing_200h,
         buildTabSwitchButton(
           filter: WalletFilter.hot,
           title: t.wallet_list.bottom_sheet.show_hot_wallet_tab,

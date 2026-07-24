@@ -244,6 +244,9 @@ wallet_home_screen:
     restore:
       title: "Mit Mnemonik wiederherstellen"
       description: "Bestehende Wallet beibehalten"
+    device_passcode_required:
+      title: "Ein Gerätecode ist erforderlich"
+      description: "Lege zum Schutz deiner Hot Wallet zuerst einen Code für die Bildschirmsperre in den Geräteeinstellungen fest."
   add_wallet: "Wallet hinzufügen"
   add_wallet_action: "Wallet hinzufügen"
   view_all: "Alle anzeigen"

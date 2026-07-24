@@ -245,6 +245,9 @@ wallet_home_screen:
     restore:
       title: "Restaurar con mnemónico"
       description: "Conservar la billetera existente"
+    device_passcode_required:
+      title: "Se requiere un código del dispositivo"
+      description: "Para proteger tu billetera caliente, configura primero un código de bloqueo de pantalla en los ajustes del dispositivo."
   add_wallet: "Añadir billetera"
   add_wallet_action: "Añadir billetera"
   view_all: "Ver todas"

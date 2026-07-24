@@ -244,6 +244,9 @@ wallet_home_screen:
     restore:
       title: "Restore with mnemonic"
       description: "Keep your existing wallet"
+    device_passcode_required:
+      title: "A device passcode is required"
+      description: "To protect your hot wallet, first set a screen lock passcode in your device settings."
   add_wallet: "Add wallet"
   add_wallet_action: "Add wallet"
   view_all: "View all"

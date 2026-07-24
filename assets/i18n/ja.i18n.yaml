@@ -244,6 +244,9 @@ wallet_home_screen:
     restore:
       title: "ニーモニックから復元"
       description: "既存のウォレットをそのまま"
+    device_passcode_required:
+      title: "デバイスのパスコードが必要です"
+      description: "ホットウォレットを安全に保護するため、先にデバイスの設定で画面ロックのパスコードを設定してください。"
   add_wallet: "ウォレットを追加"
   add_wallet_action: "ウォレットを追加"
   view_all: "すべて表示"

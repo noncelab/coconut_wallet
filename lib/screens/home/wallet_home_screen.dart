@@ -39,6 +39,7 @@ import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/icon/transaction_status_gradient_mask.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/long_pressed_menu_widget.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -854,14 +855,17 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     required bool isLoading,
   }) {
     final preferenceProvider = context.watch<PreferenceProvider>();
+    final hasFavoriteHotWallet = wallets.any((wallet) => wallet.hasLocalKey);
+    final shouldUseSingleWalletView =
+        !preferenceProvider.isWalletFilterVisible(WalletFilter.hot) && !hasFavoriteHotWallet;
     final walletFilterOrder =
         preferenceProvider.walletFilterOrder.where(preferenceProvider.isWalletFilterVisible).toList();
-    if (!walletFilterOrder.contains(_walletFilter)) {
+    if (shouldUseSingleWalletView || !walletFilterOrder.contains(_walletFilter)) {
       _walletFilter = WalletFilter.all;
     }
     final selectedPageIndex = walletFilterOrder.indexOf(_walletFilter);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_walletPageController.hasClients) return;
+      if (shouldUseSingleWalletView || !mounted || !_walletPageController.hasClients) return;
       final currentPage = _walletPageController.page?.round();
       if (currentPage != selectedPageIndex && !_walletPageController.position.isScrollingNotifier.value) {
         _walletPageController.jumpToPage(selectedPageIndex);
@@ -878,9 +882,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           ),
           child: Column(
             children: [
-              _buildWalletFilterTabs(walletFilterOrder),
+              if (!shouldUseSingleWalletView) _buildWalletFilterTabs(walletFilterOrder),
               if (isLoading)
                 _buildWalletOverviewSkeleton()
+              else if (shouldUseSingleWalletView)
+                _buildSingleWalletList(wallets, walletBalanceMap, getFakeBalance)
               else
                 _buildSwipeableWalletList(walletFilterOrder, wallets, walletBalanceMap, getFakeBalance),
             ],
@@ -1069,37 +1075,58 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         },
         itemBuilder: (context, index) {
           final filter = filters[index];
-          final visibleWallets = _filteredWallets(filter, wallets);
-          final pageContent =
-              visibleWallets.isEmpty
-                  ? Padding(padding: const EdgeInsets.only(top: 2.0), child: _buildEmptyWalletOverview(filter))
-                  : Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Column(
-                          children: [
-                            for (var walletIndex = 0; walletIndex < visibleWallets.length; walletIndex++)
-                              _buildWalletItem(
-                                visibleWallets[walletIndex],
-                                kAlwaysCompleteAnimation,
-                                walletBalanceMap[visibleWallets[walletIndex].id] ?? AnimatedBalanceData(0, 0),
-                                getFakeBalance(visibleWallets[walletIndex].id),
-                                walletIndex == visibleWallets.length - 1,
-                                context.coconutColors.homeSurfaceCard,
-                              ),
-                          ],
-                        ),
-                      ),
-                      _buildAddWalletRow(filter),
-                    ],
-                  );
-          return ClipRect(
-            child: SingleChildScrollView(physics: const NeverScrollableScrollPhysics(), child: pageContent),
-          );
+          return _buildWalletListPage(filter, wallets, walletBalanceMap, getFakeBalance);
         },
       ),
     );
+  }
+
+  Widget _buildSingleWalletList(
+    List<WalletItemBase> wallets,
+    Map<int, AnimatedBalanceData> walletBalanceMap,
+    FakeBalanceGetter getFakeBalance,
+  ) {
+    final pageHeight = wallets.isEmpty ? 132.0 : 66.0 + (wallets.length * 64.0);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      height: pageHeight,
+      child: _buildWalletListPage(WalletFilter.all, wallets, walletBalanceMap, getFakeBalance),
+    );
+  }
+
+  Widget _buildWalletListPage(
+    WalletFilter filter,
+    List<WalletItemBase> wallets,
+    Map<int, AnimatedBalanceData> walletBalanceMap,
+    FakeBalanceGetter getFakeBalance,
+  ) {
+    final visibleWallets = _filteredWallets(filter, wallets);
+    final pageContent =
+        visibleWallets.isEmpty
+            ? Padding(padding: const EdgeInsets.only(top: 2.0), child: _buildEmptyWalletOverview(filter))
+            : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    children: [
+                      for (var walletIndex = 0; walletIndex < visibleWallets.length; walletIndex++)
+                        _buildWalletItem(
+                          visibleWallets[walletIndex],
+                          kAlwaysCompleteAnimation,
+                          walletBalanceMap[visibleWallets[walletIndex].id] ?? AnimatedBalanceData(0, 0),
+                          getFakeBalance(visibleWallets[walletIndex].id),
+                          walletIndex == visibleWallets.length - 1,
+                          context.coconutColors.homeSurfaceCard,
+                        ),
+                    ],
+                  ),
+                ),
+                _buildAddWalletRow(filter),
+              ],
+            );
+    return ClipRect(child: SingleChildScrollView(physics: const NeverScrollableScrollPhysics(), child: pageContent));
   }
 
   List<WalletItemBase> _filteredWallets(WalletFilter filter, List<WalletItemBase> wallets) {
@@ -2344,14 +2371,41 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  void _onCreateHotWalletPressed() {
+  Future<void> _onCreateHotWalletPressed() async {
+    if (!await _ensureDevicePasscodeIsSet()) return;
+    if (!mounted) return;
+
     Navigator.pop(context);
     // TODO: 핫월렛 신규 생성 화면 연결
   }
 
-  void _onRestoreHotWalletPressed() {
+  Future<void> _onRestoreHotWalletPressed() async {
+    if (!await _ensureDevicePasscodeIsSet()) return;
+    if (!mounted) return;
+
     Navigator.pop(context);
     // TODO: 핫월렛 니모닉 복원 화면 연결
+  }
+
+  Future<bool> _ensureDevicePasscodeIsSet() async {
+    final isDevicePasscodeSet = await context.read<AuthProvider>().isDevicePasscodeSet();
+    if (!mounted) return false;
+    if (isDevicePasscodeSet) return true;
+
+    await showConfirmDialog(
+      context,
+      context.read<PreferenceProvider>().language,
+      t.wallet_home_screen.hot_wallet_add.device_passcode_required.title,
+      t.wallet_home_screen.hot_wallet_add.device_passcode_required.description,
+      leftButtonText: t.close,
+      rightButtonText: t.go_to_settings,
+      onTapLeft: () => Navigator.pop(context),
+      onTapRight: () async {
+        Navigator.pop(context);
+        await context.read<AuthProvider>().openDeviceSecuritySettings();
+      },
+    );
+    return false;
   }
 
   SliverAppBar _buildAppBar(NetworkStatus networkStatus) {
