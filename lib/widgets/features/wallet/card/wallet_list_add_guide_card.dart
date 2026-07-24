@@ -20,14 +20,22 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    const borderRadius = CoconutStyles.radius_300;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
       child: ShrinkAnimationButton(
-        defaultColor: colors.surface,
-        pressedOverlayColor: colors.surfacePressOverlay,
+        defaultColor: colors.homeSurface,
+        pressedOverlayColor: colors.homeSurfacePressOverlay,
+        pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
+        borderRadius: borderRadius,
         onPressed: widget.onPressed,
         child: CustomPaint(
-          painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: context.coconutColors.primaryText),
+          painter: DashedBorderPainter(
+            dashSpace: 4.0,
+            dashWidth: 4.0,
+            color: context.coconutColors.borderStrong,
+            borderRadius: borderRadius,
+          ),
           child: Container(
             width: MediaQuery.sizeOf(context).width,
             padding: const EdgeInsets.symmetric(vertical: 42),

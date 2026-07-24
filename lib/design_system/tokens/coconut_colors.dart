@@ -16,6 +16,7 @@ class CoconutColors {
   ///
   /// 브랜드 일관성을 위해 가능하면 [kCoconutMainnetLogoGradient]를 유지합니다.
   final Gradient mainnetLogoGradient;
+  final Color regtestLogo;
 
   /// 1. 범용
   ///
@@ -280,6 +281,7 @@ class CoconutColors {
 
   const CoconutColors({
     required this.mainnetLogoGradient,
+    required this.regtestLogo,
     required this.background,
     required this.surface,
     required this.surfacePressOverlay,
@@ -410,6 +412,7 @@ class CoconutColors {
   factory CoconutColors.dark() {
     return CoconutColors(
       mainnetLogoGradient: kCoconutMainnetLogoGradient,
+      regtestLogo: ds.CoconutColors.white,
       background: ds.CoconutColors.black,
       surface: ds.CoconutColors.gray850,
       surfacePressOverlay: ds.CoconutColors.black,
@@ -543,6 +546,7 @@ class CoconutColors {
   factory CoconutColors.light() {
     return CoconutColors(
       mainnetLogoGradient: kCoconutMainnetLogoGradient,
+      regtestLogo: ds.CoconutColors.black,
       background: ds.CoconutColors.white,
       surface: ds.CoconutColors.gray150,
       surfaceInset: ds.CoconutColors.white,
@@ -691,6 +695,7 @@ class CoconutColors {
 
     return CoconutColors(
       mainnetLogoGradient: kCoconutMainnetLogoGradient,
+      regtestLogo: leaf,
       background: pulp,
       surface: cream,
       surfacePressOverlay: sand,

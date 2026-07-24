@@ -538,7 +538,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.only(top: 5, bottom: 20, left: 20, right: 20),
+            padding: const EdgeInsets.only(top: 4, bottom: 20, left: 16, right: 16),
             color: context.coconutColors.homeBackground,
             child: Column(
               children: [
