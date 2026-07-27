@@ -224,7 +224,6 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   Future<void> disconnectTrezor() async {
     final device = TrezorDevice.lastConnected;
-    TrezorDevice.lastConnected = null;
     if (device != null) {
       try {
         await device.disconnect();

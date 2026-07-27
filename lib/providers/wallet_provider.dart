@@ -19,6 +19,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/suspicious_transaction_util.dart';
@@ -390,6 +391,11 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
+    final walletToDelete = _walletItemList.firstWhereOrNull((w) => w.id == walletId);
+    if (walletToDelete?.walletImportSource == WalletImportSource.trezor) {
+      await TrezorDevice.lastConnected?.disconnect();
+    }
+
     await _walletRepository.deleteWallet(walletId);
     _setWalletItemList(await _fetchWalletListFromDB());
     _saveWalletCount(_walletItemList.length);

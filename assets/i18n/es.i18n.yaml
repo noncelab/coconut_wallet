@@ -422,20 +422,19 @@ wallet_connect_screen:
     init:
       notice: "Solo se admite Trezor Safe 7."
       ble_step1: "Active el Bluetooth y mantenga Trezor Safe 7 cerca."
-      ble_step2_prefix: "Desbloquea tu dispositivo Trezor. Si es la primera vez, pulsa "
-      ble_step2_bold: "Pair & Connect > Pair new device"
-      ble_step2_suffix: " en el Trezor."
-      ble_step3: "Pulsa el botón '$btn' de abajo para iniciar la conexión."
+      ble_step2: "Pulsa Unlock > introduce tu PIN para desbloquear el dispositivo."
+      ble_step3_prefix: "Si es la primera conexión, pulsa "
+      ble_step3_bold: "= > Pair & Connect > Pair new device"
+      ble_step3_suffix: "."
+      ble_step4: "Pulsa el botón '$btn' de abajo para iniciar la conexión."
     connecting:
       title: "Conectando el dispositivo"
-      step1: "Desbloquea el dispositivo."
-      step2: "En la primera conexión, pulsa 'Pair & Connect > Pair new device'."
       step3: "En la primera conexión, verifica que el código de emparejamiento coincida y presiona Confirm."
       step4: "Cuando el dispositivo Trezor pregunte si deseas conectar con Coconut Wallet, presiona Confirm."
     pairing_dialog:
       title: "Ingresar código de emparejamiento"
       description: "Ingresa el código de 6 dígitos que aparece en la pantalla de tu Trezor."
-      verifying: "Verificando código..."
+      verifying: "Verificando el código de emparejamiento..."
       error_wrong_code: "Código de emparejamiento incorrecto"
       error_wrong_code_dialog: "Código de emparejamiento incorrecto.\nEl proceso de conexión se reiniciará desde el principio."
     paired:
@@ -666,7 +665,7 @@ trezor_sign_screen:
     waiting: "Esperando para firmar"
   status:
     connecting_device: "Conectando con Trezor por Bluetooth..."
-    confirm_on_device: "Confirma el importe, la dirección y la comisión en el dispositivo"
+    confirm_on_device: "Confirma la dirección, el importe y la red en el dispositivo"
   done:
     title: "Firmado"
     description: "La transacción ha sido firmada por Trezor."

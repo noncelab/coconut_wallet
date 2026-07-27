@@ -410,20 +410,19 @@ wallet_connect_screen:
     init:
       notice: "Nur Trezor Safe 7 wird unterstützt."
       ble_step1: "Aktivieren Sie Bluetooth und halten Sie Trezor Safe 7 in der Nähe."
-      ble_step2_prefix: "Entsperren Sie Ihr Trezor-Gerät. Bei der Erstverbindung tippen Sie auf "
-      ble_step2_bold: "Pair & Connect > Pair new device"
-      ble_step2_suffix: "."
-      ble_step3: "Tippen Sie unten auf '$btn', um die Verbindung zu starten."
+      ble_step2: "Tippen Sie auf Unlock > geben Sie Ihre PIN ein, um das Gerät zu entsperren."
+      ble_step3_prefix: "Tippen Sie bei der ersten Verbindung auf "
+      ble_step3_bold: "= > Pair & Connect > Pair new device"
+      ble_step3_suffix: "."
+      ble_step4: "Tippen Sie unten auf '$btn', um die Verbindung zu starten."
     connecting:
       title: "Gerät wird verbunden"
-      step1: "Bitte entsperren Sie das Gerät."
-      step2: "Bei der ersten Verbindung tippen Sie auf 'Pair & Connect > Pair new device'."
       step3: "Bei der ersten Verbindung überprüfen Sie, ob der Pairing-Code übereinstimmt, und drücken Sie Confirm."
       step4: "Wenn das Trezor-Gerät fragt, ob Sie eine Verbindung mit Coconut Wallet herstellen möchten, drücken Sie Confirm."
     pairing_dialog:
       title: "Pairing-Code eingeben"
       description: "Geben Sie den 6-stelligen Code ein, der auf Ihrem Trezor-Bildschirm angezeigt wird."
-      verifying: "Code wird überprüft..."
+      verifying: "Pairing-Code wird überprüft..."
       error_wrong_code: "Falscher Pairing-Code"
       error_wrong_code_dialog: "Falscher Pairing-Code.\nDer Verbindungsprozess wird von vorne neu gestartet."
     paired:
@@ -1321,7 +1320,7 @@ trezor_sign_screen:
     waiting: "Warten auf Signatur"
   status:
     connecting_device: "Verbindung zum Trezor über Bluetooth..."
-    confirm_on_device: "Bestätigen Sie Betrag, Adresse und Gebühr auf Ihrem Gerät"
+    confirm_on_device: "Bestätigen Sie Adresse, Betrag und Netzwerk auf Ihrem Gerät"
   done:
     title: "Signiert"
     description: "Transaktion wurde von Trezor signiert."

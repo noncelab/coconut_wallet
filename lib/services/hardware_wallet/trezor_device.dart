@@ -250,5 +250,11 @@ class TrezorDevice {
     try {
       await _channel.invokeMethod('disconnect', {'id': id, 'transport': transport.name});
     } on PlatformException catch (_) {}
+
+    if (lastConnected == this) {
+      lastConnected = null;
+      cachedFingerprint = null;
+      cachedXpub = null;
+    }
   }
 }

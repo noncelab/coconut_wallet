@@ -76,8 +76,8 @@ class TrezorMethodHandler: NSObject {
             DispatchQueue.main.async { self?.connectivityEventSink?(false) }
         }
 
-        print("[TrezorBLE] connect: starting scanAndConnect with 15s timeout")
-        manager.scanAndConnect(timeout: 15) { [weak self] connectResult in
+        print("[TrezorBLE] connect: starting scanAndConnect with 25s timeout")
+        manager.scanAndConnect(timeout: 25) { [weak self] connectResult in
             switch connectResult {
             case .success:
                 // BLE GATT connected + characteristics discovered.

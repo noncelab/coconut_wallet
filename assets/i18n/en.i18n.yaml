@@ -446,20 +446,19 @@ wallet_connect_screen:
     init:
       notice: "Only Trezor Safe 7 is supported."
       ble_step1: "Turn on Bluetooth and keep Trezor Safe 7 nearby."
-      ble_step2_prefix: "Unlock your Trezor device. For first-time pairing, tap "
-      ble_step2_bold: "Pair & Connect > Pair new device"
-      ble_step2_suffix: " on the Trezor."
-      ble_step3: "Tap the '$btn' button below to start connecting."
+      ble_step2: "Tap Unlock > enter your PIN to unlock the device."
+      ble_step3_prefix: "For first-time connections, tap "
+      ble_step3_bold: "= > Pair & Connect > Pair new device"
+      ble_step3_suffix: "."
+      ble_step4: "Tap the '$btn' button below to start connecting."
     connecting:
       title: "Connecting Device"
-      step1: "Unlock your device."
-      step2: "For first-time connections, tap 'Pair & Connect > Pair new device'."
       step3: "For first-time connections, verify the pairing code matches and press Confirm."
       step4: "When the Trezor asks whether to connect with Coconut Wallet, press Confirm."
     pairing_dialog:
       title: "Enter Pairing Code"
       description: "Enter the 6-digit code shown on your Trezor screen."
-      verifying: "Verifying code..."
+      verifying: "Verifying pairing code..."
       error_wrong_code: "Wrong pairing code"
       error_wrong_code_dialog: "Wrong pairing code. The connection process will restart from the beginning."
     paired:
@@ -666,7 +665,7 @@ trezor_sign_screen:
     waiting: "Waiting to sign"
   status:
     connecting_device: "Connecting to Trezor via Bluetooth..."
-    confirm_on_device: "Confirm amount, address, and fee on your device"
+    confirm_on_device: "Confirm address, amount, and network on your device"
   done:
     title: "Signed"
     description: "Transaction has been signed by Trezor."

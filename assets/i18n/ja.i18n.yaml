@@ -447,20 +447,19 @@ wallet_connect_screen:
     init:
       notice: "Trezor Safe 7のみ対応しています。"
       ble_step1: "Bluetoothをオンにして、Trezor Safe 7を近くに置いてください。"
-      ble_step2_prefix: "Trezorデバイスのロックを解除してください。初回接続の場合は、"
-      ble_step2_bold: "Pair & Connect > Pair new device"
-      ble_step2_suffix: "をタップしてください。"
-      ble_step3: "下の「$btn」ボタンをタップして接続を開始してください。"
+      ble_step2: "Unlock > PIN番号をタップしてロックを解除してください。"
+      ble_step3_prefix: "初回接続の場合は、"
+      ble_step3_bold: "= > Pair & Connect > Pair new device"
+      ble_step3_suffix: "をタップしてください。"
+      ble_step4: "下の「$btn」ボタンをタップして接続を開始してください。"
     connecting:
       title: "デバイスを接続中"
-      step1: "デバイスのロックを解除してください。"
-      step2: "初回接続時、'Pair & Connect > Pair new device'をタップしてください。"
       step3: "初回接続時、ペアリングコードが一致しているか確認後、Confirmを押してください。"
       step4: "TrezorデバイスでCoconut Walletとの接続を求められたらConfirmを押してください。"
     pairing_dialog:
       title: "ペアリングコードの入力"
       description: "Trezor画面に表示された6桁の数字を入力してください。"
-      verifying: "コードを確認中..."
+      verifying: "ペアリングコードを確認中..."
       error_wrong_code: "間違ったペアリングコード"
       error_wrong_code_dialog: "ペアリングコードが間違っています。\n接続プロセスを最初からやり直します。"
     paired:
@@ -664,7 +663,7 @@ trezor_sign_screen:
     waiting: "署名待機中"
   status:
     connecting_device: "BluetoothでTrezorに接続中..."
-    confirm_on_device: "デバイスで金額・アドレス・手数料を確認してください"
+    confirm_on_device: "デバイスでアドレス・金額・ネットワークを確認してください"
   done:
     title: "署名完了"
     description: "Trezorがトランザクションに署名しました。"

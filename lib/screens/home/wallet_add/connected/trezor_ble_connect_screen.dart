@@ -287,10 +287,18 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
                   child: Stack(
                     children: [
                       Positioned.fill(
-                        child: SingleChildScrollView(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
-                          child: _buildStatusSection(vm),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isPairingVisible = vm.step == TrezorBleConnectStep.pairing;
+                            final bottomPadding = isPairingVisible ? 24.0 : 120.0;
+                            final minContentHeight =
+                                (constraints.maxHeight - 24 - bottomPadding).clamp(0.0, double.infinity).toDouble();
+                            return SingleChildScrollView(
+                              controller: _scrollController,
+                              padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding),
+                              child: _buildStatusSection(vm, inputMinHeight: minContentHeight),
+                            );
+                          },
                         ),
                       ),
                       if (vm.step == TrezorBleConnectStep.idle ||
@@ -318,38 +326,26 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     );
   }
 
-  Widget _buildStatusSection(TrezorBleConnectViewModel vm) {
+  Widget _buildStatusSection(TrezorBleConnectViewModel vm, {required double inputMinHeight}) {
     switch (vm.step) {
       case TrezorBleConnectStep.idle:
         return _buildInstructionToolTip([
           t.wallet_connect_screen.guide_trezor.init.ble_step1,
-          [
-            TextSpan(
-              text: t.wallet_connect_screen.guide_trezor.init.ble_step2_prefix,
-              style: TextStyle(color: context.coconutColors.primaryText),
-            ),
-            TextSpan(
-              text: t.wallet_connect_screen.guide_trezor.init.ble_step2_bold,
-              style: TextStyle(color: context.coconutColors.primaryText, fontWeight: FontWeight.bold),
-            ),
-            TextSpan(
-              text: t.wallet_connect_screen.guide_trezor.init.ble_step2_suffix,
-              style: TextStyle(color: context.coconutColors.primaryText),
-            ),
-          ],
-          t.wallet_connect_screen.guide_trezor.init.ble_step3(
+          t.wallet_connect_screen.guide_trezor.init.ble_step2,
+          _buildPairAndConnectStep(),
+          t.wallet_connect_screen.guide_trezor.init.ble_step4(
             btn: t.wallet_connect_screen.guide_trezor.btn.connect_via_ble,
           ),
         ], notice: t.wallet_connect_screen.guide_trezor.init.notice);
       case TrezorBleConnectStep.connecting:
         return _buildProgressCard(t.wallet_connect_screen.guide_trezor.connecting.title, [
-          t.wallet_connect_screen.guide_trezor.connecting.step1,
-          t.wallet_connect_screen.guide_trezor.connecting.step2,
+          t.wallet_connect_screen.guide_trezor.init.ble_step2,
+          _buildPairAndConnectStep(),
           t.wallet_connect_screen.guide_trezor.connecting.step3,
           t.wallet_connect_screen.guide_trezor.connecting.step4,
         ]);
       case TrezorBleConnectStep.pairing:
-        return _buildPairingCard(vm);
+        return _buildPairingCard(vm, minHeight: inputMinHeight);
       case TrezorBleConnectStep.passphraseUseQuestion:
         return TrezorPassphraseUseQuestionCard(
           onUsePassphrase: vm.selectUsePassphrase,
@@ -376,11 +372,28 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     }
   }
 
+  List<TextSpan> _buildPairAndConnectStep() {
+    return [
+      TextSpan(
+        text: t.wallet_connect_screen.guide_trezor.init.ble_step3_prefix,
+        style: TextStyle(color: context.coconutColors.primaryText),
+      ),
+      TextSpan(
+        text: t.wallet_connect_screen.guide_trezor.init.ble_step3_bold,
+        style: TextStyle(color: context.coconutColors.primaryText, fontWeight: FontWeight.bold),
+      ),
+      TextSpan(
+        text: t.wallet_connect_screen.guide_trezor.init.ble_step3_suffix,
+        style: TextStyle(color: context.coconutColors.primaryText),
+      ),
+    ];
+  }
+
   Widget _buildInstructionToolTip(List<Object> steps, {String? notice}) {
     return WalletConnectInstructionToolTip(steps: steps, notice: notice);
   }
 
-  Widget _buildProgressCard(String title, List<String> steps) {
+  Widget _buildProgressCard(String title, List<Object> steps) {
     return WalletConnectProgressCard(title: title, steps: steps);
   }
 
@@ -477,90 +490,114 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     );
   }
 
-  Widget _buildPairingCard(TrezorBleConnectViewModel vm) {
+  Widget _buildPairingCard(TrezorBleConnectViewModel vm, {required double minHeight}) {
+    final childAspectRatio = MediaQuery.sizeOf(context).width > 600 ? 2.5 : 1.4;
+    final gridWidth = MediaQuery.sizeOf(context).width - 48;
+    final keypadHeight = gridWidth / 3 / childAspectRatio * 4;
+
     return Container(
+      constraints: BoxConstraints(minHeight: minHeight),
       padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          Text(
-            t.wallet_connect_screen.guide_trezor.pairing_dialog.title,
-            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            t.wallet_connect_screen.guide_trezor.pairing_dialog.description,
-            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (int index = 0; index < _codeLength; index++) ...[
-                if (index > 0) SizedBox(width: index == 3 ? 12 : 4),
-                Flexible(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 40),
-                    child: TrezorDigitBox(
-                      digit: index < _pairingCode.length ? _pairingCode[index] : '',
-                      hasError: vm.pairingErrorMessage != null,
-                      isVerifying: _isVerifyingPairingCode,
+      child: IntrinsicHeight(
+        child: Column(
+          children: [
+            Text(
+              t.wallet_connect_screen.guide_trezor.pairing_dialog.title,
+              style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              t.wallet_connect_screen.guide_trezor.pairing_dialog.description,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 84,
+              child: Stack(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (int index = 0; index < _codeLength; index++) ...[
+                        if (index > 0) SizedBox(width: index == 3 ? 12 : 4),
+                        Flexible(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 40),
+                            child: TrezorDigitBox(
+                              digit: index < _pairingCode.length ? _pairingCode[index] : '',
+                              hasError: vm.pairingErrorMessage != null,
+                              isVerifying: _isVerifyingPairingCode,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (_isVerifyingPairingCode)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 2),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            t.wallet_connect_screen.guide_trezor.pairing_dialog.verifying,
+                            style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (vm.pairingErrorMessage != null)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Text(
+                        vm.pairingErrorMessage!,
+                        style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: keypadHeight + 48),
+                child: Center(
+                  child: SizedBox(
+                    height: keypadHeight,
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      childAspectRatio: childAspectRatio,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children:
+                          _keypadKeys.map((key) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: KeyButton(
+                                keyValue: key,
+                                onKeyTap: _isVerifyingPairingCode ? (_) {} : _onPairingKeyTap,
+                              ),
+                            );
+                          }).toList(),
                     ),
                   ),
                 ),
-              ],
-            ],
-          ),
-          if (_isVerifyingPairingCode)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 2),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    t.wallet_connect_screen.guide_trezor.pairing_dialog.verifying,
-                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                  ),
-                ],
-              ),
-            )
-          else
-            Visibility(
-              visible: vm.pairingErrorMessage != null,
-              maintainSize: true,
-              maintainAnimation: true,
-              maintainState: true,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  vm.pairingErrorMessage ?? '',
-                  style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
-                  textAlign: TextAlign.center,
-                ),
               ),
             ),
-          const SizedBox(height: 24),
-          GridView.count(
-            crossAxisCount: 3,
-            childAspectRatio: MediaQuery.of(context).size.width > 600 ? 2.5 : 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children:
-                _keypadKeys.map((key) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: KeyButton(keyValue: key, onKeyTap: _isVerifyingPairingCode ? (_) {} : _onPairingKeyTap),
-                  );
-                }).toList(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

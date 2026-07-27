@@ -421,20 +421,19 @@ wallet_connect_screen:
     init:
       notice: "Trezor Safe 7만 연결 가능합니다."
       ble_step1: "블루투스를 켜고 Trezor Safe 7을 가까이 두세요."
-      ble_step2_prefix: "Trezor 기기의 잠금을 해제해 주세요. 첫 연결인 경우 "
-      ble_step2_bold: "Pair & Connect > Pair new device"
-      ble_step2_suffix: "를 눌러주세요."
-      ble_step3: "아래 '$btn' 버튼을 눌러 연결을 시작하세요."
+      ble_step2: "Unlock > 핀 번호를 눌러 잠금을 해제해 주세요."
+      ble_step3_prefix: "첫 연결인 경우 "
+      ble_step3_bold: "= > Pair & Connect > Pair new device"
+      ble_step3_suffix: "를 눌러주세요."
+      ble_step4: "아래 '$btn' 버튼을 눌러 연결을 시작하세요."
     connecting:
       title: "기기 연결 중"
-      step1: "기기의 잠금을 해제해 주세요."
-      step2: "첫 연결 시 'Pair & Connect > Pair new device'를 눌러주세요."
       step3: "첫 연결 시 페어링 코드가 동일한지 확인 후 Confirm을 눌러주세요."
       step4: "Trezor 기기에 코코넛 월렛과 연결할지 묻는 화면이 나타나면 Confirm을 눌러주세요."
     pairing_dialog:
       title: "페어링 코드 입력"
       description: "Trezor 화면에 표시된 6자리 숫자를 입력해 주세요."
-      verifying: "코드를 확인 중..."
+      verifying: "페어링 코드 확인 중..."
       error_wrong_code: "잘못된 페어링 코드"
       error_wrong_code_dialog: "잘못된 페어링 코드입니다.\n연결 과정을 처음부터 다시 시작합니다."
     paired:
@@ -663,7 +662,7 @@ trezor_sign_screen:
     waiting: "서명 대기 중"
   status:
     connecting_device: "블루투스로 Trezor를 연결 중..."
-    confirm_on_device: "기기 화면에서 금액, 주소, 수수료를 확인해 주세요"
+    confirm_on_device: "기기 화면에서 주소, 금액, 네트워크를 확인해 주세요"
   done:
     title: "서명 완료"
     description: "Trezor가 트랜잭션에 서명했습니다."

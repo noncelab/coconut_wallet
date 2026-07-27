@@ -175,7 +175,7 @@ class WalletConnectInstructionToolTip extends StatelessWidget {
 /// Unified progress card with spinner, title, and numbered step instructions.
 class WalletConnectProgressCard extends StatelessWidget {
   final String title;
-  final List<String> steps;
+  final List<Object> steps;
 
   const WalletConnectProgressCard({super.key, required this.title, required this.steps});
 

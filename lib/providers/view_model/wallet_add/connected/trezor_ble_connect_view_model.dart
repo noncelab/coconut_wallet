@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
@@ -127,14 +126,7 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
 
     try {
       // Disconnect any previously active BLE session before starting a new one.
-      final lastConnected = TrezorDevice.lastConnected;
-      if (lastConnected != null) {
-        final stillConnected = await TrezorBleConnectivityService.isDeviceConnected(lastConnected.transport);
-        if (stillConnected) {
-          await lastConnected.disconnect();
-        }
-        TrezorDevice.lastConnected = null;
-      }
+      await TrezorDevice.lastConnected?.disconnect();
 
       TrezorDevice.onPairingCodeRequested = () async {
         return await waitForPairingCode();
@@ -332,7 +324,6 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
       } catch (_) {}
       _device = null;
     }
-    TrezorDevice.lastConnected = null;
     _setState(TrezorBleConnectStep.idle);
   }
 

@@ -210,7 +210,6 @@ class TrezorSignViewModel extends ChangeNotifier {
 
   Future<void> disconnectForReconnect() async {
     await disconnect();
-    TrezorDevice.lastConnected = null;
     _isWalletMismatch = false;
     _mismatchedWalletName = null;
     _fingerprint = null;

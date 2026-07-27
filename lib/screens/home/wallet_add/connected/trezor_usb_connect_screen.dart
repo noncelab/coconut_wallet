@@ -12,7 +12,6 @@ import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/trezor_digit_box.dart';
 import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
@@ -47,7 +46,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   String _pairingCode = '';
   final TextEditingController _passphraseController = TextEditingController();
 
-  static const List<String> _modelOnePinKeys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '', '', '<'];
+  static const List<String> _modelOnePinKeys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '', 'OK', '<'];
 
   @override
   void initState() {
@@ -257,18 +256,24 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: SingleChildScrollView(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
-                            child: _buildStatusSection(vm),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isPinVisible = vm.step == TrezorUsbConnectStep.pinEntry;
+                              final bottomPadding = isPinVisible ? 24.0 : 120.0;
+                              final minContentHeight =
+                                  (constraints.maxHeight - 24 - bottomPadding).clamp(0.0, double.infinity).toDouble();
+                              return SingleChildScrollView(
+                                controller: _scrollController,
+                                padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding),
+                                child: _buildStatusSection(vm, inputMinHeight: minContentHeight),
+                              );
+                            },
                           ),
                         ),
                         if (vm.step == TrezorUsbConnectStep.idle ||
                             vm.step == TrezorUsbConnectStep.error ||
                             (vm.step == TrezorUsbConnectStep.connected && vm.xpub.isNotEmpty))
                           Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
-                        if (vm.step == TrezorUsbConnectStep.pinEntry)
-                          Stack(alignment: Alignment.center, children: [_buildPinActionButtons(vm)]),
                         if (vm.step == TrezorUsbConnectStep.passphraseInput)
                           Stack(
                             alignment: Alignment.center,
@@ -289,10 +294,8 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     );
   }
 
-  Widget _buildStatusSection(TrezorUsbConnectViewModel vm) {
+  Widget _buildStatusSection(TrezorUsbConnectViewModel vm, {required double inputMinHeight}) {
     Logger.log('TREZOR_USB_SCREEN _buildStatusSection step=${vm.step}');
-    // DEBUG: temporarily force passphrase card
-    // return _buildPassphraseCard(vm);
     switch (vm.step) {
       case TrezorUsbConnectStep.idle:
         return Column(
@@ -315,7 +318,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
           steps: [t.wallet_connect_screen.guide_trezor.usb.connecting_step1],
         );
       case TrezorUsbConnectStep.pinEntry:
-        return _buildPinCard(vm);
+        return _buildPinCard(vm, minHeight: inputMinHeight);
       case TrezorUsbConnectStep.passphraseUseQuestion:
         return TrezorPassphraseUseQuestionCard(
           onUsePassphrase: vm.selectUsePassphrase,
@@ -515,65 +518,91 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     _viewModel.onPinKeyTap(value);
   }
 
-  Widget _buildPinCard(TrezorUsbConnectViewModel vm) {
+  Widget _buildPinCard(TrezorUsbConnectViewModel vm, {required double minHeight}) {
+    final childAspectRatio = MediaQuery.sizeOf(context).width > 600 ? 2.5 : 1.6;
+    final gridWidth = MediaQuery.sizeOf(context).width - 48;
+    final keypadHeight = (gridWidth / 3 / childAspectRatio * 4) + 24;
+
     return Container(
+      constraints: BoxConstraints(minHeight: minHeight),
       padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          Text(
-            t.wallet_connect_screen.guide_trezor.usb.pin_title,
-            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            t.wallet_connect_screen.guide_trezor.usb.pin_description,
-            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 84,
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              children: List.generate(
-                vm.pin.length,
-                (_) => const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 2),
-                  child: Text('●', style: TextStyle(fontSize: 18)),
+      child: IntrinsicHeight(
+        child: Column(
+          children: [
+            Text(
+              t.wallet_connect_screen.guide_trezor.usb.pin_title,
+              style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              t.wallet_connect_screen.guide_trezor.usb.pin_description,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 84,
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                children: List.generate(
+                  vm.pin.length,
+                  (_) => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 2),
+                    child: Text('●', style: TextStyle(fontSize: 18)),
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          GridView.count(
-            crossAxisCount: 3,
-            childAspectRatio: MediaQuery.of(context).size.width > 600 ? 2.5 : 1.6,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children:
-                _modelOnePinKeys.map((key) {
-                  return Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: _buildPinKeyButton(key));
-                }).toList(),
-          ),
-        ],
+            Expanded(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: keypadHeight + 48),
+                child: Center(
+                  child: SizedBox(
+                    height: keypadHeight,
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: childAspectRatio,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children:
+                          _modelOnePinKeys.map((key) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: _buildPinKeyButton(key, vm),
+                            );
+                          }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPinActionButtons(TrezorUsbConnectViewModel vm) {
-    return FixedBottomTweenButton(
-      leftButtonClicked: vm.cancelPin,
-      rightButtonClicked: vm.submitPin,
-      leftButtonRatio: 0.35,
-      leftText: t.cancel,
-      rightText: t.OK,
-      isRightButtonActive: vm.pin.length >= 4,
-    );
-  }
-
-  Widget _buildPinKeyButton(String key) {
+  Widget _buildPinKeyButton(String key, TrezorUsbConnectViewModel vm) {
     if (key.isEmpty) return const SizedBox.shrink();
+    if (key == 'OK') {
+      final isEnabled = vm.pin.length >= 4;
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: isEnabled ? vm.submitPin : null,
+        child: SizedBox.expand(
+          child: Center(
+            child: Text(
+              t.OK,
+              style: CoconutTypography.body1_16_Bold.setColor(
+                isEnabled ? context.coconutColors.primaryText : context.coconutColors.mutedText,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     if (key == '<') {
       return GestureDetector(
         behavior: HitTestBehavior.opaque,

@@ -269,7 +269,6 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
 
   Future<void> disconnect() async {
     await _disconnectDevice();
-    TrezorDevice.lastConnected = null;
     _xpub = '';
     _fingerprint = '';
     _errorMessage = null;

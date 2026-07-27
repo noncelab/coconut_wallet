@@ -61,7 +61,7 @@ class TrezorMethodHandler(
         val TREZOR_CHAR_RX: UUID    = UUID.fromString("8c000002-a59b-4d58-a9ad-073df69fa1b1") // host→device
         val TREZOR_CHAR_TX: UUID    = UUID.fromString("8c000003-a59b-4d58-a9ad-073df69fa1b1") // device→host (notify)
         val CLIENT_CHAR_CONFIG: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-        private const val SCAN_TIMEOUT_MS = 15_000L
+        private const val SCAN_TIMEOUT_MS = 25_000L
 
         private var nextHandle: Long = 1L
 
