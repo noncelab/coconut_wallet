@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -63,7 +64,12 @@ class LabelJsonLManager {
   }
 
   Future<void> shareFile(XFile xFile) async {
-    await Share.shareXFiles([xFile], text: 'Coconut Wallet Labels');
+    AppGuard.disablePrivacyScreen();
+    try {
+      await Share.shareXFiles([xFile], text: 'Coconut Wallet Labels');
+    } finally {
+      AppGuard.enablePrivacyScreen();
+    }
   }
 
   Future<void> importLabelsFromJsonLFile(int walletId, WalletProvider walletProvider, String filePath) async {

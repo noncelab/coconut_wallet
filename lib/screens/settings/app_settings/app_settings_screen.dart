@@ -41,7 +41,7 @@ class AppSettingsScreen extends StatefulWidget {
 class _AppSettingsScreen extends State<AppSettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    return LoaderOverlay(
+    return CustomLoadingOverlay(
       child: ChangeNotifierProxyProvider2<AuthProvider, PreferenceProvider, SettingsViewModel>(
         create:
             (_) => SettingsViewModel(
