@@ -11,6 +11,11 @@ class WalletIcon extends StatelessWidget {
   final int colorIndex;
   final int iconIndex;
   final bool isInnerWallet;
+  final String? badgeSvgAssetPath;
+  final Color? badgeColor;
+  final double badgeSize;
+  final double badgeRight;
+  final double badgeBottom;
 
   const WalletIcon({
     super.key,
@@ -18,10 +23,27 @@ class WalletIcon extends StatelessWidget {
     this.colorIndex = 0,
     this.iconIndex = 0,
     this.isInnerWallet = true,
+    this.badgeSvgAssetPath,
+    this.badgeColor,
+    this.badgeSize = 18,
+    this.badgeRight = -1,
+    this.badgeBottom = -0.5,
   });
 
   @override
   Widget build(BuildContext context) {
+    final icon = _buildIcon(context);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        icon,
+        if (badgeSvgAssetPath != null) Positioned(right: badgeRight, bottom: badgeBottom, child: _buildBadge(context)),
+      ],
+    );
+  }
+
+  Widget _buildIcon(BuildContext context) {
     if (walletImportSource == null) {
       return Container(
         padding: const EdgeInsets.all(10),
@@ -52,6 +74,24 @@ class WalletIcon extends StatelessWidget {
                 colorFilter: ColorFilter.mode(ColorUtil.getColor(colorIndex).color, BlendMode.srcIn),
                 width: 18.0,
               ),
+    );
+  }
+
+  Widget _buildBadge(BuildContext context) {
+    return Container(
+      width: badgeSize,
+      height: badgeSize,
+      padding: EdgeInsets.all(badgeSize * 2 / 9),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: context.coconutColors.iconBackground,
+        border: Border.all(color: context.coconutColors.background),
+      ),
+      child: SvgPicture.asset(
+        badgeSvgAssetPath!,
+        fit: BoxFit.contain,
+        colorFilter: badgeColor == null ? null : ColorFilter.mode(badgeColor!, BlendMode.srcIn),
+      ),
     );
   }
 }

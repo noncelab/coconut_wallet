@@ -329,8 +329,8 @@ flutter:
     - assets/svg/wallet-add-default.svg
     - assets/svg/wallet-add-hot.svg
     - assets/svg/wallet-import-hot.svg
-    - assets/svg/movable-button.svg
     - assets/svg/hot-wallet-fire.svg
+    - assets/svg/hot-wallet-fire-thin.svg
     - assets/svg/watch-only-eyes.svg
 
   fonts:

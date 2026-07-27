@@ -11,7 +11,8 @@ import 'package:provider/provider.dart';
 
 class PinSettingScreen extends StatefulWidget {
   final bool useBiometrics;
-  const PinSettingScreen({super.key, this.useBiometrics = false});
+  final bool popParentOnComplete;
+  const PinSettingScreen({super.key, this.useBiometrics = false, this.popParentOnComplete = true});
 
   @override
   State<PinSettingScreen> createState() => _PinSettingScreenState();
@@ -163,8 +164,11 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           await _showPinSetSuccessLottie();
 
           if (mounted) {
-            Navigator.pop(context); // Close success dialog
-            Navigator.pop(context); // Close PIN setting screen
+            final navigator = Navigator.of(context);
+            navigator.pop(); // Close PIN setting screen
+            if (widget.popParentOnComplete) {
+              navigator.pop();
+            }
           }
         } catch (e) {
           returnToBackSequence(t.errors.pin_setting_error.save_failed, isError: true, firstSequence: true);

@@ -13,10 +13,12 @@ import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 class CommonBottomSheets {
   static Future<T?> showBottomSheet<T>({
     required String title,
+    String? subtitle,
     required BuildContext context,
     required Widget child,
     List<Widget>? actionList,
     TextStyle titleTextStyle = Styles.body2Bold,
+    TextStyle? subtitleTextStyle,
     bool isDismissible = true,
     bool enableDrag = true,
     bool showCloseButton = false,
@@ -65,12 +67,27 @@ class CommonBottomSheets {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 40),
                         child: Center(
-                          child: Text(
-                            title,
-                            style: titleTextStyle.setColor(context.coconutColors.primaryText),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                style: titleTextStyle.setColor(context.coconutColors.primaryText),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (subtitle != null) ...[
+                                const SizedBox(height: Sizes.size4),
+                                Text(
+                                  subtitle,
+                                  style: (subtitleTextStyle ?? CoconutTypography.body2_14).setColor(
+                                    context.coconutColors.secondaryText,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
