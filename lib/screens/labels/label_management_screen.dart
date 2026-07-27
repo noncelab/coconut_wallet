@@ -120,16 +120,16 @@ class _LabelManagementScreenContentState extends State<_LabelManagementScreenCon
                   children: [
                     Text(
                       t.labels_management_bottom_sheet.title,
-                      style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+                      style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
                     ),
                     CoconutLayout.spacing_100w,
-                    Text(t.labels_management_bottom_sheet.feature, style: CoconutTypography.body2_14_Bold),
+                    Text(t.labels_management_bottom_sheet.feature, style: CoconutTypography.body1_16_Bold),
                   ],
                 ),
                 CoconutLayout.spacing_100h,
                 Text(
                   t.labels_management_bottom_sheet.description,
-                  style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
+                  style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
                 ),
               ],
             ),

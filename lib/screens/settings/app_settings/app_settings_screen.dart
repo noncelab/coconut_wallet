@@ -20,6 +20,7 @@ import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
 // import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
@@ -383,18 +384,22 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
 
   void _showLabelsManagementBottomSheet(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder:
-            (_) => LabelManagementScreen(
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) => LabelManagementScreen(
               importDescription: t.settings_screen.import_all_labels_description,
               exportDescription: t.settings_screen.export_all_labels_description,
               onImport: () {
-                _importLabelsForAllWallets(); // Start the import process
+                _importLabelsForAllWallets();
               },
               onExport: () {
                 _exportLabelsForAllWallets();
               },
             ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 250),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -544,10 +545,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   void _showLabelsManagementBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder:
-            (_) => LabelManagementScreen(
-              // LabelManagementScreen now handles view changes internally
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) => LabelManagementScreen(
               importDescription: t.wallet_info_screen.import_labels_description,
               exportDescription: t.wallet_info_screen.export_labels_description,
               onImport: () {
@@ -556,6 +556,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               },
               onExport: () => _exportLabels(viewModel),
             ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 250),
       ),
     );
   }
