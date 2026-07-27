@@ -1202,7 +1202,7 @@ estimated_fee_bottom_sheet:
   estimated_fee: "Geschätzte Gebühr"
   fee_rate: "Gebührenrate"
 
-manage_labels_bottom_sheet:
+labels_management_bottom_sheet:
   title: "Notizen verwalten"
   subtitle: "Sie können Ihre gespeicherten Notizen importieren oder exportieren."
   feature: "Funktion:"

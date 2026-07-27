@@ -28,7 +28,7 @@ import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet/manage_labels_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/bottom_sheet/labels_management_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -324,8 +324,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               ),
               SingleButton(
                 enableShrinkAnim: true,
-                title: t.manage_labels_bottom_sheet.title,
-                onPressed: () => _showManageLabelsBottomSheet(context, viewModel),
+                title: t.labels_management_bottom_sheet.title,
+                onPressed: () => _showLabelsManagementBottomSheet(context, viewModel),
               ),
             ],
           ),
@@ -585,8 +585,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     );
   }
 
-  void _showManageLabelsBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
-    ManageLabelsBottomSheet.show(
+  void _showLabelsManagementBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
+    LabelsManagementBottomSheet.show(
       context: context,
       onImportPressed: () => _showImportLabelsDialog(context, viewModel),
       onExportPressed: () => _showExportLabelsDialog(context, viewModel),

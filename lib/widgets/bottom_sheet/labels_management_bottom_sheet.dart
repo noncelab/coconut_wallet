@@ -5,11 +5,11 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 
-class ManageLabelsBottomSheet extends StatelessWidget {
+class LabelsManagementBottomSheet extends StatelessWidget {
   final VoidCallback onImportPressed;
   final VoidCallback onExportPressed;
 
-  const ManageLabelsBottomSheet({super.key, required this.onImportPressed, required this.onExportPressed});
+  const LabelsManagementBottomSheet({super.key, required this.onImportPressed, required this.onExportPressed});
 
   static Future<void> show({
     required BuildContext context,
@@ -18,9 +18,9 @@ class ManageLabelsBottomSheet extends StatelessWidget {
   }) {
     return CommonBottomSheets.showBottomSheet(
       context: context,
-      title: t.manage_labels_bottom_sheet.title,
+      title: t.labels_management_bottom_sheet.title,
       showCloseButton: true,
-      child: ManageLabelsBottomSheet(onImportPressed: onImportPressed, onExportPressed: onExportPressed),
+      child: LabelsManagementBottomSheet(onImportPressed: onImportPressed, onExportPressed: onExportPressed),
     );
   }
 
@@ -37,16 +37,16 @@ class ManageLabelsBottomSheet extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    t.manage_labels_bottom_sheet.title,
+                    t.labels_management_bottom_sheet.title,
                     style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                   ),
                   CoconutLayout.spacing_50w,
-                  Text(t.manage_labels_bottom_sheet.feature, style: CoconutTypography.body3_12_Bold),
+                  Text(t.labels_management_bottom_sheet.feature, style: CoconutTypography.body3_12_Bold),
                 ],
               ),
               CoconutLayout.spacing_100h,
               Text(
-                t.manage_labels_bottom_sheet.description,
+                t.labels_management_bottom_sheet.description,
                 style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
               ),
             ],

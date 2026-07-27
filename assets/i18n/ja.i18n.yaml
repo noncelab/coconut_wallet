@@ -1243,7 +1243,7 @@ estimated_fee_bottom_sheet:
     estimated_fee: "予想手数料"
     fee_rate: "手数料率"
 
-manage_labels_bottom_sheet:
+labels_management_bottom_sheet:
   title: "メモの管理"
   subtitle: "記録したメモをインポートまたはエクスポートできます。"
   feature: "機能は、"

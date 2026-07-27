@@ -1243,7 +1243,7 @@ estimated_fee_bottom_sheet:
   estimated_fee: "Estimated Fee"
   fee_rate: "Fee Rate"
 
-manage_labels_bottom_sheet:
+labels_management_bottom_sheet:
   title: "Manage Notes"
   subtitle: "You can import or export your recorded notes."
   feature: "feature:"

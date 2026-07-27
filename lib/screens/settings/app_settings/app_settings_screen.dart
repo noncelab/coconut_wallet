@@ -23,7 +23,7 @@ import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet/manage_labels_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/bottom_sheet/labels_management_bottom_sheet.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -270,10 +270,10 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           ),
                         ),
                         SingleButton(
-                          title: t.manage_labels_bottom_sheet.title,
-                          subtitle: t.manage_labels_bottom_sheet.subtitle,
+                          title: t.labels_management_bottom_sheet.title,
+                          subtitle: t.labels_management_bottom_sheet.subtitle,
                           isVerticalSubtitle: true,
-                          onPressed: () => _showManageLabelsBottomSheet(context),
+                          onPressed: () => _showLabelsManagementBottomSheet(context),
                         ),
                         _buildAnimatedButton(
                           title: t.log_viewer,
@@ -381,8 +381,8 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     }
   }
 
-  void _showManageLabelsBottomSheet(BuildContext context) {
-    ManageLabelsBottomSheet.show(
+  void _showLabelsManagementBottomSheet(BuildContext context) {
+    LabelsManagementBottomSheet.show(
       context: context,
       onImportPressed:
           () => _showLabelActionDialog(

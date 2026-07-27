@@ -1245,7 +1245,7 @@ estimated_fee_bottom_sheet:
     estimated_fee: "Comisión estimada"
     fee_rate: "Tasa de comisión"
 
-manage_labels_bottom_sheet:
+labels_management_bottom_sheet:
   title: "Gestionar notas"
   subtitle: "Puedes importar o exportar tus notas guardadas."
   feature: "función:"
