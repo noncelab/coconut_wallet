@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/view_model/settings/settings_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/labels/label_management_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
@@ -23,7 +24,6 @@ import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet/labels_management_bottom_sheet.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -382,41 +382,20 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
   }
 
   void _showLabelsManagementBottomSheet(BuildContext context) {
-    LabelsManagementBottomSheet.show(
-      context: context,
-      onImportPressed:
-          () => _showLabelActionDialog(
-            title: t.settings_screen.import_labels,
-            description: t.settings_screen.import_all_labels_description,
-            onConfirm: _importLabelsForAllWallets,
-          ),
-      onExportPressed:
-          () => _showLabelActionDialog(
-            title: t.settings_screen.export_labels,
-            description: t.settings_screen.export_all_labels_description,
-            onConfirm: _exportLabelsForAllWallets,
-          ),
-    );
-  }
-
-  void _showLabelActionDialog({required String title, required String description, required VoidCallback onConfirm}) {
-    showDialog(
-      context: context,
-      builder:
-          (BuildContext dialogContext) => CoconutPopup(
-            languageCode: context.read<PreferenceProvider>().language,
-            title: title,
-            titleTextStyle: CoconutTypography.heading4_18_Bold,
-            description: description,
-            descriptionTextStyle: CoconutTypography.body1_16,
-            onTapRight: () {
-              Navigator.of(dialogContext).pop();
-              onConfirm();
-            },
-            rightButtonText: t.next,
-            onTapLeft: () => Navigator.of(dialogContext).pop(),
-            leftButtonText: t.cancel,
-          ),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => LabelManagementScreen(
+              importDescription: t.settings_screen.import_all_labels_description,
+              exportDescription: t.settings_screen.export_all_labels_description,
+              onImport: () {
+                _importLabelsForAllWallets(); // Start the import process
+              },
+              onExport: () {
+                _exportLabelsForAllWallets();
+              },
+            ),
+      ),
     );
   }
 

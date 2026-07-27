@@ -12,8 +12,8 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/labels/label_management_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_signer_section.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_stats_section.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -26,9 +26,9 @@ import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
+import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet/labels_management_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -517,49 +517,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     );
   }
 
-  void _showExportLabelsDialog(BuildContext context, WalletInfoViewModel viewModel) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
-          title: t.wallet_info_screen.export_labels,
-          description: t.wallet_info_screen.export_labels_description,
-          onTapRight: () async {
-            Navigator.of(dialogContext).pop();
-            _setOverlayLoading(true);
-            final startTime = DateTime.now();
-
-            final file = await viewModel.createLabelsJsonLFile();
-
-            final duration = DateTime.now().difference(startTime);
-            if (duration < const Duration(seconds: 1)) {
-              await Future.delayed(const Duration(seconds: 1) - duration);
-            }
-            _setOverlayLoading(false);
-
-            if (!mounted) return;
-
-            if (file != null) {
-              await viewModel.shareLabelsFile(file);
-            } else {
-              CoconutToast.showToast(
-                context: context,
-                text: t.wallet_info_screen.error.no_memos,
-                level: CoconutToastLevel.info,
-                isVisibleIcon: true,
-                iconPath: 'assets/svg/circle-info.svg',
-              );
-            }
-          },
-          rightButtonText: t.next,
-          onTapLeft: () => Navigator.of(dialogContext).pop(),
-          leftButtonText: t.cancel,
-        );
-      },
-    );
-  }
-
   void _showDeleteWalletDialog(BuildContext context, WalletInfoViewModel viewModel) {
     showDialog(
       context: context,
@@ -586,32 +543,20 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   void _showLabelsManagementBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
-    LabelsManagementBottomSheet.show(
-      context: context,
-      onImportPressed: () => _showImportLabelsDialog(context, viewModel),
-      onExportPressed: () => _showExportLabelsDialog(context, viewModel),
-    );
-  }
-
-  void _showImportLabelsDialog(BuildContext context, WalletInfoViewModel viewModel) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
-          title: t.wallet_info_screen.import_labels,
-          titleTextStyle: CoconutTypography.heading4_18_Bold,
-          description: t.wallet_info_screen.import_labels_description,
-          descriptionTextStyle: CoconutTypography.body1_16,
-          onTapRight: () {
-            Navigator.of(dialogContext).pop();
-            _importLabels(viewModel);
-          },
-          rightButtonText: t.next,
-          onTapLeft: () => Navigator.of(dialogContext).pop(),
-          leftButtonText: t.cancel,
-        );
-      },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => LabelManagementScreen(
+              // LabelManagementScreen now handles view changes internally
+              importDescription: t.wallet_info_screen.import_labels_description,
+              exportDescription: t.wallet_info_screen.export_labels_description,
+              onImport: () {
+                // Then start the import process
+                _importLabels(viewModel);
+              },
+              onExport: () => _exportLabels(viewModel),
+            ),
+      ),
     );
   }
 
@@ -659,6 +604,45 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             e.toString(),
           );
         }
+      }
+    }
+  }
+
+  Future<void> _exportLabels(WalletInfoViewModel viewModel) async {
+    _setOverlayLoading(true);
+    final startTime = DateTime.now();
+
+    try {
+      final file = await viewModel.createLabelsJsonLFile();
+
+      final duration = DateTime.now().difference(startTime);
+      if (duration < const Duration(seconds: 1)) {
+        await Future.delayed(const Duration(seconds: 1) - duration);
+      }
+      _setOverlayLoading(false);
+
+      if (!mounted) return;
+
+      if (file != null) {
+        await viewModel.shareLabelsFile(file);
+      } else {
+        CoconutToast.showToast(
+          context: context,
+          text: t.wallet_info_screen.error.no_memos,
+          level: CoconutToastLevel.info,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/circle-info.svg',
+        );
+      }
+    } catch (e) {
+      _setOverlayLoading(false);
+      if (mounted) {
+        await showInfoDialog(
+          context,
+          context.read<PreferenceProvider>().language,
+          t.wallet_info_screen.export_labels_fail,
+          e.toString(),
+        );
       }
     }
   }
