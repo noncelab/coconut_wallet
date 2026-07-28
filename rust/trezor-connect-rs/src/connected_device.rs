@@ -1423,6 +1423,28 @@ impl ConnectedDevice {
         })
     }
 
+    /// Apply settings to the device (e.g. enable/disable passphrase protection).
+    ///
+    /// Sends `ApplySettings` with `use_passphrase = enable_passphrase`.
+    /// The device will prompt the user to confirm on its screen (ButtonRequest).
+    /// Works on all Trezor models (V1 and THP).
+    pub async fn apply_settings(&self, use_passphrase: Option<bool>) -> Result<()> {
+        let settings = protos::management::ApplySettings {
+            use_passphrase,
+            ..Default::default()
+        };
+        let (resp_type, resp_data) = self
+            .transport
+            .call(
+                &self.session,
+                MessageType::ApplySettings as u16,
+                &settings.encode_to_vec(),
+            )
+            .await?;
+        let _: protos::common::Success = self.handle_response(resp_type, resp_data).await?;
+        Ok(())
+    }
+
     /// Disconnect from the device.
     pub async fn disconnect(&mut self) -> Result<()> {
         self.transport.release(&self.session).await?;

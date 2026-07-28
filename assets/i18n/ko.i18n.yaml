@@ -479,6 +479,7 @@ wallet_connect_screen:
       passphrase_use_no: "사용 안함"
       passphrase_where_to_enter: "패스프레이즈를 어디에서 입력하시겠어요?"
       passphrase_confirm_on_device: "Trezor에서 입력하신 패스프레이즈를 확인해 주세요."
+      passphrase_enabling: "Trezor 기기에서 패스프레이즈 활성화를 확인해 주세요."
       suite_app_notice: "USB 연결 시 Trezor Suite 앱이 자동 실행돼요."
       suite_app_setting_guide:
         title: "· 기본 앱 설정을 제거하세요"

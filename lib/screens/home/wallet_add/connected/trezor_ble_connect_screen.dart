@@ -8,10 +8,8 @@ import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
-import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/trezor_digit_box.dart';
 import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart';
@@ -42,7 +40,6 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   final FocusNode _passphraseFocusNode = FocusNode();
 
   static const int _codeLength = 6;
-  static const List<String> _keypadKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '<'];
   String _pairingCode = '';
   final TextEditingController _passphraseController = TextEditingController();
   late final Future<TrezorPassphraseResponse> Function(bool) _passphraseHandler;
@@ -241,7 +238,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       t.wallet_connect_screen.guide_trezor.keep_connection_description,
       leftButtonText: t.no,
       rightButtonText: t.yes,
-      barrierDismissible: false,
+      barrierDismissible: true,
       onTapLeft: () {
         keepConnection = false;
         Navigator.pop(context);
@@ -346,12 +343,21 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
           t.wallet_connect_screen.guide_trezor.connecting.step4,
         ]);
       case TrezorBleConnectStep.pairing:
-        return _buildPairingCard(vm, minHeight: inputMinHeight);
+        return TrezorPairingCard(
+          pairingCode: _pairingCode,
+          isVerifying: _isVerifyingPairingCode,
+          hasError: vm.pairingErrorMessage != null,
+          errorMessage: vm.pairingErrorMessage,
+          onKeyTap: _onPairingKeyTap,
+          minHeight: inputMinHeight,
+        );
       case TrezorBleConnectStep.passphraseUseQuestion:
         return TrezorPassphraseUseQuestionCard(
           onUsePassphrase: vm.selectUsePassphrase,
           onNoPassphrase: vm.selectNoPassphrase,
         );
+      case TrezorBleConnectStep.passphraseEnabling:
+        return TrezorLoadingCard(title: t.wallet_connect_screen.guide_trezor.usb.passphrase_enabling);
       case TrezorBleConnectStep.passphraseSourceSelection:
         return TrezorPassphraseSourceSelectionCard(onAppEntry: vm.selectAppEntry, onDeviceEntry: vm.selectDeviceEntry);
       case TrezorBleConnectStep.passphraseInput:
@@ -463,118 +469,6 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     );
   }
 
-  Widget _buildPairingCard(TrezorBleConnectViewModel vm, {required double minHeight}) {
-    final childAspectRatio = MediaQuery.sizeOf(context).width > 600 ? 2.5 : 1.4;
-    final gridWidth = MediaQuery.sizeOf(context).width - 48;
-    final keypadHeight = gridWidth / 3 / childAspectRatio * 4;
-
-    return Container(
-      constraints: BoxConstraints(minHeight: minHeight),
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: IntrinsicHeight(
-        child: Column(
-          children: [
-            Text(
-              t.wallet_connect_screen.guide_trezor.pairing_dialog.title,
-              style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              t.wallet_connect_screen.guide_trezor.pairing_dialog.description,
-              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 84,
-              child: Stack(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (int index = 0; index < _codeLength; index++) ...[
-                        if (index > 0) SizedBox(width: index == 3 ? 12 : 4),
-                        Flexible(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 40),
-                            child: TrezorDigitBox(
-                              digit: index < _pairingCode.length ? _pairingCode[index] : '',
-                              hasError: vm.pairingErrorMessage != null,
-                              isVerifying: _isVerifyingPairingCode,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (_isVerifyingPairingCode)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 2),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            t.wallet_connect_screen.guide_trezor.pairing_dialog.verifying,
-                            style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (vm.pairingErrorMessage != null)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: Text(
-                        vm.pairingErrorMessage!,
-                        style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: keypadHeight + 48),
-                child: Center(
-                  child: SizedBox(
-                    height: keypadHeight,
-                    child: GridView.count(
-                      crossAxisCount: 3,
-                      childAspectRatio: childAspectRatio,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children:
-                          _keypadKeys.map((key) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: KeyButton(
-                                keyValue: key,
-                                onKeyTap: _isVerifyingPairingCode ? (_) {} : _onPairingKeyTap,
-                              ),
-                            );
-                          }).toList(),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   bool _isWalletMismatch(TrezorBleConnectViewModel vm) {
     final isSignFlow = widget.psbtBase64 != null;
     final isPaired = vm.step == TrezorBleConnectStep.paired;
@@ -645,7 +539,13 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       onPressed = () => _onAddWalletPressed(vm);
     } else if (isRetry) {
       buttonText = t.wallet_connect_screen.guide_trezor.btn.retry;
-      onPressed = () => vm.connect();
+      onPressed = () {
+        _passphraseController.clear();
+        vm.reset();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          vm.connect();
+        });
+      };
     } else {
       buttonText = t.wallet_connect_screen.guide_trezor.btn.connect_via_ble;
       onPressed = () => vm.connect();

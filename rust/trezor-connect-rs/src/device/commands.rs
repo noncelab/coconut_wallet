@@ -107,6 +107,7 @@ impl TryFrom<u16> for MessageType {
             49 => Ok(MessageType::GetOwnershipProof),
             50 => Ok(MessageType::OwnershipProof),
             51 => Ok(MessageType::AuthorizeCoinJoin),
+            25 => Ok(MessageType::ApplySettings),
             55 => Ok(MessageType::GetFeatures),
             63 => Ok(MessageType::CancelAuthorization),
             _ => Err(()),

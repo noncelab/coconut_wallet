@@ -15,6 +15,7 @@ enum TrezorUsbConnectStep {
   pinEntry,
   pairing,
   passphraseUseQuestion, // 1: use passphrase?
+  passphraseEnabling, // 1-1: enabling passphrase on device (loading)
   passphraseSourceSelection, // 3: where to enter?
   passphraseInput, // 4-1: enter passphrase in app
   passphraseOnDevice, // 4-2: enter on Trezor
@@ -79,11 +80,7 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
       );
 
       await _ensureMinStepDuration(const Duration(milliseconds: 1500));
-      if (_device!.passphraseProtection) {
-        _setState(TrezorUsbConnectStep.passphraseUseQuestion);
-      } else {
-        await _proceedToXpub();
-      }
+      _setState(TrezorUsbConnectStep.passphraseUseQuestion);
     } on TrezorPairingCodeWrongException catch (e) {
       _errorMessage = e.message;
       _isPairingCodeWrong = true;
@@ -115,7 +112,24 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   }
 
   /// Step 1: User chose to use passphrase → go to step 2/3.
-  void selectUsePassphrase() {
+  ///
+  /// If passphraseProtection is already enabled on the device, proceed to passphrase entry.
+  /// If not, first call applySettings to enable it — the user must confirm on the device.
+  /// The user cannot skip this step after choosing to use passphrase.
+  Future<void> selectUsePassphrase() async {
+    if (!_device!.passphraseProtection) {
+      _setState(TrezorUsbConnectStep.passphraseEnabling);
+      try {
+        await _device!.applySettings(usePassphrase: true);
+      } catch (error) {
+        _errorMessage = error.toString();
+        await _disconnectDevice();
+        _setState(TrezorUsbConnectStep.error);
+        return;
+      }
+      // After enabling, update the device flag so downstream logic works correctly
+      _device!.passphraseProtection = true;
+    }
     if (_device!.passphraseAlwaysOnDevice) {
       _setState(TrezorUsbConnectStep.passphraseOnDevice);
     } else if (!_device!.supportsPassphraseEntry) {

@@ -43,6 +43,8 @@ class TrezorMethodHandler: NSObject {
             connect(result: result)
         case "createSession":
             createSession(call, result: result)
+        case "applySettings":
+            applySettings(call, result: result)
         case "getXPub":
             getXPub(call, result: result)
         case "getFingerprint":
@@ -217,6 +219,32 @@ class TrezorMethodHandler: NSObject {
             } catch {
                 DispatchQueue.main.async {
                     result(FlutterError(code: "CREATE_SESSION_FAILED", message: error.localizedDescription, details: nil))
+                }
+            }
+        }
+    }
+
+    // MARK: - applySettings
+    private func applySettings(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        let usePassphrase = args["usePassphrase"] as? Bool
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+#if canImport(trezor_bridgeFFI)
+                try trezorApplySettings(deviceId: deviceId, usePassphrase: usePassphrase)
+                DispatchQueue.main.async { result(nil) }
+#else
+                throw NSError(domain: "TrezorBridge", code: -99,
+                    userInfo: [NSLocalizedDescriptionKey: "TrezorBridgeFFI not linked"])
+#endif
+            } catch {
+                DispatchQueue.main.async {
+                    result(FlutterError(code: "APPLY_SETTINGS_FAILED", message: error.localizedDescription, details: nil))
                 }
             }
         }

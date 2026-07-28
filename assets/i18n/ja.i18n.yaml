@@ -505,6 +505,7 @@ wallet_connect_screen:
       passphrase_use_no: "使用しない"
       passphrase_where_to_enter: "パスフレーズをどこで入力しますか？"
       passphrase_confirm_on_device: "Trezorで入力したパスフレーズを確認してください。"
+      passphrase_enabling: "Trezorデバイスでパスフレーズの有効化を確認してください。"
       suite_app_notice: "USB接続時、Trezor Suiteアプリが自動で起動することがあります。"
       suite_app_setting_guide:
         title: "· デフォルトアプリの設定を解除してください"

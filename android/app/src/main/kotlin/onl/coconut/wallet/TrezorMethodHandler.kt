@@ -210,6 +210,7 @@ class TrezorMethodHandler(
         when (call.method) {
             "connect" -> connect(call, result)
             "createSession" -> createSession(call, result)
+            "applySettings" -> applySettings(call, result)
             "getXPub" -> getXPub(call, result)
             "getFingerprint" -> getFingerprint(call, result)
             "signTransaction" -> signTransaction(call, result)
@@ -680,6 +681,27 @@ class TrezorMethodHandler(
                 mainHandler.post { result.success(null) }
             } catch (e: Exception) {
                 mainHandler.post { result.error("CREATE_SESSION_FAILED", e.message, null) }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // applySettings
+    // -------------------------------------------------------------------------
+    private fun applySettings(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        val usePassphrase = call.argument<Boolean>("usePassphrase")
+
+        executor.execute {
+            try {
+                if (!TrezorBridge.tryLoad()) throw bridgeNotReady()
+                uniffi.trezor_bridge.trezorApplySettings(deviceId, usePassphrase)
+                mainHandler.post { result.success(null) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("APPLY_SETTINGS_FAILED", e.message, null) }
             }
         }
     }

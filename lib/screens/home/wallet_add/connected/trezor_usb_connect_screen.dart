@@ -11,9 +11,7 @@ import 'package:coconut_wallet/services/hardware_wallet/trezor_wallet_mismatch.d
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/trezor_digit_box.dart';
 import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/card/expandable_info_card.dart';
@@ -43,7 +41,6 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   final FocusNode _passphraseFocusNode = FocusNode();
 
   static const int _codeLength = 6;
-  static const List<String> _keypadKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '<'];
   String _pairingCode = '';
   final TextEditingController _passphraseController = TextEditingController();
 
@@ -196,7 +193,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       t.wallet_connect_screen.guide_trezor.keep_connection_description,
       leftButtonText: t.no,
       rightButtonText: t.yes,
-      barrierDismissible: false,
+      barrierDismissible: true,
       onTapLeft: () {
         keepConnection = false;
         Navigator.pop(context);
@@ -260,8 +257,9 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
                         Positioned.fill(
                           child: LayoutBuilder(
                             builder: (context, constraints) {
-                              final isPinVisible = vm.step == TrezorUsbConnectStep.pinEntry;
-                              final bottomPadding = isPinVisible ? 24.0 : 120.0;
+                              final isFullHeight =
+                                  vm.step == TrezorUsbConnectStep.pinEntry || vm.step == TrezorUsbConnectStep.pairing;
+                              final bottomPadding = isFullHeight ? 24.0 : 120.0;
                               final minContentHeight =
                                   (constraints.maxHeight - 24 - bottomPadding).clamp(0.0, double.infinity).toDouble();
                               return SingleChildScrollView(
@@ -326,6 +324,8 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
           onUsePassphrase: vm.selectUsePassphrase,
           onNoPassphrase: vm.selectNoPassphrase,
         );
+      case TrezorUsbConnectStep.passphraseEnabling:
+        return TrezorLoadingCard(title: t.wallet_connect_screen.guide_trezor.usb.passphrase_enabling);
       case TrezorUsbConnectStep.passphraseSourceSelection:
         return TrezorPassphraseSourceSelectionCard(onAppEntry: vm.selectAppEntry, onDeviceEntry: vm.selectDeviceEntry);
       case TrezorUsbConnectStep.passphraseInput:
@@ -339,9 +339,17 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       case TrezorUsbConnectStep.passphraseConfirm:
         return const TrezorPassphraseConfirmCard();
       case TrezorUsbConnectStep.passphraseProcessing:
-        return const TrezorPassphraseProcessingCard();
+        return TrezorPassphraseProcessingCard(usesThp: vm.usesThp, usePassphrase: vm.passphraseProtection);
       case TrezorUsbConnectStep.pairing:
-        return _buildPairingCard(vm);
+        return TrezorPairingCard(
+          pairingCode: _pairingCode,
+          isVerifying: _isVerifyingPairingCode,
+          hasError: vm.isPairingCodeWrong,
+          errorMessage:
+              vm.isPairingCodeWrong ? t.wallet_connect_screen.guide_trezor.pairing_dialog.error_wrong_code : null,
+          onKeyTap: _onPairingKeyTap,
+          minHeight: inputMinHeight,
+        );
       case TrezorUsbConnectStep.connected:
         return _buildSuccessCard(vm);
       case TrezorUsbConnectStep.error:
@@ -449,8 +457,11 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     } else if (isRetry) {
       buttonText = t.wallet_connect_screen.guide_trezor.btn.retry;
       onPressed = () {
+        _passphraseController.clear();
         vm.reset();
-        vm.connect();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          vm.connect();
+        });
       };
     } else {
       buttonText = t.wallet_connect_screen.guide_trezor.usb.connect;
@@ -470,94 +481,6 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
           vm.step != TrezorUsbConnectStep.passphraseProcessing &&
           vm.step != TrezorUsbConnectStep.pairing &&
           !_isAddingWallet,
-    );
-  }
-
-  Widget _buildPairingCard(TrezorUsbConnectViewModel vm) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          Text(
-            t.wallet_connect_screen.guide_trezor.pairing_dialog.title,
-            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            t.wallet_connect_screen.guide_trezor.pairing_dialog.description,
-            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (int index = 0; index < _codeLength; index++) ...[
-                if (index > 0) SizedBox(width: index == 3 ? 12 : 4),
-                Flexible(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 40),
-                    child: TrezorDigitBox(
-                      digit: index < _pairingCode.length ? _pairingCode[index] : '',
-                      hasError: vm.isPairingCodeWrong,
-                      isVerifying: _isVerifyingPairingCode,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          if (_isVerifyingPairingCode)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 2),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    t.wallet_connect_screen.guide_trezor.pairing_dialog.verifying,
-                    style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                  ),
-                ],
-              ),
-            )
-          else
-            Visibility(
-              visible: vm.isPairingCodeWrong,
-              maintainSize: true,
-              maintainAnimation: true,
-              maintainState: true,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  t.wallet_connect_screen.guide_trezor.pairing_dialog.error_wrong_code,
-                  style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          const SizedBox(height: 24),
-          GridView.count(
-            crossAxisCount: 3,
-            childAspectRatio: MediaQuery.of(context).size.width > 600 ? 2.5 : 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children:
-                _keypadKeys.map((key) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: KeyButton(keyValue: key, onKeyTap: _isVerifyingPairingCode ? (_) {} : _onPairingKeyTap),
-                  );
-                }).toList(),
-          ),
-        ],
-      ),
     );
   }
 

@@ -15,6 +15,7 @@ enum TrezorBleConnectStep {
   connecting,
   pairing,
   passphraseUseQuestion,
+  passphraseEnabling,
   passphraseSourceSelection,
   passphraseInput,
   passphraseOnDevice,
@@ -136,12 +137,7 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
         'lastConnectedSame=${identical(TrezorDevice.lastConnected, _device)}',
       );
 
-      if (_device!.passphraseProtection) {
-        _setState(TrezorBleConnectStep.passphraseUseQuestion);
-      } else {
-        await _device!.createSession(type: TrezorPassphraseType.standard);
-        await _retrieveXPub(silent: true);
-      }
+      _setState(TrezorBleConnectStep.passphraseUseQuestion);
     } on TrezorPairingCodeWrongException catch (e) {
       _errorMessage = e.message;
       _pairingCodeCompleter = null;
@@ -282,7 +278,23 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   }
 
   /// Step 1: User chose to use passphrase → go to step 2/3.
-  void selectUsePassphrase() {
+  ///
+  /// If passphraseProtection is already enabled on the device, proceed to passphrase entry.
+  /// If not, first call applySettings to enable it — the user must confirm on the device.
+  /// The user cannot skip this step after choosing to use passphrase.
+  Future<void> selectUsePassphrase() async {
+    if (!_device!.passphraseProtection) {
+      _setState(TrezorBleConnectStep.passphraseEnabling);
+      try {
+        await _device!.applySettings(usePassphrase: true);
+      } catch (error) {
+        _errorMessage = error.toString();
+        await _disconnectDevice();
+        _setState(TrezorBleConnectStep.error);
+        return;
+      }
+      _device!.passphraseProtection = true;
+    }
     if (_device!.passphraseAlwaysOnDevice) {
       _setState(TrezorBleConnectStep.passphraseOnDevice);
     } else if (!_device!.supportsPassphraseEntry) {
@@ -315,6 +327,7 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
       await _device!.createSession(type: type, value: value);
     } catch (error) {
       _errorMessage = error.toString();
+      await _disconnectDevice();
       _setState(TrezorBleConnectStep.error);
       return;
     }
@@ -322,13 +335,18 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
     await _retrieveXPub(silent: true);
   }
 
-  Future<void> disconnect() async {
-    if (_device != null) {
+  Future<void> _disconnectDevice() async {
+    final device = _device;
+    _device = null;
+    if (device != null) {
       try {
-        await _device!.disconnect();
+        await device.disconnect();
       } catch (_) {}
-      _device = null;
     }
+  }
+
+  Future<void> disconnect() async {
+    await _disconnectDevice();
     _setState(TrezorBleConnectStep.idle);
   }
 

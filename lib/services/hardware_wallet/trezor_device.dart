@@ -61,7 +61,8 @@ class TrezorDevice {
   /// Whether passphrase protection is enabled on the device.
   /// True if the user has turned on passphrase in Trezor settings;
   /// the device can open passphrase (hidden) wallets, not just the standard wallet.
-  final bool passphraseProtection;
+  /// May be updated in-place after calling [applySettings].
+  bool passphraseProtection;
 
   /// Whether the device is configured to always require passphrase entry on the device itself.
   final bool passphraseAlwaysOnDevice;
@@ -211,6 +212,22 @@ class TrezorDevice {
       await _channel.invokeMethod('createSession', {'id': id, 'passphraseType': typeStr, 'passphraseValue': value});
     } on PlatformException catch (e) {
       throw TrezorConnectException(e.code, e.message ?? 'createSession failed');
+    }
+  }
+
+  /// Apply settings to the device (e.g. enable/disable passphrase protection).
+  ///
+  /// [usePassphrase] controls the passphrase protection setting:
+  /// - `true` → enable passphrase protection
+  /// - `false` → disable passphrase protection
+  /// - `null` → no change
+  ///
+  /// The device will prompt the user to confirm on its screen.
+  Future<void> applySettings({bool? usePassphrase}) async {
+    try {
+      await _channel.invokeMethod('applySettings', {'id': id, 'usePassphrase': usePassphrase});
+    } on PlatformException catch (e) {
+      throw TrezorConnectException(e.code, e.message ?? 'applySettings failed');
     }
   }
 

@@ -504,6 +504,7 @@ wallet_connect_screen:
       passphrase_use_no: "Don't use"
       passphrase_where_to_enter: "Where do you want to enter your passphrase?"
       passphrase_confirm_on_device: "Please confirm the passphrase on your Trezor device."
+      passphrase_enabling: "Please confirm enabling passphrase on your Trezor device."
       suite_app_notice: "The Trezor Suite app may open automatically when connected via USB."
       suite_app_setting_guide:
         title: "· Remove the default app setting"

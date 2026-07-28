@@ -403,8 +403,10 @@ impl CallbackTransport {
             }
         }
 
-        // Read response
-        for _ in 0..20 {
+        // Read response. THP devices respond immediately with Failure_InvalidProtocol;
+        // V1 devices (e.g. Model T) simply ignore the Cancel, so fewer retries still
+        // correctly detect THP while reducing idle wait time for V1 devices.
+        for _ in 0..3 {
             let read_result = self.callback.read_chunk(path);
             if !read_result.success || read_result.data.is_empty() {
                 std::thread::sleep(std::time::Duration::from_millis(100));
@@ -1944,9 +1946,19 @@ impl Transport for CallbackTransport {
                 self.perform_thp_handshake(path).await?;
             }
         } else {
-            // For USB devices, detect THP via Cancel → Failure_InvalidProtocol
+            // For USB devices, detect THP via Cancel → Failure_InvalidProtocol.
+            // Model One (0x534c:0x0001) only supports V1, so skip THP detection
+            // to avoid ~100 s of idle Cancel-message timeouts on retry.
+            let is_model_one = {
+                let devices = self.callback.enumerate_devices();
+                devices.iter().any(|d| {
+                    d.path == path
+                        && d.vendor_id == Some(0x534c)
+                        && d.product_id == Some(0x0001)
+                })
+            };
             let already_thp = self.has_thp(path).await;
-            if !already_thp {
+            if !already_thp && !is_model_one {
                 match self.detect_thp_protocol(path) {
                     Ok(true) => {
                         log::info!("[Callback] USB device needs THP — performing handshake...");

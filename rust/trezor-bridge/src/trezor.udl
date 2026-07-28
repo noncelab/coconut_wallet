@@ -53,6 +53,11 @@ namespace trezor_bridge {
     // passphrase_value: passphrase string (used only for "hidden")
     [Throws=TrezorError]
     void trezor_create_session(string device_id, string passphrase_type, string passphrase_value);
+
+    // Apply settings to the device (e.g. enable/disable passphrase protection).
+    // use_passphrase: true to enable passphrase, false to disable, omitted = no change
+    [Throws=TrezorError]
+    void trezor_apply_settings(string device_id, boolean? use_passphrase);
 };
 
 // Callback interface implemented by the native layer (Swift / Kotlin).

@@ -910,6 +910,32 @@ pub fn trezor_create_session(
     })
 }
 
+/// Apply settings to the device (e.g. enable/disable passphrase protection).
+///
+/// `use_passphrase` controls the `use_passphrase` field of `ApplySettings`:
+/// - `Some(true)` → enable passphrase protection
+/// - `Some(false)` → disable passphrase protection
+/// - `None` → no change
+///
+/// The device will prompt the user to confirm on its screen.
+pub fn trezor_apply_settings(
+    device_id: String,
+    use_passphrase: Option<bool>,
+) -> Result<(), TrezorError> {
+    RT.block_on(async move {
+        let sessions = SESSIONS.lock().unwrap();
+        let s = sessions
+            .get(&device_id)
+            .ok_or_else(|| TrezorError::Connect(format!("Unknown device_id: {device_id}")))?;
+
+        s.device
+            .apply_settings(use_passphrase)
+            .await
+            .map_err(|e| TrezorError::Connect(e.to_string()))?;
+        Ok(())
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

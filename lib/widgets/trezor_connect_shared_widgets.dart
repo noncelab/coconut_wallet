@@ -3,7 +3,9 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/trezor_digit_box.dart';
 import 'package:coconut_wallet/widgets/textfield/passphrase_input_text_field.dart';
 import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
@@ -265,13 +267,152 @@ class TrezorPassphraseConfirmCard extends StatelessWidget {
 
 /// Step 6: Processing — getXPub in progress (loading)
 class TrezorPassphraseProcessingCard extends StatelessWidget {
-  const TrezorPassphraseProcessingCard({super.key});
+  final bool usesThp;
+  final bool usePassphrase;
+  const TrezorPassphraseProcessingCard({super.key, this.usesThp = true, this.usePassphrase = false});
 
   @override
   Widget build(BuildContext context) {
-    return WalletConnectSuccessCard(
-      title: t.wallet_connect_screen.common.loading_wallet_info,
-      child: const WalletConnectWalletInfoSkeleton(),
+    final showDevicePrompt = !usesThp && usePassphrase;
+    return TrezorLoadingCard(
+      title:
+          showDevicePrompt
+              ? t.wallet_connect_screen.guide_trezor.usb.connecting_step1
+              : t.wallet_connect_screen.common.loading_wallet_info,
+    );
+  }
+}
+
+/// Pairing code input card with digit boxes and keypad.
+/// Used by both USB and BLE connect screens.
+class TrezorPairingCard extends StatelessWidget {
+  final String pairingCode;
+  final bool isVerifying;
+  final bool hasError;
+  final String? errorMessage;
+  final ValueChanged<String> onKeyTap;
+  final double minHeight;
+
+  static const int _codeLength = 6;
+  static const List<String> _keypadKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '<'];
+
+  const TrezorPairingCard({
+    super.key,
+    required this.pairingCode,
+    required this.isVerifying,
+    required this.hasError,
+    required this.errorMessage,
+    required this.onKeyTap,
+    this.minHeight = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final childAspectRatio = MediaQuery.sizeOf(context).width > 600 ? 2.5 : 1.4;
+    final gridWidth = MediaQuery.sizeOf(context).width - 48;
+    final keypadHeight = gridWidth / 3 / childAspectRatio * 4;
+
+    return Container(
+      constraints: BoxConstraints(minHeight: minHeight),
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: IntrinsicHeight(
+        child: Column(
+          children: [
+            Text(
+              t.wallet_connect_screen.guide_trezor.pairing_dialog.title,
+              style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              t.wallet_connect_screen.guide_trezor.pairing_dialog.description,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 84,
+              child: Stack(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (int index = 0; index < _codeLength; index++) ...[
+                        if (index > 0) SizedBox(width: index == 3 ? 12 : 4),
+                        Flexible(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 40),
+                            child: TrezorDigitBox(
+                              digit: index < pairingCode.length ? pairingCode[index] : '',
+                              hasError: hasError,
+                              isVerifying: isVerifying,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (isVerifying)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 2),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            t.wallet_connect_screen.guide_trezor.pairing_dialog.verifying,
+                            style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (errorMessage != null)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Text(
+                        errorMessage!,
+                        style: CoconutTypography.body3_12.setColor(context.coconutColors.danger),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: keypadHeight + 48),
+                child: Center(
+                  child: SizedBox(
+                    height: keypadHeight,
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      childAspectRatio: childAspectRatio,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children:
+                          _keypadKeys.map((key) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: KeyButton(keyValue: key, onKeyTap: isVerifying ? (_) {} : onKeyTap),
+                            );
+                          }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
