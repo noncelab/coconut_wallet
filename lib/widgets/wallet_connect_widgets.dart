@@ -301,6 +301,42 @@ class WalletConnectSuccessCard extends StatelessWidget {
   }
 }
 
+/// Wallet mismatch card — connection succeeded but the connected wallet
+/// doesn't match the expected wallet. Shows a warning icon, mismatch message
+/// as title, and optional child content (e.g. wallet info).
+class WalletConnectMismatchCard extends StatelessWidget {
+  final String title;
+  final Widget? child;
+
+  const WalletConnectMismatchCard({super.key, required this.title, this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          SvgPicture.asset(
+            'assets/svg/triangle-warning.svg',
+            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+            height: 48,
+            width: 48,
+          ),
+          CoconutLayout.spacing_200h,
+          Text(
+            title,
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.danger),
+            textAlign: TextAlign.center,
+          ),
+          CoconutLayout.spacing_200h,
+          CoconutLayout.spacing_600h,
+          if (child != null) child!,
+        ],
+      ),
+    );
+  }
+}
+
 /// Unified wallet info card container with configurable content.
 class WalletConnectWalletInfoCard extends StatelessWidget {
   final List<Widget> children;

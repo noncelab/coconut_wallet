@@ -2,10 +2,9 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/transaction/prev_tx_fetcher.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_wallet_mismatch.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:flutter/foundation.dart';
 
@@ -24,7 +23,6 @@ class TrezorSignViewModel extends ChangeNotifier {
   bool _isSigning = false;
   String? _fingerprint;
   Timer? _timeoutTimer;
-  bool _disposed = false;
   bool _isConnectionError = false;
 
   final String psbtBase64;
@@ -60,17 +58,37 @@ class TrezorSignViewModel extends ChangeNotifier {
 
   void _probeDeviceStatus() {
     final last = TrezorDevice.lastConnected;
-    if (last == null || last.transport != transport) return;
+    debugPrint(
+      'TREZOR_SIGN probe device=${last != null} '
+      'deviceTransport=${last?.transport.name} expectedTransport=${transport.name} '
+      'cachedXpub=${last?.cachedXpub != null} cachedFingerprint=${last?.cachedFingerprint != null}',
+    );
+    if (last == null || last.transport != transport) {
+      debugPrint('TREZOR_SIGN probe skipped: device missing or transport mismatch');
+      return;
+    }
     _device = last;
     if (last.cachedFingerprint != null) _fingerprint = last.cachedFingerprint;
+    debugPrint('TREZOR_SIGN probe accepted: fingerprint=${_fingerprint ?? '<null>'}');
   }
 
   Future<void> probeWalletMismatch() async {
-    if (_device == null) return;
+    debugPrint(
+      'TREZOR_SIGN mismatch probe start: device=${_device != null} '
+      'deviceTransport=${_device?.transport.name} expectedTransport=${transport.name} '
+      'cachedXpub=${_device?.cachedXpub != null} targetWallet="$walletName"',
+    );
+    if (_device == null) {
+      debugPrint('TREZOR_SIGN mismatch probe skipped: device is null');
+      return;
+    }
     final deviceXpub = _device!.cachedXpub;
-    if (deviceXpub == null) return;
+    if (deviceXpub == null) {
+      debugPrint('TREZOR_SIGN mismatch probe skipped: cached xpub is null');
+      return;
+    }
 
-    final matchedName = _findMatchingTrezorWalletName(deviceXpub);
+    final matchedName = TrezorWalletMismatch.findMatchingWalletName(_walletProvider, deviceXpub);
     if (matchedName == null) {
       _isWalletMismatch = true;
       _mismatchedWalletName = null;
@@ -81,18 +99,12 @@ class TrezorSignViewModel extends ChangeNotifier {
       _isWalletMismatch = false;
       _mismatchedWalletName = null;
     }
-    if (!_disposed) notifyListeners();
-  }
-
-  String? _findMatchingTrezorWalletName(String xpub) {
-    for (final wallet in _walletProvider.walletItemList) {
-      if (wallet.walletImportSource != WalletImportSource.trezor) continue;
-      if (wallet is! SinglesigWalletItem) continue;
-      if (wallet.extendedPublicKey == xpub) {
-        return wallet.name;
-      }
-    }
-    return null;
+    _matchedWalletName = matchedName;
+    debugPrint(
+      'TREZOR_SIGN mismatch probe result: isWalletMismatch=$_isWalletMismatch '
+      'matchedWallet="${matchedName ?? '<none>'}" targetWallet="$walletName"',
+    );
+    notifyListeners();
   }
 
   Future<void> signTransaction() async {
@@ -209,19 +221,27 @@ class TrezorSignViewModel extends ChangeNotifier {
   }
 
   Future<void> disconnectForReconnect() async {
+    debugPrint(
+      'TREZOR_SIGN disconnectForReconnect start: device=${_device != null} '
+      'lastConnected=${TrezorDevice.lastConnected != null} ',
+    );
     await disconnect();
+    debugPrint(
+      'TREZOR_SIGN disconnectForReconnect after disconnect: lastConnected=${TrezorDevice.lastConnected != null}',
+    );
     _isWalletMismatch = false;
     _mismatchedWalletName = null;
     _fingerprint = null;
-    _matchedWalletName = null;
     _errorMessage = null;
     _setState(TrezorSignStep.idle);
+    debugPrint(
+      'TREZOR_SIGN disconnectForReconnect complete: step=$_step lastConnected=${TrezorDevice.lastConnected != null}',
+    );
   }
 
   @override
   void dispose() {
     _cancelTimeout();
-    _disposed = true;
     _device = null;
     super.dispose();
   }

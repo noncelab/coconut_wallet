@@ -1,3 +1,7 @@
+realm-clean:
+	rm -f default.realm.lock default.realm.note
+	rm -rf default.realm.management
+
 format:
 	fvm dart format . --line-length 120
 

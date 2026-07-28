@@ -670,8 +670,8 @@ trezor_sign_screen:
     title: "Signed"
     description: "Transaction has been signed by Trezor."
   error_title: "Signing Failed"
-  device_mismatch: "The connected device does not match this wallet. Please connect the correct device."
-  device_mismatch_other_wallet: "The connected device belongs to '${wallet_name}'. Please connect the correct device."
+  device_mismatch: "The connected device does not match this wallet."
+  device_mismatch_other_wallet: "The connected wallet belongs to '${wallet_name}'. Please connect the correct wallet."
   btn:
     sign: "Sign with Trezor"
     connect_other_trezor: "Connect Another Trezor"

@@ -668,8 +668,8 @@ trezor_sign_screen:
     title: "署名完了"
     description: "Trezorがトランザクションに署名しました。"
   error_title: "署名に失敗"
-  device_mismatch: "接続されたデバイスがこのウォレットと一致しません。正しいデバイスを接続してください。"
-  device_mismatch_other_wallet: "接続されたデバイスは'${wallet_name}'のキーです。正しいデバイスを接続してください。"
+  device_mismatch: "接続されたデバイスがこのウォレットと一致しません。"
+  device_mismatch_other_wallet: "接続されたウォレットは'${wallet_name}'に属しています。正しいウォレットを接続してください。"
   btn:
     sign: "Trezorで署名"
     connect_other_trezor: "別のTrezorを接続"

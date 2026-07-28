@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
@@ -41,6 +40,7 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   String _pin = '';
   bool _isPairingCodeWrong = false;
   TrezorPassphraseResponse? _pendingPassphraseResponse;
+  DateTime _stepEnteredAt = DateTime.now();
 
   TrezorUsbConnectStep get step => _step;
   String get xpub => _xpub;
@@ -78,6 +78,7 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
         'usesThp=${_device!.usesThp}',
       );
 
+      await _ensureMinStepDuration(const Duration(milliseconds: 1500));
       if (_device!.passphraseProtection) {
         _setState(TrezorUsbConnectStep.passphraseUseQuestion);
       } else {
@@ -155,6 +156,7 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   Future<void> _createSessionAndProceed(TrezorPassphraseType type, {String value = ''}) async {
     try {
       await _device!.createSession(type: type, value: value);
+      await _ensureMinStepDuration(const Duration(milliseconds: 1500));
       await _proceedToXpub();
     } catch (error) {
       _errorMessage = error.toString();
@@ -173,20 +175,13 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
       _device!.cachedXpub = _xpub;
       _fingerprint = await _device!.getFingerprint();
       _device!.cachedFingerprint = _fingerprint;
+      await _ensureMinStepDuration(const Duration(milliseconds: 1000));
       _setState(TrezorUsbConnectStep.connected);
     } catch (error) {
       _errorMessage = error.toString();
       await _disconnectDevice();
       _setState(TrezorUsbConnectStep.error);
     }
-  }
-
-  String? findMatchingTrezorWalletName(String xpub) {
-    for (final wallet in _walletProvider.walletItemList) {
-      if (wallet.walletImportSource != WalletImportSource.trezor || wallet is! SinglesigWalletItem) continue;
-      if (wallet.extendedPublicKey == xpub) return wallet.name;
-    }
-    return null;
   }
 
   Future<ResultOfSyncFromVault> addToWalletList() async {
@@ -276,10 +271,19 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   }
 
   void reset() {
+    _device?.disconnect().catchError((_) {});
+    _device = null;
+    _step = TrezorUsbConnectStep.idle;
     _errorMessage = null;
     _isPairingCodeWrong = false;
     _pairingCodeCompleter = null;
-    _setState(TrezorUsbConnectStep.idle);
+    _pin = '';
+    _pinCompleter?.complete('');
+    _pinCompleter = null;
+    _pendingPassphraseResponse = null;
+    _xpub = '';
+    _fingerprint = '';
+    if (!_disposed) notifyListeners();
   }
 
   String _resolveNameWithBase(String baseName, List<String> existingNames) {
@@ -307,7 +311,15 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   void _setState(TrezorUsbConnectStep step) {
     if (_disposed) return;
     _step = step;
+    _stepEnteredAt = DateTime.now();
     notifyListeners();
+  }
+
+  Future<void> _ensureMinStepDuration(Duration minDuration) async {
+    final elapsed = DateTime.now().difference(_stepEnteredAt);
+    if (elapsed < minDuration) {
+      await Future.delayed(minDuration - elapsed);
+    }
   }
 
   @override

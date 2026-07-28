@@ -7,7 +7,6 @@ import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/foundation.dart';
 
@@ -74,17 +73,6 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   bool get passphraseAlwaysOnDevice => _device?.passphraseAlwaysOnDevice ?? false;
   bool get usesThp => _device?.usesThp ?? false;
 
-  String? findMatchingTrezorWalletName(String xpub) {
-    for (final wallet in _walletProvider.walletItemList) {
-      if (wallet.walletImportSource != WalletImportSource.trezor) continue;
-      if (wallet is! SinglesigWalletItem) continue;
-      if (wallet.extendedPublicKey == xpub) {
-        return wallet.name;
-      }
-    }
-    return null;
-  }
-
   void _setState(TrezorBleConnectStep step) {
     if (_disposed) return;
     _step = step;
@@ -113,7 +101,14 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   }
 
   Future<void> connect() async {
-    if (_isConnecting || _step == TrezorBleConnectStep.paired) return;
+    debugPrint(
+      'TREZOR_BLE_CONNECT connect start: step=${_step.name} isConnecting=$_isConnecting '
+      'lastConnected=${TrezorDevice.lastConnected != null}',
+    );
+    if (_isConnecting || _step == TrezorBleConnectStep.paired) {
+      debugPrint('TREZOR_BLE_CONNECT connect skipped: already connecting or paired');
+      return;
+    }
 
     _isConnecting = true;
     _errorMessage = null;
@@ -135,6 +130,11 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
       _device = await TrezorDevice.connect();
       _deviceLabel = _device!.label;
       TrezorDevice.lastConnected = _device;
+      debugPrint(
+        'TREZOR_BLE_CONNECT connected: id=${_device!.id} label="${_device!.label}" '
+        'transport=${_device!.transport.name} passphraseProtection=${_device!.passphraseProtection} '
+        'lastConnectedSame=${identical(TrezorDevice.lastConnected, _device)}',
+      );
 
       if (_device!.passphraseProtection) {
         _setState(TrezorBleConnectStep.passphraseUseQuestion);
@@ -213,6 +213,11 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
         _device!.cachedXpub = _xpub;
         _fingerprint = await _device!.getFingerprint();
         _device!.cachedFingerprint = _fingerprint;
+        debugPrint(
+          'TREZOR_BLE_CONNECT xpub retrieved: id=${_device!.id} '
+          'xpubLength=${_xpub.length} fingerprint=$_fingerprint '
+          'cachedXpub=${_device!.cachedXpub != null} cachedFingerprint=${_device!.cachedFingerprint != null}',
+        );
         _setState(TrezorBleConnectStep.paired);
       } on Exception catch (e) {
         if (silent) {
@@ -328,8 +333,15 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
   }
 
   void reset() {
-    _step = TrezorBleConnectStep.idle;
+    debugPrint(
+      'TREZOR_BLE_CONNECT reset: step=${_step.name} device=${_device != null} '
+      'lastConnected=${TrezorDevice.lastConnected != null} xpub=${_xpub.isNotEmpty} fingerprint=${_fingerprint.isNotEmpty}',
+    );
+    // Disconnect the actual BLE session before clearing references,
+    // otherwise connect() cannot reach lastConnected to disconnect it.
+    _device?.disconnect().catchError((_) {});
     _device = null;
+    _step = TrezorBleConnectStep.idle;
     _errorMessage = null;
     _errorDescription = null;
     _peerRemovedPairingSteps = null;
@@ -338,7 +350,6 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
     _xpub = '';
     _fingerprint = '';
     _deviceLabel = '';
-    TrezorDevice.lastConnected = null;
     if (!_disposed) notifyListeners();
   }
 

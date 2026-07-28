@@ -61,7 +61,7 @@ class _PassphraseTextFieldState extends State<PassphraseTextField> {
           focusNode: widget.passphraseFocusNode,
           obscureText: _obscured,
           onChanged: (value) => widget.onChanged?.call(value),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 5),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
           backgroundColor: context.coconutColors.inputSurface,
           activeColor: context.coconutColors.primaryText,
           cursorColor: context.coconutColors.primaryText,

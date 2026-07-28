@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_wallet_mismatch.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -241,6 +242,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       child: ChangeNotifierProvider.value(
         value: _viewModel,
         child: Scaffold(
+          resizeToAvoidBottomInset: false,
           backgroundColor: context.coconutColors.background,
           appBar: CoconutAppBar.build(
             title: WalletImportSource.trezor.displayName,
@@ -372,12 +374,39 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
 
   Widget _buildSuccessCard(TrezorUsbConnectViewModel vm) {
     final hasXpub = vm.xpub.isNotEmpty;
+    final isMismatch = widget.psbtBase64 != null && hasXpub && _isWalletMismatch(vm);
+
+    if (isMismatch) {
+      final matchedWalletName = TrezorWalletMismatch.findMatchingWalletName(context.read<WalletProvider>(), vm.xpub);
+      final mismatchMessage =
+          matchedWalletName != null
+              ? t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: matchedWalletName)
+              : t.trezor_sign_screen.device_mismatch;
+      return WalletConnectMismatchCard(
+        title: mismatchMessage,
+        child: TrezorWalletInfoCard(deviceLabel: vm.deviceLabel, fingerprint: vm.fingerprint, xpub: vm.xpub),
+      );
+    }
+
     return WalletConnectSuccessCard(
       title: t.wallet_connect_screen.guide_trezor.paired.title,
       child:
           hasXpub
               ? TrezorWalletInfoCard(deviceLabel: vm.deviceLabel, fingerprint: vm.fingerprint, xpub: vm.xpub)
               : const WalletConnectWalletInfoSkeleton(),
+    );
+  }
+
+  bool _isWalletMismatch(TrezorUsbConnectViewModel vm) {
+    final isSignFlow = widget.psbtBase64 != null;
+    final isPaired = vm.step == TrezorUsbConnectStep.connected;
+    final hasXpub = vm.xpub.isNotEmpty;
+    if (!isSignFlow || !isPaired || !hasXpub) return false;
+
+    return TrezorWalletMismatch.isMismatch(
+      walletProvider: context.read<WalletProvider>(),
+      xpub: vm.xpub,
+      targetWalletName: widget.walletName ?? '',
     );
   }
 
@@ -388,11 +417,30 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     final bool isPaired = vm.step == TrezorUsbConnectStep.connected;
     final bool hasXpub = vm.xpub.isNotEmpty;
     final bool isSignFlow = widget.psbtBase64 != null;
+    final bool isMismatch = _isWalletMismatch(vm);
 
     String buttonText;
     VoidCallback onPressed;
 
-    if (isSignFlow && isPaired) {
+    if (isSignFlow && isPaired && isMismatch) {
+      return TrezorWalletMismatchActionButton(
+        onButtonClicked: () {
+          debugPrint('TREZOR_USB_CONNECT mismatch alternate-device clicked: resetting and reconnecting USB device');
+          vm.reset();
+          vm.connect();
+        },
+        isActive:
+            vm.step != TrezorUsbConnectStep.connecting &&
+            vm.step != TrezorUsbConnectStep.pinEntry &&
+            vm.step != TrezorUsbConnectStep.passphraseUseQuestion &&
+            vm.step != TrezorUsbConnectStep.passphraseSourceSelection &&
+            vm.step != TrezorUsbConnectStep.passphraseOnDevice &&
+            vm.step != TrezorUsbConnectStep.passphraseConfirm &&
+            vm.step != TrezorUsbConnectStep.passphraseProcessing &&
+            vm.step != TrezorUsbConnectStep.pairing &&
+            !_isAddingWallet,
+      );
+    } else if (isSignFlow && isPaired) {
       buttonText = t.wallet_connect_screen.guide_trezor.btn.start_signing;
       onPressed = _startSigning;
     } else if (!isSignFlow && isPaired && hasXpub) {

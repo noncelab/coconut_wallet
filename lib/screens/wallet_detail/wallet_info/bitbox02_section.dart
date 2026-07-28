@@ -117,8 +117,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                   ),
                 ),
                 if (_isConnected) ...[
-                  Divider(color: context.coconutColors.divider, height: 1),
-                  CoconutLayout.spacing_300w,
+                  CoconutLayout.spacing_100w,
                   GestureDetector(
                     onTap: _confirmDisconnect,
                     child: Container(

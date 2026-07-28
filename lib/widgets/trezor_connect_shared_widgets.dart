@@ -7,8 +7,65 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/textfield/passphrase_input_text_field.dart';
 import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// Loading card with spinner, title, and optional description.
+class TrezorWalletMismatchWarning extends StatelessWidget {
+  final String? matchedWalletName;
+
+  const TrezorWalletMismatchWarning({super.key, this.matchedWalletName});
+
+  @override
+  Widget build(BuildContext context) {
+    final message =
+        matchedWalletName != null
+            ? t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: matchedWalletName!)
+            : t.trezor_sign_screen.device_mismatch;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: BoxDecoration(
+        color: context.coconutColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+        border: Border.all(color: context.coconutColors.danger.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: SvgPicture.asset(
+              'assets/svg/triangle-warning.svg',
+              colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+              width: 16,
+              height: 16,
+            ),
+          ),
+          CoconutLayout.spacing_200w,
+          Expanded(child: Text(message, style: CoconutTypography.body3_12.setColor(context.coconutColors.danger))),
+        ],
+      ),
+    );
+  }
+}
+
+class TrezorWalletMismatchActionButton extends StatelessWidget {
+  final VoidCallback onButtonClicked;
+  final bool isActive;
+
+  const TrezorWalletMismatchActionButton({super.key, required this.onButtonClicked, this.isActive = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return FixedBottomButton(
+      onButtonClicked: onButtonClicked,
+      text: t.trezor_sign_screen.btn.connect_other_trezor,
+      isActive: isActive,
+    );
+  }
+}
+
 class TrezorLoadingCard extends StatelessWidget {
   final String title;
   final String? description;

@@ -16,10 +16,10 @@ import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_wallet_mismatch.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class TrezorBleConnectScreen extends StatefulWidget {
@@ -272,6 +272,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       child: ChangeNotifierProvider.value(
         value: _viewModel,
         child: Scaffold(
+          resizeToAvoidBottomInset: false,
           backgroundColor: context.coconutColors.background,
           appBar: CoconutAppBar.build(
             title: WalletImportSource.trezor.displayName,
@@ -400,56 +401,28 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   Widget _buildSuccessCard(TrezorBleConnectViewModel vm) {
     final hasXpub = vm.xpub.isNotEmpty;
     final hasSilentError = !hasXpub && vm.errorMessage != null;
+    final isMismatch = widget.psbtBase64 != null && hasXpub && _isWalletMismatch(vm);
+
+    if (isMismatch) {
+      final matchedWalletName = TrezorWalletMismatch.findMatchingWalletName(context.read<WalletProvider>(), vm.xpub);
+      final mismatchMessage =
+          matchedWalletName != null
+              ? t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: matchedWalletName)
+              : t.trezor_sign_screen.device_mismatch;
+      return WalletConnectMismatchCard(
+        title: mismatchMessage,
+        child: TrezorWalletInfoCard(deviceLabel: vm.deviceLabel, fingerprint: vm.fingerprint, xpub: vm.xpub),
+      );
+    }
+
     return WalletConnectSuccessCard(
       title: t.wallet_connect_screen.guide_trezor.paired.title,
       child:
           hasXpub
-              ? Column(
-                children: [
-                  TrezorWalletInfoCard(deviceLabel: vm.deviceLabel, fingerprint: vm.fingerprint, xpub: vm.xpub),
-                  if (widget.psbtBase64 != null && _isWalletMismatch(vm)) ...[
-                    CoconutLayout.spacing_400h,
-                    _buildWalletMismatchWarning(vm),
-                  ],
-                ],
-              )
+              ? TrezorWalletInfoCard(deviceLabel: vm.deviceLabel, fingerprint: vm.fingerprint, xpub: vm.xpub)
               : hasSilentError
               ? _buildXPubRetryCard(vm)
               : const WalletConnectWalletInfoSkeleton(),
-    );
-  }
-
-  Widget _buildWalletMismatchWarning(TrezorBleConnectViewModel vm) {
-    final matchedName = vm.findMatchingTrezorWalletName(vm.xpub);
-    final message =
-        matchedName != null
-            ? t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: matchedName)
-            : t.trezor_sign_screen.device_mismatch;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: BoxDecoration(
-        color: context.coconutColors.danger.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-        border: Border.all(color: context.coconutColors.danger.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: SvgPicture.asset(
-              'assets/svg/triangle-warning.svg',
-              colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
-              width: 16,
-              height: 16,
-            ),
-          ),
-          CoconutLayout.spacing_200w,
-          Expanded(child: Text(message, style: CoconutTypography.body3_12.setColor(context.coconutColors.danger))),
-        ],
-      ),
     );
   }
 
@@ -603,13 +576,27 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
   }
 
   bool _isWalletMismatch(TrezorBleConnectViewModel vm) {
-    if (widget.psbtBase64 == null) return false;
-    if (vm.step != TrezorBleConnectStep.paired) return false;
-    if (vm.xpub.isEmpty) return false;
+    final isSignFlow = widget.psbtBase64 != null;
+    final isPaired = vm.step == TrezorBleConnectStep.paired;
+    final hasXpub = vm.xpub.isNotEmpty;
+    if (!isSignFlow || !isPaired || !hasXpub) {
+      debugPrint(
+        'TREZOR_BLE_CONNECT mismatch check skipped: signFlow=$isSignFlow '
+        'step=${vm.step.name} hasXpub=$hasXpub targetWallet="${widget.walletName}"',
+      );
+      return false;
+    }
 
-    final matchedName = vm.findMatchingTrezorWalletName(vm.xpub);
-    if (matchedName == null) return true;
-    return matchedName != (widget.walletName ?? '');
+    final isMismatch = TrezorWalletMismatch.isMismatch(
+      walletProvider: context.read<WalletProvider>(),
+      xpub: vm.xpub,
+      targetWalletName: widget.walletName ?? '',
+    );
+    debugPrint(
+      'TREZOR_BLE_CONNECT mismatch check: targetWallet="${widget.walletName}" '
+      'isMismatch=$isMismatch',
+    );
+    return isMismatch;
   }
 
   Widget _buildPrimaryActionButton(TrezorBleConnectViewModel vm) {
@@ -620,16 +607,23 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     final bool isPaired = vm.step == TrezorBleConnectStep.paired;
     final bool isSignFlow = widget.psbtBase64 != null;
     final bool isMismatch = _isWalletMismatch(vm);
+    debugPrint(
+      'TREZOR_BLE_CONNECT button build: step=${vm.step.name} signFlow=$isSignFlow '
+      'isPaired=$isPaired hasXpub=$hasXpub isMismatch=$isMismatch',
+    );
 
     String buttonText;
     VoidCallback onPressed;
 
     if (isSignFlow && isPaired && isMismatch) {
-      buttonText = t.wallet_connect_screen.guide_trezor.btn.retry;
-      onPressed = () {
-        vm.reset();
-        vm.connect();
-      };
+      return TrezorWalletMismatchActionButton(
+        onButtonClicked: () {
+          debugPrint('TREZOR_BLE_CONNECT mismatch alternate-device clicked: resetting and reconnecting BLE device');
+          vm.reset();
+          vm.connect();
+        },
+        isActive: !_isAddingWallet && !vm.isConnecting,
+      );
     } else if (isSignFlow && isPaired) {
       buttonText = t.wallet_connect_screen.guide_trezor.btn.start_signing;
       onPressed = () {

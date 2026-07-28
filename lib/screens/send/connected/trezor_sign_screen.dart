@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/connected/trezor_sign_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -42,6 +43,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
   late Animation<double> _pulseAnimation;
 
   TrezorSignStep? _lastStep;
+  bool _lastIsWalletMismatch = false;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -65,8 +67,6 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
       if (mounted) _viewModel.probeWalletMismatch();
     });
   }
-
-  bool _lastIsWalletMismatch = false;
 
   Future<void> _onStateChanged() async {
     final step = _viewModel.step;
@@ -342,7 +342,10 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
             ],
           ),
         ),
-        if (vm.isWalletMismatch) ...[CoconutLayout.spacing_400h, _buildWalletMismatchWarning(vm)],
+        if (vm.isWalletMismatch) ...[
+          CoconutLayout.spacing_400h,
+          TrezorWalletMismatchWarning(matchedWalletName: vm.mismatchedWalletName),
+        ],
       ],
     );
   }
@@ -358,45 +361,12 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
     }
   }
 
-  Widget _buildWalletMismatchWarning(TrezorSignViewModel vm) {
-    final message =
-        vm.mismatchedWalletName != null
-            ? t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: vm.mismatchedWalletName!)
-            : t.trezor_sign_screen.device_mismatch;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: BoxDecoration(
-        color: context.coconutColors.danger.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-        border: Border.all(color: context.coconutColors.danger.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: SvgPicture.asset(
-              'assets/svg/triangle-warning.svg',
-              colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
-              width: 16,
-              height: 16,
-            ),
-          ),
-          CoconutLayout.spacing_200w,
-          Expanded(child: Text(message, style: CoconutTypography.body3_12.setColor(context.coconutColors.danger))),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPrimaryActionButton(TrezorSignViewModel vm) {
     final bool isError = vm.step == TrezorSignStep.error;
     final bool isBusy = vm.step == TrezorSignStep.signing;
 
     if (vm.isWalletMismatch) {
-      return FixedBottomButton(
+      return TrezorWalletMismatchActionButton(
         onButtonClicked: () async {
           await vm.disconnectForReconnect();
           if (!mounted) return;
@@ -409,8 +379,6 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
             walletFingerprint: widget.walletFingerprint,
           );
         },
-        text: t.trezor_sign_screen.btn.connect_other_trezor,
-        isActive: true,
       );
     }
 
