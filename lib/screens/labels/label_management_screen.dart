@@ -2,13 +2,14 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
+import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class LabelManagementScreen extends StatelessWidget {
+class LabelManagementScreen extends StatefulWidget {
   final String importDescription;
   final String exportDescription;
   final VoidCallback onImport;
@@ -23,11 +24,74 @@ class LabelManagementScreen extends StatelessWidget {
   });
 
   @override
+  State<LabelManagementScreen> createState() => _LabelManagementScreenState();
+}
+
+class _LabelManagementScreenState extends State<LabelManagementScreen> {
+  final GlobalKey _tooltipIconKey = GlobalKey();
+  Size? _tooltipIconSize;
+  Offset? _tooltipIconPosition;
+  bool _isTooltipVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateTooltipPosition();
+    });
+  }
+
+  void _updateTooltipPosition() {
+    final renderBox = _tooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      setState(() {
+        _tooltipIconPosition = renderBox.localToGlobal(Offset.zero);
+        _tooltipIconSize = renderBox.size;
+      });
+    }
+  }
+
+  void _toggleTooltip() {
+    setState(() {
+      _isTooltipVisible = !_isTooltipVisible;
+    });
+  }
+
+  void _removeTooltip() {
+    if (_isTooltipVisible) {
+      setState(() {
+        _isTooltipVisible = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.coconutColors.background,
-      appBar: CoconutAppBar.build(title: t.labels_management_bottom_sheet.title, context: context),
-      body: _buildMenuView(context),
+    return GestureDetector(
+      onTap: _removeTooltip,
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: context.coconutColors.background,
+            appBar: CoconutAppBar.build(
+              title: t.labels_management_screen.title,
+              context: context,
+              actionButtonList: [
+                IconButton(
+                  key: _tooltipIconKey,
+                  icon: SvgPicture.asset(
+                    'assets/svg/question-mark.svg',
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                  ),
+                  onPressed: _toggleTooltip,
+                ),
+              ],
+            ),
+            body: _buildMenuView(context),
+          ),
+          if (_isTooltipVisible && _tooltipIconPosition != null && _tooltipIconSize != null) _buildTooltip(context),
+        ],
+      ),
     );
   }
 
@@ -35,33 +99,8 @@ class LabelManagementScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CoconutLayout.spacing_400h,
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      t.labels_management_bottom_sheet.title,
-                      style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-                    ),
-                    CoconutLayout.spacing_100w,
-                    Text(t.labels_management_bottom_sheet.feature, style: CoconutTypography.body1_16_Bold),
-                  ],
-                ),
-                CoconutLayout.spacing_100h,
-                Text(
-                  t.labels_management_bottom_sheet.description,
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
-                ),
-              ],
-            ),
-          ),
-          CoconutLayout.spacing_1000h,
           ButtonGroup(
             buttons: [
               SingleButton(
@@ -70,10 +109,10 @@ class LabelManagementScreen extends StatelessWidget {
                     () => _navigateToActionScreen(
                       context: context,
                       title: t.wallet_info_screen.import_labels,
-                      description: importDescription,
+                      description: widget.importDescription,
                       iconPath: 'assets/svg/import.svg',
                       actionButtonText: t.import,
-                      onAction: onImport,
+                      onAction: widget.onImport,
                     ),
               ),
               SingleButton(
@@ -82,15 +121,37 @@ class LabelManagementScreen extends StatelessWidget {
                     () => _navigateToActionScreen(
                       context: context,
                       title: t.wallet_info_screen.export_labels,
-                      description: exportDescription,
+                      description: widget.exportDescription,
                       iconPath: 'assets/svg/export.svg',
                       actionButtonText: t.export,
-                      onAction: onExport,
+                      onAction: widget.onExport,
                     ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTooltip(BuildContext context) {
+    return Positioned(
+      top: _tooltipIconPosition!.dy + _tooltipIconSize!.height - 10,
+      right: 18,
+      child: GestureDetector(
+        onTap: _removeTooltip,
+        child: ClipPath(
+          clipper: RightTriangleBubbleClipper(),
+          child: Container(
+            width: MediaQuery.sizeOf(context).width * 0.68,
+            padding: const EdgeInsets.only(top: 28, left: 16, right: 16, bottom: 12),
+            color: context.coconutColors.popoverBackground,
+            child: Text(
+              t.labels_management_screen.description,
+              style: CoconutTypography.body3_12.copyWith(color: context.coconutColors.popoverText, height: 1.3),
+            ),
+          ),
+        ),
       ),
     );
   }
