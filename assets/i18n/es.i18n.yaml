@@ -1249,7 +1249,7 @@ estimated_fee_bottom_sheet:
 
 labels_management_screen:
   title: "Gestionar notas"
-  subtitle: "Puedes importar o exportar tus notas guardadas."
+  subtitle: "Importa o exporta tus notas guardadas."
   description: "Esta función le permite gestionar cómodamente las notas que ha escrito.\n\nPuede exportar e importar notas fácilmente mediante un archivo de respaldo con el estándar BIP 329.\nIncluso si cambia de dispositivo o vuelve a instalar la aplicación, solo necesita cargar el archivo de respaldo para recuperar todas sus notas anteriores."
 
 long_pressed_menu:

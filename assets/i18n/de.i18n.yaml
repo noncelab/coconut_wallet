@@ -1206,7 +1206,7 @@ estimated_fee_bottom_sheet:
 
 labels_management_screen:
   title: "Notizen verwalten"
-  subtitle: "Sie können Ihre gespeicherten Notizen importieren oder exportieren."
+  subtitle: "Importieren oder exportieren Sie Ihre gespeicherten Notizen."
   description: "Mit dieser Funktion können Sie Ihre verfassten Notizen bequem verwalten.\n\nNotizen lassen sich ganz einfach über eine Backup-Datei nach dem BIP-329-Standard exportieren und importieren.\nSelbst wenn Sie das Gerät wechseln oder die App neu installieren, müssen Sie nur die Backup-Datei laden, um Ihre zuvor erstellten Notizen wiederherzustellen."
 
 long_pressed_menu:
