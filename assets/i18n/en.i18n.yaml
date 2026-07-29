@@ -411,10 +411,10 @@ wallet_connect_screen:
       start_signing: "Start Signing"
     init:
       step1: "Connect your BitBox02 Nova via USB."
-      step2: "Unlock your device."
+      step2: "When 'Tap this side' appears on the device screen, select the side that will be the bottom of the screen."
       step3: "When you see 'See the BitBoxApp' on your device, tap '$btn' below."
       ble_step1: "Turn on Bluetooth and keep BitBox02 Nova nearby."
-      ble_step2: "If 'Tap this side' appears on the device screen, tap both sides of the device."
+      ble_step2: "When 'Tap this side' appears on the device screen, select the side that will be the bottom of the screen."
       ble_step3: "When the wallet appears on the device screen, tap the '$btn' button below."
     connecting:
       title: "Connecting Device"
@@ -422,6 +422,7 @@ wallet_connect_screen:
       step2: "When the pairing code appears on your device, tap the check mark (✓) to confirm."
     paired:
       title: "BitBox02 is paired and ready."
+      device_name: "Device Name"
       master_fingerprint: "Master Fingerprint"
       derivation_path: "Derivation Path"
       xpub: "Extended Public Key"
@@ -429,6 +430,12 @@ wallet_connect_screen:
       title: "Connection Failed"
       description: "BitBox02 Nova was not found. Reconnect the device and try again."
       ble_description: "BitBox02 Nova not found. Please turn on Bluetooth and bring the device closer."
+    ble_init_retry:
+      title: "BitBox02 Reconnection Failed"
+      description: "Please restart the BitBox02 device and reconnect."
+      step1: "Turn off the BitBox02 power, then turn it back on."
+    keep_connection_title: "Keep connection"
+    keep_connection_description: "Do you want to keep the BitBox02 connected?"
   guide_trezor:
     btn:
       connect_via_ble: "Connect via Bluetooth"
@@ -647,8 +654,10 @@ bitbox02_sign_screen:
     ready_to_broadcast: "Ready to broadcast."
   error_title: "Signing Failed"
   device_mismatch: "The connected device does not match this wallet. Please connect the correct device."
+  device_mismatch_other_wallet: "The connected wallet is '${wallet_name}'. Please connect the correct wallet."
   btn:
     sign: "Sign with BitBox02"
+    connect_other_bitbox02: "Connect another BitBox02"
   state_label:
     idle: "Waiting to Sign"
     signing: "Signing"

@@ -4,7 +4,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/transaction/prev_tx_fetcher.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_wallet_mismatch.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:flutter/foundation.dart';
 
@@ -88,7 +87,7 @@ class TrezorSignViewModel extends ChangeNotifier {
       return;
     }
 
-    final matchedName = TrezorWalletMismatch.findMatchingWalletName(_walletProvider, deviceXpub);
+    final matchedName = _walletProvider.findWalletNameByXpub(deviceXpub);
     if (matchedName == null) {
       _isWalletMismatch = true;
       _mismatchedWalletName = null;

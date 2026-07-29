@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/transaction/prev_tx_fetcher.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_exceptions.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
@@ -33,13 +34,19 @@ class BitBox02SignViewModel extends ChangeNotifier {
   final String walletName;
   final String walletFingerprint;
   final String transport;
+  final WalletProvider _walletProvider;
+
+  String? _matchedWalletName;
+  bool _isWalletMismatch = false;
+  String? _mismatchedWalletName;
 
   BitBox02SignViewModel({
     required this.psbtBase64,
     required this.walletName,
     this.walletFingerprint = '',
     this.transport = 'usb',
-  }) {
+    required WalletProvider walletProvider,
+  }) : _walletProvider = walletProvider {
     _probeDeviceStatus();
   }
 
@@ -49,18 +56,38 @@ class BitBox02SignViewModel extends ChangeNotifier {
   String get signedPsbt => _signedPsbt;
   bool get isSigning => _isSigning;
   String? get fingerprint => _fingerprint;
+  bool get isWalletMismatch => _isWalletMismatch;
+  String? get mismatchedWalletName => _mismatchedWalletName;
+  String? get matchedWalletName => _matchedWalletName;
 
   void _probeDeviceStatus() {
     final last = BitBox02Device.lastConnected;
     if (last == null) return;
-    final fp = last.cachedFingerprint;
-    final mismatch = walletFingerprint.isNotEmpty && fp != null && fp.toLowerCase() != walletFingerprint.toLowerCase();
-    if (mismatch) {
-      BitBox02Device.lastConnected = null;
-      return;
-    }
     _device = last;
+    final fp = last.cachedFingerprint;
     if (fp != null) _fingerprint = fp;
+  }
+
+  /// Check if the connected device's fingerprint matches the target wallet.
+  /// Called after the screen is built (like Trezor's probeWalletMismatch).
+  Future<void> probeWalletMismatch() async {
+    if (_device == null) return;
+    final fp = _fingerprint;
+    if (fp == null || fp.isEmpty) return;
+
+    final matchedName = _walletProvider.findWalletNameByFingerprint(fp);
+    if (matchedName == null) {
+      _isWalletMismatch = true;
+      _mismatchedWalletName = null;
+    } else if (matchedName != walletName) {
+      _isWalletMismatch = true;
+      _mismatchedWalletName = matchedName;
+    } else {
+      _isWalletMismatch = false;
+      _mismatchedWalletName = null;
+    }
+    _matchedWalletName = matchedName;
+    notifyListeners();
   }
 
   Future<void> signTransaction({BitBox02Device? existingDevice}) async {
@@ -86,7 +113,8 @@ class BitBox02SignViewModel extends ChangeNotifier {
       } else {
         _device = null;
         BitBox02Device.lastConnected = null;
-        _device = await BitBox02Device.connect(transport: BitBox02Transport.resolve(preferred: transport));
+        final resolvedTransport = BitBox02Transport.resolve(preferred: transport);
+        _device = await BitBox02Device.connect(transport: resolvedTransport);
 
         _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.checkPairing);
 
@@ -200,6 +228,9 @@ class BitBox02SignViewModel extends ChangeNotifier {
     _isSigning = false;
     _signedPsbt = '';
     _fingerprint = null;
+    _matchedWalletName = null;
+    _isWalletMismatch = false;
+    _mismatchedWalletName = null;
     _probeDeviceStatus();
     notifyListeners();
   }
@@ -212,6 +243,17 @@ class BitBox02SignViewModel extends ChangeNotifier {
       } catch (_) {}
       _device = null;
     }
+  }
+
+  Future<void> disconnectForReconnect() async {
+    await disconnect();
+    BitBox02Device.lastConnected = null;
+    _isWalletMismatch = false;
+    _mismatchedWalletName = null;
+    _matchedWalletName = null;
+    _fingerprint = null;
+    _errorMessage = null;
+    _setState(BitBox02SignStep.idle);
   }
 
   @override

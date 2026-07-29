@@ -17,6 +17,11 @@ class BitBox02Device {
   /// Fingerprint cached from [rootFingerprint], may be set by callers.
   String? cachedFingerprint;
 
+  /// Device name fetched from the device during [init].
+  String _name = '';
+
+  String get name => _name;
+
   BitBox02Device._({required this.id, required this.transport});
 
   static Future<BitBox02Device> connect({
@@ -46,6 +51,11 @@ class BitBox02Device {
       if (status == null) {
         throw const BitBox02InitException('NULL_RESPONSE', 'Init returned null');
       }
+      try {
+        final json = jsonDecode(status) as Map<String, dynamic>;
+        _name = json['name'] as String? ?? '';
+        debugPrint('BB02: init response name="$_name", raw=$status');
+      } catch (_) {}
       return status;
     } on PlatformException catch (e) {
       throw BitBox02InitException(e.code, e.message ?? 'Init failed');

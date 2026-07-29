@@ -14,7 +14,6 @@ import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_wallet_mismatch.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
@@ -410,7 +409,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     final isMismatch = widget.psbtBase64 != null && hasXpub && _isWalletMismatch(vm);
 
     if (isMismatch) {
-      final matchedWalletName = TrezorWalletMismatch.findMatchingWalletName(context.read<WalletProvider>(), vm.xpub);
+      final matchedWalletName = context.read<WalletProvider>().findWalletNameByXpub(vm.xpub);
       final mismatchMessage =
           matchedWalletName != null
               ? t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: matchedWalletName)
@@ -481,11 +480,9 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       return false;
     }
 
-    final isMismatch = TrezorWalletMismatch.isMismatch(
-      walletProvider: context.read<WalletProvider>(),
-      xpub: vm.xpub,
-      targetWalletName: widget.walletName ?? '',
-    );
+    final wp = context.read<WalletProvider>();
+    final matchedName = wp.findWalletNameByXpub(vm.xpub);
+    final isMismatch = matchedName == null || matchedName != (widget.walletName ?? '');
     debugPrint(
       'TREZOR_BLE_CONNECT mismatch check: targetWallet="${widget.walletName}" '
       'isMismatch=$isMismatch',

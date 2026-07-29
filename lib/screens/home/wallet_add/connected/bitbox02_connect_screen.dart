@@ -7,9 +7,11 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/connected/bitbox02_connect_viewmodel.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
@@ -81,13 +83,55 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     showWalletSyncResultErrorDialog(context, result, walletProvider);
   }
 
+  Future<void> _handleClose() async {
+    if (_viewModel.step == BitBox02ConnectStep.pairing) {
+      Navigator.pop(context);
+      return;
+    }
+    if (!_viewModel.isPaired) {
+      Navigator.pop(context);
+      return;
+    }
+
+    bool? keepConnection;
+    await showConfirmDialog(
+      context,
+      context.read<PreferenceProvider>().language,
+      t.wallet_connect_screen.guide_bitbox02.keep_connection_title,
+      t.wallet_connect_screen.guide_bitbox02.keep_connection_description,
+      leftButtonText: t.no,
+      rightButtonText: t.yes,
+      barrierDismissible: true,
+      onTapLeft: () {
+        keepConnection = false;
+        Navigator.pop(context);
+      },
+      onTapRight: () {
+        keepConnection = true;
+        Navigator.pop(context);
+      },
+    );
+    if (!mounted || keepConnection == null) return;
+    if (keepConnection == false) {
+      await _viewModel.disconnect();
+    }
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _viewModel,
       child: Scaffold(
         backgroundColor: context.coconutColors.background,
-        appBar: CoconutAppBar.build(title: widget.importSource.displayName, context: context, isBottom: true),
+        appBar: CoconutAppBar.build(
+          title: widget.importSource.displayName,
+          context: context,
+          isBottom: true,
+          onBackPressed: _handleClose,
+        ),
         body: Consumer<BitBox02ConnectViewModel>(
           builder: (context, vm, _) {
             return SafeArea(
@@ -103,7 +147,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
                     ),
                     if (vm.step == BitBox02ConnectStep.idle ||
                         vm.step == BitBox02ConnectStep.error ||
-                        vm.step == BitBox02ConnectStep.paired)
+                        (vm.step == BitBox02ConnectStep.paired && !vm.isConnecting))
                       Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
                     if (_isAddingWallet) const CoconutLoadingOverlay(applyFullScreen: true),
                   ],
@@ -166,6 +210,8 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
   Widget _buildWalletInfoCard(BitBox02ConnectViewModel vm) {
     return WalletConnectWalletInfoCard(
       children: [
+        WalletConnectInfoRow(label: t.wallet_connect_screen.guide_bitbox02.paired.device_name, value: vm.deviceName),
+        CoconutLayout.spacing_300h,
         WalletConnectInfoRow(
           label: t.wallet_connect_screen.guide_bitbox02.paired.master_fingerprint,
           value: vm.fingerprint.toUpperCase(),
@@ -189,10 +235,12 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     return WalletConnectErrorCard(
       title: t.wallet_connect_screen.guide_bitbox02.error.title,
       description:
-          Platform.isIOS
+          vm.errorDescription ??
+          (Platform.isIOS
               ? t.wallet_connect_screen.guide_bitbox02.error.ble_description
-              : t.wallet_connect_screen.guide_bitbox02.error.description,
+              : t.wallet_connect_screen.guide_bitbox02.error.description),
       errorMessage: vm.errorMessage,
+      steps: vm.errorSteps,
     );
   }
 

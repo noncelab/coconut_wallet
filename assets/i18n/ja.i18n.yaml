@@ -412,10 +412,10 @@ wallet_connect_screen:
       start_signing: "署名を開始"
     init:
       step1: "BitBox02 NovaをUSBで接続してください。"
-      step2: "デバイスのロックを解除してください。"
+      step2: "デバイス画面に「Tap this side」と表示されたら、画面の下部になる面を選択してください。"
       step3: "デバイス画面に「See the BitBoxApp」と表示されたら、下の「$btn」ボタンを押してください。"
       ble_step1: "Bluetoothをオンにして、BitBox02 Novaを近くに置いてください。"
-      ble_step2: "デバイス画面に「Tap this side」と表示されたら、デバイスの両面をタップしてください。"
+      ble_step2: "デバイス画面に「Tap this side」と表示されたら、画面の下部になる面を選択してください。"
       ble_step3: "デバイス画面にウォレットが表示されたら、下の「$btn」ボタンをタップしてください。"
     connecting:
       title: "デバイスを接続中"
@@ -423,6 +423,7 @@ wallet_connect_screen:
       step2: "デバイスにペアリングコードが表示されたら、チェックマーク（✓）を押してください。"
     paired:
       title: "BitBox02のペアリングが完了しました。"
+      device_name: "デバイス名"
       master_fingerprint: "マスターフィンガープリント"
       derivation_path: "導出パス"
       xpub: "拡張公開鍵"
@@ -430,6 +431,12 @@ wallet_connect_screen:
       title: "接続に失敗しました"
       description: "BitBox02 Novaが見つかりませんでした。デバイスを再接続して、もう一度お試しください。"
       ble_description: "BitBox02 Novaが見つかりません。Bluetoothをオンにして、デバイスを近づけてください。"
+    ble_init_retry:
+      title: "BitBox02の再接続に失敗しました"
+      description: "BitBox02デバイスを再起動して再接続してください。"
+      step1: "BitBox02の電源を切って、再び入れてください。"
+    keep_connection_title: "接続の維持"
+    keep_connection_description: "BitBox02との接続を維持しますか？"
   guide_trezor:
     btn:
       connect_via_ble: "Bluetoothで接続"
@@ -645,8 +652,10 @@ bitbox02_sign_screen:
     ready_to_broadcast: "ブロードキャストの準備が完了しました。"
   error_title: "署名に失敗"
   device_mismatch: "接続されたデバイスがこのウォレットと一致しません。正しいデバイスを接続してください。"
+  device_mismatch_other_wallet: "接続されたウォレットは '${wallet_name}' です。正しいウォレットを接続してください。"
   btn:
     sign: "BitBox02で署名"
+    connect_other_bitbox02: "別のBitBox02を接続"
   state_label:
     idle: "署名待機"
     signing: "署名中"

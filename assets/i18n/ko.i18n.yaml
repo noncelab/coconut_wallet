@@ -386,10 +386,10 @@ wallet_connect_screen:
       start_signing: "서명 시작"
     init:
       step1: "BitBox02 Nova를 USB로 연결해주세요."
-      step2: "기기 화면에 'Tap this side'가 보이면 기기의 양면을 탭해주세요."
+      step2: "기기 화면에 'Tap this side'가 표시되면 화면의 하단이 될 면을 선택해 주세요."
       step3: "기기 화면에 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
       ble_step1: "블루투스를 켜고 BitBox02 Nova를 가까이 두세요."
-      ble_step2: "기기 화면에 'Tap this side'가 보이면 기기의 양면을 탭해주세요."
+      ble_step2: "기기 화면에 'Tap this side'가 표시되면 화면의 하단이 될 면을 선택해 주세요."
       ble_step3: "기기 화면에 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
     connecting: 
       title: "기기 연결 중"
@@ -397,6 +397,7 @@ wallet_connect_screen:
       step2: "기기 화면에 Pairing code가 표시되면 확인(✓)을 눌러주세요."
     paired:
       title: "BitBox02 연결이 완료되었습니다."
+      device_name: "기기 이름"
       master_fingerprint: "마스터 핑거프린트"
       derivation_path: "파생 경로"
       xpub: "확장 공개키"
@@ -404,6 +405,12 @@ wallet_connect_screen:
       title: "연결 실패"
       description: "BitBox02 Nova를 찾을 수 없어요. 기기를 다시 연결한 후 시도해 주세요."
       ble_description: "BitBox02 Nova를 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
+    ble_init_retry:
+      title: "BitBox02 재연결 실패"
+      description: "BitBox02 기기 재시작 후 재연결 해주세요."
+      step1: "BitBox02의 전원 공급을 중단했다가 다시 켜주세요."
+    keep_connection_title: "연결 유지 여부"
+    keep_connection_description: "BitBox02 연결을 유지하시겠어요?"
   guide_trezor:
     btn:
       connect_via_ble: "블루투스로 연결하기"
@@ -644,8 +651,10 @@ bitbox02_sign_screen:
     ready_to_broadcast: "전송할 준비가 되었어요."
   error_title: "서명 실패"
   device_mismatch: "연결된 기기가 이 지갑과 일치하지 않습니다. 올바른 기기를 연결해 주세요."
+  device_mismatch_other_wallet: "연결된 지갑은 '${wallet_name}'입니다. 올바른 지갑을 연결해 주세요."
   btn:
     sign: "BitBox02로 서명하기"
+    connect_other_bitbox02: "다른 BitBox02 연결하기"
   state_label:
     idle: "서명 대기"
     signing: "서명 중"

@@ -126,6 +126,20 @@ class Bitbox02MethodHandler: NSObject {
                     result(FlutterError(code: "INIT_FAILED", message: err.localizedDescription, details: nil))
                     return
                 }
+                // If the firmware DeviceInfo returns an empty name, fall back to
+                // the BLE advertised name (peripheral.name) which is set in the
+                // BitBox02 app or defaults to the model name.
+                if let data = status.data(using: .utf8),
+                   var json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let name = json["name"] as? String, name.isEmpty,
+                   let bleName = self.bleTransport?.bleName, !bleName.isEmpty {
+                    json["name"] = bleName
+                    if let updated = try? JSONSerialization.data(withJSONObject: json),
+                       let updatedStr = String(data: updated, encoding: .utf8) {
+                        result(updatedStr)
+                        return
+                    }
+                }
                 result(status)
             }
         }

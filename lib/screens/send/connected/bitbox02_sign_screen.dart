@@ -2,11 +2,16 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/connected/bitbox02_sign_viewmodel.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -47,12 +52,17 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       walletName: widget.walletName,
       walletFingerprint: widget.walletFingerprint,
       transport: widget.transport,
+      walletProvider: context.read<WalletProvider>(),
     );
     _viewModel.addListener(_onStateChanged);
 
     _pulseController = AnimationController(duration: const Duration(milliseconds: 1200), vsync: this)
       ..repeat(reverse: true);
     _pulseAnimation = CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _viewModel.probeWalletMismatch();
+    });
   }
 
   Future<void> _onStateChanged() async {
@@ -317,6 +327,10 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
             ],
           ),
         ),
+        if (vm.isWalletMismatch) ...[
+          CoconutLayout.spacing_400h,
+          TrezorWalletMismatchWarning(matchedWalletName: vm.mismatchedWalletName),
+        ],
       ],
     );
   }
@@ -341,6 +355,28 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
   Widget _buildPrimaryActionButton(BitBox02SignViewModel vm) {
     final bool isError = vm.step == BitBox02SignStep.error;
     final bool isBusy = vm.step == BitBox02SignStep.signing;
+
+    if (vm.isWalletMismatch) {
+      return FixedBottomButton(
+        onButtonClicked: () async {
+          await vm.disconnectForReconnect();
+          if (!mounted) return;
+          Navigator.pop(context);
+          CommonBottomSheets.showCustomHeightBottomSheet(
+            context: context,
+            child: BitBox02ConnectScreen(
+              importSource: WalletImportSource.bitbox02,
+              psbtBase64: widget.psbtBase64,
+              walletName: widget.walletName,
+              walletFingerprint: widget.walletFingerprint,
+            ),
+            heightRatio: 0.9,
+          );
+        },
+        text: t.bitbox02_sign_screen.btn.connect_other_bitbox02,
+        isActive: !isBusy,
+      );
+    }
 
     final String buttonText =
         isError ? t.wallet_connect_screen.guide_bitbox02.btn.retry : t.bitbox02_sign_screen.btn.sign;

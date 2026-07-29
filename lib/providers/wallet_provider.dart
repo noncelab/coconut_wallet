@@ -109,6 +109,25 @@ class WalletProvider extends ChangeNotifier {
     return _walletItemList.firstWhere((element) => element.id == id);
   }
 
+  /// Find a singlesig wallet name by extended public key, regardless of import source.
+  String? findWalletNameByXpub(String xpub) {
+    for (final wallet in _walletItemList) {
+      if (wallet is! SinglesigWalletItem) continue;
+      if (wallet.extendedPublicKey == xpub) return wallet.name;
+    }
+    return null;
+  }
+
+  /// Find a singlesig wallet name by master fingerprint, regardless of import source.
+  String? findWalletNameByFingerprint(String fingerprint) {
+    for (final wallet in _walletItemList) {
+      if (wallet is! SinglesigWalletItem) continue;
+      final mfp = (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+      if (mfp.toLowerCase() == fingerprint.toLowerCase()) return wallet.name;
+    }
+    return null;
+  }
+
   Future<List<WalletItemBase>> _fetchWalletListFromDB() async {
     return await _walletRepository.getWalletItemList();
   }

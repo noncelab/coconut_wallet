@@ -387,10 +387,10 @@ wallet_connect_screen:
       start_signing: "Empezar a firmar"
     init:
       step1: "Conecta tu BitBox02 Nova mediante USB."
-      step2: "Desbloquea tu dispositivo."
+      step2: "Cuando aparezca 'Tap this side' en la pantalla del dispositivo, selecciona el lado que será la parte inferior de la pantalla."
       step3: "Cuando aparezca 'See the BitBoxApp' en la pantalla del dispositivo, pulsa el botón '$btn' de abajo."
       ble_step1: "Active el Bluetooth y mantenga BitBox02 Nova cerca."
-      ble_step2: "Si aparece 'Tap this side' en la pantalla del dispositivo, toque ambos lados del dispositivo."
+      ble_step2: "Cuando aparezca 'Tap this side' en la pantalla del dispositivo, selecciona el lado que será la parte inferior de la pantalla."
       ble_step3: "Cuando aparezca la cartera en la pantalla del dispositivo, toque el botón '$btn' a continuación."
     connecting:
       title: "Conectando el dispositivo"
@@ -398,6 +398,7 @@ wallet_connect_screen:
       step2: "Cuando aparezca el código de emparejamiento en el dispositivo, pulsa la marca de verificación (✓) para confirmar." 
     paired:
       title: "BitBox02 está emparejado y listo."
+      device_name: "Nombre del dispositivo"
       master_fingerprint: "Huella digital maestra"
       derivation_path: "Ruta de derivación"
       xpub: "Clave pública extendida"
@@ -405,6 +406,12 @@ wallet_connect_screen:
       title: "Error de conexión"
       description: "No se encontró BitBox02 Nova. Vuelve a conectar el dispositivo e inténtalo de nuevo."
       ble_description: "No se encontró BitBox02 Nova. Encienda el Bluetooth y acerque el dispositivo."
+    ble_init_retry:
+      title: "Error de reconexión de BitBox02"
+      description: "Reinicie el dispositivo BitBox02 y vuelva a conectar."
+      step1: "Apague el BitBox02 y vuelva a encenderlo."
+    keep_connection_title: "Mantener conexión"
+    keep_connection_description: "¿Quiere mantener el BitBox02 conectado?"
   guide_trezor:
     btn:
       connect_via_ble: "Conectar vía Bluetooth"
@@ -647,8 +654,10 @@ bitbox02_sign_screen:
     ready_to_broadcast: "Listo para transmitir."
   error_title: "Error al firmar"
   device_mismatch: "El dispositivo conectado no coincide con esta billetera. Por favor conecte el dispositivo correcto."
+  device_mismatch_other_wallet: "La billetera conectada es '${wallet_name}'. Por favor conecte la billetera correcta."
   btn:
     sign: "Firmar con BitBox02"
+    connect_other_bitbox02: "Conectar otro BitBox02"
   state_label:
     idle: "Esperando para firmar"
     signing: "Firmando"

@@ -375,10 +375,10 @@ wallet_connect_screen:
       start_signing: "Signierung starten"
     init:
       step1: "Bitte schließen Sie BitBox02 Nova über USB an."
-      step2: "Wenn 'Tap this side' auf dem Display erscheint, tippen Sie auf beide Seiten des Geräts."
+      step2: "Wenn 'Tap this side' auf dem Display erscheint, wählen Sie die Seite, die unten auf dem Bildschirm sein soll."
       step3: "Wenn das Wallet auf dem Display angezeigt wird, drücken Sie die Schaltfläche '$btn' unten."
       ble_step1: "Aktivieren Sie Bluetooth und halten Sie BitBox02 Nova in der Nähe."
-      ble_step2: "Wenn 'Tap this side' auf dem Bildschirm erscheint, tippen Sie auf beide Seiten des Geräts."
+      ble_step2: "Wenn 'Tap this side' auf dem Bildschirm erscheint, wählen Sie die Seite, die unten auf dem Bildschirm sein soll."
       ble_step3: "Wenn das Wallet auf dem Bildschirm angezeigt wird, tippen Sie auf '$btn' unten."
     connecting:
       title: "Gerät wird verbunden"
@@ -386,6 +386,7 @@ wallet_connect_screen:
       step2: "Wenn der Pairing-Code auf dem Display erscheint, drücken Sie Bestätigen (✓)."
     paired:
       title: "BitBox02 erfolgreich verbunden."
+      device_name: "Gerätename"
       master_fingerprint: "Master-Fingerabdruck"
       derivation_path: "Ableitungspfad"
       xpub: "Erweiterter öffentlicher Schlüssel"
@@ -393,6 +394,12 @@ wallet_connect_screen:
       title: "Verbindung fehlgeschlagen"
       description: "BitBox02 Nova wurde nicht gefunden. Bitte schließen Sie das Gerät erneut an und versuchen Sie es nochmal."
       ble_description: "BitBox02 Nova wurde nicht gefunden. Bitte aktivieren Sie Bluetooth und bringen Sie das Gerät näher."
+    ble_init_retry:
+      title: "BitBox02 Neuverbindung fehlgeschlagen"
+      description: "Bitte starten Sie das BitBox02-Gerät neu und verbinden Sie es erneut."
+      step1: "Schalten Sie den BitBox02 aus und wieder ein."
+    keep_connection_title: "Verbindung beibehalten"
+    keep_connection_description: "Möchten Sie die BitBox02-Verbindung beibehalten?"
   guide_trezor:
     btn:
       connect_via_ble: "Über Bluetooth verbinden"
@@ -1308,6 +1315,10 @@ taproot:
   setup_summary_card:
     signer_configuration: "Unterzeichnerkonfiguration"
     inheritance_condition: "Vererbungsbedingung"
+bitbox02_sign_screen:
+  device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
+  btn:
+    connect_other_bitbox02: "Anderes BitBox02 verbinden"
 trezor_sign_screen:
   tx_card:
     title: "Transaktion"
