@@ -1250,7 +1250,12 @@ estimated_fee_bottom_sheet:
 labels_management_screen:
   title: "Gestionar notas"
   subtitle: "Importa o exporta tus notas guardadas."
-  description: "Esta función le permite gestionar cómodamente las notas que ha escrito.\n\nPuede exportar e importar notas fácilmente mediante un archivo de respaldo con el estándar BIP 329.\nIncluso si cambia de dispositivo o vuelve a instalar la aplicación, solo necesita cargar el archivo de respaldo para recuperar todas sus notas anteriores."
+  description: "BIP 329 es un estándar abierto para intercambiar notas entre billeteras de forma compatible. Incluso si cambias de dispositivo o reinstalas la aplicación, tus notas se restaurarán tal como estaban simplemente importando el archivo de respaldo."
+  tooltip:
+    title: "¿Qué son las notas en Coconut?"
+    description: "Es tu propia información que registras y gestionas directamente en Coconut Wallet."
+    supported_title: "Notas compatibles"
+    supported_list: "BIP 329 - Memos de transacción, etiquetas UTXO, bloqueos de gasto\nInformación adicional de Coconut - Colores de etiqueta"
 
 long_pressed_menu:
   hide: "Ocultar"

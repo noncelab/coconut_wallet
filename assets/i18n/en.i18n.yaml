@@ -1248,7 +1248,12 @@ estimated_fee_bottom_sheet:
 labels_management_screen:
   title: "Manage Notes"
   subtitle: "Import or export recorded notes."
-  description: "This feature allows you to conveniently manage the notes you've created.\n\nYou can easily export and import notes using the BIP 329 standard backup file format.\nEven if you change devices or reinstall the app, simply loading the backup file will restore all your previously written notes."
+  description: "BIP 329 is an open standard for compatibly exchanging notes between wallets. Even if you change devices or reinstall the app, simply importing your backup file will restore your notes exactly as they were."
+  tooltip:
+    title: "What are notes in Coconut?"
+    description: "It's your own information that you record and manage directly in Coconut Wallet."
+    supported_title: "Supported Notes"
+    supported_list: "BIP 329 - Transaction memos, UTXO tags, spend locks\nCoconut additional info - Tag colors"
 
 long_pressed_menu:
   hide: "Hide"

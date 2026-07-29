@@ -1254,7 +1254,12 @@ estimated_fee_bottom_sheet:
 labels_management_screen:
   title: "메모 관리"
   subtitle: "기록한 메모들을 가져오거나 내보냅니다."
-  description: "직접 기록한 메모들을 편리하게 관리하는 기능이에요.\n\n메모는 BIP 329 표준 백업 파일로 간편하게 내보내고 가져올 수 있어요.\n기기를 바꾸거나 앱을 재설치하더라도 백업 파일만 불러오면 이전에 작성해 둔 메모를 그대로 가져올 수 있어요."
+  description: "BIP 329는 지갑 간에 메모를 호환되게 주고받는 공개 표준이에요. 기기를 바꾸거나 앱을 재설치해도, 백업 파일만 불러오면 메모가 그대로 복원돼요."
+  tooltip:
+    title: "코코넛에서 메모란?"
+    description: "코코넛 월렛에서 직접 기록하고 관리하는 나만의 정보예요."
+    supported_title: "지원하는 메모"
+    supported_list: "BIP 329 - 거래 메모, UTXO 태그, 사용 잠금\n코코넛 추가 정보 - 태그 색상"
 
 long_pressed_menu:
   hide: "숨기기"

@@ -100,7 +100,8 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         children: [
-          CoconutLayout.spacing_400h,
+          _buildInfoTooltip(context),
+          CoconutLayout.spacing_1000h,
           ButtonGroup(
             buttons: [
               SingleButton(
@@ -110,7 +111,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
                       context: context,
                       title: t.wallet_info_screen.import_labels,
                       description: widget.importDescription,
-                      iconPath: 'assets/svg/import.svg',
+                      iconPath: 'assets/svg/file.svg',
                       actionButtonText: t.import,
                       onAction: widget.onImport,
                     ),
@@ -122,7 +123,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
                       context: context,
                       title: t.wallet_info_screen.export_labels,
                       description: widget.exportDescription,
-                      iconPath: 'assets/svg/export.svg',
+                      iconPath: 'assets/svg/file.svg',
                       actionButtonText: t.export,
                       onAction: widget.onExport,
                     ),
@@ -130,6 +131,42 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInfoTooltip(BuildContext context) {
+    return CoconutToolTip(
+      backgroundColor: context.coconutColors.surface,
+      borderColor: context.coconutColors.surface,
+      icon: SvgPicture.asset(
+        'assets/svg/circle-info.svg',
+        width: 20,
+        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+      ),
+      tooltipType: CoconutTooltipType.fixed,
+      richText: RichText(
+        text: TextSpan(
+          style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+          children: [
+            TextSpan(
+              text: '${t.labels_management_screen.tooltip.title}\n',
+              style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+            ),
+            TextSpan(
+              text: '${t.labels_management_screen.tooltip.description}\n\n',
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+            ),
+            TextSpan(
+              text: '${t.labels_management_screen.tooltip.supported_title}\n',
+              style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+            ),
+            TextSpan(
+              text: t.labels_management_screen.tooltip.supported_list,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+            ),
+          ],
+        ),
       ),
     );
   }
