@@ -1254,6 +1254,12 @@ labels_management_screen:
     description: "It's your own information that you record and manage directly in Coconut Wallet."
     supported_title: "Supported Notes"
     supported_list: "BIP 329 - Transaction memos, UTXO tags, spend locks\nCoconut additional info - Tag colors"
+  file:
+    not_found: "File not found"
+    delete: "Delete File"
+    delete_description: "Are you sure you want to delete the file '$fileName'?"
+    delete_success: "File deleted successfully"
+    delete_failed: "Failed to delete file"
 
 long_pressed_menu:
   hide: "Hide"

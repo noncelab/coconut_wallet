@@ -1254,6 +1254,12 @@ labels_management_screen:
     description: "ココナッツウォレットで直接記録・管理する自分だけの情報です。"
     supported_title: "サポートされているメモ"
     supported_list: "BIP 329 - 取引メモ、UTXOタグ、使用ロック\nココナッツ追加情報 - タグの色"
+  file:
+    not_found: "ファイルが見つかりません"
+    delete: "ファイルを削除"
+    delete_description: "本当に「$fileName」ファイルを削除しますか？"
+    delete_success: "ファイルの削除に成功しました"
+    delete_failed: "ファイルの削除に失敗しました"
 
 long_pressed_menu:
   hide: "非表示"

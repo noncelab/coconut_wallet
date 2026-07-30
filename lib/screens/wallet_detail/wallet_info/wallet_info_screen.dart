@@ -31,7 +31,6 @@ import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dar
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -550,10 +549,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             (context, animation, secondaryAnimation) => LabelManagementScreen(
               importDescription: t.wallet_info_screen.import_labels_description,
               exportDescription: t.wallet_info_screen.export_labels_description,
-              onImport: () {
-                // Then start the import process
-                _importLabels(viewModel);
-              },
+              onImport: (filePath) => _importLabels(viewModel, filePath),
               onExport: () => _exportLabels(viewModel),
             ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -564,50 +560,31 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     );
   }
 
-  Future<void> _importLabels(WalletInfoViewModel viewModel) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.any);
+  Future<void> _importLabels(WalletInfoViewModel viewModel, String filePath) async {
+    _setOverlayLoading(true);
+    try {
+      final labelManager = LabelJsonLManager();
+      await labelManager.importLabelsFromJsonLFile(widget.id, context.read<WalletProvider>(), filePath);
 
-    if (result != null) {
-      final file = result.files.single;
-      if (file.extension?.toLowerCase() != 'jsonl') {
-        if (mounted) {
-          CoconutToast.showToast(
-            context: context,
-            text: t.wallet_info_screen.error.invalid_file_type,
-            level: CoconutToastLevel.warning,
-            isVisibleIcon: true,
-            iconPath: 'assets/svg/triangle-warning.svg',
-          );
-        }
-        return;
+      _setOverlayLoading(false);
+      if (mounted) {
+        CoconutToast.showToast(
+          context: context,
+          text: t.wallet_info_screen.import_labels_success,
+          level: CoconutToastLevel.success,
+        );
+
+        Navigator.of(context).pop();
       }
-
-      final filePath = file.path;
-      if (filePath == null) return;
-
+    } catch (e) {
       _setOverlayLoading(true);
-      try {
-        final labelManager = LabelJsonLManager();
-        await labelManager.importLabelsFromJsonLFile(widget.id, context.read<WalletProvider>(), filePath);
-
-        _setOverlayLoading(false);
-        if (mounted) {
-          CoconutToast.showToast(
-            context: context,
-            text: t.wallet_info_screen.import_labels_success,
-            level: CoconutToastLevel.success,
-          );
-        }
-      } catch (e) {
-        _setOverlayLoading(false);
-        if (mounted) {
-          await showInfoDialog(
-            context,
-            context.read<PreferenceProvider>().language,
-            t.wallet_info_screen.import_labels_fail,
-            e.toString(),
-          );
-        }
+      if (mounted) {
+        await showInfoDialog(
+          context,
+          context.read<PreferenceProvider>().language,
+          t.wallet_info_screen.import_labels_fail,
+          e.toString(),
+        );
       }
     }
   }

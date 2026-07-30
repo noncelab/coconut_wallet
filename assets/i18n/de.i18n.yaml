@@ -1213,6 +1213,12 @@ labels_management_screen:
     description: "Es sind Ihre eigenen Informationen, die Sie direkt in Coconut Wallet aufzeichnen und verwalten."
     supported_title: "Unterstützte Notizen"
     supported_list: "BIP 329 - Transaktionsnotizen, UTXO-Tags, Ausgabesperren\nZusätzliche Coconut-Infos - Tag-Farben"
+  file:
+    not_found: "Datei nicht gefunden"
+    delete: "Datei löschen"
+    delete_description: "Sind Sie sicher, dass Sie die Datei '$fileName' löschen möchten?"
+    delete_success: "Datei erfolgreich gelöscht"
+    delete_failed: "Datei konnte nicht gelöscht werden"
 
 long_pressed_menu:
   hide: "Verbergen"

@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:path/path.dart' as p;
 
 class LabelJsonLManager {
   Future<XFile?> createLabelsJsonLFile(int walletId, WalletProvider walletProvider) async {
@@ -245,5 +246,21 @@ class LabelJsonLManager {
     final identifier = '[$mfp/$path]';
 
     return '$type($identifier)';
+  }
+
+  Future<List<File>> getImportableLabelFiles() async {
+    try {
+      final directory = await getTemporaryDirectory();
+      final files =
+          directory.listSync().whereType<File>().where((file) {
+            return p.extension(file.path) == '.jsonl';
+          }).toList();
+
+      // Sort by modification date, newest first
+      files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+      return files;
+    } catch (e) {
+      return [];
+    }
   }
 }
