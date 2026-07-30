@@ -479,70 +479,72 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                 defaultColor: context.coconutColors.surface,
                                 pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                                 child: FixedTextScale(
-                                  child: Container(
-                                    height: 100,
-                                    width: 100,
-                                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(14),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Stack(
-                                            children: [
-                                              Align(
-                                                alignment: Alignment.topLeft,
-                                                child: FixedTextScale(
-                                                  child: FittedBox(
-                                                    fit: BoxFit.scaleDown,
-                                                    alignment: Alignment.centerLeft,
-                                                    child: Text(
-                                                      _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
-                                                      maxLines: 2,
-                                                      style: CoconutTypography.body2_14.setColor(
-                                                        context.coconutColors.primaryText,
+                                  child: SizedBox.expand(
+                                    child: Container(
+                                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(14),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Stack(
+                                              children: [
+                                                Align(
+                                                  alignment: Alignment.topLeft,
+                                                  child: FixedTextScale(
+                                                    child: FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      alignment: Alignment.centerLeft,
+                                                      child: Text(
+                                                        _getHomeFeatureLabel(
+                                                          widget['homeFeatureTypeString'].toString(),
+                                                        ),
+                                                        maxLines: 2,
+                                                        style: CoconutTypography.body2_14.setColor(
+                                                          context.coconutColors.primaryText,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                              Align(
-                                                alignment: Alignment.topRight,
-                                                child: AnimatedContainer(
-                                                  duration: const Duration(milliseconds: 100),
-                                                  width: 16,
-                                                  height: 16,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color:
-                                                        (widget['isEnabled'] as bool)
-                                                            ? context.coconutColors.checkIconBackground
-                                                            : context.coconutColors.checkIconBackgroundDisabled,
-                                                    border: Border.all(
-                                                      width: (widget['isEnabled'] as bool) ? 0 : 1.5,
-                                                      color: context.coconutColors.switchInactiveTrack,
+                                                Align(
+                                                  alignment: Alignment.topRight,
+                                                  child: AnimatedContainer(
+                                                    duration: const Duration(milliseconds: 100),
+                                                    width: 16,
+                                                    height: 16,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color:
+                                                          (widget['isEnabled'] as bool)
+                                                              ? context.coconutColors.checkIconBackground
+                                                              : context.coconutColors.checkIconBackgroundDisabled,
+                                                      border: Border.all(
+                                                        width: (widget['isEnabled'] as bool) ? 0 : 1.5,
+                                                        color: context.coconutColors.switchInactiveTrack,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  child: Center(
-                                                    child: SvgPicture.asset(
-                                                      CommonActionIconPath.check,
-                                                      width: 6,
-                                                      height: 6,
-                                                      colorFilter: ColorFilter.mode(
-                                                        (widget['isEnabled'] as bool)
-                                                            ? context.coconutColors.checkIconForeground
-                                                            : context.coconutColors.checkIconForegroundDisabled,
-                                                        BlendMode.srcIn,
+                                                    child: Center(
+                                                      child: SvgPicture.asset(
+                                                        CommonActionIconPath.check,
+                                                        width: 6,
+                                                        height: 6,
+                                                        colorFilter: ColorFilter.mode(
+                                                          (widget['isEnabled'] as bool)
+                                                              ? context.coconutColors.checkIconForeground
+                                                              : context.coconutColors.checkIconForegroundDisabled,
+                                                          BlendMode.srcIn,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                          const Spacer(),
-                                          SvgPicture.asset(widget['icon']!.toString(), width: 32),
-                                        ],
+                                              ],
+                                            ),
+                                            const Spacer(),
+                                            SvgPicture.asset(widget['icon']!.toString(), width: 32),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),

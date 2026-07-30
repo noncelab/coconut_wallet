@@ -618,7 +618,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     // TODO:
     // final bgColor =
     //     isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButtonSecondary : colors.brandAccentBackground;
-    final bgColor = isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButton : colors.brandAccentBackground;
+    final bgColor =
+        isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButton : colors.brandAccentBackground;
     final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
     final textColor =
         isUtxoSelectionAuto
@@ -1293,19 +1294,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         },
         child: CustomPaint(
           painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: context.coconutColors.border),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(
-                CommonActionIconPath.plus,
-                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-              ),
-              CoconutLayout.spacing_100w,
-              Text(
-                t.send_screen.add_recipient,
-                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-              ),
-            ],
+          child: SizedBox.expand(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  CommonActionIconPath.plus,
+                  colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                ),
+                CoconutLayout.spacing_100w,
+                Text(
+                  t.send_screen.add_recipient,
+                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                ),
+              ],
+            ),
           ),
         ),
       ),
