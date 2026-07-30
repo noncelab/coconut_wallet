@@ -80,10 +80,12 @@ The wallet stays online to keep your wallet data up to date and broadcasts signe
 - Dart 3.7+
 - Android Studio or Xcode
 - [Go](https://go.dev/dl/) (1.26+) — required to build the BitBox02 bridge
+- [Rust](https://www.rust-lang.org/tools/install) (stable) — required to build the Trezor bridge
 
 ```bash
 flutter --version
 go version
+rustc --version
 ```
 
 ### Clone & Install Dependencies
@@ -123,6 +125,32 @@ make gomobile-bind   # both iOS and Android
 # make gomobile-ios
 # make gomobile-android
 ```
+
+### Native Bridge (Trezor)
+
+This project uses [UniFFI](https://mozilla.github.io/uniffi-rs/) + [cargo-ndk](https://github.com/bbqsrc/cargo-ndk) to generate native bindings for the Trezor Safe 7 BLE (THP v2) hardware wallet bridge.
+
+Quick steps:
+
+```bash
+# 1. Install Rust (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# 2. Install cargo-ndk
+cargo install cargo-ndk
+
+# 3. Add Android/iOS Rust targets
+rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+
+# 4. Build native bindings
+make trezor-bind   # both iOS and Android
+# make trezor-android
+# make trezor-ios
+```
+
+> The build scripts are at `rust/trezor-bridge/scripts/build_android.sh` and `rust/trezor-bridge/scripts/build_ios.sh`.
+> 16KB page-size alignment is configured via `rust/trezor-bridge/.cargo/config.toml` (Android) and linker flags (iOS).
 
 ### Code Generation
 

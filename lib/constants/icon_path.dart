@@ -9,4 +9,5 @@ const kZpubIconPath = 'assets/svg/wallet-type/zpub.svg';
 const kColdCardIconPath = 'assets/svg/wallet-type/cold-card.svg';
 const kKruxIconPath = 'assets/svg/wallet-type/krux.svg';
 const kPassportIconPath = 'assets/svg/wallet-type/passport.svg';
+const kTrezorIconPath = 'assets/svg/wallet-type/trezor.svg';
 const kBitBox02IconPath = 'assets/svg/wallet-type/bitbox02.svg';

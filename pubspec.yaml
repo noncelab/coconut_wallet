@@ -283,6 +283,7 @@ flutter:
     - assets/svg/wallet-type/krux.svg
     - assets/svg/wallet-type/passport.svg
     - assets/svg/wallet-type/bitbox02.svg
+    - assets/svg/wallet-type/trezor.svg
     - assets/svg/wallet-type/zpub.svg
     - assets/svg/copy.svg
     - assets/svg/lock.svg

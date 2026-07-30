@@ -79,6 +79,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
 
   bool _isDropdownMenuVisible = false;
+  bool _hasRetriedRecommendedFees = false;
 
   // 스크롤 범위 연산에 사용하는 값들
   final double kCoconutAppbarHeight = 60;
@@ -836,10 +837,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         final recommendedFeeFetchStatus = data.item1;
         final isNetworkOn = data.item2;
 
-        if (isNetworkOn && recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed) {
+        if (isNetworkOn &&
+            recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed &&
+            !_hasRetriedRecommendedFees) {
+          _hasRetriedRecommendedFees = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _viewModel.refreshRecommendedFees();
           });
+        } else if (recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed) {
+          _hasRetriedRecommendedFees = false;
         }
 
         final isFailed = recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed;
