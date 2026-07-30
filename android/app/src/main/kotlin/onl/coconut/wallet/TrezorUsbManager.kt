@@ -11,7 +11,6 @@ import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
-import android.util.Log
 import androidx.core.content.ContextCompat
 
 class TrezorUsbManager(private val context: Context) {
@@ -31,12 +30,8 @@ class TrezorUsbManager(private val context: Context) {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action != ACTION_USB_PERMISSION) return
             val device = intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE) ?: findDevice()
-            if (device == null) {
-                Log.e("TrezorUSB", "USB permission result did not include a supported device")
-                return
-            }
+            if (device == null) return
             val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false) || hasPermission(device)
-            Log.d("TrezorUSB", "USB permission result: device=${device.deviceName} granted=$granted")
             permissionCallback?.invoke(device, granted)
             permissionCallback = null
         }
@@ -77,7 +72,6 @@ class TrezorUsbManager(private val context: Context) {
             Intent(ACTION_USB_PERMISSION).setPackage(context.packageName),
             PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        Log.d("TrezorUSB", "Requesting USB permission: device=${device.deviceName}")
         usbManager.requestPermission(device, intent)
     }
 

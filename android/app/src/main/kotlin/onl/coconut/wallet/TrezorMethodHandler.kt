@@ -14,7 +14,6 @@ import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
@@ -144,16 +143,13 @@ class TrezorMethodHandler(
         val g = gatt ?: return false
         val future = CompletableFuture<Boolean>()
         pendingWriteFuture = future
-        Log.d("TrezorBLE", "bleWrite: ${data.size} bytes, char.properties=0x${char.properties.toString(16)}, SDK=${Build.VERSION.SDK_INT}")
         val queued = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val rc = g.writeCharacteristic(char, data, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
-            Log.d("TrezorBLE", "bleWrite API33: rc=$rc (SUCCESS=${android.bluetooth.BluetoothStatusCodes.SUCCESS})")
             rc == android.bluetooth.BluetoothStatusCodes.SUCCESS
         } else {
             char.value = data
             char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
             val ok = g.writeCharacteristic(char)
-            Log.d("TrezorBLE", "bleWrite legacy: ok=$ok")
             ok
         }
         if (!queued) {
@@ -323,9 +319,6 @@ class TrezorMethodHandler(
         scanCallback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, scanResult: ScanResult) {
                 val device = scanResult.device
-                val name = device.name ?: "(no name)"
-                Log.d("TrezorBLE", "Found BLE device: $name  addr=${device.address}  uuids=${scanResult.scanRecord?.serviceUuids}")
-
                 if (scanResult.scanRecord?.serviceUuids?.any { it.uuid == TREZOR_SERVICE_UUID } != true) return
 
                 if (resolved) return
@@ -446,7 +439,6 @@ class TrezorMethodHandler(
 
         val gattCallback = object : BluetoothGattCallback() {
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-                Log.d("TrezorBLE", "onConnectionStateChange: status=$status newState=$newState callbackFired=$callbackFired retryCount=$retryCount")
                 // Allow post-connection disconnect events to pass through so the
                 // connectivity EventSink is notified even after callbackFired is set.
                 if (callbackFired) {
@@ -469,7 +461,6 @@ class TrezorMethodHandler(
                     BluetoothProfile.STATE_DISCONNECTED -> {
                         if (status == 133 && retryCount < maxRetries) {
                             retryCount++
-                            Log.d("TrezorBLE", "status=133, retrying ($retryCount/$maxRetries)")
                             gatt.close()
                             this@TrezorMethodHandler.gatt = null
                             Thread.sleep(500)
@@ -496,7 +487,6 @@ class TrezorMethodHandler(
             }
 
             override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
-                Log.d("TrezorBLE", "onMtuChanged: mtu=$mtu status=$status")
                 if (callbackFired) return
                 gatt.discoverServices()
             }
@@ -532,10 +522,8 @@ class TrezorMethodHandler(
                 gatt.setCharacteristicNotification(tx, true)
                 val descriptor = tx.getDescriptor(CLIENT_CHAR_CONFIG)
                 if (descriptor != null) {
-                    Log.d("TrezorBLE", "onServicesDiscovered: writing CCCD descriptor")
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        val rc = gatt.writeDescriptor(descriptor, android.bluetooth.BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
-                        Log.d("TrezorBLE", "writeDescriptor API33: rc=$rc")
+                        gatt.writeDescriptor(descriptor, android.bluetooth.BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
                     } else {
                         @Suppress("DEPRECATION")
                         descriptor.value = android.bluetooth.BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
@@ -550,7 +538,6 @@ class TrezorMethodHandler(
             }
 
             override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: android.bluetooth.BluetoothGattDescriptor, status: Int) {
-                Log.d("TrezorBLE", "onDescriptorWrite: status=$status uuid=${descriptor.uuid} callbackFired=$callbackFired")
                 if (callbackFired) return
                 callbackFired = true
                 if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -563,18 +550,15 @@ class TrezorMethodHandler(
 
             @Suppress("DEPRECATION")
             override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
-                Log.d("TrezorBLE", "onCharacteristicWrite: status=$status uuid=${characteristic.uuid}")
                 onCharacteristicWriteResult(status == BluetoothGatt.GATT_SUCCESS)
             }
 
             override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-                Log.d("TrezorBLE", "onCharacteristicChanged (legacy): ${characteristic.value?.size} bytes")
                 characteristic.value?.let { readQueue.offer(it) }
             }
 
             @Suppress("DEPRECATION")
             override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray) {
-                Log.d("TrezorBLE", "onCharacteristicChanged (API33): ${value.size} bytes")
                 readQueue.offer(value)
             }
         }
@@ -585,26 +569,20 @@ class TrezorMethodHandler(
     // Called on executor thread once BLE notifications are enabled.
     // Mirrors iOS drainThenConnect(delay:2.0): flush stale Trezor packets for 2 s before handshake.
     private fun doRustConnect(deviceId: String, result: MethodChannel.Result) {
-        Log.d("TrezorBLE", "doRustConnect: called, submitting to executor")
         executor.execute {
-            Log.d("TrezorBLE", "doRustConnect: executor started, draining for 2s")
             val deadline = System.currentTimeMillis() + 2000L
             while (System.currentTimeMillis() < deadline) {
                 readQueue.clear()
                 Thread.sleep(100)
             }
             readQueue.clear()
-            Log.d("TrezorBLE", "doRustConnect: drain complete, starting Rust handshake")
             try {
                 if (!TrezorBridge.tryLoad()) throw bridgeNotReady()
                 val handle = (nextHandle++).toULong()
                 val cbs = KotlinBleCallbacks(this)
                 val credPath = credentialFilePath()
-                Log.d("TrezorBLE", "doRustConnect: registering callbacks, handle=$handle, credPath=$credPath")
                 uniffi.trezor_bridge.trezorRegisterCallbacks(handle, cbs)
-                Log.d("TrezorBLE", "doRustConnect: invoking trezorConnect")
                 val rustDeviceId = uniffi.trezor_bridge.trezorConnect(handle, deviceId, credPath)
-                Log.d("TrezorBLE", "doRustConnect: connected, deviceId=$rustDeviceId")
                 activeHandle = handle
                 activeDeviceId = rustDeviceId
                 mainHandler.post { result.success(rustDeviceId) }
@@ -850,7 +828,6 @@ class TrezorMethodHandler(
     }
 
     fun requestPairingCode(): String {
-        Log.d("TrezorBLE", "requestPairingCode: invoking showPairingCodeDialog on Dart")
         val future = CompletableFuture<String>()
         pendingPairingFuture = future
         mainHandler.post {
@@ -860,17 +837,14 @@ class TrezorMethodHandler(
                 object : MethodChannel.Result {
                     override fun success(result: Any?) {
                         val code = (result as? String) ?: ""
-                        Log.d("TrezorBLE", "requestPairingCode: Dart returned code=$code")
                         future.complete(code)
                         pendingPairingFuture = null
                     }
                     override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
-                        Log.d("TrezorBLE", "requestPairingCode: Dart error errorCode=$errorCode errorMessage=$errorMessage")
                         future.complete("")
                         pendingPairingFuture = null
                     }
                     override fun notImplemented() {
-                        Log.d("TrezorBLE", "requestPairingCode: showPairingCodeDialog not implemented on Dart")
                         future.complete("")
                         pendingPairingFuture = null
                     }
@@ -977,7 +951,6 @@ class KotlinBleCallbacks(
     override fun getPassphrase(onDevice: Boolean): String = handler.requestPassphrase(onDevice)
 
     override fun getPairingCode(): String {
-        Log.d("TrezorBLE", "KotlinBleCallbacks.getPairingCode: Rust requested pairing code")
         return handler.requestPairingCode()
     }
 }

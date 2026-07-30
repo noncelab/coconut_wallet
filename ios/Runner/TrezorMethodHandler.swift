@@ -78,24 +78,19 @@ class TrezorMethodHandler: NSObject {
             DispatchQueue.main.async { self?.connectivityEventSink?(false) }
         }
 
-        print("[TrezorBLE] connect: starting scanAndConnect with 25s timeout")
         manager.scanAndConnect(timeout: 25) { [weak self] connectResult in
             switch connectResult {
             case .success:
                 // BLE GATT connected + characteristics discovered.
-                print("[TrezorBLE] BLE GATT connected — flushing read queue, then draining for 2s")
                 manager.flushReadQueue()
                 manager.drainThenConnect(delay: 2.0) {
-                    print("[TrezorBLE] Drain complete — starting Rust THP handshake")
                     do {
 #if canImport(trezor_bridgeFFI)
                         let nativeCbs = SwiftBleCallbacks(manager: manager, channel: self!.channel)
                         trezorRegisterCallbacks(bleHandle: handle, callbacks: nativeCbs)
                         let deviceUUID = manager.peripheralUUID ?? "ble-\(handle)"
                         let credPath = Self.credentialFilePath()
-                        print("[TrezorBLE] Callbacks registered, calling trezorConnect(handle=\(handle), uuid=\(deviceUUID), credPath=\(credPath))")
                         let deviceId = try trezorConnect(bleHandle: handle, deviceUuid: deviceUUID, credentialPath: credPath)
-                        print("[TrezorBLE] trezorConnect succeeded: deviceId=\(deviceId)")
                         TrezorMethodHandler.handleMap.removeValue(forKey: handle)
                         DispatchQueue.main.async { result(deviceId) }
 #else
@@ -103,7 +98,6 @@ class TrezorMethodHandler: NSObject {
                         DispatchQueue.main.async { result(deviceId) }
 #endif
                     } catch {
-                        print("[TrezorBLE] trezorConnect FAILED: \(error.localizedDescription)")
                         TrezorMethodHandler.handleMap.removeValue(forKey: handle)
                         let msg = error.localizedDescription
                         let code: String
@@ -124,7 +118,6 @@ class TrezorMethodHandler: NSObject {
                     }
                 }
             case .failure(let error):
-                print("[TrezorBLE] scanAndConnect FAILED: \(error.localizedDescription) [domain=\((error as NSError).domain) code=\((error as NSError).code)]")
                 TrezorMethodHandler.handleMap.removeValue(forKey: handle)
                 DispatchQueue.main.async {
                     self?.bleManager = nil
@@ -417,7 +410,6 @@ fileprivate class TrezorBleManager: NSObject {
     // MARK: - BLE I/O — called by SwiftBleCallbacks (UniFFI callback impl)
     func bleWrite(_ data: Data) -> Bool {
         guard let char = rxChar, let p = peripheral else {
-            print("[TrezorBLE] bleWrite: FAILED — rxChar or peripheral is nil")
             return false
         }
         p.writeValue(data, for: char, type: .withResponse)
@@ -508,7 +500,6 @@ fileprivate class TrezorBleManager: NSObject {
 
 extension TrezorBleManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        print("[TrezorBLE] centralManagerDidUpdateState: state=\(central.state.rawValue)")
         guard central.state == .poweredOn else {
             if completion != nil {
                 let errorCode: Int
@@ -525,13 +516,11 @@ extension TrezorBleManager: CBCentralManagerDelegate {
                     code: errorCode,
                     userInfo: [NSLocalizedDescriptionKey: errorDesc]
                 )
-                print("[TrezorBLE] Bluetooth not powered on — state=\(central.state.rawValue) code=\(errorCode)")
                 completion?(.failure(error))
                 completion = nil
             }
             return
         }
-        print("[TrezorBLE] Bluetooth powered on — starting scan")
         startScan()
     }
 
@@ -541,27 +530,20 @@ extension TrezorBleManager: CBCentralManagerDelegate {
         advertisementData: [String: Any],
         rssi RSSI: NSNumber
     ) {
-        let name = peripheral.name ?? "(unknown)"
-        print("[TrezorBLE] didDiscover: name=\(name) uuid=\(peripheral.identifier.uuidString) rssi=\(RSSI)")
         central.stopScan()
         self.peripheral = peripheral
-        print("[TrezorBLE] Connecting to peripheral...")
         central.connect(peripheral, options: nil)
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        print("[TrezorBLE] didConnect: uuid=\(peripheral.identifier.uuidString)")
         peripheral.delegate = self
-        print("[TrezorBLE] Discovering services...")
         peripheral.discoverServices([TrezorBleManager.serviceUUID])
     }
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        print("[TrezorBLE] didFailToConnect: uuid=\(peripheral.identifier.uuidString) error=\(String(describing: error))")
         scanTimeoutTimer?.invalidate()
         if let cbError = error as? CBError,
            #available(iOS 13.4, *), cbError.code == .peerRemovedPairingInformation {
-            print("[TrezorBLE] peerRemovedPairingInformation — returning PEER_REMOVED_PAIRING error")
             let err = NSError(
                 domain: "TrezorBLE",
                 code: -7,
@@ -583,12 +565,10 @@ extension TrezorBleManager: CBCentralManagerDelegate {
     }
 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        print("[TrezorBLE] didDisconnectPeripheral: uuid=\(peripheral.identifier.uuidString) error=\(String(describing: error)) completion!=nil=\(completion != nil)")
         if completion != nil {
             scanTimeoutTimer?.invalidate()
             if let cbError = error as? CBError,
                #available(iOS 13.4, *), cbError.code == .peerRemovedPairingInformation {
-                print("[TrezorBLE] peerRemovedPairingInformation on disconnect — returning error")
                 let err = NSError(
                     domain: "TrezorBLE",
                     code: -7,
@@ -625,45 +605,37 @@ extension TrezorBleManager: CBCentralManagerDelegate {
 extension TrezorBleManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         if let error = error {
-            print("[TrezorBLE] didDiscoverServices ERROR: \(error.localizedDescription)")
             completion?(.failure(error))
             completion = nil
             return
         }
         guard let service = peripheral.services?.first(where: { $0.uuid == TrezorBleManager.serviceUUID }) else {
-            print("[TrezorBLE] didDiscoverServices: Trezor service not found. Services: \(peripheral.services?.map { $0.uuid.uuidString } ?? [])")
             completion?(.failure(NSError(domain: "TrezorBLE", code: -4,
                 userInfo: [NSLocalizedDescriptionKey: "Trezor service not found"])))
             completion = nil
             return
         }
-        print("[TrezorBLE] didDiscoverServices: found Trezor service")
         peripheral.discoverCharacteristics([TrezorBleManager.rxCharUUID, TrezorBleManager.txCharUUID], for: service)
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         if let error = error {
-            print("[TrezorBLE] didDiscoverCharacteristics ERROR: \(error.localizedDescription)")
             completion?(.failure(error))
             completion = nil
             return
         }
         var needsNotifyConfirmation = false
         for char in service.characteristics ?? [] {
-            print("[TrezorBLE] Found char: uuid=\(char.uuid.uuidString) properties=0x\(String(char.properties.rawValue, radix: 16))")
             if char.uuid == TrezorBleManager.rxCharUUID {
                 rxChar = char
-                print("[TrezorBLE] RX char found (host to device)")
             }
             if char.uuid == TrezorBleManager.txCharUUID {
                 txChar = char
-                print("[TrezorBLE] TX char found (device to host) — enabling notifications")
                 peripheral.setNotifyValue(true, for: char)
                 needsNotifyConfirmation = true
             }
         }
         guard rxChar != nil, txChar != nil else {
-            print("[TrezorBLE] Missing required characteristics. rxChar=\(rxChar != nil) txChar=\(txChar != nil)")
             completion?(.failure(NSError(domain: "TrezorBLE", code: -5,
                 userInfo: [NSLocalizedDescriptionKey: "Required BLE characteristics not found"])))
             completion = nil
@@ -672,7 +644,6 @@ extension TrezorBleManager: CBPeripheralDelegate {
         let id = peripheral.identifier.uuidString
         self.deviceId = id
         if !needsNotifyConfirmation {
-            print("[TrezorBLE] No notify confirmation needed — completing with deviceId=\(id)")
             completion?(.success(id))
             completion = nil
         }
@@ -680,23 +651,17 @@ extension TrezorBleManager: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         if let error = error {
-            print("[TrezorBLE] didUpdateNotificationStateFor ERROR: \(error.localizedDescription)")
             completion?(.failure(error))
             completion = nil
             return
         }
-        print("[TrezorBLE] didUpdateNotificationStateFor: notifications enabled for \(characteristic.uuid.uuidString)")
         if let id = deviceId {
-            print("[TrezorBLE] BLE setup complete — deviceId=\(id)")
             completion?(.success(id))
             completion = nil
         }
     }
 
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-        if let error = error {
-            print("[TrezorBLE] didWriteValueFor ERROR: \(error.localizedDescription)")
-        }
         pendingWriteResult?(error == nil)
         pendingWriteResult = nil
     }
@@ -709,10 +674,7 @@ extension TrezorBleManager: CBPeripheralDelegate {
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        if let error = error {
-            print("[TrezorBLE] didUpdateValueFor ERROR: \(error.localizedDescription)")
-            return
-        }
+        if error != nil { return }
         guard let data = characteristic.value else { return }
         queueLock.lock()
         if let waiter = readWaiters.first {

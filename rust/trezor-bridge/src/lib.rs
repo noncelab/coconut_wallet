@@ -341,7 +341,6 @@ impl TransportCallback for UsbNativeAdapter {
     }
 
     fn log_debug(&self, tag: &str, message: &str) {
-        eprintln!("[TrezorBridge][{}] {}", tag, message);
     }
 }
 
@@ -386,7 +385,6 @@ impl TransportCallback for NativeAdapter {
     }
 
     fn log_debug(&self, tag: &str, message: &str) {
-        eprintln!("[TrezorBridge][{}] {}", tag, message);
     }
 
     fn enumerate_devices(&self) -> Vec<CallbackDeviceInfo> {
@@ -561,8 +559,6 @@ pub fn trezor_connect_usb(
         // THP handshake if needed. Check if THP was negotiated so we can
         // tell ConnectedDevice to use GetFeatures instead of Initialize.
         let uses_thp = transport.has_thp(&device_id).await;
-        eprintln!("[TrezorBridge] USB has_thp={}", uses_thp);
-
         let info = DeviceInfo::new_usb(device_id.clone(), vendor_id, product_id);
         let mut connected = ConnectedDevice::new(info, Box::new(transport), session);
         connected.set_uses_thp(uses_thp);
@@ -660,8 +656,6 @@ pub fn trezor_connect(
             .map_err(|e| TrezorError::Connect(e.to_string()))?;
 
         let uses_thp = transport.has_thp(&path).await;
-        eprintln!("[TrezorBridge] has_thp={}", uses_thp);
-
         let dev_info = DeviceInfo::new_bluetooth(path.clone(), Some("Trezor Safe 7".to_string()));
 
         let mut connected = ConnectedDevice::new(dev_info, Box::new(transport), session);
@@ -680,10 +674,6 @@ pub fn trezor_connect(
             .filter(|s| !s.is_empty())
             .or_else(|| features.model.clone())
             .unwrap_or_default();
-        eprintln!(
-            "[TrezorBridge] initialize() label={:?} model={:?}",
-            label, features.model
-        );
         SESSIONS
             .lock()
             .unwrap()
@@ -819,7 +809,6 @@ fn inject_prev_txs_into_psbt(device_id: &str, psbt_bytes: &[u8]) -> Result<Vec<u
         let prev_tx: bitcoin::Transaction = bitcoin::consensus::deserialize(&raw_tx_bytes)
             .map_err(|e| TrezorError::Sign(format!("prevtx[{input_index}]: deserialize: {e}")))?;
         psbt.inputs[input_index].non_witness_utxo = Some(prev_tx);
-        eprintln!("[TrezorBridge] injected NonWitnessUtxo for input[{input_index}]");
     }
 
     Ok(psbt.serialize())

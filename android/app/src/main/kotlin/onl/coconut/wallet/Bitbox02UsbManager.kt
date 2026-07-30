@@ -66,41 +66,31 @@ class Bitbox02UsbManager(private val context: Context) {
         return usbManager.hasPermission(device)
     }
     fun openDevice(device: UsbDevice): UsbTransport? {
-        android.util.Log.d("BB02_USB", "openDevice: hasPermission=${hasPermission(device)}")
         if (!hasPermission(device)) return null
         val iface = findHidInterface(device)
-        android.util.Log.d("BB02_USB", "findHidInterface: $iface, class=${iface?.interfaceClass}")
         if (iface == null) return null
         val endpointPair = findEndpoints(iface)
-        android.util.Log.d("BB02_USB", "endpoints: $endpointPair")
         if (endpointPair == null) return null
         val epIn = endpointPair.first
         val epOut = endpointPair.second
 
         // BitBox02 Nova has exactly 1 interface; official app uses getInterface(0)
         val hidIface = device.getInterface(0)
-        android.util.Log.d("BB02_USB", "using interface 0: class=${hidIface.interfaceClass}")
 
         for (attempt in 1..3) {
-            android.util.Log.d("BB02_USB", "attempt $attempt: opening device...")
             val connection = usbManager.openDevice(device)
-            android.util.Log.d("BB02_USB", "openDevice result: $connection")
             if (connection == null) continue
 
-            android.util.Log.d("BB02_USB", "attempt $attempt: claiming interface 0 (force=true)...")
             var claimed = connection.claimInterface(hidIface, true)
             if (!claimed) {
-                android.util.Log.w("BB02_USB", "attempt $attempt: force=true failed, sleep and retry...")
                 connection.close()
                 Thread.sleep(500)
                 continue
             }
 
-            android.util.Log.d("BB02_USB", "claimInterface OK on attempt $attempt")
             return UsbTransport(connection, hidIface, epIn, epOut)
         }
 
-        android.util.Log.e("BB02_USB", "all attempts failed")
         return null
     }
 
