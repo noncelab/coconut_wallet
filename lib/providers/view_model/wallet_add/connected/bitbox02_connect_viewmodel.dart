@@ -55,6 +55,21 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Populates this viewmodel from an already-connected [BitBox02Device.lastConnected]
+  /// session and jumps straight to [BitBox02ConnectStep.paired], skipping the
+  /// pairing flow entirely. Returns true if a resumable session was found.
+  bool resumeFromExistingSession() {
+    final device = BitBox02Device.lastConnected;
+    final cachedXpub = device?.cachedXpub;
+    if (device == null || cachedXpub == null || cachedXpub.isEmpty) return false;
+    _device = device;
+    _xpub = cachedXpub;
+    _fingerprint = device.cachedFingerprint ?? '';
+    _transport = device.transport;
+    _setState(BitBox02ConnectStep.paired);
+    return true;
+  }
+
   Future<void> connect({required String transport, String configJson = '', String? host, int? port}) async {
     if (_isConnecting || _step == BitBox02ConnectStep.paired) return;
 
@@ -143,6 +158,7 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
       try {
         final xpub = await _device!.btcXPub(keypath: keypath, coin: coin, xpubType: xpubType, display: false);
         _xpub = xpub;
+        _device!.cachedXpub = xpub;
         _fingerprint = await _device!.rootFingerprint();
         _device!.cachedFingerprint = _fingerprint;
         _setState(BitBox02ConnectStep.paired);

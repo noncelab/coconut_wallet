@@ -101,6 +101,21 @@ class TrezorBleConnectViewModel extends ChangeNotifier {
     }
   }
 
+  /// Populates this viewmodel from an already-connected [TrezorDevice.lastConnected]
+  /// session and jumps straight to [TrezorBleConnectStep.paired], skipping the
+  /// pairing flow entirely. Returns true if a resumable session was found.
+  bool resumeFromExistingSession() {
+    final device = TrezorDevice.lastConnected;
+    final cachedXpub = device?.cachedXpub;
+    if (device == null || cachedXpub == null || cachedXpub.isEmpty) return false;
+    _device = device;
+    _deviceLabel = device.label;
+    _xpub = cachedXpub;
+    _fingerprint = device.cachedFingerprint ?? '';
+    _setState(TrezorBleConnectStep.paired);
+    return true;
+  }
+
   Future<void> connect() async {
     debugPrint(
       'TREZOR_BLE_CONNECT connect start: step=${_step.name} isConnecting=$_isConnecting '

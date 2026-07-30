@@ -625,6 +625,8 @@ send_confirm_screen:
   output_detail_title: "Detalles de salida"
   flow_input_title: "Entrada #$index"
   flow_output_title: "Salida #$index"
+  sign_with_connected_device_title: "Sign with Connected Device"
+  sign_with_connected_device_description: "Would you like to sign with the currently connected $deviceName?"
 bitbox02_sign_screen:
   tx_card:
     title: "Transacción"
@@ -653,7 +655,8 @@ bitbox02_sign_screen:
     description: "La transacción ha sido firmada por BitBox02."
     ready_to_broadcast: "Listo para transmitir."
   error_title: "Error al firmar"
-  device_mismatch: "El dispositivo conectado no coincide con esta billetera. Por favor conecte el dispositivo correcto."
+  wrong_wallet_title: "Billetera incorrecta conectada"
+  device_mismatch: "El BitBox02 conectado no coincide con la billetera con la que intenta firmar."
   device_mismatch_other_wallet: "La billetera conectada es '${wallet_name}'. Por favor conecte la billetera correcta."
   btn:
     sign: "Firmar con BitBox02"

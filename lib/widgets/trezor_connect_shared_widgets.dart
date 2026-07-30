@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -7,7 +6,6 @@ import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/trezor_digit_box.dart';
 import 'package:coconut_wallet/widgets/textfield/passphrase_input_text_field.dart';
-import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -430,42 +428,6 @@ class TrezorPassphraseInputActionButton extends StatelessWidget {
       onButtonClicked: onSubmit,
       text: t.confirm,
       isActive: passphraseController.text.isNotEmpty,
-    );
-  }
-}
-
-/// Wallet info card showing device label, fingerprint, derivation path, and xpub.
-class TrezorWalletInfoCard extends StatelessWidget {
-  final String deviceLabel;
-  final String fingerprint;
-  final String xpub;
-
-  const TrezorWalletInfoCard({super.key, required this.deviceLabel, required this.fingerprint, required this.xpub});
-
-  @override
-  Widget build(BuildContext context) {
-    return WalletConnectWalletInfoCard(
-      children: [
-        if (deviceLabel.isNotEmpty) ...[
-          WalletConnectInfoRow(label: t.wallet_connect_screen.guide_trezor.paired.device_name, value: deviceLabel),
-          CoconutLayout.spacing_300h,
-        ],
-        WalletConnectInfoRow(
-          label: t.wallet_connect_screen.guide_trezor.paired.master_fingerprint,
-          value: fingerprint.toUpperCase(),
-        ),
-        CoconutLayout.spacing_300h,
-        WalletConnectInfoRow(
-          label: t.wallet_connect_screen.guide_trezor.paired.derivation_path,
-          value: NetworkType.currentNetworkType.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'",
-        ),
-        CoconutLayout.spacing_300h,
-        WalletConnectInfoRow(
-          label: t.wallet_connect_screen.guide_trezor.paired.xpub,
-          value: xpub,
-          direction: Axis.vertical,
-        ),
-      ],
     );
   }
 }

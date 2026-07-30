@@ -1,5 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
@@ -302,13 +304,17 @@ class WalletConnectSuccessCard extends StatelessWidget {
 }
 
 /// Wallet mismatch card — connection succeeded but the connected wallet
-/// doesn't match the expected wallet. Shows a warning icon, mismatch message
-/// as title, and optional child content (e.g. wallet info).
+/// doesn't match the expected wallet. Shows a warning icon, a short mismatch
+/// title, an optional secondary description, optional child content (e.g.
+/// wallet info), and an optional footer message shown in danger color below
+/// the child content.
 class WalletConnectMismatchCard extends StatelessWidget {
   final String title;
+  final String? description;
   final Widget? child;
+  final String? footerText;
 
-  const WalletConnectMismatchCard({super.key, required this.title, this.child});
+  const WalletConnectMismatchCard({super.key, required this.title, this.description, this.child, this.footerText});
 
   @override
   Widget build(BuildContext context) {
@@ -328,10 +334,44 @@ class WalletConnectMismatchCard extends StatelessWidget {
             style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.danger),
             textAlign: TextAlign.center,
           ),
+          if (description != null && description!.isNotEmpty) ...[
+            CoconutLayout.spacing_200h,
+            Text(
+              description!,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+              textAlign: TextAlign.center,
+            ),
+          ],
           CoconutLayout.spacing_200h,
           CoconutLayout.spacing_600h,
           if (child != null) child!,
+          if (footerText != null && footerText!.isNotEmpty) ...[
+            CoconutLayout.spacing_300h,
+            Text(
+              footerText!,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.danger),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// Secondary label shown above a wallet info card, e.g. "Connected Wallet".
+class WalletConnectSectionLabel extends StatelessWidget {
+  final String label;
+
+  const WalletConnectSectionLabel({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8, left: 4),
+        child: Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
       ),
     );
   }
@@ -353,6 +393,85 @@ class WalletConnectWalletInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    );
+  }
+}
+
+/// Fingerprint comparison card shown when a wallet mismatch is detected.
+/// Displays the expected wallet's master fingerprint alongside the
+/// currently connected device's master fingerprint.
+class FingerprintCompareCard extends StatelessWidget {
+  final String expectedFingerprint;
+  final String connectedFingerprint;
+
+  const FingerprintCompareCard({super.key, required this.expectedFingerprint, required this.connectedFingerprint});
+
+  @override
+  Widget build(BuildContext context) {
+    return WalletConnectWalletInfoCard(
+      children: [
+        WalletConnectInfoRow(
+          label: t.trezor_sign_screen.fingerprint_compare.expected,
+          value: expectedFingerprint.toUpperCase(),
+        ),
+        CoconutLayout.spacing_300h,
+        WalletConnectInfoRow(
+          label: t.trezor_sign_screen.fingerprint_compare.connected,
+          value: connectedFingerprint.toUpperCase(),
+        ),
+      ],
+    );
+  }
+}
+
+/// Wallet info card showing device name, fingerprint, derivation path, and xpub.
+class HardwareWalletInfoCard extends StatelessWidget {
+  final String deviceName;
+  final String fingerprint;
+  final String xpub;
+  final String? deviceNameLabel;
+  final String? fingerprintLabel;
+  final String? derivationPathLabel;
+  final String? xpubLabel;
+
+  const HardwareWalletInfoCard({
+    super.key,
+    required this.deviceName,
+    required this.fingerprint,
+    required this.xpub,
+    this.deviceNameLabel,
+    this.fingerprintLabel,
+    this.derivationPathLabel,
+    this.xpubLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return WalletConnectWalletInfoCard(
+      children: [
+        if (deviceName.isNotEmpty) ...[
+          WalletConnectInfoRow(
+            label: deviceNameLabel ?? t.wallet_connect_screen.guide_trezor.paired.device_name,
+            value: deviceName,
+          ),
+          CoconutLayout.spacing_300h,
+        ],
+        WalletConnectInfoRow(
+          label: fingerprintLabel ?? t.wallet_connect_screen.guide_trezor.paired.master_fingerprint,
+          value: fingerprint.toUpperCase(),
+        ),
+        CoconutLayout.spacing_300h,
+        WalletConnectInfoRow(
+          label: derivationPathLabel ?? t.wallet_connect_screen.guide_trezor.paired.derivation_path,
+          value: NetworkType.currentNetworkType.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'",
+        ),
+        CoconutLayout.spacing_300h,
+        WalletConnectInfoRow(
+          label: xpubLabel ?? t.wallet_connect_screen.guide_trezor.paired.xpub,
+          value: xpub,
+          direction: Axis.vertical,
+        ),
+      ],
     );
   }
 }

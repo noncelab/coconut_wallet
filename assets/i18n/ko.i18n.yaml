@@ -622,6 +622,8 @@ send_confirm_screen:
   output_detail_title: "출력 상세 보기"
   flow_input_title: "입력 #$index"
   flow_output_title: "출력 #$index"
+  sign_with_connected_device_title: "연결된 기기로 서명"
+  sign_with_connected_device_description: "현재 연결된 $deviceName로 서명하시겠어요?"
 bitbox02_sign_screen:
   tx_card:
     title: "거래 요약"
@@ -650,8 +652,13 @@ bitbox02_sign_screen:
     description: "BitBox02가 트랜잭션에 서명했습니다."
     ready_to_broadcast: "전송할 준비가 되었어요."
   error_title: "서명 실패"
-  device_mismatch: "연결된 기기가 이 지갑과 일치하지 않습니다. 올바른 기기를 연결해 주세요."
-  device_mismatch_other_wallet: "연결된 지갑은 '${wallet_name}'입니다. 올바른 지갑을 연결해 주세요."
+  wrong_wallet_title: "잘못된 지갑이 연결됨"
+  device_mismatch: "연결된 BitBox02가 서명하려는 지갑과 일치하지 않아요."
+  device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
+  fingerprint_compare:
+    expected: "서명 지갑"
+    connected: "연결된 지갑"
+  connected_wallet_label: "연결된 지갑"
   btn:
     sign: "BitBox02로 서명하기"
     connect_other_bitbox02: "다른 BitBox02 연결하기"
@@ -677,8 +684,13 @@ trezor_sign_screen:
     title: "서명 완료"
     description: "Trezor가 트랜잭션에 서명했습니다."
   error_title: "서명 실패"
-  device_mismatch: "연결된 기기가 이 지갑과 일치하지 않습니다."
-  device_mismatch_other_wallet: "연결된 지갑은 '${wallet_name}'입니다. 올바른 지갑을 연결해 주세요."
+  wrong_wallet_title: "잘못된 지갑이 연결됨"
+  device_mismatch: "연결된 기기가 이 지갑과 일치하지 않아요."
+  device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
+  fingerprint_compare:
+    expected: "서명 지갑"
+    connected: "연결된 지갑"
+  connected_wallet_label: "연결된 지갑"
   btn:
     sign: "Trezor로 서명하기"
     connect_other_trezor: "다른 Trezor 연결하기"

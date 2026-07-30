@@ -623,6 +623,8 @@ send_confirm_screen:
   output_detail_title: "出力詳細を見る"
   flow_input_title: "入力 #$index"
   flow_output_title: "出力 #$index"
+  sign_with_connected_device_title: "Sign with Connected Device"
+  sign_with_connected_device_description: "Would you like to sign with the currently connected $deviceName?"
 bitbox02_sign_screen:
   tx_card:
     title: "取引情報"
@@ -651,7 +653,8 @@ bitbox02_sign_screen:
     description: "BitBox02がトランザクションに署名しました。"
     ready_to_broadcast: "ブロードキャストの準備が完了しました。"
   error_title: "署名に失敗"
-  device_mismatch: "接続されたデバイスがこのウォレットと一致しません。正しいデバイスを接続してください。"
+  wrong_wallet_title: "接続されたウォレットが正しくありません"
+  device_mismatch: "接続されたBitBox02が署名しようとしているウォレットと一致しません。"
   device_mismatch_other_wallet: "接続されたウォレットは '${wallet_name}' です。正しいウォレットを接続してください。"
   btn:
     sign: "BitBox02で署名"

@@ -22,8 +22,15 @@ class TrezorUsbConnectScreen extends StatefulWidget {
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
+  final bool resumeFromExistingSession;
 
-  const TrezorUsbConnectScreen({super.key, this.psbtBase64, this.walletName, this.walletFingerprint});
+  const TrezorUsbConnectScreen({
+    super.key,
+    this.psbtBase64,
+    this.walletName,
+    this.walletFingerprint,
+    this.resumeFromExistingSession = false,
+  });
 
   @override
   State<TrezorUsbConnectScreen> createState() => _TrezorUsbConnectScreenState();
@@ -53,6 +60,9 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     _passphraseHandler = _viewModel.requestPassphrase;
     TrezorDevice.onPinRequested = _pinHandler;
     TrezorDevice.onPassphraseRequested = _passphraseHandler;
+    if (widget.resumeFromExistingSession) {
+      _viewModel.resumeFromExistingSession();
+    }
     _viewModel.addListener(_onViewModelChanged);
   }
 
@@ -385,13 +395,25 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
 
     if (isMismatch) {
       final matchedWalletName = context.read<WalletProvider>().findWalletNameByXpub(vm.xpub);
-      final mismatchMessage =
-          matchedWalletName != null
-              ? t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: matchedWalletName)
-              : t.trezor_sign_screen.device_mismatch;
       return WalletConnectMismatchCard(
-        title: mismatchMessage,
-        child: TrezorWalletInfoCard(deviceLabel: vm.deviceLabel, fingerprint: vm.fingerprint, xpub: vm.xpub),
+        title: t.trezor_sign_screen.wrong_wallet_title,
+        description: t.trezor_sign_screen.device_mismatch,
+        footerText:
+            matchedWalletName != null
+                ? t.trezor_sign_screen.device_mismatch_other_wallet(wallet_name: matchedWalletName)
+                : null,
+        child: Column(
+          children: [
+            WalletConnectSectionLabel(label: t.wallet_connect_screen.guide_trezor.paired.master_fingerprint),
+            FingerprintCompareCard(
+              expectedFingerprint: widget.walletFingerprint ?? '',
+              connectedFingerprint: vm.fingerprint,
+            ),
+            CoconutLayout.spacing_400h,
+            WalletConnectSectionLabel(label: t.trezor_sign_screen.connected_wallet_label),
+            HardwareWalletInfoCard(deviceName: vm.deviceLabel, fingerprint: vm.fingerprint, xpub: vm.xpub),
+          ],
+        ),
       );
     }
 
@@ -399,7 +421,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       title: t.wallet_connect_screen.guide_trezor.paired.title,
       child:
           hasXpub
-              ? TrezorWalletInfoCard(deviceLabel: vm.deviceLabel, fingerprint: vm.fingerprint, xpub: vm.xpub)
+              ? HardwareWalletInfoCard(deviceName: vm.deviceLabel, fingerprint: vm.fingerprint, xpub: vm.xpub)
               : const WalletConnectWalletInfoSkeleton(),
     );
   }

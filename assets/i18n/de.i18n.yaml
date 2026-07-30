@@ -613,6 +613,8 @@ send_confirm_screen:
   output_detail_title: "Ausgabedetails"
   flow_input_title: "Eingabe #$index"
   flow_output_title: "Ausgabe #$index"
+  sign_with_connected_device_title: "Sign with Connected Device"
+  sign_with_connected_device_description: "Would you like to sign with the currently connected $deviceName?"
 signed_psbt_scanner_screen:
   title: "Signierte Tx scannen"
   bbqr_mode_switching: "Wechsle in den BBQR-Modus.\nBitte warten Sie einen Moment."
@@ -1316,6 +1318,8 @@ taproot:
     signer_configuration: "Unterzeichnerkonfiguration"
     inheritance_condition: "Vererbungsbedingung"
 bitbox02_sign_screen:
+  wrong_wallet_title: "Falsche Wallet verbunden"
+  device_mismatch: "Das verbundene BitBox02 passt nicht zur Wallet, mit der Sie signieren möchten."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
   btn:
     connect_other_bitbox02: "Anderes BitBox02 verbinden"

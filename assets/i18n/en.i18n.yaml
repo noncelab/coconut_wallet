@@ -625,6 +625,8 @@ send_confirm_screen:
   output_detail_title: "Output Details"
   flow_input_title: "Input #$index"
   flow_output_title: "Output #$index"
+  sign_with_connected_device_title: "Sign with Connected Device"
+  sign_with_connected_device_description: "Would you like to sign with the currently connected $deviceName?"
 bitbox02_sign_screen:
   tx_card:
     title: "Transaction"
@@ -653,8 +655,13 @@ bitbox02_sign_screen:
     description: "Transaction has been signed by BitBox02."
     ready_to_broadcast: "Ready to broadcast."
   error_title: "Signing Failed"
-  device_mismatch: "The connected device does not match this wallet. Please connect the correct device."
-  device_mismatch_other_wallet: "The connected wallet is '${wallet_name}'. Please connect the correct wallet."
+  wrong_wallet_title: "Wrong wallet connected"
+  device_mismatch: "The connected Bitbox doesn't match the wallet you're trying to sign with."
+  device_mismatch_other_wallet: "The connected wallet matches the wallet named '${wallet_name}'."
+  fingerprint_compare:
+    expected: "Expected"
+    connected: "Connected"
+  connected_wallet_label: "Connected Wallet"
   btn:
     sign: "Sign with BitBox02"
     connect_other_bitbox02: "Connect another BitBox02"
@@ -680,8 +687,13 @@ trezor_sign_screen:
     title: "Signed"
     description: "Transaction has been signed by Trezor."
   error_title: "Signing Failed"
-  device_mismatch: "The connected device does not match this wallet."
-  device_mismatch_other_wallet: "The connected wallet belongs to '${wallet_name}'. Please connect the correct wallet."
+  wrong_wallet_title: "Wrong wallet connected"
+  device_mismatch: "The connected Trezor doesn't match the wallet you're trying to sign with."
+  device_mismatch_other_wallet: "The connected wallet matches the wallet named '${wallet_name}'."
+  fingerprint_compare:
+    expected: "Expected"
+    connected: "Connected"
+  connected_wallet_label: "Connected Wallet"
   btn:
     sign: "Sign with Trezor"
     connect_other_trezor: "Connect Another Trezor"

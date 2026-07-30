@@ -17,6 +17,9 @@ class BitBox02Device {
   /// Fingerprint cached from [rootFingerprint], may be set by callers.
   String? cachedFingerprint;
 
+  /// xpub cached from [btcXPub] at the standard derivation path, may be set by callers.
+  String? cachedXpub;
+
   /// Device name fetched from the device during [init].
   String _name = '';
 
@@ -104,6 +107,16 @@ class BitBox02Device {
       return result ?? false;
     } on PlatformException catch (e) {
       throw BitBox02InitException(e.code, e.message ?? 'deviceInitialized failed');
+    }
+  }
+
+  /// Returns true if the physical device is currently reachable.
+  static Future<bool> isConnected() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('isConnected');
+      return result ?? false;
+    } on PlatformException {
+      return false;
     }
   }
 
@@ -249,6 +262,12 @@ class BitBox02Device {
       await _channel.invokeMethod('disconnect', {'id': id});
     } on PlatformException catch (e) {
       throw BitBox02Exception(e.code, e.message ?? 'disconnect failed');
+    }
+
+    if (lastConnected == this) {
+      lastConnected = null;
+      cachedFingerprint = null;
+      cachedXpub = null;
     }
   }
 

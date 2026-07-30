@@ -420,7 +420,6 @@ fileprivate class TrezorBleManager: NSObject {
             print("[TrezorBLE] bleWrite: FAILED — rxChar or peripheral is nil")
             return false
         }
-        print("[TrezorBLE] bleWrite: \(data.count) bytes, char.properties=0x\(String(char.properties.rawValue, radix: 16))")
         p.writeValue(data, for: char, type: .withResponse)
         return true
     }
@@ -697,8 +696,6 @@ extension TrezorBleManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         if let error = error {
             print("[TrezorBLE] didWriteValueFor ERROR: \(error.localizedDescription)")
-        } else {
-            print("[TrezorBLE] didWriteValueFor OK: \(characteristic.uuid.uuidString)")
         }
         pendingWriteResult?(error == nil)
         pendingWriteResult = nil
@@ -717,7 +714,6 @@ extension TrezorBleManager: CBPeripheralDelegate {
             return
         }
         guard let data = characteristic.value else { return }
-        print("[TrezorBLE] didUpdateValueFor: \(data.count) bytes")
         queueLock.lock()
         if let waiter = readWaiters.first {
             readWaiters.removeFirst()

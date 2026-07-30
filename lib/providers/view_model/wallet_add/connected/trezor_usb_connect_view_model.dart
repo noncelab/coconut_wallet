@@ -57,6 +57,20 @@ class TrezorUsbConnectViewModel extends ChangeNotifier {
   bool get passphraseProtection => _device?.passphraseProtection ?? false;
   bool get usesThp => _device?.usesThp ?? false;
 
+  /// Populates this viewmodel from an already-connected [TrezorDevice.lastConnected]
+  /// session and jumps straight to [TrezorUsbConnectStep.connected], skipping the
+  /// pairing flow entirely. Returns true if a resumable session was found.
+  bool resumeFromExistingSession() {
+    final device = TrezorDevice.lastConnected;
+    final cachedXpub = device?.cachedXpub;
+    if (device == null || cachedXpub == null || cachedXpub.isEmpty) return false;
+    _device = device;
+    _xpub = cachedXpub;
+    _fingerprint = device.cachedFingerprint ?? '';
+    _setState(TrezorUsbConnectStep.connected);
+    return true;
+  }
+
   Future<void> connect() async {
     if (_step == TrezorUsbConnectStep.connecting) return;
     _setState(TrezorUsbConnectStep.connecting);

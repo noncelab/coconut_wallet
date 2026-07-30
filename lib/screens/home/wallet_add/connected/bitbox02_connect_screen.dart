@@ -1,7 +1,6 @@
 import 'dart:io' show Platform;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -26,6 +25,7 @@ class BitBox02ConnectScreen extends StatefulWidget {
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
+  final bool resumeFromExistingSession;
 
   const BitBox02ConnectScreen({
     super.key,
@@ -33,6 +33,7 @@ class BitBox02ConnectScreen extends StatefulWidget {
     this.psbtBase64,
     this.walletName,
     this.walletFingerprint,
+    this.resumeFromExistingSession = false,
   });
 
   @override
@@ -47,6 +48,9 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
   void initState() {
     super.initState();
     _viewModel = BitBox02ConnectViewModel(Provider.of<WalletProvider>(context, listen: false));
+    if (widget.resumeFromExistingSession) {
+      _viewModel.resumeFromExistingSession();
+    }
   }
 
   @override
@@ -201,34 +205,66 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
 
   Widget _buildSuccessCard(BitBox02ConnectViewModel vm) {
     final hasXpub = vm.xpub.isNotEmpty;
+    final isMismatch = widget.psbtBase64 != null && hasXpub && _isWalletMismatch(vm);
+
+    if (isMismatch) {
+      final matchedWalletName = context.read<WalletProvider>().findWalletNameByXpub(vm.xpub);
+      return WalletConnectMismatchCard(
+        title: t.bitbox02_sign_screen.wrong_wallet_title,
+        description: t.bitbox02_sign_screen.device_mismatch,
+        footerText:
+            matchedWalletName != null
+                ? t.bitbox02_sign_screen.device_mismatch_other_wallet(wallet_name: matchedWalletName)
+                : null,
+        child: Column(
+          children: [
+            WalletConnectSectionLabel(label: t.wallet_connect_screen.guide_bitbox02.paired.master_fingerprint),
+            FingerprintCompareCard(
+              expectedFingerprint: widget.walletFingerprint ?? '',
+              connectedFingerprint: vm.fingerprint,
+            ),
+            CoconutLayout.spacing_400h,
+            WalletConnectSectionLabel(label: t.bitbox02_sign_screen.connected_wallet_label),
+            HardwareWalletInfoCard(
+              deviceName: vm.deviceName,
+              fingerprint: vm.fingerprint,
+              xpub: vm.xpub,
+              deviceNameLabel: t.wallet_connect_screen.guide_bitbox02.paired.device_name,
+              fingerprintLabel: t.wallet_connect_screen.guide_bitbox02.paired.master_fingerprint,
+              derivationPathLabel: t.wallet_connect_screen.guide_bitbox02.paired.derivation_path,
+              xpubLabel: t.wallet_connect_screen.guide_bitbox02.paired.xpub,
+            ),
+          ],
+        ),
+      );
+    }
+
     return WalletConnectSuccessCard(
       title: t.wallet_connect_screen.guide_bitbox02.paired.title,
-      child: hasXpub ? _buildWalletInfoCard(vm) : const WalletConnectWalletInfoSkeleton(),
+      child:
+          hasXpub
+              ? HardwareWalletInfoCard(
+                deviceName: vm.deviceName,
+                fingerprint: vm.fingerprint,
+                xpub: vm.xpub,
+                deviceNameLabel: t.wallet_connect_screen.guide_bitbox02.paired.device_name,
+                fingerprintLabel: t.wallet_connect_screen.guide_bitbox02.paired.master_fingerprint,
+                derivationPathLabel: t.wallet_connect_screen.guide_bitbox02.paired.derivation_path,
+                xpubLabel: t.wallet_connect_screen.guide_bitbox02.paired.xpub,
+              )
+              : const WalletConnectWalletInfoSkeleton(),
     );
   }
 
-  Widget _buildWalletInfoCard(BitBox02ConnectViewModel vm) {
-    return WalletConnectWalletInfoCard(
-      children: [
-        WalletConnectInfoRow(label: t.wallet_connect_screen.guide_bitbox02.paired.device_name, value: vm.deviceName),
-        CoconutLayout.spacing_300h,
-        WalletConnectInfoRow(
-          label: t.wallet_connect_screen.guide_bitbox02.paired.master_fingerprint,
-          value: vm.fingerprint.toUpperCase(),
-        ),
-        CoconutLayout.spacing_300h,
-        WalletConnectInfoRow(
-          label: t.wallet_connect_screen.guide_bitbox02.paired.derivation_path,
-          value: NetworkType.currentNetworkType.isTestnet ? "m/84'/1'/0'" : "m/84'/0'/0'",
-        ),
-        CoconutLayout.spacing_300h,
-        WalletConnectInfoRow(
-          label: t.wallet_connect_screen.guide_bitbox02.paired.xpub,
-          value: vm.xpub,
-          direction: Axis.vertical,
-        ),
-      ],
-    );
+  bool _isWalletMismatch(BitBox02ConnectViewModel vm) {
+    final isSignFlow = widget.psbtBase64 != null;
+    final isPaired = vm.step == BitBox02ConnectStep.paired;
+    final hasXpub = vm.xpub.isNotEmpty;
+    if (!isSignFlow || !isPaired || !hasXpub) return false;
+
+    final wp = context.read<WalletProvider>();
+    final matchedName = wp.findWalletNameByXpub(vm.xpub);
+    return matchedName == null || matchedName != (widget.walletName ?? '');
   }
 
   Widget _buildErrorCard(BitBox02ConnectViewModel vm) {
@@ -249,11 +285,21 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     final bool hasXpub = vm.xpub.isNotEmpty;
     final bool isPaired = vm.step == BitBox02ConnectStep.paired;
     final bool isSignFlow = widget.psbtBase64 != null;
+    final bool isMismatch = _isWalletMismatch(vm);
 
     String buttonText;
     VoidCallback onPressed;
 
-    if (isSignFlow && isPaired) {
+    if (isSignFlow && isPaired && isMismatch) {
+      return FixedBottomButton(
+        onButtonClicked: () {
+          vm.reset();
+          vm.connect(transport: vm.transport);
+        },
+        text: t.bitbox02_sign_screen.btn.connect_other_bitbox02,
+        isActive: !_isAddingWallet && !vm.isConnecting,
+      );
+    } else if (isSignFlow && isPaired) {
       buttonText = t.wallet_connect_screen.guide_bitbox02.btn.start_signing;
       onPressed = () {
         // Dismiss the bottom sheet first, then push the sign screen on the main navigator.

@@ -17,6 +17,7 @@ import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
@@ -138,35 +139,85 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   Future<void> _onButtonClicked(SendConfirmViewModel viewModel) async {
     context.loaderOverlay.show();
     viewModel.setTxWaitingForSign();
-    if (!context.mounted) return;
+    if (!mounted) return;
+
+    final connectedDeviceSource = await viewModel.findConnectedMatchingDevice();
+    if (!mounted) return;
     context.loaderOverlay.hide();
 
-    switch (viewModel.walletImportSource) {
+    if (connectedDeviceSource != null && connectedDeviceSource != viewModel.walletImportSource) {
+      final language = context.read<PreferenceProvider>().language;
+      final deviceName = connectedDeviceSource.displayName;
+      if (!mounted) return;
+      bool useConnectedDevice = false;
+      await showConfirmDialog(
+        context,
+        language,
+        t.send_confirm_screen.sign_with_connected_device_title,
+        t.send_confirm_screen.sign_with_connected_device_description(deviceName: deviceName),
+        leftButtonText: t.no,
+        rightButtonText: t.yes,
+        barrierDismissible: true,
+        onTapLeft: () {
+          useConnectedDevice = false;
+          Navigator.of(context).pop();
+        },
+        onTapRight: () {
+          useConnectedDevice = true;
+          Navigator.of(context).pop();
+        },
+      );
+      if (!mounted) return;
+      _navigateToNextScreen(viewModel, connectedDeviceSource: useConnectedDevice ? connectedDeviceSource : null);
+      return;
+    }
+
+    _navigateToNextScreen(viewModel, connectedDeviceSource: connectedDeviceSource);
+  }
+
+  void _navigateToNextScreen(SendConfirmViewModel viewModel, {WalletImportSource? connectedDeviceSource}) {
+    final source = connectedDeviceSource ?? viewModel.walletImportSource;
+    switch (source) {
       case WalletImportSource.bitbox02:
-        await _navigateToBitBox02Sign(viewModel);
+        if (connectedDeviceSource != null) {
+          _pushBitBox02SignScreen(viewModel);
+        } else {
+          _navigateToBitBox02ConnectIfNeeded(viewModel);
+        }
       case WalletImportSource.trezor:
-        _navigateToTrezorSign(viewModel);
+        if (connectedDeviceSource != null) {
+          _pushTrezorSignScreen(viewModel);
+        } else {
+          _navigateToTrezorConnectIfNeeded(viewModel);
+        }
       default:
         Navigator.pushNamed(context, '/unsigned-transaction-qr', arguments: {'walletName': viewModel.walletName});
     }
   }
 
-  Future<void> _navigateToBitBox02Sign(SendConfirmViewModel viewModel) async {
-    final isPhysicallyConnected = await BitBox02ConnectivityService.isDeviceConnected();
-    final hasSession = BitBox02Device.lastConnected != null;
-    if (!context.mounted) return;
-    if (isPhysicallyConnected && hasSession) {
-      Navigator.pushNamed(
-        context,
-        '/bitbox02-sign',
-        arguments: {
-          'psbtBase64': viewModel.txWaitingForSign,
-          'walletName': viewModel.walletName,
-          'walletFingerprint': viewModel.walletFingerprint,
-          'isFromSendFlow': true,
-          'transport': BitBox02Transport.resolveForSign(),
-        },
-      );
+  void _pushBitBox02SignScreen(SendConfirmViewModel viewModel) {
+    Navigator.pushNamed(
+      context,
+      '/bitbox02-sign',
+      arguments: {
+        'psbtBase64': viewModel.txWaitingForSign,
+        'walletName': viewModel.walletName,
+        'walletFingerprint': viewModel.walletFingerprint,
+        'isFromSendFlow': true,
+        'transport': BitBox02Transport.resolveForSign(),
+      },
+    );
+  }
+
+  Future<void> _navigateToBitBox02ConnectIfNeeded(SendConfirmViewModel viewModel) async {
+    final isConnected = await BitBox02ConnectivityService.isDeviceConnected();
+    final lastConnected = BitBox02Device.lastConnected;
+    final hasSession = lastConnected != null;
+    final isMatchingWallet =
+        hasSession && lastConnected.cachedXpub != null && lastConnected.cachedXpub == viewModel.walletExtendedPublicKey;
+    if (!mounted) return;
+    if (isConnected && hasSession && isMatchingWallet) {
+      _pushBitBox02SignScreen(viewModel);
     } else {
       CommonBottomSheets.showCustomHeightBottomSheet(
         context: context,
@@ -175,37 +226,46 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
           psbtBase64: viewModel.txWaitingForSign,
           walletName: viewModel.walletName,
           walletFingerprint: viewModel.walletFingerprint,
+          resumeFromExistingSession: isConnected && hasSession,
         ),
         heightRatio: 0.9,
       );
     }
   }
 
-  Future<void> _navigateToTrezorSign(SendConfirmViewModel viewModel) async {
+  void _pushTrezorSignScreen(SendConfirmViewModel viewModel) {
+    final lastConnected = TrezorDevice.lastConnected!;
+    Navigator.pushNamed(
+      context,
+      '/trezor-sign',
+      arguments: {
+        'psbtBase64': viewModel.txWaitingForSign,
+        'walletName': viewModel.walletName,
+        'walletFingerprint': viewModel.walletFingerprint,
+        'isFromSendFlow': true,
+        'transport': lastConnected.transport.name,
+      },
+    );
+  }
+
+  Future<void> _navigateToTrezorConnectIfNeeded(SendConfirmViewModel viewModel) async {
     final lastConnected = TrezorDevice.lastConnected;
-    final isPhysicallyConnected = await TrezorBleConnectivityService.isDeviceConnected(
+    final isConnected = await TrezorBleConnectivityService.isDeviceConnected(
       lastConnected?.transport ?? TrezorTransport.ble,
     );
     final hasSession = lastConnected != null;
-    if (!context.mounted) return;
-    if (isPhysicallyConnected && hasSession) {
-      Navigator.pushNamed(
-        context,
-        '/trezor-sign',
-        arguments: {
-          'psbtBase64': viewModel.txWaitingForSign,
-          'walletName': viewModel.walletName,
-          'walletFingerprint': viewModel.walletFingerprint,
-          'isFromSendFlow': true,
-          'transport': lastConnected.transport.name,
-        },
-      );
+    final isMatchingWallet =
+        hasSession && lastConnected.cachedXpub != null && lastConnected.cachedXpub == viewModel.walletExtendedPublicKey;
+    if (!mounted) return;
+    if (isConnected && hasSession && isMatchingWallet) {
+      _pushTrezorSignScreen(viewModel);
     } else {
       TrezorNavigator.showConnectScreen(
         context: context,
         psbtBase64: viewModel.txWaitingForSign,
         walletName: viewModel.walletName,
         walletFingerprint: viewModel.walletFingerprint,
+        resumeFromExistingSession: isConnected && hasSession,
       );
     }
   }
