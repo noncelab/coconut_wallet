@@ -253,38 +253,50 @@ class _LabelManagementActionScreen extends StatelessWidget {
   }
 
   Widget _buildContentView(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(shape: BoxShape.circle, color: context.coconutColors.primary.withOpacity(0.1)),
-              child: SvgPicture.asset(
-                iconPath,
-                width: 40,
-                height: 40,
-                colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          CoconutToolTip(
+            backgroundColor: context.coconutColors.surface,
+            borderColor: context.coconutColors.surface,
+            icon: SvgPicture.asset(
+              'assets/svg/circle-info.svg',
+              width: 20,
+              colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+            ),
+            tooltipType: CoconutTooltipType.fixed,
+            richText: RichText(
+              textAlign: TextAlign.start,
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$title\n\n',
+                    style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+                  ),
+                  TextSpan(
+                    text: description,
+                    style: CoconutTypography.body1_16.setColor(context.coconutColors.secondaryText),
+                  ),
+                ],
               ),
             ),
-            CoconutLayout.spacing_1000h,
-            Text(
-              title,
-              style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
-              textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 80),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: context.coconutColors.primary.withOpacity(0.1)),
+            child: SvgPicture.asset(
+              iconPath,
+              width: 40,
+              height: 40,
+              colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
             ),
-            CoconutLayout.spacing_500h,
-            Text(
-              description,
-              style: CoconutTypography.body1_16.setColor(context.coconutColors.secondaryText),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 150),
-          ],
-        ),
+          ),
+          const SizedBox(height: 150),
+        ],
       ),
     );
   }
