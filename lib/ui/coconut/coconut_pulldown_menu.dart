@@ -174,7 +174,7 @@ class CoconutPulldownMenu extends StatelessWidget {
                     buttonHeight: buttonHeight,
                     buttonPadding: buttonPadding,
                     textColor: textColor ?? colors.pulldownMenuTextColor,
-                    disabledTextColor: colors.secondaryText,
+                    disabledTextColor: colors.mutedText,
                     isSelectedItemBold: isSelectedItemBold ?? false,
                     selectedIndex: selectedIndex,
                     iconSize: iconSize,

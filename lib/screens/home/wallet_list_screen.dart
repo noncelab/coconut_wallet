@@ -874,7 +874,10 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
               duration: const Duration(milliseconds: 300),
               child: Text(
                 t.wallet_list.bottom_sheet.visible,
-                style: CoconutTypography.caption_10.copyWith(height: 1.4, color: context.coconutColors.accentForeground),
+                style: CoconutTypography.caption_10.copyWith(
+                  height: 1.4,
+                  color: context.coconutColors.accentForeground,
+                ),
               ),
             ),
           ],

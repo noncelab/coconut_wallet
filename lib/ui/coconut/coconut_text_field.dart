@@ -216,6 +216,9 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   }
 
   bool get _showClearButton {
+    if (_text.isEmpty) {
+      return false;
+    }
     switch (widget.clearButtonVisibility) {
       case CoconutTextFieldClearButtonVisibility.never:
         return false;

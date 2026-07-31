@@ -679,37 +679,40 @@ class CoconutColors {
   }
 
   factory CoconutColors.coconutPulp() {
-    const pulp = Color(0xFFFFFDE9);
-    const cream = Color(0xFFFFF4DD);
-    const shell = Color(0xFFFFFEFA);
-    const sand = Color(0xFFEDCCA4);
-    const caramel = Color(0xFFE3A567);
-    const husk = Color(0xFFC57723);
+    const pulp = Color(0xFFFAF8F3);
+    const cream = Color(0xFFF4E9D3);
+    const shell = Color(0xFFFFFDF7);
+    const sand = Color(0xFFEAD6B4);
+    const caramel = Color(0xFFD89A5B);
     const huskDeep = Color(0xFF6E3D18);
-    const huskSoft = Color(0xFFE5C09B);
-    const lagoon = Color(0xFF71C0D2);
-    const lagoonSoft = Color(0xFFF2FBFC);
-    const leaf = Color(0xFF8FC178);
-    const line = Color(0xFFE2CCAA);
+    const husk = Color(0xFFB87433);
+    const huskSoft = Color(0xFFDFC09A);
+    const toast = Color(0xFFC18C55);
+    const lagoonDeep = Color(0xFF4FA8C8);
+    const lagoon = Color(0xFF72CFEA);
+    const seefoam = Color(0xFF8FD9C5);
+    const palmGreen = Color(0xFF7FB96A);
+    const line = Color(0xFFE8D8BF);
     const dim = Color(0xFFF2DFC0);
+    const golenSun = Color(0xFFD99B45);
 
     return CoconutColors(
       mainnetLogoGradient: kCoconutMainnetLogoGradient,
-      regtestLogo: leaf,
+      regtestLogo: palmGreen,
       background: pulp,
       surface: cream,
-      surfacePressOverlay: sand,
-      surfacePressOverlayOpacity: 0.5,
-      surfaceDisabled: line,
-      surfaceMuted: dim,
+      surfacePressOverlay: golenSun,
+      surfacePressOverlayOpacity: 0.12,
+      surfaceDisabled: shell,
+      surfaceMuted: sand,
       surfaceInset: shell,
-      surfaceInfoChip: lagoonSoft,
-      primary: leaf,
+      surfaceInfoChip: seefoam.withAlpha(60),
+      primary: palmGreen,
       primaryText: huskDeep,
-      secondaryText: husk.withAlpha(160),
-      tertiaryText: caramel,
-      mutedText: sand,
-      accentForeground: leaf,
+      secondaryText: husk,
+      tertiaryText: toast,
+      mutedText: huskSoft,
+      accentForeground: palmGreen,
       border: line,
       borderStrong: huskDeep,
       shadowDefault: huskDeep.withValues(alpha: 0.18),
@@ -723,8 +726,8 @@ class CoconutColors {
       iconButtonHighlight: dim,
       warning: ds.CoconutColors.warningYellow,
       danger: ds.CoconutColors.hotPink,
-      success: leaf,
-      divider: line.withAlpha(100),
+      success: palmGreen,
+      divider: lagoon.withAlpha(30),
 
       brandAccentBackground: lagoon,
       brandAccentForeground: huskDeep,
@@ -745,7 +748,7 @@ class CoconutColors {
       chipOutlinedUnselectedBackground: cream,
       chipOutlinedUnselectedText: huskSoft,
       inputSurface: ds.CoconutColors.white,
-      inputPlaceholder: caramel,
+      inputPlaceholder: toast.withAlpha(140),
       inputBorder: line,
       segmentedControlSelected: huskDeep,
       segmentedControlBackground: dim,
@@ -785,9 +788,9 @@ class CoconutColors {
 
       homeBackground: pulp,
       homeSurface: cream,
-      homeSurfacePressOverlay: sand,
+      homeSurfacePressOverlay: golenSun,
       homeSurfacePressOverlayOpacity: 0.2,
-      nodeConnected: lagoon,
+      nodeConnected: lagoonDeep,
       nodeFailed: ds.CoconutColors.hotPink,
       utxoOverviewChartSurface: shell,
       utxoOverviewChartUnselectedOverlayOpacity: 0.32,
@@ -809,19 +812,19 @@ class CoconutColors {
       taprootParticipantNeutralRoleBorder: line,
       taprootParticipantNeutralRoleText: huskDeep,
       txFlowLine: caramel,
-      rbfAccent: leaf,
+      rbfAccent: palmGreen,
       cpfpAccent: lagoon,
       feeBumpingHistoryLine: sand,
-      sendingColor: leaf,
+      sendingColor: palmGreen,
       receivingColor: lagoon,
       recommendFeeAnimStart: huskDeep,
       recommendFeeAnimHighlight: caramel,
-      glossaryKeywordBackground: lagoonSoft,
+      glossaryKeywordBackground: seefoam,
       glossaryKeywordText: huskDeep,
       qrScannerOverlay: huskSoft.withValues(alpha: 0.4),
       qrScannerProgressBarTrack: sand,
       qrScannerProgressBarFill: huskDeep,
-      faucetPopoverBackground: lagoonSoft,
+      faucetPopoverBackground: seefoam,
       faucetPopoverText: huskDeep,
     );
   }
