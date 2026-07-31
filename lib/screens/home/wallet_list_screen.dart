@@ -1,4 +1,16 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -13,15 +25,15 @@ import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_item_setting_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/animated_balance.dart';
-import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
+import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -29,8 +41,9 @@ import 'package:provider/provider.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
 import 'package:tuple/tuple.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class WalletListScreen extends StatefulWidget {
   const WalletListScreen({super.key});
@@ -220,19 +233,13 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   Widget _buildEditModeHeader() {
     SvgPicture starIcon = SvgPicture.asset(
-      'assets/svg/star-small.svg',
+      CommonStateIconPath.starSmall,
       width: 16,
       height: 16,
       colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
     );
     SvgPicture hamburgerIcon = SvgPicture.asset(
-      'assets/svg/hamburger.svg',
-      width: 16,
-      height: 16,
-      colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
-    );
-    SvgPicture deleteIcon = SvgPicture.asset(
-      'assets/svg/delete.svg',
+      CommonMenuIconPath.hamburger,
       width: 16,
       height: 16,
       colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
@@ -242,7 +249,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        color: context.coconutColors.surfaceCard,
+        color: context.coconutColors.surface,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       child: Column(
@@ -313,7 +320,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 width: MediaQuery.sizeOf(context).width,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 decoration: BoxDecoration(
-                  color: context.coconutColors.surfaceCard,
+                  color: context.coconutColors.surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Selector<PreferenceProvider, Tuple3<BitcoinUnit, List<int>, List<int>>>(
@@ -440,10 +447,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     );
                   },
                   icon: SvgPicture.asset(
-                    'assets/svg/settings.svg',
+                    FeatureSettingsIconPath.settings,
                     width: 16,
                     height: 16,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                   ),
                 ),
               ),
@@ -463,11 +470,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             const Spacer(),
             BitcoinAmountUnit(
               currentUnit: currentUnit,
-              unitStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryTextStrong),
+              unitStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
               spacing: CoconutLayout.spacing_100w,
               child: Text(
                 currentUnit.displayBitcoinAmount(amount),
-                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryTextStrong),
+                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
               ),
             ),
           ],
@@ -525,7 +532,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         // 드래그 중인 항목의 외관 변경
         return Container(
           decoration: BoxDecoration(
-            color: context.coconutColors.surfaceRaised,
+            // shadow 대비로 더 잘보이도록 화면 배경과 동일하게 맞춤
+            color: context.coconutColors.background,
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
             boxShadow: [
               BoxShadow(
@@ -553,9 +561,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             padding: const EdgeInsets.symmetric(horizontal: 20),
             color: context.coconutColors.danger,
             child: SvgPicture.asset(
-              'assets/svg/trash.svg',
+              CommonActionIconPath.trash,
               width: 16,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
           onDismissed: (direction) {
@@ -660,10 +668,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             );
           },
           rightWidget: SvgPicture.asset(
-            'assets/svg/arrow-right.svg',
+            CommonNavigationIconPath.arrowRight,
             width: 6,
             height: 10,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
           ),
         );
       },
@@ -689,11 +697,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   description: t.wallet_list.edit.unsaved_changes_confirm_exit,
                   leftButtonText: t.no,
                   rightButtonText: t.yes,
-                  onTapRight: () {
-                    _viewModel.setEditMode(false);
+                  onTapLeft: () {
                     Navigator.pop(context);
                   },
-                  onTapLeft: () {
+                  onTapRight: () {
+                    _viewModel.setEditMode(false);
                     Navigator.pop(context);
                   },
                 );
@@ -734,7 +742,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   child: Padding(
                     key: ValueKey("loading"),
                     padding: EdgeInsets.only(bottom: 20.0),
-                    child: LoadingIndicator(),
+                    child: InlineLoadingIndicator(),
                   ),
                 )
                 : null,
@@ -841,7 +849,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: context.coconutColors.surfaceCard,
+                color: context.coconutColors.surface,
                 borderRadius: BorderRadius.circular(CoconutStyles.radius_50),
               ),
               width: 18,
@@ -866,14 +874,17 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
               duration: const Duration(milliseconds: 300),
               child: Text(
                 t.wallet_list.bottom_sheet.visible,
-                style: CoconutTypography.caption_10.copyWith(height: 1.4, color: context.coconutColors.textHighlight),
+                style: CoconutTypography.caption_10.copyWith(
+                  height: 1.4,
+                  color: context.coconutColors.accentForeground,
+                ),
               ),
             ),
           ],
         ),
         ShrinkAnimationButton(
           defaultColor: context.coconutColors.surface,
-          pressedColor: context.coconutColors.surfacePressed,
+          pressedOverlayColor: context.coconutColors.surfacePressOverlay,
           borderRadius: 8,
           child: Container(
             constraints: const BoxConstraints(minWidth: 52),

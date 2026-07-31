@@ -39,7 +39,6 @@ class Bip21AmountBottomSheet {
           currentUnit.isBtcUnit ? [const BtcAmountInputFormatter()] : [const SatoshiAmountInputFormatter()],
       completeEnabledWhen: (current, original) => current != original,
       focusOnlyWhenOriginalNotEmpty: false,
-      inputBorderColor: context.coconutColors.inputBorder,
       prefix:
           currentUnit.isBip177Unit
               ? Padding(

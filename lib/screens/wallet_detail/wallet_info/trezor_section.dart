@@ -84,7 +84,7 @@ class _TrezorSectionState extends State<TrezorSection> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(color: context.coconutColors.surfaceCard, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(color: context.coconutColors.surface, borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -105,7 +105,7 @@ class _TrezorSectionState extends State<TrezorSection> {
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _isConnected ? context.coconutColors.textHighlight : context.coconutColors.surfaceDisabled,
+                    color: _isConnected ? context.coconutColors.primary : context.coconutColors.surfaceDisabled,
                   ),
                 ),
                 CoconutLayout.spacing_100w,
@@ -114,7 +114,7 @@ class _TrezorSectionState extends State<TrezorSection> {
                       ? t.wallet_info_screen.connected_hardware_wallet.connected
                       : t.wallet_info_screen.connected_hardware_wallet.disconnected,
                   style: CoconutTypography.body3_12_Bold.setColor(
-                    _isConnected ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
+                    _isConnected ? context.coconutColors.primary : context.coconutColors.secondaryText,
                   ),
                 ),
                 if (_isConnected) ...[

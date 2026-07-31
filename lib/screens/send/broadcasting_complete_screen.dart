@@ -1,15 +1,18 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/ripple_effect.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class BroadcastingCompleteScreen extends StatefulWidget {
   final int id;
@@ -59,7 +62,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                           ? MediaQuery.of(context).size.height * 0.1
                           : MediaQuery.of(context).size.height * 0.3,
                 ),
-                SvgPicture.asset('assets/svg/completion-check.svg'),
+                SvgPicture.asset(CommonStateIconPath.completionCheck),
                 CoconutLayout.spacing_400h,
                 Text(
                   t.broadcasting_complete_screen.complete,
@@ -127,7 +130,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: t.toast.memo_update_failed,
         level: CoconutToastLevel.warning,
       );
@@ -187,7 +190,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                'assets/svg/pen.svg',
+                CommonActionIconPath.pen,
                 colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
@@ -226,7 +229,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                'assets/svg/pen.svg',
+                CommonActionIconPath.pen,
                 colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
@@ -271,7 +274,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
           padding: const EdgeInsets.symmetric(horizontal: Sizes.size8, vertical: Sizes.size4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Sizes.size14),
-            border: Border.all(width: 1, color: context.coconutColors.tertiaryText),
+            border: Border.all(width: 1, color: context.coconutColors.border),
           ),
           child: Text(text, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText)),
         ),

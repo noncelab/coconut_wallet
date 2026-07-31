@@ -1,7 +1,9 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class CoconutLimitTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -34,7 +36,6 @@ class CoconutLimitTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -52,7 +53,7 @@ class CoconutLimitTextField extends StatelessWidget {
             keyboardType: keyboardType,
             placeholder: placeholder,
             padding: EdgeInsets.fromLTRB(prefix != null ? 0 : 16, 20, 16, 20),
-            style: typography.body.copyWith(color: colors.primaryText),
+            style: CoconutTypography.body1_16.setColor(colors.primaryText),
             cursorColor: cursorColor,
             decoration: const BoxDecoration(color: Colors.transparent),
             maxLength: maxLength,
@@ -64,7 +65,7 @@ class CoconutLimitTextField extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
                         child: SvgPicture.asset(
-                          'assets/svg/text-field-clear.svg',
+                          CommonFormIconPath.textFieldClear,
                           colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                           width: 15,
                           height: 15,
@@ -90,9 +91,8 @@ class CoconutLimitTextField extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4, right: 4),
               child: Text(
                 '${controller.text.runes.length}/$maxLength',
-                style: typography.caption.copyWith(
-                  color: controller.text.runes.length == maxLength ? colors.primaryText : colors.tertiaryText,
-                  fontFamily: 'SpaceGrotesk',
+                style: CoconutTypography.body3_12_Number.copyWith(
+                  color: controller.text.runes.length == maxLength ? colors.primaryText : colors.mutedText,
                 ),
               ),
             ),

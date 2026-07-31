@@ -1,9 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/key_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/features/auth/pin/key_button.dart';
 import 'package:coconut_wallet/widgets/trezor_digit_box.dart';
 import 'package:coconut_wallet/widgets/textfield/passphrase_input_text_field.dart';
 import 'package:flutter/material.dart';
@@ -121,7 +121,7 @@ class TrezorPassphraseOptionButton extends StatelessWidget {
       width: double.infinity,
       child: ShrinkAnimationButton(
         defaultColor: context.coconutColors.surfaceButton,
-        pressedColor: context.coconutColors.surfacePressed,
+        pressedOverlayColor: context.coconutColors.surfacePressOverlay, // TODO: UI 확인 필요
         borderRadius: CoconutStyles.radius_200,
         isActive: onTap != null,
         onPressed: onTap ?? () {},

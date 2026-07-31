@@ -1,8 +1,22 @@
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -22,9 +36,10 @@ import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/ripple_effect.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -558,7 +573,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       CoconutToast.showToast(
         context: context,
         text: t.utility.p2p_calculator.enter_amount_first,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         level: CoconutToastLevel.warning,
         isVisibleIcon: true,
       );
@@ -718,7 +733,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       onPressed: () => Navigator.of(context).pop(),
                       color: context.coconutColors.primaryText,
                       icon: SvgPicture.asset(
-                        'assets/svg/close.svg',
+                        CommonActionIconPath.close,
                         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                       ),
                     ),
@@ -800,7 +815,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               Expanded(
                 child: ShrinkAnimationButton(
                   borderRadius: 8,
-                  pressedColor: context.coconutColors.surfacePressed,
+                  pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                   onPressed: () {
                     _onSendButtonPressed(satsAmount);
                   },
@@ -810,10 +825,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SvgPicture.asset(
-                          'assets/svg/send-plane.svg',
-                          colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                          width: 14,
-                          height: 14,
+                          FeatureTransactionIconPath.sendPlane,
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                          width: 16,
+                          height: 16,
                         ),
                         CoconutLayout.spacing_200w,
                         Text(
@@ -829,7 +844,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               Expanded(
                 child: ShrinkAnimationButton(
                   borderRadius: 8,
-                  pressedColor: context.coconutColors.surfacePressed,
+                  pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                   onPressed: () {
                     _captureAndShareBill();
                   },
@@ -839,10 +854,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SvgPicture.asset(
-                          'assets/svg/export.svg',
-                          colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                          width: 14,
-                          height: 14,
+                          CommonActionIconPath.export,
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                          width: 16,
+                          height: 16,
                         ),
                         CoconutLayout.spacing_200w,
                         Text(
@@ -884,7 +899,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             context: context,
             title: t.utility.p2p_calculator.calculator,
             actionButtonList: [
-              IconButton(
+              CoconutAppBarActionButton(
                 onPressed: () {
                   _viewModel.toggleP2PMode();
                   if (_viewModel.isOfflineMode) {
@@ -896,7 +911,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                   }
                 },
                 icon: Lottie.asset(
-                  'assets/lottie/online-offline-switch.json',
+                  SettingsLottiePath.onlineOfflineSwitch,
                   width: 24,
                   height: 24,
                   controller: _lottieController,
@@ -904,7 +919,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                     values: [
                       ValueDelegate.colorFilter([
                         '**',
-                      ], value: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcATop)),
+                      ], value: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcATop)),
                     ],
                   ),
                   onLoaded: (composition) {
@@ -912,13 +927,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                   },
                 ),
               ),
-              IconButton(
+              CoconutAppBarActionButton(
                 onPressed: _onShowTransactionBill,
                 icon: SvgPicture.asset(
-                  'assets/svg/hand-shake.svg',
+                  FeatureSettingsIconPath.handShake,
                   width: 24,
                   height: 24,
-                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                 ),
               ),
             ],
@@ -978,7 +993,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         _buildCurrentPriceWidget(isVisible),
         if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
-            pressedColor: context.coconutColors.surfacePressed,
+            pressedOverlayColor: context.coconutColors.surfacePressOverlay,
             onPressed: () async {
               await _viewModel.onFiatUnitChange();
               _resetCalculator();
@@ -1205,42 +1220,32 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }
 
   Widget _buildChangeInputAssetButton() {
-    if (_viewModel.isOfflineMode) {
-      return ShrinkAnimationButton(
-        onPressed: _changeInputAsset,
-        defaultColor: context.coconutColors.surfaceButton,
-        pressedColor: context.coconutColors.surfacePressed,
-        borderRadius: 8,
-        child: SizedBox(
-          width: 28,
-          height: 28,
-          child: Center(
-            child: SvgPicture.asset(
-              'assets/svg/arrow-top-down.svg',
-              width: 18,
-              height: 18,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
-            ),
-          ),
-        ),
-      );
-    }
+    final isOfflineMode = _viewModel.isOfflineMode;
+    final buttonSize = isOfflineMode ? 28.0 : 52.0;
+    final iconSize = isOfflineMode ? 18.0 : 32.0;
+    final borderRadius = isOfflineMode ? 8.0 : 26.0;
+
     return ShrinkAnimationButton(
       onPressed: _changeInputAsset,
       defaultColor: context.coconutColors.surfaceButton,
-      pressedColor: context.coconutColors.surfacePressed,
-      child: SizedBox(
-        width: 52,
-        height: 52,
-        child: Center(
-          child: SvgPicture.asset(
-            'assets/svg/arrow-top-down.svg',
-            width: 32,
-            height: 32,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+      borderRadius: borderRadius,
+      childBuilder:
+          (context, isPressed) => SizedBox(
+            width: buttonSize,
+            height: buttonSize,
+            child: Center(
+              child: SvgPicture.asset(
+                CommonNavigationIconPath.arrowTopDown,
+                width: iconSize,
+                height: iconSize,
+                colorFilter: ColorFilter.mode(
+                  isPressed ? context.coconutColors.iconPrimary : context.coconutColors.iconSecondary,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -1257,7 +1262,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     bool hidePlaceholderOnFocus = true,
   }) {
     final hasInput = _viewModel.inputAmount != null;
-    final textColor = hasInput ? context.coconutColors.primaryText : context.coconutColors.tertiaryText;
+    final textColor = hasInput ? context.coconutColors.primaryText : context.coconutColors.mutedText;
     // focus가 있고 입력값이 비어있으면 placeholder 숨김 (단, controller.text가 있으면 표시)
     final shouldHidePlaceholder = hidePlaceholderOnFocus && focusNode.hasFocus && controller.text.isEmpty;
     final effectivePlaceholder = shouldHidePlaceholder ? '' : placeholderText;
@@ -1274,10 +1279,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               curve: Curves.easeInOut,
               constraints: BoxConstraints(minHeight: fixedHeight ?? 175),
               height: fixedHeight,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: context.coconutColors.inputSurface,
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
               child: Center(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -1294,7 +1296,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                         child: IntrinsicWidth(
                           child: CoconutTextField(
                             key: ValueKey('input_textfield_$placeholderText'),
-                            placeholderColor: context.coconutColors.tertiaryText,
+                            placeholderColor: context.coconutColors.mutedText,
                             enabled: _viewModel.isNetworkOn,
                             maxLines: 1,
                             controller: controller,
@@ -1316,6 +1318,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
                             padding: EdgeInsets.zero,
+                            activeColor: context.coconutColors.primaryText,
+                            cursorColor: context.coconutColors.primaryText,
                           ),
                         ),
                       ),
@@ -1363,11 +1367,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               }
               : null,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: context.coconutColors.surfaceSectionBreak,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: context.coconutColors.divider),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1387,13 +1388,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                     focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
                     padding: EdgeInsets.zero,
                     maxLines: 1,
-                    height: 22,
+                    height: 24,
                     textInputAction: TextInputAction.done,
                     textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
                     textInputFormatter: const [RateInputFormatter(integerPlaces: 2, decimalPlaces: 1)],
                     onChanged: _handlePremiumInputChanged,
                     textAlign: TextAlign.end,
                     isVisibleBorder: false,
+                    activeColor: context.coconutColors.primaryText,
+                    cursorColor: context.coconutColors.primaryText,
                   ),
                 ),
               ),
@@ -1418,7 +1421,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           constraints: BoxConstraints(minHeight: fixedHeight),
           height: fixedHeight,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.inputSurface),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
           child: child,
         ),
       ),
@@ -1432,7 +1435,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     String? postfix,
     VoidCallback? onTap,
   }) {
-    final textColor = isActive ? context.coconutColors.primaryText : context.coconutColors.tertiaryText;
+    final textColor = isActive ? context.coconutColors.primaryText : context.coconutColors.mutedText;
 
     return Center(
       child: FittedBox(
@@ -1548,7 +1551,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         child: Container(
           width: MediaQuery.of(context).size.width,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          color: context.coconutColors.surfaceCard,
+          color: context.coconutColors.surface,
           child: Row(
             children: [
               for (int i = 0; i < buttonData.length; i++) ...[
@@ -1730,7 +1733,7 @@ class _CopyableTextState extends State<_CopyableText> {
             ),
             CoconutLayout.spacing_100w,
             SvgPicture.asset(
-              'assets/svg/copy.svg',
+              CommonActionIconPath.copy,
               colorFilter: ColorFilter.mode(
                 _isPressed ? context.coconutColors.secondaryText : context.coconutColors.primaryText,
                 BlendMode.srcIn,

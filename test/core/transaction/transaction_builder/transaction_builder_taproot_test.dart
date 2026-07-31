@@ -69,7 +69,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -89,7 +89,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -108,7 +108,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -132,7 +132,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -155,7 +155,7 @@ void main() {
             recipients: {recipient1: 200},
             feeRate: 10.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -179,7 +179,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
             scriptPathPolicy: taprootWallet.defaultPolicy!,
@@ -200,7 +200,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
             scriptPathPolicy: taprootWallet.defaultPolicy!,
@@ -218,7 +218,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
             scriptPathPolicy: taprootWallet.defaultPolicy!,
@@ -247,7 +247,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -258,7 +258,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -275,7 +275,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -286,7 +286,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -303,7 +303,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -319,7 +319,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -330,7 +330,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -346,7 +346,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -357,7 +357,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -380,7 +380,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -399,7 +399,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -419,7 +419,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -438,7 +438,7 @@ void main() {
             recipients: singleRecipient,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -463,7 +463,7 @@ void main() {
             recipients: singleRecipientSameBalance,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -487,7 +487,7 @@ void main() {
             recipients: {recipient1: 200},
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -512,7 +512,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -532,7 +532,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
             scriptPathPolicy: taprootWallet.defaultPolicy!,
@@ -553,7 +553,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1800.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -572,7 +572,7 @@ void main() {
             recipients: batchRecipientsSameBalance,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: false,
           ).build();
@@ -588,7 +588,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -613,7 +613,7 @@ void main() {
             recipients: batchRecipientsOverBalance,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: false,
           ).build();
@@ -635,7 +635,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: false,
             isUtxoFixed: true,
           ).build();
@@ -661,7 +661,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 1.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -690,7 +690,7 @@ void main() {
             recipients: batchRecipients,
             feeRate: 200.0,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: taprootWallet,
+            walletItemBase: taprootWallet,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
           ).build();
@@ -717,7 +717,7 @@ void main() {
         recipients: {recipient1: 199850},
         feeRate: 1.0,
         changeDerivationPath: changeDerivationPath,
-        walletListItemBase: taprootWallet,
+        walletItemBase: taprootWallet,
         isFeeSubtractedFromAmount: false,
         isUtxoFixed: false,
       );
@@ -738,7 +738,7 @@ void main() {
         recipients: singleRecipient,
         feeRate: 1.0,
         changeDerivationPath: changeDerivationPath,
-        walletListItemBase: taprootWallet,
+        walletItemBase: taprootWallet,
         isFeeSubtractedFromAmount: false,
         isUtxoFixed: false,
       );
@@ -770,7 +770,7 @@ void main() {
         recipients: paymentMap,
         feeRate: feeRate,
         changeDerivationPath: changeDerivationPath,
-        walletListItemBase: taprootWallet,
+        walletItemBase: taprootWallet,
         isFeeSubtractedFromAmount: false,
         isUtxoFixed: false,
       );
@@ -803,7 +803,7 @@ void main() {
         recipients: paymentMap,
         feeRate: feeRate,
         changeDerivationPath: changeDerivationPath,
-        walletListItemBase: taprootWallet,
+        walletItemBase: taprootWallet,
         isFeeSubtractedFromAmount: false,
         isUtxoFixed: false,
         scriptPathPolicy: taprootWallet.defaultPolicy!,

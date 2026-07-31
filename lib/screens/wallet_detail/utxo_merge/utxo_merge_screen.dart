@@ -1,6 +1,12 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutAppBar, CoconutUnderlinedButton, CoconutOptionPicker, CoconutTextField, CoconutTextFieldStyle;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_option_picker.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
@@ -21,22 +27,22 @@ import 'package:coconut_wallet/screens/common/tag_select_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/address_scan_util.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet/estimated_fee_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/fixed_text_scale.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
+import 'package:coconut_wallet/widgets/features/utxo/bottom_sheet/estimated_fee_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/text/fixed_text_scale.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:coconut_wallet/widgets/card/animated_summary_card.dart';
+import 'package:coconut_wallet/widgets/features/utxo/summary/animated_summary_card.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -82,7 +88,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   bool _isReceiveAddressBottomSheetOpen = false;
   bool _isFeeBottomSheetOpen = false;
 
-  Color get _pickerDividerColor => context.coconutColors.inputPlaceholder;
+  Color get _pickerDividerColor => context.coconutColors.divider;
 
   @override
   void initState() {
@@ -537,7 +543,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     if (_isHeaderFadingOut) {
       return text.characterFadeOutAnimation(
         key: ValueKey('merge-header-out-${step.name}-$_headerAnimationNonce'),
-        textStyle: CoconutTypography.heading4_18_Bold,
+        textStyle: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
         duration: const Duration(milliseconds: 100),
         slideDirection: CoconutCharacterFadeSlideDirection.slideUp,
       );
@@ -545,7 +551,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
 
     return text.characterFadeInAnimation(
       key: ValueKey('merge-header-in-${step.name}-$_headerAnimationNonce'),
-      textStyle: CoconutTypography.heading4_18_Bold,
+      textStyle: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
       duration: _headerAnimationDuration,
       delay: const Duration(milliseconds: 300),
       slideDirection: CoconutCharacterFadeSlideDirection.slideDown,
@@ -614,7 +620,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
         ShrinkAnimationButton(
           onPressed: _toggleDustExclusion,
           defaultColor: Colors.transparent,
-          pressedColor: context.coconutColors.surfacePressed,
+          pressedOverlayColor: context.coconutColors.surfacePressOverlay,
           borderRadius: 8,
           borderWidth: 0,
           child: Padding(
@@ -634,7 +640,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                       _viewModel.excludeDustUtxos
                           ? Center(
                             child: SvgPicture.asset(
-                              'assets/svg/check.svg',
+                              CommonActionIconPath.check,
                               width: 12,
                               height: 12,
                               colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
@@ -659,7 +665,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     return ShrinkAnimationButton(
       onPressed: _toggleDustExclusion,
       defaultColor: Colors.transparent,
-      pressedColor: context.coconutColors.surfacePressed,
+      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
       borderRadius: 8,
       borderWidth: 0,
       child: Padding(
@@ -679,7 +685,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                   _viewModel.excludeDustUtxos
                       ? Center(
                         child: SvgPicture.asset(
-                          'assets/svg/check.svg',
+                          CommonActionIconPath.check,
                           width: 14,
                           height: 14,
                           colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
@@ -1080,14 +1086,16 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     return switch (step) {
       UtxoMergeStep.selectMergeMethod => CoconutOptionPicker(
         text: _getCurrentMethodText(mergeMethod),
+        isExpanded: _isMergeMethodBottomSheetOpen,
         label: _viewModel.currentStep == UtxoMergeStep.selectMergeMethod ? null : t.merge_utxos_screen.merge_method,
-        dividerColor: _isMergeMethodBottomSheetOpen ? null : _pickerDividerColor,
+        dividerColor: _pickerDividerColor,
         onTap: _showMergeOptionBottomSheet,
       ),
       UtxoMergeStep.selectAmountRange => CoconutOptionPicker(
         text: _currentAmountRangeText,
+        isExpanded: _isAmountRangeBottomSheetOpen,
         label: _viewModel.currentStep == UtxoMergeStep.selectAmountRange ? null : t.merge_utxos_screen.amount_range,
-        dividerColor: _isAmountRangeBottomSheetOpen ? null : _pickerDividerColor,
+        dividerColor: _pickerDividerColor,
         onTap: _showAmountRangeBottomSheet,
         coconutOptionStateEnum:
             _viewModel.hasDustUtxosInInputs && !_viewModel.excludeDustUtxos
@@ -1098,16 +1106,18 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       ),
       UtxoMergeStep.selectTag => CoconutOptionPicker(
         text: _viewModel.effectiveSelectedTagName == null ? t.merge_utxos_screen.select_tag : '',
+        isExpanded: _isTagBottomSheetOpen,
         label: _viewModel.currentStep == UtxoMergeStep.selectTag ? null : t.merge_utxos_screen.selected_tag,
-        dividerColor: _isTagBottomSheetOpen ? null : _pickerDividerColor,
+        dividerColor: _pickerDividerColor,
         onTap: _showTagSelectBottomSheet,
         inlineWidgets: _buildSelectedTagInlineWidgets(context),
         inlineSpacing: 0,
       ),
       UtxoMergeStep.selectReceiveAddress => CoconutOptionPicker(
+        isExpanded: _isReceiveAddressBottomSheetOpen,
         inlineWidgets: [_buildReceiveAddressOptionText()],
         label: t.merge_utxos_screen.receive_address,
-        dividerColor: _isReceiveAddressBottomSheetOpen ? null : _pickerDividerColor,
+        dividerColor: _pickerDividerColor,
         onTap: _showReceiveAddressBottomSheet,
         enableTextWrap: true,
         coconutOptionStateEnum:
@@ -1149,13 +1159,14 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
         final shouldShowFeeRatePlaceholder = selector.isFeeRateInputEmpty;
         final isFeeTooHigh = selector.isFeeTooHigh;
         return CoconutOptionPicker(
+          isExpanded: _isFeeBottomSheetOpen,
           text:
               shouldShowFeeRatePlaceholder
                   ? t.merge_utxos_screen.fee_rate_input_placeholder
                   : selector.estimatedFeeText,
           label: t.estimated_fee,
           textColor: shouldShowFeeRatePlaceholder ? context.coconutColors.mutedText : context.coconutColors.primaryText,
-          dividerColor: _isFeeBottomSheetOpen ? null : _pickerDividerColor,
+          dividerColor: _pickerDividerColor,
           onTap: _showEstimatedFeeBottomSheet,
           coconutOptionStateEnum:
               isFeeTooHigh || selector.feeRate == 0 ? CoconutOptionStateEnum.error : CoconutOptionStateEnum.normal,

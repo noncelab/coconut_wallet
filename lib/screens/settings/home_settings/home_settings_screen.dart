@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
@@ -8,24 +9,22 @@ class HomeSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
-    final spacing = context.coconutSpacing;
 
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: colors.background,
         elevation: 0,
-        title: Text(t.home_screen_settings, style: typography.title.copyWith(color: colors.primaryText)),
+        title: Text(t.home_screen_settings, style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText)),
       ),
       body: Padding(
-        padding: EdgeInsets.all(spacing.md),
+        padding: const EdgeInsets.all(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () => Navigator.pushNamed(context, '/wallet-home-edit'),
           child: Container(
             width: double.infinity,
-            padding: EdgeInsets.all(spacing.lg),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: colors.surface,
               borderRadius: BorderRadius.circular(16),
@@ -33,7 +32,7 @@ class HomeSettingsScreen extends StatelessWidget {
             ),
             child: Text(
               t.wallet_home_screen.edit.title,
-              style: typography.bodyBold.copyWith(color: colors.primaryText),
+              style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
             ),
           ),
         ),

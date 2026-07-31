@@ -9,8 +9,9 @@ import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
+import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UtxoBucketCardRow extends StatelessWidget {
   final UtxoBucket bucket;
@@ -306,7 +307,7 @@ class _CoinStackState extends State<_CoinStack> {
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(999),
-                            color: context.coconutColors.infoChipBackground,
+                            color: context.coconutColors.surfaceInfoChip,
                           ),
                           child: Text(
                             '+$extraCount',
@@ -395,6 +396,7 @@ class UtxoCoinCard extends StatefulWidget {
     bool isLarge,
     bool isFocused,
     Color iconColor,
+    double unfocusedIconOpacity,
     Color amountTextColor,
     Color timestampTextColor,
     UtxoState utxo,
@@ -409,9 +411,9 @@ class UtxoCoinCard extends StatefulWidget {
           child: Padding(
             padding: EdgeInsets.all(size * (isSuspiciousDust ? 0.25 : 0.2)),
             child: Opacity(
-              opacity: isFocused ? 0.2 : 0.1,
+              opacity: isFocused ? 0.2 : unfocusedIconOpacity,
               child: SvgPicture.asset(
-                isSuspiciousDust ? 'assets/svg/dust.svg' : 'assets/svg/bitcoin.svg',
+                isSuspiciousDust ? FeatureUtxoIconPath.dust : FeatureWalletIconPath.bitcoin,
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
               ),
             ),
@@ -467,23 +469,27 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     final isLarge = !widget.compact;
     final isBill = UtxoCoinCard.isBillShape(widget.utxo.amount);
     final cardWidth = isBill ? widget.size * 1.35 : widget.size;
     final cardHeight = isBill ? widget.size * 0.85 : widget.size;
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
     final bucketCol = tierTheme.colorForSats(widget.utxo.amount, dustThreshold: widget.dustThreshold);
-    final bgColor = widget.isFocused ? bucketCol : Color.lerp(context.coconutColors.background, bucketCol, 0.68)!;
+    final bgColor =
+        widget.isFocused ? bucketCol : Color.lerp(colors.background, bucketCol, colors.utxoOverviewCoinTintStrength)!;
     final iconColor = bgColor;
     final shadowBlur = widget.isFocused ? 16.0 : 6.0;
     final innerStrokeColor =
-        widget.isSuspiciousDust ? Colors.transparent : bgColor.withValues(alpha: widget.isFocused ? 0.2 : 0.1);
+        widget.isSuspiciousDust
+            ? Colors.transparent
+            : bgColor.withValues(alpha: widget.isFocused ? 0.2 : colors.utxoOverviewCoinInnerStrokeOpacity);
     final coinBorder =
         widget.isSuspiciousDust
             ? null
             : widget.isAddressReused
-            ? Border.all(color: context.coconutColors.danger, width: 2)
-            : (widget.isSelected ? Border.all(color: context.coconutColors.selectedCoinBorder, width: 2) : null);
+            ? Border.all(color: colors.danger, width: 2)
+            : (widget.isSelected ? Border.all(color: colors.utxoOverviewSelectedCoinBorder, width: 2) : null);
 
     final coin = GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -504,11 +510,11 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
               decoration: BoxDecoration(
                 shape: isBill ? BoxShape.rectangle : BoxShape.circle,
                 borderRadius: isBill ? BorderRadius.circular(8) : null,
-                color: isBill ? context.coconutColors.billSurface : context.coconutColors.coinSurface,
+                color: isBill ? colors.utxoOverviewBillSurface : colors.utxoOverviewCoinSurface,
                 border: coinBorder,
                 boxShadow: [
                   BoxShadow(
-                    color: context.coconutColors.shadowDefault,
+                    color: colors.shadowDefault,
                     blurRadius: shadowBlur,
                     spreadRadius: widget.isFocused ? 2 : 0,
                     offset: const Offset(0, 4),
@@ -526,8 +532,9 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                               isLarge,
                               widget.isFocused,
                               iconColor,
-                              context.coconutColors.primaryText,
-                              context.coconutColors.mutedText,
+                              colors.utxoOverviewCoinIconOpacity,
+                              colors.primaryText,
+                              colors.mutedText,
                               widget.utxo,
                               widget.currentUnit,
                               widget.dustThreshold,
@@ -556,8 +563,9 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                               isLarge,
                               widget.isFocused,
                               iconColor,
-                              context.coconutColors.primaryText,
-                              context.coconutColors.mutedText,
+                              colors.utxoOverviewCoinIconOpacity,
+                              colors.primaryText,
+                              colors.mutedText,
                               widget.utxo,
                               widget.currentUnit,
                               widget.dustThreshold,
@@ -584,10 +592,10 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                     isBill
                         ? ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Container(color: context.coconutColors.selectionOverlay.withValues(alpha: 0.5)),
+                          child: Container(color: colors.utxoOverviewUnselectedOverlay.withValues(alpha: 0.3)),
                         )
                         : ClipOval(
-                          child: Container(color: context.coconutColors.selectionOverlay.withValues(alpha: 0.5)),
+                          child: Container(color: colors.utxoOverviewUnselectedOverlay.withValues(alpha: 0.3)),
                         ),
               ),
             if (widget.isSelected && widget.showSelectedCheckIcon)
@@ -596,12 +604,12 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                 right: isLarge ? 6 : 4,
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(color: context.coconutColors.primaryText, shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: colors.primaryText, shape: BoxShape.circle),
                   child: SvgPicture.asset(
-                    'assets/svg/check.svg',
+                    CommonActionIconPath.check,
                     width: isLarge ? 16 : 8,
                     height: isLarge ? 16 : 8,
-                    colorFilter: ColorFilter.mode(context.coconutColors.background, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(colors.background, BlendMode.srcIn),
                   ),
                 ),
               ),
@@ -611,15 +619,12 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                 right: isLarge ? 4 : 2,
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: context.coconutColors.primaryText.withValues(alpha: 0.5),
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: colors.primaryText.withValues(alpha: 0.5), shape: BoxShape.circle),
                   child: SvgPicture.asset(
-                    'assets/svg/lock_simple.svg',
+                    CommonSecurityIconPath.lockSimple,
                     width: isLarge ? 16 : 12,
                     height: isLarge ? 16 : 12,
-                    colorFilter: ColorFilter.mode(context.coconutColors.dimOverlay, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(colors.dimOverlay, BlendMode.srcIn),
                   ),
                 ),
               ),
@@ -629,15 +634,12 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                 left: isLarge ? 8 : 4,
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(6, 6, 6, 7),
-                  decoration: BoxDecoration(
-                    color: context.coconutColors.danger.withValues(alpha: 0.8),
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: colors.danger.withValues(alpha: 0.8), shape: BoxShape.circle),
                   child: SvgPicture.asset(
-                    'assets/svg/triangle-warning.svg',
+                    CommonStateIconPath.triangleWarning,
                     width: isLarge ? 12 : 10,
                     height: isLarge ? 12 : 10,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconOnDanger, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(colors.iconOnDanger, BlendMode.srcIn),
                   ),
                 ),
               ),

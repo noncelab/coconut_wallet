@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -16,15 +16,15 @@ void showTextFieldDialog({
     context: context,
     builder: (context) {
       return CupertinoAlertDialog(
-        title: title != null ? Text(title, style: Styles.h3) : null,
+        title: title != null ? Text(title, style: CoconutTypography.heading4_18_Bold) : null,
         content: Column(
           children: [
-            if (content != null) ...[Text(content, style: Styles.body2), const SizedBox(height: 12)],
+            if (content != null) ...[Text(content, style: CoconutTypography.body2_14), const SizedBox(height: 12)],
             CupertinoTextField(
               textAlign: TextAlign.center,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               controller: controller,
-              style: Styles.body1,
+              style: CoconutTypography.body1_16,
               keyboardType: textInputType ?? const TextInputType.numberWithOptions(decimal: true),
             ),
           ],

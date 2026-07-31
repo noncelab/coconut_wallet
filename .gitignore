@@ -201,7 +201,6 @@ coconut-fastlane-supply.json
 rust/trezor-bridge/target/
 rust/trezor-connect-rs/target/
 
-# CCOS
-docs/ccos/*
-
 /META-INF
+
+.zed/*

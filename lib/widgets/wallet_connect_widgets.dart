@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
@@ -57,7 +58,7 @@ class WalletConnectErrorCard extends StatelessWidget {
       child: Column(
         children: [
           SvgPicture.asset(
-            'assets/svg/circle-warning.svg',
+            CommonStateIconPath.circleWarning,
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
             height: 48,
             width: 48,
@@ -138,7 +139,7 @@ class WalletConnectInstructionToolTip extends StatelessWidget {
       backgroundColor: context.coconutColors.surface,
       borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
+        CommonStateIconPath.circleInfo,
         width: 20,
         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
@@ -190,12 +191,12 @@ class WalletConnectProgressCard extends StatelessWidget {
           SizedBox(
             width: 40,
             height: 40,
-            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 3),
+            child: CircularProgressIndicator(color: context.coconutColors.loadingIndicatorColor, strokeWidth: 3),
           ),
           CoconutLayout.spacing_400h,
           Text(
             title,
-            style: CoconutTypography.body2_14.setColor(context.coconutColors.primary),
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             textAlign: TextAlign.center,
           ),
           CoconutLayout.spacing_400h,
@@ -283,8 +284,8 @@ class WalletConnectSuccessCard extends StatelessWidget {
       child: Column(
         children: [
           SvgPicture.asset(
-            'assets/svg/circle-check.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
+            CommonStateIconPath.completionCheck,
+            colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
             height: 48,
             width: 48,
           ),
@@ -323,7 +324,7 @@ class WalletConnectMismatchCard extends StatelessWidget {
       child: Column(
         children: [
           SvgPicture.asset(
-            'assets/svg/triangle-warning.svg',
+            CommonStateIconPath.triangleWarning,
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
             height: 48,
             width: 48,

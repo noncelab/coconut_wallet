@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class ExpandableInfo {
   final String titleText;
@@ -21,8 +22,8 @@ class ExpandableInfoCard extends StatefulWidget {
     super.key,
     required this.descriptionText,
     required this.sections,
-    this.collapsedIconAsset = 'assets/svg/circle-help.svg',
-    this.expandedIconAsset = 'assets/svg/circle-warning.svg',
+    this.collapsedIconAsset = CommonStateIconPath.circleHelp,
+    this.expandedIconAsset = CommonStateIconPath.circleWarning,
   });
 
   @override
