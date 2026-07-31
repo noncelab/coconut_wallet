@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
@@ -337,6 +338,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                   qrcodeTopWidget: widget.qrcodeTopWidget,
                   qrData: displayQrData,
                   displayText: displayTextData,
+                  embedWidget: widget.showQrEmbedImage ? const CoconutLogoIcon(size: 16) : null,
                   isAddress: widget.isAddress,
                   qrInternalPadding: widget.qrInternalPadding,
                 ),

@@ -408,10 +408,18 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                     scrollController: scrollController,
                                     backgroundColor: context.coconutColors.surfaceBottomSheet,
                                     showBottomActions: true,
-                                    qrcodeTopWidget: Text(
-                                      addressList[index].derivationPath,
-                                      style: CoconutTypography.body2_14.merge(
-                                        TextStyle(color: context.coconutColors.primaryText.withValues(alpha: 0.7)),
+                                    qrcodeTopWidget: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            addressList[index].derivationPath,
+                                            style: CoconutTypography.body2_14.setColor(
+                                              context.coconutColors.secondaryText,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     qrData: addressList[index].address,
