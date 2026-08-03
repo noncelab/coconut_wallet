@@ -1325,6 +1325,7 @@ labels_management_screen:
     not_found: "Datei nicht gefunden.\nTippen Sie auf das Dateisymbol, um eine Sicherungsdatei hinzuzufügen."
     select: "Auswählen"
     apply: "Anwenden"
+    apply_description: "Möchten Sie die Datei $fileName anwenden?"
     delete: "Datei löschen"
     delete_description: "Sind Sie sicher, dass Sie die Datei '$fileName' löschen möchten?"
     delete_success: "Datei erfolgreich gelöscht"

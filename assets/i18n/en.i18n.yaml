@@ -1405,6 +1405,7 @@ labels_management_screen:
     not_found: "File not found.\nTap the file icon to add a backup file."
     select: "Select File"
     apply: "Apply"
+    apply_description: "Do you want to apply the file $fileName?"
     delete: "Delete File"
     delete_description: "Are you sure you want to delete the file '$fileName'?"
     delete_success: "File deleted successfully"

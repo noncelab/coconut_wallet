@@ -512,12 +512,7 @@ class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScre
                         child: FixedBottomButton(
                           text: t.labels_management_screen.file.apply,
                           isActive: _selectedItemIndex != null,
-                          onButtonClicked: () {
-                            if (_selectedItemIndex != null && snapshot.hasData) {
-                              final selectedFile = snapshot.data![_selectedItemIndex!];
-                              widget.onFileSelected(selectedFile.path);
-                            }
-                          },
+                          onButtonClicked: () => _onApplyButtonPressed(snapshot.data!),
                         ),
                       ),
                   ],
@@ -578,6 +573,29 @@ class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScre
         ),
       ),
     );
+  }
+
+  void _onApplyButtonPressed(List<File> files) async {
+    if (_selectedItemIndex == null) return;
+
+    final selectedFile = files[_selectedItemIndex!];
+    final fileName = p.basename(selectedFile.path);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            title: t.labels_management_screen.file.apply,
+            description: t.labels_management_screen.file.apply_description(fileName: fileName),
+            onTapRight: () => Navigator.of(dialogContext).pop(true),
+            rightButtonText: t.confirm,
+          ),
+    );
+
+    if (confirmed == true) {
+      widget.onFileSelected(selectedFile.path);
+    }
   }
 
   void _deleteFile(File file, int index) async {
