@@ -1396,6 +1396,7 @@ labels_management_screen:
     import: "Importa un archivo de notas BIP-329 (.jsonl) y lo aplica a Coconut Wallet."
   file:
     not_found: "No se encontró el archivo.\nToca el ícono de archivo para agregar un archivo de copia de seguridad."
+    select: "Seleccionar"
     delete: "Eliminar archivo"
     delete_description: "¿Estás seguro de que quieres eliminar el archivo '$fileName'?"
     delete_success: "Archivo eliminado correctamente"

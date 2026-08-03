@@ -1403,6 +1403,7 @@ labels_management_screen:
     import: "Imports a BIP-329 note file (.jsonl) and applies it to Coconut Wallet."
   file:
     not_found: "File not found.\nTap the file icon to add a backup file."
+    select: "Select File"
     delete: "Delete File"
     delete_description: "Are you sure you want to delete the file '$fileName'?"
     delete_success: "File deleted successfully"

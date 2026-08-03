@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'dart:math';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
@@ -364,12 +365,6 @@ class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScre
     }
   }
 
-  void _toggleTooltip() {
-    setState(() {
-      _isTooltipVisible = !_isTooltipVisible;
-    });
-  }
-
   void _removeTooltip() {
     if (_isTooltipVisible) {
       setState(() {
@@ -386,20 +381,7 @@ class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScre
         children: [
           Scaffold(
             backgroundColor: context.coconutColors.background,
-            appBar: CoconutAppBar.build(
-              title: t.wallet_info_screen.import_labels,
-              context: context,
-              actionButtonList: [
-                IconButton(
-                  key: _tooltipIconKey,
-                  icon: SvgPicture.asset(
-                    'assets/svg/question-mark.svg',
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                  ),
-                  onPressed: _toggleTooltip,
-                ),
-              ],
-            ),
+            appBar: CoconutAppBar.build(title: t.labels_management_screen.import_title, context: context),
             body: FutureBuilder<List<File>>(
               future: _filesFuture,
               builder: (context, snapshot) {
@@ -455,9 +437,50 @@ class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScre
                                     )
                                     : ListView.separated(
                                       padding: const EdgeInsets.only(top: 20, bottom: 90),
-                                      itemCount: snapshot.data!.length,
+                                      itemCount: snapshot.data!.length + 1,
                                       separatorBuilder: (context, index) => const SizedBox(height: 12),
                                       itemBuilder: (context, index) {
+                                        if (index == snapshot.data!.length) {
+                                          return GestureDetector(
+                                            onTap: _addExternalFile,
+                                            child: CustomPaint(
+                                              painter: _DashedBorderPainter(
+                                                color: context.coconutColors.border,
+                                                strokeWidth: 1.0,
+                                                dashWidth: 8.0,
+                                                gapWidth: 4.0,
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.transparent,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.start,
+                                                  children: [
+                                                    SvgPicture.asset(
+                                                      'assets/svg/plus.svg',
+                                                      width: 12,
+                                                      colorFilter: ColorFilter.mode(
+                                                        context.coconutColors.primaryText,
+                                                        BlendMode.srcIn,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      t.labels_management_screen.file.select,
+                                                      style: CoconutTypography.body1_16.setColor(
+                                                        context.coconutColors.primaryText,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }
                                         final file = snapshot.data![index];
                                         return _FileListItemCard(
                                           file: file,
@@ -626,6 +649,56 @@ class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScre
   }
 }
 
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double dashWidth;
+  final double gapWidth;
+  final BorderRadius borderRadius;
+
+  _DashedBorderPainter({
+    required this.color,
+    this.strokeWidth = 1.0,
+    this.dashWidth = 5.0,
+    this.gapWidth = 3.0,
+    this.borderRadius = BorderRadius.zero,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..color = color
+          ..strokeWidth = strokeWidth
+          ..style = PaintingStyle.stroke;
+
+    final path = Path();
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final rrect = borderRadius.toRRect(rect);
+
+    final rrectPath = Path()..addRRect(rrect);
+    for (final metric in rrectPath.computeMetrics()) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        final double start = distance;
+        final double end = (distance + dashWidth).clamp(0.0, metric.length);
+        path.addPath(metric.extractPath(start, end), Offset.zero);
+        distance += dashWidth + gapWidth;
+      }
+    }
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.dashWidth != dashWidth ||
+        oldDelegate.gapWidth != gapWidth ||
+        oldDelegate.borderRadius != borderRadius;
+  }
+}
+
 class _FileListItemCard extends StatefulWidget {
   final File file;
   final bool isSelected;
@@ -731,13 +804,22 @@ class _FileListItemCardState extends State<_FileListItemCard> with SingleTickerP
     _animationController.forward();
   }
 
+  String _formatBytes(int bytes, {int decimals = 1}) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    var i = (log(bytes) / log(1024)).floor();
+    final size = (bytes / pow(1024, i));
+    return '${size.toStringAsFixed(size > 10 || i == 0 ? 0 : decimals)} ${suffixes[i]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final fileName = p.basename(widget.file.path);
-    final modifiedDate = DateFormat('yyyy-MM-dd HH:mm').format(widget.file.lastModifiedSync());
+    final modifiedDate = DateFormat('yy-MM-dd HH:mm').format(widget.file.lastModifiedSync());
 
     return Stack(
+      alignment: Alignment.center,
       children: [
         Positioned.fill(
           child: Container(
@@ -818,9 +900,21 @@ class _FileListItemCardState extends State<_FileListItemCard> with SingleTickerP
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            modifiedDate,
-                            style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                          Row(
+                            children: [
+                              Text(
+                                _formatBytes(widget.file.lengthSync()),
+                                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                              ),
+                              Text(
+                                ' • ',
+                                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                              ),
+                              Text(
+                                modifiedDate,
+                                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                              ),
+                            ],
                           ),
                         ],
                       ),
