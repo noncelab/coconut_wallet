@@ -1250,18 +1250,24 @@ estimated_fee_bottom_sheet:
 labels_management_screen:
   title: "Gestionar notas"
   subtitle: "Importa o exporta tus notas guardadas."
-  description: "BIP 329 es un estándar abierto para intercambiar notas entre billeteras de forma compatible. Incluso si cambias de dispositivo o reinstalas la aplicación, tus notas se restaurarán tal como estaban simplemente importando el archivo de respaldo."
+  description: "BIP-329 es un estándar abierto que permite intercambiar notas entre billeteras. Si exportas tus notas, puedes restaurarlas fácilmente importándolas, incluso si cambias de dispositivo o reinstalas la aplicación."
+  import_title: "Importar"
+  import_description: "Importa notas de otra billetera."
+  export_title: "Exportar"
+  export_description: "Realiza una copia de seguridad de las notas o compártelas con otra billetera."
   tooltip:
-    title: "¿Qué son las notas en Coconut?"
-    description: "Es tu propia información que registras y gestionas directamente en Coconut Wallet."
+    title: "Notas de Coconut"
+    description: "Puedes registrar tu propia información para identificar transacciones y UTXOs más fácilmente."
     supported_title: "Notas compatibles"
-    supported_list: "BIP 329 - Memos de transacción, etiquetas UTXO, bloqueos de gasto\nInformación adicional de Coconut - Colores de etiqueta"
+    supported_list: "• Notas de transacción\n• Etiquetas UTXO (Nombre/Color)\n• Bloqueo de uso de UTXO"
+    import: "Importa un archivo de notas BIP-329 (.jsonl) y lo aplica a Coconut Wallet."
   file:
-    not_found: "Archivo no encontrado"
+    not_found: "No se encontró el archivo.\nToca el ícono de archivo para agregar un archivo de copia de seguridad."
     delete: "Eliminar archivo"
     delete_description: "¿Estás seguro de que quieres eliminar el archivo '$fileName'?"
     delete_success: "Archivo eliminado correctamente"
     delete_failed: "Error al eliminar el archivo"
+    invalid_file_type: "Formato de archivo no válido. Selecciona un archivo JSONL."
 
 long_pressed_menu:
   hide: "Ocultar"

@@ -1248,18 +1248,24 @@ estimated_fee_bottom_sheet:
 labels_management_screen:
   title: "Manage Notes"
   subtitle: "Import or export recorded notes."
-  description: "BIP 329 is an open standard for compatibly exchanging notes between wallets. Even if you change devices or reinstall the app, simply importing your backup file will restore your notes exactly as they were."
+  description: "BIP-329 is an open standard that allows wallets to exchange notes with each other. Exporting your notes lets you restore them simply by importing, even if you switch devices or reinstall the app."
+  import_title: "Import"
+  import_description: "Import notes from another wallet."
+  export_title: "Export"
+  export_description: "Back up notes or share them with another wallet."
   tooltip:
-    title: "What are notes in Coconut?"
-    description: "It's your own information that you record and manage directly in Coconut Wallet."
+    title: "Coconut's Notes"
+    description: "You can record your own information to identify transactions and UTXOs more easily."
     supported_title: "Supported Notes"
-    supported_list: "BIP 329 - Transaction memos, UTXO tags, spend locks\nCoconut additional info - Tag colors"
+    supported_list: "• Transaction notes\n• UTXO tags (Name/Color)\n• UTXO spend lock"
+    import: "Imports a BIP-329 note file (.jsonl) and applies it to Coconut Wallet."
   file:
-    not_found: "File not found"
+    not_found: "File not found.\nTap the file icon to add a backup file."
     delete: "Delete File"
     delete_description: "Are you sure you want to delete the file '$fileName'?"
     delete_success: "File deleted successfully"
     delete_failed: "Failed to delete file"
+    invalid_file_type: "Invalid file type. Please select a JSONL file."
 
 long_pressed_menu:
   hide: "Hide"

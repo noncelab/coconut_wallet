@@ -112,20 +112,24 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
           ButtonGroup(
             buttons: [
               SingleButton(
-                title: t.wallet_info_screen.import_labels,
+                title: t.labels_management_screen.import_title,
+                subtitle: t.labels_management_screen.import_description,
                 onPressed: () => _navigateToImportFilePicker(context),
+                isVerticalSubtitle: true,
               ),
               SingleButton(
-                title: t.wallet_info_screen.export_labels,
+                title: t.labels_management_screen.export_title,
+                subtitle: t.labels_management_screen.export_description,
                 onPressed:
                     () => _navigateToActionScreen(
                       context: context,
-                      title: t.wallet_info_screen.export_labels,
+                      title: t.labels_management_screen.export_title,
                       description: widget.exportDescription,
                       iconPath: 'assets/svg/file.svg',
-                      actionButtonText: t.export,
+                      actionButtonText: t.labels_management_screen.export_title,
                       onAction: widget.onExport,
                     ),
+                isVerticalSubtitle: true,
               ),
             ],
           ),
@@ -330,6 +334,11 @@ class _LabelImportFilePickerScreen extends StatefulWidget {
 class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScreen> {
   late Future<List<File>> _filesFuture;
   int _swipedItemIndex = -1;
+  int? _selectedItemIndex;
+  final GlobalKey _tooltipIconKey = GlobalKey();
+  Size? _tooltipIconSize;
+  Offset? _tooltipIconPosition;
+  bool _isTooltipVisible = false;
 
   @override
   void initState() {
@@ -338,79 +347,212 @@ class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScre
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateTooltipPosition();
+    });
+  }
+
+  void _updateTooltipPosition() {
+    final renderBox = _tooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      setState(() {
+        _tooltipIconPosition = renderBox.localToGlobal(Offset.zero);
+        _tooltipIconSize = renderBox.size;
+      });
+    }
+  }
+
+  void _toggleTooltip() {
+    setState(() {
+      _isTooltipVisible = !_isTooltipVisible;
+    });
+  }
+
+  void _removeTooltip() {
+    if (_isTooltipVisible) {
+      setState(() {
+        _isTooltipVisible = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.coconutColors.background,
-      appBar: CoconutAppBar.build(title: t.wallet_info_screen.import_labels, context: context),
-      body: FutureBuilder<List<File>>(
-        future: _filesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return GestureDetector(
+      onTap: _removeTooltip,
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: context.coconutColors.background,
+            appBar: CoconutAppBar.build(
+              title: t.wallet_info_screen.import_labels,
+              context: context,
+              actionButtonList: [
+                IconButton(
+                  key: _tooltipIconKey,
+                  icon: SvgPicture.asset(
+                    'assets/svg/question-mark.svg',
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                  ),
+                  onPressed: _toggleTooltip,
+                ),
+              ],
+            ),
+            body: FutureBuilder<List<File>>(
+              future: _filesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: context.coconutColors.secondaryText.withOpacity(0.1),
+                final bool noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
+
+                return Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        children: [
+                          _buildInfoTooltip(context),
+                          Expanded(
+                            child:
+                                noFiles
+                                    ? GestureDetector(
+                                      onTap: _addExternalFile,
+                                      child: Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(24),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: context.coconutColors.secondaryText.withOpacity(0.1),
+                                              ),
+                                              child: SvgPicture.asset(
+                                                'assets/svg/file.svg',
+                                                width: 40,
+                                                height: 40,
+                                                colorFilter: ColorFilter.mode(
+                                                  context.coconutColors.iconDefault,
+                                                  BlendMode.srcIn,
+                                                ),
+                                              ),
+                                            ),
+                                            CoconutLayout.spacing_400h,
+                                            Text(
+                                              t.labels_management_screen.file.not_found,
+                                              style: CoconutTypography.body1_16.setColor(
+                                                context.coconutColors.primaryText,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                    : ListView.separated(
+                                      padding: const EdgeInsets.only(top: 20, bottom: 90),
+                                      itemCount: snapshot.data!.length,
+                                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                                      itemBuilder: (context, index) {
+                                        final file = snapshot.data![index];
+                                        return _FileListItemCard(
+                                          file: file,
+                                          isSelected: _selectedItemIndex == index,
+                                          isSwiped: _swipedItemIndex == index && _selectedItemIndex != index,
+                                          onTap: () {
+                                            setState(() {
+                                              if (_selectedItemIndex == index) {
+                                                _selectedItemIndex = null;
+                                              } else {
+                                                _selectedItemIndex = index;
+                                                _swipedItemIndex = -1;
+                                              }
+                                            });
+                                          },
+                                          onSwipeChanged:
+                                              (isSwiped) => setState(() => _swipedItemIndex = isSwiped ? index : -1),
+                                          onDeleteTriggered: () => _deleteFile(file, index),
+                                        );
+                                      },
+                                    ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: SvgPicture.asset(
-                      'assets/svg/file.svg',
-                      width: 40,
-                      height: 40,
-                      colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
-                    ),
-                  ),
-                  CoconutLayout.spacing_400h,
-                  Text(
-                    t.labels_management_screen.file.not_found,
-                    style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-                  ),
-                ],
+                    if (!noFiles)
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: FixedBottomButton(
+                          text: t.wallet_info_screen.import_labels,
+                          isActive: _selectedItemIndex != null,
+                          onButtonClicked: () {
+                            if (_selectedItemIndex != null && snapshot.hasData) {
+                              final selectedFile = snapshot.data![_selectedItemIndex!];
+                              widget.onFileSelected(selectedFile.path);
+                            }
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+          if (_isTooltipVisible && _tooltipIconPosition != null && _tooltipIconSize != null) _buildTooltip(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTooltip(BuildContext context) {
+    return Positioned(
+      top: _tooltipIconPosition!.dy + _tooltipIconSize!.height - 10,
+      right: 18,
+      child: GestureDetector(
+        onTap: _removeTooltip,
+        child: ClipPath(
+          clipper: RightTriangleBubbleClipper(),
+          child: Container(
+            width: MediaQuery.sizeOf(context).width * 0.68,
+            padding: const EdgeInsets.only(top: 28, left: 16, right: 16, bottom: 12),
+            color: context.coconutColors.popoverBackground,
+            child: Text(
+              t.labels_management_screen.tooltip.import,
+              style: CoconutTypography.body3_12.copyWith(color: context.coconutColors.popoverText, height: 1.3),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoTooltip(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 20.0),
+      child: CoconutToolTip(
+        backgroundColor: context.coconutColors.surface,
+        borderColor: context.coconutColors.surface,
+        icon: SvgPicture.asset(
+          'assets/svg/circle-info.svg',
+          width: 20,
+          colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+        ),
+        tooltipType: CoconutTooltipType.fixed,
+        richText: RichText(
+          text: TextSpan(
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+            children: [
+              TextSpan(
+                text: t.labels_management_screen.tooltip.import,
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
               ),
-            );
-          }
-
-          final files = snapshot.data!;
-
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            itemCount: files.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final file = files[index];
-              return _FileListItemCard(
-                file: file,
-                isSwiped: _swipedItemIndex == index,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  widget.onFileSelected(file.path);
-                },
-                onSwipeChanged: (isSwiped) {
-                  setState(() {
-                    if (isSwiped) {
-                      _swipedItemIndex = index;
-                    } else {
-                      _swipedItemIndex = -1;
-                    }
-                  });
-                },
-                onDeleteTriggered: () {
-                  setState(() {
-                    _swipedItemIndex = index;
-                  });
-                  _deleteFile(file, index);
-                },
-              );
-            },
-          );
-        },
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -453,15 +595,32 @@ class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScre
     }
   }
 
-  void _resetSwipeState() {
+  void _refreshFiles() {
     setState(() {
+      _filesFuture = LabelJsonLManager().getImportableLabelFiles();
       _swipedItemIndex = -1;
     });
   }
 
-  void _refreshFiles() {
+  Future<void> _addExternalFile() async {
+    try {
+      final addedFile = await LabelJsonLManager().pickAndSaveExternalLabelFile();
+      if (addedFile != null && mounted) {
+        _refreshFiles();
+      }
+    } catch (e) {
+      if (mounted) {
+        CoconutToast.showToast(
+          context: context,
+          text: t.labels_management_screen.file.invalid_file_type,
+          level: CoconutToastLevel.error,
+        );
+      }
+    }
+  }
+
+  void _resetSwipeState() {
     setState(() {
-      _filesFuture = LabelJsonLManager().getImportableLabelFiles();
       _swipedItemIndex = -1;
     });
   }
@@ -469,12 +628,14 @@ class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScre
 
 class _FileListItemCard extends StatefulWidget {
   final File file;
+  final bool isSelected;
   final bool isSwiped;
   final VoidCallback onTap;
   final ValueChanged<bool> onSwipeChanged;
   final VoidCallback onDeleteTriggered;
 
   const _FileListItemCard({
+    required this.isSelected,
     required this.file,
     required this.isSwiped,
     required this.onTap,
@@ -618,6 +779,7 @@ class _FileListItemCardState extends State<_FileListItemCard> with SingleTickerP
             final swipeThresholdPx = screenWidth * _swipeThreshold;
             if (_dragOffset.abs() >= swipeThresholdPx) {
               widget.onDeleteTriggered();
+              widget.onSwipeChanged(true);
               _animateToDeletePosition();
             } else {
               widget.onSwipeChanged(false);
@@ -633,11 +795,17 @@ class _FileListItemCardState extends State<_FileListItemCard> with SingleTickerP
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 child: Row(
                   children: [
-                    SvgPicture.asset(
-                      'assets/svg/file.svg',
-                      width: 24,
-                      colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
-                    ),
+                    widget.isSelected
+                        ? SvgPicture.asset(
+                          'assets/svg/check.svg',
+                          width: 24,
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                        )
+                        : SvgPicture.asset(
+                          'assets/svg/file.svg',
+                          width: 24,
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                        ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(

@@ -5,6 +5,7 @@ import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -35,7 +36,7 @@ class LabelJsonLManager {
     debugPrint(jsonlString);
     debugPrint('---------------------------------');
 
-    final directory = await getTemporaryDirectory();
+    final directory = await getApplicationDocumentsDirectory();
     final fileName = 'coconut-labels-${DateTime.now().millisecondsSinceEpoch}.jsonl';
     final file = File('${directory.path}/$fileName');
     await file.writeAsString(jsonlString);
@@ -167,7 +168,7 @@ class LabelJsonLManager {
     debugPrint(content);
     debugPrint('---------------------------------');
 
-    final directory = await getTemporaryDirectory();
+    final directory = await getApplicationDocumentsDirectory();
     final fileName = 'coconut-labels-all-${DateTime.now().millisecondsSinceEpoch}.jsonl';
     final file = File('${directory.path}/$fileName');
     await file.writeAsString(content);
@@ -250,10 +251,10 @@ class LabelJsonLManager {
 
   Future<List<File>> getImportableLabelFiles() async {
     try {
-      final directory = await getTemporaryDirectory();
+      final directory = await getApplicationDocumentsDirectory();
       final files =
           directory.listSync().whereType<File>().where((file) {
-            return p.extension(file.path) == '.jsonl';
+            return file.path.toLowerCase().endsWith('.jsonl');
           }).toList();
 
       // Sort by modification date, newest first
@@ -261,6 +262,42 @@ class LabelJsonLManager {
       return files;
     } catch (e) {
       return [];
+    }
+  }
+
+  Future<File?> pickAndSaveExternalLabelFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(type: FileType.any);
+
+      if (result == null || result.files.isEmpty || result.files.single.path == null) {
+        return null;
+      }
+
+      final pickedFile = result.files.single;
+      final filePath = pickedFile.path!;
+      final fileName = pickedFile.name;
+
+      if (!fileName.toLowerCase().endsWith('.jsonl') && !filePath.toLowerCase().endsWith('.jsonl')) {
+        throw ErrorCodes.withMessage(ErrorCodes.storageReadError, 'Invalid file type');
+      }
+
+      final sourceFile = File(filePath);
+      if (!await sourceFile.exists()) {
+        return null;
+      }
+
+      final directory = await getApplicationDocumentsDirectory();
+      String baseName = p.basenameWithoutExtension(sourceFile.path);
+      String targetPath = p.join(directory.path, '$baseName.jsonl');
+
+      if (await File(targetPath).exists()) {
+        targetPath = p.join(directory.path, '${baseName}_${DateTime.now().millisecondsSinceEpoch}.jsonl');
+      }
+
+      return await sourceFile.copy(targetPath);
+    } catch (e) {
+      debugPrint('Error picking or saving external label file: $e');
+      rethrow;
     }
   }
 }

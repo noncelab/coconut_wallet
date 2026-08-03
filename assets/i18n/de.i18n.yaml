@@ -1207,18 +1207,24 @@ estimated_fee_bottom_sheet:
 labels_management_screen:
   title: "Notizen verwalten"
   subtitle: "Importieren oder exportieren Sie Ihre gespeicherten Notizen."
-  description: "BIP 329 ist ein offener Standard für den kompatiblen Austausch von Notizen zwischen Wallets. Selbst wenn Sie das Gerät wechseln oder die App neu installieren, werden Ihre Notizen durch einfaches Importieren der Backupdatei genau so wiederhergestellt, wie sie waren."
+  description: "BIP-329 ist ein offener Standard, der den Austausch von Notizen zwischen Wallets ermöglicht. Wenn Sie Ihre Notizen exportieren, können Sie diese durch einfaches Importieren wiederherstellen, selbst wenn Sie das Gerät wechseln oder die App neu installieren."
+  import_title: "Importieren"
+  import_description: "Notizen aus einer anderen Wallet importieren."
+  export_title: "Exportieren"
+  export_description: "Notizen sichern oder mit einer anderen Wallet teilen."
   tooltip:
-    title: "Was sind Notizen in Coconut?"
-    description: "Es sind Ihre eigenen Informationen, die Sie direkt in Coconut Wallet aufzeichnen und verwalten."
+    title: "Coconuts Notizen"
+    description: "Sie können Ihre eigenen Informationen aufzeichnen, um Transaktionen und UTXOs einfacher zu unterscheiden."
     supported_title: "Unterstützte Notizen"
-    supported_list: "BIP 329 - Transaktionsnotizen, UTXO-Tags, Ausgabesperren\nZusätzliche Coconut-Infos - Tag-Farben"
+    supported_list: "• Transaktionsnotizen\n• UTXO-Tags (Name/Farbe)\n• UTXO-Ausgabensperre"
+    import: "Importiert eine BIP-329-Notizdatei (.jsonl) und wendet sie auf Coconut Wallet an."
   file:
-    not_found: "Datei nicht gefunden"
+    not_found: "Datei nicht gefunden.\nTippen Sie auf das Dateisymbol, um eine Sicherungsdatei hinzuzufügen."
     delete: "Datei löschen"
     delete_description: "Sind Sie sicher, dass Sie die Datei '$fileName' löschen möchten?"
     delete_success: "Datei erfolgreich gelöscht"
     delete_failed: "Datei konnte nicht gelöscht werden"
+    invalid_file_type: "Ungültiges Dateiformat. Bitte wählen Sie eine JSONL-Datei aus."
 
 long_pressed_menu:
   hide: "Verbergen"
