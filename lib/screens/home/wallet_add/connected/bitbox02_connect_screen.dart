@@ -72,31 +72,37 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     if (_isAddingWallet) return;
     setState(() => _isAddingWallet = true);
 
-    final stopwatch = Stopwatch()..start();
-    final result = await vm.addToWalletList();
-    final remaining = const Duration(seconds: 3) - stopwatch.elapsed;
-    if (remaining > Duration.zero) {
-      await Future.delayed(remaining);
+    try {
+      final stopwatch = Stopwatch()..start();
+      final result = await vm.addToWalletList();
+      final remaining = const Duration(seconds: 3) - stopwatch.elapsed;
+      if (remaining > Duration.zero) {
+        await Future.delayed(remaining);
+      }
+
+      if (!mounted) return;
+
+      if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
+        Navigator.pushReplacementNamed(
+          context,
+          '/wallet-detail',
+          arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
+        );
+        return;
+      }
+
+      final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+      showWalletSyncResultErrorDialog(context, result, walletProvider);
+    } catch (e) {
+      if (!mounted) return;
+      showInfoDialog(context, context.read<PreferenceProvider>().language, t.alert.wallet_add.add_failed, e.toString());
+    } finally {
+      if (mounted) setState(() => _isAddingWallet = false);
     }
-
-    if (!mounted) return;
-
-    if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
-      Navigator.pushReplacementNamed(
-        context,
-        '/wallet-detail',
-        arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
-      );
-      return;
-    }
-
-    setState(() => _isAddingWallet = false);
-
-    final walletProvider = Provider.of<WalletProvider>(context, listen: false);
-    showWalletSyncResultErrorDialog(context, result, walletProvider);
   }
 
   Future<void> _handleClose() async {
+    if (_isAddingWallet) return;
     if (_viewModel.step == BitBox02ConnectStep.pairing) {
       Navigator.pop(context);
       return;
@@ -137,37 +143,44 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _viewModel,
-      child: Scaffold(
-        backgroundColor: context.coconutColors.background,
-        appBar: CoconutAppBar.build(
-          title: widget.importSource.displayName,
-          context: context,
-          isBottom: true,
-          onBackPressed: _handleClose,
-        ),
-        body: Consumer<BitBox02ConnectViewModel>(
-          builder: (context, vm, _) {
-            return SafeArea(
-              child: SizedBox(
-                height: MediaQuery.sizeOf(context).height,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
-                        child: _buildStatusSection(vm),
+      child: PopScope(
+        canPop: !_isAddingWallet,
+        child: Stack(
+          children: [
+            Scaffold(
+              backgroundColor: context.coconutColors.background,
+              appBar: CoconutAppBar.build(
+                title: widget.importSource.displayName,
+                context: context,
+                isBottom: true,
+                onBackPressed: _handleClose,
+              ),
+              body: Consumer<BitBox02ConnectViewModel>(
+                builder: (context, vm, _) {
+                  return SafeArea(
+                    child: SizedBox(
+                      height: MediaQuery.sizeOf(context).height,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+                              child: _buildStatusSection(vm),
+                            ),
+                          ),
+                          if (vm.step == BitBox02ConnectStep.idle ||
+                              vm.step == BitBox02ConnectStep.error ||
+                              (vm.step == BitBox02ConnectStep.paired && !vm.isConnecting))
+                            Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
+                        ],
                       ),
                     ),
-                    if (vm.step == BitBox02ConnectStep.idle ||
-                        vm.step == BitBox02ConnectStep.error ||
-                        (vm.step == BitBox02ConnectStep.paired && !vm.isConnecting))
-                      Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
-                    if (_isAddingWallet) const CoconutLoadingOverlay(applyFullScreen: true),
-                  ],
-                ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+            if (_isAddingWallet) const CoconutLoadingOverlay(),
+          ],
         ),
       ),
     );

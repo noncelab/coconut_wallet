@@ -38,7 +38,7 @@ class ResultsArea extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const InlineLoadingIndicator(padding: EdgeInsets.zero),
+            const ContentLoadingIndicator(padding: EdgeInsets.zero),
             const SizedBox(height: 16),
             Text(
               '데이터를 조회하고 있습니다...',

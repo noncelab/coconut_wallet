@@ -110,7 +110,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         builder: (_, viewModel, child) {
           final txList = viewModel.transactionList;
           if (txList == null || txList.isEmpty) {
-            return const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero));
+            return const Center(child: ContentLoadingIndicator(padding: EdgeInsets.zero));
           }
           final tx = viewModel.transactionList![viewModel.selectedTransactionIndex];
           final txMemo = viewModel.fetchTransactionMemo();

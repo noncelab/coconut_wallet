@@ -126,7 +126,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
       ),
       body:
           _isLoading
-              ? const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 18))
+              ? const Center(child: ContentLoadingIndicator(padding: EdgeInsets.zero, radius: 18))
               : SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(

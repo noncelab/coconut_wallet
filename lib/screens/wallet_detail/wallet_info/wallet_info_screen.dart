@@ -30,7 +30,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_info_item_card.dart';
-import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -43,7 +43,6 @@ import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
-import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 const String kEntryPointWalletList = '/wallet-list';
@@ -74,6 +73,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   double _tooltipTopPadding = 0;
   Timer? _tooltipTimer;
   int _tooltipRemainingTime = 0;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -88,239 +88,243 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           ),
       child: Consumer<WalletInfoViewModel>(
         builder: (innerContext, viewModel, child) {
-          return Stack(
-            children: [
-              GestureDetector(
-                onTapDown: (details) => _removeTooltip(),
-                child: Scaffold(
-                  backgroundColor: context.coconutColors.background,
-                  appBar: CoconutAppBar.build(title: '', context: context),
-                  body: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
-                          child: WalletInfoItemCard(
-                            id: widget.id,
-                            walletItem: viewModel.walletItemBase,
-                            onTooltipClicked: () {
-                              if (_tooltipRemainingTime > 0) {
-                                _removeTooltip();
-                                return;
-                              }
+          return PopScope(
+            canPop: !_isLoading,
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTapDown: (details) => _removeTooltip(),
+                  child: Scaffold(
+                    backgroundColor: context.coconutColors.background,
+                    appBar: CoconutAppBar.build(title: '', context: context),
+                    body: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
+                            child: WalletInfoItemCard(
+                              id: widget.id,
+                              walletItem: viewModel.walletItemBase,
+                              onTooltipClicked: () {
+                                if (_tooltipRemainingTime > 0) {
+                                  _removeTooltip();
+                                  return;
+                                }
 
-                              Future.delayed(const Duration(milliseconds: 50), () {
-                                setState(() {
-                                  _tooltipRemainingTime = kTooltipDuration;
-                                });
-
-                                _tooltipTimer?.cancel();
-                                _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                                Future.delayed(const Duration(milliseconds: 50), () {
                                   setState(() {
-                                    if (_tooltipRemainingTime > 0) {
-                                      _tooltipRemainingTime--;
-                                    } else {
-                                      _removeTooltip();
-                                      timer.cancel();
-                                    }
+                                    _tooltipRemainingTime = kTooltipDuration;
+                                  });
+
+                                  _tooltipTimer?.cancel();
+                                  _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                                    setState(() {
+                                      if (_tooltipRemainingTime > 0) {
+                                        _tooltipRemainingTime--;
+                                      } else {
+                                        _removeTooltip();
+                                        timer.cancel();
+                                      }
+                                    });
                                   });
                                 });
-                              });
-                            },
-                            onShowMfpInputBottomSheet: () {
-                              _showMfpInputBottomSheet();
-                            },
-                            tooltipKey: _walletTooltipKey,
-                            onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
-                          ),
-                        ),
-                        WalletSignerSection(walletType: widget.walletType),
-                        if (viewModel.isBitBox02Wallet)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                            child: BitBox02Section(
-                              walletFingerprint: viewModel.walletFingerprint,
-                              onDisconnect: () async {
-                                await viewModel.disconnectBitBox02();
                               },
+                              onShowMfpInputBottomSheet: () {
+                                _showMfpInputBottomSheet();
+                              },
+                              tooltipKey: _walletTooltipKey,
+                              onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
                             ),
                           ),
-                        if (viewModel.isTrezorWallet)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                            child: TrezorSection(
-                              walletFingerprint: viewModel.walletFingerprint,
-                              onDisconnect: () async {
-                                await viewModel.disconnectTrezor();
-                              },
-                            ),
-                          ),
-                        _WalletInfoStatsSection(
-                          walletId: widget.id,
-                          transactionCount: viewModel.transactionCount,
-                          utxoCount: viewModel.utxoCount,
-                          balanceSats: viewModel.walletBalance.total,
-                          currentUnit: context.read<PreferenceProvider>().currentUnit,
-                          targetSats: viewModel.targetSats,
-                          onEditTargetTap: () => _showTargetSettingBottomSheet(context, viewModel),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: ButtonGroup(
-                            buttons: [
-                              SingleButton(
-                                enableShrinkAnim: true,
-                                title: t.view_all_addresses,
-                                onPressed: () {
-                                  _removeTooltip();
-                                  Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
+                          WalletSignerSection(walletType: widget.walletType),
+                          if (viewModel.isBitBox02Wallet)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                              child: BitBox02Section(
+                                walletFingerprint: viewModel.walletFingerprint,
+                                onDisconnect: () async {
+                                  await viewModel.disconnectBitBox02();
                                 },
                               ),
-                              if (widget.walletType == WalletType.singleSignature) ...[
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.wallet_info_screen.view_xpub,
-                                  onPressed: () async {
-                                    _removeTooltip();
-                                    _handleAuthFlow(
-                                      onComplete: () {
-                                        _showExtendedBottomSheet(viewModel.extendedPublicKey);
-                                      },
-                                    );
-                                  },
-                                ),
-                              ],
-                              if (widget.walletType == WalletType.taproot) ...[
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.wallet_info_screen.view_wallet_backup_data,
-                                  onPressed: () {
-                                    _removeTooltip();
-
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/taproot-wallet-backup-data',
-                                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
-                                    );
-                                  },
-                                ),
-                              ],
-                              if (widget.walletType == WalletType.multiSignature) ...[
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.wallet_info_screen.view_wallet_backup_data,
-                                  onPressed: () {
-                                    _removeTooltip();
-
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/wallet-backup-data',
-                                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
-                                    );
-                                  },
-                                ),
-                              ],
-                              SingleButton(
-                                enableShrinkAnim: true,
-                                title: t.tag_manage_label,
-                                onPressed: () {
-                                  _removeTooltip();
-                                  Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
+                            ),
+                          if (viewModel.isTrezorWallet)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                              child: TrezorSection(
+                                walletFingerprint: viewModel.walletFingerprint,
+                                onDisconnect: () async {
+                                  await viewModel.disconnectTrezor();
                                 },
                               ),
-                            ],
-                          ),
-                        ),
-                        Center(
-                          child: Container(
-                            width: 65,
-                            height: 1,
-                            margin: const EdgeInsets.symmetric(vertical: 20),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(1),
-                              color: context.coconutColors.divider,
                             ),
+                          _WalletInfoStatsSection(
+                            walletId: widget.id,
+                            transactionCount: viewModel.transactionCount,
+                            utxoCount: viewModel.utxoCount,
+                            balanceSats: viewModel.walletBalance.total,
+                            currentUnit: context.read<PreferenceProvider>().currentUnit,
+                            targetSats: viewModel.targetSats,
+                            onEditTargetTap: () => _showTargetSettingBottomSheet(context, viewModel),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: SingleButton(
-                            enableShrinkAnim: true,
-                            title: t.delete_label,
-                            rightElement: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: context.coconutColors.primaryText.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: SvgPicture.asset(
-                                CommonActionIconPath.trash,
-                                width: 16,
-                                colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
-                              ),
-                            ),
-                            onPressed: () {
-                              _removeTooltip();
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return CoconutPopup(
-                                    languageCode: context.read<PreferenceProvider>().language,
-                                    title: t.alert.wallet_delete.confirm_delete,
-                                    description: t.alert.wallet_delete.confirm_delete_description,
-                                    onTapRight: () {
-                                      final dialogContext = context;
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: ButtonGroup(
+                              buttons: [
+                                SingleButton(
+                                  enableShrinkAnim: true,
+                                  title: t.view_all_addresses,
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
+                                  },
+                                ),
+                                if (widget.walletType == WalletType.singleSignature) ...[
+                                  SingleButton(
+                                    enableShrinkAnim: true,
+                                    title: t.wallet_info_screen.view_xpub,
+                                    onPressed: () async {
+                                      _removeTooltip();
                                       _handleAuthFlow(
-                                        onComplete: () async {
-                                          Navigator.of(dialogContext).pop();
-                                          await _deleteWalletAndGoToEntryPoint(viewModel);
+                                        onComplete: () {
+                                          _showExtendedBottomSheet(viewModel.extendedPublicKey);
                                         },
                                       );
                                     },
-                                    onTapLeft: () {
-                                      Navigator.of(context).pop();
+                                  ),
+                                ],
+                                if (widget.walletType == WalletType.taproot) ...[
+                                  SingleButton(
+                                    enableShrinkAnim: true,
+                                    title: t.wallet_info_screen.view_wallet_backup_data,
+                                    onPressed: () {
+                                      _removeTooltip();
+
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/taproot-wallet-backup-data',
+                                        arguments: {'id': widget.id, 'walletName': viewModel.walletName},
+                                      );
                                     },
-                                    rightButtonText: t.delete,
-                                    rightButtonColor: context.coconutColors.danger,
-                                    leftButtonText: t.cancel,
-                                  );
-                                },
-                              );
-                            },
+                                  ),
+                                ],
+                                if (widget.walletType == WalletType.multiSignature) ...[
+                                  SingleButton(
+                                    enableShrinkAnim: true,
+                                    title: t.wallet_info_screen.view_wallet_backup_data,
+                                    onPressed: () {
+                                      _removeTooltip();
+
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/wallet-backup-data',
+                                        arguments: {'id': widget.id, 'walletName': viewModel.walletName},
+                                      );
+                                    },
+                                  ),
+                                ],
+                                SingleButton(
+                                  enableShrinkAnim: true,
+                                  title: t.tag_manage_label,
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        CoconutLayout.spacing_2500h,
-                      ],
+                          Center(
+                            child: Container(
+                              width: 65,
+                              height: 1,
+                              margin: const EdgeInsets.symmetric(vertical: 20),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(1),
+                                color: context.coconutColors.divider,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: SingleButton(
+                              enableShrinkAnim: true,
+                              title: t.delete_label,
+                              rightElement: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: context.coconutColors.primaryText.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: SvgPicture.asset(
+                                  CommonActionIconPath.trash,
+                                  width: 16,
+                                  colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+                                ),
+                              ),
+                              onPressed: () {
+                                _removeTooltip();
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return CoconutPopup(
+                                      languageCode: context.read<PreferenceProvider>().language,
+                                      title: t.alert.wallet_delete.confirm_delete,
+                                      description: t.alert.wallet_delete.confirm_delete_description,
+                                      onTapRight: () {
+                                        final dialogContext = context;
+                                        _handleAuthFlow(
+                                          onComplete: () async {
+                                            Navigator.of(dialogContext).pop();
+                                            await _deleteWalletAndGoToEntryPoint(viewModel);
+                                          },
+                                        );
+                                      },
+                                      onTapLeft: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      rightButtonText: t.delete,
+                                      rightButtonColor: context.coconutColors.danger,
+                                      leftButtonText: t.cancel,
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                          CoconutLayout.spacing_2500h,
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Positioned(
-                top: _tooltipTopPadding,
-                right:
-                    MediaQuery.of(context).size.width -
-                    _walletTooltipIconPosition.dx -
-                    (_walletTooltipIconRenderBox == null ? 0 : _walletTooltipIconRenderBox!.size.width) -
-                    10,
-                child: CoconutToolTip(
-                  width: MediaQuery.sizeOf(context).width,
-                  isBubbleClipperSideLeft: false,
-                  tooltipType: CoconutTooltipType.placement,
-                  backgroundColor: context.coconutColors.popoverBackground,
-                  richText: RichText(
-                    text: TextSpan(
-                      text: _getTooltipText(viewModel),
-                      style: CoconutTypography.body3_12
-                          .setColor(context.coconutColors.popoverText)
-                          .merge(const TextStyle(height: 1.3)),
+                Positioned(
+                  top: _tooltipTopPadding,
+                  right:
+                      MediaQuery.of(context).size.width -
+                      _walletTooltipIconPosition.dx -
+                      (_walletTooltipIconRenderBox == null ? 0 : _walletTooltipIconRenderBox!.size.width) -
+                      10,
+                  child: CoconutToolTip(
+                    width: MediaQuery.sizeOf(context).width,
+                    isBubbleClipperSideLeft: false,
+                    tooltipType: CoconutTooltipType.placement,
+                    backgroundColor: context.coconutColors.popoverBackground,
+                    richText: RichText(
+                      text: TextSpan(
+                        text: _getTooltipText(viewModel),
+                        style: CoconutTypography.body3_12
+                            .setColor(context.coconutColors.popoverText)
+                            .merge(const TextStyle(height: 1.3)),
+                      ),
                     ),
+                    onTapRemove: _removeTooltip,
+                    isPlacementTooltipVisible: _tooltipRemainingTime > 0,
                   ),
-                  onTapRemove: _removeTooltip,
-                  isPlacementTooltipVisible: _tooltipRemainingTime > 0,
                 ),
-              ),
-            ],
+                if (_isLoading) const CoconutLoadingOverlay(),
+              ],
+            ),
           );
         },
       ),
@@ -512,11 +516,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   void _setOverlayLoading(bool value) {
     if (!mounted) return;
-    if (value) {
-      context.loaderOverlay.show();
-    } else {
-      context.loaderOverlay.hide();
-    }
+    setState(() => _isLoading = value);
   }
 
   Future<void> _handleAuthFlow({required VoidCallback onComplete}) async {
@@ -535,7 +535,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: onComplete)),
+      child: PinCheckScreen(onComplete: onComplete),
     );
   }
 

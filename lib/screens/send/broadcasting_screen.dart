@@ -35,7 +35,7 @@ import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
-import 'package:loader_overlay/loader_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
@@ -50,6 +50,7 @@ class BroadcastingScreen extends StatefulWidget {
 class _BroadcastingScreenState extends State<BroadcastingScreen> {
   late BroadcastingViewModel _viewModel;
   late BitcoinUnit _currentUnit;
+  bool _isLoading = false;
 
   String get confirmText => _currentUnit.displayBitcoinAmount(_viewModel.amount);
 
@@ -59,15 +60,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   String get unitText => _currentUnit.symbol;
 
   void _setOverlayLoading(bool value) {
-    if (value) {
-      context.loaderOverlay.show();
-    } else {
-      context.loaderOverlay.hide();
-    }
+    if (!mounted) return;
+    setState(() => _isLoading = value);
   }
 
   void broadcast() async {
-    if (context.loaderOverlay.visible) return;
+    if (_isLoading) return;
     _setOverlayLoading(true);
     await Future.delayed(const Duration(seconds: 1));
     try {
@@ -127,6 +125,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
+      canPop: !_isLoading,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop && _viewModel.isFromSignedDraft) {
           _viewModel.clearSendInfo();
@@ -143,66 +142,71 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         },
         child: Consumer<BroadcastingViewModel>(
           builder:
-              (context, viewModel, child) => Scaffold(
-                floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-                backgroundColor: context.coconutColors.background,
-                appBar: CoconutAppBar.build(title: t.broadcasting_screen.title, context: context),
-                body: SafeArea(
-                  child: Stack(
-                    children: [
-                      _buildNormalBroadcastInfo(
-                        viewModel,
-                        viewModel.amount,
-                        viewModel.fee,
-                        viewModel.totalAmount,
-                        viewModel.sendingAmountWhenAddressIsMyChange,
-                        viewModel.isSendingToMyAddress,
-                        viewModel.recipientAddresses,
-                        viewModel.isNetworkOn,
+              (context, viewModel, child) => Stack(
+                children: [
+                  Scaffold(
+                    floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+                    backgroundColor: context.coconutColors.background,
+                    appBar: CoconutAppBar.build(title: t.broadcasting_screen.title, context: context),
+                    body: SafeArea(
+                      child: Stack(
+                        children: [
+                          _buildNormalBroadcastInfo(
+                            viewModel,
+                            viewModel.amount,
+                            viewModel.fee,
+                            viewModel.totalAmount,
+                            viewModel.sendingAmountWhenAddressIsMyChange,
+                            viewModel.isSendingToMyAddress,
+                            viewModel.recipientAddresses,
+                            viewModel.isNetworkOn,
+                          ),
+                          if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
+                            FixedBottomTweenButton(
+                              leftButtonRatio: 0.35,
+                              leftButtonClicked: () async {
+                                if (viewModel.isAlreadySaved) {
+                                  CoconutToast.showToast(
+                                    context: context,
+                                    text: t.broadcasting_screen.toast.already_saved_draft,
+                                    isVisibleIcon: true,
+                                  );
+                                  return;
+                                }
+                                try {
+                                  final result = await viewModel.saveTransactionDraft();
+                                  if (result.isSuccess) {
+                                    _showTransactionDraftSavedDialog();
+                                  } else {
+                                    _showTransactionDraftSaveFailedDialog(result.error.message);
+                                  }
+                                } catch (e) {
+                                  _showTransactionDraftSaveFailedDialog(e.toString());
+                                }
+                              },
+                              rightButtonClicked: () async {
+                                _onBroadcastButtonClicked(viewModel);
+                              },
+                              leftText: t.transaction_draft.save,
+                              rightText: t.broadcasting_screen.btn_submit,
+                              rightButtonBackgroundColor: context.coconutColors.primary,
+                            ),
+                          } else ...{
+                            FixedBottomButton(
+                              isActive: viewModel.isNetworkOn && viewModel.isInitDone,
+                              onButtonClicked: () async {
+                                _onBroadcastButtonClicked(viewModel);
+                              },
+                              text: t.broadcasting_screen.btn_submit,
+                              backgroundColor: context.coconutColors.primary,
+                            ),
+                          },
+                        ],
                       ),
-                      if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
-                        FixedBottomTweenButton(
-                          leftButtonRatio: 0.35,
-                          leftButtonClicked: () async {
-                            if (viewModel.isAlreadySaved) {
-                              CoconutToast.showToast(
-                                context: context,
-                                text: t.broadcasting_screen.toast.already_saved_draft,
-                                isVisibleIcon: true,
-                              );
-                              return;
-                            }
-                            try {
-                              final result = await viewModel.saveTransactionDraft();
-                              if (result.isSuccess) {
-                                _showTransactionDraftSavedDialog();
-                              } else {
-                                _showTransactionDraftSaveFailedDialog(result.error.message);
-                              }
-                            } catch (e) {
-                              _showTransactionDraftSaveFailedDialog(e.toString());
-                            }
-                          },
-                          rightButtonClicked: () async {
-                            _onBroadcastButtonClicked(viewModel);
-                          },
-                          leftText: t.transaction_draft.save,
-                          rightText: t.broadcasting_screen.btn_submit,
-                          rightButtonBackgroundColor: context.coconutColors.primary,
-                        ),
-                      } else ...{
-                        FixedBottomButton(
-                          isActive: viewModel.isNetworkOn && viewModel.isInitDone,
-                          onButtonClicked: () async {
-                            _onBroadcastButtonClicked(viewModel);
-                          },
-                          text: t.broadcasting_screen.btn_submit,
-                          backgroundColor: context.coconutColors.primary,
-                        ),
-                      },
-                    ],
+                    ),
                   ),
-                ),
+                  if (_isLoading) const CoconutLoadingOverlay(),
+                ],
               ),
         ),
       ),

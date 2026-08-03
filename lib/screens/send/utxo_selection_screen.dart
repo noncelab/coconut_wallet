@@ -219,7 +219,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                             ),
                                           ],
                                         )
-                                        : const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero)),
+                                        : const Center(child: ContentLoadingIndicator(padding: EdgeInsets.zero)),
                               ),
                             ],
                           ),

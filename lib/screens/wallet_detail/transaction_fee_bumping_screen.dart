@@ -77,7 +77,6 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   bool _isRecommendFeePannelPressed = false;
 
   bool _isLoading = false;
-
   final FocusNode _feeTextFieldFocusNode = FocusNode();
 
   final TextEditingController _textEditingController = TextEditingController();
@@ -204,11 +203,11 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                   viewModel.hasMfp,
                               subWidget: _buildBottomStatusWidget(viewModel),
                             ),
-                            if (_isLoading) const CoconutLoadingOverlay(),
                           ],
                         ),
                       ),
                       if (_isTooltipVisible) _buildTooltip(context),
+                      if (_isLoading) const CoconutLoadingOverlay(),
                     ],
                   ),
                 ),

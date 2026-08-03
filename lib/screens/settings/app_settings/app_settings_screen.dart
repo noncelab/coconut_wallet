@@ -19,7 +19,6 @@ import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
-import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -341,7 +340,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: CustomLoadingOverlay(child: PinSettingScreen(useBiometrics: useBiometrics)),
+      child: PinSettingScreen(useBiometrics: useBiometrics),
     );
   }
 
@@ -349,7 +348,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     return (await CommonBottomSheets.showCustomHeightBottomSheet(
           context: context,
           heightRatio: 0.9,
-          child: const CustomLoadingOverlay(child: PinCheckScreen()),
+          child: const PinCheckScreen(),
         ) ==
         true);
   }

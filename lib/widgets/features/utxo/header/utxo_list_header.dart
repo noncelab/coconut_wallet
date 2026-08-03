@@ -126,7 +126,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                   margin: const EdgeInsets.only(right: 4),
                   width: 12,
                   height: 12,
-                  child: InlineLoadingIndicator(
+                  child: ContentLoadingIndicator(
                     padding: EdgeInsets.zero,
                     color: context.coconutColors.secondaryText,
                     radius: 6,

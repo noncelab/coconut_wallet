@@ -262,9 +262,11 @@ class WalletListViewModel extends ChangeNotifier {
           // 삭제 여부 판단
           if (tempWalletOrder.length != _preferenceProvider.walletOrder.length) {
             setLoadingNotifier(true);
-
-            await _deleteWallets(deletedWalletIds);
-            setLoadingNotifier(false);
+            try {
+              await _deleteWallets(deletedWalletIds);
+            } finally {
+              setLoadingNotifier(false);
+            }
           }
           await _preferenceProvider.setWalletOrder(tempWalletOrder);
 

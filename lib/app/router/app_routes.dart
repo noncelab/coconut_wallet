@@ -41,7 +41,6 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.d
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
-import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:flutter/widgets.dart';
 
 Map<String, WidgetBuilder> buildAppRoutes() {
@@ -58,7 +57,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/electrum-server': (context) => const ElectrumServerScreen(),
     '/block-explorer': (context) => const BlockExplorerScreen(),
     '/broadcasting':
-        (context) => _buildLoadingScreenWithArgs(
+        (context) => _buildScreenWithArgs(
           context,
           (args) => BroadcastingScreen(
             signedTransactionDraftId:
@@ -109,16 +108,14 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             initialBitcoinUri: args['initialBitcoinUri'],
           ),
         ),
-    '/merge-utxos': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoMergeScreen(id: args['id'])),
+    '/merge-utxos': (context) => _buildScreenWithArgs(context, (args) => UtxoMergeScreen(id: args['id'])),
     '/split-utxo': (context) => _buildScreenWithArgs(context, (args) => UtxoSplitScreen(id: args['id'])),
     '/utxo-tag': (context) => _buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
     '/wallet-add-scanner':
-        (context) => _buildLoadingScreenWithArgs(
-          context,
-          (args) => WalletAddScannerScreen(importSource: args['walletImportSource']),
-        ),
+        (context) =>
+            _buildScreenWithArgs(context, (args) => WalletAddScannerScreen(importSource: args['walletImportSource'])),
     '/wallet-info':
-        (context) => _buildLoadingScreenWithArgs(
+        (context) => _buildScreenWithArgs(
           context,
           (args) => WalletInfoScreen(
             id: args['id'],
@@ -128,12 +125,10 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           ),
         ),
     '/broadcasting-complete':
-        (context) => _buildLoadingScreenWithArgs(
-          context,
-          (args) => BroadcastingCompleteScreen(id: args['id'], txHash: args['txHash']),
-        ),
+        (context) =>
+            _buildScreenWithArgs(context, (args) => BroadcastingCompleteScreen(id: args['id'], txHash: args['txHash'])),
     '/utxo-selection':
-        (context) => _buildLoadingScreenWithArgs(
+        (context) => _buildScreenWithArgs(
           context,
           (args) => UtxoSelectionScreen(
             selectedUtxoList: args['selectedUtxoList'],
@@ -142,13 +137,11 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           ),
         ),
     '/send-confirm':
-        (context) =>
-            _buildLoadingScreenWithArgs(context, (args) => SendConfirmScreen(currentUnit: args['currentUnit'])),
-    '/utxo-list': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoListScreen(id: args['id'])),
-    '/utxo-overview': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoOverviewScreen(id: args['id'])),
+        (context) => _buildScreenWithArgs(context, (args) => SendConfirmScreen(currentUnit: args['currentUnit'])),
+    '/utxo-list': (context) => _buildScreenWithArgs(context, (args) => UtxoListScreen(id: args['id'])),
+    '/utxo-overview': (context) => _buildScreenWithArgs(context, (args) => UtxoOverviewScreen(id: args['id'])),
     '/utxo-detail':
-        (context) =>
-            _buildLoadingScreenWithArgs(context, (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id'])),
+        (context) => _buildScreenWithArgs(context, (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id'])),
     '/p2p-calculator': (context) => const P2PCalculatorScreen(),
     '/transaction-draft':
         (context) => _buildScreenWithArgs(
@@ -220,9 +213,4 @@ Map<String, WidgetBuilder> buildAppRoutes() {
 Widget _buildScreenWithArgs(BuildContext context, Widget Function(Map<String, dynamic>) builder) {
   final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
   return builder(args);
-}
-
-Widget _buildLoadingScreenWithArgs(BuildContext context, Widget Function(Map<String, dynamic>) builder) {
-  final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
-  return CustomLoadingOverlay(child: builder(args));
 }

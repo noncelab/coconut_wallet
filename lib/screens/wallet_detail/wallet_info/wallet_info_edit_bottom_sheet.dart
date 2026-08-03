@@ -226,7 +226,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                             child: Container(
                               color: context.coconutColors.iconPrimary.withValues(alpha: 0.6),
                               alignment: Alignment.center,
-                              child: const FullscreenLoadingIndicator(size: 160, padding: EdgeInsets.zero),
+                              child: const OverlayLoadingIndicator(size: 160, padding: EdgeInsets.zero),
                             ),
                           ),
                       ],

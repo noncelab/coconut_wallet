@@ -83,7 +83,7 @@ class QueryInputSection extends StatelessWidget {
                         const SizedBox(
                           width: 16,
                           height: 16,
-                          child: InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 8),
+                          child: ContentLoadingIndicator(padding: EdgeInsets.zero, radius: 8),
                         ),
                         const SizedBox(width: 8),
                         Text(viewModel.selectedTable, style: TextStyle(color: Colors.grey.shade600)),
@@ -151,7 +151,7 @@ class QueryInputSection extends StatelessWidget {
                   ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 8),
+                    child: ContentLoadingIndicator(padding: EdgeInsets.zero, radius: 8),
                   )
                   : const Icon(Icons.play_arrow),
           label: Text(viewModel.isLoading ? '실행 중...' : '쿼리 실행'),
@@ -178,7 +178,7 @@ class QueryInputSection extends StatelessWidget {
         viewModel.isLoading
             ? const Row(
               children: [
-                SizedBox(width: 16, height: 16, child: InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 8)),
+                SizedBox(width: 16, height: 16, child: ContentLoadingIndicator(padding: EdgeInsets.zero, radius: 8)),
                 SizedBox(width: 8),
                 Text('조회 중...'),
               ],

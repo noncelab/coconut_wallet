@@ -30,7 +30,6 @@ import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
-import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
@@ -112,7 +111,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               viewModel.pinCheckNotifier.value = false;
               await CommonBottomSheets.showCustomHeightBottomSheet(
                 context: context,
-                child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: () => viewModel.handleAuthCompletion())),
+                child: PinCheckScreen(onComplete: () => viewModel.handleAuthCompletion()),
                 heightRatio: 0.9,
               );
             });
@@ -186,7 +185,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               ValueListenableBuilder<bool>(
                 valueListenable: viewModel.loadingNotifier,
                 builder: (context, isLoading, _) {
-                  return isLoading ? const CoconutLoadingOverlay() : Container();
+                  return isLoading ? const CoconutLoadingOverlay() : const SizedBox.shrink();
                 },
               ),
             ],
@@ -742,7 +741,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   child: Padding(
                     key: ValueKey("loading"),
                     padding: EdgeInsets.only(bottom: 20.0),
-                    child: InlineLoadingIndicator(),
+                    child: ContentLoadingIndicator(),
                   ),
                 )
                 : null,

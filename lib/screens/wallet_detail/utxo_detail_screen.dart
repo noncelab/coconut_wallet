@@ -189,7 +189,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                 children: [
                   _buildSuspiciousDustUtxoWarning(isSuspiciousDustUtxo, utxoStatus == UtxoStatus.locked),
                   if (tx == null)
-                    const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero))
+                    const Center(child: ContentLoadingIndicator(padding: EdgeInsets.zero))
                   else ...{
                     _buildDateTime(dateString),
                     _buildAmount(),

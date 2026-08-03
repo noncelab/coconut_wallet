@@ -121,17 +121,19 @@ class TrezorPassphraseOptionButton extends StatelessWidget {
       width: double.infinity,
       child: ShrinkAnimationButton(
         defaultColor: context.coconutColors.surfaceButton,
-        pressedOverlayColor: context.coconutColors.surfacePressOverlay, // TODO: UI 확인 필요
         borderRadius: CoconutStyles.radius_200,
         isActive: onTap != null,
         onPressed: onTap ?? () {},
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: CoconutTypography.body2_14.setColor(
-              onTap != null ? context.coconutColors.primaryText : context.coconutColors.tertiaryText,
+        child: SizedBox(
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: CoconutTypography.body2_14.setColor(
+                onTap != null ? context.coconutColors.primaryText : context.coconutColors.tertiaryText,
+              ),
             ),
           ),
         ),
@@ -153,10 +155,11 @@ class TrezorPassphraseUseQuestionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             t.wallet_connect_screen.guide_trezor.usb.passphrase_use_question,
+            textAlign: TextAlign.center,
             style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
           ),
           CoconutLayout.spacing_400h,

@@ -262,7 +262,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       stateIcon = SizedBox(
         width: 12,
         height: 12,
-        child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: color, radius: 6),
+        child: ContentLoadingIndicator(padding: EdgeInsets.zero, color: color, radius: 6),
       );
       stateLabel = t.bitbox02_sign_screen.state_label.signing;
       detailText = _subStatusText(vm.subStatus);

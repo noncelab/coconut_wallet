@@ -4,17 +4,23 @@ import 'package:flutter/material.dart';
 
 class CoconutLoadingOverlay extends StatelessWidget {
   final bool applyFullScreen;
-  const CoconutLoadingOverlay({super.key, this.applyFullScreen = false});
+  final bool barrier;
+  const CoconutLoadingOverlay({super.key, this.applyFullScreen = true, this.barrier = true});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: context.coconutColors.loadingOverlay,
-      padding:
-          applyFullScreen
-              ? EdgeInsets.zero
-              : EdgeInsets.only(bottom: kToolbarHeight + MediaQuery.of(context).padding.top + kToolbarHeight),
-      child: const Center(child: FullscreenLoadingIndicator(padding: EdgeInsets.zero)),
+    return Stack(
+      children: [
+        if (barrier) const ModalBarrier(dismissible: false),
+        Container(
+          color: context.coconutColors.loadingOverlay,
+          padding:
+              applyFullScreen
+                  ? EdgeInsets.zero
+                  : EdgeInsets.only(bottom: kToolbarHeight + MediaQuery.of(context).padding.top + kToolbarHeight),
+          child: const Center(child: OverlayLoadingIndicator(padding: EdgeInsets.zero)),
+        ),
+      ],
     );
   }
 }

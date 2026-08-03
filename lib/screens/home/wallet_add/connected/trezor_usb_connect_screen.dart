@@ -14,6 +14,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/card/expandable_info_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/wallet_connect_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -173,6 +174,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
   }
 
   Future<void> _handleClose() async {
+    if (_isAddingWallet) return;
     if (_viewModel.step == TrezorUsbConnectStep.pinEntry) {
       _viewModel.cancelPin();
       Navigator.pop(context);
@@ -247,57 +249,65 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       },
       child: ChangeNotifierProvider.value(
         value: _viewModel,
-        child: Scaffold(
-          resizeToAvoidBottomInset: false,
-          backgroundColor: context.coconutColors.background,
-          appBar: CoconutAppBar.build(
-            title: WalletImportSource.trezor.displayName,
-            context: context,
-            isBottom: true,
-            onBackPressed: _handleClose,
-          ),
-          body: Consumer<TrezorUsbConnectViewModel>(
-            builder:
-                (context, vm, _) => SafeArea(
-                  child: SizedBox(
-                    height: MediaQuery.sizeOf(context).height,
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final isFullHeight =
-                                  vm.step == TrezorUsbConnectStep.pinEntry || vm.step == TrezorUsbConnectStep.pairing;
-                              final bottomPadding = isFullHeight ? 24.0 : 120.0;
-                              final minContentHeight =
-                                  (constraints.maxHeight - 24 - bottomPadding).clamp(0.0, double.infinity).toDouble();
-                              return SingleChildScrollView(
-                                controller: _scrollController,
-                                padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding),
-                                child: _buildStatusSection(vm, inputMinHeight: minContentHeight),
-                              );
-                            },
-                          ),
-                        ),
-                        if (vm.step == TrezorUsbConnectStep.idle ||
-                            vm.step == TrezorUsbConnectStep.error ||
-                            (vm.step == TrezorUsbConnectStep.connected && vm.xpub.isNotEmpty))
-                          Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
-                        if (vm.step == TrezorUsbConnectStep.passphraseInput)
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              TrezorPassphraseInputActionButton(
-                                onSubmit: () => vm.submitPassphraseValue(_passphraseController.text),
-                                passphraseController: _passphraseController,
+        child: Stack(
+          children: [
+            Scaffold(
+              resizeToAvoidBottomInset: false,
+              backgroundColor: context.coconutColors.background,
+              appBar: CoconutAppBar.build(
+                title: WalletImportSource.trezor.displayName,
+                context: context,
+                isBottom: true,
+                onBackPressed: _handleClose,
+              ),
+              body: Consumer<TrezorUsbConnectViewModel>(
+                builder:
+                    (context, vm, _) => SafeArea(
+                      child: SizedBox(
+                        height: MediaQuery.sizeOf(context).height,
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final isFullHeight =
+                                      vm.step == TrezorUsbConnectStep.pinEntry ||
+                                      vm.step == TrezorUsbConnectStep.pairing;
+                                  final bottomPadding = isFullHeight ? 24.0 : 120.0;
+                                  final minContentHeight =
+                                      (constraints.maxHeight - 24 - bottomPadding)
+                                          .clamp(0.0, double.infinity)
+                                          .toDouble();
+                                  return SingleChildScrollView(
+                                    controller: _scrollController,
+                                    padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding),
+                                    child: _buildStatusSection(vm, inputMinHeight: minContentHeight),
+                                  );
+                                },
                               ),
-                            ],
-                          ),
-                      ],
+                            ),
+                            if (vm.step == TrezorUsbConnectStep.idle ||
+                                vm.step == TrezorUsbConnectStep.error ||
+                                (vm.step == TrezorUsbConnectStep.connected && vm.xpub.isNotEmpty))
+                              Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
+                            if (vm.step == TrezorUsbConnectStep.passphraseInput)
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  TrezorPassphraseInputActionButton(
+                                    onSubmit: () => vm.submitPassphraseValue(_passphraseController.text),
+                                    passphraseController: _passphraseController,
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-          ),
+              ),
+            ),
+            if (_isAddingWallet) const CoconutLoadingOverlay(),
+          ],
         ),
       ),
     );

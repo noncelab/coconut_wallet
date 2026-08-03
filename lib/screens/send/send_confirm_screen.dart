@@ -31,8 +31,8 @@ import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/material.dart';
-import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 class SendConfirmScreen extends StatefulWidget {
@@ -47,6 +47,7 @@ class SendConfirmScreen extends StatefulWidget {
 class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late SendConfirmViewModel _viewModel;
   late BitcoinUnit _currentUnit;
+  bool _isLoading = false;
 
   String get totalSendAmountText =>
       _currentUnit.displayBitcoinAmount(UnitUtil.convertBitcoinToSatoshi(_viewModel.totalSendAmount ?? 0));
@@ -65,44 +66,49 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
       create: (_) => _viewModel,
       child: Consumer<SendConfirmViewModel>(
         builder: (context, viewModel, child) {
-          return Scaffold(
-            backgroundColor: context.coconutColors.background,
-            appBar: CoconutAppBar.build(title: t.send_confirm_screen.title, context: context),
-            body: SafeArea(
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10, right: 10),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          SendAmountHeader(
-                            amountText: totalSendAmountText,
-                            unit: _currentUnit,
-                            satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.totalSendAmount ?? 0),
-                            totalCostAmountText: totalCostText,
-                            onTap: _toggleUnit,
+          return Stack(
+            children: [
+              Scaffold(
+                backgroundColor: context.coconutColors.background,
+                appBar: CoconutAppBar.build(title: t.send_confirm_screen.title, context: context),
+                body: SafeArea(
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 10, right: 10),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              SendAmountHeader(
+                                amountText: totalSendAmountText,
+                                unit: _currentUnit,
+                                satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.totalSendAmount ?? 0),
+                                totalCostAmountText: totalCostText,
+                                onTap: _toggleUnit,
+                              ),
+                              CoconutLayout.spacing_300h,
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                child: _buildTransactionFlowCard(viewModel),
+                              ),
+                              CoconutLayout.spacing_500h,
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                child: _buildOutputDetailCard(viewModel),
+                              ),
+                              CoconutLayout.spacing_500h,
+                              CoconutLayout.spacing_2500h,
+                            ],
                           ),
-                          CoconutLayout.spacing_300h,
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: _buildTransactionFlowCard(viewModel),
-                          ),
-                          CoconutLayout.spacing_500h,
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: _buildOutputDetailCard(viewModel),
-                          ),
-                          CoconutLayout.spacing_500h,
-                          CoconutLayout.spacing_2500h,
-                        ],
+                        ),
                       ),
-                    ),
+                      FixedBottomButton(text: t.next, onButtonClicked: () => _onButtonClicked(viewModel)),
+                    ],
                   ),
-                  FixedBottomButton(text: t.next, onButtonClicked: () => _onButtonClicked(viewModel)),
-                ],
+                ),
               ),
-            ),
+              if (_isLoading) const CoconutLoadingOverlay(),
+            ],
           );
         },
       ),
@@ -112,7 +118,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   @override
   void initState() {
     super.initState();
-    context.loaderOverlay.show();
+    setState(() => _isLoading = true);
     _currentUnit = widget.currentUnit ?? context.read<PreferenceProvider>().currentUnit;
     _viewModel = SendConfirmViewModel(
       Provider.of<SendInfoProvider>(context, listen: false),
@@ -122,12 +128,12 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         .setEstimatedFeeAndTotalUsedAmount()
         .then((_) {
           if (mounted) {
-            context.loaderOverlay.hide();
+            setState(() => _isLoading = false);
           }
         })
         .catchError((error) async {
           if (mounted) {
-            context.loaderOverlay.hide();
+            setState(() => _isLoading = false);
             showDialog(
               context: context,
               builder: (BuildContext context) {
@@ -147,42 +153,48 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   }
 
   Future<void> _onButtonClicked(SendConfirmViewModel viewModel) async {
-    context.loaderOverlay.show();
+    setState(() => _isLoading = true);
     viewModel.setTxWaitingForSign();
     if (!mounted) return;
 
-    final connectedDeviceSource = await viewModel.findConnectedMatchingDevice();
-    if (!mounted) return;
-    context.loaderOverlay.hide();
+    try {
+      final connectedDeviceSource = await viewModel.findConnectedMatchingDevice();
+      if (!mounted) return;
+      setState(() => _isLoading = false);
 
-    if (connectedDeviceSource != null && connectedDeviceSource != viewModel.walletImportSource) {
-      final language = context.read<PreferenceProvider>().language;
-      final deviceName = connectedDeviceSource.displayName;
+      if (connectedDeviceSource != null && connectedDeviceSource != viewModel.walletImportSource) {
+        final language = context.read<PreferenceProvider>().language;
+        final deviceName = connectedDeviceSource.displayName;
+        if (!mounted) return;
+        bool useConnectedDevice = false;
+        await showConfirmDialog(
+          context,
+          language,
+          t.send_confirm_screen.sign_with_connected_device_title,
+          t.send_confirm_screen.sign_with_connected_device_description(deviceName: deviceName),
+          leftButtonText: t.no,
+          rightButtonText: t.yes,
+          barrierDismissible: true,
+          onTapLeft: () {
+            useConnectedDevice = false;
+            Navigator.of(context).pop();
+          },
+          onTapRight: () {
+            useConnectedDevice = true;
+            Navigator.of(context).pop();
+          },
+        );
+        if (!mounted) return;
+        _navigateToNextScreen(viewModel, connectedDeviceSource: useConnectedDevice ? connectedDeviceSource : null);
+        return;
+      }
+
+      _navigateToNextScreen(viewModel, connectedDeviceSource: connectedDeviceSource);
+    } catch (e) {
       if (!mounted) return;
-      bool useConnectedDevice = false;
-      await showConfirmDialog(
-        context,
-        language,
-        t.send_confirm_screen.sign_with_connected_device_title,
-        t.send_confirm_screen.sign_with_connected_device_description(deviceName: deviceName),
-        leftButtonText: t.no,
-        rightButtonText: t.yes,
-        barrierDismissible: true,
-        onTapLeft: () {
-          useConnectedDevice = false;
-          Navigator.of(context).pop();
-        },
-        onTapRight: () {
-          useConnectedDevice = true;
-          Navigator.of(context).pop();
-        },
-      );
-      if (!mounted) return;
-      _navigateToNextScreen(viewModel, connectedDeviceSource: useConnectedDevice ? connectedDeviceSource : null);
-      return;
+      setState(() => _isLoading = false);
+      showInfoDialog(context, context.read<PreferenceProvider>().language, t.alert.error_occurs, e.toString());
     }
-
-    _navigateToNextScreen(viewModel, connectedDeviceSource: connectedDeviceSource);
   }
 
   void _navigateToNextScreen(SendConfirmViewModel viewModel, {WalletImportSource? connectedDeviceSource}) {

@@ -28,7 +28,7 @@ class StatisticsSection extends StatelessWidget {
                       const SizedBox(
                         width: 16,
                         height: 16,
-                        child: InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 8),
+                        child: ContentLoadingIndicator(padding: EdgeInsets.zero, radius: 8),
                       ),
                       const SizedBox(width: 8),
                       Text(

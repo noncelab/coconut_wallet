@@ -155,29 +155,13 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     _passphraseController.dispose();
     _passphraseFocusNode.dispose();
     _scrollController.dispose();
-    _loadingOverlayEntry?.remove();
-    _loadingOverlayEntry = null;
     _viewModel.dispose();
     super.dispose();
   }
 
-  OverlayEntry? _loadingOverlayEntry;
-
-  void _showFullScreenLoading() {
-    _loadingOverlayEntry = OverlayEntry(builder: (_) => const CoconutLoadingOverlay(applyFullScreen: true));
-    Overlay.of(context).insert(_loadingOverlayEntry!);
-    setState(() => _isAddingWallet = true);
-  }
-
-  void _hideFullScreenLoading() {
-    _loadingOverlayEntry?.remove();
-    _loadingOverlayEntry = null;
-    if (mounted) setState(() => _isAddingWallet = false);
-  }
-
   Future<void> _onAddWalletPressed(TrezorBleConnectViewModel vm) async {
     if (_isAddingWallet) return;
-    _showFullScreenLoading();
+    setState(() => _isAddingWallet = true);
 
     final stopwatch = Stopwatch()..start();
     ResultOfSyncFromVault result;
@@ -185,7 +169,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       result = await vm.addToWalletList();
     } catch (e) {
       if (!mounted) return;
-      _hideFullScreenLoading();
+      setState(() => _isAddingWallet = false);
       showDialog(
         context: context,
         builder:
@@ -207,7 +191,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     if (!mounted) return;
 
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
-      _hideFullScreenLoading();
+      if (mounted) setState(() => _isAddingWallet = false);
       Navigator.pushReplacementNamed(
         context,
         '/wallet-detail',
@@ -216,13 +200,14 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       return;
     }
 
-    _hideFullScreenLoading();
+    if (mounted) setState(() => _isAddingWallet = false);
 
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
     showWalletSyncResultErrorDialog(context, result, walletProvider);
   }
 
   Future<void> _handleClose() async {
+    if (_isAddingWallet) return;
     if (_viewModel.step == TrezorBleConnectStep.pairing) {
       _viewModel.cancelPairing();
       Navigator.pop(context);
@@ -277,57 +262,62 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       },
       child: ChangeNotifierProvider.value(
         value: _viewModel,
-        child: Scaffold(
-          resizeToAvoidBottomInset: false,
-          backgroundColor: context.coconutColors.background,
-          appBar: CoconutAppBar.build(
-            title: WalletImportSource.trezor.displayName,
-            context: context,
-            isBottom: true,
-            onBackPressed: _handleClose,
-          ),
-          body: Consumer<TrezorBleConnectViewModel>(
-            builder: (context, vm, _) {
-              return SafeArea(
-                child: SizedBox(
-                  height: MediaQuery.sizeOf(context).height,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isPairingVisible = vm.step == TrezorBleConnectStep.pairing;
-                            final bottomPadding = isPairingVisible ? 24.0 : 120.0;
-                            final minContentHeight =
-                                (constraints.maxHeight - 24 - bottomPadding).clamp(0.0, double.infinity).toDouble();
-                            return SingleChildScrollView(
-                              controller: _scrollController,
-                              padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding),
-                              child: _buildStatusSection(vm, inputMinHeight: minContentHeight),
-                            );
-                          },
-                        ),
-                      ),
-                      if (vm.step == TrezorBleConnectStep.idle ||
-                          vm.step == TrezorBleConnectStep.error ||
-                          (vm.step == TrezorBleConnectStep.paired && vm.xpub.isNotEmpty))
-                        Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
-                      if (vm.step == TrezorBleConnectStep.passphraseInput)
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            TrezorPassphraseInputActionButton(
-                              onSubmit: () => vm.submitPassphraseValue(_passphraseController.text),
-                              passphraseController: _passphraseController,
+        child: Stack(
+          children: [
+            Scaffold(
+              resizeToAvoidBottomInset: false,
+              backgroundColor: context.coconutColors.background,
+              appBar: CoconutAppBar.build(
+                title: WalletImportSource.trezor.displayName,
+                context: context,
+                isBottom: true,
+                onBackPressed: _handleClose,
+              ),
+              body: Consumer<TrezorBleConnectViewModel>(
+                builder: (context, vm, _) {
+                  return SafeArea(
+                    child: SizedBox(
+                      height: MediaQuery.sizeOf(context).height,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isPairingVisible = vm.step == TrezorBleConnectStep.pairing;
+                                final bottomPadding = isPairingVisible ? 24.0 : 120.0;
+                                final minContentHeight =
+                                    (constraints.maxHeight - 24 - bottomPadding).clamp(0.0, double.infinity).toDouble();
+                                return SingleChildScrollView(
+                                  controller: _scrollController,
+                                  padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding),
+                                  child: _buildStatusSection(vm, inputMinHeight: minContentHeight),
+                                );
+                              },
                             ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+                          ),
+                          if (vm.step == TrezorBleConnectStep.idle ||
+                              vm.step == TrezorBleConnectStep.error ||
+                              (vm.step == TrezorBleConnectStep.paired && vm.xpub.isNotEmpty))
+                            Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
+                          if (vm.step == TrezorBleConnectStep.passphraseInput)
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                TrezorPassphraseInputActionButton(
+                                  onSubmit: () => vm.submitPassphraseValue(_passphraseController.text),
+                                  passphraseController: _passphraseController,
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (_isAddingWallet) const CoconutLoadingOverlay(),
+          ],
         ),
       ),
     );

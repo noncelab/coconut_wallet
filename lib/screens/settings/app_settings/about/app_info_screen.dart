@@ -183,7 +183,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
-            child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.iconPrimary),
+            child: ContentLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.iconPrimary),
           );
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
@@ -449,7 +449,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
-            child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.iconPrimary),
+            child: ContentLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.iconPrimary),
           );
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));

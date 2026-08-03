@@ -38,6 +38,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:coconut_wallet/widgets/common/text/fixed_text_scale.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -45,7 +46,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/widgets/features/utxo/summary/animated_summary_card.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:loader_overlay/loader_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:shimmer/shimmer.dart';
 
 part 'utxo_merge_screen_components.dart';
@@ -87,6 +88,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   bool _isTagBottomSheetOpen = false;
   bool _isReceiveAddressBottomSheetOpen = false;
   bool _isFeeBottomSheetOpen = false;
+  bool _isLoading = false;
 
   Color get _pickerDividerColor => context.coconutColors.divider;
 
@@ -156,7 +158,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: true,
+      canPop: !_isLoading,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
           _viewModel.clearSendInfo();
@@ -164,10 +166,15 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       },
       child: ChangeNotifierProvider<UtxoMergeViewModel>.value(
         value: _viewModel,
-        child: Scaffold(
-          backgroundColor: context.coconutColors.background,
-          appBar: _buildAppBar(context),
-          body: SafeArea(child: _buildBody(context)),
+        child: Stack(
+          children: [
+            Scaffold(
+              backgroundColor: context.coconutColors.background,
+              appBar: _buildAppBar(context),
+              body: SafeArea(child: _buildBody(context)),
+            ),
+            if (_isLoading) const CoconutLoadingOverlay(),
+          ],
         ),
       ),
     );
@@ -415,7 +422,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   Future<void> _onMergeButtonClicked() async {
     if (_viewModel.mergeState != MergeState.ready) return;
 
-    context.loaderOverlay.show();
+    setState(() => _isLoading = true);
 
     try {
       if (!await _viewModel.saveForNext()) {
@@ -423,15 +430,19 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       }
 
       if (!mounted) return;
-      context.loaderOverlay.hide();
+      setState(() => _isLoading = false);
       Navigator.pushNamed(
         context,
         '/send-confirm',
         arguments: {"currentUnit": context.read<PreferenceProvider>().currentUnit},
       );
+    } catch (e) {
+      if (mounted) {
+        showInfoDialog(context, context.read<PreferenceProvider>().language, t.alert.error_occurs, e.toString());
+      }
     } finally {
-      if (mounted && context.loaderOverlay.visible) {
-        context.loaderOverlay.hide();
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }

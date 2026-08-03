@@ -32,10 +32,10 @@ import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/expandable_info_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
@@ -56,6 +56,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   MobileScannerController? controller;
   bool _isProcessing = false;
   bool _clipboardContentAvailable = false;
+  bool _isLoading = false;
   late WalletAddScannerViewModel _viewModel;
 
   @override
@@ -356,73 +357,85 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CoconutAppBar.build(
-        title: _getAppBarTitle(),
-        context: context,
-        isBottom: true,
-        backgroundColor: context.coconutColors.background,
-        actionButtonList: [
-          IconButton(
-            onPressed: () {
-              if (controller != null) {
-                controller!.switchCamera();
-              }
-            },
-            icon: SvgPicture.asset(
-              CommonActionIconPath.arrowReload,
-              width: 20,
-              height: 20,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-            ),
-            color: context.coconutColors.iconPrimary,
-          ),
-        ],
-      ),
-      body: Stack(
+    return PopScope(
+      canPop: !_isLoading,
+      child: Stack(
         children: [
-          CoconutQrScanner(
-            setMobileScannerController: (MobileScannerController qrViewcontroller) {
-              controller = qrViewcontroller;
-            },
-            onComplete: _onCompletedScanning,
-            onFailed: _onFailedScanning,
-            qrDataHandler: _viewModel.qrDataHandler,
-          ),
-          Padding(
-            padding: const EdgeInsets.only(
-              top: 20,
-              left: CoconutLayout.defaultPadding,
-              right: CoconutLayout.defaultPadding,
+          Scaffold(
+            appBar: CoconutAppBar.build(
+              title: _getAppBarTitle(),
+              context: context,
+              isBottom: true,
+              backgroundColor: context.coconutColors.background,
+              actionButtonList: [
+                IconButton(
+                  onPressed: () {
+                    if (controller != null) {
+                      controller!.switchCamera();
+                    }
+                  },
+                  icon: SvgPicture.asset(
+                    CommonActionIconPath.arrowReload,
+                    width: 20,
+                    height: 20,
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                  ),
+                  color: context.coconutColors.iconPrimary,
+                ),
+              ],
             ),
-            child:
-                widget.importSource == WalletImportSource.extendedPublicKey
-                    ? ExpandableInfoCard(
-                      descriptionText: t.wallet_add_scanner_screen.paste.wallet_description_text,
-                      sections: [
-                        ExpandableInfo(
-                          titleText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[0],
-                          descriptionList: [...t.wallet_add_scanner_screen.paste.blue_wallet_texts.getRange(1, 3)],
-                          addressText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[3],
-                        ),
-                        ExpandableInfo(
-                          titleText: t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[0],
-                          descriptionList: [...t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts.getRange(1, 2)],
-                          addressText:
-                              Platform.isAndroid
-                                  ? t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[2]
-                                  : t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[3],
-                        ),
-                      ],
-                    )
-                    : _buildDefaultToolTip(),
-          ),
-          if (widget.importSource == WalletImportSource.extendedPublicKey && _clipboardContentAvailable)
-            FixedBottomButton(
-              onButtonClicked: _handleClipboardImport,
-              text: t.wallet_add_scanner_screen.paste.paste_button,
-              showSurroundings: false,
+            body: Stack(
+              children: [
+                CoconutQrScanner(
+                  setMobileScannerController: (MobileScannerController qrViewcontroller) {
+                    controller = qrViewcontroller;
+                  },
+                  onComplete: _onCompletedScanning,
+                  onFailed: _onFailedScanning,
+                  qrDataHandler: _viewModel.qrDataHandler,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: 20,
+                    left: CoconutLayout.defaultPadding,
+                    right: CoconutLayout.defaultPadding,
+                  ),
+                  child:
+                      widget.importSource == WalletImportSource.extendedPublicKey
+                          ? ExpandableInfoCard(
+                            descriptionText: t.wallet_add_scanner_screen.paste.wallet_description_text,
+                            sections: [
+                              ExpandableInfo(
+                                titleText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[0],
+                                descriptionList: [
+                                  ...t.wallet_add_scanner_screen.paste.blue_wallet_texts.getRange(1, 3),
+                                ],
+                                addressText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[3],
+                              ),
+                              ExpandableInfo(
+                                titleText: t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[0],
+                                descriptionList: [
+                                  ...t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts.getRange(1, 2),
+                                ],
+                                addressText:
+                                    Platform.isAndroid
+                                        ? t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[2]
+                                        : t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[3],
+                              ),
+                            ],
+                          )
+                          : _buildDefaultToolTip(),
+                ),
+                if (widget.importSource == WalletImportSource.extendedPublicKey && _clipboardContentAvailable)
+                  FixedBottomButton(
+                    onButtonClicked: _handleClipboardImport,
+                    text: t.wallet_add_scanner_screen.paste.paste_button,
+                    showSurroundings: false,
+                  ),
+              ],
             ),
+          ),
+          if (_isLoading) const CoconutLoadingOverlay(),
         ],
       ),
     );
@@ -472,12 +485,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
       ResultOfSyncFromVault? addResult;
       if (descriptor != null && mounted) {
-        context.loaderOverlay.show();
+        setState(() => _isLoading = true);
         addResult = await _viewModel.addWallet(descriptor);
       } else {
         String? mfp = await _showMfpInputBottomSheet();
         if (!mounted) return;
-        context.loaderOverlay.show();
+        setState(() => _isLoading = true);
         addResult = await _viewModel.addWallet(extendedPublicKey!, isExtendedPublicKey: true, masterFingerPrint: mfp);
       }
       await _handleAddWalletResult(addResult);
@@ -629,7 +642,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     FileLogger.log(className, '_finalizeAddWallet', 'finalize');
     vibrateMedium();
     if (mounted) {
-      context.loaderOverlay.hide();
+      setState(() => _isLoading = false);
       controller?.start();
       _viewModel.qrDataHandler.reset(); // TODO: 추가됨. 다른 타입 지갑 추가 시 동작 확인 필요
     }

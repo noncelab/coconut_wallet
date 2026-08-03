@@ -168,7 +168,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 semanticChildCount: isEmpty ? 1 : utxos.length,
                 slivers: [
-                  if (isSyncing) const SliverToBoxAdapter(child: InlineLoadingIndicator()),
+                  if (isSyncing) const SliverToBoxAdapter(child: ContentLoadingIndicator()),
                   CupertinoSliverRefreshControl(
                     onRefresh: () async => context.read<UtxoListViewModel>().refetchFromDB(),
                   ),

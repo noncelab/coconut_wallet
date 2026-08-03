@@ -360,7 +360,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   Widget _buildAddressList(List<WalletAddress> addressList, Tuple2<bool, bool> isTooltipDisabled) {
     return _isInitializing
-        ? const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero))
+        ? const Center(child: ContentLoadingIndicator(padding: EdgeInsets.zero))
         : NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification notification) {
             if (_controller.hasClients &&
@@ -447,7 +447,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 40, top: 20),
                     child: Center(
-                      child: InlineLoadingIndicator(
+                      child: ContentLoadingIndicator(
                         padding: EdgeInsets.zero,
                         color: context.coconutColors.iconPrimary,
                         radius: 14,

@@ -221,7 +221,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
             SizedBox(
               height: 20,
               width: 20,
-              child: InlineLoadingIndicator(
+              child: ContentLoadingIndicator(
                 padding: EdgeInsets.zero,
                 color: context.coconutColors.iconPrimary,
                 radius: 10,

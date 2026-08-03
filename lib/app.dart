@@ -15,7 +15,6 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/app/deep_link/deep_link_listener.dart';
-import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
@@ -106,15 +105,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       ? StartScreen(onComplete: _completeSplash)
                       : _appEntryFlow == AppEntryFlow.main
                       ? const WalletHomeScreen()
-                      : CustomLoadingOverlay(
-                        child: PinCheckScreen(
-                          appEntrance: true,
-                          onComplete: () {
-                            setState(() {
-                              _appEntryFlow = AppEntryFlow.main;
-                            });
-                          },
-                        ),
+                      : PinCheckScreen(
+                        appEntrance: true,
+                        onComplete: () {
+                          setState(() {
+                            _appEntryFlow = AppEntryFlow.main;
+                          });
+                        },
                       ),
               routes: buildAppRoutes(),
             );

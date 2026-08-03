@@ -445,7 +445,7 @@ wallet_connect_screen:
       error_wrong_code: "잘못된 페어링 코드"
       error_wrong_code_dialog: "잘못된 페어링 코드입니다.\n연결 과정을 처음부터 다시 시작합니다."
     paired:
-      title: "Trezor 연결이 완료되었습니다."
+      title: "Trezor 연결이 완료되었어요."
       device_name: "기기 이름"
       master_fingerprint: "마스터 핑거프린트"
       derivation_path: "파생 경로"

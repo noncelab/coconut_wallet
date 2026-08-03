@@ -283,12 +283,7 @@ class WalletConnectSuccessCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          SvgPicture.asset(
-            CommonStateIconPath.completionCheck,
-            colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
-            height: 48,
-            width: 48,
-          ),
+          SvgPicture.asset(CommonStateIconPath.completionCheck, height: 48, width: 48),
           CoconutLayout.spacing_200h,
           Text(
             title,

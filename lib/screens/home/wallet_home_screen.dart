@@ -2026,7 +2026,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   child: Padding(
                     key: ValueKey("loading"),
                     padding: EdgeInsets.only(bottom: 20.0),
-                    child: InlineLoadingIndicator(),
+                    child: ContentLoadingIndicator(),
                   ),
                 )
                 : null,

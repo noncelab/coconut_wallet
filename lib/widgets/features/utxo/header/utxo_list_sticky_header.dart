@@ -181,7 +181,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                 child: SizedBox(
                   width: 12,
                   height: 12,
-                  child: InlineLoadingIndicator(
+                  child: ContentLoadingIndicator(
                     padding: EdgeInsets.zero,
                     color: context.coconutColors.secondaryText,
                     radius: 6,
