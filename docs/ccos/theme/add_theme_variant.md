@@ -177,14 +177,14 @@ dart run slang
 
 - `lib/screens/settings/theme_bottom_sheet.dart`
 - `lib/screens/settings/app_settings/app_settings_screen.dart`
-- 필요 시 `lib/ccos/theme/ccos_theme_catalog.dart`
+- 필요 시 `lib/ccos/store/ccos_feature_registry.dart`
 
 해야 할 일:
 
 - built-in theme로 직접 노출할지, CCOS catalog entry를 통해 노출할지 먼저 결정한다.
 - built-in theme로 노출한다면 `theme_bottom_sheet.dart`의 선택 목록에 variant를 추가한다.
 - 현재 variant label을 표시하는 switch에 케이스를 추가한다.
-- CCOS 예시나 contributor-offered theme로 노출한다면, `ccos_theme_catalog.dart`에 entry와 free / one-time purchase metadata를 추가한다.
+- CCOS 예시나 contributor-offered theme로 노출한다면, `ccos_feature_registry.dart`에 entry와 free / one-time purchase metadata를 추가한다.
 
 예시:
 
@@ -199,7 +199,7 @@ CoconutThemeVariant.sepia => t.theme_sepia,
 CCOS catalog 예시:
 
 ```dart
-CcosThemeOffer(
+CcosFeatureListing(
   id: 'ccos-theme-sepia-pack',
   title: 'Sepia Pack',
   description: '...',
@@ -265,7 +265,7 @@ CcosThemeOffer(
 | `assets/i18n/*.i18n.yaml` | 번역 키 추가 후 `dart run slang` 실행 |
 | `lib/screens/settings/theme_bottom_sheet.dart` | built-in theme 목록 또는 CCOS entry 노출 구조 반영 |
 | `lib/screens/settings/app_settings/app_settings_screen.dart` | 현재 label switch에 케이스 추가 |
-| `lib/ccos/theme/ccos_theme_catalog.dart` | contributor-offered theme entry와 monetization metadata 추가 시 수정 |
+| `lib/ccos/store/ccos_feature_registry.dart` | contributor-offered feature entry와 monetization metadata 추가 시 수정 |
 
 보통 수정 불필요:
 

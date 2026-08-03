@@ -4,6 +4,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
@@ -135,11 +136,11 @@ class _NativeSplashAppearance extends StatelessWidget {
 class _ThemeSplashAppearance extends StatelessWidget {
   const _ThemeSplashAppearance({required this.colors});
 
-  final dynamic colors;
+  final CoconutColors colors;
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(color: kNativeSplashBackgroundColor, child: Center(child: _StartScreenLogoSlot()));
+    return ColoredBox(color: colors.background, child: const Center(child: _StartScreenLogoSlot()));
   }
 }
 

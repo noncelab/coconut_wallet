@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -28,6 +30,10 @@ import 'package:tuple/tuple.dart';
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final WalletPreferencesRepository _walletPreferencesRepository;
+  late final CcosFeatureActivationStore _ccosFeatureActivationStore;
+  late final CcosFeatureEntitlementStore _ccosFeatureEntitlementStore;
+  static const CcosFeatureAvailabilityResolver _ccosAvailabilityResolver =
+      CcosFeatureAvailabilityResolver();
 
   // FeatureSettingsProvider는 선택적으로 주입받을 수 있음 (Facade 패턴)
   // 주입되지 않으면 내부에서 직접 관리 (하위 호환성)
@@ -60,11 +66,13 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 전체 주소 보기 화면 [입금] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
   late bool _isReceivingTooltipDisabled;
-  bool get isReceivingTooltipDisabled => language == AppLanguage.ko.code ? _isReceivingTooltipDisabled : true;
+  bool get isReceivingTooltipDisabled =>
+      language == AppLanguage.ko.code ? _isReceivingTooltipDisabled : true;
 
   /// 전체 주소 보기 화면 [잔돈] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
   late bool _isChangeTooltipDisabled;
-  bool get isChangeTooltipDisabled => language == AppLanguage.ko.code ? _isChangeTooltipDisabled : true;
+  bool get isChangeTooltipDisabled =>
+      language == AppLanguage.ko.code ? _isChangeTooltipDisabled : true;
 
   /// 보내기 화면 [수신자 추가하기 카드] 확인 여부
   late bool _hasSeenAddRecipientCard;
@@ -92,11 +100,13 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 총 잔액에서 제외할 지갑 목록
   late List<int> _excludedFromTotalBalanceWalletIds;
-  List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
+  List<int> get excludedFromTotalBalanceWalletIds =>
+      _excludedFromTotalBalanceWalletIds;
 
   /// 홈 화면에 표시할 기능(최근 거래, 분석 ...)
   // FeatureSettingsProvider로 위임
-  List<HomeFeature> get homeFeatures => _featureSettingsProvider?.features ?? [];
+  List<HomeFeature> get homeFeatures =>
+      _featureSettingsProvider?.features ?? [];
 
   /// 특정 기능이 활성화되어 있는지 확인
   bool isHomeFeatureEnabled(HomeFeatureType type) {
@@ -108,7 +118,8 @@ class PreferenceProvider extends ChangeNotifier {
   Tuple2<DateTime?, DateTime?> get analysisPeriodRange =>
       _featureSettingsProvider?.analysisPeriodRange ?? const Tuple2(null, null);
   AnalysisTransactionType get selectedAnalysisTransactionType =>
-      _featureSettingsProvider?.selectedAnalysisTransactionType ?? AnalysisTransactionType.all;
+      _featureSettingsProvider?.selectedAnalysisTransactionType ??
+      AnalysisTransactionType.all;
 
   late UtxoOrder _utxoSortOrder;
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
@@ -129,10 +140,16 @@ class PreferenceProvider extends ChangeNotifier {
   CoconutThemeVariant get themeVariant => _themeVariant;
 
   late DateTime? _openStoreIntroCardHiddenUntil;
+  Set<String> _ccosActivatedFeatureIds = <String>{};
+  Map<String, CcosFeatureEntitlement> _ccosEntitlements =
+      <String, CcosFeatureEntitlement>{};
+  bool _isCcosRuntimeReady = false;
   bool get shouldShowOpenStoreIntroCard {
     final hiddenUntil = _openStoreIntroCardHiddenUntil;
     return hiddenUntil == null || DateTime.now().isAfter(hiddenUntil);
   }
+
+  bool get isCcosRuntimeReady => _isCcosRuntimeReady;
 
   PreferenceProvider(
     this._walletPreferencesRepository,
@@ -140,48 +157,82 @@ class PreferenceProvider extends ChangeNotifier {
     this._blockExplorerProvider, {
     FeatureSettingsProvider? featureSettingsProvider,
   }) : _featureSettingsProvider = featureSettingsProvider {
+    _ccosFeatureActivationStore = SharedPrefsCcosFeatureActivationStore(
+      _sharedPrefs,
+    );
+    _ccosFeatureEntitlementStore = SharedPrefsCcosFeatureEntitlementStore(
+      _sharedPrefs,
+    );
+
     // 통화 설정 초기화
     _initializeFiat();
     _initializeLanguageFromSystem();
 
     _electrumServerProvider.addListener(notifyListeners);
     _blockExplorerProvider.addListener(notifyListeners);
-    _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
-    _isFiatBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsFiatBalanceHidden);
+    _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(
+      SharedPrefKeys.kFakeBalanceTotal,
+    );
+    _isFiatBalanceHidden = _sharedPrefs.getBool(
+      SharedPrefKeys.kIsFiatBalanceHidden,
+    );
     _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
     _bitcoinUnit = _loadBitcoinUnit();
-    _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
+    _showOnlyUnusedAddresses = _sharedPrefs.getBool(
+      SharedPrefKeys.kShowOnlyUnusedAddresses,
+    );
     _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
-    _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
-    _excludedFromTotalBalanceWalletIds = _walletPreferencesRepository.getExcludedWalletIds().toList();
+    _favoriteWalletIds =
+        _walletPreferencesRepository.getFavoriteWalletIds().toList();
+    _excludedFromTotalBalanceWalletIds =
+        _walletPreferencesRepository.getExcludedWalletIds().toList();
     // FeatureSettingsProvider가 없으면 내부에서 생성 (하위 호환성)
     // 주입된 경우에는 이미 초기화되어 있음
     _featureSettingsProvider ??= FeatureSettingsProvider();
-    _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
-    _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
-    _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
+    _isReceivingTooltipDisabled = _sharedPrefs.getBool(
+      SharedPrefKeys.kIsReceivingTooltipDisabled,
+    );
+    _isChangeTooltipDisabled = _sharedPrefs.getBool(
+      SharedPrefKeys.kIsChangeTooltipDisabled,
+    );
+    _hasSeenAddRecipientCard = _sharedPrefs.getBool(
+      SharedPrefKeys.kHasSeenAddRecipientCard,
+    );
     _utxoSortOrder =
         _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
             ? UtxoOrder.values.firstWhere(
-              (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder),
+              (e) =>
+                  e.name ==
+                  _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder),
               orElse: () => UtxoOrder.byAmountDesc,
             )
             : UtxoOrder.byAmountDesc;
-    _isManualUtxoSelectionMode = _sharedPrefs.getBool(SharedPrefKeys.kIsManualUtxoSelectionMode);
-    _utxoTierTheme = UtxoTierThemes.fromId(_sharedPrefs.getString(SharedPrefKeys.kUtxoTierThemeId));
+    _isManualUtxoSelectionMode = _sharedPrefs.getBool(
+      SharedPrefKeys.kIsManualUtxoSelectionMode,
+    );
+    _utxoTierTheme = UtxoTierThemes.fromId(
+      _sharedPrefs.getString(SharedPrefKeys.kUtxoTierThemeId),
+    );
 
-    _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
+    _isWalletListFiatHidden = _sharedPrefs.getBool(
+      SharedPrefKeys.kWalletListFiatHidden,
+    );
     _walletListVisibleFiats = _loadWalletListVisibleFiats();
     _themeVariant = _loadThemeVariant();
     _openStoreIntroCardHiddenUntil = _loadOpenStoreIntroCardHiddenUntil();
+
+    Future<void>.microtask(loadCcosRuntimeState);
   }
 
   /// 통화 설정 초기화
   void _initializeFiat() {
     final fiatCode = _sharedPrefs.getString(SharedPrefKeys.kSelectedFiat);
     if (fiatCode.isNotEmpty) {
-      _selectedFiat = FiatCode.values.firstWhere((fiat) => fiat.code == fiatCode, orElse: () => FiatCode.KRW);
+      _selectedFiat = FiatCode.values.firstWhere(
+        (fiat) => fiat.code == fiatCode,
+        orElse: () => FiatCode.KRW,
+      );
     } else {
       _selectedFiat = FiatCode.KRW;
       _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, _selectedFiat.code);
@@ -303,7 +354,10 @@ class PreferenceProvider extends ChangeNotifier {
   /// 주소 리스트 화면 '입금' 툴팁 다시 보지 않기 설정
   Future<void> setReceivingTooltipDisabledPermanently() async {
     _isReceivingTooltipDisabled = true;
-    await _sharedPrefs.setBool(SharedPrefKeys.kIsReceivingTooltipDisabled, true);
+    await _sharedPrefs.setBool(
+      SharedPrefKeys.kIsReceivingTooltipDisabled,
+      true,
+    );
     notifyListeners();
   }
 
@@ -330,7 +384,9 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeFiat(FiatCode fiatCode) async {
     _selectedFiat = fiatCode;
     await _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, fiatCode.code);
-    _walletListVisibleFiats = _sortWalletListVisibleFiats(_walletListVisibleFiats);
+    _walletListVisibleFiats = _sortWalletListVisibleFiats(
+      _walletListVisibleFiats,
+    );
     await _sharedPrefs.setString(
       SharedPrefKeys.kWalletListVisibleFiats,
       _walletListVisibleFiats.map((f) => f.code).join(','),
@@ -349,7 +405,8 @@ class PreferenceProvider extends ChangeNotifier {
       'isFakeBalanceActive일 때, fakeBalanceTotalSats는 필수 값입니다.',
     );
 
-    var fakeBalanceTotalBtc = fakeBalanceTotalSats ?? _fakeBalanceTotalBtc!.toDouble();
+    var fakeBalanceTotalBtc =
+        fakeBalanceTotalSats ?? _fakeBalanceTotalBtc!.toDouble();
     fakeBalanceTotalBtc = fakeBalanceTotalBtc / 100000000;
 
     if (isFakeBalanceActive != _isFakeBalanceActive) {
@@ -358,12 +415,18 @@ class PreferenceProvider extends ChangeNotifier {
 
     if (!isFakeBalanceActive) return;
 
-    final fixedString = fakeBalanceTotalBtc.toStringAsFixed(8).replaceAll('.', '');
+    final fixedString = fakeBalanceTotalBtc
+        .toStringAsFixed(8)
+        .replaceAll('.', '');
     fakeBalanceTotalBtc = double.parse(fixedString);
 
     final Map<int, dynamic> fakeBalanceMap = {};
 
-    final splits = FakeBalanceUtil.distributeFakeBalance(fakeBalanceTotalBtc, wallets.length, BitcoinUnit.sats);
+    final splits = FakeBalanceUtil.distributeFakeBalance(
+      fakeBalanceTotalBtc,
+      wallets.length,
+      BitcoinUnit.sats,
+    );
 
     for (int i = 0; i < splits.length; i++) {
       final walletId = wallets[i].id;
@@ -386,7 +449,9 @@ class PreferenceProvider extends ChangeNotifier {
   /// 가짜 잔액 총량 초기화
   Future<void> clearFakeBalanceTotalAmount() async {
     _fakeBalanceTotalBtc = null;
-    await _sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kFakeBalanceTotal);
+    await _sharedPrefs.deleteSharedPrefsWithKey(
+      SharedPrefKeys.kFakeBalanceTotal,
+    );
     await _sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kFakeBalanceMap);
     notifyListeners();
   }
@@ -413,15 +478,21 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 가짜 잔액 Map 불러오기
   Map<int, dynamic> getFakeBalanceMap() {
-    final String encoded = _sharedPrefs.getString(SharedPrefKeys.kFakeBalanceMap);
+    final String encoded = _sharedPrefs.getString(
+      SharedPrefKeys.kFakeBalanceMap,
+    );
     if (encoded.isEmpty) return {};
-    final Map<String, dynamic> decoded = Map<String, dynamic>.from(json.decode(encoded));
+    final Map<String, dynamic> decoded = Map<String, dynamic>.from(
+      json.decode(encoded),
+    );
     return decoded.map((key, value) => MapEntry(int.parse(key), value));
   }
 
   /// 가짜 잔액 Map 설정
   Future<void> setFakeBalanceMap(Map<int, dynamic> map) async {
-    final Map<String, dynamic> stringKeyMap = map.map((key, value) => MapEntry(key.toString(), value));
+    final Map<String, dynamic> stringKeyMap = map.map(
+      (key, value) => MapEntry(key.toString(), value),
+    );
     final String encoded = json.encode(stringKeyMap);
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
   }
@@ -464,12 +535,16 @@ class PreferenceProvider extends ChangeNotifier {
   /// 총 잔액에서 제외할 지갑 단일 제거
   Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
     _excludedFromTotalBalanceWalletIds.remove(walletId);
-    await _walletPreferencesRepository.setExcludedWalletIds(_excludedFromTotalBalanceWalletIds);
+    await _walletPreferencesRepository.setExcludedWalletIds(
+      _excludedFromTotalBalanceWalletIds,
+    );
     notifyListeners();
   }
 
   /// UTXO 수동 선택 지갑 목록에서 제거
-  @Deprecated('Manual UTXO Selection Mode 는 이제 앱 전체 설정으로 변경되어, 개별 지갑 설정이 제거되었습니다.')
+  @Deprecated(
+    'Manual UTXO Selection Mode 는 이제 앱 전체 설정으로 변경되어, 개별 지갑 설정이 제거되었습니다.',
+  )
   Future<void> removeManualUtxoSelectionWalletId(int walletId) async {
     final ids = _walletPreferencesRepository.getManualUtxoSelectionWalletIds();
     if (ids.contains(walletId)) {
@@ -503,14 +578,17 @@ class PreferenceProvider extends ChangeNotifier {
     }
 
     // FeatureSettingsProvider의 동기화 메서드 사용
-    await _featureSettingsProvider?.synchronizeWithDefaults(walletList: walletItemList);
+    await _featureSettingsProvider?.synchronizeWithDefaults(
+      walletList: walletItemList,
+    );
 
     notifyListeners();
   }
 
   /// 분석 설정 (FeatureSettingsProvider로 위임)
   Tuple2<DateTime?, DateTime?> getAnalysisPeriodRange() {
-    return _featureSettingsProvider?.getAnalysisPeriodRange() ?? const Tuple2(null, null);
+    return _featureSettingsProvider?.getAnalysisPeriodRange() ??
+        const Tuple2(null, null);
   }
 
   Future<void> setAnalysisPeriodRange(DateTime start, DateTime end) async {
@@ -528,10 +606,13 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   AnalysisTransactionType getAnalysisTransactionType() {
-    return _featureSettingsProvider?.getAnalysisTransactionType() ?? AnalysisTransactionType.all;
+    return _featureSettingsProvider?.getAnalysisTransactionType() ??
+        AnalysisTransactionType.all;
   }
 
-  Future<void> setAnalysisTransactionType(AnalysisTransactionType transactionType) async {
+  Future<void> setAnalysisTransactionType(
+    AnalysisTransactionType transactionType,
+  ) async {
     await _featureSettingsProvider?.setAnalysisTransactionType(transactionType);
     notifyListeners();
   }
@@ -539,7 +620,10 @@ class PreferenceProvider extends ChangeNotifier {
   /// 보내기 화면 [수신자 추가 카드] 확인 여부 활성화 - 보내기 화면 진입시 Bounce 애니메이션을 처리하지 않음
   Future<void> setHasSeenAddRecipientCard() async {
     _hasSeenAddRecipientCard = true;
-    await _sharedPrefs.setBool(SharedPrefKeys.kHasSeenAddRecipientCard, _hasSeenAddRecipientCard);
+    await _sharedPrefs.setBool(
+      SharedPrefKeys.kHasSeenAddRecipientCard,
+      _hasSeenAddRecipientCard,
+    );
     notifyListeners();
   }
 
@@ -554,7 +638,10 @@ class PreferenceProvider extends ChangeNotifier {
   // UTXO 수동선택 모드 여부
   Future<void> setManualUtxoSelectionMode(bool isManual) async {
     _isManualUtxoSelectionMode = isManual;
-    await _sharedPrefs.setBool(SharedPrefKeys.kIsManualUtxoSelectionMode, isManual);
+    await _sharedPrefs.setBool(
+      SharedPrefKeys.kIsManualUtxoSelectionMode,
+      isManual,
+    );
     notifyListeners();
   }
 
@@ -566,7 +653,8 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// selectedFiat 기준으로 정렬된 전체 법정화폐 목록
-  List<FiatCode> get orderedFiats => _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
+  List<FiatCode> get orderedFiats =>
+      _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
 
   static const Map<FiatCode, List<FiatCode>> _fiatOrder = {
     FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY, FiatCode.EUR],
@@ -577,7 +665,10 @@ class PreferenceProvider extends ChangeNotifier {
 
   CoconutThemeVariant _loadThemeVariant() {
     final stored = _sharedPrefs.getString(SharedPrefKeys.kThemeVariant);
-    return CoconutThemeVariant.values.firstWhere((e) => e.name == stored, orElse: () => CoconutThemeVariant.dark);
+    return CoconutThemeVariant.values.firstWhere(
+      (e) => e.name == stored,
+      orElse: () => CoconutThemeVariant.dark,
+    );
   }
 
   Future<void> changeThemeVariant(CoconutThemeVariant variant) async {
@@ -589,7 +680,9 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   DateTime? _loadOpenStoreIntroCardHiddenUntil() {
-    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kOpenStoreIntroCardHiddenUntil);
+    final stored = _sharedPrefs.getStringOrNull(
+      SharedPrefKeys.kOpenStoreIntroCardHiddenUntil,
+    );
     if (stored == null || stored.isEmpty) {
       return null;
     }
@@ -597,7 +690,9 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   Future<void> hideOpenStoreIntroCardForOneMonth() async {
-    _openStoreIntroCardHiddenUntil = DateTime.now().add(const Duration(days: 30));
+    _openStoreIntroCardHiddenUntil = DateTime.now().add(
+      const Duration(days: 30),
+    );
     await _sharedPrefs.setString(
       SharedPrefKeys.kOpenStoreIntroCardHiddenUntil,
       _openStoreIntroCardHiddenUntil!.toIso8601String(),
@@ -605,8 +700,89 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loadCcosRuntimeState() async {
+    _ccosActivatedFeatureIds =
+        await _ccosFeatureActivationStore.loadActivatedFeatureIds();
+    _ccosEntitlements = await _ccosFeatureEntitlementStore.loadEntitlements();
+    _isCcosRuntimeReady = true;
+    notifyListeners();
+  }
+
+  CcosFeatureAvailability getCcosFeatureAvailability(String featureId) {
+    final listing = CcosFeatureRegistrySource.findListingById(featureId);
+    if (listing == null) {
+      return const CcosFeatureAvailability(
+        featureId: '',
+        isVisible: false,
+        isActivated: false,
+        isEntitled: false,
+        isAvailable: false,
+      );
+    }
+
+    return _ccosAvailabilityResolver.resolve(
+      listing: listing,
+      activatedFeatureIds: _ccosActivatedFeatureIds,
+      entitlements: _ccosEntitlements,
+    );
+  }
+
+  String? getCcosFeatureStatusLabel(String featureId) {
+    final availability = getCcosFeatureAvailability(featureId);
+    if (!availability.isVisible) return null;
+    if (availability.isActivated) return '활성화됨';
+    if (availability.isEntitled) return '구매 완료';
+    return null;
+  }
+
+  Future<void> activateCcosFeature(String featureId) async {
+    await _ccosFeatureActivationStore.setActivated(featureId, true);
+    _ccosActivatedFeatureIds =
+        await _ccosFeatureActivationStore.loadActivatedFeatureIds();
+    notifyListeners();
+  }
+
+  Future<void> deactivateCcosFeature(String featureId) async {
+    await _ccosFeatureActivationStore.setActivated(featureId, false);
+    _ccosActivatedFeatureIds =
+        await _ccosFeatureActivationStore.loadActivatedFeatureIds();
+    notifyListeners();
+  }
+
+  Future<void> markCcosFeaturePurchased(
+    String featureId, {
+    CcosFeatureEntitlementSource source =
+        CcosFeatureEntitlementSource.localSnapshot,
+  }) async {
+    _ccosEntitlements = Map<String, CcosFeatureEntitlement>.from(
+        _ccosEntitlements,
+      )
+      ..[featureId] = CcosFeatureEntitlement(
+        featureId: featureId,
+        isEntitled: true,
+        source: source,
+        updatedAt: DateTime.now(),
+      );
+
+    await _ccosFeatureEntitlementStore.saveEntitlements(
+      _ccosEntitlements.values,
+    );
+    notifyListeners();
+  }
+
+  Future<void> purchaseAndActivateCcosFeature(
+    String featureId, {
+    CcosFeatureEntitlementSource source =
+        CcosFeatureEntitlementSource.localSnapshot,
+  }) async {
+    await markCcosFeaturePurchased(featureId, source: source);
+    await activateCcosFeature(featureId);
+  }
+
   List<FiatCode> _loadWalletListVisibleFiats() {
-    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats);
+    final stored = _sharedPrefs.getStringOrNull(
+      SharedPrefKeys.kWalletListVisibleFiats,
+    );
     if (stored == null) {
       return [_selectedFiat];
     }
@@ -615,7 +791,10 @@ class PreferenceProvider extends ChangeNotifier {
         stored
             .split(',')
             .where((code) => code.isNotEmpty)
-            .map((code) => FiatCode.values.where((f) => f.code == code).firstOrNull)
+            .map(
+              (code) =>
+                  FiatCode.values.where((f) => f.code == code).firstOrNull,
+            )
             .whereType<FiatCode>()
             .toList();
 
@@ -635,7 +814,10 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> setWalletListVisibleFiats(List<FiatCode> fiats) async {
     final sorted = _sortWalletListVisibleFiats(fiats);
     _walletListVisibleFiats = sorted;
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletListVisibleFiats, sorted.map((f) => f.code).join(','));
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kWalletListVisibleFiats,
+      sorted.map((f) => f.code).join(','),
+    );
     notifyListeners();
   }
 

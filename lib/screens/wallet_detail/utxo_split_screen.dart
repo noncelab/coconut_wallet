@@ -90,7 +90,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   bool _isMethodBottomSheetOpen = false;
   bool _isFeeBottomSheetOpen = false;
 
-  Color get _pickerDividerColor => context.coconutColors.divider;
+  Color get _pickerDividerColor => context.coconutColors.inputPlaceholder;
 
   /// manual input 삭제 버튼은 딱 1개만 노출되어야 함
   ManualSplitItem? _visibleDeleteButtonItem;

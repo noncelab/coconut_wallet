@@ -180,9 +180,20 @@ flutter:
     - assets/images/discord-full-logo.png
     - assets/images/mail-icon.png
     - assets/images/laurel-wreath.png
+    - assets/images/ccos/what.png
+    - assets/images/ccos/why.png
+    - assets/images/ccos/delivery.png
+    - assets/images/ccos/preview_transaction_card.png
+    - assets/images/ccos/preview_wallet_icon.png
+    - assets/images/ccos/preview_arrow_down.png
+    - assets/images/ccos/preview_arrow_up.png
+    - assets/images/ccos/preview_address_bar.png
     - regtest.env
     - mainnet.env
     - testnet.env
+
+  shaders:
+    - shaders/liquid_glass.frag
 
   fonts:
     - family: SpaceGrotesk

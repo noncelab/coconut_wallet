@@ -12,7 +12,10 @@ abstract final class AppIconPath {
 }
 
 abstract final class BrandIconPath {
+  static const String arrowRightLg = 'assets/svg/brand/motifs/arrow-right-lg.svg';
   static const String coconutPlanet = 'assets/svg/brand/motifs/coconut-planet.svg';
+  static const String coconutCore = 'assets/svg/brand/motifs/coconut-core.svg';
+  static const String coconutOrbit = 'assets/svg/brand/motifs/coconut-orbit.svg';
 }
 
 abstract final class CommonActionIconPath {

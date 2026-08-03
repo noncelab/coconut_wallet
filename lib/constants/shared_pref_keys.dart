@@ -95,4 +95,8 @@ class SharedPrefKeys {
 
   /// 코코넛 오픈 스토어 소개 카드 숨김 만료일
   static const String kOpenStoreIntroCardHiddenUntil = 'OPEN_STORE_INTRO_CARD_HIDDEN_UNTIL';
+
+  /// CCOS feature runtime
+  static const String kCcosActivatedFeatureIds = 'CCOS_ACTIVATED_FEATURE_IDS';
+  static const String kCcosEntitlementSnapshots = 'CCOS_ENTITLEMENT_SNAPSHOTS';
 }

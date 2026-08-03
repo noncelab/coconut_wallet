@@ -85,9 +85,9 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       },
       onTapDown: (details) {
         setState(() {
-          _textColor = colors.secondaryText;
-          _buttonColor = colors.surfacePressOverlay;
-          _iconColor = colors.iconSecondary;
+          _textColor = colors.primaryText.withValues(alpha: 0.5);
+          _buttonColor = colors.surfaceMuted;
+          _iconColor = colors.iconPrimary.withValues(alpha: 0.5);
         });
       },
       onTapCancel: () {
@@ -100,10 +100,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       child: Container(
         width: MediaQuery.sizeOf(context).width,
         padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
-          color: colors.surface,
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(CoconutStyles.radius_400), color: colors.surface),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

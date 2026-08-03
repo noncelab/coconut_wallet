@@ -13,7 +13,7 @@
 
 ## 1. 목적
 
-CCOS Phase 1의 목적은 Coconut Wallet을 단순히 "정리된 Flutter 앱"으로 만드는 것이 아니라, **외부 개발자가 안전한 경계 안에서 UI-only 기여를 이해하고, AI와 예제를 활용해 실제 PR을 제출할 수 있는 contributor-safe host repository**로 만드는 것이다.
+CCOS Phase 1의 목적은 Coconut Wallet을 단순히 "정리된 Flutter 앱"으로 만드는 것이 아니라, **외부 개발자가 안전한 경계 안에서 기여 범위를 이해하고, AI와 예제를 활용해 실제 PR을 제출할 수 있는 contributor-safe host repository**로 만드는 것이다.
 
 이 단계는 아직 marketplace commerce를 출시하는 단계가 아니다.
 이 단계는 future store/platform을 위해 다음을 한 번에 성립시키는 단계다.
@@ -22,6 +22,7 @@ CCOS Phase 1의 목적은 Coconut Wallet을 단순히 "정리된 Flutter 앱"으
 2. contribution boundary가 명확하다.
 3. repo/documentation/template/example이 외부 개발자에게 실제로 작동한다.
 4. maintainers가 그 기여를 일관되게 리뷰할 수 있다.
+5. 사용자는 스토어와 기능 진입점에서 "누가 어떤 의도로 만들었는지"를 확인할 수 있다.
 
 ## 2. 이 문서가 우선하는 범위
 
@@ -52,6 +53,7 @@ Phase 1은 아래 조건이 충족되면 성공이다.
 3. contributor-facing 문서, template, example이 준비되어 있다.
 4. Phase 1 canonical example을 기준으로 외부 기여자가 실제 PR을 제출할 수 있다.
 5. maintainers가 해당 PR을 새로운 boundary와 review rule만으로 검토할 수 있다.
+6. 제안된 기능이 store listing metadata, author attribution, discoverability rule까지 포함한 형태로 설명 가능하다.
 
 ## 5. Phase 1의 대상 contributor
 
@@ -117,7 +119,63 @@ Phase 1에서 아직 필요하지 않은 것은 다음이다.
 - subscription lifecycle
 - platform billing integration
 
-## 8. Canonical example
+## 8. Store UX principles
+
+Phase 1은 실제 marketplace commerce를 출시하지 않더라도, future store/platform이 어떤 신뢰 모델로 작동해야 하는지는 미리 보여줘야 한다.
+
+특히 오픈 스토어는 단순한 기능 목록이 아니라, **기능 제안, 승인, 사용, 발견**의 전 과정을 사용자와 기여자 모두에게 설명하는 UI여야 한다.
+
+### 8.1 Proposal-first listing
+
+스토어에 들어오는 각 기능/테마/모듈은 단순 card가 아니라 최소한 아래 정보를 담은 listing을 가질 수 있어야 한다.
+
+- 누가 제안했는가
+- 어떤 문제를 해결하려고 했는가
+- 왜 Coconut 안에 있어야 하는가
+- Green / Yellow / Red 중 어떤 boundary 분류를 받았는가
+- free / one-time / future paid candidate 중 무엇인가
+- 사용자는 이 기능의 출처와 설명을 어디서 다시 확인할 수 있는가
+
+즉, listing은 단순 marketing copy가 아니라 **reviewable proposal의 사용자-facing 요약본**이어야 한다.
+
+### 8.2 Author attribution
+
+사용자가 기능을 쓸 때 "이건 Coconut 팀이 만든 건지, 외부 기여자가 만든 건지, 어떤 의도로 넣은 건지"를 알 수 있어야 한다.
+
+Phase 1에서 필요한 기준:
+
+- store card에 author / studio / contributor attribution metadata를 표현할 수 있어야 한다.
+- 가능하면 feature detail 또는 기능 진입점 근처에서 author card를 다시 발견할 수 있어야 한다.
+- attribution은 단순 credit가 아니라 trust signal이어야 한다.
+
+예:
+
+- "이 기능은 누가 만들었는가"
+- "무엇을 위해 제안되었는가"
+- "어떤 경계 안에서 승인되었는가"
+
+### 8.3 Discoverability inside the product
+
+스토어에서만 설명하고 실제 기능 안에서는 아무 흔적이 없으면, 사용자는 기능의 출처와 성격을 잊어버린다.
+
+따라서 Phase 1부터 아래 원칙을 준비해야 한다.
+
+- 승인된 기능은 store listing과 실제 진입점이 연결되어야 한다.
+- 기능을 사용하는 화면 어딘가에는 author / purpose / source를 다시 확인할 수 있는 작은 discoverability touchpoint가 있어야 한다.
+- 이 touchpoint는 과도한 광고 UI가 아니라, 신뢰를 위한 lightweight info card 또는 source badge 성격이어야 한다.
+
+### 8.4 Trust before commerce
+
+CCOS의 장기 목표에 free listing, paid listing, activation, purchase가 포함되더라도, 사용자 관점에서 첫 번째 신뢰 장치는 결제가 아니라 다음이어야 한다.
+
+- 누가 만들었는지 안다.
+- 어떤 의도로 들어왔는지 안다.
+- 어떤 경계에서 승인되었는지 안다.
+- Coconut host가 어떤 책임 범위에서 받아들였는지 안다.
+
+즉, commerce보다 먼저 attribution과 discoverability가 설계되어야 한다.
+
+## 9. Canonical example
 
 Phase 1의 증명용 example contribution은 아래 형태여야 한다.
 
@@ -143,7 +201,7 @@ Phase 1에서는 다음보다 이 canonical example이 우선한다.
 - 실제 contributor program은 별도의 feature boundary 분류 체계를 먼저 공개적으로 정의한 뒤 운영한다.
 - 즉, "예시는 가장 안전한 것부터" 시작하되, "허용 가능한 제안 범위"는 category 기반으로 더 넓게 설명해야 한다.
 
-## 9. Feature boundary
+## 10. Feature boundary
 
 CCOS는 외부 개발자가 "내가 생각한 기능이 이 프로젝트에 제안 가능한가"를 미리 판단할 수 있어야 한다.
 
@@ -236,7 +294,7 @@ Phase 1에서는 기능 제안과 PR 가능 범위를 아래처럼 카테고리�
 - 2, 3이 `Yes`면 Yellow 또는 Red 검토가 필요하다.
 - 1이 `Yes`면 기본적으로 Red로 본다.
 
-## 10. Deliverables
+## 11. Deliverables
 
 Phase 1의 산출물은 크게 다섯 묶음이다.
 
@@ -265,6 +323,10 @@ Phase 1의 산출물은 크게 다섯 묶음이다.
 - example module이 따라야 할 folder convention 정의
 - host UI surface와 contributor catalog source를 분리하는 구조 정의
 - free / one-time purchase 같은 monetization metadata를 결제 로직 없이도 표현할 수 있는 구조 정의
+- feature proposal metadata와 user-facing store listing metadata 사이의 대응 규칙 정의
+- author attribution metadata를 host가 표시할 수 있는 구조 정의
+- feature 진입점에서 author/source를 다시 발견할 수 있는 discoverability touchpoint 규칙 정의
+- future registry/activation을 위해 listing, activation state, entitlement state를 분리하는 방향 정의
 
 ### 10.3 Contributor docs deliverables
 
@@ -277,12 +339,16 @@ Phase 1의 산출물은 크게 다섯 묶음이다.
 - PR template
 - maintainer review checklist
 - canonical example walkthrough
+- author attribution 작성 가이드
+- discoverability / source badge 가이드
 
 ### 10.4 Repo structure deliverables
 
 - 외부 contributor가 읽기 쉬운 상위 레벨 문서 구조
 - example path를 쉽게 찾을 수 있는 directory layout
 - legacy area와 official extension path의 구분
+- contributor metadata source와 host rendering layer의 구분
+- future registry 도입 시 static listing source를 무리 없이 교체할 수 있는 구조
 
 ### 10.5 Proof deliverables
 
@@ -291,8 +357,10 @@ Phase 1의 산출물은 크게 다섯 묶음이다.
 - 해당 example을 만드는 step-by-step 문서
 - example PR template 또는 example PR checklist
 - maintainer가 사용할 review checklist
+- example listing 안에서 author, intent, boundary, monetization metadata를 모두 확인할 수 있는 store card 하나
+- example feature 진입점에서 source/author를 다시 발견할 수 있는 lightweight UI touchpoint 하나
 
-## 11. Required documentation set
+## 12. Required documentation set
 
 Phase 1 종료 전 최소한 아래 문서군이 있어야 한다.
 
@@ -306,6 +374,7 @@ Phase 1 종료 전 최소한 아래 문서군이 있어야 한다.
 8. review checklist
 9. canonical example guide
 10. milestone / execution tracking 문서
+11. attribution / discoverability guide
 
 권장 추가 문서:
 
@@ -313,7 +382,7 @@ Phase 1 종료 전 최소한 아래 문서군이 있어야 한다.
 - "what is not allowed" 문서
 - AI-assisted contribution workflow example
 
-## 12. Repository rules for Phase 1
+## 13. Repository rules for Phase 1
 
 Phase 1에서는 아래 규칙을 분명히 해야 한다.
 
@@ -347,6 +416,8 @@ Phase 1에서는 아래 규칙을 분명히 해야 한다.
 - official UI primitives consumption path
 - approved screen/module patterns
 - docs/example/template paths
+- contributor-owned listing metadata source
+- author attribution / discoverability metadata source
 
 ### Protected areas
 
@@ -358,7 +429,66 @@ Phase 1에서는 아래 규칙을 분명히 해야 한다.
 
 기여 문서에는 "allowed area"만 쓰는 것이 아니라, "왜 protected area를 건드리면 안 되는가"도 같이 설명해야 한다.
 
-## 13. Milestones
+## 14. Architecture preparation for post-Phase-1 store
+
+Phase 1 안에서 runtime plugin loading이나 실제 purchase activation을 구현하지는 않지만, 이후 단계가 무리 없이 이어지려면 아래 계층 분리가 준비되어 있어야 한다.
+
+### 14.1 Listing layer
+
+스토어에 보여줄 정보:
+
+- title
+- description
+- author
+- author intent
+- boundary classification
+- monetization metadata
+- discoverability note
+- linked host surface
+
+이 정보는 host UI와 분리된 static source 또는 catalog source에서 관리되어야 한다.
+
+### 14.2 Activation layer
+
+사용자가 어떤 기능을 "보는가", "활성화하는가", "사용 중인가"는 listing과 분리된 상태로 생각해야 한다.
+
+Phase 1에서는 real entitlement를 만들지 않더라도 최소한 개념적으로 아래를 분리해 둔다.
+
+- listing visibility
+- activation state
+- entitlement state
+
+이 분리가 있어야 future paid/free activation이 UI 구조를 다시 갈아엎지 않고 들어올 수 있다.
+
+### 14.3 Host surface layer
+
+기능은 아무 화면에나 침투하는 것이 아니라, host-approved surface를 통해 노출되어야 한다.
+
+예:
+
+- bottom sheet entry
+- settings entry
+- sandboxed detail screen
+- approved info card slot
+- source badge / author card slot
+
+즉, "어디에 붙일 수 있는가"를 registry 이전에도 먼저 정의해야 한다.
+
+### 14.4 Trust metadata layer
+
+future store/platform에서 제일 먼저 중요한 것은 entitlement보다 trust metadata다.
+
+최소 요구 metadata:
+
+- author identity
+- proposal intent
+- boundary classification
+- review status
+- discoverability touchpoint
+
+이 metadata는 Phase 1의 canonical example에도 반영되어야 한다.
+
+## 15. Milestones
 
 Phase 1은 아래 작업축으로 나눈다.
 
@@ -390,6 +520,8 @@ Phase 1은 아래 작업축으로 나눈다.
 - Green / Yellow / Red feature boundary 정리
 - boundary 판정 질문과 review path 문서화
 - contributor-offered theme metadata source와 host picker entry의 책임 분리
+- proposal metadata, listing metadata, author attribution metadata의 책임 분리
+- feature 진입점 discoverability touchpoint 원칙 정의
 
 ### Milestone C — Contributor docs and templates
 
@@ -404,6 +536,7 @@ Phase 1은 아래 작업축으로 나눈다.
 - feature proposal template 작성
 - monetization draft 작성
 - PR template / review checklist 작성
+- author attribution / discoverability guide 작성
 
 ### Milestone D — Canonical example proof
 
@@ -417,8 +550,10 @@ Phase 1은 아래 작업축으로 나눈다.
 - example guide 작성
 - example contributor path 검증
 - maintainer review path 검증
+- example store listing에 author / intent / boundary / monetization metadata 연결
+- example 진입점에 source/author 확인 UI 연결
 
-## 14. Acceptance criteria
+## 16. Acceptance criteria
 
 Phase 1은 아래를 모두 만족해야 seed-complete로 본다.
 
@@ -433,8 +568,11 @@ Phase 1은 아래를 모두 만족해야 seed-complete로 본다.
 9. canonical example이 sandboxed UI-only module 기준으로 존재한다.
 10. 일반 프론트엔드 개발자가 AI/example/template를 활용해 해당 example PR을 제출할 수 있다.
 11. maintainer가 새 review rule로 그 PR을 검토할 수 있다.
+12. example listing이 author, intent, boundary classification, monetization metadata를 모두 표현한다.
+13. 사용자가 feature 진입점 근처에서 source/author 정보를 다시 확인할 수 있는 discoverability touchpoint가 정의되어 있다.
+14. listing / activation / entitlement를 장기적으로 분리할 수 있는 구조 방향이 문서로 명시되어 있다.
 
-## 15. Verification
+## 17. Verification
 
 검증은 세 층으로 본다.
 
@@ -456,8 +594,10 @@ Phase 1은 아래를 모두 만족해야 seed-complete로 본다.
 - feature idea를 Green / Yellow / Red로 스스로 1차 분류할 수 있음
 - 필요한 template와 example이 누락되지 않음
 - example PR이 review checklist로 검토 가능함
+- listing metadata만 보고도 "누가, 왜, 어떤 경계에서" 제안한 기능인지 이해 가능함
+- 실제 기능 진입점에서 source/author를 다시 찾을 수 있는 구조가 존재함
 
-## 16. Risks
+## 18. Risks
 
 ### Risk: host refactor와 contributor onboarding이 한 phase에서 충돌
 
@@ -496,7 +636,15 @@ Phase 1은 아래를 모두 만족해야 seed-complete로 본다.
 - proposal template에 boundary self-classification 항목을 넣는다.
 - maintainer review checklist에 boundary decision 항목을 넣는다.
 
-## 17. Next document recommendations
+### Risk: 스토어가 marketing surface처럼 보이고 trust surface 역할을 못 함
+
+대응:
+
+- listing에 author, intent, boundary metadata를 포함한다.
+- 기능 진입점 근처에 source/author discoverability touchpoint를 둔다.
+- "누가 왜 만들었는지"를 copy가 아니라 구조로 노출한다.
+
+## 19. Next document recommendations
 
 이 문서 다음으로 우선 작성/보강할 문서는 다음이다.
 
@@ -506,7 +654,8 @@ Phase 1은 아래를 모두 만족해야 seed-complete로 본다.
 4. `contributor_quickstart.md`
 5. `monetization_guide.md`
 6. `canonical_example.md`
+7. attribution / discoverability working guide
 
-## 18. One-sentence restatement
+## 20. One-sentence restatement
 
-CCOS Phase 1은 `coconut_wallet`를 contributor-safe UI extension host로 정리하고, feature boundary를 Green/Yellow/Red로 공개 정의하며, real commerce 없이 monetization boundary를 문서화하고, 일반 프론트엔드 개발자가 AI와 예제를 활용해 새로운 sandboxed UI-only module PR을 실제로 제출하고 review 받을 수 있음을 증명하는 단계다.
+CCOS Phase 1은 `coconut_wallet`를 contributor-safe UI extension host로 정리하고, feature boundary를 Green/Yellow/Red로 공개 정의하며, real commerce 없이 monetization boundary를 문서화하고, 일반 프론트엔드 개발자가 AI와 예제를 활용해 새로운 sandboxed UI-only module PR을 실제로 제출하고 review 받을 수 있음을 증명하며, 사용자가 store와 기능 진입점에서 누가 어떤 의도로 만든 기능인지 신뢰 가능하게 이해할 수 있도록 author attribution과 discoverability 구조까지 준비하는 단계다.

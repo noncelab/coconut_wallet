@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:carousel_slider/carousel_slider.dart';
@@ -16,6 +17,9 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
+import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -45,6 +49,7 @@ import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/text/animated_dots_text.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/features/ccos/card/coconut_open_store_intro_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/icon/transaction_status_gradient_mask.dart';
@@ -69,6 +74,8 @@ import 'package:collection/collection.dart';
 
 class WalletHomeScreen extends StatefulWidget {
   const WalletHomeScreen({super.key});
+
+  static const CcosOpenStoreIntro _openStoreIntro = CcosOpenStoreContentSource.intro;
 
   /// P2P 등 외부에서 홈의 "지갑 추가" 바텀시트를 띄울 때 호출.
   static void openAddWalletIfActive() => _currentState?._onAddWalletPressed();
@@ -192,6 +199,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletHomeViewModel>(context, listen: false);
+          final shouldShowOpenStoreIntroCard = context.select<PreferenceProvider, bool>(
+            (provider) => provider.shouldShowOpenStoreIntroCard,
+          );
+          final openStoreFeatureStatusLabel = context.select<PreferenceProvider, String?>(
+            (provider) => provider.getCcosFeatureStatusLabel(CcosFeatureRegistrySource.featuredListing.id),
+          );
 
           final walletItem = data.item1;
           final favoriteWallets = data.item2;
@@ -258,7 +271,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               child: Column(
                                 children: [
                                   if (walletItem.isEmpty) ...[
-                                    CoconutLayout.spacing_600h,
+                                    if (shouldShowOpenStoreIntroCard) ...[
+                                      CoconutLayout.spacing_400h,
+                                      _buildOpenStoreIntroCard(),
+                                    ],
+                                    CoconutLayout.spacing_400h,
                                     WalletAdditionGuideCard(onPressed: _onAddWalletPressed),
                                   ],
                                 ],
@@ -272,7 +289,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             // 지갑 리스트가 비어있지 않을 때
 
                             // 전체보기 위젯
-                            _buildViewAllWallets(walletItem.length),
+                            _buildViewAllWallets(
+                              walletItem.length,
+                              shouldShowOpenStoreIntroCard,
+                              openStoreFeatureStatusLabel,
+                            ),
 
                             if (favoriteWallets.isNotEmpty)
                               // 즐겨찾기된 지갑 목록
@@ -914,11 +935,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildViewAllWallets(int walletCount) {
+  Widget _buildViewAllWallets(int walletCount, bool showOpenStoreIntroCard, String? openStoreFeatureStatusLabel) {
     return SliverToBoxAdapter(
       child: Column(
         children: [
           CoconutLayout.spacing_500h,
+          if (showOpenStoreIntroCard) _buildOpenStoreIntroCard(bottomPadding: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: ShrinkAnimationButton(
@@ -966,6 +988,22 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildOpenStoreIntroCard({double bottomPadding = 0}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeInOutCubic,
+        alignment: Alignment.topCenter,
+        child: CoconutOpenStoreIntroCard(
+          intro: WalletHomeScreen._openStoreIntro,
+          onTap: () => openCoconutOpenStoreIntroScreen(context),
+          onDismiss: () => context.read<PreferenceProvider>().hideOpenStoreIntroCardForOneMonth(),
+        ),
       ),
     );
   }
@@ -2104,7 +2142,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   String _getActionKeyFromSelectedText(String selectedText) {
     if (selectedText == t.transaction_draft.title) return 'transaction_draft';
     if (selectedText == t.glossary) return 'glossary';
-    if (selectedText == t.utility.p2p_calculator.calculator) return 'p2p_calculator';
+    if (selectedText == t.utility.p2p_calculator.calculator) {
+      return 'p2p_calculator';
+    }
     if (selectedText == t.mnemonic_wordlist) return 'mnemonic_wordlist';
     if (selectedText == t.tutorial) return 'tutorial';
     if (selectedText == t.home_screen_settings) return 'home_screen_settings';
@@ -2116,9 +2156,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     return ShrinkAnimationButton(
       // top sheet의 background 색상과 동일하게 homeBackground로 지정
       defaultColor: context.coconutColors.homeBackground,
-      // defaultColor가 homeBackground 이기 때문에 press는 homeSurface여야 대비가 보임
-      pressedOverlayColor: context.coconutColors.homeSurface,
-      pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
+      pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+      pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
       onPressed: () => onPressed(),
       borderRadius: isWide ? 12 : 24,
       child:

@@ -19,6 +19,8 @@ class CoconutAppBar {
     Key? entireWidgetKey,
     Key? faucetIconKey,
     Color? backgroundColor,
+    Color? foregroundColor,
+    Color? leadingHighlightColor,
     bool isBottom = false,
     bool isLeadingVisible = true,
     bool showSubLabel = false,
@@ -33,6 +35,7 @@ class CoconutAppBar {
   }) {
     final colors = context.coconutColors;
     final brightness = Theme.of(context).brightness;
+    final resolvedForegroundColor = foregroundColor ?? colors.primaryText;
     final titleWidget =
         customTitle != null
             ? GestureDetector(onTap: onTitlePressed, child: Padding(padding: titlePadding, child: customTitle))
@@ -42,7 +45,7 @@ class CoconutAppBar {
                 if (onTitlePressed == null)
                   Padding(
                     padding: titlePadding,
-                    child: Text(title, style: CoconutTypography.body1_16.setColor(colors.primaryText)),
+                    child: Text(title, style: CoconutTypography.body1_16.setColor(resolvedForegroundColor)),
                   )
                 else
                   CoconutUnderlinedButton(
@@ -62,7 +65,8 @@ class CoconutAppBar {
     final leading = _AppBarLeading(
       iconKey: faucetIconKey,
       assetName: isBottom && !isBackButton ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
-      iconColor: colors.primaryText,
+      iconColor: resolvedForegroundColor,
+      highlightColor: leadingHighlightColor,
       onPressed: () {
         if (onBackPressed != null) {
           onBackPressed();
@@ -117,18 +121,20 @@ class CoconutAppBar {
     String nextButtonTitle = '다음',
     double? height,
     Color? backgroundColor,
+    Color? foregroundColor,
     VoidCallback? onBackPressed,
     List<Widget>? actionButtonList,
     EdgeInsets? padding,
   }) {
     final colors = context.coconutColors;
     final brightness = Theme.of(context).brightness;
+    final resolvedForegroundColor = foregroundColor ?? colors.primaryText;
 
     return AppBar(
       systemOverlayStyle: _systemOverlayStyle(brightness),
       title: Padding(
         padding: padding ?? const EdgeInsets.all(20),
-        child: Text(title, style: CoconutTypography.heading4_18.setColor(colors.primaryText)),
+        child: Text(title, style: CoconutTypography.heading4_18.setColor(resolvedForegroundColor)),
       ),
       centerTitle: true,
       scrolledUnderElevation: 0,
@@ -138,7 +144,7 @@ class CoconutAppBar {
           Navigator.canPop(context)
               ? _AppBarLeading(
                 assetName: isBottom ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
-                iconColor: colors.primaryText,
+                iconColor: resolvedForegroundColor,
                 onPressed: () {
                   if (onBackPressed != null) {
                     onBackPressed();
@@ -184,12 +190,19 @@ class CoconutAppBar {
 }
 
 class _AppBarLeading extends StatelessWidget {
-  const _AppBarLeading({required this.assetName, required this.iconColor, required this.onPressed, this.iconKey});
+  const _AppBarLeading({
+    required this.assetName,
+    required this.iconColor,
+    required this.onPressed,
+    this.iconKey,
+    this.highlightColor,
+  });
 
   final String assetName;
   final Color iconColor;
   final VoidCallback onPressed;
   final Key? iconKey;
+  final Color? highlightColor;
 
   @override
   Widget build(BuildContext context) {
@@ -200,6 +213,7 @@ class _AppBarLeading extends StatelessWidget {
         child: CoconutAppBarActionButton(
           buttonKey: iconKey,
           onPressed: onPressed,
+          highlightColor: highlightColor,
           icon: SvgPicture.asset(
             assetName,
             width: 24,

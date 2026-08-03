@@ -47,12 +47,7 @@ class UtxoItemCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color:
-                isSelectionMode
-                    ? colors.borderStrong.withValues(
-                      alpha: isSelected ? 1 : 0.2,
-                    )
-                    : Colors.transparent,
+            color: isSelectionMode ? colors.borderStrong.withValues(alpha: isSelected ? 1 : 0.2) : Colors.transparent,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
@@ -80,9 +75,7 @@ class UtxoItemCard extends StatelessWidget {
                                       ? CommonFormIconPath.circleCheckFilled
                                       : CommonFormIconPath.circleCheckOutline,
                                   colorFilter: ColorFilter.mode(
-                                    isSelected
-                                        ? context.coconutColors.iconPrimary
-                                        : context.coconutColors.iconDisabled,
+                                    isSelected ? context.coconutColors.iconPrimary : context.coconutColors.iconDisabled,
                                     BlendMode.srcIn,
                                   ),
                                 ),
@@ -95,26 +88,11 @@ class UtxoItemCard extends StatelessWidget {
                 // data string
                 Row(
                   children: [
-                    Text(
-                      dateString[0],
-                      style: CoconutTypography.body3_12_Number.setColor(
-                        colors.secondaryText,
-                      ),
-                    ),
+                    Text(dateString[0], style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText)),
                     CoconutLayout.spacing_200w,
-                    Text(
-                      '|',
-                      style: CoconutTypography.caption_10.setColor(
-                        colors.secondaryText,
-                      ),
-                    ),
+                    Text('|', style: CoconutTypography.caption_10.setColor(colors.secondaryText)),
                     CoconutLayout.spacing_200w,
-                    Text(
-                      dateString[1],
-                      style: CoconutTypography.body3_12_Number.setColor(
-                        colors.secondaryText,
-                      ),
-                    ),
+                    Text(dateString[1], style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText)),
                   ],
                 ),
                 CoconutLayout.spacing_200w,
@@ -133,17 +111,13 @@ class UtxoItemCard extends StatelessWidget {
                             CommonSecurityIconPath.lockSimple,
                             width: 16,
                             height: 16,
-                            colorFilter: ColorFilter.mode(
-                              context.coconutColors.iconPrimary,
-                              BlendMode.srcIn,
-                            ),
+                            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                           ),
                           const SizedBox(width: 4),
                         ],
                         Text(
                           currentUnit.displayBitcoinAmount(utxo.amount),
-                          style: CoconutTypography.heading4_18_NumberBold
-                              .setColor(context.coconutColors.primaryText),
+                          style: CoconutTypography.heading4_18_NumberBold.setColor(context.coconutColors.primaryText),
                         ),
                       ],
                     ),
@@ -159,9 +133,7 @@ class UtxoItemCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     utxo.to,
-                    style: CoconutTypography.body2_14_Number
-                        .setColor(colors.secondaryText)
-                        .copyWith(height: 1.3),
+                    style: CoconutTypography.body2_14_Number.setColor(colors.secondaryText).copyWith(height: 1.3),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -178,9 +150,7 @@ class UtxoItemCard extends StatelessWidget {
                       child: Wrap(
                         spacing: 4,
                         runSpacing: 4,
-                        children: List.generate((utxo.tags?.length ?? 0) + 1, (
-                          index,
-                        ) {
+                        children: List.generate((utxo.tags?.length ?? 0) + 1, (index) {
                           if (index == 0) {
                             if (utxo.isChange) {
                               return IntrinsicWidth(
@@ -189,7 +159,7 @@ class UtxoItemCard extends StatelessWidget {
                                   color: colors.surfaceInfoChip,
                                   borderColor: colors.surfaceInfoChip,
                                   label: t.change,
-                                  labelSize: 12,
+                                  labelSize: 10,
                                   labelColor: colors.primaryText,
                                 ),
                               );
@@ -197,19 +167,11 @@ class UtxoItemCard extends StatelessWidget {
                               return Container();
                             }
                           }
-                          Color foregroundColor =
-                              tagColorPalette[utxo
-                                      .tags?[index - 1]
-                                      .colorIndex ??
-                                  0];
+                          Color foregroundColor = tagColorPalette[utxo.tags?[index - 1].colorIndex ?? 0];
                           return IntrinsicWidth(
                             child: CoconutChip(
                               minWidth: 40,
-                              color:
-                                  CoconutColors.backgroundColorPaletteDark[utxo
-                                          .tags?[index - 1]
-                                          .colorIndex ??
-                                      0],
+                              color: CoconutColors.backgroundColorPaletteDark[utxo.tags?[index - 1].colorIndex ?? 0],
                               borderColor: foregroundColor,
                               label: '#${utxo.tags?[index - 1].name ?? ''}',
                               labelSize: 12,
@@ -233,11 +195,7 @@ class UtxoItemCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        PendingTransactionLottieIcon(
-          isIncoming: status == UtxoStatus.incoming,
-          size: 16,
-          fit: BoxFit.none,
-        ),
+        PendingTransactionLottieIcon(isIncoming: status == UtxoStatus.incoming, size: 16, fit: BoxFit.none),
         CoconutLayout.spacing_100w,
       ],
     );
