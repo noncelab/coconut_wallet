@@ -4,6 +4,9 @@ import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/material.dart';
 
@@ -41,6 +44,35 @@ class SendConfirmViewModel extends ChangeNotifier {
     final wallet = _walletListItemBase.walletBase;
     if (wallet is SingleSignatureWallet) return wallet.keyStore.masterFingerprint;
     return '';
+  }
+
+  bool get isSingleSigWallet => _walletListItemBase.walletType == WalletType.singleSignature;
+
+  String? get walletExtendedPublicKey {
+    final wallet = _walletListItemBase.walletBase;
+    if (wallet is SingleSignatureWallet) return wallet.keyStore.extendedPublicKey.serialize();
+    return null;
+  }
+
+  /// Returns the import source of a currently connected hardware device whose
+  /// cached xpub matches the current wallet, or null if none is connected.
+  Future<WalletImportSource?> findConnectedMatchingDevice() async {
+    final xpub = walletExtendedPublicKey;
+    if (xpub == null) return null;
+
+    final trezorDevice = TrezorDevice.lastConnected;
+    if (trezorDevice != null && trezorDevice.cachedXpub == xpub) {
+      final connected = await TrezorBleConnectivityService.isDeviceConnected(trezorDevice.transport);
+      if (connected) return WalletImportSource.trezor;
+    }
+
+    final bitboxDevice = BitBox02Device.lastConnected;
+    if (bitboxDevice != null && bitboxDevice.cachedXpub == xpub) {
+      final connected = await BitBox02Device.isConnected();
+      if (connected) return WalletImportSource.bitbox02;
+    }
+
+    return null;
   }
 
   void _setTotalSendAmount() {

@@ -90,25 +90,19 @@ class Bitbox02MethodHandler(
 
     private fun connect(call: MethodCall, result: MethodChannel.Result) {
         val transportType = call.argument<String>("transport") ?: "usb"
-        android.util.Log.d("BB02", "connect called, transport=$transportType")
-
         if (transportType == "tcp") {
             val host = call.argument<String>("host") ?: "10.0.2.2"
             val port = call.argument<Int>("port") ?: 15423
             val product = call.argument<String>("product") ?: "multi"
             val version = call.argument<String>("version") ?: "9.26.1"
-            android.util.Log.d("BB02", "connecting TCP: $host:$port product=$product version=$version")
             executor.execute {
                 try {
                     val transport = TcpTransport(host, port)
-                    android.util.Log.d("BB02_TCP", "socket connected, isConnected=${transport.isConnected()}")
                     val deviceId = Bridge.connectWithInfo(transport, product, version)
                     synchronized(this) { tcpTransports[deviceId] = transport }
                     connectedDevices.add(deviceId)
-                    android.util.Log.d("BB02", "TCP connect success, deviceId=$deviceId")
                     mainHandler.post { result.success(deviceId) }
                 } catch (e: Exception) {
-                    android.util.Log.e("BB02", "TCP connect failed: ${e.message}", e)
                     mainHandler.post { result.error("CONNECT_FAILED", e.message, null) }
                 }
             }
@@ -122,16 +116,13 @@ class Bitbox02MethodHandler(
         val mgr = Bitbox02UsbManager(context)
         usbManager = mgr
         val device = mgr.findDevice()
-        android.util.Log.d("BB02", "device found: $device, name=${device?.productName}")
         if (device == null) {
             result.error("NO_DEVICE", "BitBox02 Nova not found. Connect via USB.", null)
             return
         }
         if (mgr.hasPermission(device)) {
-            android.util.Log.d("BB02", "has permission, opening device")
             openAndConnect(mgr, device, result)
         } else {
-            android.util.Log.d("BB02", "no permission, requesting...")
             mgr.setOnDeviceConnected { dev -> openAndConnect(mgr, dev, result) }
             mgr.requestPermission(device)
         }
@@ -142,21 +133,16 @@ class Bitbox02MethodHandler(
         device: android.hardware.usb.UsbDevice,
         result: MethodChannel.Result,
     ) {
-        android.util.Log.d("BB02", "openAndConnect called for device: ${device.productName}")
         val transport = mgr.openDevice(device)
         if (transport == null) {
-            android.util.Log.e("BB02", "openDevice returned null")
             result.error("OPEN_FAILED", "Failed to open USB device", null)
             return
         }
-        android.util.Log.d("BB02", "USB device opened, calling Bridge.connect")
         try {
             val deviceId = Bridge.connect(transport)
             connectedDevices.add(deviceId)
-            android.util.Log.d("BB02", "Bridge.connect success, deviceId=$deviceId")
             result.success(deviceId)
         } catch (e: Exception) {
-            android.util.Log.e("BB02", "Bridge.connect failed: ${e.message}", e)
             transport.close()
             result.error("CONNECT_FAILED", e.message, null)
         }
@@ -167,13 +153,7 @@ class Bitbox02MethodHandler(
             result.error("INVALID_ARG", "id is required", null)
             return
         }
-        android.util.Log.d("BB02", "init called, deviceId=$deviceId")
-        runOnExecutor(result) {
-            android.util.Log.d("BB02", "init: calling Bridge.init($deviceId)...")
-            val status = Bridge.init(deviceId)
-            android.util.Log.d("BB02", "init: success, status=$status")
-            status
-        }
+        runOnExecutor(result) { Bridge.init(deviceId) }
     }
 
     private fun rootFingerprint(call: MethodCall, result: MethodChannel.Result) {

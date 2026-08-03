@@ -1,0 +1,5 @@
+// Simplified options.proto for prost compatibility
+// The original uses proto2 extensions which prost doesn't support
+
+syntax = "proto2";
+package hw.trezor.messages;

@@ -1,0 +1,100 @@
+[package]
+name = "trezor-connect-rs"
+version = "0.4.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/coreyphillips/trezor-connect-rs"
+description = "Rust library for Trezor hardware wallet communication (Bitcoin only)"
+authors = ["Corey Phillips"]
+keywords = ["trezor", "wallet", "bitcoin", "hardware-wallet", "hardware-support"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# USB - optional because libusb has no iOS backend
+rusb = { version = "0.9", optional = true }
+
+# Bluetooth - optional, works on all platforms including iOS
+btleplug = { version = "0.11", optional = true }
+uuid = { version = "1.0", features = ["v4"] }
+
+# Protobuf
+prost = "0.13"
+
+# THP Cryptography (for Safe 7 encrypted protocol)
+x25519-dalek = { version = "2.0", features = ["static_secrets"] }
+aes-gcm = "0.10"
+sha2 = "0.10"
+hkdf = "0.12"
+hmac = "0.12"
+rand = "0.8"
+
+# OS keychain integration (optional)
+keyring = { version = "3", optional = true }
+
+# Memory safety
+zeroize = { version = "1.8", features = ["derive"] }
+
+# Error handling
+thiserror = "1.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Utilities
+unicode-normalization = "0.1"
+hex = "0.4"
+base64 = "0.22"
+bytes = "1.0"
+log = "0.4"
+tracing = "0.1"
+num-bigint = "0.4.6"
+num-traits = "0.2.19"
+
+# Bitcoin primitives (address parsing, xpub decoding, tx verification, PSBT)
+bitcoin = { version = "0.32", default-features = false, features = ["std"] }
+
+[build-dependencies]
+prost-build = "0.13"
+
+[dev-dependencies]
+tokio-test = "0.4"
+env_logger = "0.11"
+dirs = "5.0"
+
+[features]
+default = ["usb", "bluetooth"]
+usb = ["dep:rusb"]
+bluetooth = ["dep:btleplug"]
+os-keychain = ["dep:keyring"]
+# PSBT support is now always available; this feature is kept as a no-op alias
+# so existing `features = ["psbt"]` consumers keep building.
+psbt = []
+
+[[example]]
+name = "get_address"
+path = "examples/get_address.rs"
+
+[[example]]
+name = "sign_transaction"
+path = "examples/sign_transaction.rs"
+
+[[example]]
+name = "sign_message"
+path = "examples/sign_message.rs"
+
+[[example]]
+name = "bluetooth_connect"
+path = "examples/bluetooth_connect.rs"
+
+[[example]]
+name = "simple_api"
+path = "examples/simple_api.rs"
+
+[[example]]
+name = "hidden_passphrase"
+path = "examples/hidden_passphrase.rs"
