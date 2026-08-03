@@ -37,11 +37,7 @@ List<SingleChildWidget> buildAppProviders({
     ChangeNotifierProvider(create: (_) => AuthProvider()),
     ChangeNotifierProvider(create: (_) => FeatureSettingsProvider()),
     Provider.value(value: realmManager),
-    // Provider<AnalyticsService>(
-    //   create:
-    //       (context) =>
-    //           AnalyticsService(isFirebaseAnalyticsUsed ? FirebaseAnalytics.instance : null, !isFirebaseAnalyticsUsed),
-    // ),
+    Provider<AnalyticsService>(create: (_) => AnalyticsService(null, !isFirebaseAnalyticsUsed)),
     // Repository providers must be registered before dependent providers.
     Provider<AddressRepository>(create: (context) => AddressRepository(context.read<RealmManager>())),
     Provider<TransactionRepository>(create: (context) => TransactionRepository(context.read<RealmManager>())),
