@@ -797,12 +797,12 @@ class _FileListItemCardState extends State<_FileListItemCard> with SingleTickerP
                   children: [
                     widget.isSelected
                         ? SvgPicture.asset(
-                          'assets/svg/check.svg',
+                          'assets/svg/square_check.svg',
                           width: 24,
                           colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                         )
                         : SvgPicture.asset(
-                          'assets/svg/file.svg',
+                          'assets/svg/square.svg',
                           width: 24,
                           colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                         ),

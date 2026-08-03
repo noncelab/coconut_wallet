@@ -328,6 +328,8 @@ flutter:
     - assets/svg/child.svg
     - assets/svg/import.svg
     - assets/svg/file.svg
+    - assets/svg/square.svg
+    - assets/svg/square_check.svg
 
   fonts:
     - family: SpaceGrotesk
