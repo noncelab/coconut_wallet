@@ -20,6 +20,7 @@ import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart'
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/suspicious_transaction_util.dart';
@@ -107,6 +108,25 @@ class WalletProvider extends ChangeNotifier {
       throw Exception('WalletItem is Empty');
     }
     return _walletItemList.firstWhere((element) => element.id == id);
+  }
+
+  /// Find a singlesig wallet name by extended public key, regardless of import source.
+  String? findWalletNameByXpub(String xpub) {
+    for (final wallet in _walletItemList) {
+      if (wallet is! SinglesigWalletItem) continue;
+      if (wallet.extendedPublicKey == xpub) return wallet.name;
+    }
+    return null;
+  }
+
+  /// Find a singlesig wallet name by master fingerprint, regardless of import source.
+  String? findWalletNameByFingerprint(String fingerprint) {
+    for (final wallet in _walletItemList) {
+      if (wallet is! SinglesigWalletItem) continue;
+      final mfp = (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+      if (mfp.toLowerCase() == fingerprint.toLowerCase()) return wallet.name;
+    }
+    return null;
   }
 
   Future<List<WalletItemBase>> _fetchWalletListFromDB() async {
@@ -391,6 +411,11 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
+    final walletToDelete = _walletItemList.firstWhereOrNull((w) => w.id == walletId);
+    if (walletToDelete?.walletImportSource == WalletImportSource.trezor) {
+      await TrezorDevice.lastConnected?.disconnect();
+    }
+
     await _walletRepository.deleteWallet(walletId);
     _walletItemList.removeWhere((wallet) => wallet.id == walletId);
     _saveWalletCount(_walletItemList.length);

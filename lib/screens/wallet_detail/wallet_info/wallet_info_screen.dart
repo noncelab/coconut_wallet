@@ -29,6 +29,7 @@ import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -129,8 +130,19 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                             child: BitBox02Section(
+                              walletFingerprint: viewModel.walletFingerprint,
                               onDisconnect: () async {
                                 await viewModel.disconnectBitBox02();
+                              },
+                            ),
+                          ),
+                        if (viewModel.isTrezorWallet)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                            child: TrezorSection(
+                              walletFingerprint: viewModel.walletFingerprint,
+                              onDisconnect: () async {
+                                await viewModel.disconnectTrezor();
                               },
                             ),
                           ),

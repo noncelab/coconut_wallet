@@ -7,6 +7,7 @@ import Flutter
     private var osMethodChannel: FlutterMethodChannel?
     private var pendingBitcoinUri: String?
     private var bitbox02Handler: Bitbox02MethodHandler?
+    private var trezorHandler: TrezorMethodHandler?
 
   override func application(
     _ application: UIApplication,
@@ -73,6 +74,7 @@ import Flutter
     }
 
     bitbox02Handler = Bitbox02MethodHandler(messenger: controller.binaryMessenger)
+    trezorHandler = TrezorMethodHandler(messenger: controller.binaryMessenger)
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

@@ -280,6 +280,7 @@ wallet_add_scanner_screen:
   krux: "Krux"
   bitbox02: "BitBox02"
   passport: "Passport"
+  trezor: "Trezor"
   self: "Enter Wallet Info"
   self_description: "Add a watch-only wallet using information from another app."
   select: "Select"
@@ -411,10 +412,10 @@ wallet_connect_screen:
       start_signing: "Start Signing"
     init:
       step1: "Connect your BitBox02 Nova via USB."
-      step2: "Unlock your device."
+      step2: "When 'Tap this side' appears on the device screen, select the side that will be the bottom of the screen."
       step3: "When you see 'See the BitBoxApp' on your device, tap '$btn' below."
       ble_step1: "Turn on Bluetooth and keep BitBox02 Nova nearby."
-      ble_step2: "If 'Tap this side' appears on the device screen, tap both sides of the device."
+      ble_step2: "When 'Tap this side' appears on the device screen, select the side that will be the bottom of the screen."
       ble_step3: "When the wallet appears on the device screen, tap the '$btn' button below."
     connecting:
       title: "Connecting Device"
@@ -422,6 +423,7 @@ wallet_connect_screen:
       step2: "When the pairing code appears on your device, tap the check mark (✓) to confirm."
     paired:
       title: "BitBox02 is paired and ready."
+      device_name: "Device Name"
       master_fingerprint: "Master Fingerprint"
       derivation_path: "Derivation Path"
       xpub: "Extended Public Key"
@@ -429,6 +431,98 @@ wallet_connect_screen:
       title: "Connection Failed"
       description: "BitBox02 Nova was not found. Reconnect the device and try again."
       ble_description: "BitBox02 Nova not found. Please turn on Bluetooth and bring the device closer."
+    ble_init_retry:
+      title: "BitBox02 Reconnection Failed"
+      description: "Please restart the BitBox02 device and reconnect."
+      step1: "Turn off the BitBox02 power, then turn it back on."
+    keep_connection_title: "Keep connection"
+    keep_connection_description: "Do you want to keep the BitBox02 connected?"
+  guide_trezor:
+    btn:
+      connect_via_ble: "Connect via Bluetooth"
+      add_wallet: "Add Wallet"
+      retry: "Retry"
+      start_signing: "Start Signing"
+    transport_select:
+      title: "Select Trezor Connection"
+      description: "Choose how to connect your Trezor device."
+      notice_ble: "Trezor Safe 7"
+      notice_usb: "All Trezor models"
+      btn:
+        ble: "Safe 7 Bluetooth"
+        usb: "USB Connect"
+    init:
+      notice: "Only Trezor Safe 7 is supported."
+      ble_step1: "Turn on Bluetooth and keep Trezor Safe 7 nearby."
+      ble_step2: "Tap Unlock > enter your PIN to unlock the device."
+      ble_step3_prefix: "For first-time connections, tap "
+      ble_step3_bold: "= > Pair & Connect > Pair new device"
+      ble_step3_suffix: "."
+      ble_step4: "Tap the '$btn' button below to start connecting."
+    connecting:
+      title: "Connecting Device"
+      step3: "For first-time connections, verify the pairing code matches and press Confirm."
+      step4: "When the Trezor asks whether to connect with Coconut Wallet, press Confirm."
+    pairing_dialog:
+      title: "Enter Pairing Code"
+      description: "Enter the 6-digit code shown on your Trezor screen."
+      verifying: "Verifying pairing code..."
+      error_wrong_code: "Wrong pairing code"
+      error_wrong_code_dialog: "Wrong pairing code. The connection process will restart from the beginning."
+    paired:
+      title: "Trezor is connected and ready."
+      device_name: "Device Name"
+      master_fingerprint: "Master Fingerprint"
+      derivation_path: "Derivation Path"
+      xpub: "Extended Public Key"
+    keep_connection_title: "Keep connection"
+    keep_connection_description: "Do you want to keep the Trezor connected?"
+    error:
+      title: "Connection Failed"
+      ble_description: "Trezor Safe 7 not found. Please turn on Bluetooth and bring the device closer."
+      usb_description: "Trezor not found. Reconnect the device and try again."
+    ios_peer_removed_pairing:
+      title: "Existing Bluetooth Pairing Information Removed"
+      description: "The Trezor has removed its previous Bluetooth pairing information."
+      step1: "Go to iPhone \"Settings > Bluetooth\"."
+      step2: "Tap (i) next to [the device name set on your Trezor] or 'Trezor Safe 7'."
+      step3: "Select 'Forget This Device' and try again."
+    pairing_aborted:
+      title: "Pairing Aborted"
+    usb:
+      title: "Connect Trezor via USB"
+      idle_step1: "Connect your Trezor to this Android device with a data-capable USB cable."
+      idle_step2: "Allow Coconut Wallet to handle Trezor."
+      idle_step3: "Allow the USB connection request when prompted."
+      connecting: "Connecting to Trezor"
+      connecting_step1: "Check the instructions on your Trezor screen."
+      connect: "Connect via USB"
+      pin_title: "Enter PIN"
+      pin_description: "Look at the number layout on your Trezor screen and enter your PIN."
+      passphrase_title: "Enter passphrase"
+      passphrase_hint: "Hidden wallet passphrase"
+      passphrase_entry_source_description: "Choose where to enter your passphrase."
+      enter_in_app: "Enter in app"
+      enter_on_trezor: "Enter on Trezor"
+      enter_on_trezor_description: "Please complete entering your passphrase on your Trezor device."
+      do_not_use_passphrase: "Don't use a passphrase"
+      standard_wallet: "Standard wallet"
+      passphrase_use_question: "Do you want to use a passphrase?"
+      passphrase_use_yes: "Use passphrase"
+      passphrase_use_no: "Don't use"
+      passphrase_where_to_enter: "Where do you want to enter your passphrase?"
+      passphrase_confirm_on_device: "Please confirm the passphrase on your Trezor device."
+      passphrase_enabling: "Please confirm enabling passphrase on your Trezor device."
+      suite_app_notice: "The Trezor Suite app may open automatically when connected via USB."
+      suite_app_setting_guide:
+        title: "· Remove the default app setting"
+        descriptions:
+          - "1. On your phone, go to 'Settings - Apps - Trezor Suite'"
+          - "2. Clear defaults under 'Set as default' or 'Open with default app'"
+          - "3. When reconnecting USB, select 'Cancel' in the 'Open Trezor Suite app to handle TREZOR?' dialog"
+  common:
+    ble_off: "Please turn on Bluetooth on your device."
+    loading_wallet_info: "Loading wallet info"
 
 
 # lib/screens/review
@@ -532,6 +626,8 @@ send_confirm_screen:
   output_detail_title: "Output Details"
   flow_input_title: "Input #$index"
   flow_output_title: "Output #$index"
+  sign_with_connected_device_title: "Sign with Connected Device"
+  sign_with_connected_device_description: "Would you like to sign with the currently connected $deviceName?"
 bitbox02_sign_screen:
   tx_card:
     title: "Transaction"
@@ -560,9 +656,48 @@ bitbox02_sign_screen:
     description: "Transaction has been signed by BitBox02."
     ready_to_broadcast: "Ready to broadcast."
   error_title: "Signing Failed"
-  device_mismatch: "The connected device does not match this wallet. Please connect the correct device."
+  wrong_wallet_title: "Wrong wallet connected"
+  device_mismatch: "The connected Bitbox doesn't match the wallet you're trying to sign with."
+  device_mismatch_other_wallet: "The connected wallet matches the wallet named '${wallet_name}'."
+  fingerprint_compare:
+    expected: "Expected"
+    connected: "Connected"
+  connected_wallet_label: "Connected Wallet"
   btn:
     sign: "Sign with BitBox02"
+    connect_other_bitbox02: "Connect another BitBox02"
+  state_label:
+    idle: "Waiting to Sign"
+    signing: "Signing"
+
+trezor_sign_screen:
+  tx_card:
+    title: "Transaction"
+    send: "Send"
+    to: "To"
+    fee: "Fee"
+    total_cost: "Total Cost"
+  device_status:
+    title: "Device Status"
+  idle:
+    waiting: "Waiting to sign"
+  status:
+    connecting_device: "Connecting to Trezor via Bluetooth..."
+    confirm_on_device: "Confirm address, amount, and network on your device"
+  done:
+    title: "Signed"
+    description: "Transaction has been signed by Trezor."
+  error_title: "Signing Failed"
+  wrong_wallet_title: "Wrong wallet connected"
+  device_mismatch: "The connected Trezor doesn't match the wallet you're trying to sign with."
+  device_mismatch_other_wallet: "The connected wallet matches the wallet named '${wallet_name}'."
+  fingerprint_compare:
+    expected: "Expected"
+    connected: "Connected"
+  connected_wallet_label: "Connected Wallet"
+  btn:
+    sign: "Sign with Trezor"
+    connect_other_trezor: "Connect Another Trezor"
   state_label:
     idle: "Waiting to Sign"
     signing: "Signing"
@@ -820,7 +955,7 @@ wallet_info_screen:
     delete: "Failed to delete wallet"
     no_memos: "There are no memos recorded in the wallet."
     invalid_file_type: "Invalid file type. Please select a JSONL file."
-  bitbox02_device:
+  connected_hardware_wallet:
     title: "Device Info"
     connection_status: "Connection Status"
     connected: "Connected"
@@ -1208,6 +1343,12 @@ alert:
     description: "To send Bitcoin, you need to add the Master Fingerprint first. Do you want to continue?"
     skip_button: "Cancel"
     confirm_button: "Add"
+  aos_ble_permission_denied:
+    title: "Permission Required"
+    description: "'Nearby devices' permission is required to connect to the device. Please allow this permission in Settings."
+  ios_ble_permission_denied:
+    title: "Bluetooth Permission Required"
+    description: "Bluetooth permission is required to connect to the device. Please allow Bluetooth permission for this app in iPhone \"Settings\"."
 
 third_party:
   keystone: "Keystone"
@@ -1216,6 +1357,7 @@ third_party:
   cold_card: "Coldcard"
   krux: "Krux"
   passport: "Passport"
+  trezor: "Trezor"
   bitbox02: "Bitbox"
   extended_public_keys:
     zpub: "zpub"
@@ -1292,3 +1434,8 @@ taproot:
   setup_summary_card:
     signer_configuration: "Signer Configuration"
     inheritance_condition: "Inheritance Condition"
+
+passphrase_input_text_field:
+  passphrase_visible: "Show passphrase"
+  passphrase_hidden: "Hide passphrase"
+  placeholder: "Enter passphrase"
