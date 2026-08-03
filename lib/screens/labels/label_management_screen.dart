@@ -510,7 +510,7 @@ class _LabelImportFilePickerScreenState extends State<_LabelImportFilePickerScre
                       Align(
                         alignment: Alignment.bottomCenter,
                         child: FixedBottomButton(
-                          text: t.wallet_info_screen.import_labels,
+                          text: t.labels_management_screen.file.apply,
                           isActive: _selectedItemIndex != null,
                           onButtonClicked: () {
                             if (_selectedItemIndex != null && snapshot.hasData) {
@@ -871,10 +871,18 @@ class _FileListItemCardState extends State<_FileListItemCard> with SingleTickerP
           child: Transform.translate(
             offset: Offset(_dragOffset, 0),
             child: Material(
-              color: context.coconutColors.surface,
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                decoration: BoxDecoration(
+                  color: context.coconutColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: widget.isSelected ? context.coconutColors.primaryText : Colors.transparent,
+                    width: 1,
+                  ),
+                ),
                 child: Row(
                   children: [
                     widget.isSelected

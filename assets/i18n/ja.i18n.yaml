@@ -1395,6 +1395,7 @@ labels_management_screen:
   file:
     not_found: "ファイルが見つかりません。\nファイルアイコンをタップしてバックアップファイルを追加してください。"
     select: "選択"
+    apply: "適用"
     delete: "ファイルを削除"
     delete_description: "本当に「$fileName」ファイルを削除しますか？"
     delete_success: "ファイルの削除に成功しました"

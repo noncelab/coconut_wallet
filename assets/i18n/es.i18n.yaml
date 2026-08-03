@@ -1397,6 +1397,7 @@ labels_management_screen:
   file:
     not_found: "No se encontró el archivo.\nToca el ícono de archivo para agregar un archivo de copia de seguridad."
     select: "Seleccionar"
+    apply: "Aplicar"
     delete: "Eliminar archivo"
     delete_description: "¿Estás seguro de que quieres eliminar el archivo '$fileName'?"
     delete_success: "Archivo eliminado correctamente"
