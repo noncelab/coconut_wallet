@@ -1105,6 +1105,38 @@ split_utxo_screen:
     preview: "Vista previa"
     description: "Hay muchas divisiones, por lo que la creación de la transacción puede tardar un poco. ¿Quieres ver primero el resultado estimado?"
 
+labels_management_screen:
+  title: "Gestionar notas"
+  subtitle: "Importa o exporta tus notas guardadas."
+  description: "BIP-329 es un estándar abierto que permite intercambiar notas entre billeteras. Si exportas tus notas, puedes restaurarlas fácilmente importándolas, incluso si cambias de dispositivo o reinstalas la aplicación."
+  import_title: "Importar"
+  import_description: "Importa notas de otra billetera."
+  export_title: "Exportar"
+  export_description: "Realiza una copia de seguridad de las notas o compártelas con otra billetera."
+  tooltip:
+    title: "Notas de Coconut"
+    description: "Puedes registrar tu propia información para identificar transacciones y UTXOs más fácilmente."
+    supported_title: "Notas compatibles"
+    supported_list: "• Notas de transacción\n• Etiquetas UTXO (Nombre/Color)\n• Bloqueo de uso de UTXO"
+    import: "Importa un archivo de notas BIP-329 (.jsonl) y lo aplica a Coconut Wallet."
+  file:
+    not_found: "No se encontró el archivo.\nToca el ícono de archivo para agregar un archivo de copia de seguridad."
+    select: "Seleccionar"
+    apply: "Aplicar"
+    apply_description: "¿Deseas aplicar el archivo $fileName?"
+    delete: "Eliminar archivo"
+    delete_description: "¿Estás seguro de que quieres eliminar el archivo '$fileName'?"
+    delete_success: "Archivo eliminado correctamente"
+    delete_failed: "Error al eliminar el archivo"
+    invalid_file_type: "Formato de archivo no válido. Selecciona un archivo JSONL."
+label_import_file_picker_screen:
+  loading_title: "Aplicando notas"
+  instruction_tooltip:
+    step1: "Aplicar a la billetera"
+    step2: "Notas de transacción"
+    step3: "Etiquetas UTXO"
+    step4: "UTXOs bloqueados"
+
 # lib/widgets/card
 wallet_list_add_guide_card:
   add_watch_only: "¡Intenta agregar una billetera de solo lectura (watch-only)!"
@@ -1379,31 +1411,6 @@ estimated_fee_bottom_sheet:
     title: "Comisión estimada"
     estimated_fee: "Comisión estimada"
     fee_rate: "Tasa de comisión"
-
-labels_management_screen:
-  title: "Gestionar notas"
-  subtitle: "Importa o exporta tus notas guardadas."
-  description: "BIP-329 es un estándar abierto que permite intercambiar notas entre billeteras. Si exportas tus notas, puedes restaurarlas fácilmente importándolas, incluso si cambias de dispositivo o reinstalas la aplicación."
-  import_title: "Importar"
-  import_description: "Importa notas de otra billetera."
-  export_title: "Exportar"
-  export_description: "Realiza una copia de seguridad de las notas o compártelas con otra billetera."
-  tooltip:
-    title: "Notas de Coconut"
-    description: "Puedes registrar tu propia información para identificar transacciones y UTXOs más fácilmente."
-    supported_title: "Notas compatibles"
-    supported_list: "• Notas de transacción\n• Etiquetas UTXO (Nombre/Color)\n• Bloqueo de uso de UTXO"
-    import: "Importa un archivo de notas BIP-329 (.jsonl) y lo aplica a Coconut Wallet."
-  file:
-    not_found: "No se encontró el archivo.\nToca el ícono de archivo para agregar un archivo de copia de seguridad."
-    select: "Seleccionar"
-    apply: "Aplicar"
-    apply_description: "¿Deseas aplicar el archivo $fileName?"
-    delete: "Eliminar archivo"
-    delete_description: "¿Estás seguro de que quieres eliminar el archivo '$fileName'?"
-    delete_success: "Archivo eliminado correctamente"
-    delete_failed: "Error al eliminar el archivo"
-    invalid_file_type: "Formato de archivo no válido. Selecciona un archivo JSONL."
 
 long_pressed_menu:
   hide: "Ocultar"

@@ -1112,6 +1112,38 @@ split_utxo_screen:
     preview: "Preview"
     description: "This split creates many outputs, so creating the transaction may take some time. Preview the result first?"
 
+labels_management_screen:
+  title: "Manage Notes"
+  subtitle: "Import or export recorded notes."
+  description: "BIP-329 is an open standard that allows wallets to exchange notes with each other. Exporting your notes lets you restore them simply by importing, even if you switch devices or reinstall the app."
+  import_title: "Import"
+  import_description: "Import notes from another wallet."
+  export_title: "Export"
+  export_description: "Back up notes or share them with another wallet."
+  tooltip:
+    title: "Coconut's Notes"
+    description: "You can record your own information to identify transactions and UTXOs more easily."
+    supported_title: "Supported Notes"
+    supported_list: "• Transaction notes\n• UTXO tags (Name/Color)\n• UTXO spend lock"
+    import: "Imports a BIP-329 note file (.jsonl) and applies it to Coconut Wallet."
+  file:
+    not_found: "File not found.\nTap the file icon to add a backup file."
+    select: "Select File"
+    apply: "Apply"
+    apply_description: "Do you want to apply the file $fileName?"
+    delete: "Delete File"
+    delete_description: "Are you sure you want to delete the file '$fileName'?"
+    delete_success: "File deleted successfully"
+    delete_failed: "Failed to delete file"
+    invalid_file_type: "Invalid file type. Please select a JSONL file."
+label_import_file_picker_screen:
+  loading_title: "Applying notes"
+  instruction_tooltip:
+    step1: "Apply to Wallet"
+    step2: "Transaction Memos"
+    step3: "UTXO Tags"
+    step4: "Locked UTXOs"
+
 # lib/widgets/card
 wallet_list_add_guide_card:
   add_watch_only: "Try adding a watch-only wallet!"
@@ -1386,31 +1418,6 @@ estimated_fee_bottom_sheet:
   title: "Estimated Fee"
   estimated_fee: "Estimated Fee"
   fee_rate: "Fee Rate"
-
-labels_management_screen:
-  title: "Manage Notes"
-  subtitle: "Import or export recorded notes."
-  description: "BIP-329 is an open standard that allows wallets to exchange notes with each other. Exporting your notes lets you restore them simply by importing, even if you switch devices or reinstall the app."
-  import_title: "Import"
-  import_description: "Import notes from another wallet."
-  export_title: "Export"
-  export_description: "Back up notes or share them with another wallet."
-  tooltip:
-    title: "Coconut's Notes"
-    description: "You can record your own information to identify transactions and UTXOs more easily."
-    supported_title: "Supported Notes"
-    supported_list: "• Transaction notes\n• UTXO tags (Name/Color)\n• UTXO spend lock"
-    import: "Imports a BIP-329 note file (.jsonl) and applies it to Coconut Wallet."
-  file:
-    not_found: "File not found.\nTap the file icon to add a backup file."
-    select: "Select File"
-    apply: "Apply"
-    apply_description: "Do you want to apply the file $fileName?"
-    delete: "Delete File"
-    delete_description: "Are you sure you want to delete the file '$fileName'?"
-    delete_success: "File deleted successfully"
-    delete_failed: "Failed to delete file"
-    invalid_file_type: "Invalid file type. Please select a JSONL file."
 
 long_pressed_menu:
   hide: "Hide"

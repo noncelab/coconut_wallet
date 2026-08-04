@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -561,7 +560,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             (context, animation, secondaryAnimation) => LabelManagementScreen(
               importDescription: t.wallet_info_screen.import_labels_description,
               exportDescription: t.wallet_info_screen.export_labels_description,
-              onImport: (filePath) => _importLabels(viewModel, filePath),
+              onImport: (filePath) => 0,
               onExport: () => _exportLabels(viewModel),
             ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -570,35 +569,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         transitionDuration: const Duration(milliseconds: 250),
       ),
     );
-  }
-
-  Future<void> _importLabels(WalletInfoViewModel viewModel, String filePath) async {
-    _setOverlayLoading(true);
-    try {
-      final labelManager = LabelJsonLManager();
-      await labelManager.importLabelsFromJsonLFile(widget.id, context.read<WalletProvider>(), filePath);
-
-      _setOverlayLoading(false);
-      if (mounted) {
-        CoconutToast.showToast(
-          context: context,
-          text: t.wallet_info_screen.import_labels_success,
-          level: CoconutToastLevel.success,
-        );
-
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      _setOverlayLoading(true);
-      if (mounted) {
-        await showInfoDialog(
-          context,
-          context.read<PreferenceProvider>().language,
-          t.wallet_info_screen.import_labels_fail,
-          e.toString(),
-        );
-      }
-    }
   }
 
   Future<void> _exportLabels(WalletInfoViewModel viewModel) async {

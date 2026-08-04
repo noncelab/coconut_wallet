@@ -1103,6 +1103,38 @@ split_utxo_screen:
     preview: "結果を確認"
     description: "分割数が多いため、トランザクションの作成に時間がかかる場合があります。先に予想結果を確認しますか？"
 
+labels_management_screen:
+  title: "メモの管理"
+  subtitle: "記録したメモをインポートまたはエクスポートします。"
+  description: "BIP-329は、ウォレット間でメモをやり取りできるように作成された公開標準です。メモを出力しておけば、デバイスの変更やアプリの再インストールを行っても、入力するだけでそのまま復元できます。"
+  import_title: "インポート"
+  import_description: "他のウォレットからメモを読み込みます。"
+  export_title: "エクスポート"
+  export_description: "メモをバックアップするか、他のウォレットへ共有します。"
+  tooltip:
+    title: "ココナッツのメモ"
+    description: "取引やUTXOをより簡単に visual / 区別できるように、自分だけの情報を記録できます。"
+    supported_title: "サポートされているメモ"
+    supported_list: "• 取引メモ\n• UTXOタグ（名前/色）\n• UTXO使用ロック"
+    import: "BIP-329メモファイル（.jsonl）をインポートしてCoconut Walletに適用します。"
+  file:
+    not_found: "ファイルが見つかりません。\nファイルアイコンをタップしてバックアップファイルを追加してください。"
+    select: "選択"
+    apply: "適用"
+    apply_description: "$fileName ファイルを適用しますか？"
+    delete: "ファイルを削除"
+    delete_description: "本当に「$fileName」ファイルを削除しますか？"
+    delete_success: "ファイルの削除に成功しました"
+    delete_failed: "ファイルの削除に失敗しました"
+    invalid_file_type: "無効なファイル形式です。JSONLファイルを選択してください。"
+label_import_file_picker_screen:
+  loading_title: "メモを適用中"
+  instruction_tooltip:
+    step1: "適用ウォレット"
+    step2: "取引メモ"
+    step3: "UTXOタグ"
+    step4: "ロックされたUTXO"
+
 # lib/widgets/card
 wallet_list_add_guide_card:
   add_watch_only: "ウォッチオンリーウォレットを\n追加してみてください！"
@@ -1377,31 +1409,6 @@ estimated_fee_bottom_sheet:
     title: "予想手数料"
     estimated_fee: "予想手数料"
     fee_rate: "手数料率"
-
-labels_management_screen:
-  title: "メモの管理"
-  subtitle: "記録したメモをインポートまたはエクスポートします。"
-  description: "BIP-329は、ウォレット間でメモをやり取りできるように作成された公開標準です。メモを出力しておけば、デバイスの変更やアプリの再インストールを行っても、入力するだけでそのまま復元できます。"
-  import_title: "インポート"
-  import_description: "他のウォレットからメモを読み込みます。"
-  export_title: "エクスポート"
-  export_description: "メモをバックアップするか、他のウォレットへ共有します。"
-  tooltip:
-    title: "ココナッツのメモ"
-    description: "取引やUTXOをより簡単に visual / 区別できるように、自分だけの情報を記録できます。"
-    supported_title: "サポートされているメモ"
-    supported_list: "• 取引メモ\n• UTXOタグ（名前/色）\n• UTXO使用ロック"
-    import: "BIP-329メモファイル（.jsonl）をインポートしてCoconut Walletに適用します。"
-  file:
-    not_found: "ファイルが見つかりません。\nファイルアイコンをタップしてバックアップファイルを追加してください。"
-    select: "選択"
-    apply: "適用"
-    apply_description: "$fileName ファイルを適用しますか？"
-    delete: "ファイルを削除"
-    delete_description: "本当に「$fileName」ファイルを削除しますか？"
-    delete_success: "ファイルの削除に成功しました"
-    delete_failed: "ファイルの削除に失敗しました"
-    invalid_file_type: "無効なファイル形式です。JSONLファイルを選択してください。"
 
 long_pressed_menu:
   hide: "非表示"

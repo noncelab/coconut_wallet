@@ -6,13 +6,15 @@ import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/label_import_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
+
+enum LabelImportStep { fileSelection, loading, success, error }
 
 class LabelImportFilePickerScreen extends StatefulWidget {
   final ValueChanged<String> onFileSelected;
@@ -25,12 +27,13 @@ class LabelImportFilePickerScreen extends StatefulWidget {
 
 class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScreen> {
   late Future<List<File>> _filesFuture;
+  LabelImportStep _step = LabelImportStep.fileSelection;
   int _swipedItemIndex = -1;
   int? _selectedItemIndex;
   final GlobalKey _tooltipIconKey = GlobalKey();
-  Size? _tooltipIconSize;
-  Offset? _tooltipIconPosition;
   bool _isTooltipVisible = false;
+  String? _successMessage;
+  String? _fileName;
 
   @override
   void initState() {
@@ -49,10 +52,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   void _updateTooltipPosition() {
     final renderBox = _tooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox != null) {
-      setState(() {
-        _tooltipIconPosition = renderBox.localToGlobal(Offset.zero);
-        _tooltipIconSize = renderBox.size;
-      });
+      setState(() {});
     }
   }
 
@@ -79,160 +79,168 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
-                final bool noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
-
-                return Stack(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Column(
-                        children: [
-                          _buildInfoTooltip(context),
-                          Expanded(
-                            child:
-                                noFiles
-                                    ? GestureDetector(
-                                      onTap: _addExternalFile,
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(24),
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: context.coconutColors.secondaryText.withOpacity(0.1),
-                                              ),
-                                              child: SvgPicture.asset(
-                                                'assets/svg/file.svg',
-                                                width: 40,
-                                                height: 40,
-                                                colorFilter: ColorFilter.mode(
-                                                  context.coconutColors.iconDefault,
-                                                  BlendMode.srcIn,
-                                                ),
-                                              ),
-                                            ),
-                                            CoconutLayout.spacing_400h,
-                                            Text(
-                                              t.labels_management_screen.file.not_found,
-                                              style: CoconutTypography.body1_16.setColor(
-                                                context.coconutColors.primaryText,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    )
-                                    : ListView.separated(
-                                      padding: const EdgeInsets.only(top: 20, bottom: 90),
-                                      itemCount: snapshot.data!.length + 1,
-                                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                                      itemBuilder: (context, index) {
-                                        if (index == snapshot.data!.length) {
-                                          return GestureDetector(
-                                            onTap: _addExternalFile,
-                                            child: CustomPaint(
-                                              painter: DashedBorderPainter(
-                                                color: context.coconutColors.border,
-                                                strokeWidth: 1.0,
-                                                dashWidth: 8.0,
-                                                gapWidth: 4.0,
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 27),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.transparent,
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.start,
-                                                  children: [
-                                                    SvgPicture.asset(
-                                                      'assets/svg/plus.svg',
-                                                      width: 12,
-                                                      colorFilter: ColorFilter.mode(
-                                                        context.coconutColors.primaryText,
-                                                        BlendMode.srcIn,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Text(
-                                                      t.labels_management_screen.file.select,
-                                                      style: CoconutTypography.body1_16.setColor(
-                                                        context.coconutColors.primaryText,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                        final file = snapshot.data![index];
-                                        return FileListItemCard(
-                                          file: file,
-                                          isSelected: _selectedItemIndex == index,
-                                          isSwiped: _swipedItemIndex == index && _selectedItemIndex != index,
-                                          onTap: () {
-                                            setState(() {
-                                              if (_selectedItemIndex == index) {
-                                                _selectedItemIndex = null;
-                                              } else {
-                                                _selectedItemIndex = index;
-                                                _swipedItemIndex = -1;
-                                              }
-                                            });
-                                          },
-                                          onSwipeChanged:
-                                              (isSwiped) => setState(() => _swipedItemIndex = isSwiped ? index : -1),
-                                          onDeleteTriggered: () => _deleteFile(file, index),
-                                        );
-                                      },
-                                    ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!noFiles)
-                      Align(
-                        alignment: Alignment.bottomCenter,
-                        child: FixedBottomButton(
-                          text: t.labels_management_screen.file.apply,
-                          isActive: _selectedItemIndex != null,
-                          onButtonClicked: () => _onApplyButtonPressed(snapshot.data!),
-                        ),
-                      ),
-                  ],
-                );
+                return _buildBody(context, snapshot);
               },
             ),
           ),
-          if (_isTooltipVisible && _tooltipIconPosition != null && _tooltipIconSize != null) _buildTooltip(context),
         ],
       ),
     );
   }
 
-  Widget _buildTooltip(BuildContext context) {
-    return Positioned(
-      top: _tooltipIconPosition!.dy + _tooltipIconSize!.height - 10,
-      right: 18,
-      child: GestureDetector(
-        onTap: _removeTooltip,
-        child: ClipPath(
-          clipper: RightTriangleBubbleClipper(),
-          child: Container(
-            width: MediaQuery.sizeOf(context).width * 0.68,
-            padding: const EdgeInsets.only(top: 28, left: 16, right: 16, bottom: 12),
-            color: context.coconutColors.popoverBackground,
-            child: Text(
-              t.labels_management_screen.tooltip.import,
-              style: CoconutTypography.body3_12.copyWith(color: context.coconutColors.popoverText, height: 1.3),
+  Widget _buildBody(BuildContext context, AsyncSnapshot<List<File>> snapshot) {
+    final bool noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
+
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            children: <Widget>[
+              if (_step == LabelImportStep.fileSelection) _buildInfoTooltip(context),
+              Expanded(child: _buildContent(context, snapshot, noFiles)),
+            ],
+          ),
+        ),
+        if (_step == LabelImportStep.fileSelection && !noFiles)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FixedBottomButton(
+              text: t.labels_management_screen.file.apply,
+              isActive: _selectedItemIndex != null,
+              onButtonClicked: () => _onApplyButtonPressed(snapshot.data!),
             ),
+          ),
+        if (_step == LabelImportStep.error)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FixedBottomButton(
+              text: 'a',
+              isActive: true,
+              onButtonClicked: () {
+                setState(() {
+                  _step = LabelImportStep.fileSelection;
+                });
+              },
+            ),
+          ),
+        if (_step == LabelImportStep.success)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FixedBottomButton(
+              text: t.confirm,
+              isActive: true,
+              onButtonClicked: () => Navigator.of(context).pop(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildContent(BuildContext context, AsyncSnapshot<List<File>> snapshot, bool noFiles) {
+    switch (_step) {
+      case LabelImportStep.fileSelection:
+        return noFiles ? _buildNoFilesFound(context) : _buildFileListView(context, snapshot.data!);
+      case LabelImportStep.loading:
+        return Center(child: _buildLoadingCard());
+      case LabelImportStep.success:
+        return _buildSuccessCard(context);
+      case LabelImportStep.error:
+        return _buildErrorCard(context);
+    }
+  }
+
+  Widget _buildNoFilesFound(BuildContext context) {
+    return GestureDetector(
+      onTap: _addExternalFile,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: context.coconutColors.secondaryText.withOpacity(0.1),
+              ),
+              child: SvgPicture.asset(
+                'assets/svg/file.svg',
+                width: 40,
+                height: 40,
+                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              ),
+            ),
+            CoconutLayout.spacing_400h,
+            Text(
+              t.labels_management_screen.file.not_found,
+              style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileListView(BuildContext context, List<File> files) {
+    return ListView.separated(
+      padding: const EdgeInsets.only(top: 20, bottom: 90),
+      itemCount: files.length + 1,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        if (index == files.length) {
+          return _buildAddFileButton(context);
+        }
+        final file = files[index];
+        return FileListItemCard(
+          file: file,
+          isSelected: _selectedItemIndex == index,
+          isSwiped: _swipedItemIndex == index && _selectedItemIndex != index,
+          onTap: () {
+            setState(() {
+              if (_selectedItemIndex == index) {
+                _selectedItemIndex = null;
+              } else {
+                _selectedItemIndex = index;
+                _swipedItemIndex = -1;
+              }
+            });
+          },
+          onSwipeChanged: (isSwiped) => setState(() => _swipedItemIndex = isSwiped ? index : -1),
+          onDeleteTriggered: () => _deleteFile(file, index),
+        );
+      },
+    );
+  }
+
+  Widget _buildAddFileButton(BuildContext context) {
+    return GestureDetector(
+      onTap: _addExternalFile,
+      child: CustomPaint(
+        painter: DashedBorderPainter(
+          color: context.coconutColors.border,
+          strokeWidth: 1.0,
+          dashWidth: 8.0,
+          gapWidth: 4.0,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 27),
+          decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(12)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              SvgPicture.asset(
+                'assets/svg/plus.svg',
+                width: 12,
+                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                t.labels_management_screen.file.select,
+                style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+              ),
+            ],
           ),
         ),
       ),
@@ -266,6 +274,49 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     );
   }
 
+  Widget _buildLoadingCard() {
+    return ImportLabelProgressCard(
+      title: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+          children: [
+            TextSpan(text: t.label_import_file_picker_screen.loading_title),
+            const TextSpan(text: '\n'),
+            TextSpan(text: _fileName, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+          ],
+        ),
+      ),
+      steps: [
+        t.label_import_file_picker_screen.instruction_tooltip.step1,
+        t.label_import_file_picker_screen.instruction_tooltip.step2,
+        t.label_import_file_picker_screen.instruction_tooltip.step3,
+        t.label_import_file_picker_screen.instruction_tooltip.step4,
+      ],
+      showSkeleton: true,
+    );
+  }
+
+  Widget _buildSuccessCard(BuildContext context) {
+    return ImportLabelSuccessCard(
+      title: 'a',
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          Text(
+            _successMessage ?? '',
+            style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorCard(BuildContext context) {
+    return const ImportLabelErrorCard(title: 'a', description: 'a');
+  }
+
   void _onApplyButtonPressed(List<File> files) async {
     if (_selectedItemIndex == null) return;
 
@@ -284,8 +335,23 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           ),
     );
 
-    if (confirmed == true) {
-      widget.onFileSelected(selectedFile.path);
+    if (confirmed == true && mounted) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      setState(() {
+        _step = LabelImportStep.loading;
+        _fileName = fileName;
+      });
+      try {
+        await Future.delayed(const Duration(seconds: 5));
+        setState(() {
+          _step = LabelImportStep.success;
+          _successMessage = 'a';
+        });
+      } catch (e) {
+        setState(() {
+          _step = LabelImportStep.error;
+        });
+      }
     }
   }
 
@@ -331,6 +397,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     setState(() {
       _filesFuture = LabelJsonLManager().getImportableLabelFiles();
       _swipedItemIndex = -1;
+      _selectedItemIndex = null;
     });
   }
 

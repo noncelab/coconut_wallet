@@ -388,7 +388,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
             (context, animation, secondaryAnimation) => LabelManagementScreen(
               importDescription: t.settings_screen.import_all_labels_description,
               exportDescription: t.settings_screen.export_all_labels_description,
-              onImport: (filePath) => _importLabelsForAllWallets(filePath),
+              onImport: (filePath) => 0,
               onExport: () {
                 _exportLabelsForAllWallets();
               },
@@ -407,34 +407,6 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
       context.loaderOverlay.show();
     } else {
       context.loaderOverlay.hide();
-    }
-  }
-
-  Future<void> _importLabelsForAllWallets(String filePath) async {
-    _setOverlayLoading(true);
-    try {
-      final labelManager = LabelJsonLManager();
-      await labelManager.importLabelsForAllWallets(context.read<WalletProvider>(), filePath);
-
-      _setOverlayLoading(false);
-      if (mounted) {
-        CoconutToast.showToast(
-          context: context,
-          text: t.wallet_info_screen.import_labels_success,
-          level: CoconutToastLevel.success,
-        );
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
-    } catch (e) {
-      _setOverlayLoading(true);
-      if (mounted) {
-        await showInfoDialog(
-          context,
-          context.read<PreferenceProvider>().language,
-          t.wallet_info_screen.import_labels_fail,
-          e.toString(),
-        );
-      }
     }
   }
 

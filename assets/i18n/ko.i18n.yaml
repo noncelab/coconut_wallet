@@ -1118,6 +1118,38 @@ split_utxo_screen:
     preview: "예상 보기"
     description: "나누는 개수가 많아 트랜잭션 생성에 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인할까요?"
 
+labels_management_screen:
+  title: "메모 관리"
+  subtitle: "기록한 메모들을 가져오거나 내보냅니다."
+  description: "BIP-329는 지갑 간에 메모를 주고받을 수 있도록 만든 공개 표준이에요. 메모를 내보내 두면 기기를 바꾸거나 앱을 다시 설치해도 가져오기만으로 그대로 복원할 수 있어요."
+  import_title: "가져오기"
+  import_description: "다른 지갑의 메모를 불러옵니다."
+  export_title: "내보내기"
+  export_description: "메모를 백업하거나 다른 지갑으로 공유합니다."
+  tooltip:
+    title: "코코넛의 메모"
+    description: "거래와 UTXO를 더 쉽게 구분할 수 있도록 나만의 정보를 기록할 수 있어요."
+    supported_title: "지원하는 메모"
+    supported_list: "• 거래 메모\n• UTXO 태그(이름/색상)\n• UTXO 사용 잠금"
+    import: "BIP-329 메모 파일(.jsonl)을 가져와 코코넛 월렛에 적용합니다."
+  file:
+    not_found: "파일을 찾을 수 없어요.\n파일 아이콘을 눌러 백업 파일을 추가하세요"
+    select: "다른 파일 선택"
+    apply: "적용하기"
+    apply_description: "$fileName 파일을 적용할까요?"
+    delete: "파일 삭제"
+    delete_description: "'$fileName' 파일을 정말로 삭제하시겠어요?"
+    delete_success: "파일 삭제 성공"
+    delete_failed: "파일 삭제 실패"
+    invalid_file_type: "잘못된 파일 형식이에요. JSONL 파일을 선택해주세요."
+label_import_file_picker_screen:
+  loading_title: "메모를 적용하고 있어요"
+  instruction_tooltip:
+    step1: "적용 지갑"
+    step2: "거래 메모"
+    step3: "UTXO 태그"
+    step4: "잠금 UTXO"
+
 # lib/widgets/card
 wallet_list_add_guide_card:
   add_watch_only: "보기 전용 지갑을 추가해 보세요!"
@@ -1392,31 +1424,6 @@ estimated_fee_bottom_sheet:
     title: "예상 수수료"
     estimated_fee: "예상 수수료"
     fee_rate: "수수료율"
-
-labels_management_screen:
-  title: "메모 관리"
-  subtitle: "기록한 메모들을 가져오거나 내보냅니다."
-  description: "BIP-329는 지갑 간에 메모를 주고받을 수 있도록 만든 공개 표준이에요. 메모를 내보내 두면 기기를 바꾸거나 앱을 다시 설치해도 가져오기만으로 그대로 복원할 수 있어요."
-  import_title: "가져오기"
-  import_description: "다른 지갑의 메모를 불러옵니다."
-  export_title: "내보내기"
-  export_description: "메모를 백업하거나 다른 지갑으로 공유합니다."
-  tooltip:
-    title: "코코넛의 메모"
-    description: "거래와 UTXO를 더 쉽게 구분할 수 있도록 나만의 정보를 기록할 수 있어요."
-    supported_title: "지원하는 메모"
-    supported_list: "• 거래 메모\n• UTXO 태그(이름/색상)\n• UTXO 사용 잠금"
-    import: "BIP-329 메모 파일(.jsonl)을 가져와 코코넛 월렛에 적용합니다."
-  file:
-    not_found: "파일을 찾을 수 없어요.\n파일 아이콘을 눌러 백업 파일을 추가하세요"
-    select: "다른 파일 선택"
-    apply: "적용하기"
-    apply_description: "$fileName 파일을 적용할까요?"
-    delete: "파일 삭제"
-    delete_description: "'$fileName' 파일을 정말로 삭제하시겠어요?"
-    delete_success: "파일 삭제 성공"
-    delete_failed: "파일 삭제 실패"
-    invalid_file_type: "잘못된 파일 형식이에요. JSONL 파일을 선택해주세요."
 
 long_pressed_menu:
   hide: "숨기기"
