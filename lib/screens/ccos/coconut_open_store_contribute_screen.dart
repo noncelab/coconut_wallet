@@ -8,6 +8,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup;
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
@@ -35,7 +36,7 @@ class ContributeSceneBody extends StatelessWidget {
               animation: animation,
               entranceInterval: const Interval(0.0341, 0.0511, curve: Curves.easeOutCubic),
               typingInterval: const Interval(0.0511, 0.2500, curve: Curves.linear),
-              text: '다음 PoW는\n여러분의 차례입니다',
+              text: t.ccos.contribute_scene.line1,
               textAlign: TextAlign.left,
               entryOffset: const Offset(-44, 22),
             ),
@@ -44,7 +45,7 @@ class ContributeSceneBody extends StatelessWidget {
               animation: animation,
               entranceInterval: const Interval(0.2614, 0.2784, curve: Curves.easeOutCubic),
               typingInterval: const Interval(0.2784, 0.4034, curve: Curves.linear),
-              text: '작은 아이디어도 괜찮습니다.',
+              text: t.ccos.contribute_scene.line2,
               textAlign: TextAlign.left,
               entryOffset: const Offset(-40, 18),
             ),
@@ -53,8 +54,8 @@ class ContributeSceneBody extends StatelessWidget {
               animation: animation,
               entranceInterval: const Interval(0.4318, 0.4489, curve: Curves.easeOutCubic),
               typingInterval: const Interval(0.4489, 0.7045, curve: Curves.linear),
-              text: '여러분의 PoW는\n새로운 기능이 되어\n더 많은 사람들의 경험으로 이어지고,',
-              highlightPhrases: const {'새로운 기능'},
+              text: t.ccos.contribute_scene.line3,
+              highlightPhrases: {t.ccos.contribute_scene.highlight_new_feature},
               textAlign: TextAlign.left,
               entryOffset: const Offset(-52, 24),
             ),
@@ -63,8 +64,8 @@ class ContributeSceneBody extends StatelessWidget {
               animation: animation,
               entranceInterval: const Interval(0.7273, 0.7443, curve: Curves.easeOutCubic),
               typingInterval: const Interval(0.7443, 0.9205, curve: Curves.linear),
-              text: '그 과정이 비트코인 스탠다드를\n조금씩 앞당깁니다',
-              highlightPhrases: const {'비트코인 스탠다드'},
+              text: t.ccos.contribute_scene.line4,
+              highlightPhrases: {t.ccos.contribute_scene.highlight_bitcoin_standard},
               textAlign: TextAlign.left,
               entryOffset: const Offset(-48, 22),
             ),
@@ -199,7 +200,10 @@ class _ContributeCtaButtonState extends State<_ContributeCtaButton> with SingleT
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('첫 PR 시작하기', style: CoconutTypography.body2_14_Bold.setColor(const Color(0xFFCDD4D7))),
+                Text(
+                  t.ccos.contribute_scene.cta_start_first_pr,
+                  style: CoconutTypography.body2_14_Bold.setColor(const Color(0xFFCDD4D7)),
+                ),
                 const SizedBox(width: 8),
                 SvgPicture.asset(
                   BrandIconPath.arrowRightLg,

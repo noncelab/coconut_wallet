@@ -1257,3 +1257,103 @@ taproot:
   setup_summary_card:
     signer_configuration: "Signer Configuration"
     inheritance_condition: "Inheritance Condition"
+
+ccos:
+  intro_screen:
+    theme_activated: "Coconut Pulp theme has been added. Set the theme and give it a try."
+    delete_popup_title: "Remove Coconut Pulp theme?"
+    delete_popup_description: "You are currently using the Coconut Pulp theme. If you remove it, the default theme will be applied."
+    theme_removed: "Coconut Pulp theme has been removed. You can add it again anytime."
+    loading_title: "Coconut\nOpen Store"
+    watermark_banner: "Coconut Open Store "
+    scenes:
+      idea:
+        label: "IDEA"
+        title: "What if, instead of each experiment scattering away,\nit could connect together\nand create a bigger network effect,"
+        description: "so even one small idea\ncould gently move\nBitcoin Standard forward?"
+        overview_title: "So a good idea\ncan grow into a bigger ripple"
+      build:
+        label: "BUILD"
+        title: "A world where anyone\ncan become a Bitcoin\nbuilder"
+        description: "Your PoW becomes\nCoconut’s next feature\nand part of a Bitcoiner’s daily life"
+        overview_title: "A place where my idea\nbecomes everyone’s feature"
+      first_pow:
+        label: "FIRST PoW"
+        title: "The first PoW\nwas left first\nby the Coconut team."
+        description: "Coconut Pulp theme is the first example showing how future Open Store features can be introduced and used."
+        overview_title: "First PoW\nCoconut Pulp theme by Coconut Team"
+        overview_highlight: "First PoW"
+      discover:
+        label: "DISCOVER"
+        overview_title: "So every Bitcoin builder\ncan shine inside Coconut"
+      contribute:
+        label: "CONTRIBUTE"
+        overview_title: "Waiting for\nthe next PoW"
+        overview_highlight: "Next PoW"
+  idea_scene:
+    line1: "Rather than letting each experiment scatter,"
+    line2: "what if they connected\nto create\na bigger network effect,"
+    line3: "so even one small idea"
+    line4: "could gently move\nBitcoin Standard\nforward?"
+    highlight_network_effect: "network effect"
+    highlight_bitcoin_standard: "Bitcoin Standard"
+  build_scene:
+    highlight_bitcoin_builder: "Bitcoin\nbuilder"
+    highlight_pow: "your PoW"
+    orbit:
+      widget: "Widget"
+      theme: "Theme"
+      analysis: "Analysis"
+      tool: "Tool"
+      layer2: "Layer2"
+      backup: "Backup"
+  first_pow_scene:
+    intro_line1: "Coconut Pulp theme\nis Open Store’s first PoW."
+    intro_line2: "It’s the first glimpse\nof how new features\ncan join Coconut."
+    intro_highlight_theme: "Coconut Pulp theme"
+    intro_highlight_first_pow: "first PoW"
+    status_applied: "Applied"
+    status_added: "Added"
+    add_button: "Add to Theme Screen"
+    remove_button: "Remove"
+    feature_detail:
+      panel_label: "FEATURE"
+      tag_free: "Free"
+      description: "A new bright theme for Coconut Wallet\ninspired by warm coconut and beach tones"
+    creator_detail:
+      panel_label: "CREATOR"
+      author: "Coconut Team"
+      author_description: "We build a better wallet experience just for Bitcoin."
+      story_label: "Creator Story"
+      feedback_quote: "\"Coconut feels like a bright and warm fruit,\nbut the wallet feels a bit too dark.\""
+      feedback_attribution: "- Feedback from Bitzzang"
+      story_paragraph1: "To clearly distinguish Coconut Wallet and Vault,\nwhich work like one pair,\nwe intentionally kept Coconut Wallet in dark themes only."
+      story_paragraph2: "But while imagining Open Store,\nwe felt the first example had to best show\n‘the experience of anyone proposing a new feature\nand building it together.’"
+      story_paragraph3: "So Coconut Pulp theme is not just a new color set.\nIt became the first example showing\nhow future ideas can be introduced\nand delivered to users through Open Store."
+      belief_statement: "We believe a new feature should carry not only code, but also the maker’s intent and reasoning."
+    delivery_detail:
+      panel_label: "DELIVERY"
+      propose_title: "Propose"
+      propose_body: "Anyone can propose a feature with clear intent.\nIt can be shared freely or delivered in a sustainable way.\nThe creator decides how it is delivered."
+      review_title: "Review"
+      review_body: "The Coconut team reviews policy and quality together.\nThrough feedback, the PoW is shaped safely\nso it fits the existing UI and UX."
+      intro_title: "Launch"
+      intro_body: "Once approved,\nthe PoW ships in the app\nand meets users."
+  discover_scene:
+    line1: "Users discover\nnew features"
+    line2: "and meet the maker again\nright when they use them"
+    line3: "We’re preparing this carefully\nso every Bitcoin builder\ncan shine inside Coconut"
+    highlight_new_feature: "new features"
+    highlight_bitcoin_builder: "Bitcoin builder"
+    highlight_can_shine: "can shine"
+    preview_open_store: "Open Store"
+    preview_created_by: "Created by"
+    preview_feature: "Feature"
+  contribute_scene:
+    line1: "The next PoW\nbelongs to you"
+    line2: "Even a small idea is welcome."
+    line3: "Your PoW becomes\na new feature\nand reaches more people’s experience,"
+    line4: "and in that process,\nit gently moves\nBitcoin Standard forward"
+    highlight_new_feature: "new feature"
+    highlight_bitcoin_standard: "Bitcoin Standard"
+    cta_start_first_pr: "Start your first PR"

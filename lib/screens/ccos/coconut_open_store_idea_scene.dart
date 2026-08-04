@@ -7,6 +7,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:flutter/material.dart';
 
@@ -35,7 +36,7 @@ class IdeaSceneBody extends StatelessWidget {
                 animation: animation,
                 entranceInterval: const Interval(0.0341, 0.0511, curve: Curves.easeOutCubic),
                 typingInterval: const Interval(0.0511, 0.2102, curve: Curves.linear),
-                text: '각자의 실험이 흩어지기보다',
+                text: t.ccos.idea_scene.line1,
                 textAlign: TextAlign.left,
                 entryOffset: const Offset(-44, 22),
               ),
@@ -48,8 +49,8 @@ class IdeaSceneBody extends StatelessWidget {
                 animation: animation,
                 entranceInterval: const Interval(0.1989, 0.2159, curve: Curves.easeOutCubic),
                 typingInterval: const Interval(0.2159, 0.5114, curve: Curves.linear),
-                text: '함께 연결되어\n더 큰 네트워크 효과를\n만든다면,',
-                highlightPhrases: const {'네트워크 효과'},
+                text: t.ccos.idea_scene.line2,
+                highlightPhrases: {t.ccos.idea_scene.highlight_network_effect},
                 textAlign: TextAlign.left,
                 entryOffset: const Offset(-54, 28),
               ),
@@ -62,7 +63,7 @@ class IdeaSceneBody extends StatelessWidget {
                 animation: animation,
                 entranceInterval: const Interval(0.5000, 0.5170, curve: Curves.easeOutCubic),
                 typingInterval: const Interval(0.5170, 0.6420, curve: Curves.linear),
-                text: '작은 아이디어 하나도',
+                text: t.ccos.idea_scene.line3,
                 textAlign: TextAlign.right,
                 entryOffset: const Offset(48, 24),
               ),
@@ -75,8 +76,8 @@ class IdeaSceneBody extends StatelessWidget {
                 animation: animation,
                 entranceInterval: const Interval(0.6307, 0.6477, curve: Curves.easeOutCubic),
                 typingInterval: const Interval(0.6477, 0.9545, curve: Curves.linear),
-                text: '비트코인 스탠다드를\n조금씩 앞당길 수 있지 않을까?',
-                highlightPhrases: const {'비트코인 스탠다드'},
+                text: t.ccos.idea_scene.line4,
+                highlightPhrases: {t.ccos.idea_scene.highlight_bitcoin_standard},
                 textAlign: TextAlign.right,
                 entryOffset: const Offset(64, 30),
               ),

@@ -1257,3 +1257,103 @@ taproot:
   setup_summary_card:
     signer_configuration: "署名構成"
     inheritance_condition: "相続条件"
+
+ccos:
+  intro_screen:
+    theme_activated: "ココナッツ果肉テーマを追加しました。テーマを設定して使ってみてください。"
+    delete_popup_title: "ココナッツ果肉テーマを削除しますか？"
+    delete_popup_description: "現在ココナッツ果肉テーマを使用しています。削除するとデフォルトテーマが適用されます。"
+    theme_removed: "ココナッツ果肉テーマを削除しました。いつでももう一度追加して使えます。"
+    loading_title: "Coconut\nOpen Store"
+    watermark_banner: "Coconut Open Store "
+    scenes:
+      idea:
+        label: "IDEA"
+        title: "それぞれの実験が散らばるのではなく、\nつながり合って\nより大きなネットワーク効果を生み出せたら,"
+        description: "小さなアイデアひとつでも\nビットコインスタンダードを\n少しずつ前に進められるのではないでしょうか？"
+        overview_title: "よいアイデアが\nより大きな波及につながるように"
+      build:
+        label: "BUILD"
+        title: "誰もがビットコインの\nビルダーになれる世界"
+        description: "みなさんのPoWが\nCoconutの新しい機能となり\nビットコイナーの日常になります"
+        overview_title: "私のアイデアが\nみんなの機能になる場所"
+      first_pow:
+        label: "FIRST PoW"
+        title: "最初のPoWは\nCoconutチームが\n先に残してみました。"
+        description: "ココナッツ果肉テーマは、これからOpen Storeに加わる機能がどのように紹介され、使われるのかを見せる最初の例です。"
+        overview_title: "最初のPoW\nココナッツ果肉テーマ by Coconut Team"
+        overview_highlight: "最初のPoW"
+      discover:
+        label: "DISCOVER"
+        overview_title: "すべてのビットコインビルダーが\nCoconutの中で輝けるように"
+      contribute:
+        label: "CONTRIBUTE"
+        overview_title: "次のPoWを\n待っています"
+        overview_highlight: "次のPoW"
+  idea_scene:
+    line1: "それぞれの実験が散らばるのではなく"
+    line2: "つながり合って\nより大きなネットワーク効果を\n生み出せたなら,"
+    line3: "小さなアイデアひとつでも"
+    line4: "ビットコインスタンダードを\n少しずつ前に進められるのではないでしょうか？"
+    highlight_network_effect: "ネットワーク効果"
+    highlight_bitcoin_standard: "ビットコインスタンダード"
+  build_scene:
+    highlight_bitcoin_builder: "ビットコイン\nビルダー"
+    highlight_pow: "みなさんのPoW"
+    orbit:
+      widget: "Widget"
+      theme: "Theme"
+      analysis: "Analysis"
+      tool: "Tool"
+      layer2: "Layer2"
+      backup: "Backup"
+  first_pow_scene:
+    intro_line1: "ココナッツ果肉テーマは\nOpen Storeの最初のPoWです。"
+    intro_line2: "新しい機能が\nCoconutに加わっていく姿を\n最初にテーマで表してみました。"
+    intro_highlight_theme: "ココナッツ果肉テーマ"
+    intro_highlight_first_pow: "最初のPoW"
+    status_applied: "適用中"
+    status_added: "追加済み"
+    add_button: "テーマ画面に追加する"
+    remove_button: "削除する"
+    feature_detail:
+      panel_label: "FEATURE"
+      tag_free: "無料"
+      description: "ココナッツと浜辺のあたたかな色を込めた\nCoconut Walletの新しい明るいテーマです"
+    creator_detail:
+      panel_label: "CREATOR"
+      author: "Coconutチーム"
+      author_description: "ビットコインのためだけの、よりよいウォレット体験を作っています。"
+      story_label: "Creator Story"
+      feedback_quote: "\"ココナッツは明るくあたたかい果物なのに,\nウォレットは少し暗い印象で惜しいです。\""
+      feedback_attribution: "- Bitzzangさんのフィードバック"
+      story_paragraph1: "ひとつのペアのように動くCoconut WalletとVaultを\nはっきり区別するために,\nCoconut Walletでは意図的にダークテーマだけを提供してきました。"
+      story_paragraph2: "でもOpen Storeを構想する中で,\n最初の事例は\n「誰でも新しい機能を提案し,\n一緒に作っていく体験」を最もよく見せられるものであるべきだと考えました。"
+      story_paragraph3: "だからココナッツ果肉テーマは,\n単に新しい色を追加しただけではありません。\nこれからOpen Storeでさまざまなアイデアが\nどのように紹介され、ユーザーに届くのかを見せる最初の例になりました。"
+      belief_statement: "新しい機能はコードだけでなく、それを作った人の考えや理由も一緒に伝わるべきだと信じています。"
+    delivery_detail:
+      panel_label: "DELIVERY"
+      propose_title: "提案"
+      propose_body: "誰でも意図を込めて機能を提案できます。\n無料で共有することも、持続可能な形で届けることもできます。\n届け方は作り手が決めます。"
+      review_title: "レビュー"
+      review_body: "Coconutチームと方針や品質を一緒に確認します。\nフィードバックを重ねながら、安全な境界の中で\n既存のUI/UXに自然に合うようPoWを形にしていきます。"
+      intro_title: "紹介"
+      intro_body: "最終承認されたPoWは\nアプリに含まれ\nユーザーと出会います。"
+  discover_scene:
+    line1: "ユーザーは\n新しい機能を見つけ"
+    line2: "使う瞬間にも\n作った人にもう一度出会います"
+    line3: "すべてのビットコインビルダーが\nCoconutの中で輝けるように\n丁寧に準備しています"
+    highlight_new_feature: "新しい機能"
+    highlight_bitcoin_builder: "ビットコインビルダー"
+    highlight_can_shine: "輝けるように"
+    preview_open_store: "Open Store"
+    preview_created_by: "Created by"
+    preview_feature: "Feature"
+  contribute_scene:
+    line1: "次のPoWは\nみなさんの番です"
+    line2: "小さなアイデアでも大丈夫です。"
+    line3: "みなさんのPoWは\n新しい機能となって\nより多くの人の体験につながり,"
+    line4: "その過程がビットコインスタンダードを\n少しずつ前に進めます"
+    highlight_new_feature: "新しい機能"
+    highlight_bitcoin_standard: "ビットコインスタンダード"
+    cta_start_first_pr: "最初のPRを始める"

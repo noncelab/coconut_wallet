@@ -7,6 +7,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:flutter/material.dart';
 
@@ -37,8 +38,8 @@ class DiscoverSceneBody extends StatelessWidget {
               animation: animation,
               entranceInterval: const Interval(0.2045, 0.2216, curve: Curves.easeOutCubic),
               typingInterval: const Interval(0.2216, 0.3864, curve: Curves.linear),
-              text: '사용자는\n새로운 기능을 발견하고',
-              highlightPhrases: const {'새로운 기능'},
+              text: t.ccos.discover_scene.line1,
+              highlightPhrases: {t.ccos.discover_scene.highlight_new_feature},
               textAlign: TextAlign.left,
               entryOffset: const Offset(-46, 24),
             ),
@@ -47,7 +48,7 @@ class DiscoverSceneBody extends StatelessWidget {
               animation: animation,
               entranceInterval: const Interval(0.3977, 0.4148, curve: Curves.easeOutCubic),
               typingInterval: const Interval(0.4148, 0.6193, curve: Curves.linear),
-              text: '사용하는 순간에도\n만든 사람을 다시 만나요',
+              text: t.ccos.discover_scene.line2,
               textAlign: TextAlign.left,
               entryOffset: const Offset(-54, 28),
             ),
@@ -60,8 +61,11 @@ class DiscoverSceneBody extends StatelessWidget {
                   animation: animation,
                   entranceInterval: const Interval(0.6477, 0.6648, curve: Curves.easeOutCubic),
                   typingInterval: const Interval(0.6648, 0.9602, curve: Curves.linear),
-                  text: '모든 비트코인 빌더가\n코코넛 안에서 빛날 수 있도록\n세심히 준비합니다',
-                  highlightPhrases: const {'비트코인 빌더', '빛날 수 있도록'},
+                  text: t.ccos.discover_scene.line3,
+                  highlightPhrases: {
+                    t.ccos.discover_scene.highlight_bitcoin_builder,
+                    t.ccos.discover_scene.highlight_can_shine,
+                  },
                   textAlign: TextAlign.right,
                   entryOffset: const Offset(60, 30),
                 ),
@@ -88,14 +92,14 @@ class _DiscoverPreviewImage extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) {
-        final t = Curves.easeOutCubic.transform(const Interval(0.04, 0.18).transform(animation.value));
-        final dx = 18 * (1 - t);
-        final dy = -22 * (1 - t);
-        final scale = 0.9 + (0.12 * t);
+        final progress = Curves.easeOutCubic.transform(const Interval(0.04, 0.18).transform(animation.value));
+        final dx = 18 * (1 - progress);
+        final dy = -22 * (1 - progress);
+        final scale = 0.9 + (0.12 * progress);
         final settleScale = scale > 1.0 ? 1.0 + ((scale - 1.0) * 0.35) : scale;
 
         return Opacity(
-          opacity: t,
+          opacity: progress,
           child: Transform.translate(
             offset: Offset(dx, dy),
             child: Transform.scale(
@@ -106,33 +110,37 @@ class _DiscoverPreviewImage extends StatelessWidget {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    const Positioned(
+                    Positioned(
                       left: 10,
                       right: 42,
                       top: 18,
                       bottom: 30,
-                      child: _PreviewGlassCard(label: 'Open Store', align: Alignment.topLeft, tint: Color(0x33FFFFFF)),
+                      child: _PreviewGlassCard(
+                        label: t.ccos.discover_scene.preview_open_store,
+                        align: Alignment.topLeft,
+                        tint: const Color(0x33FFFFFF),
+                      ),
                     ),
-                    const Positioned(
+                    Positioned(
                       left: 48,
                       right: 10,
                       top: 46,
                       bottom: 0,
                       child: _PreviewGlassCard(
-                        label: 'Created by',
+                        label: t.ccos.discover_scene.preview_created_by,
                         align: Alignment.bottomRight,
-                        tint: Color(0x40DCEEFF),
+                        tint: const Color(0x40DCEEFF),
                       ),
                     ),
-                    const Positioned(
+                    Positioned(
                       left: 34,
                       right: 68,
                       top: 62,
                       bottom: 42,
                       child: _PreviewGlassCard(
-                        label: 'Feature',
+                        label: t.ccos.discover_scene.preview_feature,
                         align: Alignment.center,
-                        tint: Color(0x36B4E3FF),
+                        tint: const Color(0x36B4E3FF),
                         isForeground: true,
                       ),
                     ),

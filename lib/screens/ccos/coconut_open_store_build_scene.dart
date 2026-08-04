@@ -10,6 +10,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup;
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -110,7 +111,7 @@ class BuildSceneBody extends StatelessWidget {
                             interval: titleTypingInterval,
                             baseStyle: titleStyle,
                             highlightStyle: titleHighlightStyle,
-                            highlightPhrases: const {'비트코인\n빌더'},
+                            highlightPhrases: {t.ccos.build_scene.highlight_bitcoin_builder},
                           ),
                         ),
                       ),
@@ -148,7 +149,7 @@ class BuildSceneBody extends StatelessWidget {
                             interval: descriptionTypingInterval,
                             baseStyle: descriptionStyle,
                             highlightStyle: descriptionHighlightStyle,
-                            highlightPhrases: const {'여러분의 PoW'},
+                            highlightPhrases: {t.ccos.build_scene.highlight_pow},
                           ),
                         ),
                       ),
@@ -307,7 +308,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
             ),
             // Orbit labels only start flying in once coconutOrbit's slow crossfade has fully settled (~0.2625).
             _BuildOrbitLabel(
-              label: 'Widget',
+              label: t.ccos.build_scene.orbit.widget,
               alignment: const Alignment(-0.32, -0.12),
               animation: widget.animation,
               pulseAnimation: _glowController,
@@ -319,7 +320,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               bendSign: 1,
             ),
             _BuildOrbitLabel(
-              label: 'Theme',
+              label: t.ccos.build_scene.orbit.theme,
               alignment: const Alignment(-0.58, -0.62),
               animation: widget.animation,
               pulseAnimation: _glowController,
@@ -331,7 +332,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               bendSign: -1,
             ),
             _BuildOrbitLabel(
-              label: 'Analysis',
+              label: t.ccos.build_scene.orbit.analysis,
               alignment: const Alignment(0.72, -0.03),
               animation: widget.animation,
               pulseAnimation: _glowController,
@@ -343,7 +344,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               bendSign: -1,
             ),
             _BuildOrbitLabel(
-              label: 'Tool',
+              label: t.ccos.build_scene.orbit.tool,
               alignment: const Alignment(0.62, -0.52),
               animation: widget.animation,
               pulseAnimation: _glowController,
@@ -355,7 +356,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               bendSign: 1,
             ),
             _BuildOrbitLabel(
-              label: 'Layer2',
+              label: t.ccos.build_scene.orbit.layer2,
               alignment: const Alignment(-0.72, 0.24),
               animation: widget.animation,
               pulseAnimation: _glowController,
@@ -367,7 +368,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               bendSign: 1,
             ),
             _BuildOrbitLabel(
-              label: 'Backup',
+              label: t.ccos.build_scene.orbit.backup,
               alignment: const Alignment(0.34, 0.26),
               animation: widget.animation,
               pulseAnimation: _glowController,

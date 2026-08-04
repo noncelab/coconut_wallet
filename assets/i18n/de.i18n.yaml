@@ -1216,3 +1216,103 @@ taproot:
   setup_summary_card:
     signer_configuration: "Unterzeichnerkonfiguration"
     inheritance_condition: "Vererbungsbedingung"
+
+ccos:
+  intro_screen:
+    theme_activated: "Das Kokosfleisch-Design wurde hinzugefügt. Stelle das Design ein und probiere es aus."
+    delete_popup_title: "Kokosfleisch-Design entfernen?"
+    delete_popup_description: "Du verwendest derzeit das Kokosfleisch-Design. Wenn du es entfernst, wird das Standarddesign angewendet."
+    theme_removed: "Das Kokosfleisch-Design wurde entfernt. Du kannst es jederzeit wieder hinzufügen."
+    loading_title: "Coconut\nOpen Store"
+    watermark_banner: "Coconut Open Store "
+    scenes:
+      idea:
+        label: "IDEA"
+        title: "Was wäre, wenn sich einzelne Experimente\nnicht verlieren,\nsondern gemeinsam einen größeren Netzwerkeffekt erzeugen könnten,"
+        description: "sodass schon eine kleine Idee\nden Bitcoin-Standard\nSchritt für Schritt voranbringen könnte?"
+        overview_title: "Damit aus einer guten Idee\neine größere Wirkung wird"
+      build:
+        label: "BUILD"
+        title: "Eine Welt,\nin der jeder ein\nBitcoin-Builder sein kann"
+        description: "Dein PoW wird\nzur nächsten Funktion in Coconut\nund Teil des Alltags von Bitcoinern"
+        overview_title: "Ein Ort, an dem meine Idee\nzur Funktion für alle wird"
+      first_pow:
+        label: "FIRST PoW"
+        title: "Das erste PoW\nhat zuerst das\nCoconut-Team hinterlassen."
+        description: "Das Kokosfleisch-Design ist das erste Beispiel dafür, wie künftige Open-Store-Funktionen vorgestellt und genutzt werden können."
+        overview_title: "Erstes PoW\nKokosfleisch-Design vom Coconut-Team"
+        overview_highlight: "Erstes PoW"
+      discover:
+        label: "DISCOVER"
+        overview_title: "Damit jeder Bitcoin-Builder\nin Coconut strahlen kann"
+      contribute:
+        label: "CONTRIBUTE"
+        overview_title: "Warten auf\ndas nächste PoW"
+        overview_highlight: "Nächstes PoW"
+  idea_scene:
+    line1: "Statt jedes Experiment verstreuen zu lassen,"
+    line2: "was wäre, wenn sie sich verbinden,\num einen größeren\nNetzwerkeffekt zu schaffen,"
+    line3: "sodass schon eine kleine Idee"
+    line4: "den Bitcoin-Standard\nSchritt für Schritt\nvoranbringen könnte?"
+    highlight_network_effect: "Netzwerkeffekt"
+    highlight_bitcoin_standard: "Bitcoin-Standard"
+  build_scene:
+    highlight_bitcoin_builder: "Bitcoin-\nBuilder"
+    highlight_pow: "dein PoW"
+    orbit:
+      widget: "Widget"
+      theme: "Theme"
+      analysis: "Analysis"
+      tool: "Tool"
+      layer2: "Layer2"
+      backup: "Backup"
+  first_pow_scene:
+    intro_line1: "Das Kokosfleisch-Design\nist das erste PoW im Open Store."
+    intro_line2: "Es zeigt zum ersten Mal,\nwie neue Funktionen\nzu Coconut dazukommen können."
+    intro_highlight_theme: "Kokosfleisch-Design"
+    intro_highlight_first_pow: "erste PoW"
+    status_applied: "Angewendet"
+    status_added: "Hinzugefügt"
+    add_button: "Zum Designbildschirm hinzufügen"
+    remove_button: "Entfernen"
+    feature_detail:
+      panel_label: "FEATURE"
+      tag_free: "Kostenlos"
+      description: "Ein neues helles Design für Coconut Wallet,\ninspiriert von warmen Kokos- und Strandfarben"
+    creator_detail:
+      panel_label: "CREATOR"
+      author: "Coconut-Team"
+      author_description: "Wir gestalten eine bessere Wallet-Erfahrung nur für Bitcoin."
+      story_label: "Creator Story"
+      feedback_quote: "\"Kokosnuss wirkt hell und warm,\naber die Wallet fühlt sich etwas zu dunkel an.\""
+      feedback_attribution: "- Feedback von Bitzzang"
+      story_paragraph1: "Um Coconut Wallet und Vault,\ndie wie ein Paar zusammenarbeiten,\nklar voneinander zu unterscheiden,\nhaben wir Coconut Wallet bewusst nur mit dunklen Designs angeboten."
+      story_paragraph2: "Doch als wir den Open Store entworfen haben,\nwaren wir überzeugt,\ndass das erste Beispiel am besten zeigen muss,\nwie jeder neue Funktionen vorschlagen\nund gemeinsam entwickeln kann."
+      story_paragraph3: "Das Kokosfleisch-Design ist deshalb nicht nur ein neues Farbschema.\nEs ist das erste Beispiel dafür,\nwie künftige Ideen im Open Store vorgestellt\nund Nutzern vermittelt werden können."
+      belief_statement: "Wir glauben, dass eine neue Funktion nicht nur Code, sondern auch die Gedanken und Gründe der Person mitbringen sollte, die sie geschaffen hat."
+    delivery_detail:
+      panel_label: "DELIVERY"
+      propose_title: "Vorschlagen"
+      propose_body: "Jeder kann eine Funktion mit klarer Absicht vorschlagen.\nSie kann kostenlos geteilt oder nachhaltig angeboten werden.\nDie Art der Bereitstellung entscheidet der Ersteller."
+      review_title: "Prüfung"
+      review_body: "Das Coconut-Team bespricht Richtlinien und Qualität gemeinsam.\nDurch Feedback wird das PoW sicher verfeinert,\ndamit es zur bestehenden UI und UX passt."
+      intro_title: "Einführung"
+      intro_body: "Nach der Freigabe\nwird das PoW in die App aufgenommen\nund trifft auf Nutzer."
+    discover_scene:
+      line1: "Nutzer entdecken\nneue Funktionen"
+      line2: "und begegnen den Erstellern erneut,\nsobald sie sie verwenden"
+      line3: "Wir bereiten das sorgfältig vor,\ndamit jeder Bitcoin-Builder\nin Coconut strahlen kann"
+      highlight_new_feature: "neue Funktionen"
+      highlight_bitcoin_builder: "Bitcoin-Builder"
+      highlight_can_shine: "strahlen kann"
+      preview_open_store: "Open Store"
+      preview_created_by: "Created by"
+      preview_feature: "Feature"
+    contribute_scene:
+      line1: "Das nächste PoW\nist dein Moment"
+      line2: "Auch eine kleine Idee ist willkommen."
+      line3: "Dein PoW wird\nzu einer neuen Funktion\nund erreicht die Erfahrungen vieler Menschen,"
+      line4: "und auf diesem Weg\nbringt es den Bitcoin-Standard\nSchritt für Schritt voran"
+      highlight_new_feature: "neuen Funktion"
+      highlight_bitcoin_standard: "Bitcoin-Standard"
+      cta_start_first_pr: "Ersten PR starten"

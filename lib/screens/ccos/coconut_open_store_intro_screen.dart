@@ -15,6 +15,7 @@ import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_build_scene.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_contribute_screen.dart';
@@ -39,8 +40,9 @@ class CoconutOpenStoreIntroScreen extends StatefulWidget {
 }
 
 class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScreen> with TickerProviderStateMixin {
-  static const CcosFeatureListing _featuredListing = CcosFeatureRegistrySource.featuredListing;
+  CcosFeatureListing get _featuredListing => CcosFeatureRegistrySource.featuredListing;
   static const Duration _loadingDuration = Duration(milliseconds: 4600);
+  static const Duration _storyEntranceDuration = Duration(milliseconds: 820);
   static const Duration _defaultSceneDuration = Duration(milliseconds: 2200);
   static const Duration _ideaSceneDuration = Duration(milliseconds: 8800);
   static const Duration _buildSceneDuration = Duration(milliseconds: 13400);
@@ -52,16 +54,17 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
   static const Color _loadingBackground = Color(0xFFF9F8F6);
   static const Color _loadingTextPrimary = Color(0xFF0B0B11);
   static const Color _textPrimary = Color(0xFF10161C);
-  static const Color _textSecondary = Color(0xB3515F6B);
   static const Color _accentBlue = Color(0xFF68D5FF);
-  static const Color _accentPurple = Color(0xFFAD74FF);
-  static const Color _accentMint = Color(0xFF73F4DE);
 
   final PageController _pageController = PageController();
   late final AnimationController _loadingController = AnimationController(vsync: this, duration: _loadingDuration);
   late final AnimationController _sceneController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2200),
+  );
+  late final AnimationController _storyEntranceController = AnimationController(
+    vsync: this,
+    duration: _storyEntranceDuration,
   );
   late final CurvedAnimation _loadingCurve = CurvedAnimation(parent: _loadingController, curve: Curves.easeInOutCubic);
   // Drives the "droplet splash" entrance of the scene-overview panel when it opens.
@@ -70,6 +73,7 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
     duration: const Duration(milliseconds: 550),
   );
   bool _hasCompletedLoading = false;
+  bool _isLoadingUnderlayVisible = true;
   bool _isSceneOverviewVisible = false;
   int _currentSceneIndex = 0;
 
@@ -82,7 +86,7 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
     if (!context.mounted) return;
     CoconutToast.showToast(
       context: context,
-      text: '${_featuredListing.title} 기능이 활성화되었어요',
+      text: t.ccos.intro_screen.theme_activated,
       isVisibleIcon: true,
       iconPath: CommonStateIconPath.circleInfo,
     );
@@ -100,10 +104,10 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
             builder:
                 (context) => CoconutPopup(
                   languageCode: provider.language,
-                  title: '코코넛 과육 테마를 삭제할까요?',
-                  description: '현재 코코넛 과육 테마를 사용하고 있어요. 삭제하면 기본 테마가 적용돼요.',
-                  leftButtonText: '취소',
-                  rightButtonText: '삭제',
+                  title: t.ccos.intro_screen.delete_popup_title,
+                  description: t.ccos.intro_screen.delete_popup_description,
+                  leftButtonText: t.cancel,
+                  rightButtonText: t.delete,
                   onTapLeft: () => Navigator.pop(context, false),
                   onTapRight: () => Navigator.pop(context, true),
                 ),
@@ -115,6 +119,13 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
     }
 
     await provider.deactivateCcosFeature(_featuredListing.id);
+    if (!context.mounted) return;
+    CoconutToast.showToast(
+      context: context,
+      text: t.ccos.intro_screen.theme_removed,
+      isVisibleIcon: true,
+      iconPath: CommonStateIconPath.circleInfo,
+    );
   }
 
   void _openSceneOverview() {
@@ -150,38 +161,35 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
       _OpenStoreSceneDefinition(
         index: 0,
         chapter: '01 / 05',
-        label: 'IDEA',
-        title: '각자의 실험이 흩어지기보다\n함께 연결되어\n더 큰 네트워크 효과를 만들 수 있다면,',
-        description: '작은 아이디어 하나로도\n비트코인 스탠다드를\n조금씩 앞당길 수 있지 않을까요?',
+        label: t.ccos.intro_screen.scenes.idea.label,
+        title: t.ccos.intro_screen.scenes.idea.title,
+        description: t.ccos.intro_screen.scenes.idea.description,
         overviewStep: '01',
-        overviewTitle: '좋은 아이디어가\n더 큰 파급으로 이어지도록',
+        overviewTitle: t.ccos.intro_screen.scenes.idea.overview_title,
         overviewSubtitle: '',
-        accent: _accentMint,
         buildHero: (_, __) => const SizedBox.shrink(),
       ),
       _OpenStoreSceneDefinition(
         index: 1,
         chapter: '02 / 05',
-        label: 'BUILD',
-        title: '누구나 비트코인\n빌더가 되는 세상',
-        description: '여러분의 PoW가\n코코넛 안에서\n기능이 되어 사용자와 만납니다',
+        label: t.ccos.intro_screen.scenes.build.label,
+        title: t.ccos.intro_screen.scenes.build.title,
+        description: t.ccos.intro_screen.scenes.build.description,
         overviewStep: '02',
-        overviewTitle: '나의 아이디어가\n모두의 기능이 되는 공간',
+        overviewTitle: t.ccos.intro_screen.scenes.build.overview_title,
         overviewSubtitle: '',
-        accent: _accentBlue,
         buildHero: (_, __) => const SizedBox.shrink(),
       ),
       _OpenStoreSceneDefinition(
         index: 2,
         chapter: '03 / 05',
-        label: 'FIRST PoW',
-        title: '첫 번째 PoW는\n코코넛 팀이\n먼저 남겨봤습니다.',
-        description: '코코넛 과육 테마는 앞으로 오픈 스토어에 올라올 기능이 어떤 모습으로 소개되고 사용되는지 보여주기 위한 첫 번째 예시입니다.',
+        label: t.ccos.intro_screen.scenes.first_pow.label,
+        title: t.ccos.intro_screen.scenes.first_pow.title,
+        description: t.ccos.intro_screen.scenes.first_pow.description,
         overviewStep: '03',
-        overviewTitle: '첫 PoW\n코코넛 과육 테마 by 코코넛 팀',
-        overviewHighlight: '첫 PoW',
+        overviewTitle: t.ccos.intro_screen.scenes.first_pow.overview_title,
+        overviewHighlight: t.ccos.intro_screen.scenes.first_pow.overview_highlight,
         overviewSubtitle: '',
-        accent: _accentPurple,
         buildHero:
             (context, animation) => FirstPowSceneBody(
               animation: animation,
@@ -196,26 +204,24 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
       _OpenStoreSceneDefinition(
         index: 3,
         chapter: '04 / 05',
-        label: 'DISCOVER',
+        label: t.ccos.intro_screen.scenes.discover.label,
         title: '',
         description: '',
         overviewStep: '04',
-        overviewTitle: '모든 비트코인 빌더가\n코코넛 안에서 빛날 수 있도록',
+        overviewTitle: t.ccos.intro_screen.scenes.discover.overview_title,
         overviewSubtitle: '',
-        accent: _accentMint,
         buildHero: (_, __) => const SizedBox.shrink(),
       ),
       _OpenStoreSceneDefinition(
         index: 4,
         chapter: '05 / 05',
-        label: 'CONTRIBUTE',
+        label: t.ccos.intro_screen.scenes.contribute.label,
         title: '',
         description: '',
         overviewStep: '05',
-        overviewTitle: '다음 PoW를\n기다립니다',
-        overviewHighlight: '다음 PoW',
+        overviewTitle: t.ccos.intro_screen.scenes.contribute.overview_title,
+        overviewHighlight: t.ccos.intro_screen.scenes.contribute.overview_highlight,
         overviewSubtitle: '',
-        accent: _accentPurple,
         buildHero: (_, __) => const SizedBox.shrink(),
       ),
     ];
@@ -241,16 +247,28 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
   @override
   void initState() {
     super.initState();
+    _storyEntranceController.addStatusListener(_handleStoryEntranceStatus);
     _loadingController.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
         setState(() {
           _hasCompletedLoading = true;
         });
-        _sceneController.duration = _sceneDurationFor(_currentSceneIndex);
-        _sceneController.forward(from: 0);
+        _storyEntranceController.forward(from: 0);
       }
     });
     _loadingController.forward();
+  }
+
+  void _handleStoryEntranceStatus(AnimationStatus status) {
+    if (!mounted || status != AnimationStatus.completed) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingUnderlayVisible = false;
+    });
+    _sceneController.duration = _sceneDurationFor(_currentSceneIndex);
+    _sceneController.forward(from: 0);
   }
 
   @override
@@ -258,6 +276,8 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
     _pageController.dispose();
     _loadingController.dispose();
     _sceneController.dispose();
+    _storyEntranceController.removeStatusListener(_handleStoryEntranceStatus);
+    _storyEntranceController.dispose();
     _overviewController.dispose();
     super.dispose();
   }
@@ -289,25 +309,12 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
                 ],
               )
               : null,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 700),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, animation) {
-          final isStory = child.key == const ValueKey('open-store-story');
-          if (isStory) {
-            final offsetAnimation = Tween<Offset>(
-              begin: const Offset(0.14, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
-            return SlideTransition(position: offsetAnimation, child: FadeTransition(opacity: animation, child: child));
-          }
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child:
-            _hasCompletedLoading
-                ? _buildStoryPager()
-                : _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
+      body: Stack(
+        children: [
+          if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
+            _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
+          if (_hasCompletedLoading) _StoryPagerEntrance(animation: _storyEntranceController, child: _buildStoryPager()),
+        ],
       ),
     );
   }
@@ -382,6 +389,32 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
   }
 }
 
+class _StoryPagerEntrance extends StatelessWidget {
+  const _StoryPagerEntrance({required this.animation, required this.child});
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        final t = Curves.easeOutQuart.transform(animation.value.clamp(0.0, 1.0));
+        return ClipRect(
+          child: Opacity(
+            opacity: 0.72 + (0.28 * t),
+            child: Transform.translate(
+              offset: Offset((1 - t) * MediaQuery.sizeOf(context).width * 0.22, 0),
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _OpenStoreSceneDefinition {
   const _OpenStoreSceneDefinition({
     required this.index,
@@ -392,7 +425,6 @@ class _OpenStoreSceneDefinition {
     required this.overviewStep,
     required this.overviewTitle,
     required this.overviewSubtitle,
-    required this.accent,
     required this.buildHero,
     this.overviewHighlight,
   });
@@ -408,7 +440,6 @@ class _OpenStoreSceneDefinition {
   // the first word (split on the first space) when omitted.
   final String? overviewHighlight;
   final String overviewSubtitle;
-  final Color accent;
   final Widget Function(BuildContext context, Animation<double> animation) buildHero;
 }
 
@@ -521,7 +552,7 @@ class _OpenStoreLoadingSequence extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Coconut\nOpen Store',
+                      t.ccos.intro_screen.loading_title,
                       style: CoconutTypography.heading1_32_Bold
                           .setColor(_CoconutOpenStoreIntroScreenState._loadingTextPrimary)
                           .copyWith(fontSize: 42, height: 1, letterSpacing: 0.7, fontWeight: FontWeight.w900),
@@ -1250,8 +1281,7 @@ class _SceneWatermarkBanner extends StatefulWidget {
 class _SceneWatermarkBannerState extends State<_SceneWatermarkBanner> with SingleTickerProviderStateMixin {
   late final AnimationController _driftController = AnimationController(
     vsync: this,
-    // 70% speed: same distance over a longer duration (14000 / 0.7).
-    duration: const Duration(milliseconds: 20000),
+    duration: const Duration(milliseconds: 50000),
   )..repeat();
 
   @override
@@ -1264,7 +1294,7 @@ class _SceneWatermarkBannerState extends State<_SceneWatermarkBanner> with Singl
   Widget build(BuildContext context) {
     final reveal = Curves.easeOutCubic.transform(widget.animation.value.clamp(0.0, 1.0));
     final height = widget.availableHeight * 0.20;
-    const bannerText = 'Coconut Open Store '; // 배너 간격 유지를 위해 스페이스 포함
+    final bannerText = t.ccos.intro_screen.watermark_banner; // 배너 간격 유지를 위해 스페이스 포함
     final textStyle = CoconutTypography.heading1_32_Bold
         .setColor(Colors.white.withValues(alpha: 0.16))
         .copyWith(fontSize: 140, height: 1, letterSpacing: -2.8, fontWeight: FontWeight.w800);
@@ -1457,7 +1487,7 @@ class _SceneNavCircleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white.withValues(alpha: 0.92),
+      color: Colors.white.withValues(alpha: 0.32),
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
@@ -1465,13 +1495,7 @@ class _SceneNavCircleButton extends StatelessWidget {
         child: SizedBox(
           width: 54,
           height: 54,
-          child: Icon(
-            icon,
-            color:
-                onTap == null
-                    ? _CoconutOpenStoreIntroScreenState._textSecondary.withValues(alpha: 0.35)
-                    : _CoconutOpenStoreIntroScreenState._textPrimary,
-          ),
+          child: Icon(icon, color: onTap == null ? Colors.white.withValues(alpha: 0.35) : Colors.white),
         ),
       ),
     );

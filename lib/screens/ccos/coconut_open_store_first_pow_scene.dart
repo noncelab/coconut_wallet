@@ -10,6 +10,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup;
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:coconut_wallet/widgets/common/effects/liquid_glass_surface.dart';
@@ -18,11 +19,11 @@ import 'package:flutter/physics.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-const _whatImagePath = 'assets/images/ccos/what.png';
-const _whyImagePath = 'assets/images/ccos/why.png';
+const _featureImagePath = 'assets/images/ccos/feature.png';
+const _creatorImagePath = 'assets/images/ccos/creator.png';
 const _deliveryImagePath = 'assets/images/ccos/delivery.png';
-const _whatHeroTag = 'ccos-first-pow-what-image';
-const _whoWhyHeroTag = 'ccos-first-pow-who-why-image';
+const _featureHeroTag = 'ccos-first-pow-feature-image';
+const _creatorHeroTag = 'ccos-first-pow-creator-image';
 const _deliveryHeroTag = 'ccos-first-pow-delivery-image';
 
 // The "FEATURE" detail screen's floating preview cluster: five small UI-element cutouts
@@ -41,27 +42,25 @@ const _screenBackground = Color(0xFFCDD4D7);
 // motivated the theme, followed by the reasoning behind it. Kept as separate strings (rather
 // than one block with embedded blank lines) so paragraph spacing can be tuned independently of
 // within-paragraph line spacing.
-const _creatorFeedbackQuote = '"코코넛은 밝고 따뜻한 과일인데,\n지갑은 어두운 느낌이라 조금 아쉬워요."';
-const _creatorFeedbackAttribution = '- 빗짱님 피드백';
-const _creatorStoryParagraph1 = '두 앱이 하나처럼 동작하는 코코넛 월렛과 볼트를\n구분하기 위해 의도적으로 코코넛 월렛은\n어두운 테마만 제공해 왔어요.';
-const _creatorStoryParagraph2 =
-    '하지만 오픈 스토어를 구상하며\n첫 사례는 \'누구나 새로운 기능을 제안하고\n함께 만들어가는 경험\'을 가장 잘 보여줄 수 있는\n기능이어야 한다고 생각했습니다.';
-const _creatorStoryParagraph3 =
-    '그래서 코코넛 과육 테마는\n단순히 새로운 색상을 추가한 것이 아니라,\n앞으로 오픈 스토어에서 다양한 아이디어가 어떻게 소개되고 사용자에게 전달될 수 있는지를 보여주는 첫 번째 예시가 되었습니다.';
+String get _creatorFeedbackQuote => t.ccos.first_pow_scene.creator_detail.feedback_quote;
+String get _creatorFeedbackAttribution => t.ccos.first_pow_scene.creator_detail.feedback_attribution;
+String get _creatorStoryParagraph1 => t.ccos.first_pow_scene.creator_detail.story_paragraph1;
+String get _creatorStoryParagraph2 => t.ccos.first_pow_scene.creator_detail.story_paragraph2;
+String get _creatorStoryParagraph3 => t.ccos.first_pow_scene.creator_detail.story_paragraph3;
 // CREATOR screen only: box 2, the creator's own belief statement about why intent matters.
-const _creatorBeliefStatement = '새로운 기능은 코드만이 아니라, 그것을 만든 사람의 생각과 이유도 함께 전달되어야 한다고 믿습니다.';
+String get _creatorBeliefStatement => t.ccos.first_pow_scene.creator_detail.belief_statement;
 
 // DELIVERY screen only: the three-step "propose -> review -> introduce" flow, each with its
 // own icon badge, title, and body copy.
 const _deliveryProposeIconPath = 'assets/svg/brand/motifs/bulb.svg';
 const _deliveryReviewIconPath = 'assets/svg/brand/motifs/shield-check.svg';
 const _deliveryIntroIconPath = 'assets/svg/brand/motifs/users.svg';
-const _deliveryProposeTitle = '제안';
-const _deliveryProposeBody = '누구나 제작 의도를 담아 기능을 제안할 수 있어요\n무료로 나눌 수도, 지속한 가능한 방식으로 전달할 수도 있어요\n전달 방식은 제작자가 결정해요';
-const _deliveryReviewTitle = '검토';
-const _deliveryReviewBody = '코코넛 팀과 정책과 품질을 함께 논의해요\n피드백을 주고 받으며 안전한 경계 안에서 기존 UI/UX와 어울어져 개발자의 PoW가 실현되어가요';
-const _deliveryIntroTitle = '소개';
-const _deliveryIntroBody = '최종 승인된 PoW가 앱에 포함되어\n사용자와 만나요';
+String get _deliveryProposeTitle => t.ccos.first_pow_scene.delivery_detail.propose_title;
+String get _deliveryProposeBody => t.ccos.first_pow_scene.delivery_detail.propose_body;
+String get _deliveryReviewTitle => t.ccos.first_pow_scene.delivery_detail.review_title;
+String get _deliveryReviewBody => t.ccos.first_pow_scene.delivery_detail.review_body;
+String get _deliveryIntroTitle => t.ccos.first_pow_scene.delivery_detail.intro_title;
+String get _deliveryIntroBody => t.ccos.first_pow_scene.delivery_detail.intro_body;
 
 enum _FirstPowCardKind { creator, feature, delivery }
 
@@ -70,40 +69,37 @@ class _FirstPowCardDetail {
     required this.kind,
     required this.imagePath,
     required this.heroTag,
-    required this.title,
     required this.panelLabel,
   });
 
   final _FirstPowCardKind kind;
   final String imagePath;
   final String heroTag;
-  final String title;
   final String panelLabel;
 }
 
-const Map<_FirstPowCardKind, _FirstPowCardDetail> _firstPowCardDetails = {
-  _FirstPowCardKind.creator: _FirstPowCardDetail(
-    kind: _FirstPowCardKind.creator,
-    imagePath: _whyImagePath,
-    heroTag: _whoWhyHeroTag,
-    title: 'WHO & WHY',
-    panelLabel: 'CREATOR',
-  ),
-  _FirstPowCardKind.feature: _FirstPowCardDetail(
-    kind: _FirstPowCardKind.feature,
-    imagePath: _whatImagePath,
-    heroTag: _whatHeroTag,
-    title: 'WHAT',
-    panelLabel: 'FEATURE',
-  ),
-  _FirstPowCardKind.delivery: _FirstPowCardDetail(
-    kind: _FirstPowCardKind.delivery,
-    imagePath: _deliveryImagePath,
-    heroTag: _deliveryHeroTag,
-    title: 'DELIVERY',
-    panelLabel: 'DELIVERY',
-  ),
-};
+_FirstPowCardDetail _firstPowCardDetailForKind(_FirstPowCardKind kind) {
+  return switch (kind) {
+    _FirstPowCardKind.creator => _FirstPowCardDetail(
+      kind: _FirstPowCardKind.creator,
+      imagePath: _creatorImagePath,
+      heroTag: _creatorHeroTag,
+      panelLabel: t.ccos.first_pow_scene.creator_detail.panel_label,
+    ),
+    _FirstPowCardKind.feature => _FirstPowCardDetail(
+      kind: _FirstPowCardKind.feature,
+      imagePath: _featureImagePath,
+      heroTag: _featureHeroTag,
+      panelLabel: t.ccos.first_pow_scene.feature_detail.panel_label,
+    ),
+    _FirstPowCardKind.delivery => _FirstPowCardDetail(
+      kind: _FirstPowCardKind.delivery,
+      imagePath: _deliveryImagePath,
+      heroTag: _deliveryHeroTag,
+      panelLabel: t.ccos.first_pow_scene.delivery_detail.panel_label,
+    ),
+  };
+}
 
 // Given a card rotated by [angle] around its own center, returns the translate offset that
 // makes [localCorner] (a corner in the card's own unrotated local frame, relative to its
@@ -159,16 +155,14 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
   // bigger/bold font can never collide with normal-sized text on the same line - the bug the
   // strut-height fix in scenes 1 & 2 guards against simply can't occur here.
   static const Interval _titleEntranceInterval = Interval(0.1727, 0.1891, curve: Curves.easeOutCubic);
-  static const Interval _titleTypingInterval = Interval(0.1891, 0.6227, curve: Curves.linear);
   // 0.5s after the text finishes, the add-theme button pops in with an elastic overshoot.
   static const Interval _buttonEntranceInterval = Interval(0.6682, 0.7136, curve: Curves.linear);
   // After the scene is fully composed, the center card gives a subtle "tap me" hint by
   // briefly facing the viewer and enlarging before settling back.
   static const Interval _centerHintInterval = Interval(0.7409, 0.8045, curve: Curves.easeInOutCubic);
 
-  static const String _line1Text = '코코넛 과육 테마';
-  static const String _restText = '새로운 테마이자\n앞으로의 오픈 스토어를 상상할 수 있는\n첫 번째 PoW 입니다';
-  static const String _combinedText = '$_line1Text\n$_restText';
+  static const Interval _text1TypingInterval = Interval(0.1891, 0.4180, curve: Curves.linear);
+  static const Interval _text2TypingInterval = Interval(0.4540, 0.6227, curve: Curves.linear);
 
   // Guards the auto-open "tap me" demo below so it only fires once per time the scene's
   // scripted intro actually plays through (not on every rebuild).
@@ -230,7 +224,7 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
   }
 
   void _openDetail(BuildContext context, _FirstPowCardKind kind) {
-    final detail = _firstPowCardDetails[kind]!;
+    final detail = _firstPowCardDetailForKind(kind);
     Navigator.of(context).push(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 320),
@@ -247,6 +241,13 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final text1 = t.ccos.first_pow_scene.intro_line1;
+    final text2 = t.ccos.first_pow_scene.intro_line2;
+    final introHighlights = {
+      t.ccos.first_pow_scene.intro_highlight_theme,
+      t.ccos.first_pow_scene.intro_highlight_first_pow,
+    };
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -281,12 +282,23 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
         final topExtra = cardHeight * 0.08 + 24;
 
         final bodyStyle = CoconutTypography.heading4_18_Bold.setColor(Colors.white).copyWith(height: 1.3);
-        // Line 1 is its own separately-styled, separately-rendered block (see below) rather than
-        // a highlighted run mixed into a longer line, so there's no line-box that could suddenly
-        // grow once typing reaches it - the failure mode the strut fix in scenes 1 & 2 addresses
-        // simply doesn't apply to this layout.
-        final line1Style = bodyStyle.copyWith(fontSize: (bodyStyle.fontSize ?? 18) * 1.4, fontWeight: FontWeight.w900);
-        final line1Length = _line1Text.characters.length;
+        final highlightStyle = bodyStyle.copyWith(
+          fontSize: (bodyStyle.fontSize ?? 18) * 1.4,
+          fontWeight: FontWeight.w900,
+          height: bodyStyle.height,
+        );
+        final strutStyle = StrutStyle(
+          fontSize: highlightStyle.fontSize,
+          height: bodyStyle.height,
+          forceStrutHeight: true,
+        );
+        final text2Style = bodyStyle.copyWith(height: 1.16);
+        final text2HighlightStyle = highlightStyle.copyWith(height: text2Style.height);
+        final text2StrutStyle = StrutStyle(
+          fontSize: text2HighlightStyle.fontSize,
+          height: text2Style.height,
+          forceStrutHeight: true,
+        );
 
         return AnimatedBuilder(
           animation: widget.animation,
@@ -311,13 +323,13 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                       Transform.translate(
                         offset: leftCardOffset,
                         child: _PolaroidCard(
-                          imagePath: _whyImagePath,
+                          imagePath: _creatorImagePath,
                           width: cardWidth,
                           height: cardHeight,
                           finalAngle: leftAngle,
                           entranceOffset: Offset(-cardWidth * 0.7, -24),
                           progress: cardsProgress,
-                          heroTag: _whoWhyHeroTag,
+                          heroTag: _creatorHeroTag,
                           onTap: () => _openDetail(context, _FirstPowCardKind.creator),
                         ),
                       ),
@@ -335,13 +347,13 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                         ),
                       ),
                       _PolaroidCard(
-                        imagePath: _whatImagePath,
+                        imagePath: _featureImagePath,
                         width: cardWidth,
                         height: cardHeight,
                         finalAngle: 0,
                         entranceOffset: const Offset(0, -260),
                         progress: cardsProgress,
-                        heroTag: _whatHeroTag,
+                        heroTag: _featureHeroTag,
                         onTap: () => _openDetail(context, _FirstPowCardKind.feature),
                         facingRotation: -0.08 * math.sin(centerHintT * math.pi),
                         scaleBoost: 1 + (0.14 * math.sin(centerHintT * math.pi)),
@@ -350,20 +362,11 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.only(top: cardHeight + topExtra + 56),
+                  padding: EdgeInsets.only(top: cardHeight + topExtra + 44),
                   child: Builder(
                     builder: (context) {
                       final entranceT = _titleEntranceInterval.transform(value);
                       final dy = 20 * (1 - entranceT);
-                      // One continuous typewriter reveal across all 4 lines, split into two
-                      // widgets purely for rendering (separate style + the extra 28px gap) -
-                      // typing progress and position never desync since both read off the same
-                      // combined revealed string.
-                      final fullVisible = typewriterText(_combinedText, widget.animation, _titleTypingInterval);
-                      final visibleChars = fullVisible.characters;
-                      final line1Visible = visibleChars.take(line1Length).toString();
-                      final restVisible =
-                          visibleChars.length > line1Length + 1 ? visibleChars.skip(line1Length + 1).toString() : '';
 
                       return Opacity(
                         opacity: entranceT,
@@ -372,9 +375,31 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(line1Visible, style: line1Style),
-                              const SizedBox(height: 28),
-                              Text(restVisible, style: bodyStyle),
+                              RichText(
+                                textAlign: TextAlign.left,
+                                strutStyle: strutStyle,
+                                text: typewriterSpan(
+                                  source: text1,
+                                  animation: widget.animation,
+                                  interval: _text1TypingInterval,
+                                  baseStyle: bodyStyle,
+                                  highlightStyle: highlightStyle,
+                                  highlightPhrases: introHighlights,
+                                ),
+                              ),
+                              const SizedBox(height: 22),
+                              RichText(
+                                textAlign: TextAlign.left,
+                                strutStyle: text2StrutStyle,
+                                text: typewriterSpan(
+                                  source: text2,
+                                  animation: widget.animation,
+                                  interval: _text2TypingInterval,
+                                  baseStyle: text2Style,
+                                  highlightStyle: text2HighlightStyle,
+                                  highlightPhrases: const {},
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -399,14 +424,19 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                               AnimatedBuilder(
                                 animation: _addedBadgeController,
                                 builder: (context, child) {
-                                  final t = _addedBadgeController.value;
-                                  if (t <= 0.001) return const SizedBox.shrink();
+                                  final progress = _addedBadgeController.value;
+                                  if (progress <= 0.001) return const SizedBox.shrink();
                                   return Padding(
                                     padding: const EdgeInsets.only(right: 8),
-                                    child: Transform.scale(scale: t, child: child),
+                                    child: Transform.scale(scale: progress, child: child),
                                   );
                                 },
-                                child: _AddedGlassBadge(label: widget.isApplied ? '적용됨' : '추가됨'),
+                                child: _AddedGlassBadge(
+                                  label:
+                                      widget.isApplied
+                                          ? t.ccos.first_pow_scene.status_applied
+                                          : t.ccos.first_pow_scene.status_added,
+                                ),
                               ),
                               _AddThemeButton(isAdded: widget.isAdded, onAdd: widget.onAdd, onRemove: widget.onRemove),
                             ],
@@ -560,7 +590,7 @@ class _AddThemeButtonState extends State<_AddThemeButton> with SingleTickerProvi
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   child: Text(
-                    widget.isAdded ? '제거하기' : '테마 화면에 추가하기',
+                    widget.isAdded ? t.ccos.first_pow_scene.remove_button : t.ccos.first_pow_scene.add_button,
                     key: ValueKey(widget.isAdded),
                     style:
                         widget.isAdded
@@ -637,40 +667,53 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
   // between each (like the BUILD scene's title -> pause -> description pacing), so 2200ms
   // isn't enough room - everything below is defined in absolute milliseconds against this
   // total, then divided down to the 0..1 fractions Interval needs.
-  static const int _totalEntranceMs = 4150;
+  static const int _defaultEntranceMs = 4150;
+  static const int _creatorEntranceMs = 4700;
+  static const int _deliveryEntranceMs = 5200;
+
+  static Interval _buildInterval(int startMs, int endMs, int totalMs, {Curve curve = Curves.easeOutCubic}) {
+    return Interval(startMs / totalMs, endMs / totalMs, curve: curve);
+  }
+
+  late final int _totalEntranceMs = switch (widget.detail.kind) {
+    _FirstPowCardKind.creator => _creatorEntranceMs,
+    _FirstPowCardKind.delivery => _deliveryEntranceMs,
+    _FirstPowCardKind.feature => _defaultEntranceMs,
+  };
 
   // Step 2: the glass panel fades in.
-  static const Interval _glassInterval = Interval(0, 250 / _totalEntranceMs, curve: Curves.easeOut);
+  late final Interval _glassInterval = _buildInterval(0, 250, _totalEntranceMs, curve: Curves.easeOut);
   // Step 3: the back button pops in like an elastic/jelly object.
-  static const Interval _backButtonInterval = Interval(
-    250 / _totalEntranceMs,
-    700 / _totalEntranceMs,
-    curve: Curves.elasticOut,
-  );
+  late final Interval _backButtonInterval = _buildInterval(250, 700, _totalEntranceMs, curve: Curves.elasticOut);
   // Step 4: the label slides in slowly from the right - long enough to actually register.
-  static const Interval _labelSlideInterval = Interval(
-    700 / _totalEntranceMs,
-    1400 / _totalEntranceMs,
-    curve: Curves.easeOutCubic,
-  );
+  late final Interval _labelSlideInterval = _buildInterval(700, 1400, _totalEntranceMs);
   // Step 5: title (FEATURE/CREATOR) or the first step card (DELIVERY).
-  static const Interval _bodyGroup0Interval = Interval(
-    1400 / _totalEntranceMs,
-    1750 / _totalEntranceMs,
-    curve: Curves.easeOutCubic,
-  );
+  late final Interval _bodyGroup0Interval =
+      widget.detail.kind == _FirstPowCardKind.delivery
+          ? _buildInterval(1550, 1980, _totalEntranceMs)
+          : _buildInterval(1400, 1750, _totalEntranceMs);
   // Every kind's content reveals one block at a time, fully finishing and then pausing
-  // (500ms/400ms/400ms) before the next starts, so every block has time to register instead of
-  // the whole chain reading as one instantaneous flicker.
-  // FEATURE: tags / description / image. CREATOR: "Creator Story" tag / story box / belief box.
-  // DELIVERY: review step card / intro step card (propose uses _bodyGroup0Interval above).
-  static const Interval _stage2Interval = Interval(2250 / 4150, 2550 / 4150, curve: Curves.easeOutCubic);
-  static const Interval _stage3Interval = Interval(2950 / 4150, 3300 / 4150, curve: Curves.easeOutCubic);
-  static const Interval _stage4Interval = Interval(3700 / 4150, 1.0, curve: Curves.easeOutCubic);
+  // before the next starts, so every block has time to register instead of the whole chain
+  // reading as one instantaneous flicker.
+  late final Interval _stage2Interval = switch (widget.detail.kind) {
+    _FirstPowCardKind.creator => _buildInterval(2450, 2780, _totalEntranceMs),
+    _FirstPowCardKind.delivery => _buildInterval(2680, 3120, _totalEntranceMs),
+    _FirstPowCardKind.feature => _buildInterval(2250, 2550, _totalEntranceMs),
+  };
+  late final Interval _stage3Interval = switch (widget.detail.kind) {
+    _FirstPowCardKind.creator => _buildInterval(3230, 3600, _totalEntranceMs),
+    _FirstPowCardKind.delivery => _buildInterval(3820, 4280, _totalEntranceMs),
+    _FirstPowCardKind.feature => _buildInterval(2950, 3300, _totalEntranceMs),
+  };
+  late final Interval _stage4Interval = switch (widget.detail.kind) {
+    _FirstPowCardKind.creator => _buildInterval(4020, _totalEntranceMs, _totalEntranceMs),
+    _FirstPowCardKind.delivery => _buildInterval(4700, _totalEntranceMs, _totalEntranceMs),
+    _FirstPowCardKind.feature => _buildInterval(3700, _totalEntranceMs, _totalEntranceMs),
+  };
 
   late final AnimationController _entranceController = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: _totalEntranceMs),
+    duration: Duration(milliseconds: _totalEntranceMs),
   );
 
   // The "테마 화면에 추가하기" button (FEATURE screen only) pops in 1s after the rest of the
@@ -738,8 +781,17 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
 
   @override
   Widget build(BuildContext context) {
-    const listing = CcosFeatureRegistrySource.featuredListing;
+    final listing = CcosFeatureRegistrySource.featuredListing;
     final detail = widget.detail;
+    final localizedFeatureTitle = listing.title;
+    final localizedFeatureTags = [
+      ...listing.tags,
+      if (listing.priceType == CcosListingPriceType.free)
+        t.ccos.first_pow_scene.feature_detail.tag_free,
+    ];
+    final localizedFeatureDescription = t.ccos.first_pow_scene.feature_detail.description;
+    final localizedCreatorAuthor = listing.author;
+    final localizedCreatorAuthorDescription = listing.authorBio;
     // The glass panel must not creep into the status bar; the fullscreen image behind it can.
     final topInset = MediaQuery.of(context).padding.top;
     final bottomInset = MediaQuery.of(context).padding.bottom + 12;
@@ -762,17 +814,17 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
           AnimatedBuilder(
             animation: _entranceController,
             builder: (context, child) {
-              final t = _entranceController.value;
-              final glassT = _glassInterval.transform(t);
-              final backButtonT = _backButtonInterval.transform(t);
-              final labelSlideT = _labelSlideInterval.transform(t);
+              final progress = _entranceController.value;
+              final glassT = _glassInterval.transform(progress);
+              final backButtonT = _backButtonInterval.transform(progress);
+              final labelSlideT = _labelSlideInterval.transform(progress);
               // Starts pushed further past the right edge (off-screen) and slides left toward
               // its resting, slightly-cropped position - not the reverse.
               final labelDx = -260 * (1 - labelSlideT);
-              final group0T = _bodyGroup0Interval.transform(t);
-              final stage2T = _stage2Interval.transform(t);
-              final stage3T = _stage3Interval.transform(t);
-              final stage4T = _stage4Interval.transform(t);
+              final group0T = _bodyGroup0Interval.transform(progress);
+              final stage2T = _stage2Interval.transform(progress);
+              final stage3T = _stage3Interval.transform(progress);
+              final stage4T = _stage4Interval.transform(progress);
 
               return Opacity(
                 opacity: glassT,
@@ -842,7 +894,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                     _FadeSlideIn(
                                       progress: group0T,
                                       child: Text(
-                                        '코코넛 과육 테마',
+                                        localizedFeatureTitle,
                                         style: CoconutTypography.heading3_21_Bold.setColor(_textPrimary),
                                       ),
                                     ),
@@ -856,14 +908,14 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                       child: Wrap(
                                         spacing: 8,
                                         runSpacing: 8,
-                                        children: [for (final tag in listing.tags) _GlassChip(label: tag)],
+                                        children: [for (final tag in localizedFeatureTags) _GlassChip(label: tag)],
                                       ),
                                     ),
                                     const SizedBox(height: 24),
                                     _FadeSlideIn(
                                       progress: stage3T,
                                       child: Text(
-                                        listing.description,
+                                        localizedFeatureDescription,
                                         style: CoconutTypography.body2_14.setColor(_textPrimary),
                                       ),
                                     ),
@@ -876,13 +928,13 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            listing.author,
+                                            localizedCreatorAuthor,
                                             style: CoconutTypography.heading3_21_Bold
                                                 .setColor(_textPrimary)
                                                 .copyWith(fontSize: 24),
                                           ),
                                           Text(
-                                            listing.authorDescription,
+                                            localizedCreatorAuthorDescription,
                                             style: CoconutTypography.body3_12.setColor(_textPrimary),
                                           ),
                                         ],
@@ -891,7 +943,10 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                     const SizedBox(height: 24),
                                     // "물방울" entrance: falls from just above and settles with
                                     // a bounce, rather than the plain fade/slide used elsewhere.
-                                    _DropletFadeIn(progress: stage2T, child: const _GlassChip(label: 'Creator Story')),
+                                    _DropletFadeIn(
+                                      progress: stage2T,
+                                      child: _GlassChip(label: t.ccos.first_pow_scene.creator_detail.story_label),
+                                    ),
                                     const SizedBox(height: 8),
                                     Expanded(
                                       child: Column(
@@ -906,10 +961,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                           const SizedBox(height: 12),
                                           _FadeSlideIn(
                                             progress: stage4T,
-                                            child: const _CreatorGlassTextBox(
-                                              text: _creatorBeliefStatement,
-                                              bold: true,
-                                            ),
+                                            child: _CreatorGlassTextBox(text: _creatorBeliefStatement, bold: true),
                                           ),
                                         ],
                                       ),
@@ -989,7 +1041,12 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                         if (isAdded)
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
-                            child: _AddedGlassBadge(label: isApplied ? '적용됨' : '추가됨'),
+                            child: _AddedGlassBadge(
+                              label:
+                                  isApplied
+                                      ? t.ccos.first_pow_scene.status_applied
+                                      : t.ccos.first_pow_scene.status_added,
+                            ),
                           ),
                         _AddThemeButton(isAdded: isAdded, onAdd: widget.onAdd, onRemove: widget.onRemove),
                       ],
@@ -1268,7 +1325,14 @@ class _ThemePreviewCluster extends StatefulWidget {
   State<_ThemePreviewCluster> createState() => _ThemePreviewClusterState();
 }
 
-class _ThemePreviewClusterState extends State<_ThemePreviewCluster> with SingleTickerProviderStateMixin {
+class _ThemePreviewClusterState extends State<_ThemePreviewCluster> with TickerProviderStateMixin {
+  bool _hasSettled = false;
+
+  late final AnimationController _entranceController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..forward();
+
   late final AnimationController _floatController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 7000),
@@ -1318,7 +1382,25 @@ class _ThemePreviewClusterState extends State<_ThemePreviewCluster> with SingleT
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _entranceController.addStatusListener(_handleEntranceStatus);
+  }
+
+  void _handleEntranceStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed || _hasSettled || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _hasSettled = true;
+    });
+  }
+
+  @override
   void dispose() {
+    _entranceController.removeStatusListener(_handleEntranceStatus);
+    _entranceController.dispose();
     _floatController.dispose();
     super.dispose();
   }
@@ -1335,9 +1417,19 @@ class _ThemePreviewClusterState extends State<_ThemePreviewCluster> with SingleT
             borderRadius: BorderRadius.circular(24),
           ),
           child: AnimatedBuilder(
-            animation: _floatController,
+            animation: _hasSettled ? _floatController : Listenable.merge([_entranceController, _floatController]),
             builder: (context, child) {
-              return Stack(children: [for (final spec in _images) _buildFloatingImage(spec, _floatController.value)]);
+              return Stack(
+                children: [
+                  for (var i = 0; i < _images.length; i++)
+                    _buildFloatingImage(
+                      _images[i],
+                      i,
+                      _hasSettled ? 1 : _entranceController.value,
+                      _floatController.value,
+                    ),
+                ],
+              );
             },
           ),
         ),
@@ -1345,18 +1437,35 @@ class _ThemePreviewClusterState extends State<_ThemePreviewCluster> with SingleT
     );
   }
 
-  Widget _buildFloatingImage(_FloatingImageSpec spec, double t) {
+  Widget _buildFloatingImage(_FloatingImageSpec spec, int index, double entranceT, double floatT) {
     // Both waves complete a whole number of cycles over one repeat lap (1 and 2 respectively),
     // so their value at t=1 exactly matches t=0 - no jump at the loop seam.
-    final bobWave = math.sin((t + spec.phase) * 2 * math.pi);
-    final driftWave = math.sin((t + spec.phase) * 2 * math.pi * 2 + 1.3);
+    final bobWave = math.sin((floatT + spec.phase) * 2 * math.pi);
+    final driftWave = math.sin((floatT + spec.phase) * 2 * math.pi * 2 + 1.3);
+    // Reveal the images one by one only once, when the cluster first appears on screen.
+    const revealStart = 0.08;
+    const revealStep = 0.12;
+    const revealDuration = 0.16;
+    final revealT =
+        _hasSettled
+            ? 1.0
+            : Curves.easeOutCubic.transform(
+              (((entranceT - (revealStart + (index * revealStep))) / revealDuration).clamp(0.0, 1.0)),
+            );
+
     return Align(
       alignment: spec.alignment,
-      child: Transform.translate(
-        offset: Offset(driftWave * 4, bobWave * 9),
-        child: Transform.rotate(
-          angle: spec.baseAngle + (bobWave * 0.05),
-          child: Image.asset(spec.path, width: spec.width),
+      child: Opacity(
+        opacity: revealT,
+        child: Transform.translate(
+          offset: Offset(driftWave * 4, bobWave * 9 + ((1 - revealT) * 12)),
+          child: Transform.scale(
+            scale: 0.92 + (0.08 * revealT),
+            child: Transform.rotate(
+              angle: spec.baseAngle + (bobWave * 0.05),
+              child: Image.asset(spec.path, width: spec.width),
+            ),
+          ),
         ),
       ),
     );

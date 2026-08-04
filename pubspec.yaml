@@ -180,8 +180,8 @@ flutter:
     - assets/images/discord-full-logo.png
     - assets/images/mail-icon.png
     - assets/images/laurel-wreath.png
-    - assets/images/ccos/what.png
-    - assets/images/ccos/why.png
+    - assets/images/ccos/feature.png
+    - assets/images/ccos/creator.png
     - assets/images/ccos/delivery.png
     - assets/images/ccos/preview_transaction_card.png
     - assets/images/ccos/preview_wallet_icon.png

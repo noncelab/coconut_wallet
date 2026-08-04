@@ -96,7 +96,7 @@ class ThemeBottomSheet extends StatelessWidget {
                       if (isCoconutPulp) ...[
                         const SizedBox(height: Sizes.size4),
                         Text(
-                          '${CcosFeatureRegistrySource.featuredListing.author} · ${CcosFeatureRegistrySource.featuredListing.authorDescription}',
+                          '${CcosFeatureRegistrySource.featuredListing.author} · ${CcosFeatureRegistrySource.featuredListing.authorBio}',
                           style: CoconutTypography.caption_10.setColor(colors.secondaryText),
                         ),
                       ],
