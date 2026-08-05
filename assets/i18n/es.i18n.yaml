@@ -1146,6 +1146,11 @@ label_import_file_picker_screen:
       zero: " unidades"
       one: " unidad"
       other: " unidades"
+label_export_wallet_picker_screen:
+  info_tooltip: "Puedes guardar las notas como un archivo BIP-329 (.jsonl) o compartirlas con otras billeteras."
+  all_wallets: "Todas las billeteras"
+  create_file: "Crear archivo"
+  view_list: "Ver lista"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

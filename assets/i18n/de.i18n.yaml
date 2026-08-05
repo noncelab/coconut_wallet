@@ -1073,6 +1073,11 @@ label_import_file_picker_screen:
       zero: " Stück"
       one: " Stück"
       other: " Stück"
+label_export_wallet_picker_screen:
+  info_tooltip: "Sie können Notizen als BIP-329-Datei (.jsonl) speichern oder mit anderen Wallets teilen."
+  all_wallets: "Alle Wallets"
+  create_file: "Datei erstellen"
+  view_list: "Liste anzeigen"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

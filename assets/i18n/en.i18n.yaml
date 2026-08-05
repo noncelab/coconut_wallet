@@ -1153,6 +1153,11 @@ label_import_file_picker_screen:
       zero: " items"
       one: " item"
       other: " items"
+label_export_wallet_picker_screen:
+  info_tooltip: "You can save notes as a BIP-329 file (.jsonl) or share them with other wallets."
+  all_wallets: "All Wallets"
+  create_file: "Create File"
+  view_list: "View List"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

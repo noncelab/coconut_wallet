@@ -1159,6 +1159,11 @@ label_import_file_picker_screen:
       zero: "개"
       one: "개"
       other: "개"
+label_export_wallet_picker_screen:
+  info_tooltip: 메모를 BIP-329 파일(.jsonl)로 저장하거나 다른 지갑과 공유할 수 있어요.
+  all_wallets: "모든 지갑"
+  create_file: "파일 만들기"
+  view_list: "목록 보기"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

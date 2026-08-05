@@ -1144,6 +1144,11 @@ label_import_file_picker_screen:
       zero: "個"
       one: "個"
       other: "個"
+label_export_wallet_picker_screen:
+  info_tooltip: "メモをBIP-329ファイル（.jsonl）として保存したり、他のウォレットと共有したりできます。"
+  all_wallets: "すべてのウォレット"
+  create_file: "ファイルを作成"
+  view_list: "リストを表示"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

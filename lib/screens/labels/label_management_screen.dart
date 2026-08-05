@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/screens/labels/label_export_wallet_picker_screen.dart';
 import 'package:coconut_wallet/screens/labels/label_import_file_picker_screen.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -114,15 +115,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
               SingleButton(
                 title: t.label_management_screen.export_title,
                 subtitle: t.label_management_screen.export_description,
-                onPressed:
-                    () => _navigateToActionScreen(
-                      context: context,
-                      title: t.label_management_screen.export_title,
-                      description: widget.exportDescription,
-                      iconPath: 'assets/svg/file.svg',
-                      actionButtonText: t.label_management_screen.export_title,
-                      onAction: widget.onExport,
-                    ),
+                onPressed: () => _navigateToExportWalletPicker(context),
                 isVerticalSubtitle: true,
               ),
             ],
@@ -190,32 +183,6 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
     );
   }
 
-  void _navigateToActionScreen({
-    required BuildContext context,
-    required String title,
-    required String description,
-    required String iconPath,
-    required String actionButtonText,
-    required VoidCallback onAction,
-  }) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) => _LabelManagementActionScreen(
-              title: title,
-              description: description,
-              iconPath: iconPath,
-              actionButtonText: actionButtonText,
-              onAction: onAction,
-            ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 250),
-      ),
-    );
-  }
-
   void _navigateToImportFilePicker(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
@@ -232,9 +199,28 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
       ),
     );
   }
+
+  void _navigateToExportWalletPicker(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) => const LabelExportWalletPickerScreen(
+              // title: t.label_management_screen.export_title,
+              // description: widget.exportDescription,
+              // iconPath: 'assets/svg/file.svg',
+              // actionButtonText: t.label_management_screen.export_title,
+              // onAction: widget.onExport,
+            ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 250),
+      ),
+    );
+  }
 }
 
-class _LabelManagementActionScreen extends StatelessWidget {
+class _LabelManagementActionScreen extends StatefulWidget {
   final String title;
   final String description;
   final String iconPath;
@@ -250,16 +236,21 @@ class _LabelManagementActionScreen extends StatelessWidget {
   });
 
   @override
+  State<_LabelManagementActionScreen> createState() => _LabelManagementActionScreenState();
+}
+
+class _LabelManagementActionScreenState extends State<_LabelManagementActionScreen> {
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.coconutColors.background,
-      appBar: CoconutAppBar.build(title: title, context: context),
+      appBar: CoconutAppBar.build(title: widget.title, context: context),
       body: Stack(
         children: [
           _buildContentView(context),
           Align(
             alignment: Alignment.bottomCenter,
-            child: FixedBottomButton(text: actionButtonText, onButtonClicked: onAction),
+            child: FixedBottomButton(text: widget.actionButtonText, onButtonClicked: widget.onAction),
           ),
         ],
       ),
@@ -287,11 +278,11 @@ class _LabelManagementActionScreen extends StatelessWidget {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: '$title\n\n',
+                    text: '${widget.title}\n\n',
                     style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                   ),
                   TextSpan(
-                    text: description,
+                    text: widget.description,
                     style: CoconutTypography.body1_16.setColor(context.coconutColors.secondaryText),
                   ),
                 ],
@@ -303,7 +294,7 @@ class _LabelManagementActionScreen extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(shape: BoxShape.circle, color: context.coconutColors.primary.withOpacity(0.1)),
             child: SvgPicture.asset(
-              iconPath,
+              widget.iconPath,
               width: 40,
               height: 40,
               colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
