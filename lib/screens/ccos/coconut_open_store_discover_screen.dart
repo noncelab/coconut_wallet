@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -6,7 +8,10 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutTooltipState,
         CoconutToast,
         CoconutToastLevel,
-        CoconutPopup;
+        CoconutPopup,
+        CoconutColors;
+import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/coconut_open_store_text_effects.dart';
 import 'package:flutter/material.dart';
@@ -85,9 +90,14 @@ class _DiscoverPreviewImage extends StatelessWidget {
   final Animation<double> animation;
   final double height;
 
+  // Flat (Z-axis) tilt only, so the mock stays parallel to the screen's XY plane instead of
+  // turning away in 3D perspective.
+  static const double _tiltAngle = -5 * math.pi / 180;
+
   @override
   Widget build(BuildContext context) {
-    final width = height * 1.22;
+    final width = height * 1.82;
+    final listing = CcosFeatureRegistrySource.featuredListing;
 
     return AnimatedBuilder(
       animation: animation,
@@ -104,52 +114,12 @@ class _DiscoverPreviewImage extends StatelessWidget {
             offset: Offset(dx, dy),
             child: Transform.scale(
               scale: settleScale,
-              child: SizedBox(
-                width: width,
-                height: height,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Positioned(
-                      left: 10,
-                      right: 42,
-                      top: 18,
-                      bottom: 30,
-                      child: _PreviewGlassCard(
-                        label: t.ccos.discover_scene.preview_open_store,
-                        align: Alignment.topLeft,
-                        tint: const Color(0x33FFFFFF),
-                      ),
-                    ),
-                    Positioned(
-                      left: 48,
-                      right: 10,
-                      top: 46,
-                      bottom: 0,
-                      child: _PreviewGlassCard(
-                        label: t.ccos.discover_scene.preview_created_by,
-                        align: Alignment.bottomRight,
-                        tint: const Color(0x40DCEEFF),
-                      ),
-                    ),
-                    Positioned(
-                      left: 34,
-                      right: 68,
-                      top: 62,
-                      bottom: 42,
-                      child: _PreviewGlassCard(
-                        label: t.ccos.discover_scene.preview_feature,
-                        align: Alignment.center,
-                        tint: const Color(0x36B4E3FF),
-                        isForeground: true,
-                      ),
-                    ),
-                    Positioned(
-                      right: 30,
-                      top: 28,
-                      child: _PreviewFlowDot(animation: animation, interval: const Interval(0.14, 0.30)),
-                    ),
-                  ],
+              child: Transform.rotate(
+                angle: _tiltAngle,
+                child: SizedBox(
+                  width: width,
+                  height: height,
+                  child: _ThemeSettingsMock(listing: listing, width: width),
                 ),
               ),
             ),
@@ -160,40 +130,60 @@ class _DiscoverPreviewImage extends StatelessWidget {
   }
 }
 
-class _PreviewGlassCard extends StatelessWidget {
-  const _PreviewGlassCard({required this.label, required this.align, required this.tint, this.isForeground = false});
+// A small non-interactive mock of the app's own theme settings screen (see
+// lib/screens/settings/theme_bottom_sheet.dart), showing the Coconut Pulp theme selected with
+// its creator credit - illustrating what "discovering" a feature looks like once it's added.
+class _ThemeSettingsMock extends StatelessWidget {
+  const _ThemeSettingsMock({required this.listing, required this.width});
 
-  final String label;
-  final Alignment align;
-  final Color tint;
-  final bool isForeground;
+  final CcosFeatureListing listing;
+  // The box's actual width, so the row text column can be sized as "whatever's left after
+  // padding and the check icon" instead of a fixed pixel cap that goes out of proportion when
+  // the box itself shrinks/grows (its height, and thus width, is device-dependent).
+  final double width;
+
+  static const double _horizontalPadding = 16 * 2;
+  static const double _checkIconReserve = 21;
 
   @override
   Widget build(BuildContext context) {
+    final pulpColors = CoconutColors.coconutPulp();
+    final rowTextMaxWidth = (width - _horizontalPadding - _checkIconReserve).clamp(80.0, double.infinity);
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: isForeground ? 0.62 : 0.38), width: 1.1),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white.withValues(alpha: 0.54), tint],
-        ),
+        color: pulpColors.surfaceBottomSheet,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: pulpColors.surfaceBottomSheet, width: 1.2),
         boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7E8B95).withValues(alpha: isForeground ? 0.16 : 0.08),
-            blurRadius: isForeground ? 24 : 16,
-            offset: const Offset(0, 10),
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 24, offset: const Offset(0, 12)),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Align(
-          alignment: align,
-          child: Text(
-            label,
-            style: CoconutTypography.caption_10_Bold.setColor(const Color(0xFF10161C).withValues(alpha: 0.78)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: IntrinsicWidth(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _ThemeMockRow(title: t.theme_dark, textColor: pulpColors.primaryText, maxWidth: rowTextMaxWidth),
+                  Divider(height: 24, thickness: 1, color: pulpColors.primaryText.withAlpha(30)),
+                  _ThemeMockRow(title: t.theme_light, textColor: pulpColors.primaryText, maxWidth: rowTextMaxWidth),
+                  Divider(height: 24, thickness: 1, color: pulpColors.primaryText.withAlpha(30)),
+                  _ThemeMockRow(
+                    title: t.theme_coconut_pulp,
+                    isSelected: true,
+                    subtitle: '${listing.author} · ${listing.authorBio}',
+                    textColor: pulpColors.primaryText,
+                    maxWidth: rowTextMaxWidth,
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -201,34 +191,59 @@ class _PreviewGlassCard extends StatelessWidget {
   }
 }
 
-class _PreviewFlowDot extends StatelessWidget {
-  const _PreviewFlowDot({required this.animation, required this.interval});
+class _ThemeMockRow extends StatelessWidget {
+  const _ThemeMockRow({
+    required this.title,
+    required this.textColor,
+    required this.maxWidth,
+    this.isSelected = false,
+    this.subtitle,
+  });
 
-  final Animation<double> animation;
-  final Interval interval;
+  final String title;
+  final Color textColor;
+  final double maxWidth;
+  final bool isSelected;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        final t = Curves.easeOut.transform(interval.transform(animation.value));
-        return Opacity(
-          opacity: t,
-          child: Transform.scale(
-            scale: 0.6 + (0.4 * t),
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.8),
-                boxShadow: const [BoxShadow(color: Color(0x66A6DFFF), blurRadius: 18, spreadRadius: 2)],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: CoconutTypography.body3_12_Bold.setColor(textColor),
               ),
-            ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: CoconutTypography.caption_10
+                      .setColor(textColor.withValues(alpha: 0.55))
+                      .copyWith(fontSize: 8.5),
+                ),
+              ],
+            ],
           ),
-        );
-      },
+        ),
+        if (isSelected)
+          Padding(
+            padding: const EdgeInsets.only(left: 8, top: 1),
+            child: Icon(Icons.check, size: 13, color: textColor),
+          ),
+      ],
     );
   }
 }

@@ -1259,6 +1259,11 @@ taproot:
     inheritance_condition: "相続条件"
 
 ccos:
+  intro_card:
+    title: "Coconut Open Storeのご紹介"
+    headline: "誰でもCoconutの次の機能を作れます。"
+    description: "みなさんのPoWが新しい機能となってCoconutに加わり、より良い使用体験へとつながります。良い機能はより多くの人と出会いながら共に育ち、その過程がビットコインスタンダードを少しずつ前に進めます。"
+    cta_label: "Open Storeを見る"
   intro_screen:
     theme_activated: "ココナッツ果肉テーマを追加しました。テーマを設定して使ってみてください。"
     delete_popup_title: "ココナッツ果肉テーマを削除しますか？"

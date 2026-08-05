@@ -1261,6 +1261,11 @@ taproot:
     inheritance_condition: "Condición de herencia"
 
 ccos:
+  intro_card:
+    title: "Presentamos Coconut Open Store"
+    headline: "Cualquiera puede crear la próxima función de Coconut."
+    description: "Tu PoW se convierte en una nueva función que se suma a Coconut y mejora la experiencia de uso. Las buenas funciones llegan a más personas y crecen juntas, y ese proceso empuja poco a poco el Bitcoin Standard hacia adelante."
+    cta_label: "Explorar Open Store"
   intro_screen:
     theme_activated: "Se agregó el tema Pulpa de Coco. Configura el tema y pruébalo."
     delete_popup_title: "¿Eliminar el tema Pulpa de Coco?"

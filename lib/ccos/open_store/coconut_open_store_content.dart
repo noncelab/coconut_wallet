@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
+
 class CcosOpenStoreIntro {
   const CcosOpenStoreIntro({
     required this.title,
@@ -78,12 +80,11 @@ class CcosDeveloperSection {
 }
 
 class CcosOpenStoreContentSource {
-  static const CcosOpenStoreIntro intro = CcosOpenStoreIntro(
-    title: '코코넛 오픈 스토어 소개',
-    headline: '누구나 코코넛의 다음 기능을 만들 수 있습니다.',
-    description:
-        '여러분의 PoW가 새로운 기능이 되어 코코넛에 더해지고, 더 나은 사용 경험으로 이어집니다. 좋은 기능은 더 많은 사람들을 만나며 함께 성장하고, 그 과정은 비트코인 스탠다드를 한 걸음 앞당깁니다.',
-    ctaLabel: '오픈 스토어 알아보기',
+  static CcosOpenStoreIntro get intro => CcosOpenStoreIntro(
+    title: t.ccos.intro_card.title,
+    headline: t.ccos.intro_card.headline,
+    description: t.ccos.intro_card.description,
+    ctaLabel: t.ccos.intro_card.cta_label,
   );
 
   static const CcosContributionCta featuredContributionCta = CcosContributionCta(

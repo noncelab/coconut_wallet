@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:carousel_slider/carousel_slider.dart';
@@ -75,8 +74,6 @@ import 'package:collection/collection.dart';
 class WalletHomeScreen extends StatefulWidget {
   const WalletHomeScreen({super.key});
 
-  static const CcosOpenStoreIntro _openStoreIntro = CcosOpenStoreContentSource.intro;
-
   /// P2P 등 외부에서 홈의 "지갑 추가" 바텀시트를 띄울 때 호출.
   static void openAddWalletIfActive() => _currentState?._onAddWalletPressed();
 
@@ -104,6 +101,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   late List<WalletItemBase> _previousWalletList = [];
   final GlobalKey<SliverAnimatedListState> _walletListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
+
+  // 화면 콘텐츠의 좌우 여백을 한 곳에서 동일하게 관리
+  static const double _horizontalPadding = 16;
+  // 섹션 라벨(예: "지난 24시간 거래", "최근 N일 · 전체")이 _horizontalPadding보다 추가로 더 들여지는 간격
+  static const double _sectionLabelExtraPadding = 4;
 
   double? itemCardWidth;
   double? itemCardHeight;
@@ -523,7 +525,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.only(left: 20, top: 5),
+              padding: const EdgeInsets.only(left: _horizontalPadding, top: 5),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -547,7 +549,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             ),
             CoconutLayout.spacing_500h,
             Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+              padding: const EdgeInsets.only(left: _horizontalPadding, right: _horizontalPadding, bottom: 20),
               child: _buildHeaderActions(isActive: false),
             ),
             Divider(thickness: 12, color: context.coconutColors.divider),
@@ -559,7 +561,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.only(top: 4, bottom: 20, left: 16, right: 16),
+            padding: const EdgeInsets.only(top: 4, bottom: 20, left: _horizontalPadding, right: _horizontalPadding),
             color: context.coconutColors.homeBackground,
             child: Column(
               children: [
@@ -733,7 +735,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   Widget _buildBodySkeleton() {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
         child: Column(
           children: [
             CoconutLayout.spacing_500h,
@@ -942,7 +944,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           CoconutLayout.spacing_500h,
           if (showOpenStoreIntroCard) _buildOpenStoreIntroCard(bottomPadding: 12),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
             child: ShrinkAnimationButton(
               defaultColor: context.coconutColors.homeSurface,
               pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
@@ -994,13 +996,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildOpenStoreIntroCard({double bottomPadding = 0}) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
+      padding: EdgeInsets.fromLTRB(_horizontalPadding, 0, _horizontalPadding, bottomPadding),
       child: AnimatedSize(
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeInOutCubic,
         alignment: Alignment.topCenter,
         child: CoconutOpenStoreIntroCard(
-          intro: WalletHomeScreen._openStoreIntro,
+          intro: CcosOpenStoreContentSource.intro,
           onTap: () => openCoconutOpenStoreIntroScreen(context),
           onDismiss: () => context.read<PreferenceProvider>().hideOpenStoreIntroCardForOneMonth(),
         ),
@@ -1017,7 +1019,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   ) {
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.only(top: 12, left: 20, right: 20),
+        margin: const EdgeInsets.only(top: 12, left: _horizontalPadding, right: _horizontalPadding),
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.homeSurface),
         child: Column(
@@ -1140,7 +1142,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
+                padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding + _sectionLabelExtraPadding),
                 width: MediaQuery.sizeOf(context).width,
                 child: Text(
                   t.wallet_home_screen.last_24_hours_transactions,
@@ -1172,7 +1174,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
                       if (ordered.isEmpty || _viewModel.isBalanceHidden || _viewModel.fakeBalanceTotalAmount != null) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
                           child: _buildEmptyRecentTransactions(
                             (_viewModel.shouldShowLoadingIndicator && _viewModel.walletItemList.isNotEmpty) ||
                                 showRecentInitialLoading,
@@ -1180,9 +1182,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         );
                       }
 
+                      final screenWidth = MediaQuery.sizeOf(context).width;
+                      final carouselViewportFraction = 1 - (2 * _horizontalPadding / screenWidth);
+
                       return ordered.length == 1
                           ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
                             child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, currentUnit),
                           )
                           : CarouselSlider(
@@ -1190,7 +1195,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             options: CarouselOptions(
                               autoPlay: false,
                               height: 90,
-                              viewportFraction: 0.9,
+                              viewportFraction: carouselViewportFraction,
                               enlargeCenterPage: true,
                               enlargeFactor: 0.2,
                               enableInfiniteScroll: false,
@@ -1359,7 +1364,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     if (_viewModel.isEditWidgetMode) {
       return Container(
-        padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 20),
+        padding: const EdgeInsets.only(left: _horizontalPadding, right: _horizontalPadding, top: 20, bottom: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: context.coconutColors.homeSurface),
@@ -1381,7 +1386,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         );
       },
       child: Container(
-        padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 20),
+        padding: const EdgeInsets.only(left: _horizontalPadding, right: _horizontalPadding, top: 20, bottom: 20),
         child: buildTxRow(transaction),
       ),
     );
@@ -1389,7 +1394,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildRecentTransactionsSkeleton() {
     return Container(
-      margin: const EdgeInsets.only(top: 12, left: 20, right: 20),
+      margin: const EdgeInsets.only(top: 12, left: _horizontalPadding, right: _horizontalPadding),
       child: Shimmer.fromColors(
         baseColor: context.coconutColors.surfaceSkeletonBase,
         highlightColor: context.coconutColors.surfaceSkeletonHighlight,
@@ -1424,7 +1429,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     final textColor = context.coconutColors.secondaryText;
     return Container(
-      padding: const EdgeInsets.only(left: 20, right: 14, top: 28, bottom: 28),
+      padding: const EdgeInsets.only(left: _horizontalPadding, right: _horizontalPadding, top: 28, bottom: 28),
       decoration: BoxDecoration(
         color: context.coconutColors.homeSurface,
         borderRadius: const BorderRadius.all(Radius.circular(12)),
@@ -1478,7 +1483,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             ),
           ],
           child: Container(
-            margin: const EdgeInsets.only(top: 0, left: 20, right: 20),
+            margin: const EdgeInsets.only(top: 0, left: _horizontalPadding, right: _horizontalPadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1631,7 +1636,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     final iconColor = context.coconutColors.iconSecondary;
 
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(horizontal: _sectionLabelExtraPadding, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -1731,7 +1736,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildAnalysisSkeleton() {
     return Container(
-      margin: const EdgeInsets.only(top: 36, left: 20, right: 20),
+      margin: const EdgeInsets.only(top: 36, left: _horizontalPadding, right: _horizontalPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

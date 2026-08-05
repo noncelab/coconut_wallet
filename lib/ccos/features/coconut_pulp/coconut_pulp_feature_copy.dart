@@ -51,10 +51,9 @@ class CoconutPulpFeatureCopySource {
 
   static const CoconutPulpFeatureCopy _en = CoconutPulpFeatureCopy(
     title: 'Coconut Pulp Theme',
-    description:
-        'A bright new Coconut Wallet theme inspired by the warm colors of coconut flesh and the beach.',
+    description: 'A bright new Coconut Wallet theme inspired by the warm colors of coconut flesh and the beach.',
     author: 'Coconut Team',
-    authorBio: 'Building a better wallet experience for Bitcoin only',
+    authorBio: 'Building a better wallet experience',
     authorIntent:
         'We wanted to create the first example showing how new features can be added naturally to Coconut through the Open Store.',
     whyItBelongs:
@@ -69,7 +68,7 @@ class CoconutPulpFeatureCopySource {
     description:
         'Ein helles neues Theme fuer Coconut Wallet mit warmen Farben, inspiriert von Kokosnussfleisch und Strand.',
     author: 'Coconut Team',
-    authorBio: 'Wir gestalten ein besseres Wallet-Erlebnis nur fuer Bitcoin',
+    authorBio: 'Wir gestalten ein besseres Wallet-Erlebnis',
     authorIntent:
         'Wir wollten das erste Beispiel schaffen, das zeigt, wie neue Funktionen ueber den Open Store natuerlich zu Coconut hinzukommen koennen.',
     whyItBelongs:
@@ -81,10 +80,9 @@ class CoconutPulpFeatureCopySource {
 
   static const CoconutPulpFeatureCopy _es = CoconutPulpFeatureCopy(
     title: 'Tema Coconut Pulp',
-    description:
-        'Un nuevo tema claro para Coconut Wallet inspirado en los tonos calidos del coco y la playa.',
+    description: 'Un nuevo tema claro para Coconut Wallet inspirado en los tonos calidos del coco y la playa.',
     author: 'Equipo Coconut',
-    authorBio: 'Creamos una mejor experiencia de wallet solo para Bitcoin',
+    authorBio: 'Creamos una mejor experiencia de wallet',
     authorIntent:
         'Queríamos crear el primer ejemplo de cómo nuevas funciones pueden sumarse de forma natural a Coconut a través del Open Store.',
     whyItBelongs:
@@ -100,8 +98,7 @@ class CoconutPulpFeatureCopySource {
     author: 'Coconut Team',
     authorBio: 'Bitcoin 専用のより良いウォレット体験をつくっています',
     authorIntent: 'Open Store を通じて、新しい機能が Coconut に自然に加わっていく最初の例をつくりたかったのです。',
-    whyItBelongs:
-        'Open Store は、良い PoW を見つけて一緒に使うための場所です。このテーマは、これからさまざまな機能が Coconut に加わっていく姿を見せる最初の PoW です。',
+    whyItBelongs: 'Open Store は、良い PoW を見つけて一緒に使うための場所です。このテーマは、これからさまざまな機能が Coconut に加わっていく姿を見せる最初の PoW です。',
     featureHelp: 'Open Store だけでなく、実際のテーマ画面でもこの機能を確認して使えます。',
     tags: ['明るいテーマ'],
   );

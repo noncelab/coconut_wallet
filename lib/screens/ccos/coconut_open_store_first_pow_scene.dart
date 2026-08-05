@@ -26,9 +26,6 @@ const _featureHeroTag = 'ccos-first-pow-feature-image';
 const _creatorHeroTag = 'ccos-first-pow-creator-image';
 const _deliveryHeroTag = 'ccos-first-pow-delivery-image';
 
-// The "FEATURE" detail screen's floating preview cluster: five small UI-element cutouts
-// (transaction card, wallet icon, arrows, address chip) that drift organically over the
-// theme's hero photo to preview what the theme looks like in the app.
 const _previewTxCardImagePath = 'assets/images/ccos/preview_transaction_card.png';
 const _previewWalletIconImagePath = 'assets/images/ccos/preview_wallet_icon.png';
 const _previewDownArrowImagePath = 'assets/images/ccos/preview_arrow_down.png';
@@ -38,20 +35,13 @@ const _previewAddressBarImagePath = 'assets/images/ccos/preview_address_bar.png'
 const _textPrimary = Color(0xFF10161C);
 const _screenBackground = Color(0xFFCDD4D7);
 
-// CREATOR screen only: the "story box" (box 1) content - a real piece of user feedback that
-// motivated the theme, followed by the reasoning behind it. Kept as separate strings (rather
-// than one block with embedded blank lines) so paragraph spacing can be tuned independently of
-// within-paragraph line spacing.
 String get _creatorFeedbackQuote => t.ccos.first_pow_scene.creator_detail.feedback_quote;
 String get _creatorFeedbackAttribution => t.ccos.first_pow_scene.creator_detail.feedback_attribution;
 String get _creatorStoryParagraph1 => t.ccos.first_pow_scene.creator_detail.story_paragraph1;
 String get _creatorStoryParagraph2 => t.ccos.first_pow_scene.creator_detail.story_paragraph2;
 String get _creatorStoryParagraph3 => t.ccos.first_pow_scene.creator_detail.story_paragraph3;
-// CREATOR screen only: box 2, the creator's own belief statement about why intent matters.
 String get _creatorBeliefStatement => t.ccos.first_pow_scene.creator_detail.belief_statement;
 
-// DELIVERY screen only: the three-step "propose -> review -> introduce" flow, each with its
-// own icon badge, title, and body copy.
 const _deliveryProposeIconPath = 'assets/svg/brand/motifs/bulb.svg';
 const _deliveryReviewIconPath = 'assets/svg/brand/motifs/shield-check.svg';
 const _deliveryIntroIconPath = 'assets/svg/brand/motifs/users.svg';
@@ -132,12 +122,9 @@ class FirstPowSceneBody extends StatefulWidget {
   final Animation<double> animation;
   final CcosFeatureListing listing;
   final bool isAdded;
-  // True when this listing's theme is not just unlocked but currently the active theme.
   final bool isApplied;
-  // True only while this scene is the one actually visible in the story PageView. [animation]
-  // is a single controller shared by all 5 scenes and gets restarted on every page change, so
-  // without this the auto-open demo below could fire (and push a detail screen) while the user
-  // is looking at a completely different scene.
+  // True only while this scene is the one visible - gates the center-card wiggle loop so it
+  // doesn't keep animating while the user is looking at a different scene.
   final bool isCurrentScene;
   final VoidCallback onAdd;
   final VoidCallback onRemove;
@@ -147,46 +134,45 @@ class FirstPowSceneBody extends StatefulWidget {
 }
 
 class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProviderStateMixin {
-  // Three cards drop/rotate into place together.
   static const Interval _cardsInterval = Interval(0.0, 0.0818, curve: Curves.easeOutCubic);
-  // 1s pause after the cards land, then the text settles in (~180ms) and types out as one
-  // continuous reveal (~4.8s @ ~90ms/char across all 4 lines) - same typewriter treatment as
-  // scenes 1 & 2. Line 1 is rendered as its own separately-styled block (see build()) so its
-  // bigger/bold font can never collide with normal-sized text on the same line - the bug the
-  // strut-height fix in scenes 1 & 2 guards against simply can't occur here.
   static const Interval _titleEntranceInterval = Interval(0.1727, 0.1891, curve: Curves.easeOutCubic);
-  // 0.5s after the text finishes, the add-theme button pops in with an elastic overshoot.
   static const Interval _buttonEntranceInterval = Interval(0.6682, 0.7136, curve: Curves.linear);
-  // After the scene is fully composed, the center card gives a subtle "tap me" hint by
-  // briefly facing the viewer and enlarging before settling back.
-  static const Interval _centerHintInterval = Interval(0.7409, 0.8045, curve: Curves.easeInOutCubic);
 
   static const Interval _text1TypingInterval = Interval(0.1891, 0.4180, curve: Curves.linear);
   static const Interval _text2TypingInterval = Interval(0.4540, 0.6227, curve: Curves.linear);
 
-  // Guards the auto-open "tap me" demo below so it only fires once per time the scene's
-  // scripted intro actually plays through (not on every rebuild).
-  bool _hasAutoOpened = false;
+  bool _hasInteractedWithCards = false;
 
-  // Jelly pop for the "추가됨" badge, played whenever isAdded flips true (a real interaction,
-  // not part of the scripted intro timeline, so it gets its own spring rather than a curve).
   late final AnimationController _addedBadgeController = AnimationController(
     vsync: this,
     value: widget.isAdded ? 1 : 0,
   );
 
+  static const int _wiggleBurstMs = 500;
+  static const int _wigglePauseMs = 1500;
+  static const int _wiggleLoopMs = _wiggleBurstMs + _wigglePauseMs;
+  late final AnimationController _wiggleController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: _wiggleLoopMs),
+  );
+
   @override
   void initState() {
     super.initState();
-    widget.animation.addListener(_handleAutoOpenTick);
+    if (widget.isCurrentScene) {
+      _wiggleController.repeat();
+    }
   }
 
   @override
   void didUpdateWidget(covariant FirstPowSceneBody oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.animation != widget.animation) {
-      oldWidget.animation.removeListener(_handleAutoOpenTick);
-      widget.animation.addListener(_handleAutoOpenTick);
+    if (widget.isCurrentScene != oldWidget.isCurrentScene) {
+      if (widget.isCurrentScene && !_hasInteractedWithCards) {
+        _wiggleController.repeat();
+      } else {
+        _wiggleController.stop();
+      }
     }
     if (widget.isAdded == oldWidget.isAdded && widget.isApplied == oldWidget.isApplied) return;
     if (widget.isAdded) {
@@ -200,30 +186,23 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
 
   @override
   void dispose() {
-    widget.animation.removeListener(_handleAutoOpenTick);
     _addedBadgeController.dispose();
+    _wiggleController.dispose();
     super.dispose();
   }
 
-  // The cards being tappable isn't obvious on their own, so once the scene finishes playing
-  // out (the "tap me" wiggle included), it automatically opens the center card's detail view
-  // once - a live demo of what tapping does, instead of a hint the user might miss.
-  void _handleAutoOpenTick() {
-    if (!widget.isCurrentScene) return;
-    final value = widget.animation.value;
-    if (value < 0.02 && _hasAutoOpened) {
-      _hasAutoOpened = false;
-      return;
-    }
-    if (_hasAutoOpened || value < _centerHintInterval.end) return;
-    _hasAutoOpened = true;
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-      _openDetail(context, _FirstPowCardKind.feature);
-    });
+  static double _wiggleEnvelope(double loopT) {
+    const burstFraction = _wiggleBurstMs / _wiggleLoopMs;
+    if (loopT >= burstFraction) return 0.0;
+    final burstLocal = loopT / burstFraction;
+    return math.sin(((burstLocal * 2) % 1.0) * math.pi);
   }
 
   void _openDetail(BuildContext context, _FirstPowCardKind kind) {
+    if (!_hasInteractedWithCards) {
+      _hasInteractedWithCards = true;
+      _wiggleController.stop();
+    }
     final detail = _firstPowCardDetailForKind(kind);
     Navigator.of(context).push(
       PageRouteBuilder<void>(
@@ -251,9 +230,6 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        // Target size: 1/3 of screen width, enlarged by 120% (i.e. 2.2x that third). On shorter
-        // screens this is scaled down just enough to fit the space budgeted for the image
-        // cluster, so it never overflows - the formula above is the ceiling, not a fixed value.
         final idealCardWidth = width / 3 * 1.4;
         final idealCardHeight = idealCardWidth * 1.42;
         final arcLift = idealCardHeight * 0.07;
@@ -264,9 +240,6 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
         final cardHeight = idealCardHeight * imageScale;
         const leftAngle = 10 * math.pi / 180;
         const rightAngle = -10 * math.pi / 180;
-        // Solve each side card's position so its near-top corner lands exactly on the center
-        // card's opposite top corner (left card's top-right meets center's top-left, and
-        // mirrored on the right), rather than an eyeballed overlap amount.
         final halfW = cardWidth / 2;
         final halfH = cardHeight / 2;
         final leftCardOffset = _cornerAlignedOffset(
@@ -301,11 +274,12 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
         );
 
         return AnimatedBuilder(
-          animation: widget.animation,
+          animation: Listenable.merge([widget.animation, _wiggleController]),
           builder: (context, child) {
             final value = widget.animation.value;
             final cardsProgress = _cardsInterval.transform(value);
-            final centerHintT = _centerHintInterval.transform(value);
+            final wiggleEnvelope = _hasInteractedWithCards ? 0.0 : _wiggleEnvelope(_wiggleController.value);
+            final wiggleRotation = wiggleEnvelope * 0.04;
 
             return Stack(
               clipBehavior: Clip.none,
@@ -317,9 +291,6 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                     alignment: Alignment.center,
                     clipBehavior: Clip.none,
                     children: [
-                      // Not a flat stack: each side card is positioned so its near-top corner
-                      // meets the center card's opposite top corner, as if fanned out from a
-                      // pivot somewhere above the screen.
                       Transform.translate(
                         offset: leftCardOffset,
                         child: _PolaroidCard(
@@ -355,8 +326,7 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                         progress: cardsProgress,
                         heroTag: _featureHeroTag,
                         onTap: () => _openDetail(context, _FirstPowCardKind.feature),
-                        facingRotation: -0.08 * math.sin(centerHintT * math.pi),
-                        scaleBoost: 1 + (0.14 * math.sin(centerHintT * math.pi)),
+                        extraRotation: wiggleRotation,
                       ),
                     ],
                   ),
@@ -465,8 +435,7 @@ class _PolaroidCard extends StatelessWidget {
     required this.progress,
     this.heroTag,
     this.onTap,
-    this.facingRotation = 0,
-    this.scaleBoost = 1,
+    this.extraRotation = 0,
   });
 
   final String imagePath;
@@ -477,8 +446,7 @@ class _PolaroidCard extends StatelessWidget {
   final double progress;
   final Object? heroTag;
   final VoidCallback? onTap;
-  final double facingRotation;
-  final double scaleBoost;
+  final double extraRotation;
 
   @override
   Widget build(BuildContext context) {
@@ -508,19 +476,9 @@ class _PolaroidCard extends StatelessWidget {
       opacity: progress.clamp(0.0, 1.0),
       child: Transform.translate(
         offset: offset,
-        child: Transform.scale(
-          scale: scaleBoost,
-          child: Transform(
-            alignment: Alignment.center,
-            transform:
-                Matrix4.identity()
-                  ..setEntry(3, 2, 0.0012)
-                  ..rotateY(facingRotation),
-            child: Transform.rotate(
-              angle: angle,
-              child: onTap == null ? card : GestureDetector(onTap: onTap, child: card),
-            ),
-          ),
+        child: Transform.rotate(
+          angle: angle + extraRotation,
+          child: onTap == null ? card : GestureDetector(onTap: onTap, child: card),
         ),
       ),
     );
@@ -539,7 +497,6 @@ class _AddThemeButton extends StatefulWidget {
 }
 
 class _AddThemeButtonState extends State<_AddThemeButton> with SingleTickerProviderStateMixin {
-  // Jelly press feedback, same squash-and-spring technique used for the scene-overview rows.
   late final AnimationController _squashController = AnimationController(vsync: this, value: 1.0);
 
   void _handleTapDown([TapDownDetails? _]) {
@@ -609,7 +566,6 @@ class _AddThemeButtonState extends State<_AddThemeButton> with SingleTickerProvi
   }
 }
 
-// A frosted glass "추가됨" pill, matching the app's established liquid-glass styling.
 class _AddedGlassBadge extends StatelessWidget {
   const _AddedGlassBadge({required this.label});
 
@@ -644,8 +600,6 @@ class _AddedGlassBadge extends StatelessWidget {
   }
 }
 
-// Full-screen detail view opened by tapping the center ("WHAT") photo. Only this one photo's
-// detail view is implemented for now; the other two will get their own custom treatment later.
 class _FirstPowDetailScreen extends StatefulWidget {
   const _FirstPowDetailScreen({required this.detail, required this.onAdd, required this.onRemove});
 
@@ -658,15 +612,9 @@ class _FirstPowDetailScreen extends StatefulWidget {
 }
 
 class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with TickerProviderStateMixin {
-  // Step 1 (image expands to fullscreen) is the Hero flight driven by the push route's own
-  // transitionDuration; everything else here only starts 0.3s after that flight lands.
   static const Duration _heroFlightDuration = Duration(milliseconds: 320);
   static const Duration _postFlightPause = Duration(milliseconds: 300);
 
-  // All three detail kinds reveal their content one block at a time with a deliberate pause
-  // between each (like the BUILD scene's title -> pause -> description pacing), so 2200ms
-  // isn't enough room - everything below is defined in absolute milliseconds against this
-  // total, then divided down to the 0..1 fractions Interval needs.
   static const int _defaultEntranceMs = 4150;
   static const int _creatorEntranceMs = 4700;
   static const int _deliveryEntranceMs = 5200;
@@ -681,20 +629,13 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
     _FirstPowCardKind.feature => _defaultEntranceMs,
   };
 
-  // Step 2: the glass panel fades in.
   late final Interval _glassInterval = _buildInterval(0, 250, _totalEntranceMs, curve: Curves.easeOut);
-  // Step 3: the back button pops in like an elastic/jelly object.
   late final Interval _backButtonInterval = _buildInterval(250, 700, _totalEntranceMs, curve: Curves.elasticOut);
-  // Step 4: the label slides in slowly from the right - long enough to actually register.
   late final Interval _labelSlideInterval = _buildInterval(700, 1400, _totalEntranceMs);
-  // Step 5: title (FEATURE/CREATOR) or the first step card (DELIVERY).
   late final Interval _bodyGroup0Interval =
       widget.detail.kind == _FirstPowCardKind.delivery
           ? _buildInterval(1550, 1980, _totalEntranceMs)
           : _buildInterval(1400, 1750, _totalEntranceMs);
-  // Every kind's content reveals one block at a time, fully finishing and then pausing
-  // before the next starts, so every block has time to register instead of the whole chain
-  // reading as one instantaneous flicker.
   late final Interval _stage2Interval = switch (widget.detail.kind) {
     _FirstPowCardKind.creator => _buildInterval(2450, 2780, _totalEntranceMs),
     _FirstPowCardKind.delivery => _buildInterval(2680, 3120, _totalEntranceMs),
@@ -716,21 +657,16 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
     duration: Duration(milliseconds: _totalEntranceMs),
   );
 
-  // The "테마 화면에 추가하기" button (FEATURE screen only) pops in 1s after the rest of the
-  // content - including the floating preview images - has fully entered.
   static const Duration _addButtonDelay = Duration(seconds: 1);
   late final AnimationController _addButtonController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 500),
   );
 
-  // How much of the label's final character should still peek past the panel's edge once it
-  // settles - the rest of that character (and everything before it that's pushed further
-  // right) is cropped away by the panel's own clip.
   static const double _visibleLastCharFraction = 0.5;
 
-  // Measured against the label's actual rendered glyph width (not a fixed guess), so the crop
-  // stays correct regardless of which panelLabel string or font ends up here.
+  // Measured against the label's actual rendered glyph width so the crop stays correct
+  // regardless of which panelLabel string or font ends up here.
   late final double _labelCropWidth = _computeLabelCropWidth(widget.detail.panelLabel);
 
   static TextStyle _panelLabelStyle() {
@@ -786,19 +722,16 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
     final localizedFeatureTitle = listing.title;
     final localizedFeatureTags = [
       ...listing.tags,
-      if (listing.priceType == CcosListingPriceType.free)
-        t.ccos.first_pow_scene.feature_detail.tag_free,
+      if (listing.priceType == CcosListingPriceType.free) t.ccos.first_pow_scene.feature_detail.tag_free,
     ];
     final localizedFeatureDescription = t.ccos.first_pow_scene.feature_detail.description;
     final localizedCreatorAuthor = listing.author;
     final localizedCreatorAuthorDescription = listing.authorBio;
-    // The glass panel must not creep into the status bar; the fullscreen image behind it can.
     final topInset = MediaQuery.of(context).padding.top;
     final bottomInset = MediaQuery.of(context).padding.bottom + 12;
 
-    // Reactive to PreferenceProvider so the button/badge below reflect live add/remove/apply
-    // taps made from this screen (or elsewhere) without needing this route to be rebuilt by
-    // its parent - this screen was pushed on top of it, so it watches independently.
+    // context.watch keeps the button/badge below reflecting live add/remove/apply taps made
+    // from this screen or elsewhere, since this route was pushed on top of its parent.
     final preferenceProvider = context.watch<PreferenceProvider>();
     final availability = preferenceProvider.getCcosFeatureAvailability(listing.id);
     final isAdded = availability.isActivated;
@@ -818,8 +751,6 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
               final glassT = _glassInterval.transform(progress);
               final backButtonT = _backButtonInterval.transform(progress);
               final labelSlideT = _labelSlideInterval.transform(progress);
-              // Starts pushed further past the right edge (off-screen) and slides left toward
-              // its resting, slightly-cropped position - not the reverse.
               final labelDx = -260 * (1 - labelSlideT);
               final group0T = _bodyGroup0Interval.transform(progress);
               final stage2T = _stage2Interval.transform(progress);
@@ -848,7 +779,6 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                       rimColor: Colors.white.withValues(alpha: 0.12),
                       rimWidth: 2,
                       rimOnTopBottom: true,
-                      // Top inset already reserved by the padding above.
                       child: SafeArea(
                         top: false,
                         child: Stack(
@@ -899,10 +829,6 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    // Strictly sequential: tags don't start until the title
-                                    // above has fully finished fading in, and so on down the
-                                    // chain - each _FadeSlideIn's interval only begins where
-                                    // the previous one ends (see the interval definitions).
                                     _FadeSlideIn(
                                       progress: stage2T,
                                       child: Wrap(
@@ -941,8 +867,6 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                       ),
                                     ),
                                     const SizedBox(height: 24),
-                                    // "물방울" entrance: falls from just above and settles with
-                                    // a bounce, rather than the plain fade/slide used elsewhere.
                                     _DropletFadeIn(
                                       progress: stage2T,
                                       child: _GlassChip(label: t.ccos.first_pow_scene.creator_detail.story_label),
@@ -952,9 +876,6 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          // Box 1: fills whatever space is left above box 2 and
-                                          // scrolls internally if the story text runs taller
-                                          // than that - box 2 below always stays fully visible.
                                           Expanded(
                                             child: _FadeSlideIn(progress: stage3T, child: const _CreatorStoryBox()),
                                           ),
@@ -967,10 +888,6 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                       ),
                                     ),
                                   ] else ...[
-                                    // DELIVERY: three identical-design step cards (propose ->
-                                    // review -> introduce), each fully finishing and pausing
-                                    // before the next appears - spaced far enough apart to
-                                    // register clearly, unlike FEATURE/CREATOR's tighter chain.
                                     Expanded(
                                       child: Column(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1061,8 +978,6 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
   }
 }
 
-// Fades and slides a body block up into place, driven by an externally-computed 0..1 progress
-// (already curved) so several of these can cascade top-to-bottom off one shared controller.
 class _FadeSlideIn extends StatelessWidget {
   const _FadeSlideIn({required this.progress, required this.child});
 
@@ -1076,8 +991,6 @@ class _FadeSlideIn extends StatelessWidget {
   }
 }
 
-// A small liquid-glass chip for the "what" screen's tag pills, matching the panel's own
-// frosted treatment rather than a flat outlined pill.
 class _GlassChip extends StatelessWidget {
   const _GlassChip({required this.label});
 
@@ -1109,8 +1022,6 @@ class _GlassChip extends StatelessWidget {
   }
 }
 
-// CREATOR screen only: the "Creator Story" tag's entrance - falls from just above and settles
-// with a bounce, reading as a droplet landing rather than the plain fade/slide used elsewhere.
 class _DropletFadeIn extends StatelessWidget {
   const _DropletFadeIn({required this.progress, required this.child});
 
@@ -1130,9 +1041,6 @@ class _DropletFadeIn extends StatelessWidget {
   }
 }
 
-// CREATOR screen only: box 1, the scrollable "story" card - a real piece of user feedback
-// (bold, with attribution) followed by the reasoning paragraphs behind the theme. Scrolls
-// internally rather than growing the box, since box 2 below it must always stay fully visible.
 class _CreatorStoryBox extends StatelessWidget {
   const _CreatorStoryBox();
 
@@ -1209,8 +1117,6 @@ class _StoryEdgeFade extends StatelessWidget {
   }
 }
 
-// CREATOR screen only: box 2 - a short, always-fully-visible statement in its own frosted card,
-// matching box 1's styling (same white/50%-opacity fill, same 16-radius corners).
 class _CreatorGlassTextBox extends StatelessWidget {
   const _CreatorGlassTextBox({required this.text, this.bold = false});
 
@@ -1229,9 +1135,6 @@ class _CreatorGlassTextBox extends StatelessWidget {
   }
 }
 
-// DELIVERY screen only: one step of the propose -> review -> introduce flow. The box itself
-// fades/slides in first; the icon badge overlapping its top-left corner pops in a beat later
-// with an elastic overshoot, reading as "the card arrives, then the icon lands on top of it".
 class _DeliveryStepCard extends StatelessWidget {
   const _DeliveryStepCard({required this.progress, required this.iconPath, required this.title, required this.body});
 
@@ -1285,8 +1188,6 @@ class _DeliveryStepCard extends StatelessWidget {
   }
 }
 
-// DELIVERY screen only: the circular frosted-glass icon badge that overlaps each step card's
-// top-left corner, matching the app's established liquid-glass styling.
 class _DeliveryIconBadge extends StatelessWidget {
   const _DeliveryIconBadge({required this.iconPath});
 
@@ -1315,9 +1216,6 @@ class _DeliveryIconBadge extends StatelessWidget {
   }
 }
 
-// The FEATURE screen's floating preview: five small UI-element cutouts (transaction card,
-// wallet icon, arrows, address chip) drifting organically over the theme's hero photo, giving a
-// glance of what the theme looks like in the app rather than a single static screenshot.
 class _ThemePreviewCluster extends StatefulWidget {
   const _ThemePreviewCluster();
 
@@ -1338,11 +1236,6 @@ class _ThemePreviewClusterState extends State<_ThemePreviewCluster> with TickerP
     duration: const Duration(milliseconds: 7000),
   )..repeat();
 
-  // Each image's resting position (fraction of the cluster box), size, resting tilt, and its
-  // own phase in the shared drift cycle - offset phases keep the five images from ever bobbing
-  // in unison, which is what reads as "organic" rather than mechanical.
-  // Painted in list order (later = on top), so the tx card sits first/behind and the two
-  // corner badges (wallet icon, down arrow) paint after it to stay visible over its corners.
   static const List<_FloatingImageSpec> _images = [
     _FloatingImageSpec(
       path: _previewTxCardImagePath,
@@ -1438,11 +1331,8 @@ class _ThemePreviewClusterState extends State<_ThemePreviewCluster> with TickerP
   }
 
   Widget _buildFloatingImage(_FloatingImageSpec spec, int index, double entranceT, double floatT) {
-    // Both waves complete a whole number of cycles over one repeat lap (1 and 2 respectively),
-    // so their value at t=1 exactly matches t=0 - no jump at the loop seam.
     final bobWave = math.sin((floatT + spec.phase) * 2 * math.pi);
     final driftWave = math.sin((floatT + spec.phase) * 2 * math.pi * 2 + 1.3);
-    // Reveal the images one by one only once, when the cluster first appears on screen.
     const revealStart = 0.08;
     const revealStep = 0.12;
     const revealDuration = 0.16;
@@ -1485,6 +1375,5 @@ class _FloatingImageSpec {
   final Alignment alignment;
   final double width;
   final double baseAngle;
-  // 0..1 offset into the shared drift cycle, so each image bobs out of phase with the others.
   final double phase;
 }

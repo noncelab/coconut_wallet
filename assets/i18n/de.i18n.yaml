@@ -1218,6 +1218,11 @@ taproot:
     inheritance_condition: "Vererbungsbedingung"
 
 ccos:
+  intro_card:
+    title: "Coconut Open Store vorgestellt"
+    headline: "Jeder kann Coconuts nächste Funktion bauen."
+    description: "Dein PoW wird zu einer neuen Funktion, die in Coconut aufgenommen wird und zu einer besseren Nutzungserfahrung führt. Gute Funktionen erreichen mehr Menschen und wachsen gemeinsam, und dieser Prozess bringt den Bitcoin-Standard Schritt für Schritt voran."
+    cta_label: "Open Store entdecken"
   intro_screen:
     theme_activated: "Das Kokosfleisch-Design wurde hinzugefügt. Stelle das Design ein und probiere es aus."
     delete_popup_title: "Kokosfleisch-Design entfernen?"
@@ -1298,21 +1303,21 @@ ccos:
       review_body: "Das Coconut-Team bespricht Richtlinien und Qualität gemeinsam.\nDurch Feedback wird das PoW sicher verfeinert,\ndamit es zur bestehenden UI und UX passt."
       intro_title: "Einführung"
       intro_body: "Nach der Freigabe\nwird das PoW in die App aufgenommen\nund trifft auf Nutzer."
-    discover_scene:
-      line1: "Nutzer entdecken\nneue Funktionen"
-      line2: "und begegnen den Erstellern erneut,\nsobald sie sie verwenden"
-      line3: "Wir bereiten das sorgfältig vor,\ndamit jeder Bitcoin-Builder\nin Coconut strahlen kann"
-      highlight_new_feature: "neue Funktionen"
-      highlight_bitcoin_builder: "Bitcoin-Builder"
-      highlight_can_shine: "strahlen kann"
-      preview_open_store: "Open Store"
-      preview_created_by: "Created by"
-      preview_feature: "Feature"
-    contribute_scene:
-      line1: "Das nächste PoW\nist dein Moment"
-      line2: "Auch eine kleine Idee ist willkommen."
-      line3: "Dein PoW wird\nzu einer neuen Funktion\nund erreicht die Erfahrungen vieler Menschen,"
-      line4: "und auf diesem Weg\nbringt es den Bitcoin-Standard\nSchritt für Schritt voran"
-      highlight_new_feature: "neuen Funktion"
-      highlight_bitcoin_standard: "Bitcoin-Standard"
-      cta_start_first_pr: "Ersten PR starten"
+  discover_scene:
+    line1: "Nutzer entdecken\nneue Funktionen"
+    line2: "und begegnen den Erstellern erneut,\nsobald sie sie verwenden"
+    line3: "Wir bereiten das sorgfältig vor,\ndamit jeder Bitcoin-Builder\nin Coconut strahlen kann"
+    highlight_new_feature: "neue Funktionen"
+    highlight_bitcoin_builder: "Bitcoin-Builder"
+    highlight_can_shine: "strahlen kann"
+    preview_open_store: "Open Store"
+    preview_created_by: "Created by"
+    preview_feature: "Feature"
+  contribute_scene:
+    line1: "Das nächste PoW\nist dein Moment"
+    line2: "Auch eine kleine Idee ist willkommen."
+    line3: "Dein PoW wird\nzu einer neuen Funktion\nund erreicht die Erfahrungen vieler Menschen,"
+    line4: "und auf diesem Weg\nbringt es den Bitcoin-Standard\nSchritt für Schritt voran"
+    highlight_new_feature: "neuen Funktion"
+    highlight_bitcoin_standard: "Bitcoin-Standard"
+    cta_start_first_pr: "Ersten PR starten"

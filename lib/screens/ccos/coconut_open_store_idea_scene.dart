@@ -26,8 +26,6 @@ class IdeaSceneBody extends StatelessWidget {
 
         return Stack(
           children: [
-            // Each line quickly settles into place, then types out one character at a time at
-            // a constant, readable pace (~100ms/char) - matching scene 2's title/description effect.
             Positioned(
               top: height * 0.08,
               left: 0,
@@ -116,9 +114,6 @@ class _IdeaTypeLine extends StatelessWidget {
       fontWeight: FontWeight.w900,
       height: 1.2,
     );
-    // Reserve every line's height up front for the bigger highlighted run, so a line doesn't
-    // suddenly grow taller (shoving later lines down) the instant typing reaches a highlight -
-    // without this the line box only expands once a highlighted character actually appears.
     final strutStyle =
         highlightPhrases.isEmpty
             ? null
@@ -223,8 +218,6 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
       fontWeight: FontWeight.w900,
       height: 1.2,
     );
-    // Reserve every line's height up front for the bigger highlighted run, so a line doesn't
-    // suddenly grow taller the instant typing reaches a highlight.
     final strutStyle =
         widget.highlightPhrases.isEmpty
             ? null
@@ -288,11 +281,6 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
     );
   }
 
-  // '...?' types out, then erases from the last character back to nothing, then '!' appears -
-  // ordinary typed/erased text throughout, so there's no separate glyph swap (and no risk of
-  // a line-height hiccup from mismatched cursor-character metrics).
-  // The type/erase of '...?' runs at ~76.5ms/char (70% slower than the previous 45ms/char pace),
-  // and there's now a much longer pause after it's fully erased before '!' lands.
   static const String _trailingDots = '...?';
   static const double _typeDotsEnd = 0.1330; // 306ms
   static const double _eraseStart = 0.2722; // hold full "...?" until 626ms
@@ -319,9 +307,6 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
   }
 }
 
-// Quickly settles a text block into place (fade + slide + scale), fully decoupled from
-// whatever reveals its content (e.g. a typewriter effect on a separate interval) so the
-// entrance doesn't smear together with in-progress typing.
 class _AnimatedTypeBlock extends StatelessWidget {
   const _AnimatedTypeBlock({
     required this.animation,

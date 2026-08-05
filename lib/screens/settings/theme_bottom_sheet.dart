@@ -24,8 +24,6 @@ class ThemeBottomSheet extends StatefulWidget {
 }
 
 class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
-  static const CcosOpenStoreIntro _intro = CcosOpenStoreContentSource.intro;
-
   // 스와이프로 삭제 가능한 테마
   CoconutThemeVariant? _swipedVariant;
 
@@ -115,7 +113,7 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
                 const SizedBox(height: Sizes.size8),
                 if (provider.shouldShowOpenStoreIntroCard) ...[
                   CoconutOpenStoreIntroCard(
-                    intro: _intro,
+                    intro: CcosOpenStoreContentSource.intro,
                     onTap: () => openCoconutOpenStoreIntroScreen(context),
                     onDismiss: provider.hideOpenStoreIntroCardForOneMonth,
                   ),

@@ -1265,6 +1265,11 @@ taproot:
     inheritance_condition: "상속 조건"
 
 ccos:
+  intro_card:
+    title: "코코넛 오픈 스토어 소개"
+    headline: "누구나 코코넛의 다음 기능을 만들 수 있습니다."
+    description: "여러분의 PoW가 새로운 기능이 되어 코코넛에 더해지고, 더 나은 사용 경험으로 이어집니다. 좋은 기능은 더 많은 사람들을 만나며 함께 성장하고, 그 과정은 비트코인 스탠다드를 한 걸음 앞당깁니다."
+    cta_label: "오픈 스토어 알아보기"
   intro_screen:
     theme_activated: "코코넛 과육 테마가 추가되었어요. 테마를 설정하고 사용해 보세요."
     delete_popup_title: "코코넛 과육 테마를 삭제할까요?"

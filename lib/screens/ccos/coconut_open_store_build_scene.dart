@@ -484,10 +484,7 @@ class _BuildOrbitLabel extends StatelessWidget {
                   label,
                   style: CoconutTypography.heading4_18_Bold
                       .setColor(color)
-                      .copyWith(
-                        fontSize: fontSize,
-                        letterSpacing: -0.2,
-                      ),
+                      .copyWith(fontSize: fontSize, letterSpacing: -0.2),
                 ),
               ),
             ),

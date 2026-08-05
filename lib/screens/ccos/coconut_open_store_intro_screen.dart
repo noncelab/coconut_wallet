@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/physics.dart';
 
@@ -67,10 +66,9 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
     duration: _storyEntranceDuration,
   );
   late final CurvedAnimation _loadingCurve = CurvedAnimation(parent: _loadingController, curve: Curves.easeInOutCubic);
-  // Drives the "droplet splash" entrance of the scene-overview panel when it opens.
   late final AnimationController _overviewController = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 550),
+    duration: const Duration(milliseconds: 750),
   );
   bool _hasCompletedLoading = false;
   bool _isLoadingUnderlayVisible = true;
@@ -284,105 +282,113 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _hasCompletedLoading ? _screenBackground : _loadingBackground,
-      appBar:
-          _hasCompletedLoading && !_isSceneOverviewVisible
-              ? CoconutAppBar.build(
-                context: context,
-                foregroundColor: _textPrimary,
-                // A soft tint pulled from the screen's own backdrop gradient, instead of the
-                // app bar's default (too-dark-on-this-light-palette) press highlight.
-                leadingHighlightColor: _accentBlue.withValues(alpha: 0.22),
-                onBackPressed: () => Navigator.of(context).maybePop(),
-                actionButtonList: [
-                  CoconutAppBarActionButton(
-                    onPressed: _openSceneOverview,
-                    highlightColor: _accentBlue.withValues(alpha: 0.22),
-                    icon: SvgPicture.asset(
-                      CommonMenuIconPath.hamburger,
-                      width: 24,
-                      height: 24,
-                      colorFilter: const ColorFilter.mode(_textPrimary, BlendMode.srcIn),
-                    ),
-                  ),
+    return Consumer<PreferenceProvider>(
+      builder: (context, provider, child) {
+        final availability = provider.getCcosFeatureAvailability(_featuredListing.id);
+        final isAdded = availability.isActivated;
+        final isApplied =
+            isAdded &&
+            _featuredListing.linkedVariant != null &&
+            provider.themeVariant == _featuredListing.linkedVariant;
+        final sceneItems = _buildSceneDefinitions(
+          context: context,
+          provider: provider,
+          isAdded: isAdded,
+          isApplied: isApplied,
+        );
+
+        return Stack(
+          children: [
+            Scaffold(
+              backgroundColor: _hasCompletedLoading ? _screenBackground : _loadingBackground,
+              appBar:
+                  _hasCompletedLoading
+                      ? PreferredSize(
+                        preferredSize: const Size.fromHeight(56),
+                        child: Visibility(
+                          maintainSize: true,
+                          maintainAnimation: true,
+                          maintainState: true,
+                          visible: !_isSceneOverviewVisible,
+                          child: CoconutAppBar.build(
+                            context: context,
+                            foregroundColor: _textPrimary,
+                            leadingHighlightColor: _accentBlue.withValues(alpha: 0.22),
+                            onBackPressed: () => Navigator.of(context).maybePop(),
+                            actionButtonList: [
+                              CoconutAppBarActionButton(
+                                onPressed: _openSceneOverview,
+                                highlightColor: _accentBlue.withValues(alpha: 0.22),
+                                icon: SvgPicture.asset(
+                                  CommonMenuIconPath.hamburger,
+                                  width: 24,
+                                  height: 24,
+                                  colorFilter: const ColorFilter.mode(_textPrimary, BlendMode.srcIn),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      : null,
+              body: Stack(
+                children: [
+                  if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
+                    _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
+                  if (_hasCompletedLoading)
+                    _StoryPagerEntrance(animation: _storyEntranceController, child: _buildStoryPager(sceneItems)),
                 ],
-              )
-              : null,
-      body: Stack(
-        children: [
-          if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
-            _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
-          if (_hasCompletedLoading) _StoryPagerEntrance(animation: _storyEntranceController, child: _buildStoryPager()),
-        ],
-      ),
+              ),
+            ),
+            if (_hasCompletedLoading && _isSceneOverviewVisible)
+              Positioned.fill(
+                child: _SceneOverviewOverlay(
+                  items: sceneItems,
+                  currentIndex: _currentSceneIndex,
+                  entranceAnimation: _overviewController,
+                  onClose: _closeSceneOverview,
+                  onSelect: _animateToScene,
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildStoryPager() {
+  Widget _buildStoryPager(List<_OpenStoreSceneDefinition> sceneItems) {
     return Stack(
       key: const ValueKey('open-store-story'),
       children: [
         const Positioned.fill(child: _OpenStoreBackdrop()),
-        Consumer<PreferenceProvider>(
-          builder: (context, provider, child) {
-            final availability = provider.getCcosFeatureAvailability(_featuredListing.id);
-            final isAdded = availability.isActivated;
-            final isApplied =
-                isAdded &&
-                _featuredListing.linkedVariant != null &&
-                provider.themeVariant == _featuredListing.linkedVariant;
-            final sceneItems = _buildSceneDefinitions(
-              context: context,
-              provider: provider,
-              isAdded: isAdded,
-              isApplied: isApplied,
-            );
-
-            return Stack(
-              children: [
-                PageView(
-                  controller: _pageController,
-                  scrollDirection: Axis.horizontal,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (index) {
-                    if (_currentSceneIndex != index) {
-                      setState(() {
-                        _currentSceneIndex = index;
-                      });
-                    }
-                    _sceneController.duration = _sceneDurationFor(index);
-                    _sceneController.forward(from: 0);
-                  },
-                  children: [
-                    for (final item in sceneItems)
-                      _StoryScene(
-                        chapter: item.chapter,
-                        sceneIndex: item.index,
-                        sceneCount: sceneItems.length,
-                        label: item.label,
-                        title: item.title,
-                        description: item.description,
-                        hero: item.buildHero(context, _sceneController),
-                        sceneAnimation: _sceneController,
-                        onPrevious: item.index == 0 ? null : () => _animateToScene(item.index - 1),
-                        onNext: item.index == sceneItems.length - 1 ? null : () => _animateToScene(item.index + 1),
-                      ),
-                  ],
-                ),
-                if (_isSceneOverviewVisible)
-                  Positioned.fill(
-                    child: _SceneOverviewOverlay(
-                      items: sceneItems,
-                      currentIndex: _currentSceneIndex,
-                      entranceAnimation: _overviewController,
-                      onClose: _closeSceneOverview,
-                      onSelect: _animateToScene,
-                    ),
-                  ),
-              ],
-            );
+        PageView(
+          controller: _pageController,
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          onPageChanged: (index) {
+            if (_currentSceneIndex != index) {
+              setState(() {
+                _currentSceneIndex = index;
+              });
+            }
+            _sceneController.duration = _sceneDurationFor(index);
+            _sceneController.forward(from: 0);
           },
+          children: [
+            for (final item in sceneItems)
+              _StoryScene(
+                chapter: item.chapter,
+                sceneIndex: item.index,
+                sceneCount: sceneItems.length,
+                label: item.label,
+                title: item.title,
+                description: item.description,
+                hero: item.buildHero(context, _sceneController),
+                sceneAnimation: _sceneController,
+                onPrevious: item.index == 0 ? null : () => _animateToScene(item.index - 1),
+                onNext: item.index == sceneItems.length - 1 ? null : () => _animateToScene(item.index + 1),
+              ),
+          ],
         ),
       ],
     );
@@ -436,8 +442,6 @@ class _OpenStoreSceneDefinition {
   final String description;
   final String overviewStep;
   final String overviewTitle;
-  // Exact prefix of overviewTitle to bold/enlarge in the navigation overlay. Defaults to just
-  // the first word (split on the first space) when omitted.
   final String? overviewHighlight;
   final String overviewSubtitle;
   final Widget Function(BuildContext context, Animation<double> animation) buildHero;
@@ -627,36 +631,50 @@ class _SceneOverviewOverlay extends StatelessWidget {
   final VoidCallback onClose;
   final ValueChanged<int> onSelect;
 
-  // Roughly where the hamburger action button sits in the app bar, so the panel and its
-  // splash burst appear to originate from the button that was actually tapped.
   static const Alignment _originAlignment = Alignment(0.94, -1);
+
+  static const Interval _backgroundStage = Interval(0.0, 0.45);
+  static const Interval _contentStage = Interval(0.45, 0.95);
+  static const Interval _closeButtonStage = Interval(0.9, 1.0);
+
+  static double _panelScaleFor(double backgroundStageT) {
+    const growEnd = 0.6;
+    const shrinkEnd = 0.72;
+    const overshoot = 1.08;
+    if (backgroundStageT <= growEnd) {
+      final t = (backgroundStageT / growEnd).clamp(0.0, 1.0);
+      return Curves.easeOut.transform(t) * overshoot;
+    }
+    if (backgroundStageT <= shrinkEnd) {
+      final t = ((backgroundStageT - growEnd) / (shrinkEnd - growEnd)).clamp(0.0, 1.0);
+      return overshoot + (1.0 - overshoot) * Curves.easeIn.transform(t);
+    }
+    return 1.0;
+  }
+
+  static double _itemRevealProgress(double contentStageT, int index, int itemCount) {
+    const revealSpan = 0.5;
+    final step = itemCount > 1 ? (1 - revealSpan) / (itemCount - 1) : 0.0;
+    final start = index * step;
+    final t = ((contentStageT - start) / revealSpan).clamp(0.0, 1.0);
+    return Curves.easeOut.transform(t);
+  }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: entranceAnimation,
       builder: (context, child) {
-        final backdropOpacity = Curves.easeOut.transform(entranceAnimation.value);
-        // A quick droplet-like burst from the button, ahead of the panel settling into place.
-        final splashProgress = Curves.easeOut.transform((entranceAnimation.value / 0.42).clamp(0.0, 1.0));
-        final splashOpacity = (1 - Curves.easeIn.transform((entranceAnimation.value / 0.6).clamp(0.0, 1.0))) * 0.5;
-        // Overshoots slightly past 1.0 then settles, like a droplet stretching before it relaxes.
-        final panelScale = Curves.easeOutBack.transform(entranceAnimation.value);
-        final panelOpacity = Curves.easeOut.transform((entranceAnimation.value / 0.6).clamp(0.0, 1.0));
+        final backgroundStageT = _backgroundStage.transform(entranceAnimation.value);
+        final splashProgress = Curves.easeOut.transform((backgroundStageT / 0.4).clamp(0.0, 1.0));
+        final splashOpacity = (1 - Curves.easeIn.transform((backgroundStageT / 0.4).clamp(0.0, 1.0))) * 0.5;
+        final panelScale = _panelScaleFor(backgroundStageT);
+        final panelOpacity = Curves.easeOut.transform((backgroundStageT / 0.4).clamp(0.0, 1.0));
 
         return Stack(
           children: [
             Positioned.fill(
               child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: onClose, child: const SizedBox.expand()),
-            ),
-            Positioned.fill(
-              child: Opacity(
-                opacity: backdropOpacity,
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                  child: Container(color: const Color(0x14F4F7F8)),
-                ),
-              ),
             ),
             IgnorePointer(
               child: Align(
@@ -698,25 +716,21 @@ class _SceneOverviewOverlay extends StatelessWidget {
                   spreadRadius: 1,
                   offset: const Offset(0, 16),
                 ),
-                // Soft light-colored halo along the outside of the edge - an "edge-lit glass"
-                // cue that reads regardless of whatever happens to be behind the panel.
                 BoxShadow(color: Colors.white.withValues(alpha: 0.35), blurRadius: 18, spreadRadius: -2),
               ],
             ),
             child: LiquidGlassSurface(
-              // Border/shadow already come from the DecoratedBox above, so the surface itself
-              // stays borderless (default rim is off) - it only supplies refraction and blur.
               cornerRadius: 34,
-              blurSigma: 6,
+              blurSigma: 4,
               distortion: 0.16,
               distortionWidth: 42,
               magnification: 1.1,
               tintColor: const Color(0x2AFBFDFF),
+              rimOnLeftRight: true,
+              rimOnTopBottom: false,
+              rimWidth: 2,
               child: Stack(
                 children: [
-                  // Specular highlight - the bright glint of light across the top edge
-                  // that reads as "glass" rather than a flat frosted panel. Backdrop-
-                  // independent, unlike the lens warp, so it always sells the material.
                   IgnorePointer(
                     child: Align(
                       alignment: Alignment.topCenter,
@@ -732,8 +746,6 @@ class _SceneOverviewOverlay extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // A second, fainter diagonal glint from the opposite corner adds
-                  // dimensionality that doesn't depend on the backdrop either.
                   IgnorePointer(
                     child: Align(
                       alignment: Alignment.bottomLeft,
@@ -751,42 +763,65 @@ class _SceneOverviewOverlay extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-                    child: Column(
-                      children: [
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: CoconutIconButton(
-                            onPressed: onClose,
-                            icon: SvgPicture.asset(
-                              CommonActionIconPath.close,
-                              width: 28,
-                              height: 28,
-                              colorFilter: const ColorFilter.mode(
-                                _CoconutOpenStoreIntroScreenState._textPrimary,
-                                BlendMode.srcIn,
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                    child: AnimatedBuilder(
+                      animation: entranceAnimation,
+                      builder: (context, child) {
+                        final contentStageT = _contentStage.transform(entranceAnimation.value);
+                        return ListView.separated(
+                          clipBehavior: Clip.none,
+                          padding: const EdgeInsets.only(top: 48),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: items.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 34),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            final itemT = _itemRevealProgress(contentStageT, index, items.length);
+                            return Opacity(
+                              opacity: itemT,
+                              child: Transform.translate(
+                                offset: Offset(0, 16 * (1 - itemT)),
+                                child: _SceneNavigationRow(
+                                  item: item,
+                                  isSelected: currentIndex == index,
+                                  isReversed: index.isOdd,
+                                  onTap: () => onSelect(index),
+                                ),
                               ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: AnimatedBuilder(
+                      animation: entranceAnimation,
+                      builder: (context, child) {
+                        final closeButtonOpacity = Curves.easeOut.transform(
+                          _closeButtonStage.transform(entranceAnimation.value),
+                        );
+                        return Opacity(opacity: closeButtonOpacity, child: child);
+                      },
+                      child: Material(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          onTap: onClose,
+                          customBorder: const CircleBorder(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: SvgPicture.asset(
+                              CommonActionIconPath.close,
+                              width: 22,
+                              height: 22,
+                              colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: ListView.separated(
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: items.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 34),
-                            itemBuilder: (context, index) {
-                              final item = items[index];
-                              return _SceneNavigationRow(
-                                item: item,
-                                isSelected: currentIndex == index,
-                                isReversed: index.isOdd,
-                                onTap: () => onSelect(index),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -819,8 +854,6 @@ class _SceneNavigationRow extends StatefulWidget {
 class _SceneNavigationRowState extends State<_SceneNavigationRow> with SingleTickerProviderStateMixin {
   bool _isPressed = false;
 
-  // Drives a "jelly" squash-and-stretch: a quick press-in, then a springy (slightly
-  // overshooting) release back to rest, instead of a stiff uniform scale.
   late final AnimationController _squashController = AnimationController(vsync: this, value: 1.0);
 
   void _handleTapDown([TapDownDetails? _]) {
@@ -856,8 +889,6 @@ class _SceneNavigationRowState extends State<_SceneNavigationRow> with SingleTic
         animation: _squashController,
         builder: (context, child) {
           final squash = _squashController.value;
-          // Vertically compresses while bulging horizontally (and vice versa on the
-          // springy overshoot past 1.0) - the squash-and-stretch that reads as "jelly".
           final scaleY = squash;
           final scaleX = 1 + ((1 - squash) * 0.6);
           return Transform(
@@ -884,11 +915,6 @@ class _SceneNavigationRowState extends State<_SceneNavigationRow> with SingleTic
             highlightColor: Colors.transparent,
             child: Ink(
               width: rowWidth,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                color: _isPressed ? Colors.white.withValues(alpha: 0.18) : Colors.transparent,
-                border: _isPressed ? Border.all(color: Colors.white.withValues(alpha: 0.42), width: 1) : null,
-              ),
               child: Stack(
                 children: [
                   Positioned(
@@ -1160,13 +1186,7 @@ class _StoryScene extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(
-                                  chapter,
-                                  style: CoconutTypography.caption_10_Bold.setColor(
-                                    Colors.white,
-                                    // _CoconutOpenStoreIntroScreenState._textSecondary,
-                                  ),
-                                ),
+                                Text(chapter, style: CoconutTypography.caption_10_Bold.setColor(Colors.white)),
                                 const SizedBox(height: 6),
                                 Transform.translate(
                                   offset: isIdeaScene ? Offset(ideaLabelSlide.dx * 36, 0) : Offset.zero,
@@ -1304,8 +1324,6 @@ class _SceneWatermarkBannerState extends State<_SceneWatermarkBanner> with Singl
           ..textDirection = TextDirection.ltr
           ..maxLines = 1
           ..layout();
-    // Keep the phrases visually close enough that the next "Coconut" begins entering as the
-    // previous "Store" leaves, so it reads like one continuous ribbon rather than isolated words.
     final gap = math.max(12.0, height * 0.08);
     final unitWidth = textPainter.width + gap;
 
@@ -1346,9 +1364,6 @@ class _SceneWatermarkBannerState extends State<_SceneWatermarkBanner> with Singl
                   width: visibleWidth,
                   height: height,
                   child: ClipRect(
-                    // Positioned (rather than a bare Stack child) forces a tight width of
-                    // trackWidth regardless of the Stack's own (narrower) size, so the track
-                    // never gets clamped down and overflows its Row.
                     child: Stack(
                       children: [
                         Positioned(
@@ -1470,7 +1485,7 @@ class _SceneBottomNavigation extends StatelessWidget {
           children: [
             if (onPrevious != null) _SceneNavCircleButton(icon: Icons.arrow_back_rounded, onTap: onPrevious),
             const Spacer(),
-            if (onNext != null) _SceneNavCircleButton(icon: Icons.arrow_forward_rounded, onTap: onNext),
+            if (onNext != null) _SceneNavCircleButton(icon: Icons.arrow_forward_rounded, onTap: onNext, pulse: true),
           ],
         ),
       ),
@@ -1478,26 +1493,72 @@ class _SceneBottomNavigation extends StatelessWidget {
   }
 }
 
-class _SceneNavCircleButton extends StatelessWidget {
-  const _SceneNavCircleButton({required this.icon, required this.onTap});
+class _SceneNavCircleButton extends StatefulWidget {
+  const _SceneNavCircleButton({required this.icon, required this.onTap, this.pulse = false});
 
   final IconData icon;
   final VoidCallback? onTap;
+  final bool pulse;
+
+  @override
+  State<_SceneNavCircleButton> createState() => _SceneNavCircleButtonState();
+}
+
+class _SceneNavCircleButtonState extends State<_SceneNavCircleButton> with SingleTickerProviderStateMixin {
+  AnimationController? _pulseController;
+
+  static const int _pulseBurstMs = 600;
+  static const int _pulsePauseMs = 3000;
+  static const int _pulseLoopMs = _pulseBurstMs + _pulsePauseMs;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.pulse) {
+      _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: _pulseLoopMs))
+        ..repeat();
+    }
+  }
+
+  static double _pulseScaleFor(double loopT) {
+    const burstFraction = _pulseBurstMs / _pulseLoopMs;
+    if (loopT >= burstFraction) return 1.0;
+    final burstLocal = loopT / burstFraction;
+    final bump = math.sin(((burstLocal * 2) % 1.0) * math.pi);
+    return 1.0 + (0.12 * bump);
+  }
+
+  @override
+  void dispose() {
+    _pulseController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.32),
+    final button = Material(
+      color: Colors.white.withValues(alpha: 0.5),
       shape: const CircleBorder(),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
           width: 54,
           height: 54,
-          child: Icon(icon, color: onTap == null ? Colors.white.withValues(alpha: 0.35) : Colors.white),
+          child: Icon(widget.icon, color: Colors.black.withValues(alpha: widget.onTap == null ? 0.35 : 0.8)),
         ),
       ),
+    );
+
+    final pulseController = _pulseController;
+    if (pulseController == null) return button;
+
+    return AnimatedBuilder(
+      animation: pulseController,
+      builder: (context, child) {
+        return Transform.scale(scale: _pulseScaleFor(pulseController.value), child: child);
+      },
+      child: button,
     );
   }
 }
