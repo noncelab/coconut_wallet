@@ -1388,7 +1388,7 @@ third_party:
   krux: "Krux"
   passport: "Passport"
   trezor: "Trezor"
-  bitbox02: "Bitbox02"
+  bitbox02: "BitBox02"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"
