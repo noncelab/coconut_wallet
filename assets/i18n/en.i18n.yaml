@@ -1141,6 +1141,7 @@ label_import_file_picker_screen:
   loading_title: "Applying notes"
   success_title: "Notes Imported"
   no_applied_memo: "No memo applied.\nPlease check your wallet and files again."
+  delete_file: "Deletes file upon clicking Done"
   error_title: "Couldn't load notes"
   instruction_tooltip:
     step1: "Apply to Wallet"

@@ -36,6 +36,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   String? _fileName;
   List<LabelImportResult> _importResults = [];
   int _currentPage = 0;
+  bool _deleteFileOnSuccess = true;
 
   @override
   void initState() {
@@ -130,9 +131,16 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           Align(
             alignment: Alignment.bottomCenter,
             child: FixedBottomButton(
-              text: t.confirm,
+              text: t.complete,
               isActive: true,
-              onButtonClicked: () => Navigator.of(context).pop(),
+              onButtonClicked: () async {
+                if (_deleteFileOnSuccess && _selectedItemIndex != null) {
+                  final files = await _filesFuture;
+                  final fileToDelete = files[_selectedItemIndex!];
+                  await fileToDelete.delete();
+                }
+                Navigator.of(context).pop();
+              },
             ),
           ),
       ],
@@ -370,6 +378,29 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
                 ),
               ),
               if (_importResults.length > 1) _buildPageIndicator(),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _deleteFileOnSuccess = !_deleteFileOnSuccess;
+                  });
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(
+                      _deleteFileOnSuccess ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
+                      width: 20,
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      t.label_import_file_picker_screen.delete_file,
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
           const Spacer(),
@@ -439,6 +470,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         _fileName = fileName;
       });
       try {
+        await Future.delayed(const Duration(milliseconds: 2500));
         final result = await LabelJsonLManager().importLabelsForAllWallets(
           context.read<WalletProvider>(),
           selectedFile.path,
