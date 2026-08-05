@@ -1067,7 +1067,10 @@ label_import_file_picker_screen:
     step3: "UTXO-Tags"
     step4: "Gesperrte UTXOs"
   widget:
-    count_unit: "Stück"
+    count_unit(cardinal):
+      zero: " Stück"
+      one: " Stück"
+      other: " Stück"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

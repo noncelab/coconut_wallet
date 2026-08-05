@@ -175,7 +175,7 @@ class ImportLabelInstructionToolTip extends StatelessWidget {
                         Text(() {
                           final result = stepResults![e.key];
                           if (result is int) {
-                            return '$result${t.label_import_file_picker_screen.widget.count_unit}';
+                            return '$result${t.label_import_file_picker_screen.widget.count_unit(n: result)}';
                           }
                           return result.toString();
                         }(), style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),

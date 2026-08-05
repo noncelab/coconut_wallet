@@ -1138,7 +1138,10 @@ label_import_file_picker_screen:
     step3: "UTXOタグ"
     step4: "ロックされたUTXO"
   widget:
-    count_unit: "個"
+    count_unit(cardinal):
+      zero: "個"
+      one: "個"
+      other: "個"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

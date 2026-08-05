@@ -1147,7 +1147,10 @@ label_import_file_picker_screen:
     step3: "UTXO Tags"
     step4: "Locked UTXOs"
   widget:
-    count_unit: "items"
+    count_unit(cardinal):
+      zero: " items"
+      one: " item"
+      other: " items"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

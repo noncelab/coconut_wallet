@@ -1153,7 +1153,10 @@ label_import_file_picker_screen:
     step3: "UTXO 태그"
     step4: "잠금 UTXO"
   widget:
-    count_unit: "개"
+    count_unit(cardinal):
+      zero: "개"
+      one: "개"
+      other: "개"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

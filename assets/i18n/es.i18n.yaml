@@ -1140,7 +1140,10 @@ label_import_file_picker_screen:
     step3: "Etiquetas UTXO"
     step4: "UTXOs bloqueados"
   widget:
-    count_unit: "unidades"
+    count_unit(cardinal):
+      zero: " unidades"
+      one: " unidad"
+      other: " unidades"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
