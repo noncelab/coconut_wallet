@@ -30,9 +30,8 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   late Future<List<File>> _filesFuture;
   LabelImportStep _step = LabelImportStep.fileSelection;
   int _swipedItemIndex = -1;
+  double _dragOffset = 0;
   int? _selectedItemIndex;
-  final GlobalKey _tooltipIconKey = GlobalKey();
-  bool _isTooltipVisible = false;
   String? _fileName;
   List<LabelImportResult> _importResults = [];
   int _currentPage = 0;
@@ -45,49 +44,23 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateTooltipPosition();
-    });
-  }
-
-  void _updateTooltipPosition() {
-    final renderBox = _tooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox != null) {
-      setState(() {});
-    }
-  }
-
-  void _removeTooltip() {
-    if (_isTooltipVisible) {
-      setState(() {
-        _isTooltipVisible = false;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _removeTooltip,
-      child: Stack(
-        children: [
-          Scaffold(
-            backgroundColor: context.coconutColors.background,
-            appBar: CoconutAppBar.build(title: t.label_management_screen.import_title, context: context),
-            body: FutureBuilder<List<File>>(
-              future: _filesFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return _buildBody(context, snapshot);
-              },
-            ),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: context.coconutColors.background,
+          appBar: CoconutAppBar.build(title: t.label_management_screen.import_title, context: context),
+          body: FutureBuilder<List<File>>(
+            future: _filesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return _buildBody(context, snapshot);
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -216,8 +189,33 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
               }
             });
           },
-          onSwipeChanged: (isSwiped) => setState(() => _swipedItemIndex = isSwiped ? index : -1),
+          onHorizontalDragUpdate: (details) {
+            if (details.delta.dx < 0) {
+              setState(() {
+                _dragOffset = (_dragOffset + details.delta.dx).clamp(-MediaQuery.of(context).size.width, 0);
+                _swipedItemIndex = index;
+              });
+            } else if (details.delta.dx > 0 && _dragOffset < 0) {
+              setState(() {
+                _dragOffset = (_dragOffset + details.delta.dx).clamp(-MediaQuery.of(context).size.width, 0);
+                _swipedItemIndex = index;
+              });
+            }
+          },
+          onHorizontalDragEnd: (details) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final swipeThresholdPx = screenWidth * 0.2;
+            if (_dragOffset.abs() >= swipeThresholdPx) {
+              _deleteFile(file, index);
+              setState(() {
+                _dragOffset = -screenWidth * 0.25;
+              });
+            } else {
+              _resetSwipeState();
+            }
+          },
           onDeleteTriggered: () => _deleteFile(file, index),
+          dragOffset: _swipedItemIndex == index ? _dragOffset : 0,
         );
       },
     );
@@ -272,12 +270,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         richText: RichText(
           text: TextSpan(
             style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-            children: [
-              TextSpan(
-                text: t.label_management_screen.tooltip.import,
-                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-              ),
-            ],
+            children: [TextSpan(text: t.label_management_screen.tooltip.import)],
           ),
         ),
       ),
@@ -553,9 +546,18 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     }
   }
 
+  String _formatBytes(int bytes, {int decimals = 1}) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    var i = (log(bytes) / log(1024)).floor();
+    final size = (bytes / pow(1024, i));
+    return '${size.toStringAsFixed(size > 10 || i == 0 ? 0 : decimals)} ${suffixes[i]}';
+  }
+
   void _resetSwipeState() {
     setState(() {
       _swipedItemIndex = -1;
+      _dragOffset = 0;
     });
   }
 }
@@ -610,125 +612,32 @@ class DashedBorderPainter extends CustomPainter {
   }
 }
 
-class FileListItemCard extends StatefulWidget {
+class FileListItemCard extends StatelessWidget {
   final File file;
   final bool isSelected;
   final bool isSwiped;
   final VoidCallback onTap;
-  final ValueChanged<bool> onSwipeChanged;
+  final GestureDragUpdateCallback onHorizontalDragUpdate;
+  final GestureDragEndCallback onHorizontalDragEnd;
   final VoidCallback onDeleteTriggered;
+  final double dragOffset;
 
   const FileListItemCard({
     super.key,
-    required this.isSelected,
     required this.file,
+    required this.isSelected,
     required this.isSwiped,
     required this.onTap,
-    required this.onSwipeChanged,
+    required this.onHorizontalDragUpdate,
+    required this.onHorizontalDragEnd,
     required this.onDeleteTriggered,
+    required this.dragOffset,
   });
 
   @override
-  State<FileListItemCard> createState() => _FileListItemCardState();
-}
-
-class _FileListItemCardState extends State<FileListItemCard> with SingleTickerProviderStateMixin {
-  late double _dragOffset;
-  late AnimationController _animationController;
-  late Animation<double> _animation;
-  bool _isAnimating = false;
-  final double _swipeThreshold = 0.2;
-  final double _swipeStopPosition = 0.25;
-
-  @override
-  void initState() {
-    super.initState();
-    _dragOffset = 0;
-    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
-    _animation = Tween<double>(
-      begin: 0,
-      end: 0,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void didUpdateWidget(FileListItemCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isSwiped != widget.isSwiped && !widget.isSwiped) {
-      _animateToOriginalPosition();
-    }
-  }
-
-  void _animationListener() {
-    if (mounted) {
-      setState(() {
-        _dragOffset = _animation.value;
-      });
-    }
-  }
-
-  void _animateToOriginalPosition() {
-    _isAnimating = true;
-    _animation.removeListener(_animationListener);
-    _animationController.stop();
-    _animationController.reset();
-
-    _animation = Tween<double>(
-      begin: _dragOffset,
-      end: 0,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
-
-    _animation.addListener(_animationListener);
-    _animation.addStatusListener((status) {
-      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
-        _animation.removeListener(_animationListener);
-        _isAnimating = false;
-      }
-    });
-    _animationController.forward();
-  }
-
-  void _animateToDeletePosition() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    _isAnimating = true;
-    _animation.removeListener(_animationListener);
-    _animationController.stop();
-    _animationController.reset();
-
-    _animation = Tween<double>(
-      begin: _dragOffset,
-      end: -screenWidth * _swipeStopPosition,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
-
-    _animation.addListener(_animationListener);
-    _animation.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _animation.removeListener(_animationListener);
-        _isAnimating = false;
-      }
-    });
-    _animationController.forward();
-  }
-
-  String _formatBytes(int bytes, {int decimals = 1}) {
-    if (bytes <= 0) return "0 B";
-    const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-    var i = (log(bytes) / log(1024)).floor();
-    final size = (bytes / pow(1024, i));
-    return '${size.toStringAsFixed(size > 10 || i == 0 ? 0 : decimals)} ${suffixes[i]}';
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final fileName = p.basename(widget.file.path);
-    final modifiedDate = DateFormat('yy-MM-dd HH:mm').format(widget.file.lastModifiedSync());
+    final fileName = p.basename(file.path);
+    final modifiedDate = DateFormat('yy-MM-dd HH:mm').format(file.lastModifiedSync());
 
     return Stack(
       alignment: Alignment.center,
@@ -750,38 +659,16 @@ class _FileListItemCardState extends State<FileListItemCard> with SingleTickerPr
         ),
         GestureDetector(
           onTap: () {
-            if (_dragOffset != 0) {
-              widget.onSwipeChanged(false);
+            if (dragOffset != 0) {
+              onDeleteTriggered();
             } else {
-              widget.onTap();
+              onTap();
             }
           },
-          onHorizontalDragUpdate: (details) {
-            if (_isAnimating) return;
-            if (details.delta.dx < 0) {
-              setState(() {
-                _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth, 0);
-              });
-            } else if (details.delta.dx > 0 && _dragOffset < 0) {
-              setState(() {
-                _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth, 0);
-              });
-            }
-          },
-          onHorizontalDragEnd: (details) {
-            if (_isAnimating) return;
-            final swipeThresholdPx = screenWidth * _swipeThreshold;
-            if (_dragOffset.abs() >= swipeThresholdPx) {
-              widget.onDeleteTriggered();
-              widget.onSwipeChanged(true);
-              _animateToDeletePosition();
-            } else {
-              widget.onSwipeChanged(false);
-              _animateToOriginalPosition();
-            }
-          },
+          onHorizontalDragUpdate: onHorizontalDragUpdate,
+          onHorizontalDragEnd: onHorizontalDragEnd,
           child: Transform.translate(
-            offset: Offset(_dragOffset, 0),
+            offset: Offset(dragOffset, 0),
             child: Material(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(12),
@@ -791,13 +678,13 @@ class _FileListItemCardState extends State<FileListItemCard> with SingleTickerPr
                   color: context.coconutColors.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: widget.isSelected ? context.coconutColors.primaryText : Colors.transparent,
+                    color: isSelected ? context.coconutColors.primaryText : Colors.transparent,
                     width: 1,
                   ),
                 ),
                 child: Row(
                   children: [
-                    widget.isSelected
+                    isSelected
                         ? SvgPicture.asset(
                           'assets/svg/square_check.svg',
                           width: 24,
@@ -823,7 +710,7 @@ class _FileListItemCardState extends State<FileListItemCard> with SingleTickerPr
                           Row(
                             children: [
                               Text(
-                                _formatBytes(widget.file.lengthSync()),
+                                _LabelImportFilePickerScreenState()._formatBytes(file.lengthSync()),
                                 style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                               ),
                               Text(
