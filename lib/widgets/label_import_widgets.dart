@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
@@ -7,8 +8,8 @@ import 'package:shimmer/shimmer.dart';
 class ImportLabelSuccessCard extends StatelessWidget {
   final Widget title;
   final List<Object> steps;
-
-  const ImportLabelSuccessCard({super.key, required this.title, required this.steps});
+  final List<Object>? stepResults;
+  const ImportLabelSuccessCard({super.key, required this.title, required this.steps, this.stepResults});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +26,7 @@ class ImportLabelSuccessCard extends StatelessWidget {
           CoconutLayout.spacing_200h,
           title,
           CoconutLayout.spacing_400h,
-          ImportLabelInstructionToolTip(steps: steps, showSkeleton: false),
+          ImportLabelInstructionToolTip(steps: steps, showSkeleton: false, stepResults: stepResults),
         ],
       ),
     );
@@ -112,8 +113,15 @@ class ImportLabelInstructionToolTip extends StatelessWidget {
   final List<Object> steps;
   final String? notice;
   final bool showSkeleton;
+  final List<Object>? stepResults;
 
-  const ImportLabelInstructionToolTip({super.key, required this.steps, this.notice, this.showSkeleton = false});
+  const ImportLabelInstructionToolTip({
+    super.key,
+    required this.steps,
+    this.notice,
+    this.showSkeleton = false,
+    this.stepResults,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -160,6 +168,18 @@ class ImportLabelInstructionToolTip extends StatelessWidget {
                           ),
                         ),
                       ),
+                    ],
+                    if (!showSkeleton && stepResults != null && e.key < stepResults!.length) ...[
+                      ...[
+                        const SizedBox(width: 8),
+                        Text(() {
+                          final result = stepResults![e.key];
+                          if (result is int) {
+                            return '$result${t.label_import_file_picker_screen.widget.count_unit}';
+                          }
+                          return result.toString();
+                        }(), style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
+                      ],
                     ],
                   ],
                 ),

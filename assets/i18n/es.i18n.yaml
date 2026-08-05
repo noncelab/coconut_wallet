@@ -111,6 +111,7 @@ account: "Cuenta"
 merge_utxos: "Fusionar"
 split_utxo: "Dividir"
 apply: "Aplicar"
+retry: "Reintentar"
 
 relative_time:
   just_now: "Justo ahora"
@@ -1132,11 +1133,14 @@ labels_management_screen:
 label_import_file_picker_screen:
   loading_title: "Aplicando notas"
   success_title: "Notas importadas"
+  no_applied_memo: "No hay notas aplicadas.\nPor favor, comprueba tu billetera y archivos de nuevo."
   instruction_tooltip:
     step1: "Aplicar a la billetera"
     step2: "Notas de transacción"
     step3: "Etiquetas UTXO"
     step4: "UTXOs bloqueados"
+  widget:
+    count_unit: "unidades"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

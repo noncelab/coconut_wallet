@@ -6,10 +6,20 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
+
+class LabelImportResult {
+  final WalletItemBase? wallet;
+  int txMemoCount = 0;
+  int utxoTagCount = 0;
+  int utxoLockCount = 0;
+
+  LabelImportResult({this.wallet});
+}
 
 class LabelJsonLManager {
   Future<XFile?> createLabelsJsonLFile(int walletId, WalletProvider walletProvider) async {
@@ -74,11 +84,17 @@ class LabelJsonLManager {
     }
   }
 
-  Future<void> importLabelsFromJsonLFile(int walletId, WalletProvider walletProvider, String filePath) async {
+  Future<LabelImportResult> importLabelsFromJsonLFile(
+    int walletId,
+    WalletProvider walletProvider,
+    String filePath,
+  ) async {
     final file = File(filePath);
     if (!await file.exists()) {
       throw ErrorCodes.withMessage(ErrorCodes.storageReadError, 'File not found: $filePath');
     }
+
+    final result = LabelImportResult(wallet: walletProvider.getWalletById(walletId));
 
     final currentWallet = walletProvider.getWalletById(walletId);
     final currentWalletOrigin = _getOriginFromDescriptor(currentWallet.descriptor);
@@ -110,6 +126,7 @@ class LabelJsonLManager {
             continue;
           }
           await walletProvider.updateTransactionMemo(walletId, ref, label);
+          result.txMemoCount++;
         } else if (type == 'output') {
           final parsedId = _parseRefToUtxoId(ref);
           if (parsedId == null) {
@@ -124,10 +141,12 @@ class LabelJsonLManager {
 
           final colorIndex = data['tag_color'] as int?;
           await walletProvider.addUtxoToTag(walletId, label, utxoId, colorIndex: colorIndex);
+          result.utxoTagCount++;
 
           final spendable = data['spendable'] as bool?;
           if (spendable == false) {
             await walletProvider.lockUtxo(walletId, utxoId);
+            result.utxoLockCount++;
           }
         }
       } catch (e, stackTrace) {
@@ -136,14 +155,22 @@ class LabelJsonLManager {
         debugPrint('StackTrace: $stackTrace');
       }
     }
+    return result;
   }
 
-  Future<void> importLabelsForAllWallets(WalletProvider walletProvider, String filePath) async {
+  Future<List<LabelImportResult>> importLabelsForAllWallets(WalletProvider walletProvider, String filePath) async {
     final allWallets = walletProvider.walletItemList;
+    final List<LabelImportResult> results = [];
 
     for (final wallet in allWallets) {
-      await importLabelsFromJsonLFile(wallet.id, walletProvider, filePath);
+      final singleWalletResult = await importLabelsFromJsonLFile(wallet.id, walletProvider, filePath);
+      if (singleWalletResult.txMemoCount > 0 ||
+          singleWalletResult.utxoTagCount > 0 ||
+          singleWalletResult.utxoLockCount > 0) {
+        results.add(singleWalletResult);
+      }
     }
+    return results;
   }
 
   String? _parseRefToUtxoId(String ref) {

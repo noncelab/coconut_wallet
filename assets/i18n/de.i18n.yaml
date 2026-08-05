@@ -110,6 +110,7 @@ account: "Konto"
 merge_utxos: "Zusammenführen"
 split_utxo: "Teilen"
 apply: "Anwenden"
+retry: "Erneut versuchen"
 
 relative_time:
   just_now: "Gerade eben"
@@ -1059,11 +1060,14 @@ labels_management_screen:
 label_import_file_picker_screen:
   loading_title: "Notizen werden angewendet"
   success_title: "Notizen importiert"
+  no_applied_memo: "Keine Notiz angewendet.\nBitte überprüfen Sie Ihre Wallet und Dateien erneut."
   instruction_tooltip:
     step1: "Auf Wallet anwenden"
     step2: "Transaktionsnotizen"
     step3: "UTXO-Tags"
     step4: "Gesperrte UTXOs"
+  widget:
+    count_unit: "Stück"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

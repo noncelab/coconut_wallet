@@ -6,6 +6,7 @@ import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/label_import_widgets.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +34,9 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   final GlobalKey _tooltipIconKey = GlobalKey();
   bool _isTooltipVisible = false;
   String? _fileName;
+  List<LabelImportResult> _importResults = [];
+  String? _errorMessage;
+  int _currentPage = 0;
 
   @override
   void initState() {
@@ -114,7 +118,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           Align(
             alignment: Alignment.bottomCenter,
             child: FixedBottomButton(
-              text: 'a',
+              text: t.retry,
               isActive: true,
               onButtonClicked: () {
                 setState(() {
@@ -143,7 +147,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       case LabelImportStep.loading:
         return Center(child: _buildLoadingCard());
       case LabelImportStep.success:
-        return Center(child: _buildSuccessCard(context));
+        return _buildSuccessView(context);
       case LabelImportStep.error:
         return _buildErrorCard(context);
     }
@@ -296,30 +300,107 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     );
   }
 
-  Widget _buildSuccessCard(BuildContext context) {
-    return ImportLabelSuccessCard(
-      title: RichText(
-        textAlign: TextAlign.center,
-        text: TextSpan(
-          style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-          children: [
-            TextSpan(text: t.label_import_file_picker_screen.success_title),
-            const TextSpan(text: '\n'),
-            TextSpan(text: _fileName, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
-          ],
-        ),
-      ),
+  Widget _buildSuccessCard(BuildContext context, LabelImportResult importResult) {
+    return ImportLabelInstructionToolTip(
       steps: [
         t.label_import_file_picker_screen.instruction_tooltip.step1,
         t.label_import_file_picker_screen.instruction_tooltip.step2,
         t.label_import_file_picker_screen.instruction_tooltip.step3,
         t.label_import_file_picker_screen.instruction_tooltip.step4,
       ],
+      stepResults: [
+        importResult.wallet?.name ?? '',
+        importResult.txMemoCount,
+        importResult.utxoTagCount,
+        importResult.utxoLockCount,
+      ],
+      showSkeleton: false,
+    );
+  }
+
+  Widget _buildSuccessView(BuildContext context) {
+    if (_importResults.isEmpty) {
+      return Center(
+        child: Text(
+          t.label_import_file_picker_screen.no_applied_memo,
+          style: CoconutTypography.body1_16,
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            'assets/svg/circle-check.svg',
+            colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
+            height: 48,
+            width: 48,
+          ),
+          CoconutLayout.spacing_200h,
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+              children: [
+                TextSpan(text: t.label_import_file_picker_screen.success_title),
+                const TextSpan(text: '\n'),
+                TextSpan(
+                  text: _fileName,
+                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                ),
+              ],
+            ),
+          ),
+          CoconutLayout.spacing_400h,
+          Column(
+            children: [
+              SizedBox(
+                height: 125,
+                child: PageView.builder(
+                  itemCount: _importResults.length,
+                  onPageChanged: (index) {
+                    setState(() => _currentPage = index);
+                  },
+                  itemBuilder: (context, index) {
+                    return _buildSuccessCard(context, _importResults[index]);
+                  },
+                ),
+              ),
+              if (_importResults.length > 1) _buildPageIndicator(),
+            ],
+          ),
+          const Spacer(),
+        ],
+      ),
     );
   }
 
   Widget _buildErrorCard(BuildContext context) {
-    return const ImportLabelErrorCard(title: 'a', description: 'a');
+    return ImportLabelErrorCard(title: 'a', description: 'a', errorMessage: _errorMessage);
+  }
+
+  Widget _buildPageIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_importResults.length, (index) {
+        return Container(
+          width: 8.0,
+          height: 8.0,
+          margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color:
+                _currentPage == index
+                    ? context.coconutColors.primaryText
+                    : context.coconutColors.secondaryText.withOpacity(0.5),
+          ),
+        );
+      }),
+    );
   }
 
   void _onApplyButtonPressed(List<File> files) async {
@@ -347,13 +428,18 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         _fileName = fileName;
       });
       try {
-        await Future.delayed(const Duration(seconds: 5));
+        final result = await LabelJsonLManager().importLabelsForAllWallets(
+          context.read<WalletProvider>(),
+          selectedFile.path,
+        );
         setState(() {
           _step = LabelImportStep.success;
+          _importResults = result;
         });
       } catch (e) {
         setState(() {
           _step = LabelImportStep.error;
+          _errorMessage = e.toString();
         });
       }
     }

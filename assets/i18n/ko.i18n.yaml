@@ -110,6 +110,7 @@ account: "계정"
 merge_utxos: "합치기"
 split_utxo: "나누기"
 apply: "정리하기"
+retry: "재시도"
 
 relative_time:
   just_now: "방금 전"
@@ -1145,11 +1146,14 @@ labels_management_screen:
 label_import_file_picker_screen:
   loading_title: "메모를 적용하고 있어요"
   success_title: "메모를 가져왔어요"
+  no_applied_memo: "적용된 메모가 없어요.\n지갑과 파일을 다시 확인해주세요."
   instruction_tooltip:
     step1: "적용 지갑"
     step2: "거래 메모"
     step3: "UTXO 태그"
     step4: "잠금 UTXO"
+  widget:
+    count_unit: "개"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

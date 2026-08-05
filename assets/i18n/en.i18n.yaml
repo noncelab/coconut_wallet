@@ -110,6 +110,7 @@ account: "Account"
 merge_utxos: "Merge"
 split_utxo: "Split"
 apply: "Apply"
+retry: "Retry"
 
 relative_time:
   just_now: "Just now"
@@ -1139,11 +1140,14 @@ labels_management_screen:
 label_import_file_picker_screen:
   loading_title: "Applying notes"
   success_title: "Notes Imported"
+  no_applied_memo: "No memo applied.\nPlease check your wallet and files again."
   instruction_tooltip:
     step1: "Apply to Wallet"
     step2: "Transaction Memos"
     step3: "UTXO Tags"
     step4: "Locked UTXOs"
+  widget:
+    count_unit: "items"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
