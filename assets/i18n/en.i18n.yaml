@@ -1113,7 +1113,7 @@ split_utxo_screen:
     preview: "Preview"
     description: "This split creates many outputs, so creating the transaction may take some time. Preview the result first?"
 
-labels_management_screen:
+label_management_screen:
   title: "Manage Notes"
   subtitle: "Import or export recorded notes."
   description: "BIP-329 is an open standard that allows wallets to exchange notes with each other. Exporting your notes lets you restore them simply by importing, even if you switch devices or reinstall the app."

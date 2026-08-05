@@ -270,8 +270,8 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           ),
                         ),
                         SingleButton(
-                          title: t.labels_management_screen.title,
-                          subtitle: t.labels_management_screen.subtitle,
+                          title: t.label_management_screen.title,
+                          subtitle: t.label_management_screen.subtitle,
                           isVerticalSubtitle: true,
                           onPressed: () => _showLabelsManagementBottomSheet(context),
                         ),

@@ -75,7 +75,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         children: [
           Scaffold(
             backgroundColor: context.coconutColors.background,
-            appBar: CoconutAppBar.build(title: t.labels_management_screen.import_title, context: context),
+            appBar: CoconutAppBar.build(title: t.label_management_screen.import_title, context: context),
             body: FutureBuilder<List<File>>(
               future: _filesFuture,
               builder: (context, snapshot) {
@@ -109,7 +109,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           Align(
             alignment: Alignment.bottomCenter,
             child: FixedBottomButton(
-              text: t.labels_management_screen.file.apply,
+              text: t.label_management_screen.file.apply,
               isActive: _selectedItemIndex != null,
               onButtonClicked: () => _onApplyButtonPressed(snapshot.data!),
             ),
@@ -182,7 +182,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
             ),
             CoconutLayout.spacing_400h,
             Text(
-              t.labels_management_screen.file.not_found,
+              t.label_management_screen.file.not_found,
               style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
               textAlign: TextAlign.center,
             ),
@@ -247,7 +247,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
               ),
               const SizedBox(width: 8),
               Text(
-                t.labels_management_screen.file.select,
+                t.label_management_screen.file.select,
                 style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
               ),
             ],
@@ -274,7 +274,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
             style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             children: [
               TextSpan(
-                text: t.labels_management_screen.tooltip.import,
+                text: t.label_management_screen.tooltip.import,
                 style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
               ),
             ],
@@ -456,8 +456,8 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       builder:
           (dialogContext) => CoconutPopup(
             languageCode: context.read<PreferenceProvider>().language,
-            title: t.labels_management_screen.file.apply,
-            description: t.labels_management_screen.file.apply_description(fileName: fileName),
+            title: t.label_management_screen.file.apply,
+            description: t.label_management_screen.file.apply_description(fileName: fileName),
             onTapRight: () => Navigator.of(dialogContext).pop(true),
             rightButtonText: t.confirm,
           ),
@@ -496,8 +496,8 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       builder:
           (dialogContext) => CoconutPopup(
             languageCode: context.read<PreferenceProvider>().language,
-            title: t.labels_management_screen.file.delete,
-            description: t.labels_management_screen.file.delete_description(fileName: p.basename(file.path)),
+            title: t.label_management_screen.file.delete,
+            description: t.label_management_screen.file.delete_description(fileName: p.basename(file.path)),
             onTapRight: () => Navigator.of(dialogContext).pop(true),
             onTapLeft: () => Navigator.of(dialogContext).pop(false),
             rightButtonText: t.delete,
@@ -511,7 +511,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         await file.delete();
         CoconutToast.showToast(
           context: context,
-          text: t.labels_management_screen.file.delete_success,
+          text: t.label_management_screen.file.delete_success,
           level: CoconutToastLevel.success,
         );
         _refreshFiles();
@@ -519,7 +519,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         _resetSwipeState();
         CoconutToast.showToast(
           context: context,
-          text: t.labels_management_screen.file.delete_failed,
+          text: t.label_management_screen.file.delete_failed,
           level: CoconutToastLevel.error,
         );
       }
@@ -546,7 +546,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       if (mounted) {
         CoconutToast.showToast(
           context: context,
-          text: t.labels_management_screen.file.invalid_file_type,
+          text: t.label_management_screen.file.invalid_file_type,
           level: CoconutToastLevel.error,
         );
       }

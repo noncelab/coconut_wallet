@@ -1106,7 +1106,7 @@ split_utxo_screen:
     preview: "Vista previa"
     description: "Hay muchas divisiones, por lo que la creación de la transacción puede tardar un poco. ¿Quieres ver primero el resultado estimado?"
 
-labels_management_screen:
+label_management_screen:
   title: "Gestionar notas"
   subtitle: "Importa o exporta tus notas guardadas."
   description: "BIP-329 es un estándar abierto que permite intercambiar notas entre billeteras. Si exportas tus notas, puedes restaurarlas fácilmente importándolas, incluso si cambias de dispositivo o reinstalas la aplicación."

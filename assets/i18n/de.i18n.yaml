@@ -1033,7 +1033,7 @@ split_utxo_screen:
     preview: "Vorschau"
     description: "Diese Teilung erzeugt viele Ausgaben, daher kann die Erstellung der Transaktion einige Zeit dauern. Zuerst das Ergebnis in der Vorschau anzeigen?"
 
-labels_management_screen:
+label_management_screen:
   title: "Notizen verwalten"
   subtitle: "Importieren oder exportieren Sie Ihre gespeicherten Notizen."
   description: "BIP-329 ist ein offener Standard, der den Austausch von Notizen zwischen Wallets ermöglicht. Wenn Sie Ihre Notizen exportieren, können Sie diese durch einfaches Importieren wiederherstellen, selbst wenn Sie das Gerät wechseln oder die App neu installieren."

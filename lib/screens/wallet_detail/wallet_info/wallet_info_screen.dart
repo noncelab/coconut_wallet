@@ -335,7 +335,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               ),
               SingleButton(
                 enableShrinkAnim: true,
-                title: t.labels_management_screen.title,
+                title: t.label_management_screen.title,
                 onPressed: () => _showLabelsManagementBottomSheet(context, viewModel),
               ),
             ],

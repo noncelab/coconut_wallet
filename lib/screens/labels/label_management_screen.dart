@@ -75,7 +75,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
           Scaffold(
             backgroundColor: context.coconutColors.background,
             appBar: CoconutAppBar.build(
-              title: t.labels_management_screen.title,
+              title: t.label_management_screen.title,
               context: context,
               actionButtonList: [
                 IconButton(
@@ -106,21 +106,21 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
           ButtonGroup(
             buttons: [
               SingleButton(
-                title: t.labels_management_screen.import_title,
-                subtitle: t.labels_management_screen.import_description,
+                title: t.label_management_screen.import_title,
+                subtitle: t.label_management_screen.import_description,
                 onPressed: () => _navigateToImportFilePicker(context),
                 isVerticalSubtitle: true,
               ),
               SingleButton(
-                title: t.labels_management_screen.export_title,
-                subtitle: t.labels_management_screen.export_description,
+                title: t.label_management_screen.export_title,
+                subtitle: t.label_management_screen.export_description,
                 onPressed:
                     () => _navigateToActionScreen(
                       context: context,
-                      title: t.labels_management_screen.export_title,
+                      title: t.label_management_screen.export_title,
                       description: widget.exportDescription,
                       iconPath: 'assets/svg/file.svg',
-                      actionButtonText: t.labels_management_screen.export_title,
+                      actionButtonText: t.label_management_screen.export_title,
                       onAction: widget.onExport,
                     ),
                 isVerticalSubtitle: true,
@@ -147,19 +147,19 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
           style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
           children: [
             TextSpan(
-              text: '${t.labels_management_screen.tooltip.title}\n',
+              text: '${t.label_management_screen.tooltip.title}\n',
               style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
             ),
             TextSpan(
-              text: '${t.labels_management_screen.tooltip.description}\n\n',
+              text: '${t.label_management_screen.tooltip.description}\n\n',
               style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             ),
             TextSpan(
-              text: '${t.labels_management_screen.tooltip.supported_title}\n',
+              text: '${t.label_management_screen.tooltip.supported_title}\n',
               style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
             ),
             TextSpan(
-              text: t.labels_management_screen.tooltip.supported_list,
+              text: t.label_management_screen.tooltip.supported_list,
               style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             ),
           ],
@@ -181,7 +181,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
             padding: const EdgeInsets.only(top: 28, left: 16, right: 16, bottom: 12),
             color: context.coconutColors.popoverBackground,
             child: Text(
-              t.labels_management_screen.description,
+              t.label_management_screen.description,
               style: CoconutTypography.body3_12.copyWith(color: context.coconutColors.popoverText, height: 1.3),
             ),
           ),
