@@ -1144,6 +1144,7 @@ labels_management_screen:
     invalid_file_type: "잘못된 파일 형식이에요. JSONL 파일을 선택해주세요."
 label_import_file_picker_screen:
   loading_title: "메모를 적용하고 있어요"
+  success_title: "메모를 가져왔어요"
   instruction_tooltip:
     step1: "적용 지갑"
     step2: "거래 메모"

@@ -1058,6 +1058,7 @@ labels_management_screen:
     invalid_file_type: "Ungültiges Dateiformat. Bitte wählen Sie eine JSONL-Datei aus."
 label_import_file_picker_screen:
   loading_title: "Notizen werden angewendet"
+  success_title: "Notizen importiert"
   instruction_tooltip:
     step1: "Auf Wallet anwenden"
     step2: "Transaktionsnotizen"

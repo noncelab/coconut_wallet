@@ -32,7 +32,6 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   int? _selectedItemIndex;
   final GlobalKey _tooltipIconKey = GlobalKey();
   bool _isTooltipVisible = false;
-  String? _successMessage;
   String? _fileName;
 
   @override
@@ -144,7 +143,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       case LabelImportStep.loading:
         return Center(child: _buildLoadingCard());
       case LabelImportStep.success:
-        return _buildSuccessCard(context);
+        return Center(child: _buildSuccessCard(context));
       case LabelImportStep.error:
         return _buildErrorCard(context);
     }
@@ -299,17 +298,23 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
 
   Widget _buildSuccessCard(BuildContext context) {
     return ImportLabelSuccessCard(
-      title: 'a',
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          Text(
-            _successMessage ?? '',
-            style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.center,
-          ),
-        ],
+      title: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+          children: [
+            TextSpan(text: t.label_import_file_picker_screen.success_title),
+            const TextSpan(text: '\n'),
+            TextSpan(text: _fileName, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+          ],
+        ),
       ),
+      steps: [
+        t.label_import_file_picker_screen.instruction_tooltip.step1,
+        t.label_import_file_picker_screen.instruction_tooltip.step2,
+        t.label_import_file_picker_screen.instruction_tooltip.step3,
+        t.label_import_file_picker_screen.instruction_tooltip.step4,
+      ],
     );
   }
 
@@ -345,7 +350,6 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         await Future.delayed(const Duration(seconds: 5));
         setState(() {
           _step = LabelImportStep.success;
-          _successMessage = 'a';
         });
       } catch (e) {
         setState(() {

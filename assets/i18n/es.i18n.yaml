@@ -1131,6 +1131,7 @@ labels_management_screen:
     invalid_file_type: "Formato de archivo no válido. Selecciona un archivo JSONL."
 label_import_file_picker_screen:
   loading_title: "Aplicando notas"
+  success_title: "Notas importadas"
   instruction_tooltip:
     step1: "Aplicar a la billetera"
     step2: "Notas de transacción"

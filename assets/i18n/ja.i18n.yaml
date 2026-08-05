@@ -1129,6 +1129,7 @@ labels_management_screen:
     invalid_file_type: "無効なファイル形式です。JSONLファイルを選択してください。"
 label_import_file_picker_screen:
   loading_title: "メモを適用中"
+  success_title: "メモをインポートしました"
   instruction_tooltip:
     step1: "適用ウォレット"
     step2: "取引メモ"

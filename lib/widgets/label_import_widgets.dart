@@ -5,10 +5,10 @@ import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
 
 class ImportLabelSuccessCard extends StatelessWidget {
-  final String title;
-  final Widget? child;
+  final Widget title;
+  final List<Object> steps;
 
-  const ImportLabelSuccessCard({super.key, required this.title, this.child});
+  const ImportLabelSuccessCard({super.key, required this.title, required this.steps});
 
   @override
   Widget build(BuildContext context) {
@@ -23,14 +23,9 @@ class ImportLabelSuccessCard extends StatelessWidget {
             width: 48,
           ),
           CoconutLayout.spacing_200h,
-          Text(
-            title,
-            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.center,
-          ),
-          CoconutLayout.spacing_200h,
-          CoconutLayout.spacing_600h,
-          if (child != null) child!,
+          title,
+          CoconutLayout.spacing_400h,
+          ImportLabelInstructionToolTip(steps: steps, showSkeleton: false),
         ],
       ),
     );
