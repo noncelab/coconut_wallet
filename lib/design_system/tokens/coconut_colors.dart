@@ -10,6 +10,14 @@ const Gradient kCoconutMainnetLogoGradient = LinearGradient(
   colors: [Color(0xFF54C8F0), Color(0xFF8A61FF)],
 );
 
+/// 성공 / 경고 / 실패(또는 위험)을 나타내는 공통 시맨틱 색상입니다.
+///
+/// 특정 배경 위에서 가독성이 떨어지는 경우에만 테마별로 다른 값으로 조정하고,
+/// 그 외에는 이 기본값을 그대로 사용합니다.
+const Color kCoconutSuccess = ds.CoconutColors.green;
+const Color kCoconutWarning = ds.CoconutColors.warningYellow;
+const Color kCoconutDanger = ds.CoconutColors.hotPink;
+
 @immutable
 class CoconutColors {
   /// 코코넛 고유 메인넷 로고 그라디언트
@@ -219,10 +227,6 @@ class CoconutColors {
   /// 홈 화면 요소가 눌렸을 때 기본으로 사용할 overlay 강도
   final double homeSurfacePressOverlayOpacity;
 
-  /// 노드 연결 상태
-  final Color nodeConnected;
-  final Color nodeFailed;
-
   /// utxo 오버뷰 화면 요소
   final Color utxoOverviewChartSurface;
   final double utxoOverviewChartUnselectedOverlayOpacity;
@@ -371,8 +375,6 @@ class CoconutColors {
     required this.homeSurface,
     required this.homeSurfacePressOverlay,
     required this.homeSurfacePressOverlayOpacity,
-    required this.nodeConnected,
-    required this.nodeFailed,
     required this.utxoOverviewChartSurface,
     required this.utxoOverviewChartUnselectedOverlayOpacity,
     required this.utxoOverviewCoinSurface,
@@ -438,9 +440,9 @@ class CoconutColors {
       iconDisabled: ds.CoconutColors.gray600,
       iconOnDanger: ds.CoconutColors.white,
       iconButtonHighlight: ds.CoconutColors.gray850,
-      warning: ds.CoconutColors.warningYellow,
-      danger: ds.CoconutColors.hotPink,
-      success: ds.CoconutColors.cyanBlue,
+      warning: kCoconutWarning,
+      danger: kCoconutDanger,
+      success: kCoconutSuccess,
       divider: ds.CoconutColors.gray800,
 
       brandAccentBackground: ds.CoconutColors.primary,
@@ -504,8 +506,6 @@ class CoconutColors {
       homeSurface: ds.CoconutColors.gray850,
       homeSurfacePressOverlay: ds.CoconutColors.black,
       homeSurfacePressOverlayOpacity: 0.5,
-      nodeConnected: ds.CoconutColors.primary,
-      nodeFailed: ds.CoconutColors.red,
       utxoOverviewChartSurface: ds.CoconutColors.gray800,
       utxoOverviewChartUnselectedOverlayOpacity: 0.6,
       utxoOverviewCoinSurface: ds.CoconutColors.gray900,
@@ -551,7 +551,7 @@ class CoconutColors {
       surface: ds.CoconutColors.gray150,
       surfaceInset: ds.CoconutColors.white,
       surfacePressOverlay: ds.CoconutColors.black,
-      surfacePressOverlayOpacity: 0.6,
+      surfacePressOverlayOpacity: 0.12,
       surfaceDisabled: ds.CoconutColors.gray300,
       surfaceMuted: ds.CoconutColors.gray200,
       surfaceInfoChip: ds.CoconutColors.gray300,
@@ -572,9 +572,9 @@ class CoconutColors {
       iconDisabled: ds.CoconutColors.gray350,
       iconOnDanger: ds.CoconutColors.white,
       iconButtonHighlight: ds.CoconutColors.gray400,
-      warning: ds.CoconutColors.warningYellow,
-      danger: ds.CoconutColors.hotPink,
-      success: ds.CoconutColors.cyanBlue,
+      warning: kCoconutWarning,
+      danger: kCoconutDanger,
+      success: kCoconutSuccess,
       divider: ds.CoconutColors.gray200,
 
       brandAccentBackground: ds.CoconutColors.purple,
@@ -639,8 +639,6 @@ class CoconutColors {
       homeSurface: ds.CoconutColors.white,
       homeSurfacePressOverlay: ds.CoconutColors.gray700,
       homeSurfacePressOverlayOpacity: 0.2,
-      nodeConnected: ds.CoconutColors.purple,
-      nodeFailed: ds.CoconutColors.red,
       utxoOverviewChartSurface: ds.CoconutColors.white,
       utxoOverviewChartUnselectedOverlayOpacity: 0.6,
       utxoOverviewCoinSurface: ds.CoconutColors.white,
@@ -724,9 +722,9 @@ class CoconutColors {
       iconDisabled: caramel,
       iconOnDanger: ds.CoconutColors.white,
       iconButtonHighlight: dim,
-      warning: ds.CoconutColors.warningYellow,
-      danger: ds.CoconutColors.hotPink,
-      success: palmGreen,
+      warning: kCoconutWarning,
+      danger: kCoconutDanger,
+      success: palmGreen, // 코코넛 과육 테마 배경에서 기본 success 색보다 잘 보이는 조정값
       divider: lagoon.withAlpha(30),
 
       brandAccentBackground: lagoon,
@@ -790,8 +788,6 @@ class CoconutColors {
       homeSurface: cream,
       homeSurfacePressOverlay: golenSun,
       homeSurfacePressOverlayOpacity: 0.2,
-      nodeConnected: lagoonDeep,
-      nodeFailed: ds.CoconutColors.hotPink,
       utxoOverviewChartSurface: shell,
       utxoOverviewChartUnselectedOverlayOpacity: 0.32,
       utxoOverviewCoinSurface: shell,

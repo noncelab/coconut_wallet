@@ -742,7 +742,10 @@ class _CoconutPopupState extends State<CoconutPopup> {
                       onTapDown: (_) => setState(() => _isLeftButtonPressing = true),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        color: _isLeftButtonPressing ? colors.surfacePressOverlay : Colors.transparent,
+                        color:
+                            _isLeftButtonPressing
+                                ? colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity)
+                                : Colors.transparent,
                         alignment: Alignment.center,
                         child: Text(
                           widget.leftButtonText ?? _getLeftButtonText(),
@@ -763,7 +766,10 @@ class _CoconutPopupState extends State<CoconutPopup> {
                     onTapDown: (_) => setState(() => _isRightButtonPressing = true),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      color: _isRightButtonPressing ? colors.surfacePressOverlay : Colors.transparent,
+                      color:
+                          _isRightButtonPressing
+                              ? colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity)
+                              : Colors.transparent,
                       alignment: Alignment.center,
                       child: Text(
                         widget.rightButtonText ?? _getRightButtonText(),

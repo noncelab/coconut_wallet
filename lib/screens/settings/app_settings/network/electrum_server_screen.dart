@@ -440,10 +440,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                               ),
                               if (serverConnectionStatus == NodeConnectionStatus.connecting) ...[
                                 CoconutLayout.spacing_100w,
-                                const InlineLoadingIndicator(
-                                  padding: EdgeInsets.zero,
-                                  radius: 6,
-                                ),
+                                const InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 6),
                               ],
                               if (serverConnectionStatus == NodeConnectionStatus.connected ||
                                   serverConnectionStatus == NodeConnectionStatus.failed) ...[
@@ -455,8 +452,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                                     shape: BoxShape.circle,
                                     color:
                                         serverConnectionStatus == NodeConnectionStatus.connected
-                                            ? context.coconutColors.nodeConnected
-                                            : context.coconutColors.nodeFailed,
+                                            ? context.coconutColors.success
+                                            : context.coconutColors.danger,
                                   ),
                                 ),
                               ],
