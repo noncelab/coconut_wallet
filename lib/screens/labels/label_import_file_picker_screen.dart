@@ -35,7 +35,6 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   bool _isTooltipVisible = false;
   String? _fileName;
   List<LabelImportResult> _importResults = [];
-  String? _errorMessage;
   int _currentPage = 0;
 
   @override
@@ -149,7 +148,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       case LabelImportStep.success:
         return _buildSuccessView(context);
       case LabelImportStep.error:
-        return _buildErrorCard(context);
+        return Center(child: _buildErrorCard(context));
     }
   }
 
@@ -380,7 +379,19 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   }
 
   Widget _buildErrorCard(BuildContext context) {
-    return ImportLabelErrorCard(title: 'a', description: 'a', errorMessage: _errorMessage);
+    return ImportLabelErrorCard(
+      title: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.danger),
+          children: [
+            TextSpan(text: t.label_import_file_picker_screen.error_title),
+            const TextSpan(text: '\n'),
+            TextSpan(text: _fileName, style: CoconutTypography.body1_16.setColor(context.coconutColors.danger)),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildPageIndicator() {
@@ -432,14 +443,16 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           context.read<WalletProvider>(),
           selectedFile.path,
         );
-        setState(() {
-          _step = LabelImportStep.success;
-          _importResults = result;
-        });
+        if (mounted) {
+          setState(() {
+            _step = LabelImportStep.success;
+            _importResults = result;
+          });
+        }
       } catch (e) {
+        if (!mounted) return;
         setState(() {
           _step = LabelImportStep.error;
-          _errorMessage = e.toString();
         });
       }
     }

@@ -1132,6 +1132,7 @@ label_import_file_picker_screen:
   loading_title: "メモを適用中"
   success_title: "メモをインポートしました"
   no_applied_memo: "適用されたメモがありません。\nウォレットとファイルをもう一度ご確認ください。"
+  error_title: "メモを取得できませんでした"
   instruction_tooltip:
     step1: "適用ウォレット"
     step2: "取引メモ"

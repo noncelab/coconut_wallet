@@ -34,18 +34,9 @@ class ImportLabelSuccessCard extends StatelessWidget {
 }
 
 class ImportLabelErrorCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final String? errorMessage;
-  final List<String>? steps;
+  final Widget title;
 
-  const ImportLabelErrorCard({
-    super.key,
-    required this.title,
-    required this.description,
-    this.errorMessage,
-    this.steps,
-  });
+  const ImportLabelErrorCard({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -60,21 +51,8 @@ class ImportLabelErrorCard extends StatelessWidget {
             width: 48,
           ),
           CoconutLayout.spacing_200h,
-          Text(title, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.danger)),
+          title,
           CoconutLayout.spacing_400h,
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-            decoration: BoxDecoration(
-              color: context.coconutColors.surface,
-              borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-            ),
-            child: Text(
-              description,
-              style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-              textAlign: TextAlign.center,
-            ),
-          ),
         ],
       ),
     );

@@ -1134,6 +1134,7 @@ label_import_file_picker_screen:
   loading_title: "Aplicando notas"
   success_title: "Notas importadas"
   no_applied_memo: "No hay notas aplicadas.\nPor favor, comprueba tu billetera y archivos de nuevo."
+  error_title: "No se pudieron cargar las notas"
   instruction_tooltip:
     step1: "Aplicar a la billetera"
     step2: "Notas de transacción"
