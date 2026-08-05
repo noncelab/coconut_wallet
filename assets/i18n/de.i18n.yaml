@@ -1263,7 +1263,7 @@ third_party:
   krux: "Krux"
   passport: "Passport"
   trezor: "Trezor"
-  bitbox02: "Bitbox"
+  bitbox02: "BitBox"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"

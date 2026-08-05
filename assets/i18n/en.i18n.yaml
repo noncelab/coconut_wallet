@@ -656,7 +656,7 @@ bitbox02_sign_screen:
     ready_to_broadcast: "Ready to broadcast."
   error_title: "Signing Failed"
   wrong_wallet_title: "Wrong wallet connected"
-  device_mismatch: "The connected Bitbox doesn't match the wallet you're trying to sign with."
+  device_mismatch: "The connected BitBox doesn't match the wallet you're trying to sign with."
   device_mismatch_other_wallet: "The connected wallet matches the wallet named '${wallet_name}'."
   fingerprint_compare:
     expected: "Expected"
@@ -1343,7 +1343,7 @@ third_party:
   krux: "Krux"
   passport: "Passport"
   trezor: "Trezor"
-  bitbox02: "Bitbox"
+  bitbox02: "BitBox"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"
