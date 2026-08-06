@@ -6,26 +6,40 @@ import 'package:shimmer/shimmer.dart';
 
 class ExportLabelSuccessCard extends StatelessWidget {
   final Widget title;
-  final List<Object> steps;
-  final List<Object>? stepResults;
+  final List<Object> topSteps;
+  final List<Object> bottomSteps;
+  final List<Object>? topStepResults;
+  final List<Object>? bottomStepResults;
 
-  const ExportLabelSuccessCard({super.key, required this.title, required this.steps, this.stepResults});
+  const ExportLabelSuccessCard({
+    super.key,
+    required this.title,
+    required this.topSteps,
+    this.bottomSteps = const [],
+    this.topStepResults,
+    this.bottomStepResults,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SvgPicture.asset(
-          'assets/svg/circle-check.svg',
-          colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
-          height: 48,
-          width: 48,
-        ),
-        CoconutLayout.spacing_200h,
-        title,
-        CoconutLayout.spacing_400h,
-        _ExportLabelInstructionToolTip(steps: steps, showSkeleton: false, stepResults: stepResults),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          SvgPicture.asset(
+            'assets/svg/circle-check.svg',
+            colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
+            height: 40,
+            width: 40,
+          ),
+          CoconutLayout.spacing_400h,
+          title,
+          CoconutLayout.spacing_400h,
+          _ExportLabelInstructionToolTip(steps: topSteps, showSkeleton: false, stepResults: topStepResults),
+          CoconutLayout.spacing_400h,
+          _ExportLabelInstructionToolTip(steps: bottomSteps, showSkeleton: false, stepResults: bottomStepResults),
+        ],
+      ),
     );
   }
 }
@@ -37,26 +51,30 @@ class ExportLabelErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SvgPicture.asset(
-          'assets/svg/circle-warning.svg',
-          colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
-          height: 48,
-          width: 48,
-        ),
-        CoconutLayout.spacing_200h,
-        title,
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          SvgPicture.asset(
+            'assets/svg/circle-warning.svg',
+            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+            height: 40,
+            width: 40,
+          ),
+          CoconutLayout.spacing_400h,
+          title,
+        ],
+      ),
     );
   }
 }
 
 class ExportLabelProgressCard extends StatelessWidget {
   final Widget title;
-  final List<Object> steps;
+  final List<Object> topSteps;
+  final List<Object> bottomSteps;
 
-  const ExportLabelProgressCard({super.key, required this.title, required this.steps});
+  const ExportLabelProgressCard({super.key, required this.title, required this.topSteps, required this.bottomSteps});
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +90,9 @@ class ExportLabelProgressCard extends StatelessWidget {
           CoconutLayout.spacing_400h,
           title,
           CoconutLayout.spacing_400h,
-          _ExportLabelInstructionToolTip(steps: steps, showSkeleton: true),
+          _ExportLabelInstructionToolTip(steps: topSteps, showSkeleton: true),
+          CoconutLayout.spacing_400h,
+          _ExportLabelInstructionToolTip(steps: bottomSteps, showSkeleton: true),
         ],
       ),
     );
@@ -128,7 +148,7 @@ class _ExportLabelInstructionToolTip extends StatelessWidget {
                     if (!showSkeleton && stepResults != null && e.key < stepResults!.length) ...[
                       const SizedBox(width: 8),
                       Text(
-                        stepResults![e.key].toString(),
+                        stepResults![e.key].toString().isNotEmpty ? stepResults![e.key].toString() : '-',
                         style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                       ),
                     ],

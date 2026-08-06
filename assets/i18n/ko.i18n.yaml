@@ -1174,6 +1174,10 @@ label_export_wallet_picker_screen:
   instruction_tooltip:
     step1: "파일 이름"
     step2: "생성 일시"
+    step3: "적용 지갑"
+    step4: "거래 메모"
+    step5: "UTXO 태그"
+    step6: "잠금 UTXO"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

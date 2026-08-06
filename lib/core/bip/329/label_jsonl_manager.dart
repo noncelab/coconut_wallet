@@ -105,6 +105,16 @@ class LabelJsonLManager {
     }
   }
 
+  Future<void> shareFiles(List<XFile> xFiles) async {
+    if (xFiles.isEmpty) return;
+    AppGuard.disablePrivacyScreen();
+    try {
+      await Share.shareXFiles(xFiles, text: 'Coconut Wallet Labels');
+    } finally {
+      AppGuard.enablePrivacyScreen();
+    }
+  }
+
   XFile createXFileFromFile(File file) {
     return XFile(file.path, name: p.basename(file.path), mimeType: 'application/jsonl');
   }

@@ -33,6 +33,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   LabelExportStep _step = LabelExportStep.selection;
   String? _exportedFileName;
   String? _exportedFileDate;
+  File? _exportedFile;
 
   late Future<List<File>> _filesFuture;
 
@@ -88,10 +89,11 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
               rightText: t.share,
               leftButtonRatio: 0.3,
               isLeftButtonActive: _selectedFileIndices.isNotEmpty,
-              isRightButtonActive: _selectedFileIndices.length == 1,
+              isRightButtonActive: _selectedFileIndices.isNotEmpty,
               rightButtonClicked: () async {
                 final files = await _filesFuture;
-                _shareFile(files[_selectedFileIndices.first]);
+                final selectedFiles = _selectedFileIndices.map((index) => files[index]).toList();
+                _shareFiles(selectedFiles);
               },
               leftButtonClicked: () async {
                 await _deleteSelectedFile();
@@ -112,7 +114,9 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
                   _isCreateFileSelected = false;
                 });
               },
-              rightButtonClicked: () {},
+              rightButtonClicked: () {
+                if (_exportedFile != null) _shareFiles([_exportedFile!]);
+              },
             ),
           ),
         if (_step == LabelExportStep.error)
@@ -208,7 +212,6 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
               }
             });
           },
-          onShare: () => _shareFile(file),
         );
       },
     );
@@ -308,9 +311,15 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
         textAlign: TextAlign.center,
       ),
-      steps: [
+      topSteps: [
         t.label_export_wallet_picker_screen.instruction_tooltip.step1,
         t.label_export_wallet_picker_screen.instruction_tooltip.step2,
+      ],
+      bottomSteps: [
+        t.label_export_wallet_picker_screen.instruction_tooltip.step3,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step4,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step5,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step6,
       ],
     );
   }
@@ -322,11 +331,18 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
         textAlign: TextAlign.center,
       ),
-      steps: [
+      topSteps: [
         t.label_export_wallet_picker_screen.instruction_tooltip.step1,
         t.label_export_wallet_picker_screen.instruction_tooltip.step2,
       ],
-      stepResults: [_exportedFileName ?? '', _exportedFileDate ?? ''],
+      topStepResults: [_exportedFileName ?? '', _exportedFileDate ?? ''],
+      bottomSteps: [
+        t.label_export_wallet_picker_screen.instruction_tooltip.step3,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step4,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step5,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step6,
+      ],
+      bottomStepResults: const ['', '', '', ''],
     );
   }
 
@@ -362,6 +378,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         setState(() {
           _step = LabelExportStep.success;
           _exportedFileName = xFile.name;
+          _exportedFile = File(xFile.path);
           _exportedFileDate = DateFormat('yy-MM-dd HH:mm').format(DateTime.now());
         });
       } else {
@@ -381,9 +398,10 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     }
   }
 
-  void _shareFile(File file) async {
+  void _shareFiles(List<File> files) async {
     final labelManager = LabelJsonLManager();
-    await labelManager.shareFile(labelManager.createXFileFromFile(file));
+    final xFiles = files.map((file) => labelManager.createXFileFromFile(file)).toList();
+    await labelManager.shareFiles(xFiles);
   }
 
   Future<void> _deleteSelectedFile() async {
@@ -486,10 +504,9 @@ class _WalletListItemCard extends StatelessWidget {
 class _FileListItemCard extends StatelessWidget {
   final File file;
   final VoidCallback onTap;
-  final VoidCallback onShare;
   final bool isSelected;
 
-  const _FileListItemCard({required this.file, required this.onTap, required this.onShare, required this.isSelected});
+  const _FileListItemCard({required this.file, required this.onTap, required this.isSelected});
 
   String _formatBytes(int bytes, {int decimals = 1}) {
     if (bytes <= 0) return "0 B";
@@ -542,15 +559,6 @@ class _FileListItemCard extends StatelessWidget {
                     ],
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            GestureDetector(
-              onTap: onShare,
-              child: SvgPicture.asset(
-                'assets/svg/share.svg',
-                width: 24,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
               ),
             ),
           ],

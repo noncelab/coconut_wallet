@@ -1088,6 +1088,10 @@ label_export_wallet_picker_screen:
   instruction_tooltip:
     step1: "Dateiname"
     step2: "Erstellungsdatum und -zeit"
+    step3: "Angetendete Wallet"
+    step4: "Transaktionsnotiz"
+    step5: "UTXO-Tag"
+    step6: "Gesperrtes UTXO"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

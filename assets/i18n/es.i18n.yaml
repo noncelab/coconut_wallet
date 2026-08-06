@@ -1161,6 +1161,10 @@ label_export_wallet_picker_screen:
   instruction_tooltip:
     step1: "Nombre del archivo"
     step2: "Fecha y hora de creación"
+    step3: "Billetera aplicada"
+    step4: "Nota de transacción"
+    step5: "Etiqueta UTXO"
+    step6: "UTXO bloqueado"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

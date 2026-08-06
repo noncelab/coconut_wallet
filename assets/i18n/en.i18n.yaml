@@ -1168,6 +1168,10 @@ label_export_wallet_picker_screen:
   instruction_tooltip:
     step1: "File Name"
     step2: "Created Date & Time"
+    step3: "Applied Wallet"
+    step4: "Transaction Note"
+    step5: "UTXO Tag"
+    step6: "Locked UTXO"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

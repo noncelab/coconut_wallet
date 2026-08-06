@@ -1159,6 +1159,10 @@ label_export_wallet_picker_screen:
   instruction_tooltip:
     step1: "ファイル名"
     step2: "作成日時"
+    step3: "適用ウォレット"
+    step4: "取引メモ"
+    step5: "UTXOタグ"
+    step6: "ロック済みUTXO"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
