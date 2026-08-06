@@ -180,11 +180,33 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _updateResultOnPremiumChange();
   }
 
+  /// 현재 입력 필드가 소수점 입력을 허용해야 하는지 여부
+  /// - fiat: 통화의 소수 자리수(decimalDigits)가 0보다 클 때 (예: USD, EUR)
+  /// - btc: sats/BIP-177 기반이 아닌 BTC 단위일 때
+  bool get _amountInputAllowsDecimal {
+    if (_viewModel.inputAssetType == InputAssetType.fiat) {
+      return _viewModel.fiatCode.decimalDigits > 0;
+    }
+    return !_viewModel.currentUnit.isBasedOnSatoshi;
+  }
+
+  List<TextInputFormatter> _amountInputFormatters() {
+    if (_viewModel.inputAssetType == InputAssetType.fiat) {
+      final decimalDigits = _viewModel.fiatCode.decimalDigits;
+      return decimalDigits > 0
+          ? [FiatAmountInputFormatter(decimalPlaces: decimalDigits)]
+          : [FilteringTextInputFormatter.digitsOnly];
+    }
+    if (!_viewModel.currentUnit.isBasedOnSatoshi) {
+      return [const BtcAmountInputFormatter()];
+    }
+    return [FilteringTextInputFormatter.digitsOnly];
+  }
+
   void _handleAmountInputChanged(String value) {
     if (_isUpdatingController) return; // 무한 루프 방지
 
-    final isBtcInput = _viewModel.inputAssetType == InputAssetType.btc && !_viewModel.currentUnit.isBasedOnSatoshi;
-    final sanitized = _sanitizeInput(value, isBtcInput);
+    final sanitized = _sanitizeInput(value, _amountInputAllowsDecimal);
 
     if (sanitized.isEmpty) {
       _viewModel.setInputAmount(null);
@@ -200,7 +222,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     final shouldUpdateController = value != _inputController.text;
 
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      _processFiatInput(sanitized);
+      _processFiatInput(sanitized, shouldUpdateController: shouldUpdateController);
     } else if (_viewModel.currentUnit.isBasedOnSatoshi) {
       _processSatsInput(sanitized);
     } else {
@@ -210,25 +232,53 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     setState(() {});
   }
 
-  void _processFiatInput(String sanitized) {
-    var value = sanitized.toIntSafe() ?? 0;
+  void _processFiatInput(String sanitized, {required bool shouldUpdateController}) {
+    final fiatCode = _viewModel.fiatCode;
+    var fiatText = filterNumericInput(sanitized, decimalPlaces: fiatCode.decimalDigits);
+    var minorUnits = _parseFiatTextToMinorUnits(fiatText);
 
     if (_viewModel.btcPrice != null && _viewModel.btcPrice! > 0) {
-      final btcFromFiat = value / _viewModel.btcPrice!;
+      final minorUnitsPrice = _viewModel.btcPrice! * fiatCode.minorUnitsPerWhole;
+      final btcFromFiat = minorUnits / minorUnitsPrice;
       if (btcFromFiat > _maxBtc) {
-        value = (_maxBtc * _viewModel.btcPrice!).round();
+        minorUnits = (_maxBtc * minorUnitsPrice).round();
+        fiatText = (minorUnits / fiatCode.minorUnitsPerWhole).toStringAsFixed(fiatCode.decimalDigits);
       }
     }
 
-    _viewModel.setInputAmount(value);
+    // decimalDigits==0인 통화(KRW/JPY)는 입력 필드에 digitsOnly 포매터만 붙어 있어
+    // 그룹 구분자(,)를 스스로 넣어주지 않으므로 매 입력마다 직접 그룹 포맷을 적용해야 한다.
+    // decimalDigits>0인 통화(USD/EUR)는 FiatAmountInputFormatter가 이미 타이핑 중에
+    // 그룹/소수점을 실시간으로 처리하므로, 프로그래매틱 갱신(Quick Add 등)일 때만 갱신한다.
+    if (fiatCode.decimalDigits == 0 || shouldUpdateController) {
+      final formatted = _formatFiatInputText(fiatText);
+      _isUpdatingController = true;
+      _inputController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+      _isUpdatingController = false;
+    }
 
-    final formatted = value.toThousandsSeparatedString();
-    _isUpdatingController = true;
-    _inputController.value = TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-    _isUpdatingController = false;
+    _viewModel.setInputAmount(minorUnits);
+  }
+
+  /// fiatText(예: "50.25")를 통화 최소단위(minor unit, 예: cent) 정수로 변환
+  int _parseFiatTextToMinorUnits(String fiatText) {
+    if (fiatText.isEmpty || fiatText == '.') return 0;
+    final value = fiatText.toDoubleSafe() ?? 0;
+    return (value * _viewModel.fiatCode.minorUnitsPerWhole).round();
+  }
+
+  String _formatFiatInputText(String fiatText) {
+    final decimalDigits = _viewModel.fiatCode.decimalDigits;
+    final displayText = _formatLocaleDecimalText(fiatText);
+    return FiatAmountInputFormatter(decimalPlaces: decimalDigits)
+        .formatEditUpdate(
+          const TextEditingValue(),
+          TextEditingValue(text: displayText, selection: TextSelection.collapsed(offset: displayText.length)),
+        )
+        .text;
   }
 
   void _processBtcInput(String sanitized, {required bool shouldUpdateController}) {
@@ -468,8 +518,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _isUpdatingController = true;
 
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      // BTC → Fiat로 전환: 정수 포맷
-      final formatted = result.toThousandsSeparatedString();
+      // BTC → Fiat로 전환: result는 통화 최소단위(minor unit) 정수
+      final formatted = _viewModel.formatFiatResult(result);
       _inputController.value = TextEditingValue(
         text: formatted,
         selection: TextSelection.collapsed(offset: formatted.length),
@@ -496,8 +546,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _isUpdatingController = false;
   }
 
-  String _sanitizeInput(String value, bool isBtcInput) {
-    if (!isBtcInput) {
+  String _sanitizeInput(String value, bool allowDecimal) {
+    if (!allowDecimal) {
       return value.replaceAll(RegExp(r'[^0-9]'), '');
     } else {
       final normalizedValue = normalizeNumTextForNumParsing(value);
@@ -573,8 +623,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     final btcPriceStr = _viewModel.btcPrice?.toThousandsSeparatedString() ?? '-';
     final fiatAmountStr =
         _viewModel.inputAssetType == InputAssetType.fiat
-            ? input.toThousandsSeparatedString()
-            : result.toThousandsSeparatedString();
+            ? _viewModel.formatFiatResult(input)
+            : _viewModel.formatFiatResult(result);
     final btcAmountStr =
         _viewModel.inputAssetType == InputAssetType.fiat
             ? _viewModel.formatSatsResult(result)
@@ -583,12 +633,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     final premiumRateStr = '$premiumRateValueStr%';
 
     final premiumRate = _parsePremiumRate();
-    double premiumAmount;
-    if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      premiumAmount = input * premiumRate / 100;
-    } else {
-      premiumAmount = result * premiumRate / 100;
-    }
+    // input/result는 통화 최소단위(minor unit) 정수이므로, whole unit(달러/원 등)으로 환산한 뒤 프리미엄을 계산한다.
+    final fiatMinorUnitsAmount = _viewModel.inputAssetType == InputAssetType.fiat ? input : result;
+    final fiatWholeUnitsAmount = fiatMinorUnitsAmount / _viewModel.fiatCode.minorUnitsPerWhole;
+    final double premiumAmount = fiatWholeUnitsAmount * premiumRate / 100;
 
     // premiumAmount를 BTC 가격으로 변환하여 sats로 표시
     final btcPrice = _viewModel.btcPrice ?? 0;
@@ -641,7 +689,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                                     ? _viewModel.fiatCode.code
                                     : _viewModel.currentUnit.symbol,
                                 _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? input.toThousandsSeparatedString()
+                                    ? _viewModel.formatFiatResult(input)
                                     : _viewModel.formatSatsResult(input),
                                 canCopy: true,
                               ),
@@ -653,7 +701,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                                     : _viewModel.fiatCode.code,
                                 _viewModel.inputAssetType == InputAssetType.fiat
                                     ? _viewModel.formatSatsResult(result)
-                                    : result.toThousandsSeparatedString(),
+                                    : _viewModel.formatFiatResult(result),
                                 canCopy: true,
                               ),
                               const SizedBox(height: 24),
@@ -1084,6 +1132,14 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     final result = hasInput ? viewModel.calculate(viewModel.inputAmount!) : 0;
     final placeholder = viewModel.getPlaceholder(isInputCard: true);
     final isOffline = viewModel.isOfflineMode;
+    // 가격 조회가 불가능하면(오프라인 등) '-'로 표시
+    final isResultActive = hasInput && viewModel.isBtcPriceAvailable;
+    final resultText =
+        !viewModel.isBtcPriceAvailable
+            ? '-'
+            : hasInput
+            ? formatResultAmount(result)
+            : viewModel.getPlaceholder(isInputCard: false);
     final expandedHeight = (usableHeight) / 2 - kToolbarHeight;
     final cardHeight = isOffline ? expandedHeight : 175.0;
 
@@ -1111,15 +1167,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             ? _buildOfflineCardWidget(
               enablePremiumInput: false,
               enableInput: false,
-              resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
-              isActive: hasInput,
+              resultText: resultText,
+              isActive: isResultActive,
               prefix: viewModel.resultCardPrefix,
               postfix: viewModel.resultCardPostfix,
               isFiatButtonVisible: false,
             )
             : _buildResultCardWidget(
-              isActive: hasInput,
-              resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
+              isActive: isResultActive,
+              resultText: resultText,
               prefix: viewModel.resultCardPrefix,
               postfix: viewModel.resultCardPostfix,
               onTap: null,
@@ -1177,16 +1233,14 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                       ? _buildOfflineCardWidget(
                         enablePremiumInput: true,
                         enableInput: true,
-                        resultText:
-                            hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
-                        isActive: hasInput,
+                        resultText: resultText,
+                        isActive: isResultActive,
                         prefix: viewModel.resultCardPrefix,
                         postfix: viewModel.resultCardPostfix,
                       )
                       : _buildResultCardWidget(
-                        isActive: hasInput,
-                        resultText:
-                            hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
+                        isActive: isResultActive,
+                        resultText: resultText,
                         prefix: viewModel.resultCardPrefix,
                         postfix: viewModel.resultCardPostfix,
                         onTap: shouldHandleUnitToggle ? _onBtcUnitToggle : null,
@@ -1300,13 +1354,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                             controller: controller,
                             focusNode: focusNode,
                             placeholderText: effectivePlaceholder,
-                            textInputFormatter:
-                                postfix == t.btc
-                                    ? [const BtcAmountInputFormatter()]
-                                    : [FilteringTextInputFormatter.digitsOnly],
+                            textInputFormatter: _amountInputFormatters(),
                             onChanged: _handleAmountInputChanged,
                             textInputType:
-                                postfix == t.btc
+                                _amountInputAllowsDecimal
                                     ? const TextInputType.numberWithOptions(signed: false, decimal: true)
                                     : TextInputType.number,
                             textInputAction: TextInputAction.done,
@@ -1595,9 +1646,14 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       _updateResultOnPremiumChange();
     } else if (_inputFocusNode.hasFocus) {
       if (_viewModel.inputAssetType == InputAssetType.fiat) {
-        final currentValue = _inputController.text.toIntSafe() ?? 0;
-        final addValue = value.toIntSafe() ?? 0;
-        _handleAmountInputChanged((currentValue + addValue).toString());
+        final fiatCode = _viewModel.fiatCode;
+        final currentMinorUnits = _viewModel.inputAmount ?? 0;
+        final addMinorUnits = _parseFiatTextToMinorUnits(value); // value는 whole unit 기준 문자열 (예: "10000")
+        final nextMinorUnits = currentMinorUnits + addMinorUnits;
+        final nextWholeUnitsText = (nextMinorUnits / fiatCode.minorUnitsPerWhole).toStringAsFixed(
+          fiatCode.decimalDigits,
+        );
+        _handleAmountInputChanged(nextWholeUnitsText);
       } else if (_viewModel.currentUnit.isBasedOnSatoshi) {
         final currentValue = _inputController.text.toIntSafe() ?? 0;
         final addValue = value.toIntSafe() ?? 0;
