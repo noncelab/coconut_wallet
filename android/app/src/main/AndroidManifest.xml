@@ -14,7 +14,8 @@
         android:theme="@style/Theme.SplashEx"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
-        android:fullBackupContent="false">
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <!-- android:icon="@mipmap/ic_launcher_event"
         android:roundIcon="@mipmap/ic_launcher_event_round" 생일 주간 아이콘 -->
         <!-- android:icon="@mipmap/ic_launcher" 이벤트 아이콘 원복 시 ic_launcher로 적용 -->

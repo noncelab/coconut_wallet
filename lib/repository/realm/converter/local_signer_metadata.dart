@@ -9,6 +9,7 @@ LocalSignerMetadata mapRealmToLocalSignerMetadata(RealmLocalSignerMetadata metad
     derivationPath: metadata.derivationPath,
     accountIndex: metadata.accountIndex,
     backupVerified: metadata.backupVerified,
+    enterPassphraseWhenSigning: metadata.enterPassphraseWhenSigning,
     createdAt: metadata.createdAt,
   );
 }

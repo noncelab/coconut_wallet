@@ -88,6 +88,7 @@ class _RealmLocalSignerMetadata {
   late String derivationPath;
   late int accountIndex;
   late bool backupVerified;
+  late bool enterPassphraseWhenSigning;
   late DateTime createdAt;
 }
 

@@ -13,7 +13,8 @@ import 'package:provider/provider.dart';
 class PinCheckScreen extends StatefulWidget {
   final bool appEntrance;
   final Function? onComplete;
-  const PinCheckScreen({super.key, this.appEntrance = false, this.onComplete});
+  final bool allowBiometrics;
+  const PinCheckScreen({super.key, this.appEntrance = false, this.onComplete, this.allowBiometrics = true});
 
   @override
   State<PinCheckScreen> createState() => _PinCheckScreenState();
@@ -86,43 +87,47 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
 
   void _verifyPin() async {
     context.loaderOverlay.show();
-    _authProvider
-        .verifyPin(pin)
-        .then((value) {
-          if (value) {
-            if (!widget.appEntrance && mounted) {
-              Navigator.pop(context, true);
-            }
-            widget.onComplete?.call();
-          } else {
-            if (widget.appEntrance) {
-              attempt += 1;
-              if (attempt < 3) {
-                errorMessage = t.errors.pin_check_error.trial_count(count: kMaxNumberOfAttempts - attempt);
-                _shufflePinNumbers();
-                vibrateLightDouble();
-              } else {
-                errorMessage = t.errors.pin_check_error.failed;
-              }
-            } else {
-              errorMessage = t.errors.pin_check_error.incorrect;
-              _shufflePinNumbers();
-              vibrateLightDouble();
-            }
-            pin = '';
-          }
+    final inputPin = pin;
+    var isClosing = false;
+    try {
+      final isValid = await _authProvider.verifyPin(inputPin);
+      if (!mounted) return;
 
-          setState(() {});
-        })
-        .whenComplete(() {
-          if (mounted) {
-            context.loaderOverlay.hide();
-          }
-        });
+      if (isValid) {
+        context.loaderOverlay.hide();
+        isClosing = true;
+        if (!widget.appEntrance) {
+          Navigator.pop(context, true);
+        }
+        widget.onComplete?.call();
+        return;
+      }
+
+      if (widget.appEntrance) {
+        attempt += 1;
+        if (attempt < 3) {
+          errorMessage = t.errors.pin_check_error.trial_count(count: kMaxNumberOfAttempts - attempt);
+          _shufflePinNumbers();
+          vibrateLightDouble();
+        } else {
+          errorMessage = t.errors.pin_check_error.failed;
+        }
+      } else {
+        errorMessage = t.errors.pin_check_error.incorrect;
+        _shufflePinNumbers();
+        vibrateLightDouble();
+      }
+      pin = '';
+      setState(() {});
+    } finally {
+      if (mounted && !isClosing) {
+        context.loaderOverlay.hide();
+      }
+    }
   }
 
   void _onKeyTap(String value) {
-    if (value == 'bio') {
+    if (value == 'bio' && widget.allowBiometrics) {
       _verifyBiometric();
       return;
     }
@@ -188,7 +193,10 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
       pin: pin,
       errorMessage: errorMessage,
       onKeyTap: _onKeyTap,
-      pinShuffleNumbers: _shuffledPinNumbers,
+      pinShuffleNumbers:
+          widget.allowBiometrics
+              ? _shuffledPinNumbers
+              : _shuffledPinNumbers.map((value) => value == 'bio' ? '' : value).toList(),
       onClosePressed: () {
         Navigator.pop(context);
       },

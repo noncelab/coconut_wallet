@@ -19,6 +19,7 @@ class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL_EVENT_ICON = "onl.coconut.wallet/app-event-icon"
     private val CHANNEL_OPEN_APP_SETTINGS = "app-settings"
     private val CHANNEL_BITBOX02 = "bitbox02"
+    private val CHANNEL_DEVICE_DEK = "onl.coconut.wallet/device-dek"
     private var osChannel: MethodChannel? = null
     private var pendingBitcoinUri: String? = null
     private var bitbox02Handler: Bitbox02MethodHandler? = null
@@ -100,6 +101,10 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
         bitbox02Handler = Bitbox02MethodHandler(this, flutterEngine)
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            CHANNEL_DEVICE_DEK,
+        ).setMethodCallHandler(DeviceDekKeystoreHandler())
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_OPEN_APP_SETTINGS).setMethodCallHandler { call, result ->
             if (call.method == "openAppSettings") {
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)

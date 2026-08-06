@@ -77,6 +77,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
     WatchOnlyWallet wallet, {
     required String secureStorageKey,
     required bool backupVerified,
+    required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
   }) async {
     addHotWalletCallCount++;
@@ -156,6 +157,7 @@ SinglesigWalletItem _createSinglesigWalletListItem({
               derivationPath: "m/84'/1'/0'",
               accountIndex: 0,
               backupVerified: true,
+              enterPassphraseWhenSigning: false,
               createdAt: DateTime.utc(2026, 7, 20),
             )
             : null,
@@ -476,6 +478,7 @@ void main() {
         _createSinglesigWatchOnlyWallet(),
         secureStorageKey: 'local_wallet_seed_new',
         backupVerified: true,
+        enterPassphraseWhenSigning: false,
         createdAt: DateTime.utc(2026, 7, 21),
       );
 
@@ -497,6 +500,7 @@ void main() {
           _createSinglesigWatchOnlyWallet(),
           secureStorageKey: 'local_wallet_seed_new',
           backupVerified: true,
+          enterPassphraseWhenSigning: false,
           createdAt: DateTime.utc(2026, 7, 21),
         ),
         throwsStateError,

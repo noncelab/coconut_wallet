@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
@@ -205,6 +206,24 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
                                 },
                               ),
+                              if (viewModel.walletItemBase.hasLocalKey)
+                                SingleButton(
+                                  enableShrinkAnim: true,
+                                  title: t.wallet_home_screen.hot_wallet_setup.backup_title,
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    _showMnemonicBackup(viewModel);
+                                  },
+                                ),
+                              if (viewModel.walletItemBase.localSignerMetadata?.enterPassphraseWhenSigning ?? false)
+                                SingleButton(
+                                  enableShrinkAnim: true,
+                                  title: t.wallet_home_screen.hot_wallet_setup.passphrase_check_title,
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    _showPassphraseCheck(viewModel);
+                                  },
+                                ),
                             ],
                           ),
                         ),
@@ -536,6 +555,66 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         backgroundColor: context.coconutColors.background,
       ),
     );
+  }
+
+  Future<void> _showMnemonicBackup(WalletInfoViewModel viewModel) async {
+    final metadata = viewModel.walletItemBase.localSignerMetadata;
+    if (metadata == null) return;
+
+    try {
+      final plaintext = await HotWalletUnlockService().unlockPreferBiometrics(
+        context: context,
+        storageKey: metadata.secureStorageKey,
+      );
+      if (!mounted || plaintext == null) return;
+
+      final isBackupConfirmed = await Navigator.pushNamed(
+        context,
+        '/hot-wallet-mnemonic-backup',
+        arguments: {
+          'mnemonic': plaintext.mnemonic,
+          'passphrase': plaintext.passphrase,
+          'enterPassphraseWhenSigning': metadata.enterPassphraseWhenSigning,
+          'descriptor': viewModel.walletItemBase.descriptor,
+        },
+      );
+      if (!mounted || isBackupConfirmed != true) return;
+      await context.read<WalletProvider>().updateHotWalletBackupVerified(widget.id, backupVerified: true);
+    } catch (error) {
+      if (!mounted) return;
+      await showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.alert.error_occurs,
+        error.toString(),
+      );
+    }
+  }
+
+  Future<void> _showPassphraseCheck(WalletInfoViewModel viewModel) async {
+    final metadata = viewModel.walletItemBase.localSignerMetadata;
+    if (metadata == null || !metadata.enterPassphraseWhenSigning) return;
+
+    try {
+      final plaintext = await HotWalletUnlockService().unlockPreferBiometrics(
+        context: context,
+        storageKey: metadata.secureStorageKey,
+      );
+      if (!mounted || plaintext == null) return;
+      await Navigator.pushNamed(
+        context,
+        '/hot-wallet-passphrase-check',
+        arguments: {'mnemonic': plaintext.mnemonic, 'descriptor': viewModel.walletItemBase.descriptor},
+      );
+    } catch (error) {
+      if (!mounted) return;
+      await showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.alert.error_occurs,
+        error.toString(),
+      );
+    }
   }
 }
 

@@ -11,6 +11,7 @@ class WalletIcon extends StatelessWidget {
   final int colorIndex;
   final int iconIndex;
   final bool isInnerWallet;
+  final bool isHotWallet;
   final String? badgeSvgAssetPath;
   final Color? badgeColor;
   final double badgeSize;
@@ -23,6 +24,7 @@ class WalletIcon extends StatelessWidget {
     this.colorIndex = 0,
     this.iconIndex = 0,
     this.isInnerWallet = true,
+    this.isHotWallet = false,
     this.badgeSvgAssetPath,
     this.badgeColor,
     this.badgeSize = 18,
@@ -33,12 +35,14 @@ class WalletIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = _buildIcon(context);
+    final resolvedBadgeSvgAssetPath = badgeSvgAssetPath ?? (isHotWallet ? 'assets/svg/hot-wallet-fire.svg' : null);
 
     return Stack(
       clipBehavior: Clip.none,
       children: [
         icon,
-        if (badgeSvgAssetPath != null) Positioned(right: badgeRight, bottom: badgeBottom, child: _buildBadge(context)),
+        if (resolvedBadgeSvgAssetPath != null)
+          Positioned(right: badgeRight, bottom: badgeBottom, child: _buildBadge(context, resolvedBadgeSvgAssetPath)),
       ],
     );
   }
@@ -77,7 +81,7 @@ class WalletIcon extends StatelessWidget {
     );
   }
 
-  Widget _buildBadge(BuildContext context) {
+  Widget _buildBadge(BuildContext context, String badgeAssetPath) {
     return Container(
       width: badgeSize,
       height: badgeSize,
@@ -88,7 +92,7 @@ class WalletIcon extends StatelessWidget {
         border: Border.all(color: context.coconutColors.background),
       ),
       child: SvgPicture.asset(
-        badgeSvgAssetPath!,
+        badgeAssetPath,
         fit: BoxFit.contain,
         colorFilter: badgeColor == null ? null : ColorFilter.mode(badgeColor!, BlendMode.srcIn),
       ),

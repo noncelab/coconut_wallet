@@ -12,14 +12,12 @@ class SharedPrefKeys {
   static const String kFakeBalanceTotal = 'FAKE_BALANCE_TOTAL';
   static const String kFakeBalanceMap = 'FAKE_BALANCE_MAP';
 
-  static const String kNextVersionUpdateDialogDate =
-      "NEXT_VERSION_UPDATE_DIALOG_DATE";
+  static const String kNextVersionUpdateDialogDate = "NEXT_VERSION_UPDATE_DIALOG_DATE";
   static const String kCanCheckBiometrics = "CAN_CHECK_BIOMETRICS";
   static const String kIsBtcUnit = "IS_BTC_UNIT"; // deprecated: 마이그레이션 전용
   static const String kBitcoinUnit = "BITCOIN_UNIT";
   static const String kShowOnlyUnusedAddresses = "SHOW_ONLY_UNUSED_ADDRESSES";
-  static const String kIsReceivingTooltipDisabled =
-      "IS_RECEIVING_TOOLTIP_DISABLED";
+  static const String kIsReceivingTooltipDisabled = "IS_RECEIVING_TOOLTIP_DISABLED";
   static const String kIsChangeTooltipDisabled = "IS_CHANGE_TOOLTIP_DISABLED";
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
   static const String kIsFiatBalanceHidden = "IS_FIAT_BALANCE_HIDDEN";
@@ -34,27 +32,19 @@ class SharedPrefKeys {
   static const String kFavoriteWalletIds = "FAVORITE_WALLET_IDS"; // 즐겨찾기된 지갑 목록
   static const String kExcludedFromTotalBalanceWalletIds =
       "EXCLUDED_FROM_TOTAL_BALANCE_WALLET_IDS"; // 홈화면 총 잔액에서 제외할 지갑 목록
-  static const String kHomeFeatures =
-      "HOME_FEATURES"; // 홈 화면에 표시할 기능(최근 거래, 분석, ...)
-  static const String kHomeAddWalletOption =
-      "HOME_ADD_WALLET_OPTION"; // 홈 화면 상단 지갑 추가 버튼
-  static const String kWalletFilterOrder =
-      "WALLET_FILTER_ORDER"; // 홈 화면 지갑 필터 칩 순서
-  static const String kVisibleWalletFilters =
-      "VISIBLE_WALLET_FILTERS"; // 홈 화면에 표시할 지갑 필터 칩
+  static const String kHomeFeatures = "HOME_FEATURES"; // 홈 화면에 표시할 기능(최근 거래, 분석, ...)
+  static const String kHomeAddWalletOption = "HOME_ADD_WALLET_OPTION"; // 홈 화면 상단 지갑 추가 버튼
+  static const String kWalletFilterOrder = "WALLET_FILTER_ORDER"; // 홈 화면 지갑 필터 칩 순서
+  static const String kVisibleWalletFilters = "VISIBLE_WALLET_FILTERS"; // 홈 화면에 표시할 지갑 필터 칩
   static const String kAnalysisPeriod = "ANALYSIS_PERIOD"; // 분석 위젯에 사용되는 조회 기간
-  static const String kAnalysisPeriodStart =
-      "ANALYSIS_PERIOD_START"; // 분석 위젯에 사용되는 조회 기간 시작 날짜
-  static const String kAnalysisPeriodEnd =
-      "ANALYSIS_PERIOD_END"; // 분석 위젯에 사용되는 조회 기간 종료 날짜
-  static const String kSelectedTransactionTypeIndices =
-      "SELECTED_TRANSACTION_TYPE_INDICES"; // 분석 위젯에 사용되는 거래 유형
+  static const String kAnalysisPeriodStart = "ANALYSIS_PERIOD_START"; // 분석 위젯에 사용되는 조회 기간 시작 날짜
+  static const String kAnalysisPeriodEnd = "ANALYSIS_PERIOD_END"; // 분석 위젯에 사용되는 조회 기간 종료 날짜
+  static const String kSelectedTransactionTypeIndices = "SELECTED_TRANSACTION_TYPE_INDICES"; // 분석 위젯에 사용되는 거래 유형
 
   /// 리뷰 요청 관련
   static const String kHaveSent = 'HAVE_SENT';
   static const String kHaveReviewed = 'HAVE_REVIEWED';
-  static const String kAppRunCountAfterRejectReview =
-      'APP_RUN_COUNT_AFTER_REJECT_REVIEW';
+  static const String kAppRunCountAfterRejectReview = 'APP_RUN_COUNT_AFTER_REJECT_REVIEW';
 
   /// Language
   static const String kLanguage = 'LANGUAGE';
@@ -97,16 +87,12 @@ class SharedPrefKeys {
   static const String kEventIconChangedDate = 'EVENT_ICON_CHANGED_DATE';
 
   /// UTXO 수동선택 모드 여부
-  static const String kIsManualUtxoSelectionMode =
-      'IS_MANUAL_UTXO_SELECTION_MODE';
+  static const String kIsManualUtxoSelectionMode = 'IS_MANUAL_UTXO_SELECTION_MODE';
 
   /// 지갑 목록 화면 - 법정화폐 관련
-  static const String kWalletListFiatHidden =
-      'WALLET_LIST_FIAT_HIDDEN'; // 지갑 목록 화면의 법정화폐 숨김 여부
-  static const String kWalletListVisibleFiats =
-      'WALLET_LIST_VISIBLE_FIATS'; // 지갑 목록 화면에서 보여줄 법정화폐 목록
-  static const String kWalletListBitcoinPriceHidden =
-      'WALLET_LIST_BITCOIN_PRICE_HIDDEN'; // 지갑 목록 화면의 1 BTC 가격 정보 숨김 여부
+  static const String kWalletListFiatHidden = 'WALLET_LIST_FIAT_HIDDEN'; // 지갑 목록 화면의 법정화폐 숨김 여부
+  static const String kWalletListVisibleFiats = 'WALLET_LIST_VISIBLE_FIATS'; // 지갑 목록 화면에서 보여줄 법정화폐 목록
+  static const String kWalletListBitcoinPriceHidden = 'WALLET_LIST_BITCOIN_PRICE_HIDDEN'; // 지갑 목록 화면의 1 BTC 가격 정보 숨김 여부
   static const String kWalletListBalanceChartHidden =
       'WALLET_LIST_BALANCE_CHART_HIDDEN'; // 지갑 목록 화면의 총 보유 수량 변화 그래프 숨김 여부
 

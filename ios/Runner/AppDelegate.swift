@@ -8,6 +8,8 @@ import LocalAuthentication
     private var osMethodChannel: FlutterMethodChannel?
     private var pendingBitcoinUri: String?
     private var bitbox02Handler: Bitbox02MethodHandler?
+    private let deviceDekKeystore = DeviceDekKeystore()
+    private let deviceDekQueue = DispatchQueue(label: "onl.coconut.wallet.device-dek")
 
   override func application(
     _ application: UIApplication,
@@ -88,6 +90,70 @@ import LocalAuthentication
         }
       } else {
         result(FlutterMethodNotImplemented)
+      }
+    }
+
+    let deviceDekChannel = FlutterMethodChannel(
+      name: "onl.coconut.wallet/device-dek",
+      binaryMessenger: controller.binaryMessenger
+    )
+    deviceDekChannel.setMethodCallHandler { [weak self] call, result in
+      guard let self,
+            let arguments = call.arguments as? [String: Any],
+            let alias = arguments["alias"] as? String else {
+        result(FlutterError(code: "INVALID_ARGUMENT", message: "alias is required", details: nil))
+        return
+      }
+      self.deviceDekQueue.async {
+        do {
+          switch call.method {
+          case "wrap":
+            guard let data = (arguments["plaintext"] as? FlutterStandardTypedData)?.data else {
+              throw NSError(domain: "DeviceDekKeystore", code: 3)
+            }
+            do {
+              let ciphertext = try self.deviceDekKeystore.wrap(alias: alias, plaintext: data)
+              DispatchQueue.main.async {
+                result([
+                  "ciphertext": FlutterStandardTypedData(bytes: ciphertext),
+                  "protection": "iosSecureEnclave",
+                ])
+              }
+            } catch {
+              DispatchQueue.main.async {
+                result(FlutterError(
+                  code: "HARDWARE_UNAVAILABLE",
+                  message: error.localizedDescription,
+                  details: nil
+                ))
+              }
+            }
+          case "unwrap":
+            guard let data = (arguments["ciphertext"] as? FlutterStandardTypedData)?.data else {
+              throw NSError(domain: "DeviceDekKeystore", code: 4)
+            }
+            let plaintext = try self.deviceDekKeystore.unwrap(
+              alias: alias,
+              ciphertext: data
+            )
+            DispatchQueue.main.async {
+              result(FlutterStandardTypedData(bytes: plaintext))
+            }
+          case "delete":
+            self.deviceDekKeystore.delete(alias: alias)
+            DispatchQueue.main.async { result(nil) }
+          default:
+            DispatchQueue.main.async { result(FlutterMethodNotImplemented) }
+          }
+        } catch {
+          DispatchQueue.main.async {
+            result(FlutterError(
+              code: "KEYSTORE_FAILED",
+              message: error.localizedDescription,
+              details: nil
+            ))
+          }
+        }
       }
     }
 

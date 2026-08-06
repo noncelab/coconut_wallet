@@ -122,6 +122,7 @@ class WalletRepository extends BaseRepository {
     WatchOnlyWallet wallet, {
     required String secureStorageKey,
     required bool backupVerified,
+    required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
   }) async {
     if (wallet.walletType != WalletType.singleSignature) {
@@ -153,6 +154,7 @@ class WalletRepository extends BaseRepository {
       derivationPath: derivationPath,
       accountIndex: _getAccountIndex(derivationPath),
       backupVerified: backupVerified,
+      enterPassphraseWhenSigning: enterPassphraseWhenSigning,
       createdAt: createdAt,
     );
     final realmMetadata = RealmLocalSignerMetadata(
@@ -162,6 +164,7 @@ class WalletRepository extends BaseRepository {
       metadata.derivationPath,
       metadata.accountIndex,
       metadata.backupVerified,
+      metadata.enterPassphraseWhenSigning,
       metadata.createdAt,
     );
 
@@ -180,6 +183,16 @@ class WalletRepository extends BaseRepository {
       throw FormatException('Invalid single-signature derivation path: $derivationPath');
     }
     return int.parse(segments[3].replaceAll(RegExp(r"['hH]"), ''));
+  }
+
+  Future<void> updateHotWalletBackupVerified(int walletId, {required bool backupVerified}) async {
+    final metadata = realm.find<RealmLocalSignerMetadata>(walletId);
+    if (metadata == null) {
+      throw StateError('Local signer metadata not found');
+    }
+    await realm.writeAsync(() {
+      metadata.backupVerified = backupVerified;
+    });
   }
 
   /// 탭루트 지갑 추가

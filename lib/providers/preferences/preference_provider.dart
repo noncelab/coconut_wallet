@@ -670,10 +670,7 @@ class PreferenceProvider extends ChangeNotifier {
   // 지갑 목록 화면 총 보유 수량 변화 그래프 표시 설정
   Future<void> setWalletListBalanceChartVisible(bool isVisible) async {
     _isWalletListBalanceChartHidden = !isVisible;
-    await _sharedPrefs.setBool(
-      SharedPrefKeys.kWalletListBalanceChartHidden,
-      !isVisible,
-    );
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListBalanceChartHidden, !isVisible);
     notifyListeners();
   }
 

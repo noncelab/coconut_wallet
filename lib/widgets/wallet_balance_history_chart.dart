@@ -8,28 +8,19 @@ class WalletBalanceHistoryChart extends StatefulWidget {
   final List<WalletBalanceHistoryPoint> points;
   final int revision;
 
-  const WalletBalanceHistoryChart({
-    super.key,
-    required this.points,
-    required this.revision,
-  });
+  const WalletBalanceHistoryChart({super.key, required this.points, required this.revision});
 
   @override
-  State<WalletBalanceHistoryChart> createState() =>
-      _WalletBalanceHistoryChartState();
+  State<WalletBalanceHistoryChart> createState() => _WalletBalanceHistoryChartState();
 }
 
-class _WalletBalanceHistoryChartState extends State<WalletBalanceHistoryChart>
-    with SingleTickerProviderStateMixin {
+class _WalletBalanceHistoryChartState extends State<WalletBalanceHistoryChart> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..forward();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..forward();
   }
 
   @override
@@ -68,11 +59,7 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
   final double progress;
   final Color lineColor;
 
-  const _WalletBalanceHistoryPainter({
-    required this.points,
-    required this.progress,
-    required this.lineColor,
-  });
+  const _WalletBalanceHistoryPainter({required this.points, required this.progress, required this.lineColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -95,12 +82,8 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
       final x =
           timestampRange <= 0
               ? size.width
-              : size.width *
-                  (points[index].timestamp.millisecondsSinceEpoch -
-                      firstTimestamp) /
-                  timestampRange;
-      final normalized =
-          (points[index].balance - minBalance) / (maxBalance - minBalance);
+              : size.width * (points[index].timestamp.millisecondsSinceEpoch - firstTimestamp) / timestampRange;
+      final normalized = (points[index].balance - minBalance) / (maxBalance - minBalance);
       final y = size.height - (normalized * (size.height - 6)) - 3;
       coordinates.add(Offset(x, y));
     }
@@ -110,14 +93,7 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
       final previous = coordinates[index - 1];
       final current = coordinates[index];
       final midpointX = (previous.dx + current.dx) / 2;
-      chartPath.cubicTo(
-        midpointX,
-        previous.dy,
-        midpointX,
-        current.dy,
-        current.dx,
-        current.dy,
-      );
+      chartPath.cubicTo(midpointX, previous.dy, midpointX, current.dy, current.dx, current.dy);
     }
 
     canvas.save();
@@ -150,8 +126,6 @@ class _WalletBalanceHistoryPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WalletBalanceHistoryPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.points != points ||
-        oldDelegate.lineColor != lineColor;
+    return oldDelegate.progress != progress || oldDelegate.points != points || oldDelegate.lineColor != lineColor;
   }
 }

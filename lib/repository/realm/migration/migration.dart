@@ -51,6 +51,9 @@ import 'package:realm/realm.dart';
 ///
 /// [addRealmLocalSignerMetadata] (8 -> 9)
 /// 1. RealmLocalSignerMetadata 스키마 추가 (기존 지갑은 모두 로컬 키 없음)
+///
+/// [addEnterPassphraseWhenSigning] (9 -> 10)
+/// 1. RealmLocalSignerMetadata에 enterPassphraseWhenSigning 추가 (기본값 false)
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');

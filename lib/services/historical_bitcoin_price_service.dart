@@ -10,12 +10,7 @@ class HistoricalBitcoinPriceService {
   HistoricalBitcoinPriceService({Dio? dio})
     : _dio =
           dio ??
-          Dio(
-            BaseOptions(
-              connectTimeout: const Duration(seconds: 5),
-              receiveTimeout: const Duration(seconds: 5),
-            ),
-          );
+          Dio(BaseOptions(connectTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5)));
 
   Future<HistoricalBitcoinPrices?> fetch(FiatCode fiatCode) {
     return switch (fiatCode) {
@@ -46,9 +41,7 @@ class HistoricalBitcoinPriceService {
     }
 
     closedPrices.sort((a, b) => a.start.compareTo(b.start));
-    return _toHistoricalPrices(
-      closedPrices.map((candle) => candle.close).toList(),
-    );
+    return _toHistoricalPrices(closedPrices.map((candle) => candle.close).toList());
   }
 
   Future<HistoricalBitcoinPrices> _fetchBinancePrices(String symbol) async {

@@ -18,6 +18,7 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/home/analysis_period_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
+import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -1204,35 +1205,43 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       defaultColor: context.coconutColors.homeSurfaceCard,
       pressedColor: context.coconutColors.surfacePressed,
       borderRadius: 12,
-      child: SizedBox(
-        height: 124,
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SvgPicture.asset(
-                addWalletIconSrc,
-                width: 20,
-                height: 20,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-              ),
-              CoconutLayout.spacing_200w,
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (addWalletDescription != null)
+      child: CustomPaint(
+        painter: DashedBorderPainter(
+          dashSpace: 4.0,
+          dashWidth: 4.0,
+          color: context.coconutColors.tertiaryText,
+          borderRadius: 12,
+        ),
+        child: SizedBox(
+          height: 124,
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  addWalletIconSrc,
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                ),
+                CoconutLayout.spacing_200w,
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (addWalletDescription != null)
+                      Text(
+                        addWalletDescription,
+                        style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                      ),
                     Text(
-                      addWalletDescription,
-                      style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                      addWalletTitle,
+                      style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                     ),
-                  Text(
-                    addWalletTitle,
-                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1255,19 +1264,27 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       pressedColor: context.coconutColors.surfacePressed,
       borderRadius: 12,
       onPressed: () => _onAddWalletPressed(filter),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(28, 16, 20, 16),
-        child: Row(
-          children: [
-            SvgPicture.asset(
-              iconPath,
-              width: 18,
-              height: 18,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-            ),
-            CoconutLayout.spacing_200w,
-            Text(title, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
-          ],
+      child: CustomPaint(
+        painter: DashedBorderPainter(
+          dashSpace: 4.0,
+          dashWidth: 4.0,
+          color: context.coconutColors.tertiaryText,
+          borderRadius: 12,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 16, 20, 16),
+          child: Row(
+            children: [
+              SvgPicture.asset(
+                iconPath,
+                width: 18,
+                height: 18,
+                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              ),
+              CoconutLayout.spacing_200w,
+              Text(title, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
+            ],
+          ),
         ),
       ),
     );
@@ -1304,6 +1321,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       builder: (context, data, child) {
         final currentUnit = data.item1;
         final isBalanceHidden = data.item2;
+        final shouldWarnUnbackedHotWallet =
+            walletItem.hasLocalKey &&
+            !(walletItem.localSignerMetadata?.backupVerified ?? false) &&
+            animatedBalanceData.current > 0;
         return LongPressedMenuWidget(
           useGlassOverlay: true,
           alignMenuToChildRight: true,
@@ -1318,6 +1339,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             isBalanceHidden: isBalanceHidden,
             fakeBalance: fakeBalance,
             currentUnit: currentUnit,
+            shouldWarnUnbackedHotWallet: shouldWarnUnbackedHotWallet,
             backgroundColor: backgroundColor,
             onPressed: () {
               Navigator.pushNamed(

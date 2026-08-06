@@ -6,6 +6,7 @@ class LocalSignerMetadata {
     required this.derivationPath,
     required this.accountIndex,
     required this.backupVerified,
+    required this.enterPassphraseWhenSigning,
     required this.createdAt,
   });
 
@@ -15,5 +16,6 @@ class LocalSignerMetadata {
   final String derivationPath;
   final int accountIndex;
   final bool backupVerified;
+  final bool enterPassphraseWhenSigning;
   final DateTime createdAt;
 }

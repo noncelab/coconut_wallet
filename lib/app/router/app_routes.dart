@@ -1,6 +1,8 @@
 import 'package:coconut_wallet/screens/home/wallet_add/air-gapped/airgap_wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_create_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_mnemonic_backup_guide_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
 import 'package:coconut_wallet/screens/settings/home_settings/wallet_home_edit_screen.dart';
@@ -37,6 +39,10 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.d
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_mnemonic_backup_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_passphrase_check_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_complete_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_confirm_screen.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:flutter/widgets.dart';
 
@@ -44,6 +50,55 @@ Map<String, WidgetBuilder> buildAppRoutes() {
   return {
     '/wallet-list': (context) => const WalletListScreen(),
     '/hot-wallet-create': (context) => const HotWalletCreateScreen(),
+    '/hot-wallet-mnemonic-backup-guide':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => HotWalletMnemonicBackupGuideScreen(
+            walletName: args['walletName'],
+            walletId: args['walletId'],
+            mnemonic: args['mnemonic'],
+            passphrase: args['passphrase'] ?? '',
+            enterPassphraseWhenSigning: args['enterPassphraseWhenSigning'] ?? false,
+          ),
+        ),
+    '/hot-wallet-app-lock-guide-screen': (context) => const HotWalletAppLockGuideScreen(),
+    '/hot-wallet-mnemonic-backup':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => HotWalletMnemonicBackupScreen(
+            mnemonic: args['mnemonic'],
+            passphrase: args['passphrase'] ?? '',
+            enterPassphraseWhenSigning: args['enterPassphraseWhenSigning'] ?? false,
+            descriptor: args['descriptor'] ?? '',
+            walletId: args['walletId'],
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
+          ),
+        ),
+    '/mnemonic-backup-confirm':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => MnemonicBackupConfirmScreen(
+            mnemonic: args['mnemonic'],
+            passphrase: args['passphrase'] ?? '',
+            descriptor: args['descriptor'] ?? '',
+            confirmPassphrase: args['confirmPassphrase'] ?? false,
+            walletId: args['walletId'],
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
+          ),
+        ),
+    '/mnemonic-backup-complete':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => MnemonicBackupCompleteScreen(
+            walletId: args['walletId'],
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
+          ),
+        ),
+    '/hot-wallet-passphrase-check':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => HotWalletPassphraseCheckScreen(mnemonic: args['mnemonic'], descriptor: args['descriptor']),
+        ),
     '/home-settings': (context) => const HomeSettingsScreen(),
     '/app-info': (context) => const AppInfoScreen(),
     '/signed-psbt-scanner': (context) => const SignedPsbtScannerScreen(),

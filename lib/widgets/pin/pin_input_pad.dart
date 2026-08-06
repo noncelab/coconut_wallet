@@ -20,6 +20,8 @@ class PinInputPad extends StatefulWidget {
   final bool initOptionVisible;
   final int pinLength;
   final Widget? centerWidget;
+  final bool showOnlyKeypad;
+  final bool isKeypadInteractive;
 
   const PinInputPad({
     super.key,
@@ -36,6 +38,8 @@ class PinInputPad extends StatefulWidget {
     this.initOptionVisible = false,
     this.pinLength = 4,
     this.centerWidget,
+    this.showOnlyKeypad = false,
+    this.isKeypadInteractive = true,
   });
 
   @override
@@ -63,6 +67,13 @@ class PinInputPadState extends State<PinInputPad> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.showOnlyKeypad) {
+      return IgnorePointer(
+        ignoring: !widget.isKeypadInteractive,
+        child: widget.isKeypadInteractive ? _buildKeypad(context) : _buildKeypadPreview(context),
+      );
+    }
+
     return Scaffold(
       backgroundColor: context.coconutColors.background,
       appBar:
@@ -139,22 +150,7 @@ class PinInputPadState extends State<PinInputPad> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                GridView.count(
-                  crossAxisCount: 3,
-                  childAspectRatio:
-                      MediaQuery.of(context).size.width > 600
-                          ? 2.5 // 폴드 펼친화면에서는 버튼 사이즈 줄여서 공간 확보
-                          : 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children:
-                      _pinShuffleNumbers.map((key) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: KeyButton(keyValue: key, onKeyTap: widget.onKeyTap),
-                        );
-                      }).toList(),
-                ),
+                _buildKeypad(context),
                 if (widget.initOptionVisible)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 50, top: 8),
@@ -174,6 +170,49 @@ class PinInputPadState extends State<PinInputPad> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildKeypad(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 3,
+      childAspectRatio:
+          MediaQuery.of(context).size.width > 600
+              ? 2.5 // 폴드 펼친화면에서는 버튼 사이즈 줄여서 공간 확보
+              : 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children:
+          _pinShuffleNumbers.map((key) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: KeyButton(keyValue: key, onKeyTap: widget.onKeyTap),
+            );
+          }).toList(),
+    );
+  }
+
+  Widget _buildKeypadPreview(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 3,
+      childAspectRatio: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children:
+          _pinShuffleNumbers.map((key) {
+            return Center(
+              child:
+                  key == '<'
+                      ? Icon(Icons.backspace, color: context.coconutColors.primaryText, size: 20)
+                      : Text(
+                        key,
+                        style: CoconutTypography.heading3_21_Number.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: context.coconutColors.primaryText,
+                        ),
+                      ),
+            );
+          }).toList(),
     );
   }
 }

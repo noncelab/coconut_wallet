@@ -395,6 +395,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
           colorIndex: colorIndex,
           iconIndex: iconIndex,
           isInnerWallet: !isExternalWallet,
+          isHotWallet: walletItem.hasLocalKey,
         ),
         if (shouldShowEditIcon)
           Positioned(

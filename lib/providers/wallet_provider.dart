@@ -19,11 +19,13 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/suspicious_transaction_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
+import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
 import 'package:tuple/tuple.dart';
 
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
@@ -256,6 +258,7 @@ class WalletProvider extends ChangeNotifier {
     WatchOnlyWallet wallet, {
     required String secureStorageKey,
     required bool backupVerified,
+    required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
   }) async {
     if (wallet.walletType != WalletType.singleSignature) {
@@ -271,13 +274,14 @@ class WalletProvider extends ChangeNotifier {
       isSingleSig: true,
     );
     if (resolvedName == null) {
-      throw StateError('A wallet with the same name already exists');
+      throw const WalletNameConflictException();
     }
 
     final hotWallet = await _walletRepository.addHotWallet(
       _copyWithNewName(wallet, resolvedName),
       secureStorageKey: secureStorageKey,
       backupVerified: backupVerified,
+      enterPassphraseWhenSigning: enterPassphraseWhenSigning,
       createdAt: createdAt,
     );
     await _addressRepository.ensureAddressesInit(walletItemBase: hotWallet);
@@ -286,6 +290,11 @@ class WalletProvider extends ChangeNotifier {
     _saveWalletCount(updatedList.length);
     await _handleNewWalletAdded(hotWallet.id);
     return hotWallet;
+  }
+
+  Future<void> updateHotWalletBackupVerified(int walletId, {required bool backupVerified}) async {
+    await _walletRepository.updateHotWalletBackupVerified(walletId, backupVerified: backupVerified);
+    _setWalletItemList(await _fetchWalletListFromDB());
   }
 
   // MARK: - Name Conflict, MFP verification Helpers
@@ -430,12 +439,26 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
+    final secretStorageKey =
+        _walletItemList
+            .whereType<SinglesigWalletItem>()
+            .firstWhereOrNull((wallet) => wallet.id == walletId)
+            ?.localSignerMetadata
+            ?.secureStorageKey;
     await _walletRepository.deleteWallet(walletId);
+    if (secretStorageKey != null) {
+      try {
+        await HotWalletSecretRepository().delete(secretStorageKey);
+      } catch (error) {
+        Logger.log('Failed to delete hot wallet secret: $error');
+      }
+    }
     _setWalletItemList(await _fetchWalletListFromDB());
     _saveWalletCount(_walletItemList.length);
     await _preferenceProvider.removeWalletOrder(walletId);
     await _preferenceProvider.removeFavoriteWalletId(walletId);
     await _preferenceProvider.removeExcludedFromTotalBalanceWalletId(walletId);
+    // ignore: deprecated_member_use_from_same_package
     await _preferenceProvider.removeManualUtxoSelectionWalletId(walletId);
     if (_walletItemList.isEmpty) {
       await _preferenceProvider.changeIsBalanceHidden(false); // 잔액 숨기기 비활성화, fakeBalance 초기화

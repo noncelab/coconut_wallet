@@ -75,7 +75,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                               return;
                             }
 
-                            if (await _isPinCheckValid()) {
+                            if (await _requestPin()) {
                               viewModel.deletePin();
                             }
                           },
@@ -105,7 +105,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                               return;
                             }
 
-                            if (await _isPinCheckValid()) {
+                            if (await _requestPin()) {
                               _showPinSettingScreen(useBiometrics: false);
                             }
                           },
@@ -343,13 +343,13 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     );
   }
 
-  Future<bool> _isPinCheckValid() async {
-    return (await CommonBottomSheets.showCustomHeightBottomSheet(
+  Future<bool> _requestPin() async {
+    return await CommonBottomSheets.showCustomHeightBottomSheet<bool>(
           context: context,
           heightRatio: 0.9,
-          child: const CustomLoadingOverlay(child: PinCheckScreen()),
-        ) ==
-        true);
+          child: const CustomLoadingOverlay(child: PinCheckScreen(allowBiometrics: false)),
+        ) ??
+        false;
   }
 
   String _getCurrentLanguageDisplayName(String language) {

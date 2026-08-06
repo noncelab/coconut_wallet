@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Hot-wallet secrets share flutter_secure_storage's preferences file.
+         Exclude the whole file because Android backup rules cannot exclude
+         individual SharedPreferences keys. -->
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+</full-backup-content>

@@ -67,6 +67,7 @@ void main() {
         createSinglesigWallet(),
         secureStorageKey: 'local_wallet_seed_regtest_1',
         backupVerified: true,
+        enterPassphraseWhenSigning: true,
         createdAt: DateTime.utc(2026, 7, 20),
       );
 
@@ -76,6 +77,7 @@ void main() {
       expect(wallet.signingMethod, WalletSigningMethod.localSigner);
       expect(wallet.localSignerMetadata?.secureStorageKey, 'local_wallet_seed_regtest_1');
       expect(wallet.localSignerMetadata?.masterFingerprint, 'D45AA182');
+      expect(wallet.localSignerMetadata?.enterPassphraseWhenSigning, isTrue);
     });
 
     test('외부 출처 싱글시그는 핫월렛 생성 경로로 저장할 수 없음', () async {
@@ -84,6 +86,7 @@ void main() {
           createSinglesigWallet(source: WalletImportSource.keystone),
           secureStorageKey: 'local_wallet_seed_regtest_1',
           backupVerified: true,
+          enterPassphraseWhenSigning: false,
           createdAt: DateTime.utc(2026, 7, 20),
         ),
         throwsArgumentError,
@@ -98,6 +101,7 @@ void main() {
         createSinglesigWallet(),
         secureStorageKey: 'local_wallet_seed_regtest_1',
         backupVerified: true,
+        enterPassphraseWhenSigning: false,
         createdAt: DateTime.utc(2026, 7, 20),
       );
 
@@ -198,6 +202,7 @@ void main() {
             "m/86'/1'/0'",
             0,
             true,
+            false,
             DateTime.utc(2026, 7, 20),
           ),
         );

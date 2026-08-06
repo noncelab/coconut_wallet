@@ -508,10 +508,11 @@ class WalletHomeViewModel extends ChangeNotifier {
             .whereType<WalletItemBase>()
             .toList();
 
-    final hasChanged = !const ListEquality<int>().equals(
-      _favoriteWallets.map((wallet) => wallet.id).toList(),
-      wallets.map((wallet) => wallet.id).toList(),
-    );
+    final hasChanged =
+        !const ListEquality<int>().equals(
+          _favoriteWallets.map((wallet) => wallet.id).toList(),
+          wallets.map((wallet) => wallet.id).toList(),
+        );
     _favoriteWallets = wallets;
     _isEmptyFavoriteWallet = wallets.isEmpty;
 
@@ -529,10 +530,7 @@ class WalletHomeViewModel extends ChangeNotifier {
       return List<int>.from(favoriteIds);
     }
 
-    return [
-      ...walletOrder.where(favoriteIdSet.contains),
-      ...favoriteIds.where((id) => !walletOrder.contains(id)),
-    ];
+    return [...walletOrder.where(favoriteIdSet.contains), ...favoriteIds.where((id) => !walletOrder.contains(id))];
   }
 
   void setReceiveAddress(int walletId) {
