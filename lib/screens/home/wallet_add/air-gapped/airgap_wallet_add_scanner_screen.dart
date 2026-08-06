@@ -15,6 +15,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
@@ -297,6 +298,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         {
           if (!hasEnglishWordOrder) {
             return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.note}\n'),
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
               _em(t.wallet_add_scanner_screen.guide_passport.step1_em),
@@ -313,6 +315,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             ];
           } else {
             return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.note}\n'),
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
               TextSpan(text: t.wallet_add_scanner_screen.select),
@@ -322,7 +325,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               _em(' ${t.wallet_add_scanner_screen.guide_passport.step2_em}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              _em(' ${t.wallet_add_scanner_screen.guide_passport.step3_em}'),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step3_em}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step4),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(' ${t.wallet_add_scanner_screen.guide_passport.step4_em}'),
@@ -607,7 +610,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     vibrateLightDouble();
     if (mounted) {
       String errorMessage = "${t.wallet_add_scanner_screen.paste.format_error_text}\n${e.toString()}";
-      if (e.toString().contains("network type")) {
+      if (e is UnsupportedWalletTypeException) {
+        errorMessage = t.wallet_add_scanner_screen.paste.unsupported_wallet_error_text;
+      } else if (e.toString().contains("network type")) {
         errorMessage =
             NetworkType.currentNetworkType == NetworkType.mainnet
                 ? t.wallet_add_scanner_screen.paste.mainnet_wallet_error_text

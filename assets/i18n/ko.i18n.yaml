@@ -336,7 +336,8 @@ wallet_add_scanner_screen:
     step2_em: "XPUB - QR 코드"
     select: "선택"
   guide_passport:
-    step0: "패스포트에서 연동할 계정을 열어 주세요."
+    note: "이 가이드는 Passport Prime 기준으로 작성되었습니다."
+    step0: "연동할 계정을 열어 주세요."
     step1: "1. "
     step1_em: "Account Details"
     step2: "2. "
@@ -732,6 +733,12 @@ unsigned_tx_qr_screen:
     step2_em: "PSBT"
     step3: "3. "
     step3_em: "카메라로 불러오기"
+  guide_passport:
+    note: "이 가이드는 Passport Prime 기준으로 작성되었습니다."
+    step1: "1. 홈 화면에서"
+    step1_em: "Scan"
+    step1_end: "선택"
+    step2: "2. 카메라로 아래 QR 코드 스캔"
   fast_scan_mode: "빠른 스캔 모드"
   low_density_qr: "단순한 QR"
   high_density_qr: "복잡한 QR"
