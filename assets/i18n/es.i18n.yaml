@@ -1128,6 +1128,7 @@ label_management_screen:
     apply_description: "¿Deseas aplicar el archivo $fileName?"
     delete: "Eliminar archivo"
     delete_description: "¿Estás seguro de que quieres eliminar\n$fileName?"
+    delete_multiple_description: "¿Estás seguro de que quieres eliminar los $count archivos seleccionados?"
     delete_success: "Archivo eliminado correctamente"
     delete_failed: "Error al eliminar el archivo"
     invalid_file_type: "Formato de archivo no válido. Selecciona un archivo JSONL."

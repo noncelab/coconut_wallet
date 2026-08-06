@@ -1055,6 +1055,7 @@ label_management_screen:
     apply_description: "Möchten Sie die Datei $fileName anwenden?"
     delete: "Datei löschen"
     delete_description: "Möchten Sie\n$fileName\nwirklich löschen?"
+    delete_multiple_description: "Möchten Sie die ausgewählten $count Dateien wirklich löschen?"
     delete_success: "Datei erfolgreich gelöscht"
     delete_failed: "Datei konnte nicht gelöscht werden"
     invalid_file_type: "Ungültiges Dateiformat. Bitte wählen Sie eine JSONL-Datei aus."

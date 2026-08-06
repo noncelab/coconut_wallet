@@ -1126,6 +1126,7 @@ label_management_screen:
     apply_description: "$fileName ファイルを適用しますか？"
     delete: "ファイルを削除"
     delete_description: "$fileName\nファイルを削除しますか？"
+    delete_multiple_description: "選択した $count 件のファイルを削除しますか？"
     delete_success: "ファイルの削除に成功しました"
     delete_failed: "ファイルの削除に失敗しました"
     invalid_file_type: "無効なファイル形式です。JSONLファイルを選択してください。"

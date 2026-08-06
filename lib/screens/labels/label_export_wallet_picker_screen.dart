@@ -25,7 +25,7 @@ class LabelExportWalletPickerScreen extends StatefulWidget {
 
 class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerScreen> {
   final Set<int> _selectedWalletIds = {};
-  int? _selectedFileIndex;
+  final Set<int> _selectedFileIndices = {};
   bool _isExporting = false;
   bool _isCreateFileSelected = true;
 
@@ -82,10 +82,11 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
                     leftText: t.delete_label,
                     rightText: t.share,
                     leftButtonRatio: 0.3,
-                    isRightButtonActive: _selectedFileIndex != null,
+                    isLeftButtonActive: _selectedFileIndices.isNotEmpty,
+                    isRightButtonActive: _selectedFileIndices.length == 1,
                     rightButtonClicked: () async {
                       final files = await _filesFuture;
-                      _shareFile(files[_selectedFileIndex!]);
+                      _shareFile(files[_selectedFileIndices.first]);
                     },
                     leftButtonClicked: () async {
                       await _deleteSelectedFile();
@@ -153,9 +154,15 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         final file = files[index];
         return _FileListItemCard(
           file: file,
-          isSelected: _selectedFileIndex == index,
+          isSelected: _selectedFileIndices.contains(index),
           onTap: () {
-            setState(() => _selectedFileIndex = _selectedFileIndex == index ? null : index);
+            setState(() {
+              if (_selectedFileIndices.contains(index)) {
+                _selectedFileIndices.remove(index);
+              } else {
+                _selectedFileIndices.add(index);
+              }
+            });
           },
           onShare: () => _shareFile(file),
         );
@@ -214,7 +221,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         setState(() {
           _isCreateFileSelected = index == 0;
           _selectedWalletIds.clear();
-          _selectedFileIndex = null;
+          _selectedFileIndices.clear();
         });
       },
       selectedColor: context.coconutColors.segmentedControlSelected,
@@ -267,7 +274,6 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
               : await labelManager.createLabelsJsonLFileForWallets(_selectedWalletIds.toList(), walletProvider);
 
       if (xFile != null) {
-        await labelManager.shareFile(xFile);
         _refreshFiles();
       } else {
         if (mounted) {
@@ -287,10 +293,15 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Future<void> _deleteSelectedFile() async {
-    if (_selectedFileIndex == null) return;
+    if (_selectedFileIndices.isEmpty) return;
 
     final files = await _filesFuture;
-    final fileToDelete = files[_selectedFileIndex!];
+    final filesToDelete = _selectedFileIndices.map((index) => files[index]).toList();
+    final count = filesToDelete.length;
+    final description =
+        count == 1
+            ? t.label_management_screen.file.delete_description(fileName: p.basename(filesToDelete.first.path))
+            : t.label_management_screen.file.delete_multiple_description(count: count);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -298,7 +309,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
           (dialogContext) => CoconutPopup(
             languageCode: context.read<PreferenceProvider>().language,
             title: t.label_management_screen.file.delete,
-            description: t.label_management_screen.file.delete_description(fileName: p.basename(fileToDelete.path)),
+            description: description,
             onTapRight: () => Navigator.of(dialogContext).pop(true),
             onTapLeft: () => Navigator.of(dialogContext).pop(false),
             rightButtonText: t.delete,
@@ -309,7 +320,9 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
 
     if (confirmed == true && mounted) {
       try {
-        await fileToDelete.delete();
+        for (final file in filesToDelete) {
+          await file.delete();
+        }
         CoconutToast.showToast(
           context: context,
           text: t.label_management_screen.file.delete_success,
@@ -329,7 +342,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   void _refreshFiles() {
     setState(() {
       _filesFuture = LabelJsonLManager().getImportableLabelFiles();
-      _selectedFileIndex = null;
+      _selectedFileIndices.clear();
     });
   }
 }

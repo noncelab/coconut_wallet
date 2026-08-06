@@ -1141,6 +1141,7 @@ label_management_screen:
     apply_description: "$fileName 파일을 적용할까요?"
     delete: "파일 삭제"
     delete_description: "$fileName\n파일을 삭제하시겠어요?"
+    delete_multiple_description: "선택한 $count개의 파일을 삭제하시겠어요?"
     delete_success: "파일 삭제 성공"
     delete_failed: "파일 삭제 실패"
     invalid_file_type: "잘못된 파일 형식이에요. JSONL 파일을 선택해주세요."
