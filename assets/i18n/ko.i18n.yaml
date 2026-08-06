@@ -111,6 +111,7 @@ merge_utxos: "합치기"
 split_utxo: "나누기"
 apply: "정리하기"
 retry: "재시도"
+share: "공유하기"
 
 relative_time:
   just_now: "방금 전"

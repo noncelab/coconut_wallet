@@ -84,6 +84,10 @@ class LabelJsonLManager {
     }
   }
 
+  XFile createXFileFromFile(File file) {
+    return XFile(file.path, name: p.basename(file.path), mimeType: 'application/jsonl');
+  }
+
   Future<LabelImportResult> importLabelsFromJsonLFile(
     int walletId,
     WalletProvider walletProvider,

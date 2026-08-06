@@ -111,6 +111,7 @@ merge_utxos: "をまとめる"
 split_utxo: "を分割"
 apply: "適用する"
 retry: "再試行"
+share: "共有する"
 
 relative_time:
   just_now: "たった今"
