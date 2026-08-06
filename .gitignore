@@ -13,6 +13,7 @@
 .history
 .svn/
 .claude/
+.local/
 
 # IntelliJ related
 *.iml
@@ -205,3 +206,5 @@ rust/trezor-connect-rs/target/
 docs/ccos/*
 
 /META-INF
+
+.zed/*
