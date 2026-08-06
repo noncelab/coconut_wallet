@@ -1134,7 +1134,7 @@ label_management_screen:
     apply: "Apply"
     apply_description: "Do you want to apply the file $fileName?"
     delete: "Delete File"
-    delete_description: "Are you sure you want to delete the file '$fileName'?"
+    delete_description: "Are you sure you want to delete\n$fileName?"
     delete_success: "File deleted successfully"
     delete_failed: "Failed to delete file"
     invalid_file_type: "Invalid file type. Please select a JSONL file."
@@ -1159,6 +1159,7 @@ label_export_wallet_picker_screen:
   all_wallets: "All Wallets"
   create_file: "Create File"
   view_list: "View List"
+  no_file: "File not found.\nPlease create a file first from 'Create File'."
 
 # lib/widgets/card
 wallet_list_add_guide_card:

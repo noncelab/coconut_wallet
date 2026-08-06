@@ -1125,7 +1125,7 @@ label_management_screen:
     apply: "適用"
     apply_description: "$fileName ファイルを適用しますか？"
     delete: "ファイルを削除"
-    delete_description: "本当に「$fileName」ファイルを削除しますか？"
+    delete_description: "$fileName\nファイルを削除しますか？"
     delete_success: "ファイルの削除に成功しました"
     delete_failed: "ファイルの削除に失敗しました"
     invalid_file_type: "無効なファイル形式です。JSONLファイルを選択してください。"
@@ -1150,6 +1150,7 @@ label_export_wallet_picker_screen:
   all_wallets: "すべてのウォレット"
   create_file: "ファイルを作成"
   view_list: "リストを表示"
+  no_file: "ファイルが見つかりません。\nまずは「ファイルを作成」からファイルを作成してください。"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

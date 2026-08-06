@@ -6,6 +6,7 @@ import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
@@ -80,12 +81,15 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
                   : FixedBottomTweenButton(
                     leftText: t.delete_label,
                     rightText: t.share,
+                    leftButtonRatio: 0.3,
                     isRightButtonActive: _selectedFileIndex != null,
                     rightButtonClicked: () async {
                       final files = await _filesFuture;
                       _shareFile(files[_selectedFileIndex!]);
                     },
-                    leftButtonClicked: () {},
+                    leftButtonClicked: () async {
+                      await _deleteSelectedFile();
+                    },
                   ),
         ),
       ],
@@ -113,31 +117,30 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Widget _buildNoFilesFound(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: context.coconutColors.secondaryText.withOpacity(0.1),
-            ),
-            child: SvgPicture.asset(
-              'assets/svg/file.svg',
-              width: 40,
-              height: 40,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-            ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        const SizedBox(height: 100),
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: context.coconutColors.secondaryText.withOpacity(0.1),
           ),
-          CoconutLayout.spacing_400h,
-          Text(
-            t.label_management_screen.file.not_found,
-            style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.center,
+          child: SvgPicture.asset(
+            'assets/svg/file.svg',
+            width: 40,
+            height: 40,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
           ),
-        ],
-      ),
+        ),
+        CoconutLayout.spacing_400h,
+        Text(
+          t.label_export_wallet_picker_screen.no_file,
+          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -265,6 +268,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
 
       if (xFile != null) {
         await labelManager.shareFile(xFile);
+        _refreshFiles();
       } else {
         if (mounted) {
           CoconutToast.showToast(context: context, text: 'a', level: CoconutToastLevel.info);
@@ -280,6 +284,53 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   void _shareFile(File file) async {
     final labelManager = LabelJsonLManager();
     await labelManager.shareFile(labelManager.createXFileFromFile(file));
+  }
+
+  Future<void> _deleteSelectedFile() async {
+    if (_selectedFileIndex == null) return;
+
+    final files = await _filesFuture;
+    final fileToDelete = files[_selectedFileIndex!];
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            title: t.label_management_screen.file.delete,
+            description: t.label_management_screen.file.delete_description(fileName: p.basename(fileToDelete.path)),
+            onTapRight: () => Navigator.of(dialogContext).pop(true),
+            onTapLeft: () => Navigator.of(dialogContext).pop(false),
+            rightButtonText: t.delete,
+            rightButtonColor: context.coconutColors.danger,
+            leftButtonText: t.cancel,
+          ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await fileToDelete.delete();
+        CoconutToast.showToast(
+          context: context,
+          text: t.label_management_screen.file.delete_success,
+          level: CoconutToastLevel.success,
+        );
+        _refreshFiles();
+      } catch (e) {
+        CoconutToast.showToast(
+          context: context,
+          text: t.label_management_screen.file.delete_failed,
+          level: CoconutToastLevel.error,
+        );
+      }
+    }
+  }
+
+  void _refreshFiles() {
+    setState(() {
+      _filesFuture = LabelJsonLManager().getImportableLabelFiles();
+      _selectedFileIndex = null;
+    });
   }
 }
 
