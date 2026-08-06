@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
 
@@ -47,7 +48,8 @@ class LabelJsonLManager {
     debugPrint('---------------------------------');
 
     final directory = await getApplicationDocumentsDirectory();
-    final fileName = 'coconut-labels-${DateTime.now().millisecondsSinceEpoch}.jsonl';
+    DateFormat('yyyy-MM-dd').format(DateTime.now());
+    const fileName = 'coconut-labels.jsonl';
     final file = File('${directory.path}/$fileName');
     await file.writeAsString(jsonlString);
 
@@ -225,14 +227,25 @@ class LabelJsonLManager {
     return (txid: txid, vout: vout);
   }
 
-  Future<XFile> _createFileFromString(String content) async {
+  Future<XFile?> _createFileFromString(String content) async {
     debugPrint('--- Exporting Labels as JSONL ---');
     debugPrint(content);
     debugPrint('---------------------------------');
 
     final directory = await getApplicationDocumentsDirectory();
-    final fileName = 'coconut-labels-all-${DateTime.now().millisecondsSinceEpoch}.jsonl';
-    final file = File('${directory.path}/$fileName');
+    const baseName = 'coconut-labels';
+    const extension = '.jsonl';
+    String fileName = '$baseName$extension';
+    String filePath = p.join(directory.path, fileName);
+    int counter = 1;
+
+    while (await File(filePath).exists()) {
+      fileName = '$baseName ($counter)$extension';
+      filePath = p.join(directory.path, fileName);
+      counter++;
+    }
+
+    final file = File(filePath);
     await file.writeAsString(content);
     return XFile(file.path, name: fileName, mimeType: 'application/jsonl');
   }
@@ -349,11 +362,16 @@ class LabelJsonLManager {
       }
 
       final directory = await getApplicationDocumentsDirectory();
-      String baseName = p.basenameWithoutExtension(sourceFile.path);
-      String targetPath = p.join(directory.path, '$baseName.jsonl');
+      final baseName = p.basenameWithoutExtension(fileName);
+      const extension = '.jsonl';
+      String targetFileName = '$baseName$extension';
+      String targetPath = p.join(directory.path, targetFileName);
+      int counter = 1;
 
-      if (await File(targetPath).exists()) {
-        targetPath = p.join(directory.path, '${baseName}_${DateTime.now().millisecondsSinceEpoch}.jsonl');
+      while (await File(targetPath).exists()) {
+        targetFileName = '$baseName ($counter)$extension';
+        targetPath = p.join(directory.path, targetFileName);
+        counter++;
       }
 
       return await sourceFile.copy(targetPath);

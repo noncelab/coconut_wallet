@@ -195,7 +195,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
 
   Widget _buildFileListView(BuildContext context, List<File> files) {
     return ListView.separated(
-      padding: const EdgeInsets.only(top: 20, bottom: 90),
+      padding: const EdgeInsets.only(top: 20, bottom: 125),
       itemCount: files.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
