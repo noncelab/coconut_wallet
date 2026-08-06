@@ -59,7 +59,7 @@ class UtxoSyncService {
       );
       final transactionMap = {for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx};
       final realmLockedUtxos = _utxoRepository.getUtxosByStatus(walletItem.id, UtxoStatus.locked);
-      final lockedUtxoMap = {for (final utxo in realmLockedUtxos) utxo.transactionHash: utxo};
+      final lockedUtxoMap = {for (final utxo in realmLockedUtxos) getUtxoId(utxo.transactionHash, utxo.index): utxo};
       return unspentResList
           // 이미 사용된 UTXO는 필터링하여 제외
           .map(
@@ -73,7 +73,7 @@ class UtxoSyncService {
               status: () {
                 if (e.height <= 0) return UtxoStatus.incoming;
 
-                final lockedUtxo = lockedUtxoMap[e.txHash];
+                final lockedUtxo = lockedUtxoMap[getUtxoId(e.txHash, e.txPos)];
                 if (lockedUtxo == null || lockedUtxo.status == UtxoStatus.unspent) {
                   return UtxoStatus.unspent;
                 } else {
