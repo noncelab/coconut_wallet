@@ -10,11 +10,14 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
+import 'package:coconut_wallet/widgets/label_export_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
+
+enum LabelExportStep { selection, exporting, success, error }
 
 class LabelExportWalletPickerScreen extends StatefulWidget {
   const LabelExportWalletPickerScreen({super.key});
@@ -26,8 +29,10 @@ class LabelExportWalletPickerScreen extends StatefulWidget {
 class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerScreen> {
   final Set<int> _selectedWalletIds = {};
   final Set<int> _selectedFileIndices = {};
-  bool _isExporting = false;
   bool _isCreateFileSelected = true;
+  LabelExportStep _step = LabelExportStep.selection;
+  String? _exportedFileName;
+  String? _exportedFileDate;
 
   late Future<List<File>> _filesFuture;
 
@@ -42,78 +47,117 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     final walletProvider = context.watch<WalletProvider>();
     final wallets = walletProvider.walletItemList;
 
-    return Stack(
-      children: [
-        Scaffold(
-          backgroundColor: context.coconutColors.background,
-          appBar: CoconutAppBar.build(title: t.label_management_screen.export_title, context: context),
-          body: _buildBody(context, wallets),
-        ),
-        if (_isExporting)
-          Container(color: Colors.black.withOpacity(0.5), child: const Center(child: CircularProgressIndicator())),
-      ],
+    return Scaffold(
+      backgroundColor: context.coconutColors.background,
+      appBar: CoconutAppBar.build(title: t.label_management_screen.export_title, context: context),
+      body: _buildBody(context, wallets),
     );
   }
 
   Widget _buildBody(BuildContext context, List<WalletItemBase> wallets) {
+    final bool showBottomButtons = _step == LabelExportStep.selection && _isCreateFileSelected;
     return Stack(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             children: <Widget>[
-              _buildInfoTooltip(context),
-              CoconutLayout.spacing_400h,
-              _buildSegmentedControl(context),
+              if (_step == LabelExportStep.selection) ...[
+                _buildInfoTooltip(context),
+                CoconutLayout.spacing_400h,
+                _buildSegmentedControl(context),
+              ],
               Expanded(child: _buildContent(context, wallets)),
             ],
           ),
         ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child:
-              _isCreateFileSelected
-                  ? FixedBottomButton(
-                    text: t.label_management_screen.export_title,
-                    isActive: _selectedWalletIds.isNotEmpty,
-                    onButtonClicked: _onExportButtonPressed,
-                  )
-                  : FixedBottomTweenButton(
-                    leftText: t.delete_label,
-                    rightText: t.share,
-                    leftButtonRatio: 0.3,
-                    isLeftButtonActive: _selectedFileIndices.isNotEmpty,
-                    isRightButtonActive: _selectedFileIndices.length == 1,
-                    rightButtonClicked: () async {
-                      final files = await _filesFuture;
-                      _shareFile(files[_selectedFileIndices.first]);
-                    },
-                    leftButtonClicked: () async {
-                      await _deleteSelectedFile();
-                    },
-                  ),
-        ),
+        if (showBottomButtons)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FixedBottomButton(
+              text: t.label_management_screen.export_title,
+              isActive: _selectedWalletIds.isNotEmpty,
+              onButtonClicked: _onExportButtonPressed,
+            ),
+          ),
+        if (_step == LabelExportStep.selection && !_isCreateFileSelected)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FixedBottomTweenButton(
+              leftText: t.delete_label,
+              rightText: t.share,
+              leftButtonRatio: 0.3,
+              isLeftButtonActive: _selectedFileIndices.isNotEmpty,
+              isRightButtonActive: _selectedFileIndices.length == 1,
+              rightButtonClicked: () async {
+                final files = await _filesFuture;
+                _shareFile(files[_selectedFileIndices.first]);
+              },
+              leftButtonClicked: () async {
+                await _deleteSelectedFile();
+              },
+            ),
+          ),
+        if (_step == LabelExportStep.success)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FixedBottomTweenButton(
+              leftText: t.complete,
+              rightText: t.share,
+              leftButtonRatio: 0.3,
+              isRightButtonActive: true,
+              leftButtonClicked: () {
+                setState(() {
+                  _step = LabelExportStep.selection;
+                  _isCreateFileSelected = false;
+                });
+              },
+              rightButtonClicked: () {},
+            ),
+          ),
+        if (_step == LabelExportStep.error)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FixedBottomButton(
+              text: t.retry,
+              isActive: true,
+              onButtonClicked: () {
+                setState(() {
+                  _step = LabelExportStep.selection;
+                });
+              },
+            ),
+          ),
       ],
     );
   }
 
   Widget _buildContent(BuildContext context, List<WalletItemBase> wallets) {
-    if (_isCreateFileSelected) {
-      return _buildWalletListView(context, wallets);
-    } else {
-      return FutureBuilder<List<File>>(
-        future: _filesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
-          if (noFiles) {
-            return _buildNoFilesFound(context);
-          }
-          return _buildFileListView(context, snapshot.data!);
-        },
-      );
+    switch (_step) {
+      case LabelExportStep.selection:
+        if (_isCreateFileSelected) {
+          return _buildWalletListView(context, wallets);
+        } else {
+          return FutureBuilder<List<File>>(
+            future: _filesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
+              if (noFiles) {
+                return _buildNoFilesFound(context);
+              }
+              return _buildFileListView(context, snapshot.data!);
+            },
+          );
+        }
+      case LabelExportStep.exporting:
+        return Center(child: _buildLoadingCard());
+      case LabelExportStep.success:
+        return Center(child: _buildSuccessCard());
+      case LabelExportStep.error:
+        return Center(child: _buildErrorCard());
     }
   }
 
@@ -257,14 +301,53 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     );
   }
 
-  Future<void> _onExportButtonPressed() async {
-    if (_selectedWalletIds.isEmpty || _isExporting) return;
+  Widget _buildLoadingCard() {
+    return ExportLabelProgressCard(
+      title: Text(
+        t.label_export_wallet_picker_screen.loading_title,
+        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+        textAlign: TextAlign.center,
+      ),
+      steps: [
+        t.label_export_wallet_picker_screen.instruction_tooltip.step1,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step2,
+      ],
+    );
+  }
 
-    setState(() => _isExporting = true);
+  Widget _buildSuccessCard() {
+    return ExportLabelSuccessCard(
+      title: Text(
+        t.label_export_wallet_picker_screen.success_title,
+        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+        textAlign: TextAlign.center,
+      ),
+      steps: [
+        t.label_export_wallet_picker_screen.instruction_tooltip.step1,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step2,
+      ],
+      stepResults: [_exportedFileName ?? '', _exportedFileDate ?? ''],
+    );
+  }
+
+  Widget _buildErrorCard() {
+    return ExportLabelErrorCard(
+      title: Text(
+        t.label_export_wallet_picker_screen.error_title,
+        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.danger),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Future<void> _onExportButtonPressed() async {
+    if (_selectedWalletIds.isEmpty || _step == LabelExportStep.exporting) return;
+
+    await Future.delayed(const Duration(milliseconds: 100));
+    setState(() => _step = LabelExportStep.exporting);
 
     final walletProvider = context.read<WalletProvider>();
     final labelManager = LabelJsonLManager();
-
     final isAllWalletsSelected = _selectedWalletIds.contains(-1);
 
     try {
@@ -275,14 +358,25 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
 
       if (xFile != null) {
         _refreshFiles();
+        await Future.delayed(const Duration(milliseconds: 2500));
+        setState(() {
+          _step = LabelExportStep.success;
+          _exportedFileName = xFile.name;
+          _exportedFileDate = DateFormat('yy-MM-dd HH:mm').format(DateTime.now());
+        });
       } else {
         if (mounted) {
-          CoconutToast.showToast(context: context, text: 'a', level: CoconutToastLevel.info);
+          CoconutToast.showToast(
+            context: context,
+            text: t.label_export_wallet_picker_screen.no_labels_to_export,
+            level: CoconutToastLevel.info,
+          );
         }
+        setState(() => _step = LabelExportStep.selection);
       }
-    } finally {
+    } catch (e) {
       if (mounted) {
-        setState(() => _isExporting = false);
+        setState(() => _step = LabelExportStep.error);
       }
     }
   }
@@ -343,6 +437,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     setState(() {
       _filesFuture = LabelJsonLManager().getImportableLabelFiles();
       _selectedFileIndices.clear();
+      _selectedWalletIds.clear();
     });
   }
 }

@@ -1161,6 +1161,13 @@ label_export_wallet_picker_screen:
   create_file: "Create File"
   view_list: "View List"
   no_file: "File not found.\nPlease create a file first from 'Create File'."
+  loading_title: "Creating file..."
+  success_title: "Would you like to share the file?"
+  error_title: "Unable to create file"
+  no_labels_to_export: "No notes to share."
+  instruction_tooltip:
+    step1: "File Name"
+    step2: "Created Date & Time"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

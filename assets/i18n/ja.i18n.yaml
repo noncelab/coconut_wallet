@@ -1152,6 +1152,13 @@ label_export_wallet_picker_screen:
   create_file: "ファイルを作成"
   view_list: "リストを表示"
   no_file: "ファイルが見つかりません。\nまずは「ファイルを作成」からファイルを作成してください。"
+  loading_title: "ファイルを作成しています"
+  success_title: "ファイルを共有しますか？"
+  error_title: "ファイルを作成できません"
+  no_labels_to_export: "共有するメモがありません。"
+  instruction_tooltip:
+    step1: "ファイル名"
+    step2: "作成日時"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

@@ -1081,6 +1081,13 @@ label_export_wallet_picker_screen:
   create_file: "Datei erstellen"
   view_list: "Liste anzeigen"
   no_file: "Datei nicht gefunden.\nBitte erstellen Sie zuerst eine Datei unter 'Datei erstellen'."
+  loading_title: "Datei wird erstellt..."
+  success_title: "Möchten Sie die Datei teilen?"
+  error_title: "Datei konnte nicht erstellt werden"
+  no_labels_to_export: "Keine Notizen zum Teilen vorhanden."
+  instruction_tooltip:
+    step1: "Dateiname"
+    step2: "Erstellungsdatum und -zeit"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
