@@ -75,6 +75,27 @@ class LabelJsonLManager {
     return _createFileFromString(jsonLines.join('\n'));
   }
 
+  Future<XFile?> createLabelsJsonLFileForWallets(List<int> walletIds, WalletProvider walletProvider) async {
+    final List<String> jsonLines = [];
+
+    for (final walletId in walletIds) {
+      final wallet = walletProvider.getWalletById(walletId);
+
+      jsonLines.addAll(
+        _generateJsonLinesForWallet(
+          descriptor: wallet.descriptor,
+          txMemos: walletProvider.getAllTransactionMemos(walletId),
+          utxoTags: walletProvider.getUtxoTags(walletId),
+          utxoStates: walletProvider.getUtxoList(walletId),
+        ),
+      );
+    }
+
+    if (jsonLines.isEmpty) return null;
+
+    return _createFileFromString(jsonLines.join('\n'));
+  }
+
   Future<void> shareFile(XFile xFile) async {
     AppGuard.disablePrivacyScreen();
     try {

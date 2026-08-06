@@ -23,7 +23,7 @@ class LabelExportWalletPickerScreen extends StatefulWidget {
 }
 
 class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerScreen> {
-  int? _selectedWalletId;
+  final Set<int> _selectedWalletIds = {};
   int? _selectedFileIndex;
   bool _isExporting = false;
   bool _isCreateFileSelected = true;
@@ -74,7 +74,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
               _isCreateFileSelected
                   ? FixedBottomButton(
                     text: t.label_management_screen.export_title,
-                    isActive: _selectedWalletId != null,
+                    isActive: _selectedWalletIds.isNotEmpty,
                     onButtonClicked: _onExportButtonPressed,
                   )
                   : FixedBottomTweenButton(
@@ -169,10 +169,15 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         if (index == 0) {
           return _WalletListItemCard(
             title: t.label_export_wallet_picker_screen.all_wallets,
-            isSelected: _selectedWalletId == -1,
+            isSelected: _selectedWalletIds.contains(-1),
             onTap: () {
               setState(() {
-                _selectedWalletId = _selectedWalletId == -1 ? null : -1;
+                if (_selectedWalletIds.contains(-1)) {
+                  _selectedWalletIds.clear();
+                } else {
+                  _selectedWalletIds.clear();
+                  _selectedWalletIds.add(-1);
+                }
               });
             },
           );
@@ -181,10 +186,17 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         final wallet = wallets[index - 1];
         return _WalletListItemCard(
           title: wallet.name,
-          isSelected: _selectedWalletId == wallet.id,
+          isSelected: _selectedWalletIds.contains(wallet.id),
           onTap: () {
             setState(() {
-              _selectedWalletId = _selectedWalletId == wallet.id ? null : wallet.id;
+              if (_selectedWalletIds.contains(-1)) {
+                _selectedWalletIds.clear();
+                _selectedWalletIds.add(wallet.id);
+              } else if (_selectedWalletIds.contains(wallet.id)) {
+                _selectedWalletIds.remove(wallet.id);
+              } else {
+                _selectedWalletIds.add(wallet.id);
+              }
             });
           },
         );
@@ -198,7 +210,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       onPressed: (index) {
         setState(() {
           _isCreateFileSelected = index == 0;
-          _selectedWalletId = null;
+          _selectedWalletIds.clear();
           _selectedFileIndex = null;
         });
       },
@@ -236,18 +248,20 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Future<void> _onExportButtonPressed() async {
-    if (_selectedWalletId == null || _isExporting) return;
+    if (_selectedWalletIds.isEmpty || _isExporting) return;
 
     setState(() => _isExporting = true);
 
     final walletProvider = context.read<WalletProvider>();
     final labelManager = LabelJsonLManager();
 
+    final isAllWalletsSelected = _selectedWalletIds.contains(-1);
+
     try {
       final xFile =
-          _selectedWalletId == -1
+          isAllWalletsSelected
               ? await labelManager.createLabelsJsonLFileForAllWallets(walletProvider)
-              : await labelManager.createLabelsJsonLFile(_selectedWalletId!, walletProvider);
+              : await labelManager.createLabelsJsonLFileForWallets(_selectedWalletIds.toList(), walletProvider);
 
       if (xFile != null) {
         await labelManager.shareFile(xFile);
