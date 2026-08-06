@@ -627,8 +627,15 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     vibrateMedium();
     if (mounted) {
       context.loaderOverlay.hide();
+    }
+  }
+
+  /// 에러 팝업이 아직 떠 있는 동안 카메라가 새 QR을 스캔해버리는 레이스 컨디션을 막기 위해,
+  /// 팝업이 실제로 닫힌 뒤(onTapRight)에만 카메라 재개 및 QR 핸들러 리셋 수행
+  void _resumeScanning() {
+    if (mounted) {
       controller?.start();
-      _viewModel.qrDataHandler.reset(); // TODO: 추가됨. 다른 타입 지갑 추가 시 동작 확인 필요
+      _viewModel.qrDataHandler.reset();
     }
   }
 
@@ -692,6 +699,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           rightButtonColor: context.coconutColors.primaryText,
           onTapRight: () {
             _isProcessing = false;
+            _resumeScanning();
             Navigator.pop(context);
           },
         );
