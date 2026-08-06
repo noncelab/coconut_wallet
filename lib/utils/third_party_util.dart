@@ -47,6 +47,8 @@ String _getThirdPartyDefaultName(WalletImportSource walletImportSource, {String?
       return t.third_party.krux;
     case WalletImportSource.passport:
       return t.third_party.passport;
+    case WalletImportSource.trezor:
+      return t.third_party.trezor;
     case WalletImportSource.bitbox02:
       return t.third_party.bitbox02;
     case WalletImportSource.extendedPublicKey:

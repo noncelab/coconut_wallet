@@ -19,10 +19,12 @@
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		A0B1C2D3E4F5060708090A0B /* BluetoothTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A2B1C0D9E8F7A6B5C4D3E2 /* BluetoothTransport.swift */; };
 		C27F3A112EB7A618000DF5BB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = C27F3A0F2EB7A618000DF5BB /* InfoPlist.strings */; };
+		C2C53B423004B27C000B5E93 /* TrezorBridge.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2C53B413004B27C000B5E93 /* TrezorBridge.xcframework */; };
+		C2C53B473004B4CD000B5E93 /* TrezorBridgeFFI.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C53B463004B4CD000B5E93 /* TrezorBridgeFFI.swift */; };
+		C2C53B493004BA05000B5E93 /* TrezorMethodHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C53B483004BA05000B5E93 /* TrezorMethodHandler.swift */; };
 		C4BD7B19EF57826E7044304F /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF6E69EA31F680FC5DDC38A4 /* Pods_RunnerTests.framework */; };
 		C8D7E6F5A4B302C1D0E9F8A7 /* bitboxbridge.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9C8D7E6F5040302A1B0C9D8 /* bitboxbridge.xcframework */; };
 		CEB6D888FCEA72BDAB7E1DC5 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C67200FB8402D2CCB62072C5 /* Pods_Runner.framework */; };
-		D7E6F5A4B3C2D1E0F9A8B7C6 /* bitboxbridge.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B9C8D7E6F5040302A1B0C9D8 /* bitboxbridge.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DEB72D872E24830A0069ED9B /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = DEB72D852E24830A0069ED9B /* InfoPlist.strings */; };
 		DEB72D8B2E2483130069ED9B /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = DEB72D892E2483130069ED9B /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
@@ -36,20 +38,6 @@
 			remoteInfo = Runner;
 		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				D7E6F5A4B3C2D1E0F9A8B7C6 /* bitboxbridge.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		00AD7CAB2FFCFB02A2287A95 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -95,6 +83,9 @@
 		BF71A04B35B0249648B60B01 /* Pods-RunnerTests.debug-regtest.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug-regtest.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug-regtest.xcconfig"; sourceTree = "<group>"; };
 		C27F3A072EB7A47C000DF5BB /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ../ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		C27F3A0E2EB7A618000DF5BB /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = InfoPlist.strings; sourceTree = "<group>"; };
+		C2C53B413004B27C000B5E93 /* TrezorBridge.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = TrezorBridge.xcframework; path = Runner/TrezorBridge.xcframework; sourceTree = "<group>"; };
+		C2C53B463004B4CD000B5E93 /* TrezorBridgeFFI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrezorBridgeFFI.swift; sourceTree = "<group>"; };
+		C2C53B483004BA05000B5E93 /* TrezorMethodHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrezorMethodHandler.swift; sourceTree = "<group>"; };
 		C67200FB8402D2CCB62072C5 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE599B60C21922DDF10792DC /* Pods-Runner.debug-regtest.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-regtest.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-regtest.xcconfig"; sourceTree = "<group>"; };
 		D092F9B294690AC61D258083 /* Pods-Runner.debug-mainnet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-mainnet.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-mainnet.xcconfig"; sourceTree = "<group>"; };
@@ -121,6 +112,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C2C53B423004B27C000B5E93 /* TrezorBridge.xcframework in Frameworks */,
 				C8D7E6F5A4B302C1D0E9F8A7 /* bitboxbridge.xcframework in Frameworks */,
 				CEB6D888FCEA72BDAB7E1DC5 /* Pods_Runner.framework in Frameworks */,
 			);
@@ -220,6 +212,8 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				C2C53B483004BA05000B5E93 /* TrezorMethodHandler.swift */,
+				C2C53B463004B4CD000B5E93 /* TrezorBridgeFFI.swift */,
 				DEB72D8A2E2483130069ED9B /* ko.lproj */,
 				DEB72D862E24830A0069ED9B /* en.lproj */,
 				414E6ADA51AE484AA49BA6FA /* de.lproj */,
@@ -253,6 +247,7 @@
 		CC252184760F376DD2314C18 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C2C53B413004B27C000B5E93 /* TrezorBridge.xcframework */,
 				B9C8D7E6F5040302A1B0C9D8 /* bitboxbridge.xcframework */,
 				C67200FB8402D2CCB62072C5 /* Pods_Runner.framework */,
 				BF6E69EA31F680FC5DDC38A4 /* Pods_RunnerTests.framework */,
@@ -307,7 +302,6 @@
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
-				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				DFD5326D7C61DE059C053AD8 /* [CP] Embed Pods Frameworks */,
 				DEE9B6482E1F8AAC00F925A3 /* ShellScript */,
@@ -514,6 +508,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C2C53B473004B4CD000B5E93 /* TrezorBridgeFFI.swift in Sources */,
+				C2C53B493004BA05000B5E93 /* TrezorMethodHandler.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				5BDE05CA37B7431FB7C74C09 /* Bitbox02MethodHandler.swift in Sources */,
 				5D7E31AA2C8B4B699F014201 /* DeviceDekKeystore.swift in Sources */,

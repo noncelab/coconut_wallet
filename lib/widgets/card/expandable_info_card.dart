@@ -1,18 +1,35 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 
-class WalletExpandableInfoCard extends StatefulWidget {
-  const WalletExpandableInfoCard({super.key});
+class ExpandableInfo {
+  final String titleText;
+  final List<String> descriptionList;
+  final String? addressText;
 
-  @override
-  State<WalletExpandableInfoCard> createState() => _WalletExpandableInfoCardState();
+  const ExpandableInfo({required this.titleText, required this.descriptionList, this.addressText});
 }
 
-class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
+class ExpandableInfoCard extends StatefulWidget {
+  final String descriptionText;
+  final List<ExpandableInfo> sections;
+  final String collapsedIconAsset;
+  final String expandedIconAsset;
+
+  const ExpandableInfoCard({
+    super.key,
+    required this.descriptionText,
+    required this.sections,
+    this.collapsedIconAsset = 'assets/svg/circle-help.svg',
+    this.expandedIconAsset = 'assets/svg/circle-warning.svg',
+  });
+
+  @override
+  State<ExpandableInfoCard> createState() => _ExpandableInfoCardState();
+}
+
+class _ExpandableInfoCardState extends State<ExpandableInfoCard> {
   bool _isExpanded = false;
 
   TextPainter _buildDescriptionTextPainter(
@@ -32,11 +49,11 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final descriptionText = t.wallet_add_scanner_screen.paste.wallet_description_text;
+    final descriptionText = widget.descriptionText;
     final descriptionStyle = CoconutTypography.body2_14.setColor(colors.primaryText);
 
     return Container(
-      padding: const EdgeInsets.all(CoconutStyles.radius_200),
+      padding: const EdgeInsets.all(CoconutLayout.defaultPadding),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: const BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
@@ -73,7 +90,7 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
                       Padding(
                         padding: EdgeInsets.only(top: isSingleLine ? 0 : firstLineCenterOffset),
                         child: SvgPicture.asset(
-                          _isExpanded ? 'assets/svg/circle-warning.svg' : 'assets/svg/circle-help.svg',
+                          _isExpanded ? widget.expandedIconAsset : widget.collapsedIconAsset,
                           width: 20,
                           colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                         ),
@@ -87,23 +104,15 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
             ),
           ),
           if (_isExpanded) ...[
-            CoconutLayout.spacing_200h,
-            _buildWalletInfoSection(
-              context: context,
-              titleText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[0],
-              descriptionList: [...t.wallet_add_scanner_screen.paste.blue_wallet_texts.getRange(1, 3)],
-              addressText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[3],
-            ),
-            CoconutLayout.spacing_200h,
-            _buildWalletInfoSection(
-              context: context,
-              titleText: t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[0],
-              descriptionList: [...t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts.getRange(1, 2)],
-              addressText:
-                  Platform.isAndroid
-                      ? t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[2]
-                      : t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[3],
-            ),
+            for (int i = 0; i < widget.sections.length; i++) ...[
+              if (i > 0) CoconutLayout.spacing_200h,
+              _buildWalletInfoSection(
+                context: context,
+                titleText: widget.sections[i].titleText,
+                descriptionList: widget.sections[i].descriptionList,
+                addressText: widget.sections[i].addressText,
+              ),
+            ],
             CoconutLayout.spacing_200h,
           ],
         ],
@@ -115,7 +124,7 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
     required BuildContext context,
     required String titleText,
     required List<String> descriptionList,
-    required String addressText,
+    String? addressText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,33 +138,35 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
               ...descriptionList.map(
                 (desc) => Text(desc, style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText)),
               ),
-              CoconutLayout.spacing_200h,
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: context.coconutColors.background,
-                    borderRadius: const BorderRadius.all(Radius.circular(CoconutStyles.radius_100)),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),
-                  child: RichText(
-                    text: TextSpan(
-                      text: addressText.substring(0, 4),
-                      style:
-                          addressText.startsWith("zpub")
-                              ? CoconutTypography.body3_12_NumberBold.setColor(context.coconutColors.primaryText)
-                              : CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
-                      children: [
-                        TextSpan(
-                          text: addressText.substring(4),
-                          style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
-                        ),
-                      ],
+              if (addressText != null) ...[
+                CoconutLayout.spacing_200h,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: context.coconutColors.background,
+                      borderRadius: const BorderRadius.all(Radius.circular(CoconutStyles.radius_100)),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),
+                    child: RichText(
+                      text: TextSpan(
+                        text: addressText.substring(0, 4),
+                        style:
+                            addressText.startsWith("zpub")
+                                ? CoconutTypography.body3_12_NumberBold.setColor(context.coconutColors.primaryText)
+                                : CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
+                        children: [
+                          TextSpan(
+                            text: addressText.substring(4),
+                            style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.primaryText),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

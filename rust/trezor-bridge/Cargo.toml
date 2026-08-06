@@ -1,0 +1,52 @@
+[package]
+name = "trezor-bridge"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+name = "trezor_bridge"
+
+[dependencies]
+# UniFFI runtime (must match uniffi-bindgen version below)
+uniffi = { version = "0.28", features = ["cli"] }
+
+# Trezor Safe 7 BLE / THP v2 — callback transport avoids btleplug on Android
+trezor-connect-rs = { version = "0.4", default-features = false, features = ["bluetooth"] }
+
+# Async runtime required by trezor-connect-rs
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "time"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# UUID for device IDs
+uuid = { version = "1", features = ["v4"] }
+
+# Base58Check decoding for xpub fingerprint extraction
+bitcoin = { version = "0.32", default-features = false }
+hex = "0.4"
+
+# Error derive macro
+thiserror = "1"
+
+# Thread-safe state
+once_cell = "1"
+
+[build-dependencies]
+uniffi = { version = "0.28", features = ["build"] }
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+
+[patch.crates-io]
+trezor-connect-rs = { path = "../trezor-connect-rs" }
+
+# ---- target overrides -------------------------------------------------------
+# Android: each ABI is a separate target; cdylib is loaded via System.loadLibrary
+[profile.release]
+opt-level = "z"   # minimize binary size for mobile
+lto = true
+panic = "abort"

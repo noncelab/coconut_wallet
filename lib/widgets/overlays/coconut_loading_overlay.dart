@@ -9,7 +9,7 @@ class CoconutLoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: context.coconutColors.loadingIndicatorColor.withValues(alpha: 0.4),
+      color: context.coconutColors.loadingOverlay,
       padding:
           applyFullScreen
               ? EdgeInsets.zero

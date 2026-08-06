@@ -3,8 +3,13 @@ import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connec
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_create_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_mnemonic_backup_guide_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_usb_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/connected/bitbox02_sign_screen.dart';
+import 'package:coconut_wallet/screens/send/connected/trezor_sign_screen.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/screens/settings/home_settings/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/settings/home_settings/home_settings_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/about/app_info_screen.dart';
@@ -208,6 +213,33 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           (args) => TransactionDraftScreen(isSignedTabActive: args['isSignedTabActive']),
         ),
     '/wallet-home-edit': (context) => const WalletHomeEditScreen(),
+    '/trezor-transport-select':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => TrezorTransportSelectScreen(
+            psbtBase64: args['psbtBase64'],
+            walletName: args['walletName'],
+            walletFingerprint: args['walletFingerprint'],
+          ),
+        ),
+    '/trezor-ble-connect':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => TrezorBleConnectScreen(
+            psbtBase64: args['psbtBase64'],
+            walletName: args['walletName'],
+            walletFingerprint: args['walletFingerprint'],
+          ),
+        ),
+    '/trezor-usb-connect':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => TrezorUsbConnectScreen(
+            psbtBase64: args['psbtBase64'],
+            walletName: args['walletName'],
+            walletFingerprint: args['walletFingerprint'],
+          ),
+        ),
     '/bitbox02-connect':
         (context) => _buildScreenWithArgs(
           context,
@@ -226,6 +258,17 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             walletFingerprint: args['walletFingerprint'] ?? '',
             isFromSendFlow: args['isFromSendFlow'] ?? false,
             transport: args['transport'] ?? 'usb',
+          ),
+        ),
+    '/trezor-sign':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => TrezorSignScreen(
+            psbtBase64: args['psbtBase64'],
+            walletName: args['walletName'],
+            walletFingerprint: args['walletFingerprint'] ?? '',
+            isFromSendFlow: args['isFromSendFlow'] ?? false,
+            transport: args['transport'] == 'usb' ? TrezorTransport.usb : TrezorTransport.ble,
           ),
         ),
   };

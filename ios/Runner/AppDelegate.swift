@@ -10,6 +10,7 @@ import LocalAuthentication
     private var bitbox02Handler: Bitbox02MethodHandler?
     private let deviceDekKeystore = DeviceDekKeystore()
     private let deviceDekQueue = DispatchQueue(label: "onl.coconut.wallet.device-dek")
+    private var trezorHandler: TrezorMethodHandler?
 
   override func application(
     _ application: UIApplication,
@@ -163,6 +164,7 @@ import LocalAuthentication
     }
 
     bitbox02Handler = Bitbox02MethodHandler(messenger: controller.binaryMessenger)
+    trezorHandler = TrezorMethodHandler(messenger: controller.binaryMessenger)
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

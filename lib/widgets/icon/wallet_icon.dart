@@ -72,6 +72,7 @@ class WalletIcon extends StatelessWidget {
                 walletImportSource!.externalWalletIconPath,
                 colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                 width: 18.0,
+                height: 18.0,
               )
               : SvgPicture.asset(
                 CustomIcons.getPathByIndex(iconIndex),

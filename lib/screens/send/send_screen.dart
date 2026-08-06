@@ -79,6 +79,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
 
   bool _isDropdownMenuVisible = false;
+  bool _hasRetriedRecommendedFees = false;
 
   // 스크롤 범위 연산에 사용하는 값들
   final double kCoconutAppbarHeight = 60;
@@ -836,10 +837,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         final recommendedFeeFetchStatus = data.item1;
         final isNetworkOn = data.item2;
 
-        if (isNetworkOn && recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed) {
+        if (isNetworkOn &&
+            recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed &&
+            !_hasRetriedRecommendedFees) {
+          _hasRetriedRecommendedFees = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _viewModel.refreshRecommendedFees();
           });
+        } else if (recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed) {
+          _hasRetriedRecommendedFees = false;
         }
 
         final isFailed = recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed;
@@ -2071,11 +2077,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     }
 
     // 문자가 입력된 경우와 삭제된 경우를 인식한다. (문자열 중간에 입력/삭제 불가)
-    String currentText = _amountController.text;
-    if (currentText.length > _previousAmountText.length) {
-      String lastInserted = currentText.substring(_previousAmountText.length);
+    // grouping separator(예: ',')가 포함되어 있으므로 제거 후 비교한다.
+    final groupingSep = NumberFormatConfig.instance.groupingSeparator;
+    String currentText = _amountController.text.replaceAll(groupingSep, '');
+    String previousText = _previousAmountText.replaceAll(groupingSep, '');
+    if (currentText.length > previousText.length) {
+      String lastInserted = currentText.substring(previousText.length);
       _viewModel.onKeyTap(lastInserted);
-    } else if (currentText.length < _previousAmountText.length) {
+    } else if (currentText.length < previousText.length) {
       _viewModel.onKeyTap('<');
       // 삭제 버튼을 꾹 누른 경우에 대한 처리
       if (currentText.isEmpty) {
@@ -2083,7 +2092,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       }
     }
 
-    _previousAmountText = currentText;
+    _previousAmountText = _amountController.text;
   }
 
   void _addAddressField() {
