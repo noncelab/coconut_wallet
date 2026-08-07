@@ -5,6 +5,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -32,7 +33,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   bool _isCreateFileSelected = true;
   LabelExportStep _step = LabelExportStep.selection;
   File? _exportedFile;
-  List<Map<String, String>> _exportResults = [];
+  List<LabelExportResult> _exportResults = [];
   int _currentPage = 0;
 
   late Future<List<File>> _filesFuture;
@@ -354,23 +355,32 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         _refreshFiles();
         await Future.delayed(const Duration(milliseconds: 2500));
 
-        final List<Map<String, String>> exportResults = [];
+        final List<LabelExportResult> exportResults = [];
+
         if (isAllWalletsSelected) {
           for (final wallet in walletProvider.walletItemList) {
-            exportResults.add({
-              'fileName': result.xFile!.name,
-              'fileDate': DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
-              'walletName': wallet.name,
-            });
+            exportResults.add(
+              LabelExportResult(
+                xFile: result.xFile,
+                wallet: wallet,
+                txMemoCount: walletProvider.getAllTransactionMemos(wallet.id).where((m) => m.memo.isNotEmpty).length,
+                utxoTagCount: walletProvider.getUtxoTags(wallet.id).fold(0, (sum, tag) => sum + tag.utxoIdList.length),
+                utxoLockCount: walletProvider.getUtxoList(wallet.id).where((u) => u.status == UtxoStatus.locked).length,
+              ),
+            );
           }
         } else {
           for (final walletId in _selectedWalletIds) {
             final wallet = walletProvider.getWalletById(walletId);
-            exportResults.add({
-              'fileName': result.xFile!.name,
-              'fileDate': DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
-              'walletName': wallet.name,
-            });
+            exportResults.add(
+              LabelExportResult(
+                xFile: result.xFile,
+                wallet: wallet,
+                txMemoCount: walletProvider.getAllTransactionMemos(walletId).where((m) => m.memo.isNotEmpty).length,
+                utxoTagCount: walletProvider.getUtxoTags(walletId).fold(0, (sum, tag) => sum + tag.utxoIdList.length),
+                utxoLockCount: walletProvider.getUtxoList(walletId).where((u) => u.status == UtxoStatus.locked).length,
+              ),
+            );
           }
         }
 
@@ -422,7 +432,10 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
               t.label_export_wallet_picker_screen.instruction_tooltip.step1,
               t.label_export_wallet_picker_screen.instruction_tooltip.step2,
             ],
-            stepResults: [_exportResults.first['fileName'] ?? '', _exportResults.first['fileDate'] ?? ''],
+            stepResults: [
+              _exportResults.first.xFile?.name ?? '',
+              DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+            ],
           ),
           SizedBox(
             height: 120,
@@ -438,7 +451,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     );
   }
 
-  Widget _buildSuccessBottomCard(Map<String, String> result) {
+  Widget _buildSuccessBottomCard(LabelExportResult result) {
     return ExportLabelInstructionToolTip(
       steps: [
         t.label_export_wallet_picker_screen.instruction_tooltip.step3,
@@ -446,7 +459,12 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         t.label_export_wallet_picker_screen.instruction_tooltip.step5,
         t.label_export_wallet_picker_screen.instruction_tooltip.step6,
       ],
-      stepResults: [result['walletName'] ?? '', '', '', ''],
+      stepResults: [
+        result.wallet?.name ?? '',
+        '${result.txMemoCount}${t.label_import_file_picker_screen.widget.count_unit(n: result.txMemoCount)}',
+        '${result.utxoTagCount}${t.label_import_file_picker_screen.widget.count_unit(n: result.utxoTagCount)}',
+        '${result.utxoLockCount}${t.label_import_file_picker_screen.widget.count_unit(n: result.utxoLockCount)}',
+      ],
     );
   }
 

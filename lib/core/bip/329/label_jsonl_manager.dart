@@ -24,7 +24,12 @@ class LabelImportResult {
 
 class LabelExportResult {
   final XFile? xFile;
-  LabelExportResult({this.xFile});
+  final WalletItemBase? wallet;
+  final int txMemoCount;
+  final int utxoTagCount;
+  final int utxoLockCount;
+
+  LabelExportResult({this.xFile, this.wallet, this.txMemoCount = 0, this.utxoTagCount = 0, this.utxoLockCount = 0});
 }
 
 class LabelJsonLManager {
