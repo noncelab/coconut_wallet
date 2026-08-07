@@ -16,6 +16,7 @@ class LabelManagementScreen extends StatefulWidget {
   final String exportDescription;
   final ValueChanged<String> onImport;
   final VoidCallback onExport;
+  final int? walletId;
 
   const LabelManagementScreen({
     super.key,
@@ -23,6 +24,7 @@ class LabelManagementScreen extends StatefulWidget {
     required this.exportDescription,
     required this.onImport,
     required this.onExport,
+    this.walletId,
   });
 
   @override
@@ -115,7 +117,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
               SingleButton(
                 title: t.label_management_screen.export_title,
                 subtitle: t.label_management_screen.export_description,
-                onPressed: () => _navigateToExportWalletPicker(context),
+                onPressed: () => _navigateToExportWalletPicker(context, walletId: widget.walletId),
                 isVerticalSubtitle: true,
               ),
             ],
@@ -200,17 +202,12 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
     );
   }
 
-  void _navigateToExportWalletPicker(BuildContext context) {
+  void _navigateToExportWalletPicker(BuildContext context, {int? walletId}) {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder:
-            (context, animation, secondaryAnimation) => const LabelExportWalletPickerScreen(
-              // title: t.label_management_screen.export_title,
-              // description: widget.exportDescription,
-              // iconPath: 'assets/svg/file.svg',
-              // actionButtonText: t.label_management_screen.export_title,
-              // onAction: widget.onExport,
-            ),
+            (context, animation, secondaryAnimation) =>
+                LabelExportWalletPickerScreen(initialSelectedWalletId: walletId),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
         },

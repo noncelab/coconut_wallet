@@ -97,6 +97,8 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   bool get isSetPin => _authProvider.isSetPin;
 
+  int get walletId => _walletId;
+
   String get walletName => _walletName;
   WalletItemBase get walletItemBase => _walletItemBase;
   int get multisigTotalSignerCount => _multisigTotalSignerCount;

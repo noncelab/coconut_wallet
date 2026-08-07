@@ -21,7 +21,9 @@ import 'package:provider/provider.dart';
 enum LabelExportStep { selection, exporting, success, error }
 
 class LabelExportWalletPickerScreen extends StatefulWidget {
-  const LabelExportWalletPickerScreen({super.key});
+  final int? initialSelectedWalletId;
+
+  const LabelExportWalletPickerScreen({super.key, this.initialSelectedWalletId});
 
   @override
   State<LabelExportWalletPickerScreen> createState() => _LabelExportWalletPickerScreenState();
@@ -41,6 +43,9 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   @override
   void initState() {
     super.initState();
+    if (widget.initialSelectedWalletId != null) {
+      _selectedWalletIds.add(widget.initialSelectedWalletId!);
+    }
     _filesFuture = LabelJsonLManager().getImportableLabelFiles();
   }
 
@@ -242,24 +247,32 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         }
 
         final wallet = wallets[index - 1];
+        final isLocked = widget.initialSelectedWalletId == wallet.id;
+
         return _WalletListItemCard(
           title: wallet.name,
           isSelected: _selectedWalletIds.contains(wallet.id),
+          isLocked: isLocked,
           onTap: () {
-            setState(() {
-              if (_selectedWalletIds.contains(-1)) {
-                _selectedWalletIds.clear();
-                _selectedWalletIds.add(wallet.id);
-              } else if (_selectedWalletIds.contains(wallet.id)) {
-                _selectedWalletIds.remove(wallet.id);
-              } else {
-                _selectedWalletIds.add(wallet.id);
-              }
-            });
+            if (isLocked) return;
+            _toggleWalletSelection(wallet.id);
           },
         );
       },
     );
+  }
+
+  void _toggleWalletSelection(int walletId) {
+    setState(() {
+      if (_selectedWalletIds.contains(-1)) {
+        _selectedWalletIds.clear();
+        _selectedWalletIds.add(walletId);
+      } else if (_selectedWalletIds.contains(walletId)) {
+        _selectedWalletIds.remove(walletId);
+      } else {
+        _selectedWalletIds.add(walletId);
+      }
+    });
   }
 
   Widget _buildSegmentedControl(BuildContext context) {
@@ -554,17 +567,27 @@ class _WalletListItemCard extends StatelessWidget {
   final String title;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isLocked;
 
-  const _WalletListItemCard({required this.title, required this.isSelected, required this.onTap});
+  const _WalletListItemCard({
+    required this.title,
+    required this.isSelected,
+    required this.onTap,
+    this.isLocked = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final bool isDisabled = isLocked && isSelected;
+    final iconColor = isDisabled ? context.coconutColors.iconDisabled : context.coconutColors.iconDefault;
+    final textColor = isDisabled ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: context.coconutColors.surface,
+          color: isDisabled ? context.coconutColors.surfaceDisabled : context.coconutColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: isSelected ? context.coconutColors.primaryText : Colors.transparent, width: 1),
         ),
@@ -573,14 +596,19 @@ class _WalletListItemCard extends StatelessWidget {
             SvgPicture.asset(
               isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
               width: 24,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: CoconutTypography.body2_14, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    title,
+                    style: CoconutTypography.body2_14.setColor(textColor),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),

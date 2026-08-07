@@ -562,6 +562,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               exportDescription: t.wallet_info_screen.export_labels_description,
               onImport: (filePath) => 0,
               onExport: () => _exportLabels(viewModel),
+              walletId: viewModel.walletId,
             ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
