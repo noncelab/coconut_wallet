@@ -225,33 +225,19 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
 
   Widget _buildWalletListView(BuildContext context, List<WalletItemBase> wallets) {
     return ListView.separated(
-      padding: const EdgeInsets.only(top: 20, bottom: 90),
-      itemCount: wallets.length + 1,
+      padding: const EdgeInsets.only(top: 20, bottom: 125),
+      itemCount: wallets.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        if (index == 0) {
-          return _WalletListItemCard(
-            title: t.label_export_wallet_picker_screen.all_wallets,
-            isSelected: _selectedWalletIds.contains(-1),
-            onTap: () {
-              setState(() {
-                if (_selectedWalletIds.contains(-1)) {
-                  _selectedWalletIds.clear();
-                } else {
-                  _selectedWalletIds.clear();
-                  _selectedWalletIds.add(-1);
-                }
-              });
-            },
-          );
-        }
-
-        final wallet = wallets[index - 1];
+        final wallet = wallets[index];
         final isLocked = widget.initialSelectedWalletId == wallet.id;
 
         return _WalletListItemCard(
           title: wallet.name,
-          isSelected: _selectedWalletIds.contains(wallet.id),
+          isSelected:
+              _selectedWalletIds.length == wallets.length
+                  ? true
+                  : _selectedWalletIds.isNotEmpty && _selectedWalletIds.contains(wallet.id),
           isLocked: isLocked,
           onTap: () {
             if (isLocked) return;
@@ -264,10 +250,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
 
   void _toggleWalletSelection(int walletId) {
     setState(() {
-      if (_selectedWalletIds.contains(-1)) {
-        _selectedWalletIds.clear();
-        _selectedWalletIds.add(walletId);
-      } else if (_selectedWalletIds.contains(walletId)) {
+      if (_selectedWalletIds.contains(walletId)) {
         _selectedWalletIds.remove(walletId);
       } else {
         _selectedWalletIds.add(walletId);
@@ -283,6 +266,9 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
           _isCreateFileSelected = index == 0;
           _selectedWalletIds.clear();
           _selectedFileIndices.clear();
+          if (widget.initialSelectedWalletId != null) {
+            _selectedWalletIds.add(widget.initialSelectedWalletId!);
+          }
         });
       },
       selectedColor: context.coconutColors.segmentedControlSelected,
@@ -356,13 +342,9 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
 
     final walletProvider = context.read<WalletProvider>();
     final labelManager = LabelJsonLManager();
-    final isAllWalletsSelected = _selectedWalletIds.contains(-1);
 
     try {
-      final result =
-          isAllWalletsSelected
-              ? await labelManager.createLabelsJsonLFileForAllWallets(walletProvider)
-              : await labelManager.createLabelsJsonLFileForWallets(_selectedWalletIds.toList(), walletProvider);
+      final result = await labelManager.createLabelsJsonLFileForWallets(_selectedWalletIds.toList(), walletProvider);
 
       if (result.xFile != null) {
         _refreshFiles();
@@ -370,31 +352,17 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
 
         final List<LabelExportResult> exportResults = [];
 
-        if (isAllWalletsSelected) {
-          for (final wallet in walletProvider.walletItemList) {
-            exportResults.add(
-              LabelExportResult(
-                xFile: result.xFile,
-                wallet: wallet,
-                txMemoCount: walletProvider.getAllTransactionMemos(wallet.id).where((m) => m.memo.isNotEmpty).length,
-                utxoTagCount: walletProvider.getUtxoTags(wallet.id).fold(0, (sum, tag) => sum + tag.utxoIdList.length),
-                utxoLockCount: walletProvider.getUtxoList(wallet.id).where((u) => u.status == UtxoStatus.locked).length,
-              ),
-            );
-          }
-        } else {
-          for (final walletId in _selectedWalletIds) {
-            final wallet = walletProvider.getWalletById(walletId);
-            exportResults.add(
-              LabelExportResult(
-                xFile: result.xFile,
-                wallet: wallet,
-                txMemoCount: walletProvider.getAllTransactionMemos(walletId).where((m) => m.memo.isNotEmpty).length,
-                utxoTagCount: walletProvider.getUtxoTags(walletId).fold(0, (sum, tag) => sum + tag.utxoIdList.length),
-                utxoLockCount: walletProvider.getUtxoList(walletId).where((u) => u.status == UtxoStatus.locked).length,
-              ),
-            );
-          }
+        for (final walletId in _selectedWalletIds) {
+          final wallet = walletProvider.getWalletById(walletId);
+          exportResults.add(
+            LabelExportResult(
+              xFile: result.xFile,
+              wallet: wallet,
+              txMemoCount: walletProvider.getAllTransactionMemos(walletId).where((m) => m.memo.isNotEmpty).length,
+              utxoTagCount: walletProvider.getUtxoTags(walletId).fold(0, (sum, tag) => sum + tag.utxoIdList.length),
+              utxoLockCount: walletProvider.getUtxoList(walletId).where((u) => u.status == UtxoStatus.locked).length,
+            ),
+          );
         }
 
         setState(() {
