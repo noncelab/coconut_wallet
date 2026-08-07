@@ -379,7 +379,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
                   });
                 },
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     SvgPicture.asset(
                       _deleteFileOnSuccess ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
