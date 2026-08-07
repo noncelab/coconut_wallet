@@ -1130,7 +1130,7 @@ errors:
 text_field:
   enter_fee_with_two_decimal_places: "Bis zu zwei Dezimalstellen erlaubt (sat/vB)"
   enter_fee_directly: "Manuell eingeben"
-  search_mnemonic_word: "Suche in Englisch oder Zahlen"
+  search_mnemonic_word: "Englische Buchstaben oder Zahlen"
 
 tooltip:
   recommended_fee1: "Empfohlene Gebühr konnte nicht abgerufen werden. Bitte geben Sie die Gebühr manuell ein."
