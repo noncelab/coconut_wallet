@@ -6,13 +6,15 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class BitBox02Section extends StatefulWidget {
+  final String walletFingerprint;
   final Future<void> Function() onDisconnect;
 
-  const BitBox02Section({super.key, required this.onDisconnect});
+  const BitBox02Section({super.key, required this.walletFingerprint, required this.onDisconnect});
 
   @override
   State<BitBox02Section> createState() => _BitBox02SectionState();
@@ -28,16 +30,24 @@ class _BitBox02SectionState extends State<BitBox02Section> {
     _checkAndSubscribe();
   }
 
+  bool _isWalletMatch() {
+    final device = BitBox02Device.lastConnected;
+    if (device == null) return false;
+    final fp = device.cachedFingerprint;
+    if (fp == null || widget.walletFingerprint.isEmpty) return false;
+    return fp.toLowerCase() == widget.walletFingerprint.toLowerCase();
+  }
+
   Future<void> _checkAndSubscribe() async {
-    final connected = await BitBox02ConnectivityService.isDeviceConnected();
+    final physicallyConnected = await BitBox02ConnectivityService.isDeviceConnected();
     if (!mounted) return;
     setState(() {
-      _isConnected = connected;
+      _isConnected = physicallyConnected && _isWalletMatch();
     });
     _sub = BitBox02ConnectivityService.onConnectionChanged.listen((connected) {
       if (!mounted) return;
       setState(() {
-        _isConnected = connected;
+        _isConnected = connected && _isWalletMatch();
       });
     });
   }
@@ -54,10 +64,10 @@ class _BitBox02SectionState extends State<BitBox02Section> {
       builder:
           (ctx) => CoconutPopup(
             languageCode: ctx.read<PreferenceProvider>().language,
-            title: t.wallet_info_screen.bitbox02_device.disconnect_confirm_title,
-            description: t.wallet_info_screen.bitbox02_device.disconnect_confirm_description,
+            title: t.wallet_info_screen.connected_hardware_wallet.disconnect_confirm_title,
+            description: t.wallet_info_screen.connected_hardware_wallet.disconnect_confirm_description,
             leftButtonText: t.cancel,
-            rightButtonText: t.wallet_info_screen.bitbox02_device.disconnect_button,
+            rightButtonText: t.wallet_info_screen.connected_hardware_wallet.disconnect_button,
             onTapLeft: () => Navigator.pop(ctx, false),
             onTapRight: () => Navigator.pop(ctx, true),
           ),
@@ -79,14 +89,14 @@ class _BitBox02SectionState extends State<BitBox02Section> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            t.wallet_info_screen.bitbox02_device.title,
+            t.wallet_info_screen.connected_hardware_wallet.title,
             style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
           ),
           CoconutLayout.spacing_300h,
           Divider(color: context.coconutColors.divider, height: 1),
           CoconutLayout.spacing_300h,
           _InfoRow(
-            label: t.wallet_info_screen.bitbox02_device.connection_status,
+            label: t.wallet_info_screen.connected_hardware_wallet.connection_status,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -101,15 +111,14 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                 CoconutLayout.spacing_100w,
                 Text(
                   _isConnected
-                      ? t.wallet_info_screen.bitbox02_device.connected
-                      : t.wallet_info_screen.bitbox02_device.disconnected,
+                      ? t.wallet_info_screen.connected_hardware_wallet.connected
+                      : t.wallet_info_screen.connected_hardware_wallet.disconnected,
                   style: CoconutTypography.body3_12_Bold.setColor(
                     _isConnected ? context.coconutColors.accentForeground : context.coconutColors.secondaryText,
                   ),
                 ),
                 if (_isConnected) ...[
-                  Divider(color: context.coconutColors.divider, height: 1),
-                  CoconutLayout.spacing_300w,
+                  CoconutLayout.spacing_100w,
                   GestureDetector(
                     onTap: _confirmDisconnect,
                     child: Container(
@@ -119,7 +128,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                         color: context.coconutColors.primaryText.withValues(alpha: 0.06),
                       ),
                       child: Text(
-                        t.wallet_info_screen.bitbox02_device.disconnect_button,
+                        t.wallet_info_screen.connected_hardware_wallet.disconnect_button,
                         style: CoconutTypography.caption_10.setColor(context.coconutColors.primaryText),
                       ),
                     ),

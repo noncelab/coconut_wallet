@@ -252,7 +252,7 @@ wallet_home_screen:
   cannot_modify_fixed_widget: "この項目は表示／非表示を変更できません。"
   no_change_in_amount: "金額に変化がありません！"
   analysis_period: "直近${days}日 • ${transaction_type}"
-  analysis_period_cutsom: "直接設定 • ${transaction_type}"
+  analysis_period_custom: "直接設定 • ${transaction_type}"
   analysis_period_bottom_sheet:
     period_for_analysis: "照会期間"
     days_15: "15日"
@@ -280,6 +280,7 @@ wallet_add_scanner_screen:
   krux: "Krux"
   bitbox02: "BitBox02"
   passport: "Passport"
+  trezor: "Trezor"
   self: "ウォレット情報を入力"
   self_description: "他のアプリの情報でウォレットを追加できます。"
   select: "選択"
@@ -412,10 +413,10 @@ wallet_connect_screen:
       start_signing: "署名を開始"
     init:
       step1: "BitBox02 NovaをUSBで接続してください。"
-      step2: "デバイスのロックを解除してください。"
+      step2: "デバイス画面に「Tap this side」と表示されたら、画面の下部になる面を選択してください。"
       step3: "デバイス画面に「See the BitBoxApp」と表示されたら、下の「$btn」ボタンを押してください。"
       ble_step1: "Bluetoothをオンにして、BitBox02 Novaを近くに置いてください。"
-      ble_step2: "デバイス画面に「Tap this side」と表示されたら、デバイスの両面をタップしてください。"
+      ble_step2: "デバイス画面に「Tap this side」と表示されたら、画面の下部になる面を選択してください。"
       ble_step3: "デバイス画面にウォレットが表示されたら、下の「$btn」ボタンをタップしてください。"
     connecting:
       title: "デバイスを接続中"
@@ -423,6 +424,7 @@ wallet_connect_screen:
       step2: "デバイスにペアリングコードが表示されたら、チェックマーク（✓）を押してください。"
     paired:
       title: "BitBox02のペアリングが完了しました。"
+      device_name: "デバイス名"
       master_fingerprint: "マスターフィンガープリント"
       derivation_path: "導出パス"
       xpub: "拡張公開鍵"
@@ -430,6 +432,98 @@ wallet_connect_screen:
       title: "接続に失敗しました"
       description: "BitBox02 Novaが見つかりませんでした。デバイスを再接続して、もう一度お試しください。"
       ble_description: "BitBox02 Novaが見つかりません。Bluetoothをオンにして、デバイスを近づけてください。"
+    ble_init_retry:
+      title: "BitBox02の再接続に失敗しました"
+      description: "BitBox02デバイスを再起動して再接続してください。"
+      step1: "BitBox02の電源を切って、再び入れてください。"
+    keep_connection_title: "接続の維持"
+    keep_connection_description: "BitBox02との接続を維持しますか？"
+  guide_trezor:
+    btn:
+      connect_via_ble: "Bluetoothで接続"
+      add_wallet: "ウォレットを追加"
+      retry: "再試行"
+      start_signing: "署名開始"
+    transport_select:
+      title: "Trezor接続方法を選択"
+      description: "Trezorデバイスの接続方法を選択してください。"
+      notice_ble: "Trezor Safe 7"
+      notice_usb: "すべてのTrezorモデル"
+      btn:
+        ble: "Safe 7 Bluetooth"
+        usb: "USB接続"
+    init:
+      notice: "Trezor Safe 7のみ対応しています。"
+      ble_step1: "Bluetoothをオンにして、Trezor Safe 7を近くに置いてください。"
+      ble_step2: "Unlock > PIN番号をタップしてロックを解除してください。"
+      ble_step3_prefix: "初回接続の場合は、"
+      ble_step3_bold: "= > Pair & Connect > Pair new device"
+      ble_step3_suffix: "をタップしてください。"
+      ble_step4: "下の「$btn」ボタンをタップして接続を開始してください。"
+    connecting:
+      title: "デバイスを接続中"
+      step3: "初回接続時、ペアリングコードが一致しているか確認後、Confirmを押してください。"
+      step4: "TrezorデバイスでCoconut Walletとの接続を求められたらConfirmを押してください。"
+    pairing_dialog:
+      title: "ペアリングコードの入力"
+      description: "Trezor画面に表示された6桁の数字を入力してください。"
+      verifying: "ペアリングコードを確認中..."
+      error_wrong_code: "間違ったペアリングコード"
+      error_wrong_code_dialog: "ペアリングコードが間違っています。\n接続プロセスを最初からやり直します。"
+    paired:
+      title: "Trezorの接続が完了しました。"
+      device_name: "デバイス名"
+      master_fingerprint: "マスターフィンガープリント"
+      derivation_path: "導出パス"
+      xpub: "拡張公開鍵"
+    keep_connection_title: "接続の維持"
+    keep_connection_description: "Trezorとの接続を維持しますか？"
+    error:
+      title: "接続に失敗しました"
+      ble_description: "Trezor Safe 7が見つかりません。Bluetoothをオンにして、デバイスを近づけてください。"
+      usb_description: "Trezorが見つかりません。デバイスを再接続して再度お試しください。"
+    ios_peer_removed_pairing:
+      title: "既存のBluetoothペアリング情報が削除されました"
+      description: "Trezorで以前のBluetoothペアリング情報が削除されました。"
+      step1: "iPhoneの「設定 > Bluetooth」を選択してください。"
+      step2: "「Trezorに設定したデバイス名」または「Trezor Safe 7」の横の(i)をタップしてください。"
+      step3: "「このデバイスを忘れる」を選択して削除した後、もう一度お試しください。"
+    pairing_aborted:
+      title: "ペアリングが中断されました。"
+    usb:
+      title: "TrezorをUSB接続"
+      idle_step1: "データ転送対応のUSBケーブルでTrezorをAndroid端末に接続してください。"
+      idle_step2: "Coconut WalletがTrezorを処理できるように許可してください。"
+      idle_step3: "USB接続のリクエストが表示されたら許可してください。"
+      connecting: "Trezorに接続中"
+      connecting_step1: "Trezor画面の案内を確認してください。"
+      connect: "USBで接続"
+      pin_title: "PINを入力"
+      pin_description: "Trezor画面の数字配置を確認し、設定したPINを入力してください。"
+      passphrase_title: "パスフレーズを入力"
+      passphrase_hint: "隠しウォレットのパスフレーズ"
+      passphrase_entry_source_description: "パスフレーズを入力する場所を選択してください。"
+      enter_in_app: "アプリで入力"
+      enter_on_trezor: "Trezorで入力"
+      enter_on_trezor_description: "Trezorデバイスでパスフレーズの入力を完了してください。"
+      do_not_use_passphrase: "パスフレーズを使用しない"
+      standard_wallet: "標準ウォレット"
+      passphrase_use_question: "パスフレーズを使用しますか？"
+      passphrase_use_yes: "使用する"
+      passphrase_use_no: "使用しない"
+      passphrase_where_to_enter: "パスフレーズをどこで入力しますか？"
+      passphrase_confirm_on_device: "Trezorで入力したパスフレーズを確認してください。"
+      passphrase_enabling: "Trezorデバイスでパスフレーズの有効化を確認してください。"
+      suite_app_notice: "USB接続時、Trezor Suiteアプリが自動で起動することがあります。"
+      suite_app_setting_guide:
+        title: "· デフォルトアプリの設定を解除してください"
+        descriptions:
+          - "1. スマートフォンの「設定 - アプリ - Trezor Suite」"
+          - "2. 「デフォルトとして設定」または「デフォルトで開く」からデフォルトを解除"
+          - "3. USBを外して再接続し、『Trezor SuiteアプリでTREZORを処理しますか？』ダイアログで「キャンセル」を選択"
+  common:
+    ble_off: "デバイスのBluetoothをオンにしてください。"
+    loading_wallet_info: "ウォレット情報を取得中"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -530,6 +624,8 @@ send_confirm_screen:
   output_detail_title: "出力詳細を見る"
   flow_input_title: "入力 #$index"
   flow_output_title: "出力 #$index"
+  sign_with_connected_device_title: "Sign with Connected Device"
+  sign_with_connected_device_description: "Would you like to sign with the currently connected $deviceName?"
 bitbox02_sign_screen:
   tx_card:
     title: "取引情報"
@@ -558,9 +654,39 @@ bitbox02_sign_screen:
     description: "BitBox02がトランザクションに署名しました。"
     ready_to_broadcast: "ブロードキャストの準備が完了しました。"
   error_title: "署名に失敗"
-  device_mismatch: "接続されたデバイスがこのウォレットと一致しません。正しいデバイスを接続してください。"
+  wrong_wallet_title: "接続されたウォレットが正しくありません"
+  device_mismatch: "接続されたBitBox02が署名しようとしているウォレットと一致しません。"
+  device_mismatch_other_wallet: "接続されたウォレットは '${wallet_name}' です。正しいウォレットを接続してください。"
   btn:
     sign: "BitBox02で署名"
+    connect_other_bitbox02: "別のBitBox02を接続"
+  state_label:
+    idle: "署名待機"
+    signing: "署名中"
+
+trezor_sign_screen:
+  tx_card:
+    title: "取引情報"
+    send: "送金額"
+    to: "送信先"
+    fee: "手数料"
+    total_cost: "合計費用"
+  device_status:
+    title: "デバイスの状態"
+  idle:
+    waiting: "署名待機中"
+  status:
+    connecting_device: "BluetoothでTrezorに接続中..."
+    confirm_on_device: "デバイスでアドレス・金額・ネットワークを確認してください"
+  done:
+    title: "署名完了"
+    description: "Trezorがトランザクションに署名しました。"
+  error_title: "署名に失敗"
+  device_mismatch: "接続されたデバイスがこのウォレットと一致しません。"
+  device_mismatch_other_wallet: "接続されたウォレットは'${wallet_name}'に属しています。正しいウォレットを接続してください。"
+  btn:
+    sign: "Trezorで署名"
+    connect_other_trezor: "別のTrezorを接続"
   state_label:
     idle: "署名待機"
     signing: "署名中"
@@ -807,7 +933,7 @@ wallet_info_screen:
       select: "選択"
   error:
     delete: "ウォレットの削除に失敗しました"
-  bitbox02_device:
+  connected_hardware_wallet:
     title: "デバイス情報"
     connection_status: "接続状態"
     connected: "接続中"
@@ -1195,6 +1321,12 @@ alert:
     description: "ビットコインを送信するには、まずマスターフィンガープリントを追加する必要があります。追加した後、再び送信することができます。"
     skip_button: "キャンセル"
     confirm_button: "追加"
+  aos_ble_permission_denied:
+    title: "権限が必要です"
+    description: "デバイスに接続するには「近くのデバイス」権限が必要です。設定で権限を許可してください。"
+  ios_ble_permission_denied:
+    title: "Bluetooth権限が必要です"
+    description: "デバイスに接続するにはBluetooth権限が必要です。iPhoneの「設定」でこのアプリのBluetooth権限を許可してください。"
 
 third_party:
   keystone: "Keystone"
@@ -1203,7 +1335,8 @@ third_party:
   cold_card: "Coldcard"
   krux: "Krux"
   passport: "Passport"
-  bitbox02: "Bitbox"
+  trezor: "Trezor"
+  bitbox02: "BitBox"
   extended_public_keys:
     zpub: "zpub"
     vpub: "vpub"
@@ -1257,6 +1390,11 @@ taproot:
   setup_summary_card:
     signer_configuration: "署名構成"
     inheritance_condition: "相続条件"
+
+passphrase_input_text_field:
+  passphrase_visible: "パスフレーズを表示"
+  passphrase_hidden: "パスフレーズを非表示"
+  placeholder: "パスフレーズを入力"
 
 ccos:
   intro_card:

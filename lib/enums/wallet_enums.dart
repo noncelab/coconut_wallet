@@ -41,6 +41,7 @@ enum WalletImportSource {
   coldCard,
   krux,
   passport,
+  trezor,
   bitbox02,
   extendedPublicKey,
   descriptor,
@@ -63,6 +64,8 @@ extension WalletImportSourceExtension on WalletImportSource {
         return t.wallet_add_scanner_screen.krux;
       case WalletImportSource.passport:
         return t.wallet_add_scanner_screen.passport;
+      case WalletImportSource.trezor:
+        return t.wallet_add_scanner_screen.trezor;
       case WalletImportSource.bitbox02:
         return t.wallet_add_scanner_screen.bitbox02;
       case WalletImportSource.extendedPublicKey:
@@ -102,6 +105,8 @@ extension WalletImportSourceExtension on WalletImportSource {
         return ThirdPartyWalletTypeIconPath.krux;
       case WalletImportSource.passport:
         return ThirdPartyWalletTypeIconPath.passport;
+      case WalletImportSource.trezor:
+        return ThirdPartyWalletTypeIconPath.trezor;
       case WalletImportSource.bitbox02:
         return ThirdPartyWalletTypeIconPath.bitBox02;
       case WalletImportSource.extendedPublicKey:

@@ -87,11 +87,23 @@ func Init(deviceID string) (string, error) {
 	}
 
 	if err := entry.Device.Init(); err != nil {
+		logger.Info(fmt.Sprintf("Init failed for device %s: %v", deviceID, err))
 		return "", fmt.Errorf("init failed: %w", err)
+	}
+	logger.Info(fmt.Sprintf("Init succeeded for device %s", deviceID))
+
+	// Best-effort: fetch device name after Noise handshake is established.
+	deviceName := ""
+	if info, err := entry.Device.DeviceInfo(); err == nil {
+		deviceName = info.Name
+		logger.Info(fmt.Sprintf("DeviceInfo: name=%q, version=%q, initialized=%v", info.Name, info.Version, info.Initialized))
+	} else {
+		logger.Info(fmt.Sprintf("DeviceInfo error: %v", err))
 	}
 
 	result := map[string]interface{}{
 		"pairing_code": nil,
+		"name":         deviceName,
 	}
 	b, err := json.Marshal(result)
 	if err != nil {

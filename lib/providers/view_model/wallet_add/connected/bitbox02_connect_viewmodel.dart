@@ -7,6 +7,7 @@ import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_exceptions.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_types.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/foundation.dart';
@@ -19,10 +20,11 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
   BitBox02ConnectViewModel(this._walletProvider);
 
   BitBox02ConnectStep _step = BitBox02ConnectStep.idle;
-  String _statusMessage = '';
   String _pairingCode = '';
   BitBox02Device? _device;
   String? _errorMessage;
+  String? _errorDescription;
+  List<String>? _errorSteps;
   // bool _mockMode = false;
   String _xpub = '';
   String _fingerprint = '';
@@ -30,36 +32,65 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
   bool _isConnecting = false;
 
   BitBox02ConnectStep get step => _step;
-  String get statusMessage => _statusMessage;
   String get pairingCode => _pairingCode;
   BitBox02Device? get device => _device;
   String? get errorMessage => _errorMessage;
+  String? get errorDescription => _errorDescription;
+  List<String>? get errorSteps => _errorSteps;
   bool get isPaired => _step == BitBox02ConnectStep.paired;
   bool get isConnecting => _isConnecting;
   // bool get mockMode => _mockMode;
   String get xpub => _xpub;
   String get fingerprint => _fingerprint;
   String get transport => _transport;
+  String get deviceName => _device?.name ?? '';
 
   // void setMockMode(bool value) {
   //   _mockMode = value;
   //   notifyListeners();
   // }
 
-  void _setState(BitBox02ConnectStep step, {String? status}) {
+  void _setState(BitBox02ConnectStep step) {
     _step = step;
-    if (status != null) _statusMessage = status;
     notifyListeners();
+  }
+
+  /// Populates this viewmodel from an already-connected [BitBox02Device.lastConnected]
+  /// session and jumps straight to [BitBox02ConnectStep.paired], skipping the
+  /// pairing flow entirely. Returns true if a resumable session was found.
+  bool resumeFromExistingSession() {
+    final device = BitBox02Device.lastConnected;
+    final cachedXpub = device?.cachedXpub;
+    if (device == null || cachedXpub == null || cachedXpub.isEmpty) return false;
+    _device = device;
+    _xpub = cachedXpub;
+    _fingerprint = device.cachedFingerprint ?? '';
+    _transport = device.transport;
+    _setState(BitBox02ConnectStep.paired);
+    return true;
   }
 
   Future<void> connect({required String transport, String configJson = '', String? host, int? port}) async {
     if (_isConnecting || _step == BitBox02ConnectStep.paired) return;
 
+    // Disconnect any previously active session before starting a new one.
+    if (BitBox02Device.lastConnected != null) {
+      try {
+        await BitBox02Device.lastConnected!.disconnect();
+      } catch (_) {}
+      BitBox02Device.lastConnected = null;
+    }
+
     final resolvedTransport = BitBox02Transport.resolve(preferred: transport);
 
     _transport = resolvedTransport;
     _isConnecting = true;
-    notifyListeners();
+    _errorDescription = null;
+    _errorSteps = null;
+    _errorMessage = null;
+    _xpub = '';
+    _fingerprint = '';
+    _setState(BitBox02ConnectStep.pairing);
 
     try {
       _device = await BitBox02Device.connect(
@@ -69,82 +100,39 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
         port: port,
       );
 
-      if (configJson.isNotEmpty) {
-        await _device!.loadConfig(configJson);
-      }
-
-      _setState(BitBox02ConnectStep.pairing, status: 'Initializing...');
+      _setState(BitBox02ConnectStep.pairing);
       await _device!.init();
       await _device!.channelHashVerify(ok: true);
 
-      _setState(BitBox02ConnectStep.paired, status: 'BitBox02 connected');
+      _setState(BitBox02ConnectStep.paired);
       BitBox02Device.lastConnected = _device;
       await retrieveXPub(silent: true);
     } on BitBox02ConnectException catch (e) {
       _errorMessage = e.message;
-      _setState(BitBox02ConnectStep.error, status: 'Connection failed');
+      _setState(BitBox02ConnectStep.error);
     } on BitBox02InitException catch (e) {
       _errorMessage = e.message;
-      _setState(BitBox02ConnectStep.error, status: 'Initialization failed');
+      // BLE connection succeeded but init failed — the BitBox02 BLE stack is
+      // stale (auto-disconnected). Noise credentials are still valid.
+      // Show "power cycle" guidance without clearing config.
+      if (resolvedTransport == 'ble') {
+        _errorDescription = t.wallet_connect_screen.guide_bitbox02.ble_init_retry.title;
+        _errorMessage = t.wallet_connect_screen.guide_bitbox02.ble_init_retry.description;
+        _errorSteps = [
+          t.wallet_connect_screen.guide_bitbox02.ble_init_retry.step1,
+          t.wallet_connect_screen.guide_bitbox02.init.ble_step2,
+          t.wallet_connect_screen.guide_bitbox02.init.ble_step3(btn: t.wallet_connect_screen.guide_bitbox02.btn.retry),
+        ];
+      }
+      _setState(BitBox02ConnectStep.error);
     } catch (e) {
       _errorMessage = e.toString();
-      _setState(BitBox02ConnectStep.error, status: 'Unexpected error');
+      _setState(BitBox02ConnectStep.error);
     } finally {
       _isConnecting = false;
       notifyListeners();
     }
   }
-
-  Future<void> restoreWallet() async {
-    if (_device == null || _step != BitBox02ConnectStep.paired) {
-      _errorMessage = 'Device not paired. Connect first.';
-      notifyListeners();
-      return;
-    }
-
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      await _device!.restoreFromMnemonic();
-      _setState(BitBox02ConnectStep.paired, status: 'Wallet restored');
-    } on Exception catch (e) {
-      _errorMessage = e.toString();
-      _setState(BitBox02ConnectStep.error, status: 'Restore failed');
-    }
-  }
-
-  Future<void> createWallet({int seedLen = 32}) async {
-    if (_device == null || _step != BitBox02ConnectStep.paired) {
-      _errorMessage = 'Device not paired. Connect first.';
-      notifyListeners();
-      return;
-    }
-
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      await _device!.setPassword(seedLen: seedLen);
-      _setState(BitBox02ConnectStep.paired, status: 'Wallet created');
-    } on Exception catch (e) {
-      _errorMessage = e.toString();
-      _setState(BitBox02ConnectStep.error, status: 'Create failed');
-    }
-  }
-
-  // Future<void> _connectMock() async {
-  //   _errorMessage = null;
-  //   _device = null;
-
-  //   await Future.delayed(const Duration(seconds: 1));
-
-  //   _setState(BitBox02ConnectStep.pairing, status: 'Initializing Noise handshake...');
-  //   await Future.delayed(const Duration(seconds: 2));
-
-  //   _setState(BitBox02ConnectStep.paired, status: 'BitBox02 paired (mock)');
-  //   await retrieveXPub(silent: true);
-  // }
 
   bool _isRetrievingXPub = false;
 
@@ -170,15 +158,27 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
       try {
         final xpub = await _device!.btcXPub(keypath: keypath, coin: coin, xpubType: xpubType, display: false);
         _xpub = xpub;
+        _device!.cachedXpub = xpub;
         _fingerprint = await _device!.rootFingerprint();
         _device!.cachedFingerprint = _fingerprint;
-        _setState(BitBox02ConnectStep.paired, status: 'XPub retrieved');
+        _setState(BitBox02ConnectStep.paired);
       } on Exception catch (e) {
+        debugPrint('BB02: retrieveXPub failed: $e');
         if (silent) {
-          _setState(BitBox02ConnectStep.paired, status: 'BitBox02 connected');
+          // Check if the device is still reachable. If btcXPub failed because
+          // the device has no seed, deviceInitialized() will still succeed and
+          // we stay in paired state. If the pairing was rejected on the device
+          // (user pressed X), the device is gone — transition to error.
+          try {
+            await _device!.deviceInitialized();
+            _setState(BitBox02ConnectStep.paired);
+          } catch (_) {
+            _errorMessage = e.toString();
+            _setState(BitBox02ConnectStep.error);
+          }
         } else {
           _errorMessage = e.toString();
-          _setState(BitBox02ConnectStep.error, status: 'XPub retrieval failed');
+          _setState(BitBox02ConnectStep.error);
         }
       }
     } finally {
@@ -203,10 +203,12 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
 
   Future<ResultOfSyncFromVault> addToWalletList() async {
     final walletAddService = WalletAddService();
-    final name = getNextThirdPartyWalletName(
-      WalletImportSource.bitbox02,
-      _walletProvider.walletItemList.map((e) => e.name).toList(),
-    );
+    final existingNames = _walletProvider.walletItemList.map((e) => e.name).toList();
+    final baseName = deviceName;
+    final name =
+        baseName.isEmpty
+            ? getNextThirdPartyWalletName(WalletImportSource.bitbox02, existingNames)
+            : _resolveNameWithBase(baseName, existingNames);
     final wallet = walletAddService.createExtendedPublicKeyWallet(
       _xpub,
       name,
@@ -214,6 +216,22 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
       walletImportSource: WalletImportSource.bitbox02,
     );
     return _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  String _resolveNameWithBase(String baseName, List<String> existingNames) {
+    final regex = RegExp('^${RegExp.escape(baseName)}(?: (\\d+))?\$');
+    final taken = <int>{};
+    for (final name in existingNames) {
+      final match = regex.firstMatch(name);
+      if (match == null) continue;
+      taken.add(match.group(1) == null ? 1 : int.tryParse(match.group(1)!) ?? 1);
+    }
+    if (!taken.contains(1)) return baseName;
+    var suffix = 2;
+    while (taken.contains(suffix)) {
+      suffix++;
+    }
+    return '$baseName $suffix';
   }
 
   Future<void> disconnect() async {
@@ -224,15 +242,16 @@ class BitBox02ConnectViewModel extends ChangeNotifier {
       _device = null;
     }
     BitBox02Device.lastConnected = null;
-    _setState(BitBox02ConnectStep.idle, status: '');
+    _setState(BitBox02ConnectStep.idle);
   }
 
   void reset() {
     _step = BitBox02ConnectStep.idle;
-    _statusMessage = '';
     _pairingCode = '';
     _device = null;
     _errorMessage = null;
+    _errorDescription = null;
+    _errorSteps = null;
     _xpub = '';
     _fingerprint = '';
     BitBox02Device.lastConnected = null;

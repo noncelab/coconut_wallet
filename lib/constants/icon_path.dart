@@ -179,5 +179,6 @@ abstract final class ThirdPartyWalletTypeIconPath {
   static const String krux = 'assets/svg/wallet-catalog/hardware-wallets/krux.svg';
   static const String passport = 'assets/svg/wallet-catalog/hardware-wallets/passport.svg';
   static const String seedSigner = 'assets/svg/wallet-catalog/hardware-wallets/seed-signer.svg';
+  static const String trezor = 'assets/svg/wallet-catalog/hardware-wallets/trezor.svg';
   static const String zpub = 'assets/svg/wallet-catalog/import-formats/zpub.svg';
 }

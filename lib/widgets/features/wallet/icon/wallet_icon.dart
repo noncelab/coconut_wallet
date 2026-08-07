@@ -59,6 +59,7 @@ class WalletIcon extends StatelessWidget {
                   BlendMode.srcIn,
                 ),
                 width: 18.0,
+                height: 18.0,
               )
               : SvgPicture.asset(
                 CustomWalletIcons.getPathByIndex(iconIndex),

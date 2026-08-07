@@ -3,11 +3,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/shared_pref_keys.dart';
-import 'package:coconut_wallet/enums/electrum_enums.dart';
+import 'package:coconut_wallet/core/transaction/prev_tx_fetcher.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_exceptions.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
@@ -17,8 +15,6 @@ import 'package:flutter/foundation.dart';
 
 enum BitBox02SignStep { idle, signing, done, error }
 
-enum BitBox02DeviceStatus { disconnected, locked, ready }
-
 enum BitBox02SignSubStatus { waiting, connectingDevice, checkPairing, preparingData, confirmOnDevice }
 
 class BitBox02SignViewModel extends ChangeNotifier {
@@ -26,7 +22,6 @@ class BitBox02SignViewModel extends ChangeNotifier {
   static const Duration _signTimeout = Duration(seconds: 120);
 
   BitBox02SignStep _step = BitBox02SignStep.idle;
-  BitBox02DeviceStatus _deviceStatus = BitBox02DeviceStatus.disconnected;
   BitBox02SignSubStatus _subStatus = BitBox02SignSubStatus.waiting;
   String? _errorMessage;
   BitBox02Device? _device;
@@ -39,40 +34,60 @@ class BitBox02SignViewModel extends ChangeNotifier {
   final String walletName;
   final String walletFingerprint;
   final String transport;
+  final WalletProvider _walletProvider;
+
+  String? _matchedWalletName;
+  bool _isWalletMismatch = false;
+  String? _mismatchedWalletName;
 
   BitBox02SignViewModel({
     required this.psbtBase64,
     required this.walletName,
     this.walletFingerprint = '',
     this.transport = 'usb',
-  }) {
+    required WalletProvider walletProvider,
+  }) : _walletProvider = walletProvider {
     _probeDeviceStatus();
   }
 
   BitBox02SignStep get step => _step;
-  BitBox02DeviceStatus get deviceStatus => _deviceStatus;
   BitBox02SignSubStatus get subStatus => _subStatus;
   String? get errorMessage => _errorMessage;
   String get signedPsbt => _signedPsbt;
   bool get isSigning => _isSigning;
   String? get fingerprint => _fingerprint;
+  bool get isWalletMismatch => _isWalletMismatch;
+  String? get mismatchedWalletName => _mismatchedWalletName;
+  String? get matchedWalletName => _matchedWalletName;
 
   void _probeDeviceStatus() {
     final last = BitBox02Device.lastConnected;
-    if (last == null) {
-      _deviceStatus = BitBox02DeviceStatus.disconnected;
-      return;
-    }
-    final fp = last.cachedFingerprint;
-    final mismatch = walletFingerprint.isNotEmpty && fp != null && fp.toLowerCase() != walletFingerprint.toLowerCase();
-    if (mismatch) {
-      BitBox02Device.lastConnected = null;
-      _deviceStatus = BitBox02DeviceStatus.disconnected;
-      return;
-    }
-    _deviceStatus = BitBox02DeviceStatus.locked;
+    if (last == null) return;
     _device = last;
+    final fp = last.cachedFingerprint;
     if (fp != null) _fingerprint = fp;
+  }
+
+  /// Check if the connected device's fingerprint matches the target wallet.
+  /// Called after the screen is built (like Trezor's probeWalletMismatch).
+  Future<void> probeWalletMismatch() async {
+    if (_device == null) return;
+    final fp = _fingerprint;
+    if (fp == null || fp.isEmpty) return;
+
+    final matchedName = _walletProvider.findWalletNameByFingerprint(fp);
+    if (matchedName == null) {
+      _isWalletMismatch = true;
+      _mismatchedWalletName = null;
+    } else if (matchedName != walletName) {
+      _isWalletMismatch = true;
+      _mismatchedWalletName = matchedName;
+    } else {
+      _isWalletMismatch = false;
+      _mismatchedWalletName = null;
+    }
+    _matchedWalletName = matchedName;
+    notifyListeners();
   }
 
   Future<void> signTransaction({BitBox02Device? existingDevice}) async {
@@ -90,17 +105,16 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
       if (existingDevice != null) {
         _device = existingDevice;
-        _deviceStatus = BitBox02DeviceStatus.ready;
       } else if (_device != null && await BitBox02ConnectivityService.isDeviceConnected()) {
         // Device is already paired and physically connected — skip re-pairing.
         _cancelTimeout();
         _fingerprint = _device!.cachedFingerprint;
         _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.preparingData);
-        _deviceStatus = BitBox02DeviceStatus.ready;
       } else {
         _device = null;
         BitBox02Device.lastConnected = null;
-        _device = await BitBox02Device.connect(transport: BitBox02Transport.resolve(preferred: transport));
+        final resolvedTransport = BitBox02Transport.resolve(preferred: transport);
+        _device = await BitBox02Device.connect(transport: resolvedTransport);
 
         _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.checkPairing);
 
@@ -131,7 +145,6 @@ class BitBox02SignViewModel extends ChangeNotifier {
         }
 
         _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.preparingData);
-        _deviceStatus = BitBox02DeviceStatus.ready;
       }
 
       final nt = NetworkType.currentNetworkType;
@@ -139,65 +152,10 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
       // Fetch and inject NonWitnessUtxo (previous transactions) for each input.
       // BitBox02 requires full previous transactions for non-Taproot inputs.
-      try {
-        final psbtParsed = Psbt.parse(psbtBase64);
-        final unsignedTx = psbtParsed.unsignedTransaction;
-        if (unsignedTx != null && unsignedTx.inputs.isNotEmpty) {
-          final prefs = SharedPrefsRepository();
-          final serverName = prefs.getString(SharedPrefKeys.kElectrumServerName);
-          final customHost = prefs.getString(SharedPrefKeys.kCustomElectrumHost);
-          final customPort = prefs.getInt(SharedPrefKeys.kCustomElectrumPort);
-          final customSsl = prefs.getBool(SharedPrefKeys.kCustomElectrumIsSsl);
-
-          String electrumHost;
-          int electrumPort;
-          bool electrumSsl;
-
-          if (serverName == 'CUSTOM') {
-            electrumHost = customHost;
-            electrumPort = customPort;
-            electrumSsl = customSsl;
-          } else if (serverName.isNotEmpty) {
-            final defServer = DefaultElectrumServer.fromServerType(serverName);
-            electrumHost = defServer.server.host;
-            electrumPort = defServer.server.port;
-            electrumSsl = defServer.server.ssl;
-          } else {
-            final net = NetworkType.currentNetworkType;
-            final defServer =
-                net == NetworkType.mainnet ? DefaultElectrumServer.coconut : DefaultElectrumServer.regtest;
-            electrumHost = defServer.server.host;
-            electrumPort = defServer.server.port;
-            electrumSsl = defServer.server.ssl;
-          }
-
-          debugPrint('BB02_SIGN electrum: $electrumHost:$electrumPort ssl=$electrumSsl');
-
-          final electrum = ElectrumService();
-          try {
-            final connected = await electrum.connect(electrumHost, electrumPort, ssl: electrumSsl);
-            if (!connected) {
-              debugPrint('BB02_SIGN electrum connect failed');
-            } else {
-              for (int i = 0; i < unsignedTx.inputs.length; i++) {
-                final txid = unsignedTx.inputs[i].transactionHash;
-                debugPrint('BB02_SIGN fetching prevtx[$i]: $txid');
-                try {
-                  final rawTxHex = await electrum.getTransaction(txid);
-                  await _device!.setPrevTxHex(i, rawTxHex);
-                  debugPrint('BB02_SIGN prevtx[$i] loaded (${rawTxHex.length} chars)');
-                } catch (e) {
-                  debugPrint('BB02_SIGN prevtx[$i] fetch failed: $e');
-                }
-              }
-            }
-          } finally {
-            electrum.close();
-          }
-        }
-      } catch (e) {
-        debugPrint('BB02_SIGN prevtx injection failed: $e');
-      }
+      await PrevTxFetcher.fetchAndInject(
+        psbtBase64: psbtBase64,
+        onPrevTxHex: (i, rawTxHex) => _device!.setPrevTxHex(i, rawTxHex),
+      );
 
       _cancelTimeout();
       _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.confirmOnDevice);
@@ -270,6 +228,9 @@ class BitBox02SignViewModel extends ChangeNotifier {
     _isSigning = false;
     _signedPsbt = '';
     _fingerprint = null;
+    _matchedWalletName = null;
+    _isWalletMismatch = false;
+    _mismatchedWalletName = null;
     _probeDeviceStatus();
     notifyListeners();
   }
@@ -282,6 +243,17 @@ class BitBox02SignViewModel extends ChangeNotifier {
       } catch (_) {}
       _device = null;
     }
+  }
+
+  Future<void> disconnectForReconnect() async {
+    await disconnect();
+    BitBox02Device.lastConnected = null;
+    _isWalletMismatch = false;
+    _mismatchedWalletName = null;
+    _matchedWalletName = null;
+    _fingerprint = null;
+    _errorMessage = null;
+    _setState(BitBox02SignStep.idle);
   }
 
   @override

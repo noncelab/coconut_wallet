@@ -1648,7 +1648,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   days: _viewModel.analysisPeriod.toString(),
                   transaction_type: _viewModel.selectedAnalysisTransactionTypeName,
                 )
-                : t.wallet_home_screen.analysis_period_cutsom(
+                : t.wallet_home_screen.analysis_period_custom(
                   transaction_type: _viewModel.selectedAnalysisTransactionTypeName,
                 ),
             style: CoconutTypography.body3_12.setColor(textColor),
@@ -1813,6 +1813,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     Navigator.pushNamed(context, '/bitbox02-connect', arguments: {'walletImportSource': WalletImportSource.bitbox02});
   }
 
+  void _goToTrezorScreen() {
+    Navigator.pop(context);
+    if (Platform.isAndroid) {
+      Navigator.pushNamed(context, '/trezor-transport-select');
+    } else {
+      Navigator.pushNamed(context, '/trezor-ble-connect', arguments: {'walletImportSource': WalletImportSource.trezor});
+    }
+  }
+
   void _onAddWalletPressed() {
     final topSheetWalletOptions = [
       WalletImportSource.coconutVault,
@@ -1822,6 +1831,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       WalletImportSource.coldCard,
       WalletImportSource.krux,
       WalletImportSource.passport,
+      WalletImportSource.trezor,
       WalletImportSource.bitbox02,
     ];
 
@@ -1882,6 +1892,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             final onPressed =
                                 scanType == WalletImportSource.bitbox02
                                     ? _goToBitBox02Screen
+                                    : scanType == WalletImportSource.trezor
+                                    ? _goToTrezorScreen
                                     : () => _goToScannerScreen(scanType);
 
                             return _buildWalletIconShrinkButton(onPressed, scanType);

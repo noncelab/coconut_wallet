@@ -21,6 +21,9 @@ class BluetoothTransport: NSObject {
     private var connectCompletion: ((Result<Void, Error>) -> Void)?
     private var productString: String?
 
+    /// BLE advertised name (from CBPeripheral.name), available after scan.
+    var bleName: String? { peripheral?.name }
+
     /// Called when the BLE peripheral disconnects unexpectedly or via [disconnect].
     var onDisconnect: (() -> Void)?
 

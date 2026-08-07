@@ -61,6 +61,7 @@ class _KeyButtonState extends State<KeyButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         widget.onKeyTap(widget.keyValue);
       },

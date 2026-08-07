@@ -17,6 +17,14 @@ class BitBox02Device {
   /// Fingerprint cached from [rootFingerprint], may be set by callers.
   String? cachedFingerprint;
 
+  /// xpub cached from [btcXPub] at the standard derivation path, may be set by callers.
+  String? cachedXpub;
+
+  /// Device name fetched from the device during [init].
+  String _name = '';
+
+  String get name => _name;
+
   BitBox02Device._({required this.id, required this.transport});
 
   static Future<BitBox02Device> connect({
@@ -46,6 +54,11 @@ class BitBox02Device {
       if (status == null) {
         throw const BitBox02InitException('NULL_RESPONSE', 'Init returned null');
       }
+      try {
+        final json = jsonDecode(status) as Map<String, dynamic>;
+        _name = json['name'] as String? ?? '';
+        debugPrint('BB02: init response name="$_name", raw=$status');
+      } catch (_) {}
       return status;
     } on PlatformException catch (e) {
       throw BitBox02InitException(e.code, e.message ?? 'Init failed');
@@ -94,6 +107,16 @@ class BitBox02Device {
       return result ?? false;
     } on PlatformException catch (e) {
       throw BitBox02InitException(e.code, e.message ?? 'deviceInitialized failed');
+    }
+  }
+
+  /// Returns true if the physical device is currently reachable.
+  static Future<bool> isConnected() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('isConnected');
+      return result ?? false;
+    } on PlatformException {
+      return false;
     }
   }
 
@@ -239,6 +262,12 @@ class BitBox02Device {
       await _channel.invokeMethod('disconnect', {'id': id});
     } on PlatformException catch (e) {
       throw BitBox02Exception(e.code, e.message ?? 'disconnect failed');
+    }
+
+    if (lastConnected == this) {
+      lastConnected = null;
+      cachedFingerprint = null;
+      cachedXpub = null;
     }
   }
 
