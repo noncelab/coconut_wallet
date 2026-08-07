@@ -6,19 +6,10 @@ import 'package:shimmer/shimmer.dart';
 
 class ExportLabelSuccessCard extends StatelessWidget {
   final Widget title;
-  final List<Object> topSteps;
-  final List<Object> bottomSteps;
-  final List<Object>? topStepResults;
-  final List<Object>? bottomStepResults;
+  final List<Object> steps;
+  final List<Object>? stepResults;
 
-  const ExportLabelSuccessCard({
-    super.key,
-    required this.title,
-    required this.topSteps,
-    this.bottomSteps = const [],
-    this.topStepResults,
-    this.bottomStepResults,
-  });
+  const ExportLabelSuccessCard({super.key, required this.title, required this.steps, this.stepResults});
 
   @override
   Widget build(BuildContext context) {
@@ -29,15 +20,13 @@ class ExportLabelSuccessCard extends StatelessWidget {
           SvgPicture.asset(
             'assets/svg/circle-check.svg',
             colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
-            height: 40,
-            width: 40,
+            height: 48,
+            width: 48,
           ),
           CoconutLayout.spacing_400h,
           title,
           CoconutLayout.spacing_400h,
-          _ExportLabelInstructionToolTip(steps: topSteps, showSkeleton: false, stepResults: topStepResults),
-          CoconutLayout.spacing_400h,
-          _ExportLabelInstructionToolTip(steps: bottomSteps, showSkeleton: false, stepResults: bottomStepResults),
+          ExportLabelInstructionToolTip(steps: steps, showSkeleton: false, stepResults: stepResults),
         ],
       ),
     );
@@ -58,8 +47,8 @@ class ExportLabelErrorCard extends StatelessWidget {
           SvgPicture.asset(
             'assets/svg/circle-warning.svg',
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
-            height: 40,
-            width: 40,
+            height: 48,
+            width: 48,
           ),
           CoconutLayout.spacing_400h,
           title,
@@ -90,21 +79,21 @@ class ExportLabelProgressCard extends StatelessWidget {
           CoconutLayout.spacing_400h,
           title,
           CoconutLayout.spacing_400h,
-          _ExportLabelInstructionToolTip(steps: topSteps, showSkeleton: true),
+          ExportLabelInstructionToolTip(steps: topSteps, showSkeleton: true),
           CoconutLayout.spacing_400h,
-          _ExportLabelInstructionToolTip(steps: bottomSteps, showSkeleton: true),
+          ExportLabelInstructionToolTip(steps: bottomSteps, showSkeleton: true),
         ],
       ),
     );
   }
 }
 
-class _ExportLabelInstructionToolTip extends StatelessWidget {
+class ExportLabelInstructionToolTip extends StatelessWidget {
   final List<Object> steps;
   final bool showSkeleton;
   final List<Object>? stepResults;
 
-  const _ExportLabelInstructionToolTip({required this.steps, this.showSkeleton = false, this.stepResults});
+  const ExportLabelInstructionToolTip({super.key, required this.steps, this.showSkeleton = false, this.stepResults});
 
   @override
   Widget build(BuildContext context) {

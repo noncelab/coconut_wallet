@@ -31,9 +31,9 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   final Set<int> _selectedFileIndices = {};
   bool _isCreateFileSelected = true;
   LabelExportStep _step = LabelExportStep.selection;
-  String? _exportedFileName;
-  String? _exportedFileDate;
   File? _exportedFile;
+  List<Map<String, String>> _exportResults = [];
+  int _currentPage = 0;
 
   late Future<List<File>> _filesFuture;
 
@@ -159,7 +159,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       case LabelExportStep.exporting:
         return Center(child: _buildLoadingCard());
       case LabelExportStep.success:
-        return Center(child: _buildSuccessCard());
+        return _buildSuccessView();
       case LabelExportStep.error:
         return Center(child: _buildErrorCard());
     }
@@ -324,28 +324,6 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     );
   }
 
-  Widget _buildSuccessCard() {
-    return ExportLabelSuccessCard(
-      title: Text(
-        t.label_export_wallet_picker_screen.success_title,
-        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-        textAlign: TextAlign.center,
-      ),
-      topSteps: [
-        t.label_export_wallet_picker_screen.instruction_tooltip.step1,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step2,
-      ],
-      topStepResults: [_exportedFileName ?? '', _exportedFileDate ?? ''],
-      bottomSteps: [
-        t.label_export_wallet_picker_screen.instruction_tooltip.step3,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step4,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step5,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step6,
-      ],
-      bottomStepResults: const ['', '', '', ''],
-    );
-  }
-
   Widget _buildErrorCard() {
     return ExportLabelErrorCard(
       title: Text(
@@ -367,19 +345,40 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     final isAllWalletsSelected = _selectedWalletIds.contains(-1);
 
     try {
-      final xFile =
+      final result =
           isAllWalletsSelected
               ? await labelManager.createLabelsJsonLFileForAllWallets(walletProvider)
               : await labelManager.createLabelsJsonLFileForWallets(_selectedWalletIds.toList(), walletProvider);
 
-      if (xFile != null) {
+      if (result.xFile != null) {
         _refreshFiles();
         await Future.delayed(const Duration(milliseconds: 2500));
+
+        final List<Map<String, String>> exportResults = [];
+        if (isAllWalletsSelected) {
+          for (final wallet in walletProvider.walletItemList) {
+            exportResults.add({
+              'fileName': result.xFile!.name,
+              'fileDate': DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+              'walletName': wallet.name,
+            });
+          }
+        } else {
+          for (final walletId in _selectedWalletIds) {
+            final wallet = walletProvider.getWalletById(walletId);
+            exportResults.add({
+              'fileName': result.xFile!.name,
+              'fileDate': DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+              'walletName': wallet.name,
+            });
+          }
+        }
+
         setState(() {
           _step = LabelExportStep.success;
-          _exportedFileName = xFile.name;
-          _exportedFile = File(xFile.path);
-          _exportedFileDate = DateFormat('yy-MM-dd HH:mm').format(DateTime.now());
+          _exportedFile = File(result.xFile!.path);
+          _exportResults = exportResults;
+          _currentPage = 0;
         });
       } else {
         if (mounted) {
@@ -396,6 +395,79 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         setState(() => _step = LabelExportStep.error);
       }
     }
+  }
+
+  Widget _buildSuccessView() {
+    if (_exportResults.isEmpty) {
+      return Center(
+        child: Text(
+          t.label_export_wallet_picker_screen.no_labels_to_export,
+          style: CoconutTypography.body1_16,
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          ExportLabelSuccessCard(
+            title: Text(
+              t.label_export_wallet_picker_screen.success_title,
+              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+              textAlign: TextAlign.center,
+            ),
+            steps: [
+              t.label_export_wallet_picker_screen.instruction_tooltip.step1,
+              t.label_export_wallet_picker_screen.instruction_tooltip.step2,
+            ],
+            stepResults: [_exportResults.first['fileName'] ?? '', _exportResults.first['fileDate'] ?? ''],
+          ),
+          SizedBox(
+            height: 120,
+            child: PageView.builder(
+              itemCount: _exportResults.length,
+              onPageChanged: (index) => setState(() => _currentPage = index),
+              itemBuilder: (context, index) => _buildSuccessBottomCard(_exportResults[index]),
+            ),
+          ),
+          if (_exportResults.length > 1) _buildPageIndicator(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccessBottomCard(Map<String, String> result) {
+    return ExportLabelInstructionToolTip(
+      steps: [
+        t.label_export_wallet_picker_screen.instruction_tooltip.step3,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step4,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step5,
+        t.label_export_wallet_picker_screen.instruction_tooltip.step6,
+      ],
+      stepResults: [result['walletName'] ?? '', '', '', ''],
+    );
+  }
+
+  Widget _buildPageIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_exportResults.length, (index) {
+        return Container(
+          width: 8.0,
+          height: 8.0,
+          margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color:
+                _currentPage == index
+                    ? context.coconutColors.primaryText
+                    : context.coconutColors.secondaryText.withOpacity(0.5),
+          ),
+        );
+      }),
+    );
   }
 
   void _shareFiles(List<File> files) async {

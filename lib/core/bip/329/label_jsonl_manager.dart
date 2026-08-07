@@ -22,6 +22,11 @@ class LabelImportResult {
   LabelImportResult({this.wallet});
 }
 
+class LabelExportResult {
+  final XFile? xFile;
+  LabelExportResult({this.xFile});
+}
+
 class LabelJsonLManager {
   Future<XFile?> createLabelsJsonLFile(int walletId, WalletProvider walletProvider) async {
     final wallet = walletProvider.getWalletById(walletId);
@@ -56,7 +61,7 @@ class LabelJsonLManager {
     return XFile(file.path, name: fileName, mimeType: 'application/jsonl');
   }
 
-  Future<XFile?> createLabelsJsonLFileForAllWallets(WalletProvider walletProvider) async {
+  Future<LabelExportResult> createLabelsJsonLFileForAllWallets(WalletProvider walletProvider) async {
     final allWallets = walletProvider.walletItemList;
     final List<String> jsonLines = [];
 
@@ -72,12 +77,12 @@ class LabelJsonLManager {
       );
     }
 
-    if (jsonLines.isEmpty) return null;
+    if (jsonLines.isEmpty) return LabelExportResult(xFile: null);
 
-    return _createFileFromString(jsonLines.join('\n'));
+    return LabelExportResult(xFile: await _createFileFromString(jsonLines.join('\n')));
   }
 
-  Future<XFile?> createLabelsJsonLFileForWallets(List<int> walletIds, WalletProvider walletProvider) async {
+  Future<LabelExportResult> createLabelsJsonLFileForWallets(List<int> walletIds, WalletProvider walletProvider) async {
     final List<String> jsonLines = [];
 
     for (final walletId in walletIds) {
@@ -93,9 +98,9 @@ class LabelJsonLManager {
       );
     }
 
-    if (jsonLines.isEmpty) return null;
+    if (jsonLines.isEmpty) return LabelExportResult(xFile: null);
 
-    return _createFileFromString(jsonLines.join('\n'));
+    return LabelExportResult(xFile: await _createFileFromString(jsonLines.join('\n')));
   }
 
   Future<void> shareFile(XFile xFile) async {

@@ -417,7 +417,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     try {
       final labelManager = LabelJsonLManager();
       final walletProvider = context.read<WalletProvider>();
-      final file = await labelManager.createLabelsJsonLFileForAllWallets(walletProvider);
+      final result = await labelManager.createLabelsJsonLFileForAllWallets(walletProvider);
 
       final duration = DateTime.now().difference(startTime);
       if (duration < const Duration(seconds: 1)) {
@@ -427,8 +427,8 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
 
       if (!mounted) return;
 
-      if (file != null) {
-        await labelManager.shareFile(file);
+      if (result.xFile != null) {
+        await labelManager.shareFile(result.xFile!);
       } else {
         CoconutToast.showToast(
           context: context,
