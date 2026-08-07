@@ -347,7 +347,10 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       final result = await labelManager.createLabelsJsonLFileForWallets(_selectedWalletIds.toList(), walletProvider);
 
       if (result.xFile != null) {
-        _refreshFiles();
+        setState(() {
+          _filesFuture = LabelJsonLManager().getImportableLabelFiles();
+          _selectedFileIndices.clear();
+        });
         await Future.delayed(const Duration(milliseconds: 2500));
 
         final List<LabelExportResult> exportResults = [];
@@ -526,7 +529,6 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     setState(() {
       _filesFuture = LabelJsonLManager().getImportableLabelFiles();
       _selectedFileIndices.clear();
-      _selectedWalletIds.clear();
     });
   }
 }
