@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -11,6 +12,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -18,6 +20,8 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
@@ -25,6 +29,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
+import 'package:coconut_wallet/widgets/card/security_warning_card.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -49,6 +54,12 @@ class WalletDetailScreen extends StatefulWidget {
 }
 
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
+  static const _warningDismissDuration = Duration(seconds: 10);
+  static const _nextWarningDelay = Duration(milliseconds: 400);
+
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+  final Set<_WalletDetailSecurityWarningType> _dismissedWarningsThisSession = {};
+  _WalletDetailSecurityWarningType? _nextWarningAfterDismissal;
   bool _isPullToRefreshing = false;
   late BitcoinUnit _currentUnit;
   late WalletDetailViewModel _viewModel;
@@ -57,6 +68,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAppLockEnabled = context.watch<AuthProvider>().isAuthEnabled;
     return ChangeNotifierProvider(
       create: (_) => _viewModel,
       child: PopScope(
@@ -111,6 +123,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           },
                         ),
                       ),
+                      _buildSecurityWarning(isAppLockEnabled),
                       _buildTxListLabel(),
                       TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
 
@@ -188,6 +201,107 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     );
 
     _viewModel.updateWalletName();
+  }
+
+  Widget _buildSecurityWarning(bool isAppLockEnabled) {
+    return SliverToBoxAdapter(
+      child: Selector<WalletDetailViewModel, Tuple3<int, bool, bool>>(
+        selector: (_, viewModel) {
+          final wallet = viewModel.walletListBaseItem;
+          return Tuple3(viewModel.balance, wallet.hasLocalKey, wallet.localSignerMetadata?.backupVerified ?? false);
+        },
+        builder: (context, walletSecurityState, _) {
+          final balance = walletSecurityState.item1;
+          final isHotWallet = walletSecurityState.item2;
+          final isBackupVerified = walletSecurityState.item3;
+
+          if (!isHotWallet || balance <= 0) {
+            return const SizedBox.shrink();
+          }
+
+          final warningType =
+              !isBackupVerified && _canShowSecurityWarning(_WalletDetailSecurityWarningType.unbackedHotWallet)
+                  ? _WalletDetailSecurityWarningType.unbackedHotWallet
+                  : !isAppLockEnabled && _canShowSecurityWarning(_WalletDetailSecurityWarningType.appLock)
+                  ? _WalletDetailSecurityWarningType.appLock
+                  : null;
+          if (warningType == null) return const SizedBox.shrink();
+
+          final isMnemonicWarning = warningType == _WalletDetailSecurityWarningType.unbackedHotWallet;
+          final iconColor =
+              isMnemonicWarning ? context.coconutColors.iconOnDanger : context.coconutColors.appLockWarningForeground;
+
+          return Column(
+            children: [
+              SecurityWarningCard(
+                key: ValueKey(warningType),
+                showDelay: _nextWarningAfterDismissal == warningType ? _nextWarningDelay : const Duration(seconds: 1),
+                title:
+                    isMnemonicWarning
+                        ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
+                        : t.wallet_home_screen.app_lock_warning.title,
+                description:
+                    isMnemonicWarning
+                        ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
+                        : t.wallet_home_screen.app_lock_warning.description,
+                useUnbackedWalletGradient: isMnemonicWarning,
+                onTap: isMnemonicWarning ? _openWalletInfoForMnemonicBackup : _openAppLockSettings,
+                onClosed:
+                    () => _dismissSecurityWarning(
+                      warningType,
+                      showNextWarning:
+                          isMnemonicWarning &&
+                          !isAppLockEnabled &&
+                          _canShowSecurityWarning(_WalletDetailSecurityWarningType.appLock),
+                    ),
+                icon: SvgPicture.asset(
+                  isMnemonicWarning ? 'assets/svg/triangle-warning.svg' : 'assets/svg/shield-warning.svg',
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                ),
+              ),
+              CoconutLayout.spacing_300h,
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  bool _canShowSecurityWarning(_WalletDetailSecurityWarningType type) {
+    if (_dismissedWarningsThisSession.contains(type)) return false;
+    final dismissedAt = _sharedPrefs.getInt(type.dismissedAtKey);
+    if (dismissedAt == 0) return true;
+    return DateTime.now().millisecondsSinceEpoch - dismissedAt >= _warningDismissDuration.inMilliseconds;
+  }
+
+  Future<void> _dismissSecurityWarning(_WalletDetailSecurityWarningType type, {required bool showNextWarning}) async {
+    _dismissedWarningsThisSession.add(type);
+    await _sharedPrefs.setInt(type.dismissedAtKey, DateTime.now().millisecondsSinceEpoch);
+    if (!mounted) return;
+    setState(() => _nextWarningAfterDismissal = showNextWarning ? _WalletDetailSecurityWarningType.appLock : null);
+  }
+
+  void _openWalletInfoForMnemonicBackup() {
+    Navigator.pushNamed(
+      context,
+      '/wallet-info',
+      arguments: {
+        'id': widget.id,
+        'walletType': _viewModel.walletType,
+        'entryPoint': widget.entryPoint,
+        'highlightMnemonicBackup': true,
+      },
+    );
+  }
+
+  void _openAppLockSettings() {
+    CommonBottomSheets.showCustomHeightBottomSheet(
+      context: context,
+      child: const AppSettingsScreen(),
+      heightRatio: 0.9,
+    );
   }
 
   void _onRefresh() async {
@@ -680,6 +794,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       ),
     );
   }
+}
+
+enum _WalletDetailSecurityWarningType { unbackedHotWallet, appLock }
+
+extension on _WalletDetailSecurityWarningType {
+  String get dismissedAtKey => switch (this) {
+    _WalletDetailSecurityWarningType.unbackedHotWallet => SharedPrefKeys.kUnbackedHotWalletWarningDismissedAt,
+    _WalletDetailSecurityWarningType.appLock => SharedPrefKeys.kAppLockWarningDismissedAt,
+  };
 }
 
 class TransactionList extends StatefulWidget {

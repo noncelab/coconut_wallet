@@ -47,6 +47,7 @@ abstract class MyColors {
   static const secondary = Color.fromRGBO(0, 196, 255, 1.0);
   static const warningYellow = Color.fromRGBO(255, 175, 3, 1.0);
   static const warningYellowBackground = Color.fromRGBO(255, 243, 190, 1.0);
+  static const appLockWarningBackground = Color(0xFFFFCC00);
   static const failedYellow = Color.fromRGBO(218, 152, 65, 1);
   static const Color bottomSheetBackground = Color(0xFF232222);
   static const Color selectBackground = Color(0xFF393939);
@@ -168,6 +169,8 @@ class CoconutColors {
   final Color iconDisabled;
   final Color iconOnDanger;
   final Color warning;
+  final Color appLockWarningBackground;
+  final Color appLockWarningForeground;
   final Color danger;
   final Color success;
   final Color rbfAccent;
@@ -324,6 +327,8 @@ class CoconutColors {
     required this.iconDisabled,
     required this.iconOnDanger,
     required this.warning,
+    required this.appLockWarningBackground,
+    required this.appLockWarningForeground,
     required this.danger,
     required this.success,
     required this.rbfAccent,
@@ -472,6 +477,8 @@ class CoconutColors {
       iconDisabled: ds.CoconutColors.gray600,
       iconOnDanger: ds.CoconutColors.white,
       warning: ds.CoconutColors.warningYellow,
+      appLockWarningBackground: MyColors.appLockWarningBackground,
+      appLockWarningForeground: ds.CoconutColors.black,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
       rbfAccent: ds.CoconutColors.primary,
@@ -623,6 +630,8 @@ class CoconutColors {
       iconDisabled: ds.CoconutColors.gray350,
       iconOnDanger: ds.CoconutColors.white,
       warning: ds.CoconutColors.warningYellow,
+      appLockWarningBackground: MyColors.appLockWarningBackground,
+      appLockWarningForeground: ds.CoconutColors.black,
       danger: ds.CoconutColors.hotPink,
       success: ds.CoconutColors.cyanBlue,
       rbfAccent: ds.CoconutColors.purple,

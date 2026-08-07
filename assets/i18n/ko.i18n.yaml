@@ -222,6 +222,12 @@ pin_check_screen:
 
 # lib/screens/home
 wallet_home_screen: 
+  unbacked_hot_wallet_warning:
+    title: "니모닉이 백업되지 않았어요"
+    description: "지금 백업하지 않으면 비트코인을 영원히 잃을 수 있어요"
+  app_lock_warning:
+    title: "앱 비밀번호를 설정해 주세요"
+    description: "앱 잠금을 설정해 지갑을 안전하게 보호하세요"
   view_all_wallets: "내 지갑 전체보기"
   wallet_filter:
     all: "전체"
@@ -786,6 +792,12 @@ send_confirm_screen:
   flow_output_title: "출력 #$index"
   sign_with_connected_device_title: "연결된 기기로 서명"
   sign_with_connected_device_description: "현재 연결된 $deviceName로 서명하시겠어요?"
+  authentication_failed_title: "인증하지 못했어요"
+  authentication_failed_description: "생체 인증 또는 앱 비밀번호를 확인한 뒤 다시 시도해 주세요."
+  signing_failed_title: "서명하지 못했어요"
+  signing_failed_description: "지갑 정보를 불러오거나 거래에 서명하는 중 문제가 발생했어요. 다시 시도해 주세요."
+  passphrase_input_title: "패스프레이즈 입력"
+  passphrase_input_description: "이 지갑을 만들 때 사용한 패스프레이즈를 입력해 주세요."
 bitbox02_sign_screen:
   tx_card:
     title: "거래 요약"

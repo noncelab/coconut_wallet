@@ -222,6 +222,12 @@ pin_check_screen:
 
 # lib/screens/home
 wallet_home_screen: 
+  unbacked_hot_wallet_warning:
+    title: "Your mnemonic isn't backed up"
+    description: "If you don't back it up now, you could lose your bitcoin forever"
+  app_lock_warning:
+    title: "Set an app password"
+    description: "Set an app lock to keep your wallet safe"
   view_all_wallets: "View All Wallets"
   wallet_filter:
     all: "All"
@@ -789,6 +795,12 @@ send_confirm_screen:
   flow_output_title: "Output #$index"
   sign_with_connected_device_title: "Sign with Connected Device"
   sign_with_connected_device_description: "Would you like to sign with the currently connected $deviceName?"
+  authentication_failed_title: "Couldn't authenticate"
+  authentication_failed_description: "Check your biometrics or app PIN and try again."
+  signing_failed_title: "Couldn't sign"
+  signing_failed_description: "There was a problem loading the wallet or signing the transaction. Please try again."
+  passphrase_input_title: "Enter passphrase"
+  passphrase_input_description: "Enter the passphrase used when creating this wallet."
 bitbox02_sign_screen:
   tx_card:
     title: "Transaction"

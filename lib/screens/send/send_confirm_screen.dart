@@ -14,6 +14,7 @@ import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart'
 import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
+import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
@@ -37,6 +38,7 @@ class SendConfirmScreen extends StatefulWidget {
 class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late SendConfirmViewModel _viewModel;
   late BitcoinUnit _currentUnit;
+  bool _isLocalSigning = false;
 
   String get totalSendAmountText =>
       _currentUnit.displayBitcoinAmount(UnitUtil.convertBitcoinToSatoshi(_viewModel.totalSendAmount ?? 0));
@@ -89,7 +91,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                       ),
                     ),
                   ),
-                  FixedBottomButton(text: t.next, onButtonClicked: () => _onButtonClicked(viewModel)),
+                  FixedBottomButton(
+                    text: viewModel.isHotWallet ? t.sign : t.next,
+                    isActive: !_isLocalSigning,
+                    onButtonClicked: () => _onButtonClicked(viewModel),
+                  ),
                 ],
               ),
             ),
@@ -137,6 +143,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   }
 
   Future<void> _onButtonClicked(SendConfirmViewModel viewModel) async {
+    if (viewModel.isHotWallet) {
+      await _signHotWallet(viewModel);
+      return;
+    }
+
     context.loaderOverlay.show();
     viewModel.setTxWaitingForSign();
     if (!mounted) return;
@@ -174,6 +185,73 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
 
     _navigateToNextScreen(viewModel, connectedDeviceSource: connectedDeviceSource);
   }
+
+  Future<void> _signHotWallet(SendConfirmViewModel viewModel) async {
+    if (_isLocalSigning) return;
+    final storageKey = viewModel.hotWalletSecretStorageKey;
+    if (storageKey == null) {
+      await _showLocalSignFailure();
+      return;
+    }
+
+    setState(() => _isLocalSigning = true);
+    try {
+      final plaintext = await HotWalletUnlockService().unlockPreferBiometrics(
+        context: context,
+        storageKey: storageKey,
+        onDecrypting: () {
+          if (mounted) context.loaderOverlay.show();
+        },
+      );
+      if (!mounted) return;
+      context.loaderOverlay.hide();
+
+      if (plaintext == null) {
+        await showInfoDialog(
+          context,
+          context.read<PreferenceProvider>().language,
+          t.send_confirm_screen.authentication_failed_title,
+          t.send_confirm_screen.authentication_failed_description,
+        );
+        return;
+      }
+
+      var passphrase = plaintext.passphrase;
+      if (viewModel.shouldEnterPassphraseWhenSigning) {
+        final enteredPassphrase = await CommonBottomSheets.showCustomHeightBottomSheet<String>(
+          context: context,
+          heightRatio: 0.55,
+          child: const _HotWalletPassphraseInputSheet(),
+        );
+        if (!mounted || enteredPassphrase == null) return;
+        passphrase = enteredPassphrase;
+      }
+
+      context.loaderOverlay.show();
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      await viewModel.signHotWallet(mnemonic: plaintext.mnemonic, passphrase: passphrase);
+      if (!mounted) return;
+      context.loaderOverlay.hide();
+      Navigator.pushReplacementNamed(context, '/broadcasting');
+    } catch (_) {
+      if (!mounted) return;
+      context.loaderOverlay.hide();
+      await _showLocalSignFailure();
+    } finally {
+      if (mounted) {
+        context.loaderOverlay.hide();
+        setState(() => _isLocalSigning = false);
+      }
+    }
+  }
+
+  Future<void> _showLocalSignFailure() => showInfoDialog(
+    context,
+    context.read<PreferenceProvider>().language,
+    t.send_confirm_screen.signing_failed_title,
+    t.send_confirm_screen.signing_failed_description,
+  );
 
   void _navigateToNextScreen(SendConfirmViewModel viewModel, {WalletImportSource? connectedDeviceSource}) {
     final source = connectedDeviceSource ?? viewModel.walletImportSource;
@@ -323,5 +401,91 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
     }
 
     return SendOutputDetailCard(items: detailItems, currentUnit: _currentUnit);
+  }
+}
+
+class _HotWalletPassphraseInputSheet extends StatefulWidget {
+  const _HotWalletPassphraseInputSheet();
+
+  @override
+  State<_HotWalletPassphraseInputSheet> createState() => _HotWalletPassphraseInputSheetState();
+}
+
+class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInputSheet> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_handleChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
+  void _handleChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _complete() {
+    if (_controller.text.isEmpty) return;
+    _focusNode.unfocus();
+    Navigator.pop(context, _controller.text);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_handleChanged);
+    _controller.clear();
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      backgroundColor: context.coconutColors.background,
+      body: SafeArea(
+        top: false,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 112),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.send_confirm_screen.passphrase_input_title,
+                    style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+                  ),
+                  CoconutLayout.spacing_200h,
+                  Text(
+                    t.send_confirm_screen.passphrase_input_description,
+                    style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                  ),
+                  CoconutLayout.spacing_500h,
+                  CoconutTextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    onChanged: (_) {},
+                    obscureText: true,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    maxLines: 1,
+                    textInputAction: TextInputAction.done,
+                    placeholderText: t.passphrase_input_text_field.placeholder,
+                    onEditingComplete: _complete,
+                  ),
+                ],
+              ),
+            ),
+            FixedBottomButton(text: t.complete, isActive: _controller.text.isNotEmpty, onButtonClicked: _complete),
+          ],
+        ),
+      ),
+    );
   }
 }

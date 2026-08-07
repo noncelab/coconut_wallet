@@ -43,20 +43,82 @@ class WalletInfoScreen extends StatefulWidget {
   final WalletType walletType;
   final String entryPoint;
   final bool showMfpInput;
+  final bool highlightMnemonicBackup;
   const WalletInfoScreen({
     super.key,
     required this.id,
     required this.walletType,
     required this.entryPoint,
     this.showMfpInput = false,
+    this.highlightMnemonicBackup = false,
   });
 
   @override
   State<WalletInfoScreen> createState() => _WalletInfoScreenState();
 }
 
+class _MnemonicBackupButton extends StatefulWidget {
+  const _MnemonicBackupButton({super.key, required this.onPressed, required this.showWarning});
+
+  final VoidCallback onPressed;
+  final bool showWarning;
+
+  @override
+  State<_MnemonicBackupButton> createState() => _MnemonicBackupButtonState();
+}
+
+class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with SingleTickerProviderStateMixin {
+  late final AnimationController _highlightController;
+
+  @override
+  void initState() {
+    super.initState();
+    _highlightController = AnimationController(vsync: this, duration: const Duration(milliseconds: 280));
+  }
+
+  Future<void> highlight() async {
+    await _highlightController.forward(from: 0);
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    if (!mounted) return;
+    await _highlightController.reverse();
+  }
+
+  @override
+  void dispose() {
+    _highlightController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _highlightController,
+      builder: (context, child) {
+        final progress = Curves.easeInOut.transform(_highlightController.value);
+        return SingleButton(
+          enableShrinkAnim: true,
+          backgroundColor: Color.lerp(context.coconutColors.surface, context.coconutColors.surfacePressed, progress),
+          title: t.wallet_home_screen.hot_wallet_setup.backup_title,
+          rightElement:
+              widget.showWarning
+                  ? SvgPicture.asset(
+                    'assets/svg/triangle-warning.svg',
+                    width: 20,
+                    height: 20,
+                    colorFilter: ColorFilter.mode(context.coconutColors.appLockWarningBackground, BlendMode.srcIn),
+                  )
+                  : null,
+          showRightArrowWithRightElement: widget.showWarning,
+          onPressed: widget.onPressed,
+        );
+      },
+    );
+  }
+}
+
 class _WalletInfoScreenState extends State<WalletInfoScreen> {
   final GlobalKey _walletTooltipKey = GlobalKey();
+  final GlobalKey<_MnemonicBackupButtonState> _mnemonicBackupButtonKey = GlobalKey<_MnemonicBackupButtonState>();
   static const int kTooltipDuration = 5;
   RenderBox? _walletTooltipIconRenderBox;
   Offset _walletTooltipIconPosition = Offset.zero;
@@ -219,9 +281,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 },
                               ),
                               if (viewModel.walletItemBase.hasLocalKey)
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.wallet_home_screen.hot_wallet_setup.backup_title,
+                                _MnemonicBackupButton(
+                                  key: _mnemonicBackupButtonKey,
+                                  showWarning:
+                                      viewModel.walletBalance.total > 0 &&
+                                      !(viewModel.walletItemBase.localSignerMetadata?.backupVerified ?? false),
                                   onPressed: () {
                                     _removeTooltip();
                                     _showMnemonicBackup(viewModel);
@@ -369,7 +433,26 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         if (!mounted) return;
         await _showMfpInputBottomSheet();
       }
+      if (widget.highlightMnemonicBackup) {
+        await _focusMnemonicBackupButton();
+      }
     });
+  }
+
+  Future<void> _focusMnemonicBackupButton() async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+    final backupButtonContext = _mnemonicBackupButtonKey.currentContext;
+    if (backupButtonContext == null || !backupButtonContext.mounted) return;
+
+    await Scrollable.ensureVisible(
+      backupButtonContext,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+      alignment: 0.5,
+    );
+    if (!mounted) return;
+    await _mnemonicBackupButtonKey.currentState?.highlight();
   }
 
   Future<String?> _showMfpInputBottomSheet() async {

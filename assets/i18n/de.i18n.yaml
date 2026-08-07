@@ -222,6 +222,12 @@ pin_check_screen:
 
 # lib/screens/home
 wallet_home_screen:
+  unbacked_hot_wallet_warning:
+    title: "Deine Mnemonik ist nicht gesichert"
+    description: "Wenn du sie jetzt nicht sicherst, könntest du deine Bitcoin für immer verlieren"
+  app_lock_warning:
+    title: "Lege ein App-Passwort fest"
+    description: "Richte eine App-Sperre ein, um deine Wallet sicher zu schützen"
   view_all_wallets: "Alle Wallets anzeigen"
   wallet_filter:
     all: "Alle"
@@ -777,6 +783,12 @@ send_confirm_screen:
   flow_output_title: "Ausgabe #$index"
   sign_with_connected_device_title: "Sign with Connected Device"
   sign_with_connected_device_description: "Would you like to sign with the currently connected $deviceName?"
+  authentication_failed_title: "Authentifizierung fehlgeschlagen"
+  authentication_failed_description: "Überprüfe deine biometrische Authentifizierung oder App-PIN und versuche es erneut."
+  signing_failed_title: "Signieren fehlgeschlagen"
+  signing_failed_description: "Beim Laden der Wallet oder Signieren der Transaktion ist ein Problem aufgetreten. Versuche es erneut."
+  passphrase_input_title: "Passphrase eingeben"
+  passphrase_input_description: "Gib die Passphrase ein, die du beim Erstellen dieser Wallet verwendet hast."
 signed_psbt_scanner_screen:
   title: "Signierte Tx scannen"
   bbqr_mode_switching: "Wechsle in den BBQR-Modus.\nBitte warten Sie einen Moment."

@@ -248,6 +248,7 @@ flutter:
     - assets/images/mail-icon.png
     - assets/images/laurel-wreath.png
     - assets/images/pin-screen-mockup.png
+    - assets/svg/shield-warning.svg
     - assets/svg/github-logo-white.svg
     - assets/svg/github-logo.svg
     - assets/files/LICENSE

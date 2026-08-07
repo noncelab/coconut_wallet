@@ -315,6 +315,7 @@ class WalletProvider extends ChangeNotifier {
   Future<void> updateHotWalletBackupVerified(int walletId, {required bool backupVerified}) async {
     await _walletRepository.updateHotWalletBackupVerified(walletId, backupVerified: backupVerified);
     _setWalletItemList(await _fetchWalletListFromDB());
+    notifyListeners();
   }
 
   // MARK: - Name Conflict, MFP verification Helpers

@@ -40,6 +40,7 @@ class SingleButton extends StatelessWidget {
   final String? description;
   final VoidCallback? onPressed;
   final Widget? rightElement;
+  final bool showRightArrowWithRightElement;
   final Widget? leftElement;
   final SingleButtonPosition buttonPosition;
   final TextStyle? subtitleStyle;
@@ -57,6 +58,7 @@ class SingleButton extends StatelessWidget {
     this.description,
     this.onPressed,
     this.rightElement,
+    this.showRightArrowWithRightElement = false,
     this.leftElement,
     this.buttonPosition = SingleButtonPosition.none,
     this.subtitleStyle,
@@ -136,7 +138,11 @@ class SingleButton extends StatelessWidget {
         ),
         if (subtitle != null && !isVerticalSubtitle)
           FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle(context))),
-        rightElement ?? _rightArrow(context),
+        if (rightElement != null) ...[
+          rightElement!,
+          if (showRightArrowWithRightElement) ...[CoconutLayout.spacing_200w, _rightArrow(context)],
+        ] else
+          _rightArrow(context),
       ],
     );
   }

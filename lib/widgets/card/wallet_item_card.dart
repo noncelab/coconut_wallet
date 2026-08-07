@@ -258,17 +258,29 @@ class WalletItemCard extends StatelessWidget {
           ),
           CoconutLayout.spacing_200w,
           isEditMode
-              ? ReorderableDragStartListener(
-                index: index!,
-                child: GestureDetector(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: SvgPicture.asset(
-                      'assets/svg/hamburger.svg',
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+              ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (shouldWarnUnbackedHotWallet) ...[
+                    SvgPicture.asset(
+                      'assets/svg/circle-warning.svg',
+                      colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+                    ),
+                    CoconutLayout.spacing_200w,
+                  ],
+                  ReorderableDragStartListener(
+                    index: index!,
+                    child: GestureDetector(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: SvgPicture.asset(
+                          'assets/svg/hamburger.svg',
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               )
               : shouldWarnUnbackedHotWallet
               ? Row(

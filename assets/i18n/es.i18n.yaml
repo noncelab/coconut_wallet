@@ -223,6 +223,12 @@ pin_check_screen:
 
 #lib/screens/home
 wallet_home_screen:
+  unbacked_hot_wallet_warning:
+    title: "Tu frase mnemónica no tiene copia de seguridad"
+    description: "Si no la guardas ahora, podrías perder tus bitcoins para siempre"
+  app_lock_warning:
+    title: "Configura una contraseña para la aplicación"
+    description: "Configura el bloqueo de la aplicación para proteger tu billetera"
   view_all_wallets: "Ver todas mis billeteras"
   wallet_filter:
     all: "Todas"
@@ -789,6 +795,12 @@ send_confirm_screen:
   flow_output_title: "Salida #$index"
   sign_with_connected_device_title: "Sign with Connected Device"
   sign_with_connected_device_description: "Would you like to sign with the currently connected $deviceName?"
+  authentication_failed_title: "No se pudo autenticar"
+  authentication_failed_description: "Comprueba la biometría o el PIN de la aplicación e inténtalo de nuevo."
+  signing_failed_title: "No se pudo firmar"
+  signing_failed_description: "Se produjo un problema al cargar la cartera o firmar la transacción. Inténtalo de nuevo."
+  passphrase_input_title: "Introduce la frase de contraseña"
+  passphrase_input_description: "Introduce la frase de contraseña utilizada al crear esta cartera."
 bitbox02_sign_screen:
   tx_card:
     title: "Transacción"

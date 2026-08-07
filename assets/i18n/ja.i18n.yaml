@@ -222,6 +222,12 @@ pin_check_screen:
 
 # lib/screens/home
 wallet_home_screen: 
+  unbacked_hot_wallet_warning:
+    title: "ニーモニックがバックアップされていません"
+    description: "今バックアップしないと、ビットコインを永久に失う可能性があります"
+  app_lock_warning:
+    title: "アプリのパスワードを設定してください"
+    description: "アプリロックを設定してウォレットを安全に保護してください"
   view_all_wallets: "マイウォレット一覧"
   wallet_filter:
     all: "すべて"
@@ -787,6 +793,12 @@ send_confirm_screen:
   flow_output_title: "出力 #$index"
   sign_with_connected_device_title: "Sign with Connected Device"
   sign_with_connected_device_description: "Would you like to sign with the currently connected $deviceName?"
+  authentication_failed_title: "認証できませんでした"
+  authentication_failed_description: "生体認証またはアプリのPINを確認して、もう一度お試しください。"
+  signing_failed_title: "署名できませんでした"
+  signing_failed_description: "ウォレットの読み込みまたは取引への署名中に問題が発生しました。もう一度お試しください。"
+  passphrase_input_title: "パスフレーズを入力"
+  passphrase_input_description: "このウォレットを作成したときに使用したパスフレーズを入力してください。"
 bitbox02_sign_screen:
   tx_card:
     title: "取引情報"

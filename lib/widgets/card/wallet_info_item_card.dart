@@ -368,7 +368,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                 isHotWallet ? 'assets/svg/hot-wallet-fire.svg' : 'assets/svg/watch-only-eyes.svg',
                 width: isHotWallet ? 10 : 14,
                 height: isHotWallet ? 10 : 9,
-                colorFilter: ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
+                colorFilter: isHotWallet ? null : ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
               ),
             ),
           ),

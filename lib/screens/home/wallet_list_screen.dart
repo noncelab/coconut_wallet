@@ -1116,6 +1116,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       builder: (context, data, child) {
         final currentUnit = data.item1;
         bool isExcludedFromTotalBalance = data.item2.contains(walletItem.id);
+        final shouldWarnUnbackedHotWallet =
+            walletItem.hasLocalKey &&
+            !(walletItem.localSignerMetadata?.backupVerified ?? false) &&
+            animatedBalanceData.current > 0;
 
         return WalletItemCard(
           key: key,
@@ -1124,6 +1128,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           isLastItem: isLastItem,
           isBalanceHidden: false,
           currentUnit: currentUnit,
+          shouldWarnUnbackedHotWallet: shouldWarnUnbackedHotWallet,
           backgroundColor: context.coconutColors.background,
           isPrimaryWallet: isFirstItem,
           isExcludeFromTotalBalance: isExcludedFromTotalBalance,
