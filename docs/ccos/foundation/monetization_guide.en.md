@@ -14,10 +14,8 @@ Contributors can propose a feature for free, or propose monetization designed to
 
 A proposed feature can go through monetization discussion and actually ship as a paid feature. The Coconut dev team reviews it, then connects payment directly at deploy time.
 
-Here's what's decided at this stage, and what isn't yet:
-
-- **Decided**: which monetization model to use (free / one-time purchase / subscription / etc.) is decided together with the Coconut dev team, based on "Currently supported" below.
-- **Not yet decided**: the formal process for how the Coconut dev team and a contributor work out a contract isn't documented yet. For now, it's discussed case by case through the "Proposal Process" in Section 2. `[TODO: link a separate document here once the contract process is formalized]`
+- Which monetization model to use (free / one-time purchase / subscription / etc.) is decided together with the Coconut dev team, based on "Currently supported" below.
+- The actual contract terms (settlement rate, payout cadence, scope of rights and responsibilities, etc.) are **worked out individually between the Coconut dev team and the contributor once the proposal is approved.** Terms vary by feature and contribution scale, so rather than publishing one standard contract here, we discuss each case on its own merits.
 
 Once market viability is validated, we plan to automate the contract/settlement process with tools such as a contributor dashboard. (This is on the roadmap, and the plan may change depending on how things go.)
 
@@ -26,9 +24,9 @@ Once market viability is validated, we plan to automate the contract/settlement 
 - documentation that classifies features as free / one-time purchase / subscription / future paid candidates
 - rules for how monetization-related information is displayed
 - review criteria for paid feature candidates
-- proposing a paid feature and actually connecting payment for it through manual discussion with the Coconut dev team (the dev team connects it directly at deploy time)
+- proposing a paid feature and actually connecting payment for it through an individual contract with the Coconut dev team (the dev team connects it directly at deploy time)
 - defining a settlement standard for how a contributor gets paid when their feature generates sales
-  - the standard itself stays internal and isn't publicly documented in full, but the contributor is briefed individually by the person in charge at proposal time. Contact channel: `[TODO: specify the settlement inquiry channel]`
+  - the settlement standard is worked out individually as part of the contract discussion
 - draft UX for a placeholder purchase flow
 - a structure that separates listing metadata from activation / entitlement state
 - card structures that help users understand both who made a feature and what pricing model it may follow
@@ -38,19 +36,19 @@ Once market viability is validated, we plan to automate the contract/settlement 
 - contributors integrating a billing system themselves
 - automatically wiring a new paid feature into the payment / entitlement pipeline (for now, the Coconut dev team connects each feature by hand; once it's connected, entitlement for individual purchases is granted automatically in the shipped app)
 - automated subscription lifecycle management
-- publicly documenting the contract process for every contributor
+- publishing contract terms as a standard template (terms vary by feature and contributor, so we run them as individual contracts)
 - automated settlement through a contributor dashboard (this is on the roadmap, and the plan may change depending on how things go)
 
 ## 2. Proposal Process
 
 If you want to propose a paid feature, follow this process:
 
-1. Submit your monetization proposal at `[TODO: where proposals are submitted — issue template / channel / etc.]`. Answering the review questions in Section 3 yourself first will speed up the review.
-2. The Coconut dev team reviews the proposal against Section 3. Review typically takes about `[TODO: rough turnaround time]`.
-3. If it's judged to be in scope, the Coconut dev team and the contributor work out the monetization model (free / one-time purchase / subscription) and settlement terms individually.
+1. Submit your monetization proposal as a GitHub issue. Answering the review questions in Section 3 yourself first will speed up the review.
+2. The Coconut dev team reviews the proposal against Section 3.
+3. If it's judged to be in scope, the Coconut dev team and the contributor work out the monetization model (free / one-time purchase / subscription) and settlement terms through an individual contract.
 4. The Coconut dev team connects payment directly at deploy time.
 
-This process is still early-stage, so the `[TODO]` items above will be filled in once finalized. Until then, reach out via `[TODO: temporary contact channel]`.
+Contract terms vary by feature and contribution scale, so this document does not lay out one standard contract in advance. If you have questions, ask directly on your proposal issue.
 
 ## 3. Review Questions and Judgment
 
@@ -71,4 +69,5 @@ Judgment (Coconut dev team's criteria):
 
 - propose monetization as a boundary and policy topic first, not as an implementation target — see Section 2 for how to propose
 - you don't need to have a payment method or business registration ready at proposal time. The monetization model and settlement terms are worked out individually with the Coconut dev team after the proposal is approved.
+- **you don't implement entitlement integration (the purchase button, payment pipeline, receipt verification code).** You only need to propose a `priceType` candidate (free / one-time / subscription) — the actual integration is done directly by the Coconut dev team at deploy time, after a contract is signed. See [architecture.md](./architecture.md) section 6.2 for the full principle.
 - the detailed principles for how paid features are displayed in the Coconut Open Store are still being designed by the Coconut dev team. This document will be updated once they're finalized.

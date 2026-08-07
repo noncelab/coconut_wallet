@@ -1368,3 +1368,6 @@ ccos:
     highlight_new_feature: "새로운 기능"
     highlight_bitcoin_standard: "비트코인 스탠다드"
     cta_start_first_pr: "첫 PR 시작하기"
+  feature_status:
+    activated: "활성화됨"
+    purchased: "구매 완료"

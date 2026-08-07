@@ -14,6 +14,7 @@ It does not need to be perfect. What matters most is clearly explaining the prob
 ## 2. Author and Intent
 
 - Author / team / studio name:
+- Contact email (optional for free/Green proposals; please include it if you're also proposing monetization, since contract discussion needs it):
 - Why you want this feature inside Coconut:
 - What user problem it is trying to solve:
 - What kind of trust signal should users see:

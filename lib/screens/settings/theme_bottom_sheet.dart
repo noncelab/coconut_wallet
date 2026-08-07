@@ -16,6 +16,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
+/// CCOS `theme` 카테고리의 host surface(진입점)다.
+/// `CcosFeatureCategory.theme`으로 등록된 기능(현재는 `CoconutPulpFeature`)이 활성화되어 있으면
+/// 여기 테마 목록에 실제로 노출된다.
+///
+/// 다른 카테고리를 새로 추가하는 경우 이 파일을 그대로 복사하지 말 것
+/// 카테고리마다 또는 기능마다 최적화된 진입점을 새로 설계한다
+/// (`docs/ccos/foundation/architecture.md` 6.1절 참고).
 class ThemeBottomSheet extends StatefulWidget {
   const ThemeBottomSheet({super.key});
 
@@ -78,10 +85,28 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
     final colors = context.coconutColors;
     return Consumer<PreferenceProvider>(
       builder: (context, provider, child) {
+        // 여기가 실제 진입점: theme 카테고리이면서 사용자가 활성화(+구매 완료)한
+        // CCOS 기능만 이 목록에 나타난다. category 체크는 `featuredListing`이
+        // 우연히 테마를 가리키고 있다는 사실에 기대지 않기 위한 명시적 가드다 —
+        // registry에 theme이 아닌 다른 카테고리 기능이 늘어나도 여기에는 영향을
+        // 주지 않는다. isAvailable(=activated && entitled)은
+        // PreferenceProvider.loadCcosRuntimeState()가 앱 진입 시 로컬 상태에서
+        // 다시 계산한 값이다 (lib/ccos/ccos_feature_runtime.dart 참고).
+        //
+        // 주의: 이 체크는 여전히 단일 CCOS 테마(Coconut Pulp) 하나만 가정한다.
+        // 두 번째 CCOS 테마가 등록되더라도 이 화면은 그걸 자동으로 보여주지
+        // 않는다 — 현재는 scope 밖이며, 필요해지면 allListings를 순회하는
+        // 구조로 다시 설계해야 한다.
+        final ccosThemeListing = CcosFeatureRegistrySource.featuredListing;
+        final isCcosThemeSelectable =
+            ccosThemeListing.category == CcosFeatureCategory.theme &&
+            ccosThemeListing.isSelectableTheme &&
+            provider.getCcosFeatureAvailability(ccosThemeListing.id).isAvailable;
+
         final builtInThemes = <_ThemeOption>[
           _ThemeOption(variant: CoconutThemeVariant.dark, title: t.theme_dark),
           _ThemeOption(variant: CoconutThemeVariant.light, title: t.theme_light),
-          if (provider.getCcosFeatureAvailability(CcosFeatureRegistrySource.featuredListing.id).isActivated)
+          if (isCcosThemeSelectable)
             _ThemeOption(variant: CoconutThemeVariant.coconutPulp, title: t.theme_coconut_pulp),
         ];
         return Scaffold(

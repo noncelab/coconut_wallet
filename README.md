@@ -214,9 +214,19 @@ Run → Edit Configurations... → Set Build Flavor to `regtest`
 
 > **⚠️ Mainnet Self-Build Disclaimer**: If you build and run the app from source on mainnet outside of official distribution channels (App Store / Google Play), we assume no responsibility for any loss of funds or errors that may occur. Please use `regtest` mode for development and testing.
 
+## Coconut Open Store (CCOS)
+
+Coconut Wallet is opening up to external contributors through **CCOS (Coconut Contribution Open Store)** — the path for proposing new features and extensions, not fixes or improvements to something that already exists. Every proposal is classified as 🟢 Green (open to propose freely), 🟡 Yellow (needs pre-review), or 🔴 Red (not accepted) before implementation starts.
+
+- [CCOS docs](./docs/ccos/README.md) — start here
+- [Feature boundary (Green/Yellow/Red)](./docs/ccos/getting_started/feature_boundary.md)
+- [Contributor quickstart](./docs/ccos/getting_started/contributor_quickstart.md)
+
 ## Contributing
 
 Please refer to [CONTRIBUTING.md](https://github.com/noncelab/coconut_wallet/blob/main/CONTRIBUTING.md) for details.
+
+If you're proposing a new feature or extension (not a fix or improvement to something that already exists), start with the [CCOS docs](./docs/ccos/README.md) instead.
 
 - [Issues](https://github.com/noncelab/coconut_wallet/issues) — Bug reports and feature requests
 - [Pull Requests](https://github.com/noncelab/coconut_wallet/pulls) — New features, documentation improvements, and bug fixes

@@ -38,6 +38,8 @@ Use the following contact points when requesting review.
 - For Yellow features, get review in an issue or draft PR before implementation grows too far.
 - If a feature looks Red, open a GitHub issue first and ask whether that classification is correct.
 
+Once your PR is merged, we'll notify you via GitHub by default. If you're proposing a paid feature, we'll also use the email you provided in the [feature proposal template](./feature_proposal_template.md) or the PR template to continue the contract discussion. Keep an eye on GitHub notifications while your review is in progress.
+
 ## 4. Branching
 
 Create your branch from `develop`.
@@ -139,7 +141,11 @@ In practice, a contributor should:
 
 1. create the feature definition under `lib/ccos/features/<feature-id>/`
 2. connect that feature from the registry
-3. wire the actual UI exposure through an existing entry point in Coconut Wallet
+3. implement the actual entry point and include it in the PR
+
+Step 3 is not optional. The theme feature's entry point in `theme_bottom_sheet.dart` is one reference example, but **it's only natural because it's a theme — it's not a standard pattern you're expected to follow.** What screen a feature should attach to, and how, varies a lot by feature, so design the entry point that fits your own feature. See [architecture.md](../foundation/architecture.md) section 6.1 for the full principle.
+
+On the other hand, **you don't implement entitlement integration (the actual purchase button, payment pipeline, receipt verification code).** If you proposed a paid feature, the Coconut dev team wires that up directly after a contract is signed, at deploy time. See [architecture.md](../foundation/architecture.md) section 6.2 and [monetization_guide.md](../foundation/monetization_guide.md) for details.
 
 ## 9. Multilingual Copy Structure
 
@@ -200,3 +206,4 @@ Before opening the PR, confirm:
 - the copy matches Coconut's tone
 - copy length is kept reasonably aligned across locales
 - `ko / en / ja / es / de` copy is all present
+- if you're proposing a paid feature, the proposal or PR template includes a contact email (needed for contract discussion)

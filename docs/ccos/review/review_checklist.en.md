@@ -21,6 +21,8 @@ This document is the baseline checklist to check when reviewing a proposed featu
 - Does it follow Coconut Wallet theme / token / primitive rules?
 - Can it be explained within the allowed contribution area?
 - Does it follow the official paths and folder structure?
+- If this opens up a category for the first time, does the same PR include a working entry point (host surface), not just a registry entry? (see `foundation/architecture.md` section 6.1). Don't reject it just because the entry point looks structurally different from the theme example (`theme_bottom_sheet.dart`) — different categories are expected to have different entry points.
+- Does the PR avoid including actual entitlement integration code (purchase button, payment pipeline, receipt verification, etc.)? If it's there, that's not normal — that's the Coconut dev team's job at deploy time, after a contract is signed, not the contributor's (see `foundation/architecture.md` section 6.2)
 
 ## 4. Testing
 
@@ -36,3 +38,11 @@ This document is the baseline checklist to check when reviewing a proposed featu
 ## 6. Scope
 
 - If it is a Yellow feature, is there a record of prior review?
+
+## 7. After Merge (for reviewers/whoever merges)
+
+- Did you notify the contributor right after merging? (default: a GitHub comment; also email if they proposed a paid feature)
+- If it's a paid feature, did you assign someone to start the contract process (`foundation/monetization_guide.md`)?
+- Did you tell the contributor this change ships with the next release, not immediately?
+
+Detailed steps follow the Coconut dev team's internal guide.

@@ -160,9 +160,29 @@ class CcosFeatureRegistrySource {
 }
 ```
 
+### 6.1 Categories and entry points (host surfaces)
+
+`CcosFeatureCategory` already defines `analysis` / `tool` / `widget` alongside `theme`. But a category existing doesn't mean a feature in that category automatically shows up anywhere in the app.
+
+- Right now, only the `theme` category has a working entry point (host surface): `lib/screens/settings/theme_bottom_sheet.dart`.
+- **Building the entry point is part of the feature's deliverable, not optional.** A PR that only registers a listing without a working entry point isn't considered a complete contribution. "Choosing a category" and "wiring that category into an actual screen" happen in the same PR.
+- `theme_bottom_sheet.dart` is just **one existing example, not a standard pattern you're expected to follow.** Which screen a feature should attach to, and how (a button, a card, a standalone screen, etc.), depends heavily on what the feature actually is — we deliberately haven't forced this into one common structure. Design the entry point that fits your own feature, and propose it as part of your contribution.
+
+This is because CCOS doesn't support runtime plugin loading yet — whatever category a feature falls into, it's compiled statically into the app, and its entry point has to be wired directly in code. (This isn't the same as saying CCOS only accepts UI features. A Yellow proposal that needs network communication or storage can still be reviewed through the boundary guide — it just also needs a directly-wired entry point, same as everything else.) If you're the first to open up a new category, please propose the entry point design along with it.
+
+### 6.2 Who owns entitlement integration
+
+Registering a feature and making it actually sellable as a paid feature are different jobs.
+
+- **Registry connection** (wiring the listing in `lib/ccos/ccos_feature_registry.dart`, marking a `priceType` candidate as free / one-time / subscription) **and building the entry point are the contributor's job** — see 6.1.
+- **Actually wiring entitlement (the purchase button, the payment pipeline, receipt verification, the code that calls `markCcosFeaturePurchased` / `purchaseAndActivateCcosFeature`) is not the contributor's job.** The Coconut dev team (the reviewer or whoever handles deployment) implements this directly, after a contract is signed, at deploy time.
+- Contributors can *propose* their feature as free / one-time purchase / subscription, but they don't need to implement the actual purchase logic themselves. Follow [monetization_guide.md](./monetization_guide.md) for the monetization process.
+
+The reason for this split: the actual payment integration depends on contract terms (settlement rate, App Store/Play Store product registration, receipt verification) that can't be hard-coded before the contract is finalized.
+
 ## Part B. Guidelines for Proposing Features
 
-Follow the [PR template](../../../.github/PULL_REQUEST_TEMPLATE/ccos_phase1.md) for what to explain in a PR.
+Follow the [PR template](../../../.github/PULL_REQUEST_TEMPLATE/ccos_contribution.md) for what to explain in a PR.
 
 ## 7. What to Clarify Before Proposing a Feature
 

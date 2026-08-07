@@ -1362,3 +1362,6 @@ ccos:
     highlight_new_feature: "new feature"
     highlight_bitcoin_standard: "Bitcoin Standard"
     cta_start_first_pr: "Start your first PR"
+  feature_status:
+    activated: "Activated"
+    purchased: "Purchased"
