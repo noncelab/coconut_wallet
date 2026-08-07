@@ -29,8 +29,6 @@ class LabelImportFilePickerScreen extends StatefulWidget {
 class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScreen> {
   late Future<List<File>> _filesFuture;
   LabelImportStep _step = LabelImportStep.fileSelection;
-  int _swipedItemIndex = -1;
-  double _dragOffset = 0;
   int? _selectedItemIndex;
   String? _fileName;
   List<LabelImportResult> _importResults = [];
@@ -178,44 +176,15 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         return FileListItemCard(
           file: file,
           isSelected: _selectedItemIndex == index,
-          isSwiped: _swipedItemIndex == index && _selectedItemIndex != index,
           onTap: () {
             setState(() {
               if (_selectedItemIndex == index) {
                 _selectedItemIndex = null;
               } else {
                 _selectedItemIndex = index;
-                _swipedItemIndex = -1;
               }
             });
           },
-          onHorizontalDragUpdate: (details) {
-            if (details.delta.dx < 0) {
-              setState(() {
-                _dragOffset = (_dragOffset + details.delta.dx).clamp(-MediaQuery.of(context).size.width, 0);
-                _swipedItemIndex = index;
-              });
-            } else if (details.delta.dx > 0 && _dragOffset < 0) {
-              setState(() {
-                _dragOffset = (_dragOffset + details.delta.dx).clamp(-MediaQuery.of(context).size.width, 0);
-                _swipedItemIndex = index;
-              });
-            }
-          },
-          onHorizontalDragEnd: (details) {
-            final screenWidth = MediaQuery.of(context).size.width;
-            final swipeThresholdPx = screenWidth * 0.2;
-            if (_dragOffset.abs() >= swipeThresholdPx) {
-              _deleteFile(file, index);
-              setState(() {
-                _dragOffset = -screenWidth * 0.25;
-              });
-            } else {
-              _resetSwipeState();
-            }
-          },
-          onDeleteTriggered: () => _deleteFile(file, index),
-          dragOffset: _swipedItemIndex == index ? _dragOffset : 0,
         );
       },
     );
@@ -483,48 +452,9 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     }
   }
 
-  void _deleteFile(File file, int index) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (dialogContext) => CoconutPopup(
-            languageCode: context.read<PreferenceProvider>().language,
-            title: t.label_management_screen.file.delete,
-            description: t.label_management_screen.file.delete_description(fileName: p.basename(file.path)),
-            onTapRight: () => Navigator.of(dialogContext).pop(true),
-            onTapLeft: () => Navigator.of(dialogContext).pop(false),
-            rightButtonText: t.delete,
-            rightButtonColor: context.coconutColors.danger,
-            leftButtonText: t.cancel,
-          ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await file.delete();
-        CoconutToast.showToast(
-          context: context,
-          text: t.label_management_screen.file.delete_success,
-          level: CoconutToastLevel.success,
-        );
-        _refreshFiles();
-      } catch (e) {
-        _resetSwipeState();
-        CoconutToast.showToast(
-          context: context,
-          text: t.label_management_screen.file.delete_failed,
-          level: CoconutToastLevel.error,
-        );
-      }
-    } else {
-      _resetSwipeState();
-    }
-  }
-
   void _refreshFiles() {
     setState(() {
       _filesFuture = LabelJsonLManager().getImportableLabelFiles();
-      _swipedItemIndex = -1;
       _selectedItemIndex = null;
     });
   }
@@ -552,13 +482,6 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     var i = (log(bytes) / log(1024)).floor();
     final size = (bytes / pow(1024, i));
     return '${size.toStringAsFixed(size > 10 || i == 0 ? 0 : decimals)} ${suffixes[i]}';
-  }
-
-  void _resetSwipeState() {
-    setState(() {
-      _swipedItemIndex = -1;
-      _dragOffset = 0;
-    });
   }
 }
 
@@ -615,124 +538,63 @@ class DashedBorderPainter extends CustomPainter {
 class FileListItemCard extends StatelessWidget {
   final File file;
   final bool isSelected;
-  final bool isSwiped;
   final VoidCallback onTap;
-  final GestureDragUpdateCallback onHorizontalDragUpdate;
-  final GestureDragEndCallback onHorizontalDragEnd;
-  final VoidCallback onDeleteTriggered;
-  final double dragOffset;
 
-  const FileListItemCard({
-    super.key,
-    required this.file,
-    required this.isSelected,
-    required this.isSwiped,
-    required this.onTap,
-    required this.onHorizontalDragUpdate,
-    required this.onHorizontalDragEnd,
-    required this.onDeleteTriggered,
-    required this.dragOffset,
-  });
+  const FileListItemCard({super.key, required this.file, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final fileName = p.basename(file.path);
     final modifiedDate = DateFormat('yy-MM-dd HH:mm').format(file.lastModifiedSync());
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              color: context.coconutColors.danger,
-              borderRadius: const BorderRadius.all(Radius.circular(12)),
-            ),
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 24),
-            child: SvgPicture.asset(
-              'assets/svg/trash.svg',
-              width: 24,
-              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-            ),
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        decoration: BoxDecoration(
+          color: context.coconutColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSelected ? context.coconutColors.primaryText : Colors.transparent, width: 1),
         ),
-        GestureDetector(
-          onTap: () {
-            if (dragOffset != 0) {
-              onDeleteTriggered();
-            } else {
-              onTap();
-            }
-          },
-          onHorizontalDragUpdate: onHorizontalDragUpdate,
-          onHorizontalDragEnd: onHorizontalDragEnd,
-          child: Transform.translate(
-            offset: Offset(dragOffset, 0),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                decoration: BoxDecoration(
-                  color: context.coconutColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? context.coconutColors.primaryText : Colors.transparent,
-                    width: 1,
-                  ),
+        child: Row(
+          children: [
+            isSelected
+                ? SvgPicture.asset(
+                  'assets/svg/square_check.svg',
+                  width: 24,
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                )
+                : SvgPicture.asset(
+                  'assets/svg/square.svg',
+                  width: 24,
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                 ),
-                child: Row(
-                  children: [
-                    isSelected
-                        ? SvgPicture.asset(
-                          'assets/svg/square_check.svg',
-                          width: 24,
-                          colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                        )
-                        : SvgPicture.asset(
-                          'assets/svg/square.svg',
-                          width: 24,
-                          colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                        ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            fileName,
-                            style: CoconutTypography.body1_16,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Text(
-                                _LabelImportFilePickerScreenState()._formatBytes(file.lengthSync()),
-                                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                              ),
-                              Text(
-                                ' • ',
-                                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                              ),
-                              Text(
-                                modifiedDate,
-                                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                              ),
-                            ],
-                          ),
-                        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(fileName, style: CoconutTypography.body1_16, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        _LabelImportFilePickerScreenState()._formatBytes(file.lengthSync()),
+                        style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                       ),
-                    ),
-                  ],
-                ),
+                      Text(' • ', style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
+                      Text(
+                        modifiedDate,
+                        style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
