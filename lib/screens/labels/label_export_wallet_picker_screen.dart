@@ -560,9 +560,12 @@ class _WalletListItemCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: isDisabled ? context.coconutColors.surfaceDisabled : context.coconutColors.surface,
+          color: context.coconutColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? context.coconutColors.primaryText : Colors.transparent, width: 1),
+          border: Border.all(
+            color: isSelected ? context.coconutColors.primaryText : context.coconutColors.border,
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
