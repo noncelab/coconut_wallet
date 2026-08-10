@@ -132,35 +132,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   }
 
   Widget _buildNoFilesFound(BuildContext context) {
-    return GestureDetector(
-      onTap: _addExternalFile,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.coconutColors.secondaryText.withOpacity(0.1),
-              ),
-              child: SvgPicture.asset(
-                'assets/svg/file.svg',
-                width: 40,
-                height: 40,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-              ),
-            ),
-            CoconutLayout.spacing_400h,
-            Text(
-              t.label_management_screen.file.not_found,
-              style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
+    return Padding(padding: const EdgeInsets.only(top: 20.0), child: Column(children: [_buildAddFileButton(context)]));
   }
 
   Widget _buildFileListView(BuildContext context, List<File> files) {

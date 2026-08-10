@@ -1120,7 +1120,6 @@ label_management_screen:
     supported_list: "• 取引メモ\n• UTXOタグ（名前/色）\n• UTXO使用ロック"
     import: "BIP-329メモファイル（.jsonl）をインポートしてCoconut Walletに適用します。"
   file:
-    not_found: "ファイルが見つかりません。\nファイルアイコンをタップしてバックアップファイルを追加してください。"
     select: "選択"
     apply: "適用"
     apply_description: "$fileName ファイルを適用しますか？"

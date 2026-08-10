@@ -1049,7 +1049,6 @@ label_management_screen:
     supported_list: "• Transaktionsnotizen\n• UTXO-Tags (Name/Farbe)\n• UTXO-Ausgabensperre"
     import: "Importiert eine BIP-329-Notizdatei (.jsonl) und wendet sie auf Coconut Wallet an."
   file:
-    not_found: "Datei nicht gefunden.\nTippen Sie auf das Dateisymbol, um eine Sicherungsdatei hinzuzufügen."
     select: "Auswählen"
     apply: "Anwenden"
     apply_description: "Möchten Sie die Datei $fileName anwenden?"

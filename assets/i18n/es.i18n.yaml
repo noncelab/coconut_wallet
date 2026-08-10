@@ -1122,7 +1122,6 @@ label_management_screen:
     supported_list: "• Notas de transacción\n• Etiquetas UTXO (Nombre/Color)\n• Bloqueo de uso de UTXO"
     import: "Importa un archivo de notas BIP-329 (.jsonl) y lo aplica a Coconut Wallet."
   file:
-    not_found: "No se encontró el archivo.\nToca el ícono de archivo para agregar un archivo de copia de seguridad."
     select: "Seleccionar"
     apply: "Aplicar"
     apply_description: "¿Deseas aplicar el archivo $fileName?"
