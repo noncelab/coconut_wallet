@@ -78,7 +78,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
             ],
           ),
         ),
-        if (showBottomButtons)
+        if (showBottomButtons) ...[
           Align(
             alignment: Alignment.bottomCenter,
             child: FixedBottomButton(
@@ -87,25 +87,35 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
               onButtonClicked: _onExportButtonPressed,
             ),
           ),
-        if (_step == LabelExportStep.selection && !_isCreateFileSelected)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: FixedBottomTweenButton(
-              leftText: t.delete_label,
-              rightText: t.share,
-              leftButtonRatio: 0.3,
-              isLeftButtonActive: _selectedFileIndices.isNotEmpty,
-              isRightButtonActive: _selectedFileIndices.isNotEmpty,
-              rightButtonClicked: () async {
-                final files = await _filesFuture;
-                final selectedFiles = _selectedFileIndices.map((index) => files[index]).toList();
-                await _shareFiles(selectedFiles);
-              },
-              leftButtonClicked: () async {
-                await _deleteSelectedFile();
-              },
-            ),
+        ] else if (_step == LabelExportStep.selection && !_isCreateFileSelected) ...[
+          FutureBuilder<List<File>>(
+            future: _filesFuture,
+            builder: (context, snapshot) {
+              final noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
+              if (noFiles) {
+                return const SizedBox.shrink();
+              }
+              return Align(
+                alignment: Alignment.bottomCenter,
+                child: FixedBottomTweenButton(
+                  leftText: t.delete_label,
+                  rightText: t.share,
+                  leftButtonRatio: 0.3,
+                  isLeftButtonActive: _selectedFileIndices.isNotEmpty,
+                  isRightButtonActive: _selectedFileIndices.isNotEmpty,
+                  rightButtonClicked: () async {
+                    final files = await _filesFuture;
+                    final selectedFiles = _selectedFileIndices.map((index) => files[index]).toList();
+                    await _shareFiles(selectedFiles);
+                  },
+                  leftButtonClicked: () async {
+                    await _deleteSelectedFile();
+                  },
+                ),
+              );
+            },
           ),
+        ],
         if (_step == LabelExportStep.success)
           Align(
             alignment: Alignment.bottomCenter,
