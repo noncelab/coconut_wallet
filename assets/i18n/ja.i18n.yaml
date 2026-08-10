@@ -1107,12 +1107,12 @@ split_utxo_screen:
 
 label_management_screen:
   title: "メモの管理"
-  subtitle: "記録したメモをインポートまたはエクスポートします。"
+  subtitle: "記録したメモをインポートまたはエクスポートします"
   description: "BIP-329は、ウォレット間でメモをやり取りできるように作成された公開標準です。メモを出力しておけば、デバイスの変更やアプリの再インストールを行っても、入力するだけでそのまま復元できます。"
   import_title: "インポート"
-  import_description: "他のウォレットからメモを読み込みます。"
+  import_description: "他のウォレットからメモを読み込みます"
   export_title: "エクスポート"
-  export_description: "メモをバックアップするか、他のウォレットへ共有します。"
+  export_description: "メモをバックアップするか、他のウォレットへ共有します"
   tooltip:
     title: "ココナッツのメモ"
     description: "取引やUTXOをより簡単に visual / 区別できるように、自分だけの情報を記録できます。"
