@@ -1079,7 +1079,7 @@ label_export_wallet_picker_screen:
   all_wallets: "Alle Wallets"
   create_file: "Datei erstellen"
   view_list: "Liste anzeigen"
-  no_file: "Datei nicht gefunden.\nBitte erstellen Sie zuerst eine Datei unter 'Datei erstellen'."
+  no_file: "Datei nicht gefunden.\nBitte tippen Sie zuerst auf [Datei erstellen], um eine Datei zu erstellen."
   loading_title: "Datei wird erstellt..."
   success_title: "Möchten Sie die Datei teilen?"
   error_title: "Datei konnte nicht erstellt werden"

@@ -1152,7 +1152,7 @@ label_export_wallet_picker_screen:
   all_wallets: "Todas las billeteras"
   create_file: "Crear archivo"
   view_list: "Ver lista"
-  no_file: "Archivo no encontrado.\nPor favor, crea un archivo primero desde 'Crear archivo'."
+  no_file: "No se encontró el archivo.\nPrimero presione [Crear archivo] para generar un archivo."
   loading_title: "Creando archivo..."
   success_title: "¿Quieres compartir el archivo?"
   error_title: "No se pudo crear el archivo"

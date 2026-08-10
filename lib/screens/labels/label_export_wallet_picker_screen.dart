@@ -174,27 +174,33 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   Widget _buildNoFilesFound(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const SizedBox(height: 100),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: context.coconutColors.secondaryText.withOpacity(0.1),
-          ),
-          child: SvgPicture.asset(
-            'assets/svg/file.svg',
-            width: 40,
-            height: 40,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-          ),
-        ),
-        CoconutLayout.spacing_400h,
-        Text(
-          t.label_export_wallet_picker_screen.no_file,
-          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-          textAlign: TextAlign.center,
-        ),
+        () {
+          final fullText = t.label_export_wallet_picker_screen.no_file;
+          final parts = fullText.split(RegExp(r'\[|\]'));
+
+          if (parts.length != 3) {
+            return Text(
+              fullText,
+              style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+              textAlign: TextAlign.center,
+            );
+          }
+
+          return RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+              children: [
+                TextSpan(text: parts[0]),
+                TextSpan(text: '[${parts[1]}]', style: CoconutTypography.body1_16_Bold),
+                TextSpan(text: parts[2]),
+              ],
+            ),
+          );
+        }(),
       ],
     );
   }

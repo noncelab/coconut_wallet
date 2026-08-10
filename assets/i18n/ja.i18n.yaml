@@ -1150,7 +1150,7 @@ label_export_wallet_picker_screen:
   all_wallets: "すべてのウォレット"
   create_file: "ファイルを作成"
   view_list: "リストを表示"
-  no_file: "ファイルが見つかりません。\nまずは「ファイルを作成」からファイルを作成してください。"
+  no_file: "ファイルが見つかりません。\n最初に［ファイル作成］を押してファイルを作成してください。"
   loading_title: "ファイルを作成しています"
   success_title: "ファイルを共有しますか？"
   error_title: "ファイルを作成できません"
