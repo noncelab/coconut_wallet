@@ -762,6 +762,7 @@ select_wallet_with_options_bottom_sheet:
 broadcasting_screen:
   title: "Endgültige Überprüfung"
   description: "Bereit zum Senden mit den folgenden Details"
+  requesting: "Sendeanfrage läuft"
   self_sending: "Dies ist eine Transaktion, die an meine eigene Wallet gesendet wird."
   error_popup_title: "Senden fehlgeschlagen"
   btn_submit: "Senden"
@@ -788,7 +789,13 @@ send_confirm_screen:
   signing_failed_title: "Signieren fehlgeschlagen"
   signing_failed_description: "Beim Laden der Wallet oder Signieren der Transaktion ist ein Problem aufgetreten. Versuche es erneut."
   passphrase_input_title: "Passphrase eingeben"
-  passphrase_input_description: "Gib die Passphrase ein, die du beim Erstellen dieser Wallet verwendet hast."
+  passphrase_input_description: "Diese Wallet benötigt zum Signieren eine Passphrase."
+  authentication_required: "Zum Signieren ist eine Authentifizierung erforderlich"
+  authentication_emphasis: "Authentifizierung"
+  signing_in_progress: "Transaktion wird sicher signiert"
+  signing_emphasis: "signiert"
+  signing_completed: "Signierung abgeschlossen"
+  passphrase_required: "Passphrase für\n${walletName} eingeben"
 signed_psbt_scanner_screen:
   title: "Signierte Tx scannen"
   bbqr_mode_switching: "Wechsle in den BBQR-Modus.\nBitte warten Sie einen Moment."

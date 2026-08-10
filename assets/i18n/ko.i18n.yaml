@@ -771,6 +771,7 @@ select_wallet_with_options_bottom_sheet:
 broadcasting_screen:
   title: "최종 확인"
   description: "아래 정보로 송금할게요"
+  requesting: "전송 요청 중"
   self_sending: "내 지갑으로 보내는 트랜잭션입니다."
   error_popup_title: "브로드캐스팅 실패"
   btn_submit: "보내기"
@@ -797,7 +798,13 @@ send_confirm_screen:
   signing_failed_title: "서명하지 못했어요"
   signing_failed_description: "지갑 정보를 불러오거나 거래에 서명하는 중 문제가 발생했어요. 다시 시도해 주세요."
   passphrase_input_title: "패스프레이즈 입력"
-  passphrase_input_description: "이 지갑을 만들 때 사용한 패스프레이즈를 입력해 주세요."
+  passphrase_input_description: "서명을 하기 위해 패스프레이즈 입력이 필요한 지갑이에요."
+  authentication_required: "서명하려면 인증이 필요해요"
+  authentication_emphasis: "인증"
+  signing_in_progress: "안전하게 서명 중이에요"
+  signing_emphasis: "서명"
+  signing_completed: "서명을 완료했어요"
+  passphrase_required: "${walletName}의\n패스프레이즈를 입력해주세요"
 bitbox02_sign_screen:
   tx_card:
     title: "거래 요약"

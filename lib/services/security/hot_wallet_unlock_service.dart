@@ -27,14 +27,11 @@ class HotWalletUnlockService {
       final biometricsSucceeded = await authProvider.isBiometricsAuthValid();
       if (!biometricsSucceeded) {
         if (!context.mounted) return null;
-        final pinVerified =
-            await CommonBottomSheets.showCustomHeightBottomSheet<bool>(
-              context: context,
-              heightRatio: 0.9,
-              child: const CustomLoadingOverlay(
-                child: PinCheckScreen(allowBiometrics: false),
-              ),
-            );
+        final pinVerified = await CommonBottomSheets.showCustomHeightBottomSheet<bool>(
+          context: context,
+          heightRatio: 0.9,
+          child: const CustomLoadingOverlay(child: PinCheckScreen(allowBiometrics: false)),
+        );
         if (pinVerified != true) return null;
       }
     }

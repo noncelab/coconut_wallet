@@ -774,6 +774,7 @@ select_wallet_with_options_bottom_sheet:
 broadcasting_screen:
   title: "Revisión final"
   description: "Listo para enviar usando los detalles a continuación"
+  requesting: "Solicitando envío"
   self_sending: "Esta es una transacción enviada a mi propia billetera." 
   error_popup_title: "Envío fallido"
   btn_submit: "Enviar"
@@ -800,7 +801,13 @@ send_confirm_screen:
   signing_failed_title: "No se pudo firmar"
   signing_failed_description: "Se produjo un problema al cargar la cartera o firmar la transacción. Inténtalo de nuevo."
   passphrase_input_title: "Introduce la frase de contraseña"
-  passphrase_input_description: "Introduce la frase de contraseña utilizada al crear esta cartera."
+  passphrase_input_description: "Esta cartera requiere una frase de contraseña para firmar."
+  authentication_required: "Se requiere autenticación para firmar"
+  authentication_emphasis: "autenticación"
+  signing_in_progress: "Firmando de forma segura"
+  signing_emphasis: "Firmando"
+  signing_completed: "Firma completada"
+  passphrase_required: "Introduce la frase de contraseña de\n${walletName}"
 bitbox02_sign_screen:
   tx_card:
     title: "Transacción"

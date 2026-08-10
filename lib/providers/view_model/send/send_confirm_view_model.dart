@@ -22,22 +22,41 @@ typedef _HotWalletSigningArguments =
       String unsignedPsbt,
     });
 
+typedef _HotWalletPassphraseValidationArguments =
+    ({String mnemonic, String passphrase, String addressTypeName, int accountIndex, String expectedExtendedPublicKey});
+
+bool _validateHotWalletPassphraseInBackground(_HotWalletPassphraseValidationArguments arguments) {
+  final mnemonicBytes = Uint8List.fromList(utf8.encode(arguments.mnemonic));
+  final passphraseBytes = Uint8List.fromList(utf8.encode(arguments.passphrase));
+  SingleSignatureVault? vault;
+  try {
+    vault = SingleSignatureVault.fromMnemonic(
+      mnemonicBytes,
+      passphrase: passphraseBytes,
+      addressType: AddressType.getAddressTypeFromName(arguments.addressTypeName),
+      accountIndex: arguments.accountIndex,
+    );
+    return vault.keyStore.extendedPublicKey.serialize() == arguments.expectedExtendedPublicKey;
+  } finally {
+    vault?.keyStore.wipeSeed();
+    mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
+    passphraseBytes.fillRange(0, passphraseBytes.length, 0);
+  }
+}
+
 String _signHotWalletInBackground(_HotWalletSigningArguments arguments) {
   final mnemonicBytes = Uint8List.fromList(utf8.encode(arguments.mnemonic));
   final passphraseBytes = Uint8List.fromList(utf8.encode(arguments.passphrase));
   SingleSignatureVault? vault;
   try {
-    final addressType = AddressType.getAddressTypeFromName(
-      arguments.addressTypeName,
-    );
+    final addressType = AddressType.getAddressTypeFromName(arguments.addressTypeName);
     vault = SingleSignatureVault.fromMnemonic(
       mnemonicBytes,
       passphrase: passphraseBytes,
       addressType: addressType,
       accountIndex: arguments.accountIndex,
     );
-    if (vault.keyStore.extendedPublicKey.serialize() !=
-        arguments.expectedExtendedPublicKey) {
+    if (vault.keyStore.extendedPublicKey.serialize() != arguments.expectedExtendedPublicKey) {
       throw StateError('The signer does not match this wallet');
     }
 
@@ -60,9 +79,7 @@ class SendConfirmViewModel extends ChangeNotifier {
   late final double _totalSendAmount;
 
   SendConfirmViewModel(this._sendInfoProvider, this._walletProvider) {
-    _walletListItemBase = _walletProvider.getWalletById(
-      _sendInfoProvider.walletId!,
-    );
+    _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _setTotalSendAmount();
   }
 
@@ -72,48 +89,36 @@ class SendConfirmViewModel extends ChangeNotifier {
   int? get totalUsedAmount => _totalUsedAmount;
   Transaction? get transaction => _sendInfoProvider.transaction;
   List<int> get externalOutputAmounts =>
-      transaction?.outputs
-          .where((output) => output.isChangeOutput != true)
-          .map((output) => output.amount)
-          .toList() ??
+      transaction?.outputs.where((output) => output.isChangeOutput != true).map((output) => output.amount).toList() ??
       [];
   List<int> get changeOutputAmounts =>
-      transaction?.outputs
-          .where((output) => output.isChangeOutput == true)
-          .map((output) => output.amount)
-          .toList() ??
+      transaction?.outputs.where((output) => output.isChangeOutput == true).map((output) => output.amount).toList() ??
       [];
   List<int?> get inputAmounts =>
-      _unsignedPsbt?.inputs
-          .map((input) => input.witnessUtxo?.amount)
-          .toList() ??
+      _unsignedPsbt?.inputs.map((input) => input.witnessUtxo?.amount).toList() ??
       List<int?>.filled(transaction?.inputs.length ?? 0, null);
   double? get totalSendAmount => _totalSendAmount; // BTC
-  WalletImportSource get walletImportSource =>
-      _walletListItemBase.walletImportSource;
-  bool get isHotWallet =>
-      _walletListItemBase.hasLocalKey &&
-      _walletListItemBase.localSignerMetadata != null;
+  WalletImportSource get walletImportSource => _walletListItemBase.walletImportSource;
+  bool get isHotWallet => _walletListItemBase.hasLocalKey && _walletListItemBase.localSignerMetadata != null;
   bool get shouldEnterPassphraseWhenSigning =>
-      _walletListItemBase.localSignerMetadata?.enterPassphraseWhenSigning ??
-      false;
-  String? get hotWalletSecretStorageKey =>
-      _walletListItemBase.localSignerMetadata?.secureStorageKey;
+      _walletListItemBase.localSignerMetadata?.enterPassphraseWhenSigning ?? false;
+  String? get hotWalletSecretStorageKey => _walletListItemBase.localSignerMetadata?.secureStorageKey;
 
   String get walletFingerprint {
     final wallet = _walletListItemBase.walletBase;
-    if (wallet is SingleSignatureWallet)
+    if (wallet is SingleSignatureWallet) {
       return wallet.keyStore.masterFingerprint;
+    }
     return '';
   }
 
-  bool get isSingleSigWallet =>
-      _walletListItemBase.walletType == WalletType.singleSignature;
+  bool get isSingleSigWallet => _walletListItemBase.walletType == WalletType.singleSignature;
 
   String? get walletExtendedPublicKey {
     final wallet = _walletListItemBase.walletBase;
-    if (wallet is SingleSignatureWallet)
+    if (wallet is SingleSignatureWallet) {
       return wallet.keyStore.extendedPublicKey.serialize();
+    }
     return null;
   }
 
@@ -125,9 +130,7 @@ class SendConfirmViewModel extends ChangeNotifier {
 
     final trezorDevice = TrezorDevice.lastConnected;
     if (trezorDevice != null && trezorDevice.cachedXpub == xpub) {
-      final connected = await TrezorBleConnectivityService.isDeviceConnected(
-        trezorDevice.transport,
-      );
+      final connected = await TrezorBleConnectivityService.isDeviceConnected(trezorDevice.transport);
       if (connected) return WalletImportSource.trezor;
     }
 
@@ -141,29 +144,19 @@ class SendConfirmViewModel extends ChangeNotifier {
   }
 
   void _setTotalSendAmount() {
-    final externalOutputAmountSum = externalOutputAmounts.fold<int>(
-      0,
-      (sum, amount) => sum + amount,
-    );
-    _totalSendAmount =
-        UnitUtil.convertSatoshiToBitcoin(
-          externalOutputAmountSum,
-        ).roundTo8Digits();
+    final externalOutputAmountSum = externalOutputAmounts.fold<int>(0, (sum, amount) => sum + amount);
+    _totalSendAmount = UnitUtil.convertSatoshiToBitcoin(externalOutputAmountSum).roundTo8Digits();
   }
 
   Future<void> setEstimatedFeeAndTotalUsedAmount() async {
     _unsignedPsbt = await _generateUnsignedPsbt();
-    _totalUsedAmount =
-        UnitUtil.convertBitcoinToSatoshi(_totalSendAmount) + _unsignedPsbt!.fee;
+    _totalUsedAmount = UnitUtil.convertBitcoinToSatoshi(_totalSendAmount) + _unsignedPsbt!.fee;
     notifyListeners();
   }
 
   Future<Psbt> _generateUnsignedPsbt() async {
     assert(_sendInfoProvider.transaction != null);
-    return Psbt.fromTransaction(
-      _sendInfoProvider.transaction!,
-      _walletListItemBase.walletBase,
-    );
+    return Psbt.fromTransaction(_sendInfoProvider.transaction!, _walletListItemBase.walletBase);
   }
 
   void setTxWaitingForSign() {
@@ -171,16 +164,10 @@ class SendConfirmViewModel extends ChangeNotifier {
     _sendInfoProvider.setTxWaitingForSign(_unsignedPsbt!.serialize());
   }
 
-  Future<void> signHotWallet({
-    required String mnemonic,
-    required String passphrase,
-  }) async {
+  Future<void> signHotWallet({required String mnemonic, required String passphrase}) async {
     final metadata = _walletListItemBase.localSignerMetadata;
     final watchOnlyWallet = _walletListItemBase.walletBase;
-    if (!isHotWallet ||
-        metadata == null ||
-        watchOnlyWallet is! SingleSignatureWallet ||
-        _unsignedPsbt == null) {
+    if (!isHotWallet || metadata == null || watchOnlyWallet is! SingleSignatureWallet || _unsignedPsbt == null) {
       throw StateError('Local signer is not available');
     }
 
@@ -191,10 +178,25 @@ class SendConfirmViewModel extends ChangeNotifier {
       passphrase: passphrase,
       addressTypeName: watchOnlyWallet.addressType.name,
       accountIndex: metadata.accountIndex,
-      expectedExtendedPublicKey:
-          watchOnlyWallet.keyStore.extendedPublicKey.serialize(),
+      expectedExtendedPublicKey: watchOnlyWallet.keyStore.extendedPublicKey.serialize(),
       unsignedPsbt: unsignedPsbt,
     ));
     _sendInfoProvider.setSignedResult(signedPsbt);
+  }
+
+  Future<bool> validateHotWalletPassphrase({required String mnemonic, required String passphrase}) async {
+    final metadata = _walletListItemBase.localSignerMetadata;
+    final wallet = _walletListItemBase.walletBase;
+    if (!isHotWallet || metadata == null || wallet is! SingleSignatureWallet) {
+      return false;
+    }
+
+    return compute(_validateHotWalletPassphraseInBackground, (
+      mnemonic: mnemonic,
+      passphrase: passphrase,
+      addressTypeName: wallet.addressType.name,
+      accountIndex: metadata.accountIndex,
+      expectedExtendedPublicKey: wallet.keyStore.extendedPublicKey.serialize(),
+    ));
   }
 }

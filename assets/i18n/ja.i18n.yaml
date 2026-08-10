@@ -772,6 +772,7 @@ select_wallet_with_options_bottom_sheet:
 broadcasting_screen:
   title: "最終確認"
   description: "以下の詳細で送信する準備ができました"
+  requesting: "送信をリクエスト中"
   self_sending: "これは自分のウォレットへ送信するトランザクションです。"
   error_popup_title: "送信失敗"
   btn_submit: "送信"
@@ -798,7 +799,13 @@ send_confirm_screen:
   signing_failed_title: "署名できませんでした"
   signing_failed_description: "ウォレットの読み込みまたは取引への署名中に問題が発生しました。もう一度お試しください。"
   passphrase_input_title: "パスフレーズを入力"
-  passphrase_input_description: "このウォレットを作成したときに使用したパスフレーズを入力してください。"
+  passphrase_input_description: "署名するにはパスフレーズの入力が必要なウォレットです。"
+  authentication_required: "署名するには認証が必要です"
+  authentication_emphasis: "認証"
+  signing_in_progress: "安全に署名しています"
+  signing_emphasis: "署名"
+  signing_completed: "署名が完了しました"
+  passphrase_required: "${walletName}の\nパスフレーズを入力してください"
 bitbox02_sign_screen:
   tx_card:
     title: "取引情報"

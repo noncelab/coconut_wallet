@@ -33,6 +33,20 @@ class AppGuard extends StatefulWidget {
     _isPrivacyEnabled = false;
   }
 
+  /// 생체인증처럼 앱이 일시적으로 inactive 상태가 되는 작업 동안 화면보호기를
+  /// 비활성화하고, 성공·취소·예외 여부와 관계없이 이전 상태로 복원합니다.
+  static Future<T> runWithoutPrivacyScreen<T>(Future<T> Function() action) async {
+    final wasPrivacyEnabled = _isPrivacyEnabled;
+    disablePrivacyScreen();
+    try {
+      return await action();
+    } finally {
+      if (wasPrivacyEnabled) {
+        enablePrivacyScreen();
+      }
+    }
+  }
+
   final Widget child;
   const AppGuard({super.key, required this.child});
 

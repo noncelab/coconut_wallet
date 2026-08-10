@@ -241,6 +241,8 @@ flutter:
     - assets/lottie/check-complete.json
     - assets/lottie/note-write-pencil.json
     - assets/lottie/app-lock-security.json
+    - assets/lottie/signature.json
+    - assets/lottie/spinning-check.json
     - assets/images/hand-with-laid-heart.png
     - assets/images/x-logo.jpg
     - assets/images/discord-logo.png

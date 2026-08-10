@@ -6,6 +6,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
@@ -829,10 +830,12 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
 
       final passphraseToStore = _enterPassphraseWhenSigning ? Uint8List(0) : Uint8List.fromList(passphrase);
       try {
-        await secretRepository.create(
-          storageKey: storageKey,
-          mnemonic: generatedMnemonic,
-          passphrase: passphraseToStore,
+        await AppGuard.runWithoutPrivacyScreen(
+          () => secretRepository.create(
+            storageKey: storageKey,
+            mnemonic: generatedMnemonic,
+            passphrase: passphraseToStore,
+          ),
         );
       } finally {
         passphraseToStore.fillRange(0, passphraseToStore.length, 0);

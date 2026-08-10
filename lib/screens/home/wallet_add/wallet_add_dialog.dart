@@ -30,10 +30,7 @@ class WalletAddDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final slideDownAnimation = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOutCubic,
-    );
+    final slideDownAnimation = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
 
     return Stack(
       children: [
@@ -42,20 +39,12 @@ class WalletAddDialog extends StatelessWidget {
           left: 0,
           right: 0,
           child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, -1),
-              end: Offset.zero,
-            ).animate(slideDownAnimation),
+            position: Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(slideDownAnimation),
             child: Material(
               elevation: 4,
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(12),
-              ),
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
               color: context.coconutColors.homeBackground,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: _buildContent(),
-              ),
+              child: Padding(padding: const EdgeInsets.all(16), child: _buildContent()),
             ),
           ),
         ),
@@ -72,23 +61,13 @@ class WalletAddDialog extends StatelessWidget {
           _WalletActionButton(
             iconPath: 'assets/svg/wallet-eyes.svg',
             title: t.wallet_home_screen.wallet_type_selection.watch_only.title,
-            description:
-                t
-                    .wallet_home_screen
-                    .wallet_type_selection
-                    .watch_only
-                    .description,
+            description: t.wallet_home_screen.wallet_type_selection.watch_only.description,
             onPressed: onWatchOnlySelected,
           ),
           _WalletActionButton(
             iconPath: 'assets/svg/wallet-add-hot.svg',
             title: t.wallet_home_screen.wallet_type_selection.hot_wallet.title,
-            description:
-                t
-                    .wallet_home_screen
-                    .wallet_type_selection
-                    .hot_wallet
-                    .description,
+            description: t.wallet_home_screen.wallet_type_selection.hot_wallet.description,
             onPressed: onHotWalletSelected,
           ),
         ],
@@ -98,16 +77,8 @@ class WalletAddDialog extends StatelessWidget {
             WalletImportSource.keystone,
             WalletImportSource.seedSigner,
           ]),
-          _buildWalletRow([
-            WalletImportSource.jade,
-            WalletImportSource.coldCard,
-            WalletImportSource.krux,
-          ]),
-          _buildWalletRow([
-            WalletImportSource.passport,
-            WalletImportSource.trezor,
-            WalletImportSource.bitbox02,
-          ]),
+          _buildWalletRow([WalletImportSource.jade, WalletImportSource.coldCard, WalletImportSource.krux]),
+          _buildWalletRow([WalletImportSource.passport, WalletImportSource.trezor, WalletImportSource.bitbox02]),
           CoconutLayout.spacing_400h,
           _buildWalletRow([WalletImportSource.extendedPublicKey]),
         ],
@@ -121,8 +92,7 @@ class WalletAddDialog extends StatelessWidget {
           _WalletActionButton(
             iconPath: 'assets/svg/wallet-import-hot.svg',
             title: t.wallet_home_screen.hot_wallet_add.restore.title,
-            description:
-                t.wallet_home_screen.hot_wallet_add.restore.description,
+            description: t.wallet_home_screen.hot_wallet_add.restore.description,
             onPressed: onRestoreHotWallet,
           ),
         ],
@@ -149,10 +119,7 @@ class WalletAddDialog extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
-        Container(
-          height: MediaQuery.paddingOf(context).top,
-          color: context.coconutColors.homeBackground,
-        ),
+        Container(height: MediaQuery.paddingOf(context).top, color: context.coconutColors.homeBackground),
         Container(
           width: MediaQuery.sizeOf(context).width,
           height: kToolbarHeight,
@@ -173,19 +140,14 @@ class WalletAddDialog extends StatelessWidget {
                     'assets/svg/close-bold.svg',
                     width: 14,
                     height: 14,
-                    colorFilter: ColorFilter.mode(
-                      context.coconutColors.iconDefault,
-                      BlendMode.srcIn,
-                    ),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
                   ),
                 ),
               ),
               const Spacer(),
               Text(
                 t.wallet_add_scanner_screen.add_wallet,
-                style: CoconutTypography.body1_16_Bold.setColor(
-                  context.coconutColors.primaryText,
-                ),
+                style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
               ),
               const Spacer(),
               const SizedBox(width: 40),
@@ -224,10 +186,7 @@ class _WalletActionButton extends StatelessWidget {
               iconPath,
               width: 24,
               height: 19,
-              colorFilter: ColorFilter.mode(
-                context.coconutColors.iconDefault,
-                BlendMode.srcIn,
-              ),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
             ),
             CoconutLayout.spacing_400w,
             Expanded(
@@ -237,18 +196,14 @@ class _WalletActionButton extends StatelessWidget {
                 children: [
                   Text(
                     description,
-                    style: CoconutTypography.body3_12.setColor(
-                      context.coconutColors.primaryText,
-                    ),
+                    style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
                   CoconutLayout.spacing_50h,
                   Text(
                     title,
-                    style: CoconutTypography.body2_14_Bold.setColor(
-                      context.coconutColors.primaryText,
-                    ),
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
@@ -266,10 +221,7 @@ class _WalletImportSourceButton extends StatelessWidget {
   final WalletImportSource walletImportSource;
   final VoidCallback onPressed;
 
-  const _WalletImportSourceButton({
-    required this.walletImportSource,
-    required this.onPressed,
-  });
+  const _WalletImportSourceButton({required this.walletImportSource, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -293,9 +245,7 @@ class _WalletImportSourceButton extends StatelessWidget {
           CoconutLayout.spacing_100h,
           Text(
             walletImportSource.displayName,
-            style: CoconutTypography.body2_14.setColor(
-              context.coconutColors.primaryText,
-            ),
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
             textAlign: TextAlign.center,
           ),
         ],
@@ -317,18 +267,14 @@ class _WalletImportSourceButton extends StatelessWidget {
               children: [
                 Text(
                   walletImportSource.displayName,
-                  style: CoconutTypography.body2_14.setColor(
-                    context.coconutColors.primaryText,
-                  ),
+                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
                 CoconutLayout.spacing_50h,
                 Text(
                   t.wallet_add_scanner_screen.self_description,
-                  style: CoconutTypography.body3_12.setColor(
-                    context.coconutColors.primaryText,
-                  ),
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2,
                 ),
@@ -345,10 +291,7 @@ class _WalletImportSourceButton extends StatelessWidget {
       walletImportSource.externalWalletIconPath,
       width: 24,
       height: 24,
-      colorFilter: ColorFilter.mode(
-        context.coconutColors.iconDefault,
-        BlendMode.srcIn,
-      ),
+      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
     );
   }
 }

@@ -1,11 +1,7 @@
 import 'dart:convert';
 
 class EncryptedValue {
-  const EncryptedValue({
-    required this.nonce,
-    required this.cipherText,
-    required this.mac,
-  });
+  const EncryptedValue({required this.nonce, required this.cipherText, required this.mac});
 
   final String nonce;
   final String cipherText;
@@ -17,11 +13,7 @@ class EncryptedValue {
     mac: json['mac'] as String,
   );
 
-  Map<String, dynamic> toJson() => {
-    'nonce': nonce,
-    'cipherText': cipherText,
-    'mac': mac,
-  };
+  Map<String, dynamic> toJson() => {'nonce': nonce, 'cipherText': cipherText, 'mac': mac};
 }
 
 enum DeviceKeyProtection {
@@ -30,21 +22,14 @@ enum DeviceKeyProtection {
   iosSecureEnclave,
   secureStorage;
 
-  factory DeviceKeyProtection.fromName(
-    String name,
-  ) => DeviceKeyProtection.values.firstWhere(
+  factory DeviceKeyProtection.fromName(String name) => DeviceKeyProtection.values.firstWhere(
     (value) => value.name == name,
-    orElse:
-        () => throw const FormatException('Unsupported device key protection'),
+    orElse: () => throw const FormatException('Unsupported device key protection'),
   );
 }
 
 class DeviceWrappedDek {
-  const DeviceWrappedDek({
-    required this.protection,
-    required this.encryptedDek,
-    this.alias,
-  });
+  const DeviceWrappedDek({required this.protection, required this.encryptedDek, this.alias});
 
   final DeviceKeyProtection protection;
 
@@ -56,14 +41,11 @@ class DeviceWrappedDek {
   /// SecureStorage fallback은 AES-256-GCM 값 전체를 사용한다.
   final EncryptedValue encryptedDek;
 
-  factory DeviceWrappedDek.fromJson(Map<String, dynamic> json) =>
-      DeviceWrappedDek(
-        protection: DeviceKeyProtection.fromName(json['protection'] as String),
-        alias: json['alias'] as String?,
-        encryptedDek: EncryptedValue.fromJson(
-          json['encryptedDek'] as Map<String, dynamic>,
-        ),
-      );
+  factory DeviceWrappedDek.fromJson(Map<String, dynamic> json) => DeviceWrappedDek(
+    protection: DeviceKeyProtection.fromName(json['protection'] as String),
+    alias: json['alias'] as String?,
+    encryptedDek: EncryptedValue.fromJson(json['encryptedDek'] as Map<String, dynamic>),
+  );
 
   Map<String, dynamic> toJson() => {
     'protection': protection.name,
@@ -73,11 +55,7 @@ class DeviceWrappedDek {
 }
 
 class HotWalletSecret {
-  const HotWalletSecret({
-    required this.version,
-    required this.encryptedPayload,
-    required this.deviceWrappedDek,
-  });
+  const HotWalletSecret({required this.version, required this.encryptedPayload, required this.deviceWrappedDek});
 
   static const int currentVersion = 1;
 
@@ -93,12 +71,8 @@ class HotWalletSecret {
     }
     return HotWalletSecret(
       version: version,
-      encryptedPayload: EncryptedValue.fromJson(
-        json['encryptedPayload'] as Map<String, dynamic>,
-      ),
-      deviceWrappedDek: DeviceWrappedDek.fromJson(
-        json['deviceWrappedDek'] as Map<String, dynamic>,
-      ),
+      encryptedPayload: EncryptedValue.fromJson(json['encryptedPayload'] as Map<String, dynamic>),
+      deviceWrappedDek: DeviceWrappedDek.fromJson(json['deviceWrappedDek'] as Map<String, dynamic>),
     );
   }
 
