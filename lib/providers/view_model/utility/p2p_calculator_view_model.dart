@@ -160,22 +160,26 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   /// Fiat → Sats 계산 (수수료 차감: × (1 - fee))
-  int calculateSatsFromFiat(int fiatAmount) {
+  /// [fiatMinorUnits]: 통화 최소단위(minor unit, 예: cent) 정수
+  int calculateSatsFromFiat(int fiatMinorUnits) {
     final price = _getBtcPrice();
     if (price == 0) return 0;
 
+    final minorUnitsPrice = price * _fiatCode.minorUnitsPerWhole;
     final discountMultiplier = 1.0 - (_feeRate / 100.0);
-    final btcAmount = (fiatAmount * discountMultiplier) / price;
+    final btcAmount = (fiatMinorUnits * discountMultiplier) / minorUnitsPrice;
     return (btcAmount * 100000000).round();
   }
 
   /// Sats → Fiat 계산 (수수료 추가: × (1 + fee))
+  /// 반환값은 통화 최소단위(minor unit, 예: cent) 정수
   int calculateFiatFromSats(int satsAmount) {
     final price = _getBtcPrice();
     if (price == 0) return 0;
+    final minorUnitsPrice = price * _fiatCode.minorUnitsPerWhole;
     final premiumMultiplier = 1.0 + (_feeRate / 100.0);
     final btcAmount = satsAmount / 100000000;
-    return (btcAmount * price * premiumMultiplier).round();
+    return (btcAmount * minorUnitsPrice * premiumMultiplier).round();
   }
 
   int _getBtcPrice() {
@@ -229,8 +233,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         case FiatCode.EUR:
           inputValue = 50;
       }
-      // Fiat → Sats
-      final sats = calculateSatsFromFiat(inputValue);
+      // Fiat → Sats (inputValue는 whole unit 기준이므로 minor unit으로 변환)
+      final sats = calculateSatsFromFiat(inputValue * _fiatCode.minorUnitsPerWhole);
       return formatSatsResult(sats);
     } else {
       if (!_isNetworkOn) {
@@ -241,7 +245,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
       inputValue = 50000; // 50,000 sats = 0.0005 BTC
       // Sats → Fiat
       final fiat = calculateFiatFromSats(inputValue);
-      return fiat.toThousandsSeparatedString();
+      return formatFiatResult(fiat);
     }
   }
 
@@ -280,8 +284,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     return result;
   }
 
-  String formatFiatResult(int fiat) {
-    return fiat.toThousandsSeparatedString();
+  /// [fiatMinorUnits]: 통화 최소단위(minor unit, 예: cent) 정수
+  String formatFiatResult(int fiatMinorUnits) {
+    return FiatUtil.formatMinorUnits(fiatMinorUnits, _fiatCode);
   }
 
   Future<void> onFiatUnitChange() async {
