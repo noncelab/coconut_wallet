@@ -328,7 +328,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           Column(
             children: [
               SizedBox(
-                height: 125,
+                height: 150,
                 child: PageView.builder(
                   itemCount: _importResults.length,
                   onPageChanged: (index) {

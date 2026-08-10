@@ -422,7 +422,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
             ],
           ),
           SizedBox(
-            height: 120,
+            height: 150,
             child: PageView.builder(
               itemCount: _exportResults.length,
               onPageChanged: (index) => setState(() => _currentPage = index),
