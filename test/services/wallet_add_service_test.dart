@@ -55,6 +55,54 @@ void main() {
       );
     });
 
+    test('Passport(Electrum 지갑 파일) 형식의 UR bytes로 지갑을 생성', () {
+      // 실기기에서 확인된 Passport 실제 Electrum 포맷 예시
+      const passportVpub =
+          'vpub5ZLNSrZLb4chuiUDgj8WuRdmo9Y9idBamnhu76mvNzx68a2pTNsnm8YJgnhi6zBKLAqogCYaqqXef15TFaxHtZHjeSQhoD3eMFLmURycndC';
+      final ur = buildUrBytes({
+        'seed_version': 17,
+        'use_encryption': false,
+        'wallet_type': 'standard',
+        'keystore': {
+          'ckcc_xfp': 1894494883, // little-endian 4바이트 == a3b2eb70
+          'ckcc_xpub':
+              'tpubDDNXaRirbhf7t73JodgrXXA9UCvhbFfe9eLe2ScqUvTjz4Kz2v419hXQyEhfdJSPwMcKnjFaJG4o7koC5qdZNU7ESiYreZLrUf4U1WTP2gA',
+          'hw_type': 'passport',
+          'type': 'hardware',
+          'label': 'Passport Acct. 0 (a3b2eb70)',
+          'derivation': "m/84'/1'/0'",
+          'xpub': passportVpub,
+        },
+      });
+
+      final wallet = walletAddService.createWalletFromUrBytes(
+        ur: ur,
+        name: '패스포트',
+        walletImportSource: WalletImportSource.passport,
+      );
+
+      expect(wallet.name, '패스포트');
+      expect(wallet.walletImportSource, WalletImportSource.passport);
+      expect(wallet.descriptor, contains(passportVpub));
+      expect(wallet.descriptor.toLowerCase(), contains('a3b2eb70'));
+    });
+
+    test('Electrum 지갑 파일이지만 bip84가 아닌 파생 경로면 예외 발생', () {
+      final ur = buildUrBytes({
+        'wallet_type': 'standard',
+        'keystore': {'ckcc_xfp': 1894494883, 'derivation': "m/49'/1'/0'", 'xpub': vpub},
+      });
+
+      expect(
+        () => walletAddService.createWalletFromUrBytes(
+          ur: ur,
+          name: '패스포트',
+          walletImportSource: WalletImportSource.passport,
+        ),
+        throwsA(isA<UnsupportedWalletTypeException>()),
+      );
+    });
+
     test('JSON이 아닌 UR bytes는 예외 발생', () {
       final payload = cbor.encode(CborBytes(utf8.encode('not json')));
       final ur = UR('bytes', Uint8List.fromList(payload));

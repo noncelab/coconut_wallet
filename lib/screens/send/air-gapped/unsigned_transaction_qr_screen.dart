@@ -5,7 +5,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/providers/view_model/send/air-gapped/unsigned_transaction_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/send/air-gapped/unsigned_transaction_qr_view_model.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/adaptive_qr_image.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
@@ -367,6 +367,26 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
               _em('${t.unsigned_tx_qr_screen.guide_krux.step2_em}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step3}'),
               _em(t.unsigned_tx_qr_screen.guide_krux.step3_em),
+            ];
+          }
+        }
+      case WalletImportSource.passport:
+        {
+          if (!hasEnglishWordOrder) {
+            return [
+              TextSpan(text: '${t.third_party.passport} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_passport.step1} '),
+              _em(t.unsigned_tx_qr_screen.guide_passport.step1_em),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_passport.step1_end}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_passport.step2}'),
+            ];
+          } else {
+            return [
+              TextSpan(text: '${t.third_party.passport} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_passport.step1}'),
+              TextSpan(text: '${t.unsigned_tx_qr_screen.guide_passport.step1_end} '),
+              _em('${t.unsigned_tx_qr_screen.guide_passport.step1_em}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_passport.step2}'),
             ];
           }
         }
