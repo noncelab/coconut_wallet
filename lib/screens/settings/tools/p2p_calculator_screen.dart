@@ -155,9 +155,31 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           );
           _isUpdatingController = false;
         }
+      } else if (!_inputFocusNode.hasFocus && _viewModel.inputAssetType == InputAssetType.fiat) {
+        _stripTrailingZeroDecimalOnFocusLost();
       }
     }
     setState(() {});
+  }
+
+  /// 소수점 구분자 뒤 소수부가 비어있거나 전부 0이면(예: "50.", "50.0", "50.00")
+  /// 포커스 아웃 시 소수점 이하를 통째로 제거한다.
+  void _stripTrailingZeroDecimalOnFocusLost() {
+    final decimalSeparator = NumberFormatConfig.instance.decimalSeparator;
+    final text = _inputController.text;
+    final sepIndex = text.indexOf(decimalSeparator);
+    if (sepIndex == -1) return;
+
+    final decimalPart = text.substring(sepIndex + decimalSeparator.length);
+    if (decimalPart.isNotEmpty && (int.tryParse(decimalPart) ?? -1) != 0) return;
+
+    final trimmed = text.substring(0, sepIndex);
+    _isUpdatingController = true;
+    _inputController.value = TextEditingValue(
+      text: trimmed,
+      selection: TextSelection.collapsed(offset: trimmed.length),
+    );
+    _isUpdatingController = false;
   }
 
   void _formatPremiumOnFocusLost() {
@@ -263,22 +285,51 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _viewModel.setInputAmount(minorUnits);
   }
 
-  /// fiatText(예: "50.25")를 통화 최소단위(minor unit, 예: cent) 정수로 변환
+  /// fiatText(예: "50.25", 항상 '.'을 소수점으로 쓰는 canonical 포맷)를 통화 최소단위(minor unit, 예: cent) 정수로 변환
+  /// - fiatText는 이미 filterNumericInput 등을 거쳐 로케일 구분자가 없는 canonical 포맷이므로
+  ///   toDoubleSafe()(로케일 구분자 기준 정규화)를 쓰면 '.'이 그룹 구분자로 오인되어(es/de 등) 값이 왜곡된다.
   int _parseFiatTextToMinorUnits(String fiatText) {
     if (fiatText.isEmpty || fiatText == '.') return 0;
-    final value = fiatText.toDoubleSafe() ?? 0;
+    final value = double.tryParse(fiatText) ?? 0;
     return (value * _viewModel.fiatCode.minorUnitsPerWhole).round();
   }
 
   String _formatFiatInputText(String fiatText) {
     final decimalDigits = _viewModel.fiatCode.decimalDigits;
-    final displayText = _formatLocaleDecimalText(fiatText);
+    final displayText = _formatLocaleDecimalText(_stripTrailingZeroDecimal(fiatText));
     return FiatAmountInputFormatter(decimalPlaces: decimalDigits)
         .formatEditUpdate(
           const TextEditingValue(),
           TextEditingValue(text: displayText, selection: TextSelection.collapsed(offset: displayText.length)),
         )
         .text;
+  }
+
+  /// 소수부가 전부 0이면(예: "10.00") 소수점 이하를 제거해 "10"으로 반환한다.
+  /// _formatFiatInputText는 프로그래매틱 갱신(Quick Add 등)에서만 호출되므로, 타이핑 중인 값은 영향받지 않는다.
+  String _stripTrailingZeroDecimal(String fiatText) {
+    final dotIndex = fiatText.indexOf('.');
+    if (dotIndex == -1) return fiatText;
+    final decimalPart = fiatText.substring(dotIndex + 1);
+    if (decimalPart.isEmpty || (int.tryParse(decimalPart) ?? 0) == 0) {
+      return fiatText.substring(0, dotIndex);
+    }
+    return fiatText;
+  }
+
+  /// [_viewModel.formatFiatResult]의 결과(로케일 포맷, 예: "50,00")에서 소수부가 전부 0이면
+  /// 소수점 이하를 제거한다. 결과/명세서(bill) 등 표시 전용 용도로만 사용한다.
+  String _formatFiatResultForDisplay(int fiatMinorUnits) {
+    final formatted = _viewModel.formatFiatResult(fiatMinorUnits);
+    final decimalSep = NumberFormatConfig.instance.decimalSeparator;
+    final sepIndex = formatted.indexOf(decimalSep);
+    if (sepIndex == -1) return formatted;
+
+    final decimalPart = formatted.substring(sepIndex + decimalSep.length);
+    if (decimalPart.isNotEmpty && (int.tryParse(decimalPart) ?? -1) == 0) {
+      return formatted.substring(0, sepIndex);
+    }
+    return formatted;
   }
 
   void _processBtcInput(String sanitized, {required bool shouldUpdateController}) {
@@ -519,7 +570,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
       // BTC → Fiat로 전환: result는 통화 최소단위(minor unit) 정수
-      final formatted = _viewModel.formatFiatResult(result);
+      final formatted = _formatFiatResultForDisplay(result);
       _inputController.value = TextEditingValue(
         text: formatted,
         selection: TextSelection.collapsed(offset: formatted.length),
@@ -569,7 +620,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
       return _viewModel.formatSatsResult(result);
     } else {
-      return _viewModel.formatFiatResult(result);
+      return _formatFiatResultForDisplay(result);
     }
   }
 
@@ -623,8 +674,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     final btcPriceStr = _viewModel.btcPrice?.toThousandsSeparatedString() ?? '-';
     final fiatAmountStr =
         _viewModel.inputAssetType == InputAssetType.fiat
-            ? _viewModel.formatFiatResult(input)
-            : _viewModel.formatFiatResult(result);
+            ? _formatFiatResultForDisplay(input)
+            : _formatFiatResultForDisplay(result);
     final btcAmountStr =
         _viewModel.inputAssetType == InputAssetType.fiat
             ? _viewModel.formatSatsResult(result)
@@ -689,7 +740,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                                     ? _viewModel.fiatCode.code
                                     : _viewModel.currentUnit.symbol,
                                 _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? _viewModel.formatFiatResult(input)
+                                    ? _formatFiatResultForDisplay(input)
                                     : _viewModel.formatSatsResult(input),
                                 canCopy: true,
                               ),
@@ -701,7 +752,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                                     : _viewModel.fiatCode.code,
                                 _viewModel.inputAssetType == InputAssetType.fiat
                                     ? _viewModel.formatSatsResult(result)
-                                    : _viewModel.formatFiatResult(result),
+                                    : _formatFiatResultForDisplay(result),
                                 canCopy: true,
                               ),
                               const SizedBox(height: 24),
@@ -756,7 +807,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                         premiumSatsStr,
                         _viewModel.inputAssetType == InputAssetType.fiat ? result : input,
                       ),
-                      CoconutLayout.spacing_600h,
+                      CoconutLayout.spacing_500h,
                     ],
                   ),
                   Positioned(
@@ -785,25 +836,32 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            label,
-            style: CoconutTypography.body3_12.copyWith(
-              height: 1.0,
-              letterSpacing: -0.12,
-              fontWeight: FontWeight.w500,
-              color: context.coconutColors.secondaryText,
+          Flexible(
+            child: Text(
+              label,
+              style: CoconutTypography.body3_12.copyWith(
+                height: 1.0,
+                letterSpacing: -0.12,
+                fontWeight: FontWeight.w500,
+                color: context.coconutColors.secondaryText,
+              ),
             ),
           ),
+          const SizedBox(width: 8),
           if (canCopy)
             _CopyableText(value: value)
           else
-            Text(
-              value,
-              style: CoconutTypography.body2_14_Number.copyWith(
-                color: context.coconutColors.primaryText,
-                height: valueLineHeight,
-                letterSpacing: -0.28,
+            Flexible(
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: CoconutTypography.body2_14_Number.copyWith(
+                  color: context.coconutColors.primaryText,
+                  height: valueLineHeight,
+                  letterSpacing: -0.28,
+                ),
               ),
             ),
         ],
@@ -822,7 +880,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     int satsAmount,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         children: [
           CoconutUnderlinedButton(
@@ -1653,7 +1711,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         final nextWholeUnitsText = (nextMinorUnits / fiatCode.minorUnitsPerWhole).toStringAsFixed(
           fiatCode.decimalDigits,
         );
-        _handleAmountInputChanged(nextWholeUnitsText);
+        _handleAmountInputChanged(_formatLocaleDecimalText(nextWholeUnitsText));
       } else if (_viewModel.currentUnit.isBasedOnSatoshi) {
         final currentValue = _inputController.text.toIntSafe() ?? 0;
         final addValue = value.toIntSafe() ?? 0;
