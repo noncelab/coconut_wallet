@@ -11,7 +11,8 @@ class ScriptCallbackService {
 
   /// 스크립트별 트랜잭션 조회 후 fetchUtxos 콜백 함수
   /// key: ScriptKey, value: Function
-  final Map<String, List<Future<void> Function()>> _fetchUtxosCallback = <String, List<Future<void> Function()>>{};
+  final Map<String, List<Future<void> Function()>> _fetchUtxosCallback =
+      <String, List<Future<void> Function()>>{};
 
   /// 현재 처리 중인 트랜잭션 해시와 처리 시작 시간을 추적하기 위한 맵
   /// key: TxHashKey "walletId:txHash", value: ({DateTime startTime, bool isConfirmed, bool isCompleted})

@@ -5,7 +5,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/chain_source.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,13 +17,13 @@ import '../../../mock/wallet_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
 
 // 모킹할 클래스 목록
-@GenerateMocks([ElectrumService])
+@GenerateMocks([ChainSource])
 import 'transaction_record_service_test.mocks.dart';
 
 void main() {
   late TestRealmManager realmManager;
   late AddressRepository addressRepository;
-  late MockElectrumService electrumService;
+  late MockChainSource electrumService;
   late TransactionRecordService transactionRecordService;
 
   const int testWalletId = 1;
@@ -37,7 +37,7 @@ void main() {
   setUp(() async {
     realmManager = await setupTestRealmManager();
     addressRepository = AddressRepository(realmManager);
-    electrumService = MockElectrumService();
+    electrumService = MockChainSource();
 
     transactionRecordService = TransactionRecordService(electrumService, addressRepository);
 
