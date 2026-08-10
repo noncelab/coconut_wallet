@@ -99,7 +99,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
               rightButtonClicked: () async {
                 final files = await _filesFuture;
                 final selectedFiles = _selectedFileIndices.map((index) => files[index]).toList();
-                _shareFiles(selectedFiles);
+                await _shareFiles(selectedFiles);
               },
               leftButtonClicked: () async {
                 await _deleteSelectedFile();
@@ -120,8 +120,8 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
                   _isCreateFileSelected = false;
                 });
               },
-              rightButtonClicked: () {
-                if (_exportedFile != null) _shareFiles([_exportedFile!]);
+              rightButtonClicked: () async {
+                if (_exportedFile != null) await _shareFiles([_exportedFile!]);
               },
             ),
           ),
@@ -472,10 +472,13 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     );
   }
 
-  void _shareFiles(List<File> files) async {
+  Future<void> _shareFiles(List<File> files) async {
     final labelManager = LabelJsonLManager();
     final xFiles = files.map((file) => labelManager.createXFileFromFile(file)).toList();
-    await labelManager.shareFiles(xFiles);
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final sharePositionOrigin =
+        renderBox != null && renderBox.hasSize ? renderBox.localToGlobal(Offset.zero) & renderBox.size : null;
+    await labelManager.shareFiles(xFiles, sharePositionOrigin: sharePositionOrigin);
   }
 
   Future<void> _deleteSelectedFile() async {

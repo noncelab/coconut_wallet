@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -108,20 +109,24 @@ class LabelJsonLManager {
     return LabelExportResult(xFile: await _createFileFromString(jsonLines.join('\n')));
   }
 
-  Future<void> shareFile(XFile xFile) async {
+  Future<void> shareFile(XFile xFile, {Rect? sharePositionOrigin}) async {
     AppGuard.disablePrivacyScreen();
     try {
-      await Share.shareXFiles([xFile], text: 'Coconut Wallet Labels');
+      await SharePlus.instance.share(
+        ShareParams(files: [xFile], text: 'Coconut Wallet Labels', sharePositionOrigin: sharePositionOrigin),
+      );
     } finally {
       AppGuard.enablePrivacyScreen();
     }
   }
 
-  Future<void> shareFiles(List<XFile> xFiles) async {
+  Future<void> shareFiles(List<XFile> xFiles, {Rect? sharePositionOrigin}) async {
     if (xFiles.isEmpty) return;
     AppGuard.disablePrivacyScreen();
     try {
-      await Share.shareXFiles(xFiles, text: 'Coconut Wallet Labels');
+      await SharePlus.instance.share(
+        ShareParams(files: xFiles, text: 'Coconut Wallet Labels', sharePositionOrigin: sharePositionOrigin),
+      );
     } finally {
       AppGuard.enablePrivacyScreen();
     }
