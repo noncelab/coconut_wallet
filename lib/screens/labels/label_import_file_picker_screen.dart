@@ -524,42 +524,45 @@ class FileListItemCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: context.coconutColors.surface,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? context.coconutColors.primaryText : Colors.transparent, width: 1),
+          border: Border.all(
+            color: isSelected ? context.coconutColors.primaryText : context.coconutColors.border,
+            width: 1,
+          ),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            isSelected
-                ? SvgPicture.asset(
-                  'assets/svg/square_check.svg',
-                  width: 24,
-                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                )
-                : SvgPicture.asset(
-                  'assets/svg/square.svg',
-                  width: 24,
-                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                ),
-            const SizedBox(width: 16),
+            SvgPicture.asset(
+              isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
+              width: 24,
+              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            ),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(fileName, style: CoconutTypography.body1_16, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        _LabelImportFilePickerScreenState()._formatBytes(file.lengthSync()),
-                        style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                      ),
-                      Text(' • ', style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
-                      Text(
-                        modifiedDate,
-                        style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                      ),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2.0),
+                    child: Text(
+                      fileName,
+                      style: CoconutTypography.body1_16,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text.rich(
+                    TextSpan(
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                      children: [
+                        TextSpan(text: _LabelImportFilePickerScreenState()._formatBytes(file.lengthSync())),
+                        const TextSpan(text: ' • '),
+                        TextSpan(text: modifiedDate),
+                      ],
+                    ),
                   ),
                 ],
               ),
