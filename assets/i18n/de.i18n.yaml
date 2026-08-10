@@ -1061,7 +1061,7 @@ label_management_screen:
 label_import_file_picker_screen:
   loading_title: "Notizen werden angewendet"
   success_title: "Notizen importiert"
-  no_applied_memo: "Keine Notiz angewendet.\nBitte überprüfen Sie Ihre Wallet und Dateien erneut."
+  no_applied_memo: "Es gibt keine Wallets, auf die die Memodatei angewendet werden kann."
   delete_file: "Löscht die Datei beim Tippen auf Fertig"
   error_title: "Notizen konnten nicht geladen werden"
   instruction_tooltip:

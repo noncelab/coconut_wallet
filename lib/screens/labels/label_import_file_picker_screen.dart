@@ -15,7 +15,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
-enum LabelImportStep { fileSelection, loading, success, error }
+enum LabelImportStep { fileSelection, loading, success, error, noLabelsToApply }
 
 class LabelImportFilePickerScreen extends StatefulWidget {
   final ValueChanged<String> onFileSelected;
@@ -114,6 +114,17 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
               },
             ),
           ),
+        if (_step == LabelImportStep.noLabelsToApply)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FixedBottomButton(
+              text: t.complete,
+              isActive: true,
+              onButtonClicked: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ),
       ],
     );
   }
@@ -128,6 +139,8 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         return _buildSuccessView(context);
       case LabelImportStep.error:
         return Center(child: _buildErrorCard(context));
+      case LabelImportStep.noLabelsToApply:
+        return _buildNoLabelsToApplyView();
     }
   }
 
@@ -187,7 +200,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
               const SizedBox(width: 8),
               Text(
                 t.label_management_screen.file.select,
-                style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
               ),
             ],
           ),
@@ -260,18 +273,8 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   }
 
   Widget _buildSuccessView(BuildContext context) {
-    if (_importResults.isEmpty) {
-      return Center(
-        child: Text(
-          t.label_import_file_picker_screen.no_applied_memo,
-          style: CoconutTypography.body1_16,
-          textAlign: TextAlign.center,
-        ),
-      );
-    }
-
     return Padding(
-      padding: const EdgeInsets.only(top: 24.0),
+      padding: const EdgeInsets.only(top: 24.0, bottom: 90),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -334,6 +337,52 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoLabelsToApplyView() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24.0, bottom: 90),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            'assets/svg/circle-check.svg',
+            colorFilter: ColorFilter.mode(context.coconutColors.iconDisabled, BlendMode.srcIn),
+            height: 48,
+            width: 48,
+          ),
+          CoconutLayout.spacing_200h,
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+              children: [
+                TextSpan(text: t.label_import_file_picker_screen.no_applied_memo),
+                const TextSpan(text: '\n'),
+                TextSpan(
+                  text: _fileName,
+                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                ),
+              ],
+            ),
+          ),
+          CoconutLayout.spacing_400h,
+          Column(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _deleteFileOnSuccess = !_deleteFileOnSuccess;
+                  });
+                },
+                child: const Row(mainAxisAlignment: MainAxisAlignment.start, children: [SizedBox(width: 8)]),
               ),
             ],
           ),
@@ -410,10 +459,14 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           selectedFile.path,
         );
         if (mounted) {
-          setState(() {
-            _step = LabelImportStep.success;
-            _importResults = result;
-          });
+          if (result.isEmpty) {
+            setState(() => _step = LabelImportStep.noLabelsToApply);
+          } else {
+            setState(() {
+              _step = LabelImportStep.success;
+              _importResults = result;
+            });
+          }
         }
       } catch (e) {
         if (!mounted) return;
