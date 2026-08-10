@@ -358,15 +358,15 @@ wallet_add_scanner_screen:
     mainnet_wallet_error_text: "Not a mainnet wallet"
     testnet_wallet_error_text: "Not a testnet wallet"
     unsupported_wallet_error_text: "Unsupported wallet"
-    wallet_description_text: "Where can I find the wallet information?"
+    wallet_description_text: "Where to find wallet info"
     blue_wallet_texts:
       - "· BlueWallet"
-      - "· Hot Wallet - More(•••) - Show Wallet XPUB"
-      - "· Watch-only Wallet - More(•••) - Export/Backup"
+      - "  · Hot Wallet - More(•••) - Show Wallet XPUB"
+      - "  · Watch-only Wallet - More(•••) - Export/Backup"
       - "zpub6rFR7y4Q2AijBEqt..."
     nunchuck_wallet_texts:
       - "· Nunchuck"
-      - "· Keys - Select Key - Key spec info"
+      - "  · Keys - Select Key - Key spec info"
       - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
       - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
     mfp_title: "Master Fingerprint"
@@ -515,13 +515,13 @@ wallet_connect_screen:
       passphrase_where_to_enter: "Where do you want to enter your passphrase?"
       passphrase_confirm_on_device: "Please confirm the passphrase on your Trezor device."
       passphrase_enabling: "Please confirm enabling passphrase on your Trezor device."
-      suite_app_notice: "The Trezor Suite app may open automatically when connected via USB."
+      suite_app_notice: "Is the Trezor Suite App Launching Automatically?"
       suite_app_setting_guide:
-        title: "· Remove the default app setting"
+        title: "When connecting your Trezor, remove the default app setting so the Trezor Suite app doesn't open automatically."
         descriptions:
-          - "1. On your phone, go to 'Settings - Apps - Trezor Suite'"
-          - "2. Clear defaults under 'Set as default' or 'Open with default app'"
-          - "3. When reconnecting USB, select 'Cancel' in the 'Open Trezor Suite app to handle TREZOR?' dialog"
+          - "1. On your phone, go to Settings → Apps → Trezor Suite."
+          - "2. Under \"Set as default\" or \"Open by default,\" clear the current setting."
+          - "3. Unplug and reconnect the USB cable. If the \"Open Trezor Suite to handle TREZOR?\" prompt appears, select Cancel."
   common:
     ble_off: "Please turn on Bluetooth on your device."
     loading_wallet_info: "Loading wallet info"

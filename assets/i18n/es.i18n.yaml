@@ -359,15 +359,15 @@ wallet_add_scanner_screen:
     mainnet_wallet_error_text: "No es una billetera de red principal (Mainnet)"  
     testnet_wallet_error_text: "No es una billetera de red de prueba (Testnet)"  
     unsupported_wallet_error_text: "Billetera no compatible" 
-    wallet_description_text: "¿Dónde puedo encontrar la información adicional de la billetera?" 
+    wallet_description_text: "Dónde encontrar la info."
     blue_wallet_texts:
       - "· BlueWallet"
-      - "· Hot Wallet - More(•••) - Show Wallet XPUB"
-      - "· Watch-only Wallet - More(•••) - Export/Backup"
+      - "  · Hot Wallet - More(•••) - Show Wallet XPUB"
+      - "  · Watch-only Wallet - More(•••) - Export/Backup"
       - "zpub6rFR7y4Q2AijBEqt..."
     nunchuck_wallet_texts:
       - "· Nunchuck"
-      - "· Keys - Select Key - Key spec info"
+      - "  · Keys - Select Key - Key spec info"
       - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
       - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
     mfp_title: "Huella digital maestra"
@@ -491,13 +491,13 @@ wallet_connect_screen:
       passphrase_where_to_enter: "¿Dónde quieres introducir tu frase de contraseña?"
       passphrase_confirm_on_device: "Confirma la frase de contraseña en tu Trezor."
       passphrase_enabling: "Confirma la activación de la frase de contraseña en tu Trezor."
-      suite_app_notice: "La aplicación Trezor Suite puede abrirse automáticamente al conectar por USB."
+      suite_app_notice: "¿Se abre automáticamente la app Trezor Suite?"
       suite_app_setting_guide:
-        title: "· Elimina la configuración de aplicación predeterminada"
+        title: "Al conectar tu Trezor, elimina la configuración de aplicación predeterminada para que la app Trezor Suite no se abra automáticamente."
         descriptions:
-          - "1. En tu teléfono: 'Configuración - Aplicaciones - Trezor Suite'"
-          - "2. Elimina los valores predeterminados en 'Establecer como predeterminada' o 'Abrir con la app predeterminada'"
-          - "3. Desconecta y vuelve a conectar el USB. En el diálogo '¿Abrir la aplicación Trezor Suite para gestionar TREZOR?', selecciona Cancelar"
+          - "1. En tu teléfono, ve a Configuración → Aplicaciones → Trezor Suite."
+          - "2. En \"Establecer como predeterminada\" o \"Abrir de forma predeterminada\", elimina el valor establecido."
+          - "3. Desconecta y vuelve a conectar el cable USB. Si aparece el mensaje \"¿Abrir Trezor Suite para procesar TREZOR?\", selecciona Cancelar."
   common:
     ble_off: "Por favor, encienda el Bluetooth de su dispositivo."
     loading_wallet_info: "Cargando información de la cartera"

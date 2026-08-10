@@ -358,15 +358,15 @@ wallet_add_scanner_screen:
     mainnet_wallet_error_text: "メインネットウォレットではありません"
     testnet_wallet_error_text: "テストネットウォレットではありません"
     unsupported_wallet_error_text: "サポートされていないウォレット"
-    wallet_description_text: "ウォレット情報はどこで見つけられますか？"
+    wallet_description_text: "ウォレット情報の確認方法"
     blue_wallet_texts:
-      - "・BlueWallet"
-      - "・Hot Wallet - More(•••) - Show Wallet XPUB"
-      - "・Watch-only Wallet - More(•••) - Export/Backup"
+      - "· BlueWallet"
+      - "  · Hot Wallet - More(•••) - Show Wallet XPUB"
+      - "  · Watch-only Wallet - More(•••) - Export/Backup"
       - "zpub6rFR7y4Q2AijBEqt..."
     nunchuck_wallet_texts:
-      - "・Nunchuck"
-      - "・Keys - Select Key - Key spec info"
+      - "· Nunchuck"
+      - "  · Keys - Select Key - Key spec info"
       - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
       - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
     mfp_title: "マスターフィンガープリント"
@@ -516,13 +516,13 @@ wallet_connect_screen:
       passphrase_where_to_enter: "パスフレーズをどこで入力しますか？"
       passphrase_confirm_on_device: "Trezorで入力したパスフレーズを確認してください。"
       passphrase_enabling: "Trezorデバイスでパスフレーズの有効化を確認してください。"
-      suite_app_notice: "USB接続時、Trezor Suiteアプリが自動で起動することがあります。"
+      suite_app_notice: "Trezor Suiteアプリが自動起動していますか？"
       suite_app_setting_guide:
-        title: "· デフォルトアプリの設定を解除してください"
+        title: "Trezorを接続する際にTrezor Suiteアプリが自動起動しないよう、デフォルトアプリの設定を解除してください。"
         descriptions:
-          - "1. スマートフォンの「設定 - アプリ - Trezor Suite」"
-          - "2. 「デフォルトとして設定」または「デフォルトで開く」からデフォルトを解除"
-          - "3. USBを外して再接続し、『Trezor SuiteアプリでTREZORを処理しますか？』ダイアログで「キャンセル」を選択"
+          - "1. スマートフォンで「設定 → アプリ → Trezor Suite」に移動します。"
+          - "2. 「デフォルトに設定」または「デフォルトで開く」の設定を解除します。"
+          - "3. USBケーブルを抜き差しします。「Trezor SuiteアプリでTREZORを処理しますか？」という表示が出たら「キャンセル」を選択してください。"
   common:
     ble_off: "デバイスのBluetoothをオンにしてください。"
     loading_wallet_info: "ウォレット情報を取得中"
