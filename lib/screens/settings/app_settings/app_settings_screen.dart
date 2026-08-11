@@ -12,7 +12,7 @@ import 'package:coconut_wallet/providers/view_model/settings/settings_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/labels/label_management_screen.dart';
+import 'package:coconut_wallet/screens/settings/tools/label_management_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
@@ -388,7 +388,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
             (context, animation, secondaryAnimation) => LabelManagementScreen(
               importDescription: t.settings_screen.import_all_labels_description,
               exportDescription: t.settings_screen.export_all_labels_description,
-              onImport: (filePath) => 0,
+              onImport: (filePath) => {},
               onExport: () {
                 _exportLabelsForAllWallets();
               },

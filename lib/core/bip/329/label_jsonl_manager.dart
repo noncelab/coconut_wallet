@@ -6,11 +6,11 @@ import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
 
@@ -59,7 +59,6 @@ class LabelJsonLManager {
     debugPrint('---------------------------------');
 
     final directory = await getApplicationDocumentsDirectory();
-    DateFormat('yyyy-MM-dd').format(DateTime.now());
     const fileName = 'coconut-labels.jsonl';
     final file = File('${directory.path}/$fileName');
     await file.writeAsString(jsonlString);
@@ -112,9 +111,7 @@ class LabelJsonLManager {
   Future<void> shareFile(XFile xFile, {Rect? sharePositionOrigin}) async {
     AppGuard.disablePrivacyScreen();
     try {
-      await SharePlus.instance.share(
-        ShareParams(files: [xFile], text: 'Coconut Wallet Labels', sharePositionOrigin: sharePositionOrigin),
-      );
+      await Share.shareXFiles([xFile], text: 'Coconut Wallet Labels', sharePositionOrigin: sharePositionOrigin);
     } finally {
       AppGuard.enablePrivacyScreen();
     }
@@ -124,9 +121,7 @@ class LabelJsonLManager {
     if (xFiles.isEmpty) return;
     AppGuard.disablePrivacyScreen();
     try {
-      await SharePlus.instance.share(
-        ShareParams(files: xFiles, text: 'Coconut Wallet Labels', sharePositionOrigin: sharePositionOrigin),
-      );
+      await Share.shareXFiles(xFiles, text: 'Coconut Wallet Labels', sharePositionOrigin: sharePositionOrigin);
     } finally {
       AppGuard.enablePrivacyScreen();
     }
@@ -267,9 +262,9 @@ class LabelJsonLManager {
 
   List<String> _generateJsonLinesForWallet({
     required String descriptor,
-    required List<dynamic> txMemos,
-    required List<dynamic> utxoTags,
+    required List<RealmTransactionMemo> txMemos,
     required List<UtxoState> utxoStates,
+    required List<RealmUtxoTag> utxoTags,
   }) {
     final txMemosWithLabels = txMemos.where((memo) => memo.memo.isNotEmpty).toList();
     final origin = _getOriginFromDescriptor(descriptor);

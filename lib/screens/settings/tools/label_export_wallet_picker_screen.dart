@@ -635,7 +635,7 @@ class _FileListItemCard extends StatelessWidget {
 
   const _FileListItemCard({required this.file, required this.onTap, required this.isSelected});
 
-  String _formatBytes(int bytes, {int decimals = 1}) {
+  static String _formatBytes(int bytes, {int decimals = 1}) {
     if (bytes <= 0) return "0 B";
     if (bytes == 1) return "1 B";
     const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
