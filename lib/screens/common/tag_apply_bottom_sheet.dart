@@ -479,7 +479,7 @@ class _ChipStyle {
   _ChipStyle({
     required this.borderColor,
     required this.textColor,
-    this.fontWeight = FontWeight.normal,
+    this.fontWeight = FontWeight.normal, // ignore: unused_element_parameter
     required this.icon,
     this.gradient,
   });

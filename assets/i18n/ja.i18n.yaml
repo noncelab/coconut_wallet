@@ -152,7 +152,6 @@ can_use_after_add_wallet: "ウォレットを追加してから使用できま�
 utility:
   p2p_calculator:
     calculator: "計算機"
-    1btc: "1 BTC"
     upbit_price: "Upbit 基準 時価"
     binance_price: "Binance 基準 時価"
     bitflyer_price: "Bitflyer 基準 時価"
@@ -383,7 +382,6 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
-  view_all_wallets: "すべてのウォレットを表示"
   primary_wallet: "プライマリウォレット"
   exclude_from_total_amount: "ホーム合計から除外"
   home_balance: "ホーム残高"
@@ -779,7 +777,6 @@ settings_screen:
   set_password: "パスワード設定"
   use_biometric: "生体認証を使用"
   change_password: "パスワード変更"
-  hide_balance: "残高を非表示"
   fiat: "法定通貨"
   language: "言語"
   utxo_manual_selection: "UTXO 数手動選択"
