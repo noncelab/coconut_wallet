@@ -40,14 +40,27 @@ class CoconutOpenStoreIntroScreen extends StatefulWidget {
 
 class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScreen> with TickerProviderStateMixin {
   CcosFeatureListing get _featuredListing => CcosFeatureRegistrySource.featuredListing;
-  static const Duration _loadingDuration = Duration(milliseconds: 4600);
-  static const Duration _storyEntranceDuration = Duration(milliseconds: 820);
+  static const Duration _loadingDuration = Duration(milliseconds: 5700);
+  static const Duration _storyEntranceDuration = Duration(milliseconds: 1050);
   static const Duration _defaultSceneDuration = Duration(milliseconds: 2200);
   static const Duration _ideaSceneDuration = Duration(milliseconds: 8800);
-  static const Duration _buildSceneDuration = Duration(milliseconds: 13400);
   static const Duration _firstPowSceneDuration = Duration(milliseconds: 11000);
   static const Duration _discoverSceneDuration = Duration(milliseconds: 9800);
   static const Duration _contributeSceneDuration = Duration(milliseconds: 9800);
+  // Temporary switch for editing the loading state.
+  // Set this back to false to restore the normal auto-advance into the story scenes.
+  static const bool _freezeLoadingPreview = false;
+  static const double _loadingPreviewFrame = 0.72;
+  static const double _loadingStoryRevealFrame = 5120 / 5700;
+
+  // Scene durations above were tuned against the Korean source text's reading/typing pace.
+  // Other locales run noticeably longer, so each scene's duration is scaled by how many
+  // characters the active locale actually types relative to these Korean baselines - otherwise
+  // longer translations get typed out in the same fixed time and feel rushed.
+  static const int _ideaSceneBaselineChars = 79;
+  static const int _firstPowSceneBaselineChars = 72;
+  static const int _discoverSceneBaselineChars = 81;
+  static const int _contributeSceneBaselineChars = 99;
 
   static const Color _screenBackground = Color(0xFFCDD4D7);
   static const Color _loadingBackground = Color(0xFFF9F8F6);
@@ -71,6 +84,7 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
     duration: const Duration(milliseconds: 750),
   );
   bool _hasCompletedLoading = false;
+  bool _hasStartedStoryEntrance = false;
   bool _isLoadingUnderlayVisible = true;
   bool _isSceneOverviewVisible = false;
   int _currentSceneIndex = 0;
@@ -160,37 +174,29 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
         index: 0,
         chapter: '01 / 05',
         label: t.ccos.intro_screen.scenes.idea.label,
-        title: t.ccos.intro_screen.scenes.idea.title,
-        description: t.ccos.intro_screen.scenes.idea.description,
-        overviewStep: '01',
+        sceneStep: '01',
         overviewTitle: t.ccos.intro_screen.scenes.idea.overview_title,
-        overviewSubtitle: '',
-        buildHero: (_, __) => const SizedBox.shrink(),
+        overviewHighlight: t.ccos.intro_screen.scenes.idea.overview_highlight,
       ),
       _OpenStoreSceneDefinition(
         index: 1,
         chapter: '02 / 05',
         label: t.ccos.intro_screen.scenes.build.label,
-        title: t.ccos.intro_screen.scenes.build.title,
-        description: t.ccos.intro_screen.scenes.build.description,
-        overviewStep: '02',
+        sceneStep: '02',
         overviewTitle: t.ccos.intro_screen.scenes.build.overview_title,
-        overviewSubtitle: '',
-        buildHero: (_, __) => const SizedBox.shrink(),
+        overviewHighlight: t.ccos.intro_screen.scenes.build.overview_highlight,
       ),
       _OpenStoreSceneDefinition(
         index: 2,
         chapter: '03 / 05',
         label: t.ccos.intro_screen.scenes.first_pow.label,
-        title: t.ccos.intro_screen.scenes.first_pow.title,
-        description: t.ccos.intro_screen.scenes.first_pow.description,
-        overviewStep: '03',
+        sceneStep: '03',
         overviewTitle: t.ccos.intro_screen.scenes.first_pow.overview_title,
         overviewHighlight: t.ccos.intro_screen.scenes.first_pow.overview_highlight,
-        overviewSubtitle: '',
         buildHero:
             (context, animation) => FirstPowSceneBody(
               animation: animation,
+              sceneDurationMs: _sceneDurationFor(2).inMilliseconds,
               listing: _featuredListing,
               isAdded: isAdded,
               isApplied: isApplied,
@@ -203,42 +209,123 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
         index: 3,
         chapter: '04 / 05',
         label: t.ccos.intro_screen.scenes.discover.label,
-        title: '',
-        description: '',
-        overviewStep: '04',
+        sceneStep: '04',
         overviewTitle: t.ccos.intro_screen.scenes.discover.overview_title,
-        overviewSubtitle: '',
-        buildHero: (_, __) => const SizedBox.shrink(),
+        overviewHighlight: t.ccos.intro_screen.scenes.discover.overview_highlight,
       ),
       _OpenStoreSceneDefinition(
         index: 4,
         chapter: '05 / 05',
         label: t.ccos.intro_screen.scenes.contribute.label,
-        title: '',
-        description: '',
-        overviewStep: '05',
+        sceneStep: '05',
         overviewTitle: t.ccos.intro_screen.scenes.contribute.overview_title,
         overviewHighlight: t.ccos.intro_screen.scenes.contribute.overview_highlight,
-        overviewSubtitle: '',
-        buildHero: (_, __) => const SizedBox.shrink(),
       ),
     ];
+  }
+
+  Duration _scaledSceneDuration(Duration base, int baselineChars, List<String> typedText) {
+    final currentChars = typedText.fold<int>(0, (sum, text) => sum + text.length);
+    if (baselineChars <= 0 || currentChars <= 0) return base;
+    return Duration(milliseconds: (base.inMilliseconds * currentChars / baselineChars).round());
+  }
+
+  Duration _typingSceneDuration(
+    Duration base,
+    int baselineChars,
+    List<String> lines,
+    List<int> starts, {
+    int endPauseMs = 450,
+  }) {
+    final scaledDuration = _scaledSceneDuration(base, baselineChars, lines);
+    final typingEndMs = List.generate(
+      lines.length,
+      (index) => index,
+    ).fold<int>(0, (latest, item) => math.max(latest, starts[item] + typewriterDurationMs(lines[item])));
+    return Duration(milliseconds: math.max(scaledDuration.inMilliseconds, typingEndMs + endPauseMs));
   }
 
   Duration _sceneDurationFor(int index) {
     switch (index) {
       case 0:
-        return _ideaSceneDuration;
+        final lines = [
+          t.ccos.idea_scene.line1,
+          t.ccos.idea_scene.line2,
+          t.ccos.idea_scene.line3,
+          t.ccos.idea_scene.line4,
+        ];
+        return _typingSceneDuration(
+          _ideaSceneDuration,
+          _ideaSceneBaselineChars,
+          lines,
+          IdeaSceneBody.typingStartMs(lines),
+        );
       case 1:
-        return _buildSceneDuration;
+        return BuildSceneBody.sceneDuration();
       case 2:
-        return _firstPowSceneDuration;
+        final lines = [t.ccos.first_pow_scene.intro_line1, t.ccos.first_pow_scene.intro_line2];
+        return _typingSceneDuration(
+          _firstPowSceneDuration,
+          _firstPowSceneBaselineChars,
+          lines,
+          FirstPowSceneBody.typingStartMs(lines),
+          endPauseMs: FirstPowSceneBody.buttonPauseMs + FirstPowSceneBody.buttonEntranceMs,
+        );
       case 3:
-        return _discoverSceneDuration;
+        final lines = [t.ccos.discover_scene.line1, t.ccos.discover_scene.line2, t.ccos.discover_scene.line3];
+        return _typingSceneDuration(
+          _discoverSceneDuration,
+          _discoverSceneBaselineChars,
+          lines,
+          DiscoverSceneBody.typingStartMs(lines),
+        );
       case 4:
-        return _contributeSceneDuration;
+        final lines = [
+          t.ccos.contribute_scene.line1,
+          t.ccos.contribute_scene.line2,
+          t.ccos.contribute_scene.line3,
+          t.ccos.contribute_scene.line4,
+        ];
+        return _typingSceneDuration(
+          _contributeSceneDuration,
+          _contributeSceneBaselineChars,
+          lines,
+          ContributeSceneBody.typingStartMs(lines),
+          endPauseMs: 1050,
+        );
       default:
         return _defaultSceneDuration;
+    }
+  }
+
+  int _navigationRevealStartMsFor(int index) {
+    switch (index) {
+      case 0:
+        final lines = [
+          t.ccos.idea_scene.line1,
+          t.ccos.idea_scene.line2,
+          t.ccos.idea_scene.line3,
+          t.ccos.idea_scene.line4,
+        ];
+        return IdeaSceneBody.navigationRevealStartMs(lines);
+      case 1:
+        return BuildSceneBody.navigationRevealStartMs();
+      case 2:
+        final lines = [t.ccos.first_pow_scene.intro_line1, t.ccos.first_pow_scene.intro_line2];
+        return FirstPowSceneBody.navigationRevealStartMs(lines);
+      case 3:
+        final lines = [t.ccos.discover_scene.line1, t.ccos.discover_scene.line2, t.ccos.discover_scene.line3];
+        return DiscoverSceneBody.navigationRevealStartMs(lines);
+      case 4:
+        final lines = [
+          t.ccos.contribute_scene.line1,
+          t.ccos.contribute_scene.line2,
+          t.ccos.contribute_scene.line3,
+          t.ccos.contribute_scene.line4,
+        ];
+        return ContributeSceneBody.navigationRevealStartMs(lines);
+      default:
+        return (_defaultSceneDuration.inMilliseconds * 0.72).round();
     }
   }
 
@@ -246,15 +333,34 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
   void initState() {
     super.initState();
     _storyEntranceController.addStatusListener(_handleStoryEntranceStatus);
+    _loadingController.addListener(_handleLoadingProgress);
     _loadingController.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
-        setState(() {
-          _hasCompletedLoading = true;
-        });
-        _storyEntranceController.forward(from: 0);
+        _startStoryEntrance();
       }
     });
+    if (_freezeLoadingPreview) {
+      _loadingController.value = _loadingPreviewFrame;
+      return;
+    }
     _loadingController.forward();
+  }
+
+  void _handleLoadingProgress() {
+    if (_loadingController.value >= _loadingStoryRevealFrame) {
+      _startStoryEntrance();
+    }
+  }
+
+  void _startStoryEntrance() {
+    if (!mounted || _hasStartedStoryEntrance) {
+      return;
+    }
+    _hasStartedStoryEntrance = true;
+    setState(() {
+      _hasCompletedLoading = true;
+    });
+    _storyEntranceController.forward(from: 0);
   }
 
   void _handleStoryEntranceStatus(AnimationStatus status) {
@@ -272,6 +378,7 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
   @override
   void dispose() {
     _pageController.dispose();
+    _loadingController.removeListener(_handleLoadingProgress);
     _loadingController.dispose();
     _sceneController.dispose();
     _storyEntranceController.removeStatusListener(_handleStoryEntranceStatus);
@@ -333,10 +440,10 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
                       : null,
               body: Stack(
                 children: [
-                  if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
-                    _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
                   if (_hasCompletedLoading)
                     _StoryPagerEntrance(animation: _storyEntranceController, child: _buildStoryPager(sceneItems)),
+                  if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
+                    _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
                 ],
               ),
             ),
@@ -377,14 +484,13 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
           children: [
             for (final item in sceneItems)
               _StoryScene(
-                chapter: item.chapter,
                 sceneIndex: item.index,
                 sceneCount: sceneItems.length,
                 label: item.label,
-                title: item.title,
-                description: item.description,
-                hero: item.buildHero(context, _sceneController),
+                hero: item.buildHero?.call(context, _sceneController),
                 sceneAnimation: _sceneController,
+                sceneDurationMs: _sceneDurationFor(item.index).inMilliseconds,
+                navigationRevealStartMs: _navigationRevealStartMsFor(item.index),
                 onPrevious: item.index == 0 ? null : () => _animateToScene(item.index - 1),
                 onNext: item.index == sceneItems.length - 1 ? null : () => _animateToScene(item.index + 1),
               ),
@@ -409,9 +515,9 @@ class _StoryPagerEntrance extends StatelessWidget {
         final t = Curves.easeOutQuart.transform(animation.value.clamp(0.0, 1.0));
         return ClipRect(
           child: Opacity(
-            opacity: 0.72 + (0.28 * t),
+            opacity: 0.08 + (0.92 * t),
             child: Transform.translate(
-              offset: Offset((1 - t) * MediaQuery.sizeOf(context).width * 0.22, 0),
+              offset: Offset((1 - t) * MediaQuery.sizeOf(context).width * 0.72, 0),
               child: child,
             ),
           ),
@@ -426,25 +532,19 @@ class _OpenStoreSceneDefinition {
     required this.index,
     required this.chapter,
     required this.label,
-    required this.title,
-    required this.description,
-    required this.overviewStep,
+    required this.sceneStep,
     required this.overviewTitle,
-    required this.overviewSubtitle,
-    required this.buildHero,
-    this.overviewHighlight,
+    required this.overviewHighlight,
+    this.buildHero,
   });
 
   final int index;
   final String chapter;
   final String label;
-  final String title;
-  final String description;
-  final String overviewStep;
+  final String sceneStep;
   final String overviewTitle;
-  final String? overviewHighlight;
-  final String overviewSubtitle;
-  final Widget Function(BuildContext context, Animation<double> animation) buildHero;
+  final String overviewHighlight;
+  final Widget Function(BuildContext context, Animation<double> animation)? buildHero;
 }
 
 class _OpenStoreLoadingSequence extends StatelessWidget {
@@ -458,12 +558,17 @@ class _OpenStoreLoadingSequence extends StatelessWidget {
       animation: animation,
       builder: (context, child) {
         final value = animation.value;
-        const iconPhaseEnd = 0.50;
-        const ringDelayAfterIcon = 300 / 4600;
-        const ringDrawDuration = 2000 / 4600;
+        const totalMs = 5700;
+        const iconPhaseEnd = 2300 / totalMs;
+        const ringDelayAfterIcon = 300 / totalMs;
+        const ringDrawDuration = 2000 / totalMs;
         const ringStart = iconPhaseEnd + ringDelayAfterIcon;
-        const ringOpacityDuration = 160 / 4600;
+        const ringOpacityDuration = 160 / totalMs;
         const polishStart = ringStart + ringDrawDuration;
+        const beatStart = 4720 / totalMs;
+        const beatDuration = 620 / totalMs;
+        const fadeStart = 5350 / totalMs;
+        const fadeDuration = 350 / totalMs;
 
         final iconMotion = (value / iconPhaseEnd).clamp(0.0, 1.0);
         final iconScale = TweenSequence<double>([
@@ -489,83 +594,102 @@ class _OpenStoreLoadingSequence extends StatelessWidget {
         final ringProgress = Curves.easeOut.transform(((value - ringStart) / ringDrawDuration).clamp(0.0, 1.0));
         final polishValue = ((value - polishStart) / 0.05).clamp(0.0, 1.0);
         final polishGlowOpacity = Curves.easeOut.transform(polishValue) * 0.22;
+        final beatT = ((value - beatStart) / beatDuration).clamp(0.0, 1.0);
+        final heartbeatScale = TweenSequence<double>([
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 1.0, end: 1.12).chain(CurveTween(curve: Curves.easeOutCubic)),
+            weight: 34,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 1.12, end: 0.98).chain(CurveTween(curve: Curves.easeInOut)),
+            weight: 28,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 0.98, end: 1.0).chain(CurveTween(curve: Curves.easeOutCubic)),
+            weight: 38,
+          ),
+        ]).transform(beatT);
+        final loadingOpacity = 1 - Curves.easeOut.transform(((value - fadeStart) / fadeDuration).clamp(0.0, 1.0));
         final startIconSize = MediaQuery.of(context).size.width * 1.2;
 
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            const _OpenStoreLoadingBackdrop(),
-            Align(
-              alignment: Alignment.center,
-              child: Transform.scale(
-                scale: iconScale,
-                child: SizedBox(
-                  width: startIconSize,
-                  height: startIconSize,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      IgnorePointer(
-                        child: Opacity(
-                          opacity: polishGlowOpacity,
-                          child: Container(
-                            width: 74,
-                            height: 74,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  Color.fromARGB(37, 31, 31, 47),
-                                  Color.fromARGB(18, 50, 50, 83),
-                                  Colors.transparent,
-                                ],
-                                stops: [0.0, 0.45, 1.0],
+        return Opacity(
+          opacity: loadingOpacity,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const _OpenStoreLoadingBackdrop(),
+              Align(
+                alignment: Alignment.center,
+                child: Transform.scale(
+                  scale: iconScale * heartbeatScale,
+                  child: SizedBox(
+                    width: startIconSize,
+                    height: startIconSize,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        IgnorePointer(
+                          child: Opacity(
+                            opacity: polishGlowOpacity,
+                            child: Container(
+                              width: 74,
+                              height: 74,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    Color.fromARGB(37, 31, 31, 47),
+                                    Color.fromARGB(18, 50, 50, 83),
+                                    Colors.transparent,
+                                  ],
+                                  stops: [0.0, 0.45, 1.0],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      Opacity(
-                        opacity: ringOpacity,
-                        child: CustomPaint(
-                          size: const Size.square(86.4),
-                          painter: _LoadingProgressRingPainter(progress: ringProgress),
+                        Opacity(
+                          opacity: ringOpacity,
+                          child: CustomPaint(
+                            size: const Size.square(86.4),
+                            painter: _LoadingProgressRingPainter(progress: ringProgress),
+                          ),
                         ),
-                      ),
-                      SvgPicture.asset(
-                        BrandIconPath.coconutPlanet,
-                        width: 60,
-                        height: 60,
-                        colorFilter: const ColorFilter.mode(
-                          _CoconutOpenStoreIntroScreenState._loadingTextPrimary,
-                          BlendMode.srcIn,
+                        SvgPicture.asset(
+                          BrandIconPath.coconutPlanet,
+                          width: 60,
+                          height: 60,
+                          colorFilter: const ColorFilter.mode(
+                            _CoconutOpenStoreIntroScreenState._loadingTextPrimary,
+                            BlendMode.srcIn,
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 28,
+                right: 28,
+                bottom: 38,
+                child: Opacity(
+                  opacity: titleOpacity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t.ccos.intro_screen.loading_title,
+                        style: CoconutTypography.heading1_32_Bold
+                            .setColor(_CoconutOpenStoreIntroScreenState._loadingTextPrimary)
+                            .copyWith(fontSize: 50, height: 1, letterSpacing: 0.7, fontWeight: FontWeight.w900),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              left: 28,
-              right: 28,
-              bottom: 38,
-              child: Opacity(
-                opacity: titleOpacity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      t.ccos.intro_screen.loading_title,
-                      style: CoconutTypography.heading1_32_Bold
-                          .setColor(_CoconutOpenStoreIntroScreenState._loadingTextPrimary)
-                          .copyWith(fontSize: 42, height: 1, letterSpacing: 0.7, fontWeight: FontWeight.w900),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -921,7 +1045,7 @@ class _SceneNavigationRowState extends State<_SceneNavigationRow> with SingleTic
                     left: widget.isReversed ? null : 0,
                     right: widget.isReversed ? 0 : null,
                     top: 0,
-                    child: _SceneNavigationNumber(step: widget.item.overviewStep, alignEnd: widget.isReversed),
+                    child: _SceneNavigationNumber(step: widget.item.sceneStep, alignEnd: widget.isReversed),
                   ),
                   Padding(
                     padding: EdgeInsets.only(
@@ -967,17 +1091,10 @@ class _SceneNavigationCopy extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String highlightText;
-    final String remainingText;
-    final explicitHighlight = item.overviewHighlight;
-    if (explicitHighlight != null && item.overviewTitle.startsWith(explicitHighlight)) {
-      highlightText = explicitHighlight;
-      remainingText = item.overviewTitle.substring(explicitHighlight.length);
-    } else {
-      final titleParts = item.overviewTitle.split(' ');
-      highlightText = titleParts.isNotEmpty ? titleParts.first : item.overviewTitle;
-      remainingText = titleParts.length > 1 ? ' ${titleParts.sublist(1).join(' ')}' : '';
-    }
+    final highlightIndex = item.overviewTitle.indexOf(item.overviewHighlight);
+    final beforeText = highlightIndex > 0 ? item.overviewTitle.substring(0, highlightIndex) : '';
+    final afterText = item.overviewTitle.substring(highlightIndex + item.overviewHighlight.length);
+    final regularStyle = CoconutTypography.heading4_18.setColor(_CoconutOpenStoreIntroScreenState._textPrimary);
 
     return Column(
       crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -987,26 +1104,15 @@ class _SceneNavigationCopy extends StatelessWidget {
           textAlign: alignEnd ? TextAlign.right : TextAlign.left,
           text: TextSpan(
             children: [
+              if (beforeText.isNotEmpty) TextSpan(text: beforeText, style: regularStyle),
               TextSpan(
-                text: highlightText,
+                text: item.overviewHighlight,
                 style: CoconutTypography.heading3_21_Bold.setColor(_CoconutOpenStoreIntroScreenState._textPrimary),
               ),
-              if (remainingText.isNotEmpty)
-                TextSpan(
-                  text: remainingText,
-                  style: CoconutTypography.heading4_18.setColor(_CoconutOpenStoreIntroScreenState._textPrimary),
-                ),
+              if (afterText.isNotEmpty) TextSpan(text: afterText, style: regularStyle),
             ],
           ),
         ),
-        if (item.overviewSubtitle.isNotEmpty) ...[
-          const SizedBox(height: 2),
-          Text(
-            item.overviewSubtitle,
-            textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-            style: CoconutTypography.heading4_18.setColor(_CoconutOpenStoreIntroScreenState._textPrimary),
-          ),
-        ],
       ],
     );
   }
@@ -1118,26 +1224,24 @@ class _LoadingProgressRingPainter extends CustomPainter {
 
 class _StoryScene extends StatelessWidget {
   const _StoryScene({
-    required this.chapter,
     required this.sceneIndex,
     required this.sceneCount,
     required this.label,
-    required this.title,
-    required this.description,
-    required this.hero,
+    this.hero,
     required this.sceneAnimation,
+    required this.sceneDurationMs,
+    required this.navigationRevealStartMs,
     required this.onPrevious,
     required this.onNext,
   });
 
-  final String chapter;
   final int sceneIndex;
   final int sceneCount;
   final String label;
-  final String title;
-  final String description;
-  final Widget hero;
+  final Widget? hero;
   final Animation<double> sceneAnimation;
+  final int sceneDurationMs;
+  final int navigationRevealStartMs;
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
 
@@ -1151,13 +1255,6 @@ class _StoryScene extends StatelessWidget {
         final isBuildScene = sceneIndex == 1;
         final isFirstPowScene = sceneIndex == 2;
         final isDiscoverScene = sceneIndex == 3;
-        final isContributeScene = sceneIndex == 4;
-        final titleText = typewriterText(title, sceneAnimation, const Interval(0.14, 0.56, curve: Curves.linear));
-        final descriptionText = typewriterText(
-          description,
-          sceneAnimation,
-          const Interval(0.52, 0.84, curve: Curves.linear),
-        );
         final ideaLabelSlide = Tween<Offset>(
           begin: const Offset(0.18, 0),
           end: Offset.zero,
@@ -1186,7 +1283,10 @@ class _StoryScene extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(chapter, style: CoconutTypography.caption_10_Bold.setColor(Colors.white)),
+                                Text(
+                                  '${(sceneIndex + 1).toString().padLeft(2, '0')} / 05',
+                                  style: CoconutTypography.caption_10_Bold.setColor(Colors.white),
+                                ),
                                 const SizedBox(height: 6),
                                 Transform.translate(
                                   offset: isIdeaScene ? Offset(ideaLabelSlide.dx * 36, 0) : Offset.zero,
@@ -1212,63 +1312,24 @@ class _StoryScene extends StatelessWidget {
                           Expanded(
                             child:
                                 isIdeaScene
-                                    ? IdeaSceneBody(animation: sceneAnimation)
+                                    ? IdeaSceneBody(animation: sceneAnimation, sceneDurationMs: sceneDurationMs)
                                     : isBuildScene
-                                    ? BuildSceneBody(animation: sceneAnimation, title: title, description: description)
+                                    ? BuildSceneBody(animation: sceneAnimation)
                                     : isFirstPowScene
-                                    ? hero
+                                    ? hero ?? const SizedBox.shrink()
                                     : isDiscoverScene
-                                    ? DiscoverSceneBody(animation: sceneAnimation)
-                                    : isContributeScene
-                                    ? ContributeSceneBody(
+                                    ? DiscoverSceneBody(animation: sceneAnimation, sceneDurationMs: sceneDurationMs)
+                                    : ContributeSceneBody(
                                       animation: sceneAnimation,
+                                      sceneDurationMs: sceneDurationMs,
                                       onStartPr: () => launchURL(CONTRIBUTING_URL),
-                                    )
-                                    : Column(
-                                      children: [
-                                        Expanded(flex: 12, child: hero),
-                                        Expanded(
-                                          flex: 10,
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    titleText,
-                                                    style: CoconutTypography.heading3_21_Bold.setColor(
-                                                      _CoconutOpenStoreIntroScreenState._textPrimary,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 20),
-                                                  Align(
-                                                    alignment: Alignment.centerRight,
-                                                    child: SizedBox(
-                                                      width: 236,
-                                                      child: Text(
-                                                        descriptionText,
-                                                        textAlign: TextAlign.right,
-                                                        style: CoconutTypography.heading4_18_Bold.setColor(
-                                                          _CoconutOpenStoreIntroScreenState._textPrimary.withValues(
-                                                            alpha: 0.9,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
                                     ),
                           ),
                           const SizedBox(height: 10),
                           _SceneBottomNavigation(
                             animation: sceneAnimation,
+                            sceneDurationMs: sceneDurationMs,
+                            revealStartMs: navigationRevealStartMs,
                             currentIndex: sceneIndex,
                             sceneCount: sceneCount,
                             onPrevious: onPrevious,
@@ -1457,6 +1518,8 @@ class _OpenStoreBackdrop extends StatelessWidget {
 class _SceneBottomNavigation extends StatelessWidget {
   const _SceneBottomNavigation({
     required this.animation,
+    required this.sceneDurationMs,
+    required this.revealStartMs,
     required this.currentIndex,
     required this.sceneCount,
     required this.onPrevious,
@@ -1464,6 +1527,8 @@ class _SceneBottomNavigation extends StatelessWidget {
   });
 
   final Animation<double> animation;
+  final int sceneDurationMs;
+  final int revealStartMs;
   final int currentIndex;
   final int sceneCount;
   final VoidCallback? onPrevious;
@@ -1471,11 +1536,15 @@ class _SceneBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scale = Tween<double>(
-      begin: 0.74,
-      end: 1,
-    ).animate(CurvedAnimation(parent: animation, curve: const Interval(0.74, 1.0, curve: Curves.easeOutBack)));
-    final opacity = CurvedAnimation(parent: animation, curve: const Interval(0.72, 0.96, curve: Curves.easeOut));
+    final scaleInterval = intervalFromMs(
+      revealStartMs,
+      revealStartMs + 520,
+      sceneDurationMs,
+      curve: Curves.easeOutBack,
+    );
+    final opacityInterval = intervalFromMs(revealStartMs, revealStartMs + 420, sceneDurationMs, curve: Curves.easeOut);
+    final scale = Tween<double>(begin: 0.74, end: 1).animate(CurvedAnimation(parent: animation, curve: scaleInterval));
+    final opacity = CurvedAnimation(parent: animation, curve: opacityInterval);
 
     return FadeTransition(
       opacity: opacity,

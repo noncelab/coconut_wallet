@@ -19,16 +19,42 @@ import 'package:flutter/material.dart';
 /// Scene 4 ("DISCOVER") of the open-store intro story: a preview image lands first, then
 /// three thoughts type themselves out one block at a time with the same readable pacing as IDEA.
 class DiscoverSceneBody extends StatelessWidget {
-  const DiscoverSceneBody({super.key, required this.animation});
+  const DiscoverSceneBody({super.key, required this.animation, required this.sceneDurationMs});
 
   final Animation<double> animation;
+  final int sceneDurationMs;
+  static const int _firstTypingStartMs = 2172;
+  static const int _entranceSpanMs = 168;
+  static const int _line1PauseMs = 1100;
+  static const int _line2PauseMs = 900;
+
+  static List<int> typingStartMs(List<String> lines) {
+    const line1Start = _firstTypingStartMs;
+    final line2Start = line1Start + typewriterDurationMs(lines[0]) + _line1PauseMs;
+    final line3Start = line2Start + typewriterDurationMs(lines[1]) + _line2PauseMs;
+    return [line1Start, line2Start, line3Start];
+  }
+
+  static int navigationRevealStartMs(List<String> lines) {
+    return typingStartMs(lines).last - (_entranceSpanMs ~/ 2);
+  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight;
-        final imageHeight = (height * 0.28).clamp(150.0, 210.0);
+        final lines = [t.ccos.discover_scene.line1, t.ccos.discover_scene.line2, t.ccos.discover_scene.line3];
+        final starts = typingStartMs(lines);
+        const firstTextTopGap = 40.0;
+        const line1And3Height = 35.3;
+        const line2Height = 27.8;
+        final textHeight =
+            (_lineCount(lines[0]) * line1And3Height) +
+            (_lineCount(lines[1]) * line2Height) +
+            (_lineCount(lines[2]) * line1And3Height);
+        final maxImageHeight = height - (height * 0.04) - firstTextTopGap - 20 - 32 - textHeight - 8;
+        final imageHeight = math.min((height * 0.28).clamp(140.0, 190.0), maxImageHeight.clamp(110.0, 190.0));
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,37 +62,43 @@ class DiscoverSceneBody extends StatelessWidget {
             SizedBox(height: height * 0.04),
             Align(
               alignment: Alignment.topCenter,
-              child: _DiscoverPreviewImage(animation: animation, height: imageHeight),
+              child: _DiscoverPreviewImage(animation: animation, sceneDurationMs: sceneDurationMs, height: imageHeight),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: firstTextTopGap),
             _DiscoverTypeLine(
               animation: animation,
-              entranceInterval: const Interval(0.2045, 0.2216, curve: Curves.easeOutCubic),
-              typingInterval: const Interval(0.2216, 0.3864, curve: Curves.linear),
-              text: t.ccos.discover_scene.line1,
+              sceneDurationMs: sceneDurationMs,
+              entranceStartMs: starts[0] - _entranceSpanMs,
+              entranceEndMs: starts[0],
+              typingStartMs: starts[0],
+              text: lines[0],
               highlightPhrases: {t.ccos.discover_scene.highlight_new_feature},
               textAlign: TextAlign.left,
               entryOffset: const Offset(-46, 24),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
             _DiscoverTypeLine(
               animation: animation,
-              entranceInterval: const Interval(0.3977, 0.4148, curve: Curves.easeOutCubic),
-              typingInterval: const Interval(0.4148, 0.6193, curve: Curves.linear),
-              text: t.ccos.discover_scene.line2,
+              sceneDurationMs: sceneDurationMs,
+              entranceStartMs: starts[1] - _entranceSpanMs,
+              entranceEndMs: starts[1],
+              typingStartMs: starts[1],
+              text: lines[1],
               textAlign: TextAlign.left,
               entryOffset: const Offset(-54, 28),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 32),
             Align(
               alignment: Alignment.centerRight,
               child: SizedBox(
-                width: constraints.maxWidth * 0.88,
+                width: constraints.maxWidth,
                 child: _DiscoverTypeLine(
                   animation: animation,
-                  entranceInterval: const Interval(0.6477, 0.6648, curve: Curves.easeOutCubic),
-                  typingInterval: const Interval(0.6648, 0.9602, curve: Curves.linear),
-                  text: t.ccos.discover_scene.line3,
+                  sceneDurationMs: sceneDurationMs,
+                  entranceStartMs: starts[2] - _entranceSpanMs,
+                  entranceEndMs: starts[2],
+                  typingStartMs: starts[2],
+                  text: lines[2],
                   highlightPhrases: {
                     t.ccos.discover_scene.highlight_bitcoin_builder,
                     t.ccos.discover_scene.highlight_can_shine,
@@ -82,12 +114,15 @@ class DiscoverSceneBody extends StatelessWidget {
       },
     );
   }
+
+  static int _lineCount(String text) => text.split('\n').length;
 }
 
 class _DiscoverPreviewImage extends StatelessWidget {
-  const _DiscoverPreviewImage({required this.animation, required this.height});
+  const _DiscoverPreviewImage({required this.animation, required this.sceneDurationMs, required this.height});
 
   final Animation<double> animation;
+  final int sceneDurationMs;
   final double height;
 
   // Flat (Z-axis) tilt only, so the mock stays parallel to the screen's XY plane instead of
@@ -102,16 +137,29 @@ class _DiscoverPreviewImage extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) {
-        final progress = Curves.easeOutCubic.transform(const Interval(0.04, 0.18).transform(animation.value));
+        final progress = intervalFromMs(
+          392,
+          1764,
+          sceneDurationMs,
+          curve: Curves.easeOutCubic,
+        ).transform(animation.value);
         final dx = 18 * (1 - progress);
         final dy = -22 * (1 - progress);
         final scale = 0.9 + (0.12 * progress);
         final settleScale = scale > 1.0 ? 1.0 + ((scale - 1.0) * 0.35) : scale;
+        final floatReady = intervalFromMs(
+          1764,
+          2200,
+          sceneDurationMs,
+          curve: Curves.easeOut,
+        ).transform(animation.value);
+        final floatDy = math.sin(animation.value * math.pi * 8) * 1.8 * floatReady;
+        final highlightPulse = (0.5 + (0.5 * math.sin((animation.value * math.pi * 6) - (math.pi / 2)))) * floatReady;
 
         return Opacity(
           opacity: progress,
           child: Transform.translate(
-            offset: Offset(dx, dy),
+            offset: Offset(dx, dy + floatDy),
             child: Transform.scale(
               scale: settleScale,
               child: Transform.rotate(
@@ -119,7 +167,7 @@ class _DiscoverPreviewImage extends StatelessWidget {
                 child: SizedBox(
                   width: width,
                   height: height,
-                  child: _ThemeSettingsMock(listing: listing, width: width),
+                  child: _ThemeSettingsMock(listing: listing, width: width, highlightPulse: highlightPulse),
                 ),
               ),
             ),
@@ -134,13 +182,14 @@ class _DiscoverPreviewImage extends StatelessWidget {
 // lib/screens/settings/theme_bottom_sheet.dart), showing the Coconut Pulp theme selected with
 // its creator credit - illustrating what "discovering" a feature looks like once it's added.
 class _ThemeSettingsMock extends StatelessWidget {
-  const _ThemeSettingsMock({required this.listing, required this.width});
+  const _ThemeSettingsMock({required this.listing, required this.width, required this.highlightPulse});
 
   final CcosFeatureListing listing;
   // The box's actual width, so the row text column can be sized as "whatever's left after
   // padding and the check icon" instead of a fixed pixel cap that goes out of proportion when
   // the box itself shrinks/grows (its height, and thus width, is device-dependent).
   final double width;
+  final double highlightPulse;
 
   static const double _horizontalPadding = 16 * 2;
   static const double _checkIconReserve = 21;
@@ -180,6 +229,7 @@ class _ThemeSettingsMock extends StatelessWidget {
                     subtitle: '${listing.author} · ${listing.authorBio}',
                     textColor: pulpColors.primaryText,
                     maxWidth: rowTextMaxWidth,
+                    highlightPulse: highlightPulse,
                   ),
                 ],
               ),
@@ -198,6 +248,7 @@ class _ThemeMockRow extends StatelessWidget {
     required this.maxWidth,
     this.isSelected = false,
     this.subtitle,
+    this.highlightPulse = 0,
   });
 
   final String title;
@@ -205,6 +256,7 @@ class _ThemeMockRow extends StatelessWidget {
   final double maxWidth;
   final bool isSelected;
   final String? subtitle;
+  final double highlightPulse;
 
   @override
   Widget build(BuildContext context) {
@@ -226,13 +278,32 @@ class _ThemeMockRow extends StatelessWidget {
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 2),
-                Text(
-                  subtitle!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: CoconutTypography.caption_10
-                      .setColor(textColor.withValues(alpha: 0.55))
-                      .copyWith(fontSize: 8.5),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: textColor.withValues(alpha: 0.025 + (0.035 * highlightPulse)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: textColor.withValues(alpha: 0.05 + (0.10 * highlightPulse)),
+                        blurRadius: 8 + (5 * highlightPulse),
+                        spreadRadius: 0.4,
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2.5),
+                    child: Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: CoconutTypography.caption_10
+                          .setColor(textColor.withValues(alpha: 0.56 + (0.12 * highlightPulse)))
+                          .copyWith(
+                            fontSize: 8.5,
+                            shadows: [Shadow(color: textColor.withValues(alpha: 0.08 * highlightPulse), blurRadius: 4)],
+                          ),
+                    ),
+                  ),
                 ),
               ],
             ],
@@ -251,8 +322,10 @@ class _ThemeMockRow extends StatelessWidget {
 class _DiscoverTypeLine extends StatelessWidget {
   const _DiscoverTypeLine({
     required this.animation,
-    required this.entranceInterval,
-    required this.typingInterval,
+    required this.sceneDurationMs,
+    required this.entranceStartMs,
+    required this.entranceEndMs,
+    required this.typingStartMs,
     required this.text,
     required this.textAlign,
     this.highlightPhrases = const <String>{},
@@ -260,8 +333,10 @@ class _DiscoverTypeLine extends StatelessWidget {
   });
 
   final Animation<double> animation;
-  final Interval entranceInterval;
-  final Interval typingInterval;
+  final int sceneDurationMs;
+  final int entranceStartMs;
+  final int entranceEndMs;
+  final int typingStartMs;
   final String text;
   final Set<String> highlightPhrases;
   final TextAlign textAlign;
@@ -282,7 +357,9 @@ class _DiscoverTypeLine extends StatelessWidget {
 
     return _AnimatedTypeBlock(
       animation: animation,
-      entranceInterval: entranceInterval,
+      sceneDurationMs: sceneDurationMs,
+      entranceStartMs: entranceStartMs,
+      entranceEndMs: entranceEndMs,
       entryOffset: entryOffset,
       textAlign: textAlign,
       builder:
@@ -292,7 +369,7 @@ class _DiscoverTypeLine extends StatelessWidget {
             text: typewriterSpan(
               source: text,
               animation: animation,
-              interval: typingInterval,
+              interval: typewriterIntervalFromMs(text, typingStartMs, sceneDurationMs),
               baseStyle: baseStyle,
               highlightStyle: highlightStyle,
               highlightPhrases: highlightPhrases,
@@ -305,14 +382,18 @@ class _DiscoverTypeLine extends StatelessWidget {
 class _AnimatedTypeBlock extends StatelessWidget {
   const _AnimatedTypeBlock({
     required this.animation,
-    required this.entranceInterval,
+    required this.sceneDurationMs,
+    required this.entranceStartMs,
+    required this.entranceEndMs,
     required this.entryOffset,
     required this.textAlign,
     required this.builder,
   });
 
   final Animation<double> animation;
-  final Interval entranceInterval;
+  final int sceneDurationMs;
+  final int entranceStartMs;
+  final int entranceEndMs;
   final Offset entryOffset;
   final TextAlign textAlign;
   final Widget Function(Animation<double> animation, TextAlign textAlign) builder;
@@ -322,6 +403,12 @@ class _AnimatedTypeBlock extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) {
+        final entranceInterval = intervalFromMs(
+          entranceStartMs,
+          entranceEndMs,
+          sceneDurationMs,
+          curve: Curves.easeOutCubic,
+        );
         final t = entranceInterval.transform(animation.value);
         final dx = entryOffset.dx * (1 - t);
         final dy = entryOffset.dy * (1 - t);

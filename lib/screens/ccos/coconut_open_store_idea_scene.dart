@@ -14,15 +14,47 @@ import 'package:flutter/material.dart';
 /// Scene 1 ("IDEA") of the open-store intro story: a handful of lines that fly in and
 /// type themselves out in a staggered, cascading sequence.
 class IdeaSceneBody extends StatelessWidget {
-  const IdeaSceneBody({super.key, required this.animation});
+  const IdeaSceneBody({
+    super.key,
+    required this.animation,
+    required this.sceneDurationMs,
+  });
 
   final Animation<double> animation;
+  final int sceneDurationMs;
+  static const int _firstTypingStartMs = 450;
+  static const int _entranceSpanMs = 150;
+  static const int _line1PauseMs = 800;
+  static const int _line2PauseMs = 1350;
+  static const int _line3PauseMs = 650;
+
+  static List<int> typingStartMs(List<String> lines) {
+    const line1Start = _firstTypingStartMs;
+    final line2Start =
+        line1Start + typewriterDurationMs(lines[0]) + _line1PauseMs;
+    final line3Start =
+        line2Start + typewriterDurationMs(lines[1]) + _line2PauseMs;
+    final line4Start =
+        line3Start + typewriterDurationMs(lines[2]) + _line3PauseMs;
+    return [line1Start, line2Start, line3Start, line4Start];
+  }
+
+  static int navigationRevealStartMs(List<String> lines) {
+    return typingStartMs(lines).last - (_entranceSpanMs ~/ 2);
+  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight;
+        final lines = [
+          t.ccos.idea_scene.line1,
+          t.ccos.idea_scene.line2,
+          t.ccos.idea_scene.line3,
+          t.ccos.idea_scene.line4,
+        ];
+        final starts = typingStartMs(lines);
 
         return Stack(
           children: [
@@ -32,9 +64,11 @@ class IdeaSceneBody extends StatelessWidget {
               right: 48,
               child: _IdeaTypeLine(
                 animation: animation,
-                entranceInterval: const Interval(0.0341, 0.0511, curve: Curves.easeOutCubic),
-                typingInterval: const Interval(0.0511, 0.2102, curve: Curves.linear),
-                text: t.ccos.idea_scene.line1,
+                sceneDurationMs: sceneDurationMs,
+                entranceStartMs: starts[0] - _entranceSpanMs,
+                entranceEndMs: starts[0],
+                typingStartMs: starts[0],
+                text: lines[0],
                 textAlign: TextAlign.left,
                 entryOffset: const Offset(-44, 22),
               ),
@@ -45,9 +79,11 @@ class IdeaSceneBody extends StatelessWidget {
               right: 32,
               child: _IdeaTypeLine(
                 animation: animation,
-                entranceInterval: const Interval(0.1989, 0.2159, curve: Curves.easeOutCubic),
-                typingInterval: const Interval(0.2159, 0.5114, curve: Curves.linear),
-                text: t.ccos.idea_scene.line2,
+                sceneDurationMs: sceneDurationMs,
+                entranceStartMs: starts[1] - _entranceSpanMs,
+                entranceEndMs: starts[1],
+                typingStartMs: starts[1],
+                text: lines[1],
                 highlightPhrases: {t.ccos.idea_scene.highlight_network_effect},
                 textAlign: TextAlign.left,
                 entryOffset: const Offset(-54, 28),
@@ -59,23 +95,29 @@ class IdeaSceneBody extends StatelessWidget {
               right: 0,
               child: _IdeaTypeLine(
                 animation: animation,
-                entranceInterval: const Interval(0.5000, 0.5170, curve: Curves.easeOutCubic),
-                typingInterval: const Interval(0.5170, 0.6420, curve: Curves.linear),
-                text: t.ccos.idea_scene.line3,
+                sceneDurationMs: sceneDurationMs,
+                entranceStartMs: starts[2] - _entranceSpanMs,
+                entranceEndMs: starts[2],
+                typingStartMs: starts[2],
+                text: lines[2],
                 textAlign: TextAlign.right,
                 entryOffset: const Offset(48, 24),
               ),
             ),
             Positioned(
               top: height * 0.62,
-              left: 64,
+              left: 16,
               right: 0,
               child: _IdeaQuestionMorphLine(
                 animation: animation,
-                entranceInterval: const Interval(0.6307, 0.6477, curve: Curves.easeOutCubic),
-                typingInterval: const Interval(0.6477, 0.9545, curve: Curves.linear),
-                text: t.ccos.idea_scene.line4,
-                highlightPhrases: {t.ccos.idea_scene.highlight_bitcoin_standard},
+                sceneDurationMs: sceneDurationMs,
+                entranceStartMs: starts[3] - _entranceSpanMs,
+                entranceEndMs: starts[3],
+                typingStartMs: starts[3],
+                text: lines[3],
+                highlightPhrases: {
+                  t.ccos.idea_scene.highlight_bitcoin_standard,
+                },
                 textAlign: TextAlign.right,
                 entryOffset: const Offset(64, 30),
               ),
@@ -90,8 +132,10 @@ class IdeaSceneBody extends StatelessWidget {
 class _IdeaTypeLine extends StatelessWidget {
   const _IdeaTypeLine({
     required this.animation,
-    required this.entranceInterval,
-    required this.typingInterval,
+    required this.sceneDurationMs,
+    required this.entranceStartMs,
+    required this.entranceEndMs,
+    required this.typingStartMs,
     required this.text,
     required this.textAlign,
     this.highlightPhrases = const <String>{},
@@ -99,8 +143,10 @@ class _IdeaTypeLine extends StatelessWidget {
   });
 
   final Animation<double> animation;
-  final Interval entranceInterval;
-  final Interval typingInterval;
+  final int sceneDurationMs;
+  final int entranceStartMs;
+  final int entranceEndMs;
+  final int typingStartMs;
   final String text;
   final Set<String> highlightPhrases;
   final TextAlign textAlign;
@@ -108,7 +154,9 @@ class _IdeaTypeLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(Colors.white).copyWith(height: 1.32);
+    final baseStyle = CoconutTypography.heading3_21_Bold
+        .setColor(Colors.white)
+        .copyWith(height: 1.32);
     final highlightStyle = baseStyle.copyWith(
       fontSize: (baseStyle.fontSize ?? 18) * 1.4,
       fontWeight: FontWeight.w900,
@@ -117,11 +165,20 @@ class _IdeaTypeLine extends StatelessWidget {
     final strutStyle =
         highlightPhrases.isEmpty
             ? null
-            : StrutStyle(fontSize: highlightStyle.fontSize, height: 1.2, forceStrutHeight: true);
+            : StrutStyle(
+              fontSize: highlightStyle.fontSize,
+              height: 1.2,
+              forceStrutHeight: true,
+            );
 
     return _AnimatedTypeBlock(
       animation: animation,
-      entranceInterval: entranceInterval,
+      entranceInterval: intervalFromMs(
+        entranceStartMs,
+        entranceEndMs,
+        sceneDurationMs,
+        curve: Curves.easeOutCubic,
+      ),
       entryOffset: entryOffset,
       textAlign: textAlign,
       builder:
@@ -131,7 +188,11 @@ class _IdeaTypeLine extends StatelessWidget {
             text: typewriterSpan(
               source: text,
               animation: animation,
-              interval: typingInterval,
+              interval: typewriterIntervalFromMs(
+                text,
+                typingStartMs,
+                sceneDurationMs,
+              ),
               baseStyle: baseStyle,
               highlightStyle: highlightStyle,
               highlightPhrases: highlightPhrases,
@@ -144,8 +205,10 @@ class _IdeaTypeLine extends StatelessWidget {
 class _IdeaQuestionMorphLine extends StatefulWidget {
   const _IdeaQuestionMorphLine({
     required this.animation,
-    required this.entranceInterval,
-    required this.typingInterval,
+    required this.sceneDurationMs,
+    required this.entranceStartMs,
+    required this.entranceEndMs,
+    required this.typingStartMs,
     required this.text,
     required this.textAlign,
     this.highlightPhrases = const <String>{},
@@ -153,8 +216,10 @@ class _IdeaQuestionMorphLine extends StatefulWidget {
   });
 
   final Animation<double> animation;
-  final Interval entranceInterval;
-  final Interval typingInterval;
+  final int sceneDurationMs;
+  final int entranceStartMs;
+  final int entranceEndMs;
+  final int typingStartMs;
   final String text;
   final Set<String> highlightPhrases;
   final TextAlign textAlign;
@@ -164,7 +229,8 @@ class _IdeaQuestionMorphLine extends StatefulWidget {
   State<_IdeaQuestionMorphLine> createState() => _IdeaQuestionMorphLineState();
 }
 
-class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with SingleTickerProviderStateMixin {
+class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _suffixController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2300),
@@ -196,7 +262,12 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
 
   void _handleParentAnimation() {
     final value = widget.animation.value;
-    if (value < widget.typingInterval.begin) {
+    final typingInterval = typewriterIntervalFromMs(
+      widget.text,
+      widget.typingStartMs,
+      widget.sceneDurationMs,
+    );
+    if (value < typingInterval.begin) {
       if (_hasStartedSuffixAnimation || _suffixController.value != 0) {
         _hasStartedSuffixAnimation = false;
         _suffixController.reset();
@@ -204,7 +275,7 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
       return;
     }
 
-    if (value >= widget.typingInterval.end && !_hasStartedSuffixAnimation) {
+    if (value >= typingInterval.end && !_hasStartedSuffixAnimation) {
       _hasStartedSuffixAnimation = true;
       _suffixController.forward(from: 0);
     }
@@ -212,7 +283,9 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(Colors.white).copyWith(height: 1.32);
+    final baseStyle = CoconutTypography.heading3_21_Bold
+        .setColor(Colors.white)
+        .copyWith(height: 1.32);
     final highlightStyle = baseStyle.copyWith(
       fontSize: (baseStyle.fontSize ?? 18) * 1.4,
       fontWeight: FontWeight.w900,
@@ -221,15 +294,33 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
     final strutStyle =
         widget.highlightPhrases.isEmpty
             ? null
-            : StrutStyle(fontSize: highlightStyle.fontSize, height: 1.2, forceStrutHeight: true);
+            : StrutStyle(
+              fontSize: highlightStyle.fontSize,
+              height: 1.2,
+              forceStrutHeight: true,
+            );
 
-    final visibleText = typewriterText(widget.text, widget.animation, widget.typingInterval);
+    final typingInterval = typewriterIntervalFromMs(
+      widget.text,
+      widget.typingStartMs,
+      widget.sceneDurationMs,
+    );
+    final visibleText = typewriterText(
+      widget.text,
+      widget.animation,
+      typingInterval,
+    );
     final hasQuestionMark = widget.text.endsWith('?');
 
     if (!hasQuestionMark || visibleText != widget.text) {
       return _AnimatedTypeBlock(
         animation: widget.animation,
-        entranceInterval: widget.entranceInterval,
+        entranceInterval: intervalFromMs(
+          widget.entranceStartMs,
+          widget.entranceEndMs,
+          widget.sceneDurationMs,
+          curve: Curves.easeOutCubic,
+        ),
         entryOffset: widget.entryOffset,
         textAlign: widget.textAlign,
         builder:
@@ -238,6 +329,7 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
               strutStyle: strutStyle,
               text: styledSpanFromVisibleText(
                 visibleText: visibleText,
+                sourceText: widget.text,
                 baseStyle: baseStyle,
                 highlightStyle: highlightStyle,
                 highlightPhrases: widget.highlightPhrases,
@@ -250,7 +342,12 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
 
     return _AnimatedTypeBlock(
       animation: widget.animation,
-      entranceInterval: widget.entranceInterval,
+      entranceInterval: intervalFromMs(
+        widget.entranceStartMs,
+        widget.entranceEndMs,
+        widget.sceneDurationMs,
+        curve: Curves.easeOutCubic,
+      ),
       entryOffset: widget.entryOffset,
       textAlign: widget.textAlign,
       builder:
@@ -268,6 +365,7 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
                   children: [
                     styledSpanFromVisibleText(
                       visibleText: prefixText,
+                      sourceText: widget.text,
                       baseStyle: baseStyle,
                       highlightStyle: highlightStyle,
                       highlightPhrases: widget.highlightPhrases,
@@ -289,15 +387,20 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
 
   String _suffixText(double progress) {
     if (progress < _typeDotsEnd) {
-      final count = (_trailingDots.length * (progress / _typeDotsEnd)).floor().clamp(0, _trailingDots.length);
+      final count = (_trailingDots.length * (progress / _typeDotsEnd))
+          .floor()
+          .clamp(0, _trailingDots.length);
       return _trailingDots.substring(0, count);
     }
     if (progress < _eraseStart) {
       return _trailingDots;
     }
     if (progress < _eraseEnd) {
-      final eraseProgress = (progress - _eraseStart) / (_eraseEnd - _eraseStart);
-      final remaining = (_trailingDots.length * (1 - eraseProgress)).ceil().clamp(0, _trailingDots.length);
+      final eraseProgress =
+          (progress - _eraseStart) / (_eraseEnd - _eraseStart);
+      final remaining = (_trailingDots.length * (1 - eraseProgress))
+          .ceil()
+          .clamp(0, _trailingDots.length);
       return _trailingDots.substring(0, remaining);
     }
     if (progress < _finalMarkStart) {
@@ -320,7 +423,8 @@ class _AnimatedTypeBlock extends StatelessWidget {
   final Interval entranceInterval;
   final Offset entryOffset;
   final TextAlign textAlign;
-  final Widget Function(Animation<double> animation, TextAlign textAlign) builder;
+  final Widget Function(Animation<double> animation, TextAlign textAlign)
+  builder;
 
   @override
   Widget build(BuildContext context) {
@@ -339,7 +443,10 @@ class _AnimatedTypeBlock extends StatelessWidget {
             offset: Offset(dx, dy),
             child: Transform.scale(
               scale: settleScale,
-              alignment: textAlign == TextAlign.right ? Alignment.centerRight : Alignment.centerLeft,
+              alignment:
+                  textAlign == TextAlign.right
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
               child: builder(animation, textAlign),
             ),
           ),

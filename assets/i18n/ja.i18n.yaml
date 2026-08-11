@@ -1412,23 +1412,20 @@ ccos:
     scenes:
       idea:
         label: "IDEA"
-        title: "それぞれの実験が散らばるのではなく、\nつながり合って\nより大きなネットワーク効果を生み出せたら,"
-        description: "小さなアイデアひとつでも\nビットコインスタンダードを\n少しずつ前に進められるのではないでしょうか？"
         overview_title: "よいアイデアが\nより大きな波及につながるように"
+        overview_highlight: "よい"
       build:
         label: "BUILD"
-        title: "誰もがビットコインの\nビルダーになれる世界"
-        description: "みなさんのPoWが\nCoconutの新しい機能となり\nビットコイナーの日常になります"
         overview_title: "私のアイデアが\nみんなの機能になる場所"
+        overview_highlight: "機能"
       first_pow:
         label: "FIRST PoW"
-        title: "最初のPoWは\nCoconutチームが\n先に残してみました。"
-        description: "ココナッツ果肉テーマは、これからOpen Storeに加わる機能がどのように紹介され、使われるのかを見せる最初の例です。"
         overview_title: "最初のPoW\nココナッツ果肉テーマ by Coconut Team"
         overview_highlight: "最初のPoW"
       discover:
         label: "DISCOVER"
         overview_title: "すべてのビットコインビルダーが\nCoconutの中で輝けるように"
+        overview_highlight: "すべての"
       contribute:
         label: "CONTRIBUTE"
         overview_title: "次のPoWを\n待っています"
@@ -1441,6 +1438,8 @@ ccos:
     highlight_network_effect: "ネットワーク効果"
     highlight_bitcoin_standard: "ビットコインスタンダード"
   build_scene:
+    line1: "誰もがビットコイン\nビルダーになれる世界"
+    line2: "みなさんのPoWが\nCoconutの新しい機能となり\nビットコイナーの日常になります"
     highlight_bitcoin_builder: "ビットコイン\nビルダー"
     highlight_pow: "みなさんのPoW"
     orbit:
@@ -1451,8 +1450,8 @@ ccos:
       layer2: "Layer2"
       backup: "Backup"
   first_pow_scene:
-    intro_line1: "ココナッツ果肉テーマは\nOpen Storeの最初のPoWです。"
-    intro_line2: "新しい機能が\nCoconutに加わっていく姿を\n最初にテーマで表してみました。"
+    intro_line1: "ココナッツ果肉テーマは\nOpen Storeの最初のPoWです"
+    intro_line2: "新しい機能が\nCoconutに加わっていく姿を\n最初にテーマで表してみました"
     intro_highlight_theme: "ココナッツ果肉テーマ"
     intro_highlight_first_pow: "最初のPoW"
     status_applied: "適用中"
@@ -1465,8 +1464,6 @@ ccos:
       description: "ココナッツと浜辺のあたたかな色を込めた\nCoconut Walletの新しい明るいテーマです"
     creator_detail:
       panel_label: "CREATOR"
-      author: "Coconutチーム"
-      author_description: "ビットコインのためだけの、よりよいウォレット体験を作っています。"
       story_label: "Creator Story"
       feedback_quote: "\"ココナッツは明るくあたたかい果物なのに,\nウォレットは少し暗い印象で惜しいです。\""
       feedback_attribution: "- Bitzzangさんのフィードバック"
@@ -1489,9 +1486,6 @@ ccos:
     highlight_new_feature: "新しい機能"
     highlight_bitcoin_builder: "ビットコインビルダー"
     highlight_can_shine: "輝けるように"
-    preview_open_store: "Open Store"
-    preview_created_by: "Created by"
-    preview_feature: "Feature"
   contribute_scene:
     line1: "次のPoWは\nみなさんの番です"
     line2: "小さなアイデアでも大丈夫です。"

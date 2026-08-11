@@ -54,6 +54,12 @@ String get _deliveryIntroBody => t.ccos.first_pow_scene.delivery_detail.intro_bo
 
 enum _FirstPowCardKind { creator, feature, delivery }
 
+const List<_FirstPowCardKind> _firstPowDetailOrder = [
+  _FirstPowCardKind.creator,
+  _FirstPowCardKind.feature,
+  _FirstPowCardKind.delivery,
+];
+
 class _FirstPowCardDetail {
   const _FirstPowCardDetail({
     required this.kind,
@@ -111,6 +117,7 @@ class FirstPowSceneBody extends StatefulWidget {
   const FirstPowSceneBody({
     super.key,
     required this.animation,
+    required this.sceneDurationMs,
     required this.listing,
     required this.isAdded,
     required this.isApplied,
@@ -120,6 +127,7 @@ class FirstPowSceneBody extends StatefulWidget {
   });
 
   final Animation<double> animation;
+  final int sceneDurationMs;
   final CcosFeatureListing listing;
   final bool isAdded;
   final bool isApplied;
@@ -129,17 +137,33 @@ class FirstPowSceneBody extends StatefulWidget {
   final VoidCallback onAdd;
   final VoidCallback onRemove;
 
+  static const int baseDurationMs = 11000;
+  static const int buttonPauseMs = 500;
+  static const int buttonEntranceMs = 500;
+  static const int _text1TypingStartMs = 2080;
+  static const int _text1PauseMs = 650;
+
+  static List<int> typingStartMs(List<String> lines) {
+    final text2Start = _text1TypingStartMs + typewriterDurationMs(lines[0]) + _text1PauseMs;
+    return [_text1TypingStartMs, text2Start];
+  }
+
+  static int ctaStartMs(List<String> lines) {
+    final starts = typingStartMs(lines);
+    return starts.last + typewriterDurationMs(lines.last) + buttonPauseMs;
+  }
+
+  static int navigationRevealStartMs(List<String> lines) {
+    return ctaStartMs(lines) + (buttonEntranceMs ~/ 2);
+  }
+
   @override
   State<FirstPowSceneBody> createState() => _FirstPowSceneBodyState();
 }
 
 class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProviderStateMixin {
   static const Interval _cardsInterval = Interval(0.0, 0.0818, curve: Curves.easeOutCubic);
-  static const Interval _titleEntranceInterval = Interval(0.1727, 0.1891, curve: Curves.easeOutCubic);
-  static const Interval _buttonEntranceInterval = Interval(0.6682, 0.7136, curve: Curves.linear);
-
-  static const Interval _text1TypingInterval = Interval(0.1891, 0.4180, curve: Curves.linear);
-  static const Interval _text2TypingInterval = Interval(0.4540, 0.6227, curve: Curves.linear);
+  static const int _buttonEntranceMs = FirstPowSceneBody.buttonEntranceMs;
 
   bool _hasInteractedWithCards = false;
 
@@ -335,7 +359,14 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                   padding: EdgeInsets.only(top: cardHeight + topExtra + 44),
                   child: Builder(
                     builder: (context) {
-                      final entranceT = _titleEntranceInterval.transform(value);
+                      final starts = FirstPowSceneBody.typingStartMs([text1, text2]);
+                      final titleEntranceInterval = intervalFromMs(
+                        starts[0] - 180,
+                        starts[0],
+                        widget.sceneDurationMs,
+                        curve: Curves.easeOutCubic,
+                      );
+                      final entranceT = titleEntranceInterval.transform(value);
                       final dy = 20 * (1 - entranceT);
 
                       return Opacity(
@@ -351,7 +382,7 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                                 text: typewriterSpan(
                                   source: text1,
                                   animation: widget.animation,
-                                  interval: _text1TypingInterval,
+                                  interval: typewriterIntervalFromMs(text1, starts[0], widget.sceneDurationMs),
                                   baseStyle: bodyStyle,
                                   highlightStyle: highlightStyle,
                                   highlightPhrases: introHighlights,
@@ -364,7 +395,7 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                                 text: typewriterSpan(
                                   source: text2,
                                   animation: widget.animation,
-                                  interval: _text2TypingInterval,
+                                  interval: typewriterIntervalFromMs(text2, starts[1], widget.sceneDurationMs),
                                   baseStyle: text2Style,
                                   highlightStyle: text2HighlightStyle,
                                   highlightPhrases: const {},
@@ -382,8 +413,15 @@ class _FirstPowSceneBodyState extends State<FirstPowSceneBody> with TickerProvid
                   bottom: 0,
                   child: Builder(
                     builder: (context) {
-                      final buttonT = Curves.elasticOut.transform(_buttonEntranceInterval.transform(value));
-                      final buttonOpacity = _buttonEntranceInterval.transform(value).clamp(0.0, 1.0);
+                      final ctaStart = FirstPowSceneBody.ctaStartMs([text1, text2]);
+                      final buttonEntranceInterval = intervalFromMs(
+                        ctaStart,
+                        ctaStart + _buttonEntranceMs,
+                        widget.sceneDurationMs,
+                        curve: Curves.linear,
+                      );
+                      final buttonT = Curves.elasticOut.transform(buttonEntranceInterval.transform(value));
+                      final buttonOpacity = buttonEntranceInterval.transform(value).clamp(0.0, 1.0);
                       return Opacity(
                         opacity: buttonOpacity,
                         child: Transform.scale(
@@ -614,6 +652,8 @@ class _FirstPowDetailScreen extends StatefulWidget {
 class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with TickerProviderStateMixin {
   static const Duration _heroFlightDuration = Duration(milliseconds: 320);
   static const Duration _postFlightPause = Duration(milliseconds: 300);
+  static const double _deliveryCardGap = 44;
+  static const double _deliveryScrollEdgeFade = 34;
 
   static const int _defaultEntranceMs = 4150;
   static const int _creatorEntranceMs = 4700;
@@ -623,30 +663,36 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
     return Interval(startMs / totalMs, endMs / totalMs, curve: curve);
   }
 
-  late final int _totalEntranceMs = switch (widget.detail.kind) {
+  late _FirstPowCardDetail _detail = widget.detail;
+  late final PageController _pageController = PageController(
+    initialPage: _firstPowDetailOrder.indexOf(widget.detail.kind),
+  );
+  bool _hasPrecachedDetailImages = false;
+
+  int get _totalEntranceMs => switch (_detail.kind) {
     _FirstPowCardKind.creator => _creatorEntranceMs,
     _FirstPowCardKind.delivery => _deliveryEntranceMs,
     _FirstPowCardKind.feature => _defaultEntranceMs,
   };
 
-  late final Interval _glassInterval = _buildInterval(0, 250, _totalEntranceMs, curve: Curves.easeOut);
-  late final Interval _backButtonInterval = _buildInterval(250, 700, _totalEntranceMs, curve: Curves.elasticOut);
-  late final Interval _labelSlideInterval = _buildInterval(700, 1400, _totalEntranceMs);
-  late final Interval _bodyGroup0Interval =
-      widget.detail.kind == _FirstPowCardKind.delivery
+  Interval get _glassInterval => _buildInterval(0, 250, _totalEntranceMs, curve: Curves.easeOut);
+  Interval get _backButtonInterval => _buildInterval(250, 700, _totalEntranceMs, curve: Curves.elasticOut);
+  Interval get _labelSlideInterval => _buildInterval(700, 1400, _totalEntranceMs);
+  Interval get _bodyGroup0Interval =>
+      _detail.kind == _FirstPowCardKind.delivery
           ? _buildInterval(1550, 1980, _totalEntranceMs)
           : _buildInterval(1400, 1750, _totalEntranceMs);
-  late final Interval _stage2Interval = switch (widget.detail.kind) {
+  Interval get _stage2Interval => switch (_detail.kind) {
     _FirstPowCardKind.creator => _buildInterval(2450, 2780, _totalEntranceMs),
     _FirstPowCardKind.delivery => _buildInterval(2680, 3120, _totalEntranceMs),
     _FirstPowCardKind.feature => _buildInterval(2250, 2550, _totalEntranceMs),
   };
-  late final Interval _stage3Interval = switch (widget.detail.kind) {
+  Interval get _stage3Interval => switch (_detail.kind) {
     _FirstPowCardKind.creator => _buildInterval(3230, 3600, _totalEntranceMs),
     _FirstPowCardKind.delivery => _buildInterval(3820, 4280, _totalEntranceMs),
     _FirstPowCardKind.feature => _buildInterval(2950, 3300, _totalEntranceMs),
   };
-  late final Interval _stage4Interval = switch (widget.detail.kind) {
+  Interval get _stage4Interval => switch (_detail.kind) {
     _FirstPowCardKind.creator => _buildInterval(4020, _totalEntranceMs, _totalEntranceMs),
     _FirstPowCardKind.delivery => _buildInterval(4700, _totalEntranceMs, _totalEntranceMs),
     _FirstPowCardKind.feature => _buildInterval(3700, _totalEntranceMs, _totalEntranceMs),
@@ -667,7 +713,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
 
   // Measured against the label's actual rendered glyph width so the crop stays correct
   // regardless of which panelLabel string or font ends up here.
-  late final double _labelCropWidth = _computeLabelCropWidth(widget.detail.panelLabel);
+  double get _labelCropWidth => _computeLabelCropWidth(_detail.panelLabel);
 
   static TextStyle _panelLabelStyle() {
     return CoconutTypography.heading1_32_Bold
@@ -694,31 +740,161 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
       if (!mounted) return;
       _entranceController.forward();
     });
-    if (widget.detail.kind == _FirstPowCardKind.feature) {
-      _entranceController.addStatusListener(_handleEntranceStatusForButton);
+    _entranceController.addStatusListener(_handleEntranceStatusForButton);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_hasPrecachedDetailImages) return;
+    _hasPrecachedDetailImages = true;
+
+    for (final path in [
+      for (final kind in _firstPowDetailOrder) _firstPowCardDetailForKind(kind).imagePath,
+      _previewTxCardImagePath,
+      _previewWalletIconImagePath,
+      _previewDownArrowImagePath,
+      _previewUpArrowImagePath,
+      _previewAddressBarImagePath,
+    ]) {
+      precacheImage(AssetImage(path), context);
     }
   }
 
   void _handleEntranceStatusForButton(AnimationStatus status) {
-    if (status != AnimationStatus.completed) return;
+    if (status != AnimationStatus.completed || _detail.kind != _FirstPowCardKind.feature) return;
     Future.delayed(_addButtonDelay, () {
-      if (!mounted) return;
+      if (!mounted || _detail.kind != _FirstPowCardKind.feature) return;
       _addButtonController.forward();
     });
+  }
+
+  void _handleDetailPageChanged(int index) {
+    setState(() {
+      _detail = _firstPowCardDetailForKind(_firstPowDetailOrder[index]);
+    });
+    _entranceController.duration = Duration(milliseconds: _totalEntranceMs);
+    _entranceController.forward(from: 0);
+    _addButtonController.reset();
   }
 
   @override
   void dispose() {
     _entranceController.removeStatusListener(_handleEntranceStatusForButton);
+    _pageController.dispose();
     _entranceController.dispose();
     _addButtonController.dispose();
     super.dispose();
   }
 
+  Widget _buildFeatureCta({required bool isAdded, required bool isApplied}) {
+    return AnimatedBuilder(
+      animation: _addButtonController,
+      builder: (context, child) {
+        final buttonT = Curves.elasticOut.transform(_addButtonController.value);
+        final buttonOpacity = _addButtonController.value.clamp(0.0, 1.0);
+        return Opacity(
+          opacity: buttonOpacity,
+          child: Transform.scale(scale: buttonT.clamp(0.0, 1.4), alignment: Alignment.centerRight, child: child),
+        );
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isAdded)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _AddedGlassBadge(
+                label: isApplied ? t.ccos.first_pow_scene.status_applied : t.ccos.first_pow_scene.status_added,
+              ),
+            ),
+          _AddThemeButton(isAdded: isAdded, onAdd: widget.onAdd, onRemove: widget.onRemove),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeaturePreview(double progress) {
+    return Flexible(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final height = constraints.maxHeight;
+          final previewWidth = math.min(width, height * 1.04);
+
+          return Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: previewWidth,
+              height: previewWidth / 1.04,
+              child: _FadeSlideIn(progress: progress, child: const _ThemePreviewCluster()),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDeliveryContent({required double group0T, required double stage2T, required double stage3T}) {
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ShaderMask(
+            blendMode: BlendMode.dstIn,
+            shaderCallback: (bounds) {
+              final fadeStop = (_deliveryScrollEdgeFade / bounds.height).clamp(0.0, 0.22);
+              return LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF), Color(0xFFFFFFFF), Color(0x00FFFFFF)],
+                stops: [0, fadeStop, 1 - fadeStop, 1],
+              ).createShader(bounds);
+            },
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 58, bottom: 42),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _DeliveryStepCard(
+                        progress: group0T,
+                        iconPath: _deliveryProposeIconPath,
+                        title: _deliveryProposeTitle,
+                        body: _deliveryProposeBody,
+                      ),
+                      const SizedBox(height: _deliveryCardGap),
+                      _DeliveryStepCard(
+                        progress: stage2T,
+                        iconPath: _deliveryReviewIconPath,
+                        title: _deliveryReviewTitle,
+                        body: _deliveryReviewBody,
+                      ),
+                      const SizedBox(height: _deliveryCardGap),
+                      _DeliveryStepCard(
+                        progress: stage3T,
+                        iconPath: _deliveryIntroIconPath,
+                        title: _deliveryIntroTitle,
+                        body: _deliveryIntroBody,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final listing = CcosFeatureRegistrySource.featuredListing;
-    final detail = widget.detail;
+    final detail = _detail;
     final localizedFeatureTitle = listing.title;
     final localizedFeatureTags = [
       ...listing.tags,
@@ -743,7 +919,18 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Hero(tag: detail.heroTag, child: Image(image: AssetImage(detail.imagePath), fit: BoxFit.cover)),
+          Hero(
+            tag: widget.detail.heroTag,
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: _handleDetailPageChanged,
+              itemCount: _firstPowDetailOrder.length,
+              itemBuilder: (context, index) {
+                final pageDetail = _firstPowCardDetailForKind(_firstPowDetailOrder[index]);
+                return Image(image: AssetImage(pageDetail.imagePath), fit: BoxFit.cover);
+              },
+            ),
+          ),
           AnimatedBuilder(
             animation: _entranceController,
             builder: (context, child) {
@@ -760,7 +947,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
               return Opacity(
                 opacity: glassT,
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(14, topInset + 14, 14, 14),
+                  padding: EdgeInsets.fromLTRB(14, topInset + 14, 14, 78 + bottomInset),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(32),
@@ -816,7 +1003,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                               left: 20,
                               right: 20,
                               top: 108,
-                              bottom: 20,
+                              bottom: detail.kind == _FirstPowCardKind.feature ? 96 : 20,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -846,7 +1033,7 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                       ),
                                     ),
                                     const SizedBox(height: 28),
-                                    _FadeSlideIn(progress: stage4T, child: const _ThemePreviewCluster()),
+                                    _buildFeaturePreview(stage4T),
                                   ] else if (detail.kind == _FirstPowCardKind.creator) ...[
                                     _FadeSlideIn(
                                       progress: group0T,
@@ -882,44 +1069,23 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
                                           const SizedBox(height: 12),
                                           _FadeSlideIn(
                                             progress: stage4T,
-                                            child: _CreatorGlassTextBox(text: _creatorBeliefStatement, bold: true),
+                                            child: _CreatorBeliefStatementBox(text: _creatorBeliefStatement),
                                           ),
                                         ],
                                       ),
                                     ),
                                   ] else ...[
-                                    Expanded(
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Container(),
-                                          _DeliveryStepCard(
-                                            progress: group0T,
-                                            iconPath: _deliveryProposeIconPath,
-                                            title: _deliveryProposeTitle,
-                                            body: _deliveryProposeBody,
-                                          ),
-                                          _DeliveryStepCard(
-                                            progress: stage2T,
-                                            iconPath: _deliveryReviewIconPath,
-                                            title: _deliveryReviewTitle,
-                                            body: _deliveryReviewBody,
-                                          ),
-                                          _DeliveryStepCard(
-                                            progress: stage3T,
-                                            iconPath: _deliveryIntroIconPath,
-                                            title: _deliveryIntroTitle,
-                                            body: _deliveryIntroBody,
-                                          ),
-                                          Container(),
-                                        ],
-                                      ),
-                                    ),
+                                    _buildDeliveryContent(group0T: group0T, stage2T: stage2T, stage3T: stage3T),
                                   ],
                                 ],
                               ),
                             ),
+                            if (detail.kind == _FirstPowCardKind.feature)
+                              Positioned(
+                                right: 20,
+                                bottom: 20,
+                                child: _buildFeatureCta(isAdded: isAdded, isApplied: isApplied),
+                              ),
                           ],
                         ),
                       ),
@@ -929,50 +1095,104 @@ class _FirstPowDetailScreenState extends State<_FirstPowDetailScreen> with Ticke
               );
             },
           ),
-          if (detail.kind == _FirstPowCardKind.feature)
-            Positioned(
-              left: 0,
-              right: 16,
-              bottom: 28 + bottomInset,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 20),
-                  child: AnimatedBuilder(
-                    animation: _addButtonController,
-                    builder: (context, child) {
-                      final buttonT = Curves.elasticOut.transform(_addButtonController.value);
-                      final buttonOpacity = _addButtonController.value.clamp(0.0, 1.0);
-                      return Opacity(
-                        opacity: buttonOpacity,
-                        child: Transform.scale(
-                          scale: buttonT.clamp(0.0, 1.4),
-                          alignment: Alignment.centerRight,
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isAdded)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: _AddedGlassBadge(
-                              label:
-                                  isApplied
-                                      ? t.ccos.first_pow_scene.status_applied
-                                      : t.ccos.first_pow_scene.status_added,
-                            ),
-                          ),
-                        _AddThemeButton(isAdded: isAdded, onAdd: widget.onAdd, onRemove: widget.onRemove),
-                      ],
-                    ),
-                  ),
-                ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 16 + bottomInset,
+            child: Center(
+              child: _FirstPowDetailSegmentedIndicator(
+                currentKind: detail.kind,
+                onSelect: (kind) {
+                  _pageController.animateToPage(
+                    _firstPowDetailOrder.indexOf(kind),
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                  );
+                },
               ),
             ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _FirstPowDetailSegmentedIndicator extends StatelessWidget {
+  const _FirstPowDetailSegmentedIndicator({required this.currentKind, required this.onSelect});
+
+  final _FirstPowCardKind currentKind;
+  final ValueChanged<_FirstPowCardKind> onSelect;
+
+  String _labelFor(_FirstPowCardKind kind) {
+    return _firstPowCardDetailForKind(kind).panelLabel;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.34), width: 1),
+      ),
+      child: LiquidGlassSurface(
+        cornerRadius: 999,
+        blurSigma: 14,
+        distortion: 0.18,
+        distortionWidth: 18,
+        magnification: 1.04,
+        tintColor: const Color(0x2BFFFFFF),
+        rimColor: Colors.white.withValues(alpha: 0.12),
+        rimWidth: 3,
+        rimOnTopBottom: false,
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final kind in _firstPowDetailOrder)
+                _FirstPowDetailSegment(
+                  label: _labelFor(kind),
+                  selected: kind == currentKind,
+                  onTap: () => onSelect(kind),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FirstPowDetailSegment extends StatelessWidget {
+  const _FirstPowDetailSegment({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? Colors.white.withValues(alpha: 0.82) : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            label,
+            style: CoconutTypography.caption_10_Bold.setColor(
+              selected ? _textPrimary : Colors.white.withValues(alpha: 0.78),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1049,7 +1269,9 @@ class _CreatorStoryBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final quoteStyle = CoconutTypography.body3_12_Bold.setColor(_textPrimary.withValues(alpha: 0.92));
-    final bodyStyle = CoconutTypography.body3_12.setColor(_textPrimary.withValues(alpha: 0.8));
+    final bodyStyle = CoconutTypography.body3_12
+        .setColor(_textPrimary.withValues(alpha: 0.8))
+        .copyWith(letterSpacing: -0.7, fontWeight: FontWeight.w400);
 
     return DecoratedBox(
       decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(16)),
@@ -1117,21 +1339,187 @@ class _StoryEdgeFade extends StatelessWidget {
   }
 }
 
-class _CreatorGlassTextBox extends StatelessWidget {
-  const _CreatorGlassTextBox({required this.text, this.bold = false});
+class _CreatorBeliefStatementBox extends StatefulWidget {
+  const _CreatorBeliefStatementBox({required this.text});
 
   final String text;
-  final bool bold;
+
+  @override
+  State<_CreatorBeliefStatementBox> createState() => _CreatorBeliefStatementBoxState();
+}
+
+class _CreatorBeliefStatementBoxState extends State<_CreatorBeliefStatementBox> with SingleTickerProviderStateMixin {
+  static final RegExp _hangulPattern = RegExp(r'[\u3131-\u318E\uAC00-\uD7A3]');
+
+  late final AnimationController _glowController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  static String _spaceBoundKoreanText(String text) {
+    if (!_hangulPattern.hasMatch(text)) return text;
+
+    final buffer = StringBuffer();
+    final word = StringBuffer();
+
+    void flushWord() {
+      if (word.isEmpty) return;
+      buffer.write(word.toString().characters.join('\u2060'));
+      word.clear();
+    }
+
+    for (final character in text.characters) {
+      if (character.trim().isEmpty) {
+        flushWord();
+        buffer.write(character);
+      } else {
+        word.write(character);
+      }
+    }
+    flushWord();
+
+    return buffer.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final style = (bold ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14).setColor(
-      _textPrimary.withValues(alpha: 0.92),
+    final style = CoconutTypography.body2_14_Bold.setColor(_textPrimary.withValues(alpha: 0.96)).copyWith(height: 1.24);
+    final text = _spaceBoundKoreanText(widget.text);
+
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, child) {
+        final glowT = Curves.easeInOut.transform(_glowController.value);
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.58),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.58 + (glowT * 0.2)), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.white.withValues(alpha: 0.16 + (glowT * 0.1)),
+                blurRadius: 18 + (glowT * 8),
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 15, 18, 17),
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
+              Positioned(
+                left: -4,
+                top: -8,
+                child: _BeliefQuoteMark(opening: true, color: _textPrimary.withValues(alpha: 0.28), size: 42),
+              ),
+              Positioned(
+                right: 4,
+                bottom: -8,
+                child: _BeliefQuoteMark(opening: false, color: _textPrimary.withValues(alpha: 0.28), size: 38),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+                child: Text(text, style: style),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
-    return DecoratedBox(
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(16)),
-      child: Padding(padding: const EdgeInsets.all(18), child: Text(text, style: style)),
-    );
+  }
+}
+
+class _BeliefQuoteMark extends StatelessWidget {
+  const _BeliefQuoteMark({required this.opening, required this.color, required this.size});
+
+  final bool opening;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(size: Size.square(size), painter: _BeliefQuoteMarkPainter(opening: opening, color: color));
+  }
+}
+
+class _BeliefQuoteMarkPainter extends CustomPainter {
+  const _BeliefQuoteMarkPainter({required this.opening, required this.color});
+
+  final bool opening;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+
+    if (opening) {
+      canvas
+        ..translate(size.width, size.height)
+        ..rotate(math.pi);
+    }
+
+    final markWidth = size.width * 0.3;
+    final gap = size.width * 0.12;
+    final top = size.height * 0.15;
+
+    for (final left in [size.width * 0.18, size.width * 0.18 + markWidth + gap]) {
+      final path =
+          Path()
+            ..moveTo(left + (markWidth * 0.95), top + (markWidth * 0.46))
+            ..cubicTo(
+              left + (markWidth * 0.95),
+              top + (markWidth * 0.18),
+              left + (markWidth * 0.74),
+              top,
+              left + (markWidth * 0.44),
+              top,
+            )
+            ..cubicTo(left + (markWidth * 0.16), top, left, top + (markWidth * 0.2), left, top + (markWidth * 0.5))
+            ..cubicTo(
+              left,
+              top + (markWidth * 0.78),
+              left + (markWidth * 0.2),
+              top + (markWidth * 0.98),
+              left + (markWidth * 0.48),
+              top + (markWidth * 1.0),
+            )
+            ..cubicTo(
+              left + (markWidth * 0.42),
+              top + (markWidth * 1.38),
+              left + (markWidth * 0.24),
+              top + (markWidth * 1.72),
+              left + (markWidth * 0.02),
+              top + (markWidth * 1.96),
+            )
+            ..lineTo(left + (markWidth * 0.38), top + (markWidth * 2.02))
+            ..cubicTo(
+              left + (markWidth * 0.76),
+              top + (markWidth * 1.72),
+              left + (markWidth * 0.96),
+              top + (markWidth * 1.28),
+              left + (markWidth * 0.95),
+              top + (markWidth * 0.46),
+            )
+            ..close();
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BeliefQuoteMarkPainter oldDelegate) {
+    return oldDelegate.opening != opening || oldDelegate.color != color;
   }
 }
 
@@ -1177,7 +1565,7 @@ class _DeliveryStepCard extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 0,
+              left: 4,
               top: -30,
               child: Transform.scale(scale: iconT.clamp(0.0, 1.4), child: _DeliveryIconBadge(iconPath: iconPath)),
             ),
@@ -1198,7 +1586,7 @@ class _DeliveryIconBadge extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.2),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.26), width: 1),
       ),
       child: LiquidGlassSurface(
         cornerRadius: 999,
@@ -1206,11 +1594,37 @@ class _DeliveryIconBadge extends StatelessWidget {
         distortion: 0.25,
         distortionWidth: 14,
         magnification: 1.08,
-        tintColor: const Color(0x33FFFFFF),
+        tintColor: Colors.transparent,
         rimColor: Colors.white.withValues(alpha: 0.1),
         rimWidth: 4,
         rimOnTopBottom: false,
-        child: Padding(padding: const EdgeInsets.all(14), child: SvgPicture.asset(iconPath, width: 22, height: 22)),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: SizedBox.square(
+            dimension: 22,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: 0.8,
+                  top: 1.2,
+                  child: SvgPicture.asset(
+                    iconPath,
+                    width: 22,
+                    height: 22,
+                    colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.26), BlendMode.srcIn),
+                  ),
+                ),
+                SvgPicture.asset(
+                  iconPath,
+                  width: 22,
+                  height: 22,
+                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

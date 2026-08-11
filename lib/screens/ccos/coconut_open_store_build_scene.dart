@@ -25,52 +25,95 @@ const _glowDarkColor = Color.fromARGB(255, 120, 120, 187);
 /// Scene 2 ("BUILD") of the open-store intro story: the coconut hero icon crossfade,
 /// its orbiting feature labels, and the typed title/description.
 class BuildSceneBody extends StatelessWidget {
-  const BuildSceneBody({super.key, required this.animation, required this.title, required this.description});
+  const BuildSceneBody({super.key, required this.animation});
 
   final Animation<double> animation;
-  final String title;
-  final String description;
+
+  // Every timestamp below is an absolute millisecond offset tuned against the Korean source
+  // text, kept as the fixed choreography for the hero icon crossfade and orbit labels - that
+  // part of the scene must always play at the same speed no matter how long the active
+  // locale's title/description run. Only the two typing spans stretch, by however many extra
+  // milliseconds-per-character the current locale's text actually needs.
+  static const double _titleEntranceStartMs = 7629.96;
+  static const double _titleEntranceSpanMs = 179.56;
+  static const double _titleTypingMsPerChar = kTypewriterMsPerCharacterDouble;
+  static const double _pauseMs = 499.82;
+  static const double _descEntranceSpanMs = 180.9;
+  static const double _descTypingMsPerChar = kTypewriterMsPerCharacterDouble;
+  static const double _endPauseMs = 470.34;
+
+  /// Total scene duration for the active locale: the hero/orbit choreography above stays fixed,
+  /// while the typing spans grow with how many characters the title/description actually type out.
+  static Duration sceneDuration() {
+    const titleEntranceEndMs = _titleEntranceStartMs + _titleEntranceSpanMs;
+    final titleTypingEndMs = titleEntranceEndMs + (_titleTypingMsPerChar * t.ccos.build_scene.line1.length);
+    final descEntranceStartMs = titleTypingEndMs + _pauseMs;
+    final descEntranceEndMs = descEntranceStartMs + _descEntranceSpanMs;
+    final descTypingEndMs = descEntranceEndMs + (_descTypingMsPerChar * t.ccos.build_scene.line2.length);
+    return Duration(milliseconds: (descTypingEndMs + _endPauseMs).round());
+  }
+
+  static int navigationRevealStartMs() {
+    const titleEntranceEndMs = _titleEntranceStartMs + _titleEntranceSpanMs;
+    final titleTypingEndMs = titleEntranceEndMs + (_titleTypingMsPerChar * t.ccos.build_scene.line1.length);
+    return (titleTypingEndMs + _pauseMs + (_descEntranceSpanMs / 2)).round();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final title = t.ccos.build_scene.line1;
+    final description = t.ccos.build_scene.line2;
+    final totalMs = sceneDuration().inMilliseconds.toDouble();
+    double frac(double ms) => (ms / totalMs).clamp(0.0, 1.0);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight;
-        final titleStyle = CoconutTypography.heading3_21_Bold.setColor(Colors.white).copyWith(height: 1.24);
-        final titleHighlightStyle = titleStyle.copyWith(
-          fontSize: (titleStyle.fontSize ?? 21) * 1.4,
-          fontWeight: FontWeight.w900,
-        );
+        final line1 = CoconutTypography.heading3_21_Bold.setColor(Colors.white).copyWith(height: 1.24);
+        final line1HighlightStyle = line1.copyWith(fontSize: (line1.fontSize ?? 21) * 1.4, fontWeight: FontWeight.w900);
         // Reserve the line's height up front for the bigger highlighted run, so '누구나' doesn't
         // shift the instant typing reaches the highlighted '비트코인' - the line box would
         // otherwise only grow once a highlighted character actually appears.
-        final titleStrutStyle = StrutStyle(
-          fontSize: titleHighlightStyle.fontSize,
-          height: titleStyle.height,
+        final line1StrutStyle = StrutStyle(
+          fontSize: line1HighlightStyle.fontSize,
+          height: line1.height,
           forceStrutHeight: true,
         );
-        final descriptionStyle = CoconutTypography.heading4_18_Bold.setColor(Colors.white).copyWith(height: 1.16);
-        final descriptionHighlightStyle = descriptionStyle.copyWith(
-          fontSize: (descriptionStyle.fontSize ?? 18) * 1.4,
+        final line2Style = CoconutTypography.heading4_18_Bold.setColor(Colors.white).copyWith(height: 1.16);
+        final line2HighlightStyle = line2Style.copyWith(
+          fontSize: (line2Style.fontSize ?? 18) * 1.4,
           fontWeight: FontWeight.w900,
         );
         // Same fix as the title: '여러분의 PoW' shares its line with plain '가', so reserve
         // that line's height for the bigger highlighted run up front.
-        final descriptionStrutStyle = StrutStyle(
-          fontSize: descriptionHighlightStyle.fontSize,
-          height: descriptionStyle.height,
+        final line2StrutStyle = StrutStyle(
+          fontSize: line2HighlightStyle.fontSize,
+          height: line2Style.height,
           forceStrutHeight: true,
         );
-        // Hero + orbit labels finish by ~5.23s, then hold for a 1s pause before the title starts typing.
-        // The title block quickly settles into place (~180ms), then every remaining character
-        // pops in one at a time at full opacity, so it reads as a clean typewriter effect
-        // instead of fading/sliding in while characters are still being added.
-        const titleEntranceInterval = Interval(0.5694, 0.5828, curve: Curves.easeOutCubic);
-        const titleTypingInterval = Interval(0.5828, 0.7037, curve: Curves.linear);
-        // Title finishes at ~8.03s; description starts 0.5s later, then settles in (~180ms)
-        // before typing out one character at a time, same as the title.
-        const descriptionEntranceInterval = Interval(0.7410, 0.7545, curve: Curves.easeOutCubic);
-        const descriptionTypingInterval = Interval(0.7545, 0.9649, curve: Curves.linear);
+        // Hero + orbit labels finish at a fixed absolute time, then hold for a fixed pause before
+        // the title starts typing. The title block quickly settles into place, then every
+        // remaining character pops in one at a time at full opacity, so it reads as a clean
+        // typewriter effect instead of fading/sliding in while characters are still being added.
+        const titleEntranceEndMs = _titleEntranceStartMs + _titleEntranceSpanMs;
+        final titleTypingEndMs = titleEntranceEndMs + (_titleTypingMsPerChar * title.length);
+        final line1EntranceInterval = Interval(
+          frac(_titleEntranceStartMs),
+          frac(titleEntranceEndMs),
+          curve: Curves.easeOutCubic,
+        );
+        final line1TypingInterval = Interval(frac(titleEntranceEndMs), frac(titleTypingEndMs), curve: Curves.linear);
+        // Description starts after a fixed pause once the title finishes, then settles in before
+        // typing out one character at a time, same as the title.
+        final descEntranceStartMs = titleTypingEndMs + _pauseMs;
+        final descEntranceEndMs = descEntranceStartMs + _descEntranceSpanMs;
+        final descTypingEndMs = descEntranceEndMs + (_descTypingMsPerChar * description.length);
+        final line2EntranceInterval = Interval(
+          frac(descEntranceStartMs),
+          frac(descEntranceEndMs),
+          curve: Curves.easeOutCubic,
+        );
+        final line2TypingInterval = Interval(frac(descEntranceEndMs), frac(descTypingEndMs), curve: Curves.linear);
 
         return Stack(
           children: [
@@ -79,17 +122,17 @@ class BuildSceneBody extends StatelessWidget {
               child: SizedBox(
                 width: constraints.maxWidth,
                 height: height * 0.56,
-                child: _BuildHero(animation: animation),
+                child: _BuildHero(animation: animation, totalMs: totalMs),
               ),
             ),
             Positioned(
-              top: height * 0.07,
+              top: height * 0.02,
               left: 0,
-              right: 90,
+              right: 24,
               child: AnimatedBuilder(
                 animation: animation,
                 builder: (context, child) {
-                  final entranceT = titleEntranceInterval.transform(animation.value);
+                  final entranceT = line1EntranceInterval.transform(animation.value);
                   final dx = -56 * (1 - entranceT);
                   final dy = 26 * (1 - entranceT);
                   final scale = 0.9 + (0.16 * entranceT);
@@ -104,13 +147,13 @@ class BuildSceneBody extends StatelessWidget {
                         alignment: Alignment.centerLeft,
                         child: RichText(
                           textAlign: TextAlign.left,
-                          strutStyle: titleStrutStyle,
+                          strutStyle: line1StrutStyle,
                           text: typewriterSpan(
                             source: title,
                             animation: animation,
-                            interval: titleTypingInterval,
-                            baseStyle: titleStyle,
-                            highlightStyle: titleHighlightStyle,
+                            interval: line1TypingInterval,
+                            baseStyle: line1,
+                            highlightStyle: line1HighlightStyle,
                             highlightPhrases: {t.ccos.build_scene.highlight_bitcoin_builder},
                           ),
                         ),
@@ -122,12 +165,12 @@ class BuildSceneBody extends StatelessWidget {
             ),
             Positioned(
               top: height * 0.72,
-              left: 84,
+              left: 0,
               right: 0,
               child: AnimatedBuilder(
                 animation: animation,
                 builder: (context, child) {
-                  final entranceT = descriptionEntranceInterval.transform(animation.value);
+                  final entranceT = line2EntranceInterval.transform(animation.value);
                   final dx = 58 * (1 - entranceT);
                   final dy = 30 * (1 - entranceT);
                   final scale = 0.9 + (0.16 * entranceT);
@@ -142,13 +185,13 @@ class BuildSceneBody extends StatelessWidget {
                         alignment: Alignment.centerRight,
                         child: RichText(
                           textAlign: TextAlign.right,
-                          strutStyle: descriptionStrutStyle,
+                          strutStyle: line2StrutStyle,
                           text: typewriterSpan(
                             source: description,
                             animation: animation,
-                            interval: descriptionTypingInterval,
-                            baseStyle: descriptionStyle,
-                            highlightStyle: descriptionHighlightStyle,
+                            interval: line2TypingInterval,
+                            baseStyle: line2Style,
+                            highlightStyle: line2HighlightStyle,
                             highlightPhrases: {t.ccos.build_scene.highlight_pow},
                           ),
                         ),
@@ -166,24 +209,30 @@ class BuildSceneBody extends StatelessWidget {
 }
 
 class _BuildHero extends StatefulWidget {
-  const _BuildHero({required this.animation});
+  const _BuildHero({required this.animation, required this.totalMs});
 
   final Animation<double> animation;
+  // Total scene duration in ms (grows with the active locale's text length) - the hero's own
+  // absolute-ms timestamps below are divided by this to get fractions, so the icon/orbit
+  // choreography always plays at the same real-world speed regardless of scene length.
+  final double totalMs;
 
   @override
   State<_BuildHero> createState() => _BuildHeroState();
 }
 
 class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
+  double _frac(double ms) => (ms / widget.totalMs).clamp(0.0, 1.0);
+
   // coconutCore: tiny dot -> 45% of screen width, ease-out, then fixed size.
-  static const Interval _coconut0GrowInterval = Interval(0.0, 0.0672, curve: Curves.easeOut);
+  Interval get _coconut0GrowInterval => Interval(_frac(0), _frac(900.48), curve: Curves.easeOut);
   // Slow, fully-overlapping crossfade (coconutCore fades out while coconutOrbit fades in at the same time)
   // so the swap reads as a smooth dissolve rather than a blink. ~3.6s, slowed further per feedback.
-  static const Interval _heroCrossfadeInterval = Interval(0.0709, 0.3396, curve: Curves.easeInOut);
+  Interval get _heroCrossfadeInterval => Interval(_frac(950.06), _frac(4550.64), curve: Curves.easeInOut);
   // Both coconutCore and coconutOrbit stay plain white through the crossfade above. Only once coconutOrbit
   // is fully visible does it slowly dissolve into the glow-colored version (~1.4s), after which
   // the wandering glow shimmer is the steady-state look.
-  static const Interval _glowRevealInterval = Interval(0.3396, 0.6441, curve: Curves.easeInOut);
+  Interval get _glowRevealInterval => Interval(_frac(4550.64), _frac(8630.94), curve: Curves.easeInOut);
 
   late final AnimationController _glowController = AnimationController(
     vsync: this,
@@ -312,7 +361,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               alignment: const Alignment(-0.32, -0.12),
               animation: widget.animation,
               pulseAnimation: _glowController,
-              interval: const Interval(0.3433, 0.3993, curve: Curves.easeOutCubic),
+              interval: Interval(_frac(4600.22), _frac(5350.62), curve: Curves.easeOutCubic),
               fontSize: 19,
               color: const Color(0xFFE3F0E6),
               pulsePhase: 0.44,
@@ -324,7 +373,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               alignment: const Alignment(-0.58, -0.62),
               animation: widget.animation,
               pulseAnimation: _glowController,
-              interval: const Interval(0.3567, 0.4239, curve: Curves.easeOutCubic),
+              interval: Interval(_frac(4779.78), _frac(5680.26), curve: Curves.easeOutCubic),
               fontSize: 14,
               color: const Color.fromARGB(217, 251, 238, 223),
               pulsePhase: 0.10,
@@ -336,7 +385,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               alignment: const Alignment(0.72, -0.03),
               animation: widget.animation,
               pulseAnimation: _glowController,
-              interval: const Interval(0.3701, 0.4299, curve: Curves.easeOutCubic),
+              interval: Interval(_frac(4959.34), _frac(5760.66), curve: Curves.easeOutCubic),
               fontSize: 12,
               color: const Color(0xFFD4E7FF),
               pulsePhase: 0.56,
@@ -348,7 +397,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               alignment: const Alignment(0.62, -0.52),
               animation: widget.animation,
               pulseAnimation: _glowController,
-              interval: const Interval(0.3866, 0.4500, curve: Curves.easeOutCubic),
+              interval: Interval(_frac(5180.44), _frac(6030.0), curve: Curves.easeOutCubic),
               fontSize: 16,
               color: const Color(0xFFDCEFEA),
               pulsePhase: 0.28,
@@ -360,7 +409,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               alignment: const Alignment(-0.72, 0.24),
               animation: widget.animation,
               pulseAnimation: _glowController,
-              interval: const Interval(0.4030, 0.4739, curve: Curves.easeOutCubic),
+              interval: Interval(_frac(5400.2), _frac(6350.26), curve: Curves.easeOutCubic),
               fontSize: 17,
               color: const Color(0xFFD9DFF5),
               pulsePhase: 0.68,
@@ -372,7 +421,7 @@ class _BuildHeroState extends State<_BuildHero> with TickerProviderStateMixin {
               alignment: const Alignment(0.34, 0.26),
               animation: widget.animation,
               pulseAnimation: _glowController,
-              interval: const Interval(0.4201, 0.4948, curve: Curves.easeOutCubic),
+              interval: Interval(_frac(5629.34), _frac(6630.32), curve: Curves.easeOutCubic),
               fontSize: 17,
               color: const Color(0xFFDCE4F4),
               pulsePhase: 0.88,
