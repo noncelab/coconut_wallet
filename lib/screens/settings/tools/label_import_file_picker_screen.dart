@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/label_import_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
@@ -33,6 +34,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   String? _fileName;
   List<LabelImportResult> _importResults = [];
   int _currentPage = 0;
+  double _successCardHeight = 150;
   bool _deleteFileOnSuccess = true;
 
   @override
@@ -276,7 +278,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     return Padding(
       padding: const EdgeInsets.only(top: 24.0, bottom: 90),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SvgPicture.asset(
             'assets/svg/circle-check.svg',
@@ -302,8 +304,17 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           CoconutLayout.spacing_400h,
           Column(
             children: [
+              Offstage(
+                child: _SizeReportingWidget(
+                  onSizeChanged: (size) {
+                    if (!mounted || _successCardHeight == size.height) return;
+                    setState(() => _successCardHeight = size.height);
+                  },
+                  child: _buildSuccessCard(context, _importResults[_currentPage]),
+                ),
+              ),
               SizedBox(
-                height: 150,
+                height: _successCardHeight,
                 child: PageView.builder(
                   itemCount: _importResults.length,
                   onPageChanged: (index) {
@@ -314,8 +325,13 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
                   },
                 ),
               ),
-              if (_importResults.length > 1) _buildPageIndicator(),
-              const SizedBox(height: 20),
+              if (_importResults.length > 1) ...[
+                const SizedBox(height: 14),
+                _buildPageIndicator(),
+                const SizedBox(height: 14),
+              ] else ...[
+                const SizedBox(height: 18),
+              ],
               GestureDetector(
                 onTap: () {
                   setState(() {
@@ -340,7 +356,6 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
               ),
             ],
           ),
-          const Spacer(),
         ],
       ),
     );
@@ -415,7 +430,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         return Container(
           width: 8.0,
           height: 8.0,
-          margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+          margin: const EdgeInsets.symmetric(horizontal: 4.0),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color:
@@ -557,6 +572,38 @@ class DashedBorderPainter extends CustomPainter {
         oldDelegate.dashWidth != dashWidth ||
         oldDelegate.gapWidth != gapWidth ||
         oldDelegate.borderRadius != borderRadius;
+  }
+}
+
+class _SizeReportingWidget extends SingleChildRenderObjectWidget {
+  final ValueChanged<Size> onSizeChanged;
+
+  const _SizeReportingWidget({required this.onSizeChanged, required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _SizeReportingRenderObject(onSizeChanged);
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, covariant _SizeReportingRenderObject renderObject) {
+    renderObject.onSizeChanged = onSizeChanged;
+  }
+}
+
+class _SizeReportingRenderObject extends RenderProxyBox {
+  _SizeReportingRenderObject(this.onSizeChanged);
+
+  ValueChanged<Size> onSizeChanged;
+  Size? _reportedSize;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    if (size == _reportedSize) return;
+
+    _reportedSize = size;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onSizeChanged(size));
   }
 }
 
