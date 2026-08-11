@@ -70,19 +70,22 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     final bool showBottomButtons = _step == LabelExportStep.selection && _isCreateFileSelected;
     return Stack(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            children: <Widget>[
-              if (_step == LabelExportStep.selection) ...[
-                _buildInfoTooltip(context),
-                CoconutLayout.spacing_400h,
-                _buildSegmentedControl(context),
+        if (_step == LabelExportStep.success)
+          _buildContent(context, wallets)
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              children: <Widget>[
+                if (_step == LabelExportStep.selection) ...[
+                  _buildInfoTooltip(context),
+                  CoconutLayout.spacing_400h,
+                  _buildSegmentedControl(context),
+                ],
+                Expanded(child: _buildContent(context, wallets)),
               ],
-              Expanded(child: _buildContent(context, wallets)),
-            ],
+            ),
           ),
-        ),
         if (showBottomButtons) ...[
           Align(
             alignment: Alignment.bottomCenter,
@@ -452,11 +455,12 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       );
     }
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: <Widget>[
-          ExportLabelSuccessCard(
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: ExportLabelSuccessCard(
             title: Text(
               t.label_export_wallet_picker_screen.success_title,
               style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
@@ -471,17 +475,21 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
               DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
             ],
           ),
-          SizedBox(
-            height: 150,
-            child: PageView.builder(
-              itemCount: _exportResults.length,
-              onPageChanged: (index) => setState(() => _currentPage = index),
-              itemBuilder: (context, index) => _buildSuccessBottomCard(_exportResults[index]),
-            ),
+        ),
+        SizedBox(
+          height: 150,
+          child: PageView.builder(
+            itemCount: _exportResults.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder:
+                (context, index) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _buildSuccessBottomCard(_exportResults[index]),
+                ),
           ),
-          if (_exportResults.length > 1) _buildPageIndicator(),
-        ],
-      ),
+        ),
+        if (_exportResults.length > 1) _buildPageIndicator(),
+      ],
     );
   }
 
