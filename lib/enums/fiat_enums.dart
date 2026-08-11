@@ -6,16 +6,27 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import '../utils/balance_format_util.dart';
 
 enum FiatCode {
-  KRW('KRW', 'South Korean Won', '₩'),
-  USD('USD', 'US Dollar', '\$'),
-  JPY('JPY', 'Japanese Yen', '¥'),
-  EUR('EUR', 'Euro', '€');
+  KRW('KRW', 'South Korean Won', '₩', 0),
+  USD('USD', 'US Dollar', '\$', 2),
+  JPY('JPY', 'Japanese Yen', '¥', 0),
+  EUR('EUR', 'Euro', '€', 2);
 
   final String code; // ISO 4217 코드
   final String fullName; // 통화 이름
   final String symbol;
+  final int decimalDigits; // ISO 4217 기준 소수 자리수 (예: KRW/JPY=0, USD/EUR=2)
 
-  const FiatCode(this.code, this.fullName, this.symbol);
+  const FiatCode(this.code, this.fullName, this.symbol, this.decimalDigits);
+
+  /// 1 whole unit를 최소단위(minor unit, 예: cent) 정수로 위해 필요한 배수 (10^decimalDigits)
+  /// 예: $1 = 100 cent -> decimalDigits = 2 (10^2 = 100)
+  int get minorUnitsPerWhole {
+    var result = 1;
+    for (var i = 0; i < decimalDigits; i++) {
+      result *= 10;
+    }
+    return result;
+  }
 
   // 메서드 추가 가능
   String description() {

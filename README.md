@@ -81,6 +81,10 @@ The wallet stays online to keep your wallet data up to date and broadcasts signe
 - Android Studio or Xcode
 - [Go](https://go.dev/dl/) (1.26+) — required to build the BitBox02 bridge
 - [Rust](https://www.rust-lang.org/tools/install) (stable) — required to build the Trezor bridge
+- [protoc](https://grpc.io/docs/protoc-installation/) (Protocol Buffers compiler) — required to build the Trezor bridge
+  - macOS: `brew install protobuf`
+  - Linux: `apt-get install -y protobuf-compiler`
+  - Windows: `choco install protoc` (or download from the [releases page](https://github.com/protocolbuffers/protobuf/releases))
 
 ```bash
 flutter --version
@@ -136,14 +140,17 @@ Quick steps:
 # 1. Install Rust (if not already installed)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# 2. Install cargo-ndk
+# 2. Install protoc (required by trezor-connect-rs to compile .proto files)
+brew install protobuf   # macOS; see Prerequisites above for Linux/Windows
+
+# 3. Install cargo-ndk
 cargo install cargo-ndk
 
-# 3. Add Android/iOS Rust targets
+# 4. Add Android/iOS Rust targets
 rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
 rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
 
-# 4. Build native bindings
+# 5. Build native bindings
 make trezor-bind   # both iOS and Android
 # make trezor-android
 # make trezor-ios

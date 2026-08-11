@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:ur/utils.dart';
 import 'package:collection/collection.dart';
 
-const String BYTEWORDS =
+const String byteWords =
     'ableacidalsoapexaquaarchatomauntawayaxisbackbaldbarnbeltbetabiasbluebodybragbrewbulbbuzzcalmcashcatschefcityclawcodecolacookcostcruxcurlcuspcyandarkdatadaysdelidicedietdoordowndrawdropdrumdulldutyeacheasyechoedgeepicevenexamexiteyesfactfairfernfigsfilmfishfizzflapflewfluxfoxyfreefrogfuelfundgalagamegeargemsgiftgirlglowgoodgraygrimgurugushgyrohalfhanghardhawkheathelphighhillholyhopehornhutsicedideaidleinchinkyintoirisironitemjadejazzjoinjoltjowljudojugsjumpjunkjurykeepkenokeptkeyskickkilnkingkitekiwiknoblamblavalazyleaflegsliarlimplionlistlogoloudloveluaulucklungmainmanymathmazememomenumeowmildmintmissmonknailnavyneednewsnextnoonnotenumbobeyoboeomitonyxopenovalowlspaidpartpeckplaypluspoempoolposepuffpumapurrquadquizraceramprealredorichroadrockroofrubyruinrunsrustsafesagascarsetssilkskewslotsoapsolosongstubsurfswantacotasktaxitenttiedtimetinytoiltombtoystriptunatwinuglyundouniturgeuservastveryvetovialvibeviewvisavoidvowswallwandwarmwaspwavewaxywebswhatwhenwhizwolfworkyankyawnyellyogayurtzapszerozestzinczonezoom';
 
 List<int>? _wordArray;
@@ -24,8 +24,8 @@ int decodeWord(String word, int wordLen) {
 
     for (int i = 0; i < 256; i++) {
       int bytewordOffset = i * 4;
-      int x = BYTEWORDS[bytewordOffset].codeUnitAt(0) - 'a'.codeUnitAt(0);
-      int y = BYTEWORDS[bytewordOffset + 3].codeUnitAt(0) - 'a'.codeUnitAt(0);
+      int x = byteWords[bytewordOffset].codeUnitAt(0) - 'a'.codeUnitAt(0);
+      int y = byteWords[bytewordOffset + 3].codeUnitAt(0) - 'a'.codeUnitAt(0);
       int arrayOffset = y * dim + x;
       _wordArray![arrayOffset] = i;
     }
@@ -49,7 +49,7 @@ int decodeWord(String word, int wordLen) {
     int bytewordOffset = value * 4;
     String c1 = word[1].toLowerCase();
     String c2 = word[2].toLowerCase();
-    if (c1 != BYTEWORDS[bytewordOffset + 1] || c2 != BYTEWORDS[bytewordOffset + 2]) {
+    if (c1 != byteWords[bytewordOffset + 1] || c2 != byteWords[bytewordOffset + 2]) {
       throw ArgumentError('Invalid Bytewords.');
     }
   }
@@ -60,12 +60,12 @@ int decodeWord(String word, int wordLen) {
 
 String getWord(int index) {
   int bytewordOffset = index * 4;
-  return BYTEWORDS.substring(bytewordOffset, bytewordOffset + 4);
+  return byteWords.substring(bytewordOffset, bytewordOffset + 4);
 }
 
 String getMinimalWord(int index) {
   int bytewordOffset = index * 4;
-  return BYTEWORDS[bytewordOffset] + BYTEWORDS[bytewordOffset + 3];
+  return byteWords[bytewordOffset] + byteWords[bytewordOffset + 3];
 }
 
 String encode(Uint8List buf, String separator) {
@@ -124,8 +124,6 @@ String encodeStyle(Style style, Uint8List bytes) {
       return encodeWithSeparator(bytes, '-');
     case Style.minimal:
       return encodeMinimal(bytes);
-    default:
-      throw ArgumentError('Invalid Bytewords style.');
   }
 }
 
@@ -137,7 +135,5 @@ Uint8List decodeStyle(Style style, String str) {
       return decode(str, '-', 4);
     case Style.minimal:
       return decode(str, '', 2);
-    default:
-      throw ArgumentError('Invalid Bytewords style.');
   }
 }

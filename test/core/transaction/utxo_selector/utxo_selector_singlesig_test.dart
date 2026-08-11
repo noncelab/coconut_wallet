@@ -45,7 +45,7 @@ void main() {
   group('[UtxoSelector SingleSigWallet Test]', () {
     test('should select optimal UTXOs for single signature wallet', () {
       final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 60000}; // 0.0006 BTC
-      final feeRate = 1.0; // 1 sat/vB
+      const feeRate = 1.0; // 1 sat/vB
 
       final result = UtxoSelector.selectOptimalUtxos(utxoList, paymentMap, feeRate, WalletType.singleSignature);
 
@@ -56,7 +56,7 @@ void main() {
 
     test('should select multiple UTXOs when single UTXO is not enough', () {
       final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 120000}; // 0.0012 BTC
-      final feeRate = 1.0;
+      const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(utxoList, paymentMap, feeRate, WalletType.singleSignature);
 
@@ -92,7 +92,7 @@ void main() {
   group('[UtxoSelector SingleSigWallet Test] when isFeeSubtractedFromAmount is true', () {
     test('should handle fee subtracted from amount (1)', () {
       final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 100000}; // 0.00095 BTC
-      final feeRate = 1.0;
+      const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
         utxoList,
@@ -108,7 +108,7 @@ void main() {
 
     test('should handle fee subtracted from amount (2)', () {
       final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
-      final feeRate = 1.0;
+      const feeRate = 1.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
         utxoList,
@@ -124,7 +124,7 @@ void main() {
 
     test('should handle fee subtracted from amount (3)', () {
       final paymentMap = {'bcrt1q6c8cqxwld4zazqntqnw88p0krqp48hk7ngzl9e': 175000};
-      final feeRate = 2.0;
+      const feeRate = 2.0;
 
       final result = UtxoSelector.selectOptimalUtxos(
         utxoList,

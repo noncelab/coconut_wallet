@@ -336,7 +336,8 @@ wallet_add_scanner_screen:
     step2_em: "XPUB - QR 코드"
     select: "선택"
   guide_passport:
-    step0: "패스포트에서 연동할 계정을 열어 주세요."
+    note: "이 가이드는 Passport Prime 기준으로 작성되었습니다."
+    step0: "연동할 계정을 열어 주세요."
     step1: "1. "
     step1_em: "Account Details"
     step2: "2. "
@@ -355,15 +356,15 @@ wallet_add_scanner_screen:
     mainnet_wallet_error_text: "메인넷 지갑이 아니에요"
     testnet_wallet_error_text: "테스트넷 지갑이 아니에요"
     unsupported_wallet_error_text: "지원하지 않는 지갑이에요"
-    wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
+    wallet_description_text: "지갑 정보는 어디서 찾나요?"
     blue_wallet_texts:
       - "· 블루월렛"
-      - "· 핫월렛 - 더보기(•••) - Show Wallet XPUB 버튼 클릭"
-      - "· 보기 전용 지갑 - 더보기(•••) - Export/Backup 버튼 클릭"
+      - "  · 핫월렛 - 더보기(•••) - Show Wallet XPUB"
+      - "  · 보기 전용 지갑 - 더보기(•••) - Export/Backup"
       - "zpub6rFR7y4Q2AijBEqt..."
     nunchuck_wallet_texts:
       - "· 넌척"
-      - "· Keys 탭 - 키 선택 - Key spec 정보"
+      - "  · Keys 탭 - 키 선택 - Key spec 정보"
       - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
       - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
     mfp_title: "마스터 핑거프린트 입력"
@@ -487,13 +488,13 @@ wallet_connect_screen:
       passphrase_where_to_enter: "패스프레이즈를 어디에서 입력하시겠어요?"
       passphrase_confirm_on_device: "Trezor에서 입력하신 패스프레이즈를 확인해 주세요."
       passphrase_enabling: "Trezor 기기에서 패스프레이즈 활성화를 확인해 주세요."
-      suite_app_notice: "USB 연결 시 Trezor Suite 앱이 자동 실행돼요."
+      suite_app_notice: "Trezor Suite 앱이 자동 실행되나요?"
       suite_app_setting_guide:
-        title: "· 기본 앱 설정을 제거하세요"
+        title: "Trezor를 연결할 때 Trezor Suite 앱이 자동으로 실행되지 않도록 기본 앱 설정을 삭제해주세요."
         descriptions:
-          - "1. 휴대폰에서 '설정 - 애플리케이션 - Trezor Suite'"
-          - "2. '기본으로 설정' 또는 '기본 앱으로 열기'에서 기본값 삭제"
-          - "3. USB 연결 해제 후 재연결 시 'Trezor Suite 앱을 열어 TREZOR을(를) 처리하시겠습니까?' 다이얼로그창에서 '취소' 선택"
+          - "1. 휴대폰에서 설정 → 애플리케이션 → Trezor Suite로 이동하세요."
+          - "2. 기본으로 설정 또는 기본 앱으로 열기에서 설정된 기본값을 삭제하세요."
+          - "3. USB 케이블을 분리했다가 다시 연결하세요. \"Trezor Suite 앱을 열어 TREZOR을(를) 처리하시겠습니까?\"라는 안내가 나타나면 취소를 선택하세요."
   common:
     ble_off: "기기 블루투스를 켜주세요."
     loading_wallet_info: "지갑 정보 가져오는 중"
@@ -732,6 +733,12 @@ unsigned_tx_qr_screen:
     step2_em: "PSBT"
     step3: "3. "
     step3_em: "카메라로 불러오기"
+  guide_passport:
+    note: "이 가이드는 Passport Prime 기준으로 작성되었습니다."
+    step1: "1. 홈 화면에서"
+    step1_em: "Scan"
+    step1_end: "선택"
+    step2: "2. 카메라로 아래 QR 코드 스캔"
   fast_scan_mode: "빠른 스캔 모드"
   low_density_qr: "단순한 QR"
   high_density_qr: "복잡한 QR"
