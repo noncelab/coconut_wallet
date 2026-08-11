@@ -52,7 +52,12 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   @override
   Widget build(BuildContext context) {
     final walletProvider = context.watch<WalletProvider>();
-    final wallets = walletProvider.walletItemList;
+    List<WalletItemBase> wallets;
+    if (widget.initialSelectedWalletId != null) {
+      wallets = walletProvider.walletItemList.where((w) => w.id == widget.initialSelectedWalletId).toList();
+    } else {
+      wallets = walletProvider.walletItemList;
+    }
 
     return Scaffold(
       backgroundColor: context.coconutColors.background,
@@ -240,27 +245,32 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Widget _buildWalletListView(BuildContext context, List<WalletItemBase> wallets) {
-    return ListView.separated(
+    return SingleChildScrollView(
       padding: const EdgeInsets.only(top: 20, bottom: 125),
-      itemCount: wallets.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final wallet = wallets[index];
-        final isLocked = widget.initialSelectedWalletId == wallet.id;
+      child: Column(
+        children: [
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: wallets.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final wallet = wallets[index];
+              final isLocked = widget.initialSelectedWalletId == wallet.id;
 
-        return _WalletListItemCard(
-          title: wallet.name,
-          isSelected:
-              _selectedWalletIds.length == wallets.length
-                  ? true
-                  : _selectedWalletIds.isNotEmpty && _selectedWalletIds.contains(wallet.id),
-          isLocked: isLocked,
-          onTap: () {
-            if (isLocked) return;
-            _toggleWalletSelection(wallet.id);
-          },
-        );
-      },
+              return _WalletListItemCard(
+                title: wallet.name,
+                isSelected: _selectedWalletIds.contains(wallet.id),
+                isLocked: isLocked,
+                onTap: () {
+                  if (isLocked) return;
+                  _toggleWalletSelection(wallet.id);
+                },
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -570,18 +580,23 @@ class _WalletListItemCard extends StatelessWidget {
     final bool isDisabled = isLocked && isSelected;
     final iconColor = isDisabled ? context.coconutColors.iconDisabled : context.coconutColors.iconDefault;
     final textColor = isDisabled ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
+    final Color borderColor;
+    if (isDisabled) {
+      borderColor = context.coconutColors.iconDisabled;
+    } else if (isSelected) {
+      borderColor = context.coconutColors.primaryText;
+    } else {
+      borderColor = context.coconutColors.border;
+    }
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: context.coconutColors.surface,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? context.coconutColors.primaryText : context.coconutColors.border,
-            width: 1,
-          ),
+          border: Border.all(color: borderColor, width: 1),
         ),
         child: Row(
           children: [
