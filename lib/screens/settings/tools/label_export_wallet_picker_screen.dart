@@ -221,55 +221,79 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Widget _buildFileListView(BuildContext context, List<File> files) {
-    return ListView.separated(
-      padding: const EdgeInsets.only(top: 20, bottom: 125),
-      itemCount: files.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final file = files[index];
-        return _FileListItemCard(
-          file: file,
-          isSelected: _selectedFileIndices.contains(index),
-          onTap: () {
-            setState(() {
-              if (_selectedFileIndices.contains(index)) {
-                _selectedFileIndices.remove(index);
-              } else {
-                _selectedFileIndices.add(index);
-              }
-            });
-          },
-        );
+    return ShaderMask(
+      shaderCallback: (Rect bounds) {
+        return LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            context.coconutColors.background,
+            Colors.transparent,
+            Colors.transparent,
+            context.coconutColors.background,
+          ],
+          stops: const [0.0, 0.03, 0.97, 1.0],
+        ).createShader(bounds);
       },
+      blendMode: BlendMode.dstOut,
+      child: ListView.separated(
+        padding: const EdgeInsets.only(top: 20, bottom: 125),
+        itemCount: files.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final file = files[index];
+          return _FileListItemCard(
+            file: file,
+            isSelected: _selectedFileIndices.contains(index),
+            onTap: () {
+              setState(() {
+                if (_selectedFileIndices.contains(index)) {
+                  _selectedFileIndices.remove(index);
+                } else {
+                  _selectedFileIndices.add(index);
+                }
+              });
+            },
+          );
+        },
+      ),
     );
   }
 
   Widget _buildWalletListView(BuildContext context, List<WalletItemBase> wallets) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 20, bottom: 125),
-      child: Column(
-        children: [
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: wallets.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final wallet = wallets[index];
-              final isLocked = widget.initialSelectedWalletId == wallet.id;
+    return ShaderMask(
+      shaderCallback: (Rect bounds) {
+        return LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            context.coconutColors.background,
+            Colors.transparent,
+            Colors.transparent,
+            context.coconutColors.background,
+          ],
+          stops: const [0.0, 0.03, 0.97, 1.0],
+        ).createShader(bounds);
+      },
+      blendMode: BlendMode.dstOut,
+      child: ListView.separated(
+        padding: const EdgeInsets.only(top: 20, bottom: 125),
+        itemCount: wallets.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final wallet = wallets[index];
+          final isLocked = widget.initialSelectedWalletId == wallet.id;
 
-              return _WalletListItemCard(
-                title: wallet.name,
-                isSelected: _selectedWalletIds.contains(wallet.id),
-                isLocked: isLocked,
-                onTap: () {
-                  if (isLocked) return;
-                  _toggleWalletSelection(wallet.id);
-                },
-              );
+          return _WalletListItemCard(
+            title: wallet.name,
+            isSelected: _selectedWalletIds.contains(wallet.id),
+            isLocked: isLocked,
+            onTap: () {
+              if (isLocked) return;
+              _toggleWalletSelection(wallet.id);
             },
-          ),
-        ],
+          );
+        },
       ),
     );
   }

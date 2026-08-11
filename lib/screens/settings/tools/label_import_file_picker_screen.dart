@@ -151,29 +151,45 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   }
 
   Widget _buildFileListView(BuildContext context, List<File> files) {
-    return ListView.separated(
-      padding: const EdgeInsets.only(top: 20, bottom: 90),
-      itemCount: files.length + 1,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        if (index == files.length) {
-          return _buildAddFileButton(context);
-        }
-        final file = files[index];
-        return FileListItemCard(
-          file: file,
-          isSelected: _selectedItemIndex == index,
-          onTap: () {
-            setState(() {
-              if (_selectedItemIndex == index) {
-                _selectedItemIndex = null;
-              } else {
-                _selectedItemIndex = index;
-              }
-            });
-          },
-        );
+    return ShaderMask(
+      shaderCallback: (Rect bounds) {
+        return LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            context.coconutColors.background,
+            Colors.transparent,
+            Colors.transparent,
+            context.coconutColors.background,
+          ],
+          stops: const [0.0, 0.03, 0.97, 1.0],
+        ).createShader(bounds);
       },
+      blendMode: BlendMode.dstOut,
+      child: ListView.separated(
+        padding: const EdgeInsets.only(top: 20, bottom: 90),
+        itemCount: files.length + 1,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          if (index == files.length) {
+            return _buildAddFileButton(context);
+          }
+          final file = files[index];
+          return FileListItemCard(
+            file: file,
+            isSelected: _selectedItemIndex == index,
+            onTap: () {
+              setState(() {
+                if (_selectedItemIndex == index) {
+                  _selectedItemIndex = null;
+                } else {
+                  _selectedItemIndex = index;
+                }
+              });
+            },
+          );
+        },
+      ),
     );
   }
 
