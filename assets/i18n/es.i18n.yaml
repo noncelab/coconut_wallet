@@ -1210,7 +1210,7 @@ errors:
 text_field:
   enter_fee_with_two_decimal_places: "Hasta dos decimales permitidos (sat/vB)"
   enter_fee_directly: "Introducir manualmente"
-  search_mnemonic_word: "Buscar en inglés o números"
+  search_mnemonic_word: "Letras en inglés o números"
 
 tooltip:
   recommended_fee1: "No se puede obtener la comisión recomendada. Por favor, ingrese la comisión manualmente." 

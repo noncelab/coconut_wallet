@@ -1208,7 +1208,7 @@ errors:
 text_field:
   enter_fee_with_two_decimal_places: "小数点以下2桁まで入力可能（sat/vB）"
   enter_fee_directly: "手動入力"
-  search_mnemonic_word: "英語で検索"
+  search_mnemonic_word: "英字または数字で検索"
 
 tooltip:
   recommended_fee1: "推奨手数料を取得できません。手数料を手動で入力してください。"
