@@ -87,7 +87,7 @@ fastlane-production-mainnet: realm-clean
 	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production skip_prep:true
 	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true
 
-fastlane-production-regtest:
+fastlane-production-regtest: realm-clean
 	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production
 	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true
 	
