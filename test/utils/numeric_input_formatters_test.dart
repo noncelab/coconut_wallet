@@ -319,6 +319,71 @@ void main() {
     });
   });
 
+  group('FiatAmountInputFormatter', () {
+    TextEditingValue format(String text, {required int decimalPlaces, String decimalSeparator = '.'}) {
+      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
+      final formatter = FiatAmountInputFormatter(decimalPlaces: decimalPlaces);
+      return formatter.formatEditUpdate(
+        const TextEditingValue(),
+        TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length)),
+      );
+    }
+
+    List<String> typeSequence(List<String> inputs, {required int decimalPlaces, String decimalSeparator = '.'}) {
+      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
+      final formatter = FiatAmountInputFormatter(decimalPlaces: decimalPlaces);
+      var current = const TextEditingValue();
+      final results = <String>[];
+      for (final input in inputs) {
+        TextEditingValue next;
+        if (input == '<') {
+          if (current.text.isEmpty) {
+            next = current;
+          } else {
+            var newText = current.text.substring(0, current.text.length - 1);
+            next = TextEditingValue(text: newText, selection: TextSelection.collapsed(offset: newText.length));
+          }
+        } else {
+          final newText = current.text + input;
+          next = TextEditingValue(text: newText, selection: TextSelection.collapsed(offset: newText.length));
+        }
+        current = formatter.formatEditUpdate(current, next);
+        results.add(current.text);
+      }
+      return results;
+    }
+
+    test('USD처럼 decimalPlaces=2인 경우 소수점 입력 및 자리수 그룹핑을 허용한다', () {
+      final seq = typeSequence(['5', '0', '.', '2', '5'], decimalPlaces: 2);
+      expect(seq, ['5', '50', '50.', '50.2', '50.25']);
+    });
+
+    test('decimalPlaces=2를 초과하는 소수 자리 입력은 거부한다', () {
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      const formatter = FiatAmountInputFormatter(decimalPlaces: 2);
+      const before = TextEditingValue(text: '50.25', selection: TextSelection.collapsed(offset: 5));
+      const addingDigit = TextEditingValue(text: '50.255', selection: TextSelection.collapsed(offset: 6));
+      expect(formatter.formatEditUpdate(before, addingDigit), before);
+    });
+
+    test('KRW처럼 decimalPlaces=0인 경우 소수점 입력 자체를 거부한다', () {
+      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      const formatter = FiatAmountInputFormatter(decimalPlaces: 0);
+      const before = TextEditingValue(text: '50000', selection: TextSelection.collapsed(offset: 5));
+      const addingDot = TextEditingValue(text: '50000.', selection: TextSelection.collapsed(offset: 6));
+      expect(formatter.formatEditUpdate(before, addingDot), before);
+    });
+
+    test('천단위 구분자가 소수부와 함께 정상적으로 삽입된다 (en)', () {
+      expect(format('1234.5', decimalPlaces: 2).text, '1,234.5');
+    });
+
+    test('로케일이 comma-decimal인 경우 소수점 입력을 허용한다 (de)', () {
+      final seq = typeSequence(['5', '0', ',', '2', '5'], decimalPlaces: 2, decimalSeparator: ',');
+      expect(seq, ['5', '50', '50,', '50,2', '50,25']);
+    });
+  });
+
   group('SatoshiAmountInputFormatter', () {
     test('keeps cursor at the end when locale grouping separator is dot', () {
       NumberFormatConfig.instance.update(AppLanguage.es.code);

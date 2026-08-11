@@ -10,6 +10,16 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/type_converter_utils.dart';
 import 'package:ur/ur.dart';
 
+/// 스캔된 지갑 정보의 스크립트 타입이
+/// Native SegWit(bip84)이 아닌 경우 발생
+class UnsupportedWalletTypeException implements Exception {
+  final String derivation;
+  UnsupportedWalletTypeException(this.derivation);
+
+  @override
+  String toString() => 'UnsupportedWalletTypeException: unsupported derivation path ($derivation)';
+}
+
 class WalletAddService {
   static const String masterFingerprintPlaceholder = '00000000';
 
@@ -97,7 +107,8 @@ class WalletAddService {
       if (json is! Map<String, dynamic>) {
         throw 'Unexpected UR bytes json type: ${json.runtimeType}';
       }
-      FileLogger.log(className, methodName, 'jsonDecode completed');
+      FileLogger.log(className, methodName, 'jsonDecode completed, keys: ${json.keys.toList()}');
+      FileLogger.log(className, methodName, 'raw json: ${jsonEncode(json)}');
       return createWalletFromJson(json: json, name: name, walletImportSource: walletImportSource);
     } catch (e, stackTrace) {
       FileLogger.error(className, methodName, 'failed: $e', stackTrace);
@@ -110,12 +121,12 @@ class WalletAddService {
     required String name,
     required WalletImportSource walletImportSource,
   }) {
-    // BBQR 스캔 결과에서 xpub과 fingerprint 추출
+    // BBQR 또는 Electrum 포맷 스캔 결과에서 xpub과 fingerprint 추출
     String? xpub;
     String? fingerprint;
     String? descriptor;
 
-    // bip84 (native segwit)
+    // Coldcard/Sparrow 스타일 BBQR 포맷: {"bip84": {"xpub": ..., "xfp": ..., "desc": ...}}
     if (json['bip84'] != null) {
       xpub = json['bip84']['xpub'];
       fingerprint = json['bip84']['xfp'];
@@ -123,9 +134,25 @@ class WalletAddService {
       if (json['bip84']['desc'] != null) {
         descriptor = json['bip84']['desc'];
       }
+    } else if (json['keystore'] is Map) {
+      // Electrum 지갑 파일 포맷 (Passport 등): {"keystore": {"xpub": ..., "derivation": "m/84'/.../...", "ckcc_xfp": ...}}
+      final keystore = json['keystore'] as Map;
+      final derivation = keystore['derivation'];
+      // Native SegWit만 지원하므로 파생 경로가 bip84가 아니면 지원 대상이 아님
+      if (derivation is String && derivation.contains("84'")) {
+        xpub = keystore['xpub'];
+        final ckccXfp = keystore['ckcc_xfp'];
+        if (ckccXfp is int) {
+          fingerprint = _ckccXfpToFingerprint(ckccXfp);
+        }
+      } else {
+        Logger.error('Unsupported derivation in keystore: $derivation');
+        throw UnsupportedWalletTypeException('$derivation');
+      }
     }
 
     if (xpub == null) {
+      Logger.error('No bip84 xpub found. Available top-level keys: ${json.keys.toList()}');
       throw Exception('No valid xpub found in BBQR data');
     }
 
@@ -141,5 +168,18 @@ class WalletAddService {
 
     // xpub으로 지갑 생성 (fallback)
     return createExtendedPublicKeyWallet(xpub, name, fingerprint, walletImportSource: walletImportSource);
+  }
+
+  /// keystore.ckcc_xfp = 마스터 핑거프린트 리틀엔디언
+  /// 바이트 순서를 뒤집어 hex 문자열로 변환한다.
+  String _ckccXfpToFingerprint(int ckccXfp) {
+    final bigEndianHex = ckccXfp.toUnsigned(32).toRadixString(16).padLeft(8, '0');
+    final bytes = [
+      bigEndianHex.substring(0, 2),
+      bigEndianHex.substring(2, 4),
+      bigEndianHex.substring(4, 6),
+      bigEndianHex.substring(6, 8),
+    ];
+    return bytes.reversed.join();
   }
 }

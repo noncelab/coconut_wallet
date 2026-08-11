@@ -339,7 +339,8 @@ wallet_add_scanner_screen:
     step2_em: "XPUB - QR Code"
     select: "を選択"
   guide_passport:
-    step0: "Passportで接続するアカウントを開いてください"
+    note: "本ガイドはPassport Prime基準で作成されています。"
+    step0: "接続するアカウントを開いてください"
     step1: "1. "
     step1_em: "Account Details"
     step2: "2. "
@@ -727,6 +728,12 @@ unsigned_tx_qr_screen:
     step2_em: "PSBT"
     step3: "3. "
     step3_em: "カメラで下のQRコードをスキャン"
+  guide_passport:
+    note: "本ガイドはPassport Prime基準で作成されています。"
+    step1: "1. ホーム画面で、"
+    step1_em: "Scan"
+    step1_end: "を選択"
+    step2: "2. カメラで下のQRコードをスキャン"
   fast_scan_mode: "高速スキャンモード"
   low_density_qr: "シンプルQR"
   high_density_qr: "高密度QR"
