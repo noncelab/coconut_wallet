@@ -1119,7 +1119,7 @@ label_management_screen:
   import_title: "Importar"
   import_description: "Importa notas de otra billetera"
   export_title: "Exportar"
-  export_description: "Realiza una copia de seguridad de las notas o compártelas con otra billetera"
+  export_description: "Respalda tus notas o compártelas con otra billetera"
   tooltip:
     title: "Notas de Coconut"
     description: "Puedes registrar tu propia información para identificar transacciones y UTXOs más fácilmente."

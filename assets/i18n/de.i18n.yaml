@@ -1059,7 +1059,7 @@ label_management_screen:
   import_title: "Importieren"
   import_description: "Notizen aus einer anderen Wallet importieren"
   export_title: "Exportieren"
-  export_description: "Notizen sichern oder mit einer anderen Wallet teilen"
+  export_description: "Sichern Sie Notizen oder teilen Sie sie mit einer anderen Wallet"
   tooltip:
     title: "Coconuts Notizen"
     description: "Sie können Ihre eigenen Informationen aufzeichnen, um Transaktionen und UTXOs einfacher zu unterscheiden."

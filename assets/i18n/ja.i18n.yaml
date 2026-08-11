@@ -1116,7 +1116,7 @@ label_management_screen:
   import_title: "インポート"
   import_description: "他のウォレットからメモを読み込みます"
   export_title: "エクスポート"
-  export_description: "メモをバックアップするか、他のウォレットへ共有します"
+  export_description: "メモをバックアップするか、他のウォレットに shared します"
   tooltip:
     title: "ココナッツのメモ"
     description: "取引やUTXOをより簡単に visual / 区別できるように、自分だけの情報を記録できます。"
