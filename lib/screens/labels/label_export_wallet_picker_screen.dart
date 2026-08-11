@@ -541,7 +541,9 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         CoconutToast.showToast(
           context: context,
           text: t.label_management_screen.file.delete_success,
-          level: CoconutToastLevel.success,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/circle-info.svg',
+          level: CoconutToastLevel.info,
         );
         _refreshFiles();
       } catch (e) {

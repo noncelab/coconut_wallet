@@ -1144,7 +1144,7 @@ label_management_screen:
   file:
     select: "다른 파일 선택"
     apply: "적용하기"
-    apply_description: "$fileName 파일을 적용할까요?"
+    apply_description: "$fileName\n파일을 적용할까요?"
     delete: "파일 삭제"
     delete_description: "$fileName\n파일을 삭제하시겠어요?"
     delete_multiple_description: "선택한 $count개의 파일을 삭제하시겠어요?"

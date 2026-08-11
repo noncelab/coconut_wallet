@@ -1129,7 +1129,7 @@ label_management_screen:
   file:
     select: "Seleccionar"
     apply: "Aplicar"
-    apply_description: "¿Deseas aplicar el archivo $fileName?"
+    apply_description: "¿Deseas aplicar el archivo\n$fileName?"
     delete: "Eliminar archivo"
     delete_description: "¿Estás seguro de que quieres eliminar\n$fileName?"
     delete_multiple_description: "¿Estás seguro de que quieres eliminar los $count archivos seleccionados?"

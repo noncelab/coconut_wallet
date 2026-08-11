@@ -1126,7 +1126,7 @@ label_management_screen:
   file:
     select: "選択"
     apply: "適用"
-    apply_description: "$fileName ファイルを適用しますか？"
+    apply_description: "$fileName\nファイルを適用しますか？"
     delete: "ファイルを削除"
     delete_description: "$fileName\nファイルを削除しますか？"
     delete_multiple_description: "選択した $count 件のファイルを削除しますか？"

@@ -1069,7 +1069,7 @@ label_management_screen:
   file:
     select: "Auswählen"
     apply: "Anwenden"
-    apply_description: "Möchten Sie die Datei $fileName anwenden?"
+    apply_description: "Möchten Sie die Datei\n$fileName\nanwenden?"
     delete: "Datei löschen"
     delete_description: "Möchten Sie\n$fileName\nwirklich löschen?"
     delete_multiple_description: "Möchten Sie die ausgewählten $count Dateien wirklich löschen?"
