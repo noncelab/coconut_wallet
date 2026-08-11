@@ -251,7 +251,7 @@ wallet_home_screen:
   cannot_modify_fixed_widget: "이 요소는 표시/숨김을 변경할 수 없어요."
   no_change_in_amount: "수량 변화가 없어요!"
   analysis_period: "최근 ${days}일 • ${transaction_type}"
-  analysis_period_cutsom: "직접 설정 • ${transaction_type}"
+  analysis_period_custom: "직접 설정 • ${transaction_type}"
   analysis_period_bottom_sheet:
     period_for_analysis: "조회 기간"
     days_15: "15일"
@@ -278,6 +278,7 @@ wallet_add_scanner_screen:
   cold_card: "콜드카드"
   krux: "크럭스"
   passport: "패스포트"
+  trezor: "트레저"
   bitbox02: "비트박스02"
   self: "직접 입력"
   self_description: "다른 앱에서 생성한 정보로 지갑을 추가할 수 있어요"
@@ -335,7 +336,8 @@ wallet_add_scanner_screen:
     step2_em: "XPUB - QR 코드"
     select: "선택"
   guide_passport:
-    step0: "패스포트에서 연동할 계정을 열어 주세요."
+    note: "이 가이드는 Passport Prime 기준으로 작성되었습니다."
+    step0: "연동할 계정을 열어 주세요."
     step1: "1. "
     step1_em: "Account Details"
     step2: "2. "
@@ -354,15 +356,15 @@ wallet_add_scanner_screen:
     mainnet_wallet_error_text: "메인넷 지갑이 아니에요"
     testnet_wallet_error_text: "테스트넷 지갑이 아니에요"
     unsupported_wallet_error_text: "지원하지 않는 지갑이에요"
-    wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
+    wallet_description_text: "지갑 정보는 어디서 찾나요?"
     blue_wallet_texts:
       - "· 블루월렛"
-      - "· 핫월렛 - 더보기(•••) - Show Wallet XPUB 버튼 클릭"
-      - "· 보기 전용 지갑 - 더보기(•••) - Export/Backup 버튼 클릭"
+      - "  · 핫월렛 - 더보기(•••) - Show Wallet XPUB"
+      - "  · 보기 전용 지갑 - 더보기(•••) - Export/Backup"
       - "zpub6rFR7y4Q2AijBEqt..."
     nunchuck_wallet_texts:
       - "· 넌척"
-      - "· Keys 탭 - 키 선택 - Key spec 정보"
+      - "  · Keys 탭 - 키 선택 - Key spec 정보"
       - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
       - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
     mfp_title: "마스터 핑거프린트 입력"
@@ -385,10 +387,10 @@ wallet_connect_screen:
       start_signing: "서명 시작"
     init:
       step1: "BitBox02 Nova를 USB로 연결해주세요."
-      step2: "기기 화면에 'Tap this side'가 보이면 기기의 양면을 탭해주세요."
+      step2: "기기 화면에 'Tap this side'가 표시되면 화면의 하단이 될 면을 선택해 주세요."
       step3: "기기 화면에 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
       ble_step1: "블루투스를 켜고 BitBox02 Nova를 가까이 두세요."
-      ble_step2: "기기 화면에 'Tap this side'가 보이면 기기의 양면을 탭해주세요."
+      ble_step2: "기기 화면에 'Tap this side'가 표시되면 화면의 하단이 될 면을 선택해 주세요."
       ble_step3: "기기 화면에 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
     connecting: 
       title: "기기 연결 중"
@@ -396,6 +398,7 @@ wallet_connect_screen:
       step2: "기기 화면에 Pairing code가 표시되면 확인(✓)을 눌러주세요."
     paired:
       title: "BitBox02 연결이 완료되었습니다."
+      device_name: "기기 이름"
       master_fingerprint: "마스터 핑거프린트"
       derivation_path: "파생 경로"
       xpub: "확장 공개키"
@@ -403,7 +406,99 @@ wallet_connect_screen:
       title: "연결 실패"
       description: "BitBox02 Nova를 찾을 수 없어요. 기기를 다시 연결한 후 시도해 주세요."
       ble_description: "BitBox02 Nova를 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
-
+    ble_init_retry:
+      title: "BitBox02 재연결 실패"
+      description: "BitBox02 기기 재시작 후 재연결 해주세요."
+      step1: "BitBox02의 전원 공급을 중단했다가 다시 켜주세요."
+    keep_connection_title: "연결 유지 여부"
+    keep_connection_description: "BitBox02 연결을 유지하시겠어요?"
+  guide_trezor:
+    btn:
+      connect_via_ble: "블루투스로 연결하기"
+      add_wallet: "지갑 추가"
+      retry: "재시도"
+      start_signing: "서명 시작"
+    transport_select:
+      title: "Trezor 연결 방식 선택"
+      description: "연결할 Trezor 기기의 방식을 선택해주세요."
+      notice_ble: "Trezor Safe 7"
+      notice_usb: "모든 Trezor 모델"
+      btn:
+        ble: "Safe 7 Bluetooth"
+        usb: "USB Connect"
+    init:
+      notice: "Trezor Safe 7만 연결 가능합니다."
+      ble_step1: "블루투스를 켜고 Trezor Safe 7을 가까이 두세요."
+      ble_step2: "Unlock > 핀 번호를 눌러 잠금을 해제해 주세요."
+      ble_step3_prefix: "첫 연결인 경우 "
+      ble_step3_bold: "= > Pair & Connect > Pair new device"
+      ble_step3_suffix: "를 눌러주세요."
+      ble_step4: "아래 '$btn' 버튼을 눌러 연결을 시작하세요."
+    connecting:
+      title: "기기 연결 중"
+      step3: "첫 연결 시 페어링 코드가 동일한지 확인 후 Confirm을 눌러주세요."
+      step4: "Trezor 기기에 코코넛 월렛과 연결할지 묻는 화면이 나타나면 Confirm을 눌러주세요."
+    pairing_dialog:
+      title: "페어링 코드 입력"
+      description: "Trezor 화면에 표시된 6자리 숫자를 입력해 주세요."
+      verifying: "페어링 코드 확인 중..."
+      error_wrong_code: "잘못된 페어링 코드"
+      error_wrong_code_dialog: "잘못된 페어링 코드입니다.\n연결 과정을 처음부터 다시 시작합니다."
+    paired:
+      title: "Trezor 연결이 완료되었습니다."
+      device_name: "기기 이름"
+      master_fingerprint: "마스터 핑거프린트"
+      derivation_path: "파생 경로"
+      xpub: "확장 공개키"
+    keep_connection_title: "연결 유지 여부"
+    keep_connection_description: "트레저 연결을 유지하시겠어요?"
+    error:
+      title: "연결 실패"
+      ble_description: "Trezor Safe 7을 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
+      usb_description: "Trezor을 찾을 수 없어요. 기기를 다시 연결한 후 시도해 주세요."
+    ios_peer_removed_pairing:
+      title: "기존 블루투스 페어링 정보 삭제됨"
+      description: "Trezor에서 이전 블루투스 페어링 정보가 삭제되었어요."
+      step1: "iPhone '설정 > 블루투스'를 선택하세요."
+      step2: "[Trezor에 직접 설정하신 기기 이름] 또는 'Trezor Safe 7' 옆의 (i)를 누르세요."
+      step3: "'이 기기 잊기'를 눌러 삭제한 후 다시 시도해 주세요."
+    pairing_aborted:
+      title: "페어링이 중단됐어요."
+    usb:
+      title: "Trezor USB 연결"
+      idle_step1: "데이터 전송이 가능한 USB 케이블로 Trezor를 Android 기기에 연결해 주세요."
+      idle_step2: "코코넛 월렛에서 Trezor를 처리할 수 있도록 허용해 주세요."
+      idle_step3: "USB 연결 요청 시 허용해 주세요."
+      connecting: "Trezor 연결 중"
+      connecting_step1: "Trezor 화면의 안내를 확인해 주세요."
+      connect: "USB로 연결하기"
+      pin_title: "PIN 입력"
+      pin_description: "Trezor 화면의 숫자 배열을 보고 설정하신 PIN 번호를 입력해 주세요."
+      passphrase_title: "Passphrase 입력"
+      passphrase_hint: "숨김 지갑 passphrase"
+      passphrase_entry_source_description: "Passphrase를 입력할 위치를 선택해 주세요."
+      enter_in_app: "앱에서 입력"
+      enter_on_trezor: "기기에서 입력"
+      enter_on_trezor_description: "Trezor 기기에서 passphrase 입력을 완료해 주세요."
+      do_not_use_passphrase: "패스프레이즈 사용 안함"
+      standard_wallet: "표준 지갑"
+      passphrase_use_question: "패스프레이즈를 사용하시겠어요?"
+      passphrase_use_yes: "사용하기"
+      passphrase_use_no: "사용 안함"
+      passphrase_where_to_enter: "패스프레이즈를 어디에서 입력하시겠어요?"
+      passphrase_confirm_on_device: "Trezor에서 입력하신 패스프레이즈를 확인해 주세요."
+      passphrase_enabling: "Trezor 기기에서 패스프레이즈 활성화를 확인해 주세요."
+      suite_app_notice: "Trezor Suite 앱이 자동 실행되나요?"
+      suite_app_setting_guide:
+        title: "Trezor를 연결할 때 Trezor Suite 앱이 자동으로 실행되지 않도록 기본 앱 설정을 삭제해주세요."
+        descriptions:
+          - "1. 휴대폰에서 설정 → 애플리케이션 → Trezor Suite로 이동하세요."
+          - "2. 기본으로 설정 또는 기본 앱으로 열기에서 설정된 기본값을 삭제하세요."
+          - "3. USB 케이블을 분리했다가 다시 연결하세요. \"Trezor Suite 앱을 열어 TREZOR을(를) 처리하시겠습니까?\"라는 안내가 나타나면 취소를 선택하세요."
+  common:
+    ble_off: "기기 블루투스를 켜주세요."
+    loading_wallet_info: "지갑 정보 가져오는 중"
+    
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
@@ -528,6 +623,8 @@ send_confirm_screen:
   output_detail_title: "출력 상세 보기"
   flow_input_title: "입력 #$index"
   flow_output_title: "출력 #$index"
+  sign_with_connected_device_title: "연결된 기기로 서명"
+  sign_with_connected_device_description: "현재 연결된 $deviceName로 서명하시겠어요?"
 bitbox02_sign_screen:
   tx_card:
     title: "거래 요약"
@@ -556,9 +653,48 @@ bitbox02_sign_screen:
     description: "BitBox02가 트랜잭션에 서명했습니다."
     ready_to_broadcast: "전송할 준비가 되었어요."
   error_title: "서명 실패"
-  device_mismatch: "연결된 기기가 이 지갑과 일치하지 않습니다. 올바른 기기를 연결해 주세요."
+  wrong_wallet_title: "잘못된 지갑이 연결됨"
+  device_mismatch: "연결된 BitBox02가 서명하려는 지갑과 일치하지 않아요."
+  device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
+  fingerprint_compare:
+    expected: "서명 지갑"
+    connected: "연결된 지갑"
+  connected_wallet_label: "연결된 지갑"
   btn:
     sign: "BitBox02로 서명하기"
+    connect_other_bitbox02: "다른 BitBox02 연결하기"
+  state_label:
+    idle: "서명 대기"
+    signing: "서명 중"
+
+trezor_sign_screen:
+  tx_card:
+    title: "거래 요약"
+    send: "보낼 금액"
+    to: "받는 주소"
+    fee: "수수료"
+    total_cost: "총 비용"
+  device_status:
+    title: "기기 상태"
+  idle:
+    waiting: "서명 대기 중"
+  status:
+    connecting_device: "블루투스로 Trezor를 연결 중..."
+    confirm_on_device: "기기 화면에서 주소, 금액, 네트워크를 확인해 주세요"
+  done:
+    title: "서명 완료"
+    description: "Trezor가 트랜잭션에 서명했습니다."
+  error_title: "서명 실패"
+  wrong_wallet_title: "잘못된 지갑이 연결됨"
+  device_mismatch: "연결된 기기가 이 지갑과 일치하지 않아요."
+  device_mismatch_other_wallet: "현재 연결된 지갑은 '${wallet_name}'이라는 이름의 지갑과 일치합니다."
+  fingerprint_compare:
+    expected: "서명 지갑"
+    connected: "연결된 지갑"
+  connected_wallet_label: "연결된 지갑"
+  btn:
+    sign: "Trezor로 서명하기"
+    connect_other_trezor: "다른 Trezor 연결하기"
   state_label:
     idle: "서명 대기"
     signing: "서명 중"
@@ -597,6 +733,12 @@ unsigned_tx_qr_screen:
     step2_em: "PSBT"
     step3: "3. "
     step3_em: "카메라로 불러오기"
+  guide_passport:
+    note: "이 가이드는 Passport Prime 기준으로 작성되었습니다."
+    step1: "1. 홈 화면에서"
+    step1_em: "Scan"
+    step1_end: "선택"
+    step2: "2. 카메라로 아래 QR 코드 스캔"
   fast_scan_mode: "빠른 스캔 모드"
   low_density_qr: "단순한 QR"
   high_density_qr: "복잡한 QR"
@@ -809,7 +951,7 @@ wallet_info_screen:
       select: "선택"
   error:
     delete: "지갑 삭제 실패"
-  bitbox02_device:
+  connected_hardware_wallet:
     title: "기기 정보"
     connection_status: "연결 상태"
     connected: "연결됨"
@@ -1199,6 +1341,12 @@ alert:
     description: "비트코인을 보내려면 마스터 핑거프린트를 먼저 추가해야 해요. 계속 하시겠어요?"
     skip_button: "취소"
     confirm_button: "추가하기"
+  aos_ble_permission_denied:
+    title: "권한 필요"
+    description: "기기 연결을 위해 '근처 기기' 권한이 필요합니다. 설정에서 권한을 허용해 주세요."
+  ios_ble_permission_denied:
+    title: "블루투스 권한 필요"
+    description: "기기 연결을 위해 블루투스 권한이 필요합니다. iPhone \"설정\"에서 이 앱의 블루투스 권한을 허용해 주세요."
 
 third_party:
   keystone: "키스톤"
@@ -1207,6 +1355,7 @@ third_party:
   cold_card: "콜드카드"
   krux: "크럭스"
   passport: "패스포트"
+  trezor: "트레저"
   bitbox02: "비트박스"
   extended_public_keys:
     zpub: "zpub"
@@ -1261,3 +1410,8 @@ taproot:
   setup_summary_card:
     signer_configuration: "서명자 구성"
     inheritance_condition: "상속 조건"
+
+passphrase_input_text_field:
+  passphrase_visible: "패스프레이즈 보기"
+  passphrase_hidden: "패스프레이즈 숨기기"
+  placeholder: "패스프레이즈 입력"

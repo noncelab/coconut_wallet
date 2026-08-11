@@ -33,7 +33,7 @@ class BbQrDecoder {
       // fileType: T = TXN, P = PSBT, J = JSON ...
       String header = part.substring(0, 8);
       String encodingType = header.substring(2, 3);
-      String fileType = header.substring(3, 4);
+      //String fileType = header.substring(3, 4);
       String totalStr = header.substring(4, 6);
       String indexStr = header.substring(6, 8);
       int dataStartIndex = 8;

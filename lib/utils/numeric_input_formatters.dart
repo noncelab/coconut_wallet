@@ -80,7 +80,58 @@ class BtcAmountInputFormatter extends TextInputFormatter {
     final btc = double.tryParse(text);
     if (btc != null && btc > maxBtc) return oldValue;
 
-    final formattedText = _formatBtcText(text, decimalSeparator: decimalSep, groupingSeparator: groupingSep);
+    final formattedText = _formatGroupedDecimalText(text, decimalSeparator: decimalSep, groupingSeparator: groupingSep);
+    final offset = _calculateSelectionOffset(
+      originalText: newValue.text,
+      formattedText: formattedText,
+      baseOffset: newValue.selection.baseOffset,
+      decimalSeparator: decimalSep,
+      groupingSeparator: groupingSep,
+    );
+    return TextEditingValue(text: formattedText, selection: TextSelection.collapsed(offset: offset));
+  }
+}
+
+/// 법정화폐(fiat) 금액 입력용. 통화별 소수 자리수(decimalPlaces)만큼만 소수점 입력을 허용한다.
+/// decimalPlaces가 0이면 소수점 입력 자체를 거부한다. (예: KRW, JPY)
+class FiatAmountInputFormatter extends TextInputFormatter {
+  final int decimalPlaces;
+
+  const FiatAmountInputFormatter({required this.decimalPlaces});
+
+  String get _altSeparator => NumberFormatConfig.instance.decimalSeparator == '.' ? ',' : '.';
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final decimalSep = NumberFormatConfig.instance.decimalSeparator;
+    final groupingSep = NumberFormatConfig.instance.groupingSeparator;
+    final inserted = _insertedText(oldValue, newValue);
+
+    if (inserted.isNotEmpty) {
+      if (!RegExp(r'^[0-9.,]+$').hasMatch(inserted)) return oldValue;
+
+      if (inserted == _altSeparator) {
+        final alreadyHasDecimal = oldValue.text.contains(decimalSep);
+        if (alreadyHasDecimal || decimalPlaces == 0) return oldValue;
+        final newText = newValue.text.substring(0, newValue.text.length - 1) + decimalSep;
+        final next = TextEditingValue(text: newText, selection: TextSelection.collapsed(offset: newText.length));
+        return formatEditUpdate(oldValue, next);
+      }
+
+      if (inserted == groupingSep) return oldValue;
+    }
+
+    final text = newValue.text.replaceAll(groupingSep, '').replaceAll(',', '.').replaceAll(RegExp(r'[^0-9.]'), '');
+    if (text.isEmpty) return newValue;
+
+    final parts = text.split('.');
+    if (parts.length > 2) return oldValue;
+    if (decimalPlaces == 0 && parts.length > 1) return oldValue;
+
+    final decimalPart = parts.length > 1 ? parts[1] : '';
+    if (decimalPart.length > decimalPlaces) return oldValue;
+
+    final formattedText = _formatGroupedDecimalText(text, decimalSeparator: decimalSep, groupingSeparator: groupingSep);
     final offset = _calculateSelectionOffset(
       originalText: newValue.text,
       formattedText: formattedText,
@@ -167,7 +218,7 @@ String _insertedText(TextEditingValue oldValue, TextEditingValue newValue) {
   return newValue.text.substring(start, end);
 }
 
-String _formatBtcText(String text, {required String decimalSeparator, required String groupingSeparator}) {
+String _formatGroupedDecimalText(String text, {required String decimalSeparator, required String groupingSeparator}) {
   if (text == '.' || text == ',') return '0$decimalSeparator';
 
   final parts = text.replaceAll(',', '.').split('.');

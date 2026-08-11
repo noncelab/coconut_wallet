@@ -231,12 +231,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       height: 16,
       colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
     );
-    SvgPicture deleteIcon = SvgPicture.asset(
-      'assets/svg/delete.svg',
-      width: 16,
-      height: 16,
-      colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
-    );
+
     return Container(
       width: MediaQuery.sizeOf(context).width,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

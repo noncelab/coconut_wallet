@@ -324,18 +324,6 @@ class BroadcastingViewModel extends ChangeNotifier {
     _sendInfoProvider.clear();
   }
 
-  void _debugPrintSendInfoProvider() {
-    debugPrint('------- sendInfoProvider ------');
-    debugPrint('walletId: $_walletId');
-    debugPrint('transactionDraftId: ${_sendInfoProvider.unsignedDraftId}');
-    debugPrint('signedPsbt: ${_sendInfoProvider.signedResult}');
-    debugPrint('txWaitingForSign: ${_sendInfoProvider.txWaitingForSign}');
-    debugPrint('walletId: ${_sendInfoProvider.walletId}');
-    debugPrint('walletBase: $_walletBase');
-    debugPrint('walletAddressType: ${_walletBase!.addressType}');
-    debugPrint('-------------------------------');
-  }
-
   bool isTxContentEqual(Transaction signedTx, Transaction? unSignedTx) {
     if (unSignedTx == null) return false;
 
@@ -502,6 +490,19 @@ class BroadcastingViewModel extends ChangeNotifier {
     final signedDraftIdToDelete = _signedDraftId ?? _savedDraftId;
     assert(signedDraftIdToDelete != null);
     await _txDraftRepository.deleteOne(signedDraftIdToDelete!);
+  }
+
+  // ignore: unused_element
+  void _debugPrintSendInfoProvider() {
+    debugPrint('------- sendInfoProvider ------');
+    debugPrint('walletId: $_walletId');
+    debugPrint('transactionDraftId: ${_sendInfoProvider.unsignedDraftId}');
+    debugPrint('signedPsbt: ${_sendInfoProvider.signedResult}');
+    debugPrint('txWaitingForSign: ${_sendInfoProvider.txWaitingForSign}');
+    debugPrint('walletId: ${_sendInfoProvider.walletId}');
+    debugPrint('walletBase: $_walletBase');
+    debugPrint('walletAddressType: ${_walletBase!.addressType}');
+    debugPrint('-------------------------------');
   }
 }
 
