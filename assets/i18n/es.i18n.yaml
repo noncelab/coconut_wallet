@@ -503,7 +503,6 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elementos"
-  view_all_wallets: "View All My Wallets"
   primary_wallet: "Cartera Principal"
   exclude_from_total_amount: "Excluido del Total"
   home_balance: "Saldo en la Pantalla Principal"
@@ -779,7 +778,6 @@ settings_screen:
   set_password: "Establecer contraseña"
   use_biometric: "Usar autenticación biométrica"
   change_password: "Cambiar contraseña"
-  hide_balance: "Ocultar saldo"
   fiat: "Fiat"
   language: "Idioma"
   utxo_manual_selection: "Selección manual de UTXO"

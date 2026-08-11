@@ -59,10 +59,7 @@ class BtcAmountInputFormatter extends TextInputFormatter {
         if (alreadyHasDecimal) return oldValue;
         // 소수점으로 대체
         final newText = newValue.text.substring(0, newValue.text.length - 1) + decimalSep;
-        final next = TextEditingValue(
-          text: newText,
-          selection: TextSelection.collapsed(offset: newText.length),
-        );
+        final next = TextEditingValue(text: newText, selection: TextSelection.collapsed(offset: newText.length));
         return formatEditUpdate(oldValue, next);
       }
 
@@ -71,10 +68,7 @@ class BtcAmountInputFormatter extends TextInputFormatter {
     }
 
     // groupingSeparator를 먼저 제거한 뒤 마침표/쉼표를 모두 .으로 통일
-    final text = newValue.text
-        .replaceAll(groupingSep, '')
-        .replaceAll(',', '.')
-        .replaceAll(RegExp(r'[^0-9.]'), '');
+    final text = newValue.text.replaceAll(groupingSep, '').replaceAll(',', '.').replaceAll(RegExp(r'[^0-9.]'), '');
     if (text.isEmpty) return newValue;
 
     final parts = text.split('.');
@@ -86,11 +80,7 @@ class BtcAmountInputFormatter extends TextInputFormatter {
     final btc = double.tryParse(text);
     if (btc != null && btc > maxBtc) return oldValue;
 
-    final formattedText = _formatGroupedDecimalText(
-      text,
-      decimalSeparator: decimalSep,
-      groupingSeparator: groupingSep,
-    );
+    final formattedText = _formatGroupedDecimalText(text, decimalSeparator: decimalSep, groupingSeparator: groupingSep);
     final offset = _calculateSelectionOffset(
       originalText: newValue.text,
       formattedText: formattedText,
@@ -98,10 +88,7 @@ class BtcAmountInputFormatter extends TextInputFormatter {
       decimalSeparator: decimalSep,
       groupingSeparator: groupingSep,
     );
-    return TextEditingValue(
-      text: formattedText,
-      selection: TextSelection.collapsed(offset: offset),
-    );
+    return TextEditingValue(text: formattedText, selection: TextSelection.collapsed(offset: offset));
   }
 }
 
@@ -127,20 +114,14 @@ class FiatAmountInputFormatter extends TextInputFormatter {
         final alreadyHasDecimal = oldValue.text.contains(decimalSep);
         if (alreadyHasDecimal || decimalPlaces == 0) return oldValue;
         final newText = newValue.text.substring(0, newValue.text.length - 1) + decimalSep;
-        final next = TextEditingValue(
-          text: newText,
-          selection: TextSelection.collapsed(offset: newText.length),
-        );
+        final next = TextEditingValue(text: newText, selection: TextSelection.collapsed(offset: newText.length));
         return formatEditUpdate(oldValue, next);
       }
 
       if (inserted == groupingSep) return oldValue;
     }
 
-    final text = newValue.text
-        .replaceAll(groupingSep, '')
-        .replaceAll(',', '.')
-        .replaceAll(RegExp(r'[^0-9.]'), '');
+    final text = newValue.text.replaceAll(groupingSep, '').replaceAll(',', '.').replaceAll(RegExp(r'[^0-9.]'), '');
     if (text.isEmpty) return newValue;
 
     final parts = text.split('.');
@@ -150,11 +131,7 @@ class FiatAmountInputFormatter extends TextInputFormatter {
     final decimalPart = parts.length > 1 ? parts[1] : '';
     if (decimalPart.length > decimalPlaces) return oldValue;
 
-    final formattedText = _formatGroupedDecimalText(
-      text,
-      decimalSeparator: decimalSep,
-      groupingSeparator: groupingSep,
-    );
+    final formattedText = _formatGroupedDecimalText(text, decimalSeparator: decimalSep, groupingSeparator: groupingSep);
     final offset = _calculateSelectionOffset(
       originalText: newValue.text,
       formattedText: formattedText,
@@ -162,10 +139,7 @@ class FiatAmountInputFormatter extends TextInputFormatter {
       decimalSeparator: decimalSep,
       groupingSeparator: groupingSep,
     );
-    return TextEditingValue(
-      text: formattedText,
-      selection: TextSelection.collapsed(offset: offset),
-    );
+    return TextEditingValue(text: formattedText, selection: TextSelection.collapsed(offset: offset));
   }
 }
 
@@ -187,10 +161,7 @@ class RateInputFormatter extends TextInputFormatter {
       if (inserted == _altSep) {
         if (oldValue.text.contains(_decimalSep)) return oldValue;
         final newText = newValue.text.substring(0, newValue.text.length - 1) + _decimalSep;
-        final next = TextEditingValue(
-          text: newText,
-          selection: TextSelection.collapsed(offset: newText.length),
-        );
+        final next = TextEditingValue(text: newText, selection: TextSelection.collapsed(offset: newText.length));
         return formatEditUpdate(oldValue, next);
       }
     }
@@ -211,10 +182,7 @@ class RateInputFormatter extends TextInputFormatter {
     }
 
     final formatted = decimalPart != null ? '$integerPart$_decimalSep$decimalPart' : integerPart;
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
+    return TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
   }
 }
 
@@ -231,20 +199,14 @@ class SatoshiAmountInputFormatter extends TextInputFormatter {
     final sats = int.tryParse(text);
     if (sats != null && sats > maxSats) return oldValue;
 
-    final formattedText = formatIntWithGroupingSeparator(
-      text,
-      NumberFormatConfig.instance.groupingSeparator,
-    );
+    final formattedText = formatIntWithGroupingSeparator(text, NumberFormatConfig.instance.groupingSeparator);
     final offset = _calculateSelectionOffset(
       originalText: newValue.text,
       formattedText: formattedText,
       baseOffset: newValue.selection.baseOffset,
       groupingSeparator: NumberFormatConfig.instance.groupingSeparator,
     );
-    return TextEditingValue(
-      text: formattedText,
-      selection: TextSelection.collapsed(offset: offset),
-    );
+    return TextEditingValue(text: formattedText, selection: TextSelection.collapsed(offset: offset));
   }
 }
 
@@ -252,18 +214,11 @@ String _insertedText(TextEditingValue oldValue, TextEditingValue newValue) {
   if (newValue.text.length <= oldValue.text.length) return '';
 
   final start = oldValue.selection.baseOffset.clamp(0, oldValue.text.length);
-  final end = (start + (newValue.text.length - oldValue.text.length)).clamp(
-    0,
-    newValue.text.length,
-  );
+  final end = (start + (newValue.text.length - oldValue.text.length)).clamp(0, newValue.text.length);
   return newValue.text.substring(start, end);
 }
 
-String _formatGroupedDecimalText(
-  String text, {
-  required String decimalSeparator,
-  required String groupingSeparator,
-}) {
+String _formatGroupedDecimalText(String text, {required String decimalSeparator, required String groupingSeparator}) {
   if (text == '.' || text == ',') return '0$decimalSeparator';
 
   final parts = text.replaceAll(',', '.').split('.');

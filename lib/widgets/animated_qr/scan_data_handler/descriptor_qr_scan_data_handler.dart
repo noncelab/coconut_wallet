@@ -34,9 +34,6 @@ class DescriptorQrScanDataHandler implements IQrScanDataHandler {
   double get progress => isCompleted() ? 1.0 : 0.0;
 
   @override
-  bool get isFragmented => false;
-
-  @override
   bool validateFormat(String data) {
     try {
       DescriptorUtil.normalizeDescriptor(data);

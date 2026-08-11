@@ -125,9 +125,11 @@ class Logger {
     final spaces = ' ' * indent;
     map.forEach((key, value) {
       if (value is Map) {
+        // ignore: avoid_print
         print('$spaces$key:');
         logMapRecursive(value, indent: indent + 2);
       } else {
+        // ignore: avoid_print
         print('$spaces$key: $value');
       }
     });

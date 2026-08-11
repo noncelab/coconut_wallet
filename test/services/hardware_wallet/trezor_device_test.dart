@@ -72,7 +72,7 @@ void main() {
 
 Future<dynamic> invokeNativeMethod(MethodCall call) async {
   final completer = Completer<ByteData?>();
-  final codec = const StandardMethodCodec();
+  const codec = StandardMethodCodec();
   await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
     'trezor',
     codec.encodeMethodCall(call),

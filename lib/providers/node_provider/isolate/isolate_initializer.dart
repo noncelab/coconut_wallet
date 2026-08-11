@@ -54,7 +54,7 @@ class IsolateInitializer {
       utxoRepository,
       scriptCallbackService,
     );
-    final NetworkService networkManager = NetworkService(electrumService, transactionRepository);
+    final NetworkService networkManager = NetworkService(electrumService);
     final ScriptSyncService scriptSyncService = ScriptSyncService(
       isolateStateManager,
       balanceSyncService,
