@@ -13,10 +13,13 @@ List<TextSpan> highlightOccurrences(
   String query, {
   bool isIndex = false,
   Color? highlightColor,
+  bool tabularFigures = false,
 }) {
   final colors = context.coconutColors;
-  final normalStyle =
-      isIndex ? CoconutTypography.body1_16_Number.setColor(colors.mutedText) : TextStyle(color: colors.primaryText);
+  final normalStyle = (isIndex
+          ? CoconutTypography.body1_16_Number.setColor(colors.mutedText)
+          : TextStyle(color: colors.primaryText))
+      .copyWith(fontFeatures: tabularFigures ? const [FontFeature.tabularFigures()] : null);
   final resolvedHighlightColor = highlightColor ?? colors.success;
 
   if (query.isEmpty) {
@@ -215,7 +218,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         maxLength: 11,
         isLengthVisible: false,
         padding: const EdgeInsets.only(),
-        height: Sizes.size40,
+        height: Sizes.size48,
         prefix: IgnorePointer(
           ignoring: true,
           child: IconButton(
@@ -290,11 +293,14 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     final indexNum = data['index'] as int;
     final type = data['type'] as String?;
     final query = _searchController.text.toLowerCase();
+    final decimalStr = (indexNum - 1).toString();
     final binaryStr = (indexNum - 1).toRadixString(2).padLeft(11, '0');
+    final groupedBinaryStr = '${binaryStr.substring(0, 4)} ${binaryStr.substring(4, 8)} ${binaryStr.substring(8, 11)}';
 
     return Column(
       children: [
         ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
           title: RichText(
             text: TextSpan(
               children: highlightOccurrences(context, item, query),
@@ -305,12 +311,20 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
             text: TextSpan(
               style: typography.caption.copyWith(color: colors.tertiaryText, fontSize: 16),
               children: [
-                const TextSpan(text: 'Binary: '),
                 ...highlightOccurrences(
                   context,
-                  binaryStr,
-                  type == 'numeric' ? binaryStr : (type == 'binary' ? query : ''),
+                  decimalStr,
+                  type == 'numeric' ? decimalStr : '',
                   isIndex: true,
+                  tabularFigures: true,
+                ),
+                const TextSpan(text: '  ·  '),
+                ...highlightOccurrences(
+                  context,
+                  groupedBinaryStr,
+                  type == 'numeric' ? groupedBinaryStr : (type == 'binary' ? query : ''),
+                  isIndex: true,
+                  tabularFigures: true,
                 ),
               ],
             ),
