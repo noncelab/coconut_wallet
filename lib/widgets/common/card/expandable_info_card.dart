@@ -51,7 +51,7 @@ class _ExpandableInfoCardState extends State<ExpandableInfoCard> {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final descriptionText = widget.descriptionText;
-    final descriptionStyle = CoconutTypography.body2_14.setColor(colors.primaryText);
+    final descriptionStyle = CoconutTypography.body3_12.setColor(colors.primaryText);
 
     return Container(
       padding: const EdgeInsets.all(CoconutLayout.defaultPadding),
@@ -92,11 +92,14 @@ class _ExpandableInfoCardState extends State<ExpandableInfoCard> {
                         padding: EdgeInsets.only(top: isSingleLine ? 0 : firstLineCenterOffset),
                         child: SvgPicture.asset(
                           _isExpanded ? widget.expandedIconAsset : widget.collapsedIconAsset,
-                          width: 20,
+                          // circle-help/circle-warning have more built-in padding (20/24 viewBox)
+                          // than the tooltip's circle-info (15/16 viewBox), so a larger width is
+                          // needed for the drawn circles to appear the same size.
+                          width: 22.5,
                           colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                         ),
                       ),
-                      CoconutLayout.spacing_100w,
+                      CoconutLayout.spacing_150w,
                       Expanded(child: Text(descriptionText, style: descriptionStyle)),
                     ],
                   );
@@ -104,18 +107,34 @@ class _ExpandableInfoCardState extends State<ExpandableInfoCard> {
               ),
             ),
           ),
-          if (_isExpanded) ...[
-            for (int i = 0; i < widget.sections.length; i++) ...[
-              if (i > 0) CoconutLayout.spacing_200h,
-              _buildWalletInfoSection(
-                context: context,
-                titleText: widget.sections[i].titleText,
-                descriptionList: widget.sections[i].descriptionList,
-                addressText: widget.sections[i].addressText,
-              ),
-            ],
-            CoconutLayout.spacing_200h,
-          ],
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: double.infinity,
+              child:
+                  _isExpanded
+                      ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CoconutLayout.spacing_100h,
+                          for (int i = 0; i < widget.sections.length; i++) ...[
+                            if (i > 0) CoconutLayout.spacing_200h,
+                            _buildWalletInfoSection(
+                              context: context,
+                              titleText: widget.sections[i].titleText,
+                              descriptionList: widget.sections[i].descriptionList,
+                              addressText: widget.sections[i].addressText,
+                            ),
+                          ],
+                          CoconutLayout.spacing_200h,
+                        ],
+                      )
+                      : const SizedBox.shrink(),
+            ),
+          ),
         ],
       ),
     );
@@ -130,12 +149,13 @@ class _ExpandableInfoCardState extends State<ExpandableInfoCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(titleText, style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Sizes.size12),
+          padding: const EdgeInsets.only(left: Sizes.size28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(titleText, style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText)),
+
               ...descriptionList.map(
                 (desc) => Text(desc, style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText)),
               ),

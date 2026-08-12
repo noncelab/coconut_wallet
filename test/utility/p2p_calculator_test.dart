@@ -145,10 +145,10 @@ void main() {
       expect(viewModel.calculateSatsFromFiat(1), 1);
     });
 
-    test('[Fiat -> Sats] 오프라인 시 KRW 기본 가격(20,000,000) 사용', () {
+    test('[Fiat -> Sats] 오프라인 시 가격 조회 불가로 0 sats 반환', () {
       final viewModel = createViewModel(isNetworkOn: false);
-      // (1,000,000 × 0.99) / 20,000,000 × 100,000,000 = 4,950,000
-      expect(viewModel.calculateSatsFromFiat(1000000), 4950000);
+      // _getBtcPrice()는 오프라인일 때 폴백 가격 없이 0을 반환하므로 변환 결과도 0
+      expect(viewModel.calculateSatsFromFiat(1000000), 0);
     });
 
     test('[Fiat -> Sats] 수수료율 변경 후 동일 금액 재계산 시 결과 변경 확인', () {
@@ -246,10 +246,10 @@ void main() {
       expect(viewModel.calculateFiatFromSats(1), 1);
     });
 
-    test('[Sats -> Fiat] 오프라인 시 KRW 기본 가격(20,000,000) 사용', () {
+    test('[Sats -> Fiat] 오프라인 시 가격 조회 불가로 0원 반환', () {
       final viewModel = createViewModel(isNetworkOn: false);
-      // (1,000,000 / 100,000,000) * 20,000,000 * 1.01 = 202,000
-      expect(viewModel.calculateFiatFromSats(1000000), 202000);
+      // _getBtcPrice()는 오프라인일 때 폴백 가격 없이 0을 반환하므로 변환 결과도 0
+      expect(viewModel.calculateFiatFromSats(1000000), 0);
     });
 
     test('[Sats -> Fiat] 수수료율 변경 후 동일 금액 재계산 시 결과 변경 확인', () {
@@ -527,6 +527,51 @@ void main() {
         // (10,000 × 0.9999) / 140,000,000 × 100,000,000 = 7142.142857... → 7,142
         expect(viewModel.calculateSatsFromFiat(10000), 7142);
       });
+    });
+  });
+
+  group('통화별 소수 자리수(decimalDigits) 처리', () {
+    test('KRW(decimalDigits=0)는 minorUnitsPerWhole=1', () {
+      expect(FiatCode.KRW.minorUnitsPerWhole, 1);
+      expect(FiatCode.JPY.minorUnitsPerWhole, 1);
+    });
+
+    test('USD/EUR(decimalDigits=2)는 minorUnitsPerWhole=100', () {
+      expect(FiatCode.USD.minorUnitsPerWhole, 100);
+      expect(FiatCode.EUR.minorUnitsPerWhole, 100);
+    });
+
+    test('[USD] \$50.25 입력(센트 단위 5025)이 소수점 없이 처리되던 KRW와 달리 센트 단위까지 반영되어 Sats로 변환된다', () {
+      // btcPrice는 1 BTC당 whole unit(달러) 기준: $50,000/BTC
+      final viewModel = createViewModel(fiatCode: FiatCode.USD, btcPrice: 50000);
+      viewModel.setPremiumRate(0.0);
+
+      // $50.25 = 5025 cents
+      final satsFromCents = viewModel.calculateSatsFromFiat(5025);
+      // $50.00 = 5000 cents
+      final satsFromWholeDollars = viewModel.calculateSatsFromFiat(5000);
+
+      // 25센트 차이가 결과 sats에도 반영되어야 한다 (반올림 오차 허용)
+      expect(satsFromCents, greaterThan(satsFromWholeDollars));
+    });
+
+    test('[USD] Sats → Fiat 변환 결과가 센트 단위(minor unit) 정수로 반환된다', () {
+      final viewModel = createViewModel(fiatCode: FiatCode.USD, btcPrice: 50000);
+      viewModel.setPremiumRate(0.0);
+
+      // 100,000 sats = 0.001 BTC → $50.00 = 5000 cents
+      expect(viewModel.calculateFiatFromSats(100000), 5000);
+    });
+
+    test('[USD] formatFiatResult가 센트 단위 정수를 "50.25" 형태로 포맷한다', () {
+      final viewModel = createViewModel(fiatCode: FiatCode.USD, btcPrice: 50000);
+      expect(viewModel.formatFiatResult(5025), '50.25');
+      expect(viewModel.formatFiatResult(5000), '50.00');
+    });
+
+    test('[KRW] formatFiatResult는 기존과 동일하게 소수점 없이 포맷한다', () {
+      final viewModel = createViewModel();
+      expect(viewModel.formatFiatResult(50000), '50,000');
     });
   });
 

@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/providers/view_model/send/air-gapped/unsigned_transaction_view_model.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/view_data_handler/i_qr_view_data_handler.dart';
+import 'package:coconut_wallet/providers/view_model/send/air-gapped/unsigned_transaction_qr_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 

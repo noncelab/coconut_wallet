@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
@@ -7,8 +8,10 @@ import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart'
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 import '../../../mock/transaction_mock.dart';
 import '../../../mock/wallet_mock.dart';
@@ -163,6 +166,7 @@ void main() {
         to: testWalletItem.walletBase.getAddress(0),
         timestamp: DateTime.now(),
         status: UtxoStatus.outgoing,
+        spentByTransactionHash: nonExistentTxHash,
       );
 
       await utxoRepository.addAllUtxos(testWalletId, [outgoingUtxo]);
@@ -285,6 +289,57 @@ void main() {
       for (final orphanedUtxo in orphanedUtxos) {
         expect(remainingUtxos.where((u) => u.utxoId == orphanedUtxo.utxoId).isEmpty, isTrue);
       }
+    });
+  });
+
+  group('fetchUtxoStateList 테스트', () {
+    test('같은 트랜잭션의 다른 output이 잠겨 있어도 잠근 적 없는 output은 unspent로 유지되는지 확인', () async {
+      // Given: 하나의 트랜잭션이 지갑 소유 output을 2개 생성 (수신 output index 0, 잔돈 output index 1)
+      const String sharedTxHash = 'shared_tx_hash_receive_and_change';
+
+      final confirmedTx = TransactionMock.createConfirmedTransactionRecord(
+        transactionHash: sharedTxHash,
+        blockHeight: 100,
+      );
+      await transactionRepository.addAllTransactions(testWalletId, [confirmedTx]);
+
+      // 수신 output(index 0)은 사용자가 수동으로 잠금 처리한 상태로 저장
+      final lockedReceiveUtxo = UtxoState(
+        transactionHash: sharedTxHash,
+        index: 0,
+        amount: 1000000,
+        derivationPath: "m/84'/0'/0'/0/0",
+        blockHeight: 100,
+        to: testWalletItem.walletBase.getAddress(0),
+        timestamp: DateTime.now(),
+        status: UtxoStatus.locked,
+      );
+      await utxoRepository.addAllUtxos(testWalletId, [lockedReceiveUtxo]);
+
+      // 잔돈 output(index 1)의 scriptStatus - 잠근 적 없음
+      final changeScriptStatus = ScriptStatus(
+        derivationPath: "m/84'/0'/0'/1/0",
+        address: testWalletItem.walletBase.getAddress(0, isChange: true),
+        index: 0,
+        isChange: true,
+        scriptPubKey: 'change_script_pub_key',
+        status: 'change_status_hash',
+        timestamp: DateTime.now(),
+      );
+
+      // electrum이 잔돈 주소에 대해 같은 트랜잭션의 output 1을 반환하도록 모킹
+      when(electrumService.getUnspentList(any, any)).thenAnswer((_) async {
+        return [ListUnspentRes(height: 100, txHash: sharedTxHash, txPos: 1, value: 500000)];
+      });
+
+      // When: 잔돈 주소에 대해 UTXO 상태를 재계산
+      final result = await utxoSyncService.fetchUtxoStateList(testWalletItem, changeScriptStatus);
+
+      // Then: 잔돈 UTXO는 locked로 전파되지 않고 unspent 상태를 유지해야 함
+      expect(result.length, 1);
+      expect(result.first.transactionHash, sharedTxHash);
+      expect(result.first.index, 1);
+      expect(result.first.status, UtxoStatus.unspent);
     });
   });
 }

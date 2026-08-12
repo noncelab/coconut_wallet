@@ -157,9 +157,9 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
                 if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
                   _isShowedCameraPermissionDialog = true;
                   WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     await _showCameraPermissionDialog();
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                   });
                 }

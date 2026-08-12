@@ -205,3 +205,4 @@ rust/trezor-connect-rs/target/
 /META-INF
 
 .zed/*
+.local/

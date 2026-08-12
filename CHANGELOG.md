@@ -1,3 +1,15 @@
+## mainnet 0.15.0, regtest 3.15.0 - 26/08/11
+### Added
+1. Trezor 지원
+### Fixed
+1. BitBox02 UI/UX 개선
+2. 보내기 화면 Bitcoin 정수 단위 입력 버그 수정
+3. 의도치 않게 UTXO 잠기는 현상 수정
+4. Passport core 호환성 문제 해결
+5. P2P 계산기 소수점 입력 불가 문제 수정(USD/EUR)
+### Enhanced
+1. bip39 단어집 ui 개선
+
 ## mainnet 0.14.0, regtest 3.14.0
 ### Added
 * 패스포트 지원

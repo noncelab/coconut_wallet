@@ -22,7 +22,7 @@ class TrezorTransportSelectScreen extends StatelessWidget {
       appBar: CoconutAppBar.build(title: strings.title, context: context, isBottom: true),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
           child: Column(
             children: [
               Expanded(
@@ -108,7 +108,7 @@ class _TransportOptionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText)),
-                  CoconutLayout.spacing_100h,
+                  CoconutLayout.spacing_50h,
                   Text(subtitle, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
                 ],
               ),

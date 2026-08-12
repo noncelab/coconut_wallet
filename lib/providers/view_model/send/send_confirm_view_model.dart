@@ -86,9 +86,19 @@ class SendConfirmViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// coconut_lib이 PSBT 글로벌 맵에 붙이는 coconut 전용 proprietary 필드(BIP-174 0xfc)의 키
+  static const String _coconutProprietaryGlobalKey = 'fc07636f636f6e757401';
+
   Future<Psbt> _generateUnsignedPsbt() async {
     assert(_sendInfoProvider.transaction != null);
-    return Psbt.fromTransaction(_sendInfoProvider.transaction!, _walletListItemBase.walletBase);
+    final psbt = Psbt.fromTransaction(_sendInfoProvider.transaction!, _walletListItemBase.walletBase);
+    // Passport Core의 PSBT 파서가 이 proprietary 필드를 unknown 필드로 간주해
+    // PSBT 전체를 거부하는 문제(PSBT Invalid: unknown error) 회피.
+    // Prime은 필드 유무와 무관하게 서명 가능하므로 Passport는 이 필드 없는 포맷으로 통일
+    if (walletImportSource == WalletImportSource.passport) {
+      (psbt.psbtMap['global'] as Map).remove(_coconutProprietaryGlobalKey);
+    }
+    return psbt;
   }
 
   void setTxWaitingForSign() {
