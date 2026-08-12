@@ -45,22 +45,30 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Scaffold(
-          backgroundColor: context.coconutColors.background,
-          appBar: CoconutAppBar.build(title: t.label_management_screen.import_title, context: context),
-          body: FutureBuilder<List<File>>(
-            future: _filesFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              return _buildBody(context, snapshot);
-            },
+    final canPop = _step != LabelImportStep.loading;
+    return PopScope(
+      canPop: canPop,
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: context.coconutColors.background,
+            appBar: CoconutAppBar.build(
+              title: t.label_management_screen.import_title,
+              context: context,
+              isLeadingVisible: canPop,
+            ),
+            body: FutureBuilder<List<File>>(
+              future: _filesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return _buildBody(context, snapshot);
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

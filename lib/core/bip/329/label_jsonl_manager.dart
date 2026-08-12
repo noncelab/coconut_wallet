@@ -158,7 +158,7 @@ class LabelJsonLManager {
         final label = data['label'] as String?;
         final origin = data['origin'] as String?;
 
-        if (type == null || ref == null || label == null || label.isEmpty) {
+        if (type == null || ref == null) {
           debugPrint('Invalid or empty label in line: $line');
           continue;
         }
@@ -170,6 +170,10 @@ class LabelJsonLManager {
 
         if (type == 'tx') {
           if (walletProvider.getTransactionRecord(walletId, ref) == null) {
+            continue;
+          }
+          if (label == null || label.isEmpty) {
+            debugPrint('Invalid or empty label for tx in line: $line');
             continue;
           }
           await walletProvider.updateTransactionMemo(walletId, ref, label);
@@ -186,9 +190,16 @@ class LabelJsonLManager {
             continue;
           }
 
-          final colorIndex = data['tag_color'] as int?;
-          await walletProvider.addUtxoToTag(walletId, label, utxoId, colorIndex: colorIndex);
-          result.utxoTagCount++;
+          if (label != null && label.isNotEmpty) {
+            int? colorIndex = data['tag_color'] as int?;
+            // 색상 추가 시 수정
+            if (colorIndex != null && (colorIndex < 0 || colorIndex > 11)) {
+              colorIndex = null;
+            }
+
+            await walletProvider.addUtxoToTag(walletId, label, utxoId, colorIndex: colorIndex);
+            result.utxoTagCount++;
+          }
 
           final spendable = data['spendable'] as bool?;
           if (spendable == false) {

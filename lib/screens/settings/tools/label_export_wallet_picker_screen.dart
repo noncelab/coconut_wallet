@@ -59,10 +59,19 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       wallets = walletProvider.walletItemList;
     }
 
-    return Scaffold(
-      backgroundColor: context.coconutColors.background,
-      appBar: CoconutAppBar.build(title: t.label_management_screen.export_title, context: context),
-      body: _buildBody(context, wallets),
+    final canPop = _step != LabelExportStep.exporting;
+
+    return PopScope(
+      canPop: canPop,
+      child: Scaffold(
+        backgroundColor: context.coconutColors.background,
+        appBar: CoconutAppBar.build(
+          title: t.label_management_screen.export_title,
+          context: context,
+          isLeadingVisible: canPop,
+        ),
+        body: _buildBody(context, wallets),
+      ),
     );
   }
 
