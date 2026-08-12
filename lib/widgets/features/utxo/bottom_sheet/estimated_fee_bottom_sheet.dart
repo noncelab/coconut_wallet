@@ -194,7 +194,6 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
                       textAlign: TextAlign.end,
                       controller: feeRateController,
                       focusNode: feeRateFocusNode,
-                      backgroundColor: context.coconutColors.inputSurface,
                       onEditingComplete: onEditingComplete,
                       height: 30,
                       padding: const EdgeInsets.only(left: 12, right: 2),
@@ -211,8 +210,6 @@ class _EstimatedFeeBottomSheetState extends State<EstimatedFeeBottomSheet> {
                       maxLines: 1,
                       fontFamily: 'SpaceGrotesk',
                       fontSize: 14,
-                      activeColor: context.coconutColors.primaryText,
-                      borderColor: context.coconutColors.inputBorder,
                       fontWeight: FontWeight.bold,
                       borderRadius: 8,
                       suffix: Container(

@@ -6,11 +6,12 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
-class SelectableUtxoItemCard extends StatefulWidget {
+class SelectableUtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
   final bool isSelectable;
   final bool isSelected;
@@ -29,63 +30,28 @@ class SelectableUtxoItemCard extends StatefulWidget {
   });
 
   @override
-  State<SelectableUtxoItemCard> createState() => _UtxoSelectableCardState();
-}
-
-class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
-  late bool _isPressing;
-  late List<String> dateString;
-
-  @override
-  void initState() {
-    super.initState();
-    _isPressing = false;
-    dateString = DateTimeUtil.formatTimestamp(widget.utxo.timestamp);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (details) {
-        if (!widget.isSelectable) return;
-        setState(() {
-          _isPressing = true;
-        });
-      },
-      onTapCancel: () {
-        if (!widget.isSelectable) return;
-        setState(() {
-          _isPressing = false;
-        });
-      },
-      onTap: () {
-        if (!widget.isSelectable) return;
-        setState(() {
-          _isPressing = false;
-        });
-        widget.onSelected(widget.utxo);
-      },
+    final colors = context.coconutColors;
+    final dateString = DateTimeUtil.formatTimestamp(utxo.timestamp);
+    // utxo_item_card.dart의 태그 칩 크기와 통일한다.
+    const chipMinWidth = 40.0;
+    const chipLabelSize = 10.0;
+    final indicatorColor = isSelected ? colors.borderStrong : colors.borderStrong.withAlpha(40);
+
+    return ShrinkAnimationButton(
+      isActive: isSelectable,
+      onPressed: () => onSelected(utxo),
+      defaultColor: colors.surface,
+      pressedOverlayColor: colors.surfacePressOverlay,
+      pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
+      borderRadius: 20,
+      borderWidth: 0,
       child: Container(
         decoration: BoxDecoration(
-          color:
-              _isPressing
-                  ? context.coconutColors.surfacePressOverlay
-                  : context.coconutColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            width: 1,
-            color:
-                widget.isSelected
-                    ? context.coconutColors.borderStrong
-                    : context.coconutColors.border,
-          ),
+          border: Border.all(width: 1, color: indicatorColor),
         ),
-        padding: const EdgeInsets.only(
-          top: 23,
-          bottom: 22,
-          left: 18,
-          right: 23,
-        ),
+        padding: const EdgeInsets.all(20),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -97,72 +63,48 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        widget.currentUnit.displayBitcoinAmount(
-                          widget.utxo.amount,
-                        ),
-                        style: CoconutTypography.heading4_18_NumberBold
-                            .setColor(context.coconutColors.primaryText),
+                        currentUnit.displayBitcoinAmount(utxo.amount),
+                        style: CoconutTypography.heading4_18_NumberBold.setColor(colors.primaryText),
                       ),
                       CoconutLayout.spacing_100w,
-                      if (widget.utxo.status == UtxoStatus.incoming)
+                      if (utxo.status == UtxoStatus.incoming)
                         CoconutChip(
-                          color: context.coconutColors.surfaceInfoChip,
+                          color: colors.surfaceInfoChip,
                           label: t.status_receiving,
-                          labelColor: context.coconutColors.receivingColor,
+                          labelColor: colors.receivingColor,
                           padding: const EdgeInsets.symmetric(vertical: 2),
                         ),
                     ],
                   ),
-                  CoconutLayout.spacing_200h,
+                  CoconutLayout.spacing_100h,
                   Row(
                     children: [
-                      Text(
-                        dateString[0],
-                        style: CoconutTypography.body3_12_Number.setColor(
-                          context.coconutColors.secondaryText,
-                        ),
-                      ),
+                      Text(dateString[0], style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText)),
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
-                        color: context.coconutColors.secondaryText,
+                        color: colors.secondaryText,
                         width: 1,
                         height: 10,
                       ),
-                      Text(
-                        dateString[1],
-                        style: CoconutTypography.body3_12_Number.setColor(
-                          context.coconutColors.secondaryText,
-                        ),
-                      ),
+                      Text(dateString[1], style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText)),
                     ],
                   ),
                   Visibility(
-                    visible: widget.utxoTags?.isNotEmpty == true,
+                    visible: utxoTags?.isNotEmpty == true,
                     child: Container(
-                      margin: const EdgeInsets.only(top: 10),
+                      margin: const EdgeInsets.only(top: 4),
                       child: Wrap(
                         spacing: 4,
                         runSpacing: 4,
-                        children: List.generate(widget.utxoTags?.length ?? 0, (
-                          index,
-                        ) {
-                          Color foregroundColor =
-                              tagColorPalette[widget
-                                      .utxoTags?[index]
-                                      .colorIndex ??
-                                  0];
+                        children: List.generate(utxoTags?.length ?? 0, (index) {
+                          Color foregroundColor = tagColorPalette[utxoTags?[index].colorIndex ?? 0];
                           return IntrinsicWidth(
                             child: CoconutChip(
-                              minWidth: 40,
-                              color:
-                                  CoconutColors
-                                      .backgroundColorPaletteDark[widget
-                                          .utxoTags?[index]
-                                          .colorIndex ??
-                                      0],
+                              minWidth: chipMinWidth,
+                              color: CoconutColors.backgroundColorPaletteDark[utxoTags?[index].colorIndex ?? 0],
                               borderColor: foregroundColor,
-                              label: '#${widget.utxoTags?[index].name ?? ''}',
-                              labelSize: 12,
+                              label: '#${utxoTags?[index].name ?? ''}',
+                              labelSize: chipLabelSize,
                               labelColor: foregroundColor,
                             ),
                           );
@@ -175,12 +117,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
             ),
             SvgPicture.asset(
               CommonFormIconPath.circleCheck,
-              colorFilter: ColorFilter.mode(
-                widget.isSelected
-                    ? context.coconutColors.primaryText
-                    : context.coconutColors.primaryText.withAlpha(40),
-                BlendMode.srcIn,
-              ),
+              colorFilter: ColorFilter.mode(indicatorColor, BlendMode.srcIn),
             ),
           ],
         ),

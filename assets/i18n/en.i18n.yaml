@@ -786,7 +786,8 @@ settings_screen:
   utxo_manual_selection: "UTXO Manual Selection"
   utxo_manual_selection_description: "Select UTXOs manually for sending"
   utxo_tier_theme: "Coin Color"
-  electrum_server: 
+  electrum_server:
+    title: "Electrum Server Settings"
     server_address: "Server Address"
     port: "Port"
     use_ssl: "Use SSL"
@@ -1152,6 +1153,8 @@ user_experience_survey_bottom_sheet:
   text2: "Was Coconut Wallet helpful?"
   text3: "Yes, it's good!"
   text4: "Just okay"
+theme_bottom_sheet:
+  title: "Theme Settings"
 unit_bottom_sheet:
   title: "Unit Settings"
   header_text: "1 BTC = 100,000,000 sats"

@@ -26,7 +26,6 @@ class UnitBottomSheet extends StatelessWidget {
                       value: unit,
                       onTap: () {
                         context.read<PreferenceProvider>().changeBitcoinUnit(unit);
-                        Navigator.of(context).pop();
                       },
                     ),
                   )

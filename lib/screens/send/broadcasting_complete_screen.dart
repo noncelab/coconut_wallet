@@ -1,4 +1,5 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -242,14 +243,14 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                     focusNode: _memoFocusNode,
                     maxLines: 1,
                     textAlignVertical: TextAlignVertical.center,
-                    style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                     cursorColor: context.coconutColors.primaryText,
                     decoration: InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                       hintText: t.broadcasting_complete_screen.memo_placeholder,
-                      hintStyle: CoconutTypography.body1_16.setColor(context.coconutColors.inputPlaceholder),
+                      hintStyle: CoconutTypography.body2_14.setColor(context.coconutColors.inputPlaceholder),
                     ),
                   ),
                 ),
@@ -270,7 +271,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
           _memoController.text = text;
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sizes.size8, vertical: Sizes.size4),
+          padding: const EdgeInsets.all(Sizes.size8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Sizes.size14),
             border: Border.all(width: 1, color: context.coconutColors.border),

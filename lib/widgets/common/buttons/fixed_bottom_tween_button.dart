@@ -123,47 +123,50 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
               children: [
                 widget.subWidget ?? Container(),
                 CoconutLayout.spacing_300h,
-                Row(
-                  children: [
-                    // 왼쪽 버튼
-                    SizedBox(
-                      width: leftButtonWidth,
-                      child: ShrinkAnimationButton(
-                        onPressed: () {
-                          widget.leftButtonClicked();
-                        },
-                        isActive: widget.isLeftButtonActive,
-                        defaultColor: widget.leftButtonBackgroundColor ?? colors.buttonSecondaryBackground,
-                        pressedOverlayColor: getDarkerColor(
-                          widget.leftButtonBackgroundColor ?? colors.buttonSecondaryBackground,
-                        ),
-                        disabledColor: colors.surfaceDisabled,
-                        borderRadius: 12,
-                        child: SizedBox(
-                          width: leftButtonWidth,
-                          height: buttonHeight,
-                          child: Center(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                widget.leftText,
-                                style: CoconutTypography.body1_16_Bold.setColor(
-                                  widget.isLeftButtonActive
-                                      ? (widget.leftButtonTextColor ?? colors.buttonSecondaryForeground)
-                                      : colors.mutedText,
+                MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                  child: Row(
+                    children: [
+                      // 왼쪽 버튼
+                      SizedBox(
+                        width: leftButtonWidth,
+                        child: ShrinkAnimationButton(
+                          onPressed: () {
+                            widget.leftButtonClicked();
+                          },
+                          isActive: widget.isLeftButtonActive,
+                          defaultColor: widget.leftButtonBackgroundColor ?? colors.buttonSecondaryBackground,
+                          pressedOverlayColor: getDarkerColor(
+                            widget.leftButtonBackgroundColor ?? colors.buttonSecondaryBackground,
+                          ),
+                          disabledColor: colors.buttonPrimaryDisabledBackground,
+                          borderRadius: 12,
+                          child: SizedBox(
+                            width: leftButtonWidth,
+                            height: buttonHeight,
+                            child: Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  widget.leftText,
+                                  textAlign: TextAlign.center,
+                                  style: CoconutTypography.body2_14_Bold
+                                      .setColor(
+                                        widget.isLeftButtonActive
+                                            ? (widget.leftButtonTextColor ?? colors.buttonSecondaryForeground)
+                                            : colors.buttonPrimaryDisabledForeground,
+                                      )
+                                      .copyWith(height: 1.0),
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: widget.buttonSpacing),
-                    // 오른쪽 버튼
-                    SizedBox(
-                      width: rightButtonWidth,
-                      child: MediaQuery(
-                        data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                      SizedBox(width: widget.buttonSpacing),
+                      // 오른쪽 버튼
+                      SizedBox(
+                        width: rightButtonWidth,
                         child: ShrinkAnimationButton(
                           onPressed: () {
                             widget.rightButtonClicked();
@@ -202,8 +205,8 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

@@ -3,6 +3,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 
 typedef SelectableItemBuilder<T> = Widget Function(BuildContext context, T item, bool isSelected, VoidCallback? onTap);
@@ -85,7 +86,16 @@ class _SelectableListBottomSheetState<T> extends State<SelectableListBottomSheet
                     });
                   }
 
-                  return widget.itemBuilder(context, item, isSelected, handleTap);
+                  // 터치 시 배경색 변화 + shrink 효과를 항목마다 직접 구현하지 않도록
+                  // 여기서 공통으로 감싼다. itemBuilder는 더 이상 onTap을 직접 쓸 필요가
+                  // 없어 null을 전달한다(이 위젯이 탭을 전담).
+                  return ShrinkAnimationButton(
+                    onPressed: handleTap,
+                    defaultColor: Colors.transparent,
+                    borderRadius: 0,
+                    borderWidth: 0,
+                    child: widget.itemBuilder(context, item, isSelected, null),
+                  );
                 },
               ),
             ),

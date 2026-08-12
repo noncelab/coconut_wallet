@@ -32,6 +32,10 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
 
   @override
   Widget build(BuildContext context) {
+    // selectable_utxo_item_card.dart / utxo_item_card.dart와 태그 칩 크기를 통일한다.
+    const chipMinWidth = 40.0;
+    const chipLabelSize = 10.0;
+
     return Container(
       decoration: BoxDecoration(
         color: context.coconutColors.background,
@@ -99,11 +103,11 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                         Color foregroundColor = tagColorPalette[widget.utxoTags?[index].colorIndex ?? 0];
                         return IntrinsicWidth(
                           child: CoconutChip(
-                            minWidth: 40,
+                            minWidth: chipMinWidth,
                             color: CoconutColors.backgroundColorPaletteDark[widget.utxoTags?[index].colorIndex ?? 0],
                             borderColor: foregroundColor,
                             label: '#${widget.utxoTags?[index].name ?? ''}',
-                            labelSize: 12,
+                            labelSize: chipLabelSize,
                             labelColor: foregroundColor,
                           ),
                         );

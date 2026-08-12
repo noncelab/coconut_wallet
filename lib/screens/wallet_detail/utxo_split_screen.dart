@@ -2013,8 +2013,6 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                         textAlign: TextAlign.center,
                                         backgroundColor:
                                             hasFocus ? context.coconutColors.inputSurface : Colors.transparent,
-                                        activeColor: context.coconutColors.primaryText,
-                                        placeholderColor: context.coconutColors.inputPlaceholder,
                                         fontSize: 24,
                                         isVisibleBorder: false,
                                         onChanged: (_) {},

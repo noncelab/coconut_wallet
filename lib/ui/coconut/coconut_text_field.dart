@@ -135,6 +135,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   late Color _placeholderColor;
   late Color _errorColor;
   late Color _borderColor;
+  late Color _focusedBorderColor;
   late Color _backgroundColor;
 
   @override
@@ -192,7 +193,8 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     _cursorColor = widget.cursorColor ?? colors.primaryText;
     _placeholderColor = widget.placeholderColor ?? colors.inputPlaceholder;
     _errorColor = widget.errorColor ?? colors.danger;
-    _borderColor = widget.borderColor ?? colors.inputBorder;
+    _borderColor = widget.borderColor ?? colors.inputBorderUnfocused;
+    _focusedBorderColor = widget.activeColor ?? colors.inputBorderFocused;
     _backgroundColor = widget.backgroundColor ?? colors.inputSurface;
     _text = widget.controller.text;
   }
@@ -394,7 +396,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
         widget.isError
             ? _errorColor
             : _isFocus
-            ? (widget.maxLength != null && _text.runes.length > widget.maxLength! ? _errorColor : _activeColor)
+            ? (widget.maxLength != null && _text.runes.length > widget.maxLength! ? _errorColor : _focusedBorderColor)
             : _borderColor;
 
     final resolvedTextColor = widget.enabled ? context.coconutColors.primaryText : context.coconutColors.secondaryText;

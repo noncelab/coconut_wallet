@@ -18,9 +18,6 @@ class LanguageBottomSheet extends StatelessWidget {
 
   Future<void> _onLanguageSelected(BuildContext context, String code) async {
     await context.read<PreferenceProvider>().changeLanguage(code);
-    if (context.mounted) {
-      Navigator.of(context).pop();
-    }
   }
 
   @override

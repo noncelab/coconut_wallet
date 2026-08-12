@@ -204,7 +204,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     selector: (_, viewModel) => viewModel.nodeConnectionStatus,
                     builder: (context, nodeConnectionStatus, _) {
                       return CoconutAppBar.build(
-                        title: t.electrum_server,
+                        title: t.settings_screen.electrum_server.title,
                         context: context,
                         isLeadingVisible: nodeConnectionStatus != NodeConnectionStatus.connecting,
                       );
@@ -545,7 +545,6 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
                     textInputType: TextInputType.text,
                     backgroundColor: context.coconutColors.background,
-                    borderColor: context.coconutColors.inputBorder,
                     maxLines: 1,
                     clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
                     onClear: () {
@@ -619,7 +618,6 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                     textInputType: TextInputType.number,
                     backgroundColor: context.coconutColors.background,
-                    borderColor: context.coconutColors.inputBorder,
                     clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
                     onClear: () {
                       setState(() {

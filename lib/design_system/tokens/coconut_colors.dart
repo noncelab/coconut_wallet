@@ -145,7 +145,12 @@ class CoconutColors {
   /// 입력 필드 배경/placeholder/보더색
   final Color inputSurface;
   final Color inputPlaceholder;
-  final Color inputBorder;
+
+  /// 포커스 안 됐을 때(비활성화 상태 아님)의 보더색
+  final Color inputBorderUnfocused;
+
+  /// 포커스됐을 때의 보더색
+  final Color inputBorderFocused;
 
   /// 세그멘티드 컨트롤
   final Color segmentedControlSelected;
@@ -335,7 +340,8 @@ class CoconutColors {
     required this.chipOutlinedUnselectedText,
     required this.inputSurface,
     required this.inputPlaceholder,
-    required this.inputBorder,
+    required this.inputBorderUnfocused,
+    required this.inputBorderFocused,
     required this.segmentedControlSelected,
     required this.segmentedControlBackground,
     required this.segmentedControlSelectedText,
@@ -465,7 +471,8 @@ class CoconutColors {
       chipOutlinedUnselectedText: ds.CoconutColors.gray700,
       inputSurface: ds.CoconutColors.gray800,
       inputPlaceholder: ds.CoconutColors.gray700,
-      inputBorder: ds.CoconutColors.gray600,
+      inputBorderUnfocused: ds.CoconutColors.gray800,
+      inputBorderFocused: ds.CoconutColors.white,
       segmentedControlSelected: ds.CoconutColors.gray900,
       segmentedControlBackground: ds.CoconutColors.gray800,
       segmentedControlSelectedText: ds.CoconutColors.white,
@@ -476,7 +483,7 @@ class CoconutColors {
       bottomSheetExtensionFieldBackground: ds.CoconutColors.black,
       bottomActionBarBackground: ds.CoconutColors.gray900,
       pulldownMenuBackground: ds.CoconutColors.gray900,
-      pulldownMenuPressedColor: ds.CoconutColors.gray700,
+      pulldownMenuPressedColor: ds.CoconutColors.gray800,
       pulldownMenuDividerColor: ds.CoconutColors.black,
       pulldownMenuTextColor: ds.CoconutColors.white,
       switchActiveTrack: ds.CoconutColors.gray100,
@@ -504,7 +511,7 @@ class CoconutColors {
 
       homeBackground: ds.CoconutColors.black,
       homeSurface: ds.CoconutColors.gray850,
-      homeSurfacePressOverlay: ds.CoconutColors.black,
+      homeSurfacePressOverlay: ds.CoconutColors.gray800,
       homeSurfacePressOverlayOpacity: 0.5,
       utxoOverviewChartSurface: ds.CoconutColors.gray800,
       utxoOverviewChartUnselectedOverlayOpacity: 0.6,
@@ -595,10 +602,10 @@ class CoconutColors {
       chipSelectedText: ds.CoconutColors.white,
       chipOutlinedUnselectedBackground: ds.CoconutColors.gray150,
       chipOutlinedUnselectedText: ds.CoconutColors.gray350,
-      //inputSurface: const Color(0xFFF1F2F5),
       inputSurface: ds.CoconutColors.white,
       inputPlaceholder: ds.CoconutColors.gray300,
-      inputBorder: ds.CoconutColors.gray350,
+      inputBorderUnfocused: ds.CoconutColors.gray350,
+      inputBorderFocused: ds.CoconutColors.black,
       segmentedControlSelected: ds.CoconutColors.gray800,
       segmentedControlBackground: ds.CoconutColors.gray150,
       segmentedControlSelectedText: ds.CoconutColors.white,
@@ -747,7 +754,8 @@ class CoconutColors {
       chipOutlinedUnselectedText: huskSoft,
       inputSurface: ds.CoconutColors.white,
       inputPlaceholder: toast.withAlpha(140),
-      inputBorder: line,
+      inputBorderUnfocused: line,
+      inputBorderFocused: huskDeep,
       segmentedControlSelected: huskDeep,
       segmentedControlBackground: dim,
       segmentedControlSelectedText: ds.CoconutColors.white,

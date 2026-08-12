@@ -776,7 +776,8 @@ settings_screen:
   utxo_manual_selection: "UTXO 数手動選択"
   utxo_manual_selection_description: "送金に使用するUTXOを手動で選択します"
   utxo_tier_theme: "コインの色"
-  electrum_server: 
+  electrum_server:
+    title: "Electrum Server設定"
     server_address: "サーバーアドレス"
     port: "ポート"
     use_ssl: "SSLを使用"
@@ -1143,6 +1144,8 @@ user_experience_survey_bottom_sheet:
   text2: "Coconut Walletは役に立ちましたか？"
   text3: "はい、良かったです！"
   text4: "まあまあです"
+theme_bottom_sheet:
+  title: "テーマ設定"
 unit_bottom_sheet:
   title: "単位設定"
   header_text: "1 BTC = 100,000,000 sats"

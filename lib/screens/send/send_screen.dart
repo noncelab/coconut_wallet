@@ -55,7 +55,6 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_scr
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/common/buttons/shrink_tap_wrapper.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_draft_card.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
@@ -103,8 +102,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   // 스크롤 범위 연산에 사용하는 값들
   final double kCoconutAppbarHeight = 60;
-  final double kPageViewHeight = 225;
-  final double kAddressBoardPosition = 185;
+  final double kPageViewHeight = 226;
+  final double kAddressBoardPosition = 186;
   final double kTooltipHeight = 43;
   final double kTooltipPadding = 5;
   final double kAmountHeight = 34;
@@ -554,7 +553,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               ),
               CoconutLayout.spacing_50h,
               if (!isWalletWithoutMfp(_viewModel.selectedWalletItem))
-                _buildUtxoSelectionModeContainer(context, isUtxoSelectionAuto, amountText, selectedUtxoListLength),
+                _SendOptionButton(
+                  label: isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText,
+                  onPressed: _onUtxoSelectionModeButtonPressed,
+                  backgroundColor:
+                      isUtxoSelectionAuto || selectedUtxoListLength == 0
+                          ? Color.alphaBlend(Colors.white.withValues(alpha: 0.08), context.coconutColors.background)
+                          : context.coconutColors.brandAccentBackground,
+                  textColor:
+                      isUtxoSelectionAuto
+                          ? context.coconutColors.surfaceButtonText
+                          : selectedUtxoListLength == 0
+                          ? context.coconutColors.surfaceButtonText
+                          : context.coconutColors.brandAccentForeground,
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 2.5),
+                ),
             ],
           );
         },
@@ -607,45 +620,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     if (result != null) {
       _viewModel.setSelectedUtxoList(List<UtxoState>.from(result));
     }
-  }
-
-  Widget _buildUtxoSelectionModeContainer(
-    BuildContext context,
-    bool isUtxoSelectionAuto,
-    String amountText,
-    int selectedUtxoListLength,
-  ) {
-    final colors = context.coconutColors;
-    // TODO:
-    // final bgColor =
-    //     isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButtonSecondary : colors.brandAccentBackground;
-    final bgColor =
-        isUtxoSelectionAuto || selectedUtxoListLength == 0 ? colors.surfaceButton : colors.brandAccentBackground;
-    final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
-    final textColor =
-        isUtxoSelectionAuto
-            ? colors.surfaceButtonText
-            // ? colors.surfaceButtonSecondaryText
-            : selectedUtxoListLength == 0
-            ? colors.surfaceButtonText
-            : colors.primaryText;
-    final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
-
-    return !isUtxoSelectionAuto
-        ? ShrinkTapWrapper(
-          shrinkScale: 0.95,
-          onTap: _onUtxoSelectionModeButtonPressed,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(4)),
-            child: Text(text, style: fontStyle.setColor(textColor)),
-          ),
-        )
-        : Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(4)),
-          child: Text(text, style: fontStyle.setColor(textColor)),
-        );
   }
 
   Widget _buildInvisibleAmountField() {
@@ -1133,7 +1107,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                     child: CoconutTextField(
                       placeholderColor: context.coconutColors.border,
-                      borderColor: context.coconutColors.inputBorder,
                       textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
                       textInputFormatter: const [RateInputFormatter()],
                       enableInteractiveSelection: false,
@@ -1166,7 +1139,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       maxLines: 1,
                       fontFamily: 'SpaceGrotesk',
                       fontSize: 14,
-                      activeColor: context.coconutColors.primaryText,
                       fontWeight: FontWeight.bold,
                       borderRadius: 8,
                       suffix: Align(
@@ -1447,40 +1419,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    ShrinkAnimationButton(
+                                    _SendOptionButton(
+                                      iconPath: FeatureSettingsIconPath.broom,
+                                      iconWidth: 16,
+                                      iconAlpha: 0.5,
+                                      label: maxButtonText,
                                       onPressed: () {
                                         _viewModel.setMaxMode(!isMaxMode);
                                         _clearFocus();
                                       },
-                                      defaultColor: context.coconutColors.surface,
-                                      pressedOverlayColor: context.coconutColors.surface,
-                                      pressedOverlayOpacity: 0.8,
-                                      borderRadius: 4.0,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            SvgPicture.asset(
-                                              FeatureSettingsIconPath.broom,
-                                              colorFilter: ColorFilter.mode(
-                                                context.coconutColors.primaryText.withValues(
-                                                  alpha: isMaxMode ? 1.0 : 0.3,
-                                                ),
-                                                BlendMode.srcIn,
-                                              ),
-                                            ),
-                                            CoconutLayout.spacing_100w,
-                                            Text(
-                                              maxButtonText,
-                                              style: CoconutTypography.body3_12.setColor(
-                                                context.coconutColors.primaryText,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
                                     ),
                                     AnimatedSwitcher(
                                       duration: const Duration(milliseconds: 220),
@@ -1501,43 +1448,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                                 key: const ValueKey('manual_utxo_button'),
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  CoconutLayout.spacing_300w,
-                                                  ShrinkAnimationButton(
+                                                  CoconutLayout.spacing_200w,
+                                                  _SendOptionButton(
+                                                    iconPath: CommonActionIconPath.arrowReload,
+                                                    iconWidth: 15,
+                                                    iconAlpha: 0.5,
+                                                    label: t.send_screen.utxo_auto_selection,
                                                     onPressed: () {
                                                       _viewModel.setIsUtxoSelectionAuto(true);
                                                       _clearFocus();
                                                     },
-                                                    defaultColor: context.coconutColors.surface,
-                                                    pressedOverlayColor: context.coconutColors.surface,
-                                                    pressedOverlayOpacity: 0.8,
-                                                    borderRadius: 4.0,
-                                                    child: Container(
-                                                      padding: const EdgeInsets.symmetric(
-                                                        horizontal: 12.0,
-                                                        vertical: 4.5,
-                                                      ),
-                                                      child: Row(
-                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                        mainAxisSize: MainAxisSize.min,
-                                                        children: [
-                                                          SvgPicture.asset(
-                                                            CommonActionIconPath.arrowReload,
-                                                            width: 16,
-                                                            colorFilter: ColorFilter.mode(
-                                                              context.coconutColors.primaryText.withValues(alpha: 0.3),
-                                                              BlendMode.srcIn,
-                                                            ),
-                                                          ),
-                                                          CoconutLayout.spacing_100w,
-                                                          Text(
-                                                            t.send_screen.utxo_auto_selection,
-                                                            style: CoconutTypography.body3_12.setColor(
-                                                              context.coconutColors.primaryText,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
                                                   ),
                                                 ],
                                               )
@@ -1590,7 +1510,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   );
                 },
               ),
-              CoconutLayout.spacing_100h,
+              // CoconutLayout.spacing_100h,
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -2264,6 +2184,62 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     }
 
     setState(() {});
+  }
+}
+
+// 앱바 UTXO 모드 변환 버튼, 수량 입력란 하단 보조 버튼에 사용
+class _SendOptionButton extends StatelessWidget {
+  const _SendOptionButton({
+    required this.label,
+    required this.onPressed,
+    this.iconPath,
+    this.iconWidth,
+    this.iconAlpha = 1.0,
+    this.backgroundColor,
+    this.textColor,
+    this.padding,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final String? iconPath;
+  final double? iconWidth;
+  final double iconAlpha;
+  final EdgeInsetsGeometry? padding;
+  final Color? backgroundColor;
+  final Color? textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final resolvedBackground =
+        backgroundColor ?? Color.alphaBlend(Colors.white.withValues(alpha: 0.08), colors.background);
+    final resolvedTextColor = textColor ?? colors.primaryText;
+    return ShrinkAnimationButton(
+      onPressed: onPressed,
+      defaultColor: resolvedBackground,
+      pressedOverlayColor: colors.surface,
+      pressedOverlayOpacity: 0.8,
+      borderRadius: 4.0,
+      child: Container(
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (iconPath != null) ...[
+              SvgPicture.asset(
+                iconPath!,
+                width: iconWidth,
+                colorFilter: ColorFilter.mode(colors.primaryText.withValues(alpha: iconAlpha), BlendMode.srcIn),
+              ),
+              CoconutLayout.spacing_100w,
+            ],
+            Text(label, style: CoconutTypography.body3_12_Number.setColor(resolvedTextColor)),
+          ],
+        ),
+      ),
+    );
   }
 }
 

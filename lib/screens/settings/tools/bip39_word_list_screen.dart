@@ -231,11 +231,6 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           _searchController.clear();
         },
         placeholderText: _hintText,
-        activeColor: colors.primaryText,
-        cursorColor: colors.primaryText,
-        placeholderColor: colors.inputPlaceholder,
-        borderColor: colors.inputBorder,
-        backgroundColor: colors.inputSurface,
       ),
     );
   }

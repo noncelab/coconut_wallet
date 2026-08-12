@@ -206,6 +206,26 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                         ? Stack(
                                           children: [
                                             Container(color: resolvedBackgroundColor, child: _buildUtxoList(viewModel)),
+                                            Positioned(
+                                              top: 0,
+                                              left: 0,
+                                              right: 0,
+                                              child: IgnorePointer(
+                                                child: Container(
+                                                  height: 16,
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      begin: Alignment.topCenter,
+                                                      end: Alignment.bottomCenter,
+                                                      colors: [
+                                                        resolvedBackgroundColor,
+                                                        resolvedBackgroundColor.withValues(alpha: 0),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
                                             FixedBottomButton(
                                               onButtonClicked: () {
                                                 vibrateLight();
@@ -408,7 +428,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     return ListView.separated(
       key: ValueKey(viewModel.selectedUtxoTagName),
       controller: _scrollController,
-      padding: const EdgeInsets.only(top: 0, bottom: 100, left: 16, right: 16),
+      padding: const EdgeInsets.only(top: 10, bottom: 100, left: 16, right: 16),
       itemCount: filteredUtxoList.length,
       separatorBuilder: (context, index) => const SizedBox(height: 0),
       itemBuilder: (context, index) {

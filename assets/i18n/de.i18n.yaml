@@ -707,6 +707,7 @@ settings_screen:
     spanish: "Español"
     german: "Deutsch"
   electrum_server:
+    title: "Electrum-Server-Einstellungen"
     server_address: "Serveradresse"
     port: "Port"
     use_ssl: "SSL verwenden"
@@ -1072,6 +1073,8 @@ user_experience_survey_bottom_sheet:
   text2: "War Coconut Wallet hilfreich?"
   text3: "Ja, es ist gut!"
   text4: "Ganz in Ordnung"
+theme_bottom_sheet:
+  title: "Design-Einstellungen"
 unit_bottom_sheet:
   title: "Einheiteneinstellungen"
   header_text: "1 BTC = 100.000.000 Sats"

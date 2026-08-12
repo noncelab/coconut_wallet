@@ -49,9 +49,5 @@ class FiatBottomSheet extends StatelessWidget {
 
   Future<void> _onFiatSelected(BuildContext context, FiatCode fiatCode) async {
     await context.read<PreferenceProvider>().changeFiat(fiatCode);
-
-    if (context.mounted) {
-      Navigator.of(context).pop();
-    }
   }
 }
