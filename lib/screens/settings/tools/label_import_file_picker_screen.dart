@@ -151,44 +151,60 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   }
 
   Widget _buildFileListView(BuildContext context, List<File> files) {
-    return ShaderMask(
-      shaderCallback: (Rect bounds) {
-        return LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            context.coconutColors.background,
-            Colors.transparent,
-            Colors.transparent,
-            context.coconutColors.background,
-          ],
-          stops: const [0.0, 0.03, 0.97, 1.0],
-        ).createShader(bounds);
-      },
-      blendMode: BlendMode.dstOut,
-      child: ListView.separated(
-        padding: const EdgeInsets.only(top: 20, bottom: 90),
-        itemCount: files.length + 1,
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          if (index == files.length) {
-            return _buildAddFileButton(context);
-          }
-          final file = files[index];
-          return FileListItemCard(
-            file: file,
-            isSelected: _selectedItemIndex == index,
-            onTap: () {
-              setState(() {
-                if (_selectedItemIndex == index) {
-                  _selectedItemIndex = null;
-                } else {
-                  _selectedItemIndex = index;
-                }
-              });
-            },
-          );
-        },
+    final backgroundColor = context.coconutColors.background;
+
+    return Stack(
+      children: [
+        ListView.separated(
+          padding: const EdgeInsets.only(top: 20, bottom: 90),
+          itemCount: files.length + 1,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            if (index == files.length) {
+              return _buildAddFileButton(context);
+            }
+            final file = files[index];
+            return FileListItemCard(
+              file: file,
+              isSelected: _selectedItemIndex == index,
+              onTap: () {
+                setState(() {
+                  if (_selectedItemIndex == index) {
+                    _selectedItemIndex = null;
+                  } else {
+                    _selectedItemIndex = index;
+                  }
+                });
+              },
+            );
+          },
+        ),
+        _buildListFade(backgroundColor, isTop: true),
+        _buildListFade(backgroundColor, isTop: false),
+      ],
+    );
+  }
+
+  Widget _buildListFade(Color backgroundColor, {required bool isTop}) {
+    return Positioned(
+      top: isTop ? 0 : null,
+      bottom: isTop ? null : 0,
+      left: 0,
+      right: 0,
+      height: 20,
+      child: IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors:
+                  isTop
+                      ? [backgroundColor, backgroundColor.withValues(alpha: 0)]
+                      : [backgroundColor.withValues(alpha: 0), backgroundColor],
+            ),
+          ),
+        ),
       ),
     );
   }
