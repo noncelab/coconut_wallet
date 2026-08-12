@@ -269,8 +269,9 @@ class LabelJsonLManager {
     final txMemosWithLabels = txMemos.where((memo) => memo.memo.isNotEmpty).toList();
     final origin = _getOriginFromDescriptor(descriptor);
     final utxoTagsWithLabels = utxoTags.where((tag) => tag.name.isNotEmpty && tag.utxoIdList.isNotEmpty).toList();
+    final lockedUtxos = utxoStates.where((utxo) => utxo.status == UtxoStatus.locked).toList();
 
-    if (txMemosWithLabels.isEmpty && utxoTagsWithLabels.isEmpty) {
+    if (txMemosWithLabels.isEmpty && utxoTagsWithLabels.isEmpty && lockedUtxos.isEmpty) {
       return [];
     }
 
@@ -309,6 +310,29 @@ class LabelJsonLManager {
         }
         jsonLines.add(jsonEncode(data));
       }
+    }
+
+    // Locked Utxos
+    final taggedUtxoIds = utxoTagsWithLabels.expand((tag) => tag.utxoIdList).toSet();
+    for (final utxo in lockedUtxos) {
+      // Skip UTXOs that already have tags as they were processed above
+      if (taggedUtxoIds.contains(utxo.utxoId)) {
+        continue;
+      }
+
+      final parsedId = _parseUtxoId(utxo.utxoId);
+      if (parsedId == null) {
+        debugPrint('Could not parse utxoId: ${utxo.utxoId}');
+        continue;
+      }
+
+      final Map<String, dynamic> data = {
+        "type": "output",
+        "ref": "${parsedId.txid}:${parsedId.vout}",
+        "spendable": false,
+        "origin": origin,
+      };
+      jsonLines.add(jsonEncode(data));
     }
 
     return jsonLines;
