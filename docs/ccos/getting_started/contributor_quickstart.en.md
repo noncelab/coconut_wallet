@@ -33,7 +33,7 @@ Checklist:
 
 Use the following contact points when requesting review.
 
-- If you are still at the proposal stage, open a GitHub issue first.
+- If you are still at the proposal stage, open a GitHub issue first. Pick the **"CCOS Feature Proposal"** template when creating the issue — it pre-fills the sections reviewers need.
 - If you want to show implementation direction as well, starting with a draft PR is also fine.
 - For Yellow features, get review in an issue or draft PR before implementation grows too far.
 - If a feature looks Red, open a GitHub issue first and ask whether that classification is correct.

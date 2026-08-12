@@ -91,7 +91,8 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
 
   Future<void> _handleAddTheme(BuildContext context) async {
     final provider = context.read<PreferenceProvider>();
-    if (_featuredListing.requiresEntitlement) {
+    final alreadyEntitled = provider.getCcosFeatureAvailability(_featuredListing.id).isEntitled;
+    if (_featuredListing.requiresEntitlement && !alreadyEntitled) {
       await provider.markCcosFeaturePurchased(_featuredListing.id);
     }
     await provider.activateCcosFeature(_featuredListing.id);
