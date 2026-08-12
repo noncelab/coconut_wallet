@@ -38,7 +38,10 @@ class FileListItemCard extends StatelessWidget {
             SvgPicture.asset(
               isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
               width: 24,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(
+                isSelected ? context.coconutColors.iconDefault : context.coconutColors.iconSubDefault,
+                BlendMode.srcIn,
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(

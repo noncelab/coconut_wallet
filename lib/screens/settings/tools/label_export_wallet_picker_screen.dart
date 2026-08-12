@@ -621,7 +621,12 @@ class _WalletListItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDisabled = isLocked && isSelected;
-    final iconColor = isDisabled ? context.coconutColors.iconDisabled : context.coconutColors.iconDefault;
+    final iconColor =
+        isDisabled
+            ? context.coconutColors.iconDisabled
+            : isSelected
+            ? context.coconutColors.iconDefault
+            : context.coconutColors.iconSubDefault;
     final textColor = isDisabled ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
     final Color borderColor;
     if (isDisabled) {
