@@ -343,6 +343,10 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
       return widget.padding!.right;
     }
 
+    if (widget.size == CoconutTextFieldSize.search) {
+      return 12;
+    }
+
     return _resolvedDefaultPadding(isUnderline).right;
   }
 
