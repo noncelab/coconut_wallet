@@ -1,11 +1,19 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
-    hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+    hide
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutTextField;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
@@ -26,7 +34,7 @@ class BroadcastingCompleteScreen extends StatefulWidget {
 
 class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
-  final TextEditingController _memoController = TextEditingController();
+  final TextEditingController _memoController = LiteralTextEditingController();
   final FocusNode _memoFocusNode = FocusNode();
   final GlobalKey _memoTagsKey = GlobalKey();
   double _memoTagsHeight = 0;
@@ -243,7 +251,9 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                     focusNode: _memoFocusNode,
                     maxLines: 1,
                     textAlignVertical: TextAlignVertical.center,
-                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                    style: CoconutTextField.withDefaultFontFeatures(
+                      CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                    ),
                     cursorColor: context.coconutColors.primaryText,
                     decoration: InputDecoration(
                       isDense: true,

@@ -1,5 +1,6 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutTextField;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -53,7 +54,7 @@ class CoconutLimitTextField extends StatelessWidget {
             keyboardType: keyboardType,
             placeholder: placeholder,
             padding: EdgeInsets.fromLTRB(prefix != null ? 0 : 16, 20, 16, 20),
-            style: CoconutTypography.body1_16.setColor(colors.primaryText),
+            style: CoconutTextField.withDefaultFontFeatures(CoconutTypography.body1_16.setColor(colors.primaryText)),
             cursorColor: cursorColor,
             decoration: const BoxDecoration(color: Colors.transparent),
             maxLength: maxLength,

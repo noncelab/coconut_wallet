@@ -1,5 +1,6 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutTextField;
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:flutter/cupertino.dart';
 
 // todo : cds에 맞게 수정 후 삭제 예정
@@ -24,7 +25,7 @@ void showTextFieldDialog({
               textAlign: TextAlign.center,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               controller: controller,
-              style: CoconutTypography.body1_16,
+              style: CoconutTextField.withDefaultFontFeatures(CoconutTypography.body1_16),
               keyboardType: textInputType ?? const TextInputType.numberWithOptions(decimal: true),
             ),
           ],

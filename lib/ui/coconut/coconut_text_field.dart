@@ -6,6 +6,59 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
+const List<FontFeature> _defaultTextFieldFontFeatures = [
+  FontFeature.disable('calt'),
+  FontFeature.disable('case'),
+  FontFeature.disable('clig'),
+  FontFeature.disable('dlig'),
+  FontFeature.disable('frac'),
+  FontFeature.disable('liga'),
+  FontFeature.disable('numr'),
+  FontFeature.disable('ordn'),
+  FontFeature.disable('sinf'),
+  FontFeature.disable('subs'),
+  FontFeature.disable('sups'),
+];
+
+class LiteralTextEditingController extends TextEditingController {
+  LiteralTextEditingController({super.text});
+
+  LiteralTextEditingController.fromValue(super.value) : super.fromValue();
+
+  @override
+  TextSpan buildTextSpan({required BuildContext context, TextStyle? style, required bool withComposing}) {
+    final composingRange = value.composing;
+    final shouldStyleComposingRange =
+        withComposing && composingRange.isValid && !composingRange.isCollapsed && composingRange.end <= text.length;
+
+    return TextSpan(
+      style: style,
+      children: _buildLiteralCharacterSpans(
+        text: text,
+        composingRange: shouldStyleComposingRange ? composingRange : null,
+      ),
+    );
+  }
+
+  List<TextSpan> _buildLiteralCharacterSpans({required String text, required TextRange? composingRange}) {
+    final spans = <TextSpan>[];
+    var offset = 0;
+
+    for (final rune in text.runes) {
+      final character = String.fromCharCode(rune);
+      final endOffset = offset + character.length;
+      final isComposing = composingRange != null && composingRange.start <= offset && endOffset <= composingRange.end;
+
+      spans.add(TextSpan(text: character, style: isComposing ? _composingStyle : null));
+      offset = endOffset;
+    }
+
+    return spans;
+  }
+
+  static const TextStyle _composingStyle = TextStyle(decoration: TextDecoration.underline);
+}
+
 enum CoconutTextFieldStyle { bordered, underline }
 
 enum CoconutTextFieldClearButtonVisibility { never, whenNotEmpty, always }
@@ -59,6 +112,7 @@ class CoconutTextField extends StatefulWidget {
   final bool enabled;
   final bool unfocusOnTapOutside;
   final TextOverflow? textOverflow;
+  final List<FontFeature>? fontFeatures;
   final double fontHeight;
   final CoconutTextFieldStyle style;
   final CoconutTextFieldSize size;
@@ -110,11 +164,16 @@ class CoconutTextField extends StatefulWidget {
     this.enabled = true,
     this.unfocusOnTapOutside = false,
     this.textOverflow = TextOverflow.ellipsis,
+    this.fontFeatures,
     this.fontHeight = 1.4,
     this.style = CoconutTextFieldStyle.bordered,
     this.size = CoconutTextFieldSize.standard,
     this.underlineSpacing = CoconutTextFieldUnderlineSpacing.standard,
   });
+
+  static TextStyle withDefaultFontFeatures(TextStyle style, {List<FontFeature>? fontFeatures}) {
+    return style.copyWith(fontFeatures: [...?style.fontFeatures, ...?fontFeatures, ..._defaultTextFieldFontFeatures]);
+  }
 
   @override
   State<CoconutTextField> createState() => _CoconutTextFieldState();
@@ -137,11 +196,15 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   late Color _borderColor;
   late Color _focusedBorderColor;
   late Color _backgroundColor;
+  late TextEditingController _inputController;
+  bool _isSyncingControllerValue = false;
 
   @override
   void initState() {
     super.initState();
     _placeholderText = widget.placeholderText ?? '';
+    _inputController = LiteralTextEditingController.fromValue(widget.controller.value);
+    _inputController.addListener(_inputControllerListener);
     widget.controller.addListener(_controllerListener);
     widget.focusNode.addListener(_focusNodeListener);
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureAffixes());
@@ -157,24 +220,68 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   void didUpdateWidget(covariant CoconutTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
     _placeholderText = widget.placeholderText ?? '';
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_controllerListener);
+      widget.controller.addListener(_controllerListener);
+      _syncInputControllerFromWidget();
+    }
     _updateResolvedColors();
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureAffixes());
   }
 
   @override
   void dispose() {
+    _inputController.removeListener(_inputControllerListener);
+    _inputController.dispose();
     widget.controller.removeListener(_controllerListener);
     widget.focusNode.removeListener(_focusNodeListener);
     super.dispose();
   }
 
+  void _inputControllerListener() {
+    if (_isSyncingControllerValue) return;
+
+    if (_trimTextToMaxLength(_inputController)) return;
+
+    _isSyncingControllerValue = true;
+    widget.controller.value = _inputController.value;
+    _isSyncingControllerValue = false;
+
+    _handleTextChanged(_inputController.text);
+  }
+
   void _controllerListener() {
-    var text = widget.controller.text;
-    if (widget.maxLength != null && text.runes.length > widget.maxLength!) {
-      text = String.fromCharCodes(text.runes.take(widget.maxLength!));
-      widget.controller.text = text;
-      return;
-    }
+    if (_isSyncingControllerValue) return;
+
+    if (_trimTextToMaxLength(widget.controller)) return;
+
+    _syncInputControllerFromWidget();
+    _handleTextChanged(widget.controller.text);
+  }
+
+  bool _trimTextToMaxLength(TextEditingController controller) {
+    final maxLength = widget.maxLength;
+    final text = controller.text;
+    if (maxLength == null || text.runes.length <= maxLength) return false;
+
+    final trimmedText = String.fromCharCodes(text.runes.take(maxLength));
+    controller.value = controller.value.copyWith(
+      text: trimmedText,
+      selection: TextSelection.collapsed(offset: trimmedText.length),
+      composing: TextRange.empty,
+    );
+    return true;
+  }
+
+  void _syncInputControllerFromWidget() {
+    if (_inputController.value == widget.controller.value) return;
+
+    _isSyncingControllerValue = true;
+    _inputController.value = widget.controller.value;
+    _isSyncingControllerValue = false;
+  }
+
+  void _handleTextChanged(String text) {
     if (text == _text) return;
     _text = text;
     setState(() {});
@@ -430,17 +537,20 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
             children: [
               CupertinoTextField(
                 focusNode: widget.focusNode,
-                controller: widget.controller,
+                controller: _inputController,
                 inputFormatters: widget.textInputFormatter,
                 obscureText: widget.obscureText,
                 textAlign: widget.textAlign ?? TextAlign.start,
                 padding: resolvedPadding.copyWith(right: resolvedPadding.right + _suffixSize.width),
-                style: CoconutTypography.body2_14.copyWith(
-                  color: resolvedTextColor,
-                  fontSize: widget.fontSize,
-                  fontFamily: widget.fontFamily,
-                  fontWeight: widget.fontWeight,
-                  height: resolvedTextHeight,
+                style: CoconutTextField.withDefaultFontFeatures(
+                  CoconutTypography.body2_14.copyWith(
+                    color: resolvedTextColor,
+                    fontSize: widget.fontSize,
+                    fontFamily: widget.fontFamily,
+                    fontWeight: widget.fontWeight,
+                    height: resolvedTextHeight,
+                  ),
+                  fontFeatures: widget.fontFeatures,
                 ),
                 strutStyle: StrutStyle(
                   fontSize: widget.fontSize,

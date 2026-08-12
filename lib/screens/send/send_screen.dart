@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 
@@ -127,6 +128,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   final TextEditingController _feeRateController = TextEditingController();
   final FocusNode _feeRateFocusNode = FocusNode();
+  ui.FlutterView? _flutterView;
 
   final TextEditingController _amountController = TextEditingController();
   final FocusNode _amountFocusNode = FocusNode();
@@ -282,13 +284,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _previousKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-      final addressInputFieldRect = _addressInputFieldKey.currentContext?.findRenderObject() as RenderBox;
+      if (!mounted) return;
+
+      _previousKeyboardHeight = _currentKeyboardHeightFromView();
+      final addressInputFieldRect = _addressInputFieldKey.currentContext?.findRenderObject();
+      if (addressInputFieldRect is! RenderBox) return;
+
       setState(() {
         _addressInputFieldBottomDy =
             addressInputFieldRect.localToGlobal(Offset.zero).dy +
             addressInputFieldRect.size.height -
-            MediaQuery.of(context).padding.top -
+            _topPaddingFromView() -
             kToolbarHeight;
       });
 
@@ -296,6 +302,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         _onDraftSelected(widget.transactionDraftId!);
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _flutterView = View.maybeOf(context);
   }
 
   @override
@@ -329,7 +341,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final currentKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+      final currentKeyboardHeight = _currentKeyboardHeightFromView();
 
       if (_previousKeyboardHeight > 0 && currentKeyboardHeight == 0) {
         _clearFocusOnKeyboardDismiss();
@@ -337,6 +349,22 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
       _previousKeyboardHeight = currentKeyboardHeight;
     });
+  }
+
+  double _currentKeyboardHeightFromView() {
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    final view = _flutterView ?? (views.isNotEmpty ? views.first : null);
+    if (view == null) return 0;
+
+    return view.viewInsets.bottom / view.devicePixelRatio;
+  }
+
+  double _topPaddingFromView() {
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    final view = _flutterView ?? (views.isNotEmpty ? views.first : null);
+    if (view == null) return 0;
+
+    return view.padding.top / view.devicePixelRatio;
   }
 
   void _clearFocusOnKeyboardDismiss() {
@@ -349,7 +377,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
     FocusManager.instance.primaryFocus?.unfocus();
 
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _setDropdownMenuVisiblility(bool isVisible) {
