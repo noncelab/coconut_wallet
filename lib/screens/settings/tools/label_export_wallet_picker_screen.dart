@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
@@ -10,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/label_export_widgets.dart';
 import 'package:flutter/material.dart';
@@ -254,7 +254,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final file = files[index];
-          return _FileListItemCard(
+          return FileListItemCard(
             file: file,
             isSelected: _selectedFileIndices.contains(index),
             onTap: () {
@@ -658,73 +658,6 @@ class _WalletListItemCard extends StatelessWidget {
                     style: CoconutTypography.body2_14.setColor(textColor),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FileListItemCard extends StatelessWidget {
-  final File file;
-  final VoidCallback onTap;
-  final bool isSelected;
-
-  const _FileListItemCard({required this.file, required this.onTap, required this.isSelected});
-
-  static String _formatBytes(int bytes, {int decimals = 1}) {
-    if (bytes <= 0) return "0 B";
-    if (bytes == 1) return "1 B";
-    const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-    var i = (log(bytes) / log(1024)).floor();
-    final size = (bytes / pow(1024, i));
-    return '${size.toStringAsFixed(size > 10 || i == 0 ? 0 : decimals)} ${suffixes[i]}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final fileName = p.basename(file.path);
-    final modifiedDate = DateFormat('yy-MM-dd HH:mm').format(file.lastModifiedSync());
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: context.coconutColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? context.coconutColors.primaryText : Colors.transparent, width: 1),
-        ),
-        child: Row(
-          children: [
-            SvgPicture.asset(
-              isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
-              width: 24,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(fileName, style: CoconutTypography.body1_16, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        _formatBytes(file.lengthSync()),
-                        style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                      ),
-                      Text(' • ', style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
-                      Text(
-                        modifiedDate,
-                        style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                      ),
-                    ],
                   ),
                 ],
               ),

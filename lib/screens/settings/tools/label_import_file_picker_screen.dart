@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
@@ -8,11 +7,11 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
 import 'package:coconut_wallet/widgets/label_import_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
@@ -567,14 +566,6 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       }
     }
   }
-
-  String _formatBytes(int bytes, {int decimals = 1}) {
-    if (bytes <= 0) return "0 B";
-    const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-    var i = (log(bytes) / log(1024)).floor();
-    final size = (bytes / pow(1024, i));
-    return '${size.toStringAsFixed(size > 10 || i == 0 ? 0 : decimals)} ${suffixes[i]}';
-  }
 }
 
 class DashedBorderPainter extends CustomPainter {
@@ -656,72 +647,5 @@ class _SizeReportingRenderObject extends RenderProxyBox {
 
     _reportedSize = size;
     WidgetsBinding.instance.addPostFrameCallback((_) => onSizeChanged(size));
-  }
-}
-
-class FileListItemCard extends StatelessWidget {
-  final File file;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const FileListItemCard({super.key, required this.file, required this.isSelected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final fileName = p.basename(file.path);
-    final modifiedDate = DateFormat('yy-MM-dd HH:mm').format(file.lastModifiedSync());
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? context.coconutColors.primaryText : context.coconutColors.border,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SvgPicture.asset(
-              isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
-              width: 24,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2.0),
-                    child: Text(
-                      fileName,
-                      style: CoconutTypography.body1_16,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text.rich(
-                    TextSpan(
-                      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                      children: [
-                        TextSpan(text: _LabelImportFilePickerScreenState()._formatBytes(file.lengthSync())),
-                        const TextSpan(text: ' • '),
-                        TextSpan(text: modifiedDate),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
