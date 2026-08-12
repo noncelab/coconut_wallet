@@ -556,58 +556,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   void _showLabelsManagementBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) => LabelManagementScreen(
-              importDescription: t.wallet_info_screen.import_labels_description,
-              exportDescription: t.wallet_info_screen.export_labels_description,
-              onImport: (filePath) => 0,
-              onExport: () => _exportLabels(viewModel),
-              walletId: viewModel.walletId,
-            ),
+        pageBuilder: (context, animation, secondaryAnimation) => LabelManagementScreen(walletId: viewModel.walletId),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
         },
         transitionDuration: const Duration(milliseconds: 250),
       ),
     );
-  }
-
-  Future<void> _exportLabels(WalletInfoViewModel viewModel) async {
-    _setOverlayLoading(true);
-    final startTime = DateTime.now();
-
-    try {
-      final file = await viewModel.createLabelsJsonLFile();
-
-      final duration = DateTime.now().difference(startTime);
-      if (duration < const Duration(seconds: 1)) {
-        await Future.delayed(const Duration(seconds: 1) - duration);
-      }
-      _setOverlayLoading(false);
-
-      if (!mounted) return;
-
-      if (file != null) {
-        await viewModel.shareLabelsFile(file);
-      } else {
-        CoconutToast.showToast(
-          context: context,
-          text: t.wallet_info_screen.error.no_memos,
-          level: CoconutToastLevel.info,
-          isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
-        );
-      }
-    } catch (e) {
-      _setOverlayLoading(false);
-      if (mounted) {
-        await showInfoDialog(
-          context,
-          context.read<PreferenceProvider>().language,
-          t.wallet_info_screen.export_labels_fail,
-          e.toString(),
-        );
-      }
-    }
   }
 }

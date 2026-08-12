@@ -18,9 +18,7 @@ import 'package:provider/provider.dart';
 enum LabelImportStep { fileSelection, loading, success, error, noLabelsToApply }
 
 class LabelImportFilePickerScreen extends StatefulWidget {
-  final ValueChanged<String> onFileSelected;
-
-  const LabelImportFilePickerScreen({super.key, required this.onFileSelected});
+  const LabelImportFilePickerScreen({super.key});
 
   @override
   State<LabelImportFilePickerScreen> createState() => _LabelImportFilePickerScreenState();

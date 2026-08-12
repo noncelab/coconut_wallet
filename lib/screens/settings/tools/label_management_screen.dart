@@ -12,20 +12,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class LabelManagementScreen extends StatefulWidget {
-  final String importDescription;
-  final String exportDescription;
-  final ValueChanged<String> onImport;
-  final VoidCallback onExport;
   final int? walletId;
 
-  const LabelManagementScreen({
-    super.key,
-    required this.importDescription,
-    required this.exportDescription,
-    required this.onImport,
-    required this.onExport,
-    this.walletId,
-  });
+  const LabelManagementScreen({super.key, this.walletId});
 
   @override
   State<LabelManagementScreen> createState() => _LabelManagementScreenState();
@@ -188,12 +177,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
   void _navigateToImportFilePicker(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) => LabelImportFilePickerScreen(
-              onFileSelected: (filePath) {
-                widget.onImport(filePath);
-              },
-            ),
+        pageBuilder: (context, animation, secondaryAnimation) => const LabelImportFilePickerScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
         },
