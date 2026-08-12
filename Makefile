@@ -83,11 +83,11 @@ fastlane-regtest:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
 
 # Production draft/App Store preparation (manual review submission remains required)
-fastlane-production-mainnet:
+fastlane-production-mainnet: realm-clean
 	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production skip_prep:true
 	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true
 
-fastlane-production-regtest:
+fastlane-production-regtest: realm-clean
 	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production
 	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true
 	
@@ -96,4 +96,3 @@ fastlane-mainnet-skipbridge:
 
 fastlane-regtest-skipbridge:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_bridge:true
-	
