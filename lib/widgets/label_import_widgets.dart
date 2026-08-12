@@ -79,7 +79,7 @@ class ImportLabelProgressCard extends StatelessWidget {
           ),
           CoconutLayout.spacing_400h,
           title,
-          CoconutLayout.spacing_400h,
+          CoconutLayout.spacing_500h,
           ImportLabelInstructionToolTip(steps: steps, showSkeleton: showSkeleton),
         ],
       ),

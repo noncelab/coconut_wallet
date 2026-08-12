@@ -341,7 +341,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
               ],
             ),
           ),
-          CoconutLayout.spacing_400h,
+          CoconutLayout.spacing_500h,
           Column(
             children: [
               Offstage(

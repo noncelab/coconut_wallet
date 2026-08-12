@@ -400,7 +400,9 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     if (_selectedWalletIds.isEmpty || _step == LabelExportStep.exporting) return;
 
     await Future.delayed(const Duration(milliseconds: 100));
-    setState(() => _step = LabelExportStep.exporting);
+    if (mounted) {
+      setState(() => _step = LabelExportStep.exporting);
+    }
 
     final walletProvider = context.read<WalletProvider>();
     final labelManager = LabelJsonLManager();
@@ -430,12 +432,14 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
           );
         }
 
-        setState(() {
-          _step = LabelExportStep.success;
-          _exportedFile = File(result.xFile!.path);
-          _exportResults = exportResults;
-          _currentPage = 0;
-        });
+        if (mounted) {
+          setState(() {
+            _step = LabelExportStep.success;
+            _exportedFile = File(result.xFile!.path);
+            _exportResults = exportResults;
+            _currentPage = 0;
+          });
+        }
       } else {
         if (mounted) {
           CoconutToast.showToast(
@@ -444,7 +448,9 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
             level: CoconutToastLevel.info,
           );
         }
-        setState(() => _step = LabelExportStep.selection);
+        if (mounted) {
+          setState(() => _step = LabelExportStep.selection);
+        }
       }
     } catch (e) {
       if (mounted) {
