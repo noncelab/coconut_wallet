@@ -105,7 +105,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
       child: Column(
         children: [
           _buildInfoTooltip(context),
-          CoconutLayout.spacing_1000h,
+          const SizedBox(height: 21),
           ButtonGroup(
             buttons: [
               SingleButton(

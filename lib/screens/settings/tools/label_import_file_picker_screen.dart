@@ -69,15 +69,18 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
 
     return Stack(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            children: <Widget>[
-              if (_step == LabelImportStep.fileSelection) _buildInfoTooltip(context),
-              Expanded(child: _buildContent(context, snapshot, noFiles)),
-            ],
+        if (_step == LabelImportStep.success)
+          _buildContent(context, snapshot, noFiles)
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              children: <Widget>[
+                if (_step == LabelImportStep.fileSelection) _buildInfoTooltip(context),
+                Expanded(child: _buildContent(context, snapshot, noFiles)),
+              ],
+            ),
           ),
-        ),
         if (_step == LabelImportStep.fileSelection && !noFiles)
           Align(
             alignment: Alignment.bottomCenter,
@@ -156,7 +159,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     return Stack(
       children: [
         ListView.separated(
-          padding: const EdgeInsets.only(top: 20, bottom: 90),
+          padding: const EdgeInsets.only(top: 20, bottom: 110),
           itemCount: files.length + 1,
           separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
@@ -188,7 +191,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   Widget _buildListFade(Color backgroundColor, {required bool isTop}) {
     return Positioned(
       top: isTop ? 0 : null,
-      bottom: isTop ? null : 0,
+      bottom: isTop ? null : 90,
       left: 0,
       right: 0,
       height: 20,
@@ -342,7 +345,10 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
                     if (!mounted || _successCardHeight == size.height) return;
                     setState(() => _successCardHeight = size.height);
                   },
-                  child: _buildSuccessCard(context, _importResults[_currentPage]),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildSuccessCard(context, _importResults[_currentPage]),
+                  ),
                 ),
               ),
               SizedBox(
@@ -353,7 +359,10 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
                     setState(() => _currentPage = index);
                   },
                   itemBuilder: (context, index) {
-                    return _buildSuccessCard(context, _importResults[index]);
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: _buildSuccessCard(context, _importResults[index]),
+                    );
                   },
                 ),
               ),
@@ -370,20 +379,23 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
                     _deleteFileOnSuccess = !_deleteFileOnSuccess;
                   });
                 },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    SvgPicture.asset(
-                      _deleteFileOnSuccess ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
-                      width: 20,
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      t.label_import_file_picker_screen.delete_file,
-                      style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SvgPicture.asset(
+                        _deleteFileOnSuccess ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
+                        width: 20,
+                        colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        t.label_import_file_picker_screen.delete_file,
+                        style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
