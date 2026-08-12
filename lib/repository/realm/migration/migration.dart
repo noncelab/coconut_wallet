@@ -54,6 +54,8 @@ import 'package:realm/realm.dart';
 /// 2. enterPassphraseWhenSigning 추가 (기본값 false)
 /// 3. RealmScriptStatus 기본키를 walletId + scriptPubKey 조합으로 변경
 /// 4. 스크립트 상태는 노드에서 다시 동기화할 수 있으므로 기존 데이터 삭제
+/// 5. RealmUtxo 기본키를 walletId + outpoint 조합으로 변경
+/// 6. UTXO는 노드에서 다시 동기화할 수 있으므로 기존 데이터 삭제
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
@@ -69,15 +71,16 @@ void defaultMigration(Migration migration, int oldVersion) {
     if (oldVersion < 7) {
       migrateExtendedPublicKeyToDescriptor(migration.newRealm);
     }
-    if (oldVersion < 9) scopeScriptStatusByWallet(migration);
+    if (oldVersion < 9) scopeWalletSyncDataByWallet(migration);
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
   }
 }
 
-void scopeScriptStatusByWallet(Migration migration) {
+void scopeWalletSyncDataByWallet(Migration migration) {
   migration.newRealm.deleteAll<RealmScriptStatus>();
+  migration.newRealm.deleteAll<RealmUtxo>();
 }
 
 /// extendedPublicKey로 저장된 지갑 중 masterFingerprint가 00000000이 아닌 경우 descriptor로 마이그레이션

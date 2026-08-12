@@ -7,14 +7,21 @@ import 'package:flutter/material.dart';
 class PositiveFeedbackScreen extends StatelessWidget {
   const PositiveFeedbackScreen({super.key});
 
-  void _startInAppReview(BuildContext context) {
+  Future<void> _startInAppReview(BuildContext context) async {
     AppReviewService.requestReview();
-    _stopGettingFeedback(context);
+    await _stopGettingFeedback(context);
   }
 
-  void _stopGettingFeedback(BuildContext context) {
-    Navigator.pop(context);
-    Navigator.pop(context);
+  Future<void> _stopGettingFeedback(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final currentRoute = ModalRoute.of(context);
+
+    navigator.pop();
+    await currentRoute?.completed;
+
+    if (navigator.mounted && navigator.canPop()) {
+      navigator.pop();
+    }
   }
 
   @override
@@ -80,7 +87,7 @@ class PositiveFeedbackScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   GestureDetector(
-                    onTap: () => _stopGettingFeedback(context),
+                    onTap: () async => _stopGettingFeedback(context),
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
