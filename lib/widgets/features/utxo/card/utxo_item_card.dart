@@ -33,6 +33,8 @@ class UtxoItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateString = DateTimeUtil.formatTimestamp(utxo.timestamp);
     final colors = context.coconutColors;
+    const chipMinWidth = 40.0;
+    const chipLabelSize = 10.0;
 
     return ShrinkAnimationButton(
       borderWidth: 0,
@@ -52,7 +54,7 @@ class UtxoItemCard extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -143,7 +145,7 @@ class UtxoItemCard extends StatelessWidget {
             Column(
               children: [
                 if ((utxo.tags?.isNotEmpty ?? false) || utxo.isChange)
-                  CoconutLayout.spacing_100h, // utxo.tags가 있거나 잔돈일때만 마진 추가
+                  CoconutLayout.spacing_150h, // utxo.tags가 있거나 잔돈일때만 마진 추가
                 Row(
                   children: [
                     Expanded(
@@ -155,11 +157,11 @@ class UtxoItemCard extends StatelessWidget {
                             if (utxo.isChange) {
                               return IntrinsicWidth(
                                 child: CoconutChip(
-                                  minWidth: 40,
+                                  minWidth: chipMinWidth,
                                   color: colors.surfaceInfoChip,
                                   borderColor: colors.surfaceInfoChip,
                                   label: t.change,
-                                  labelSize: 10,
+                                  labelSize: chipLabelSize,
                                   labelColor: colors.primaryText,
                                 ),
                               );
@@ -170,11 +172,11 @@ class UtxoItemCard extends StatelessWidget {
                           Color foregroundColor = tagColorPalette[utxo.tags?[index - 1].colorIndex ?? 0];
                           return IntrinsicWidth(
                             child: CoconutChip(
-                              minWidth: 40,
+                              minWidth: chipMinWidth,
                               color: CoconutColors.backgroundColorPaletteDark[utxo.tags?[index - 1].colorIndex ?? 0],
                               borderColor: foregroundColor,
                               label: '#${utxo.tags?[index - 1].name ?? ''}',
-                              labelSize: 12,
+                              labelSize: chipLabelSize,
                               labelColor: foregroundColor,
                             ),
                           );

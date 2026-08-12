@@ -422,7 +422,7 @@ class CoconutColors {
       surfaceDisabled: ds.CoconutColors.black,
       surfaceMuted: ds.CoconutColors.gray800,
       surfaceInset: ds.CoconutColors.black,
-      surfaceInfoChip: ds.CoconutColors.gray850,
+      surfaceInfoChip: ds.CoconutColors.gray750,
       primary: ds.CoconutColors.primary,
       primaryText: ds.CoconutColors.white,
       secondaryText: ds.CoconutColors.gray400,

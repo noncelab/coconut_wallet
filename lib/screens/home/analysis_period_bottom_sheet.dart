@@ -60,7 +60,7 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
           ],
           child: CupertinoTheme(
             data: CupertinoThemeData(
-              primaryColor: CupertinoColors.white, // 선택 포커스/악센트
+              primaryColor: context.coconutColors.primary, // 선택 포커스/악센트
               textTheme: CupertinoTextThemeData(
                 dateTimePickerTextStyle: CoconutTypography.heading3_21.setColor(context.coconutColors.primaryText),
               ),

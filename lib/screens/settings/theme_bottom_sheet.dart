@@ -339,7 +339,7 @@ class _DeletableThemeRowState extends State<_DeletableThemeRow> with SingleTicke
                   child: SvgPicture.asset(
                     CommonActionIconPath.trash,
                     width: 20,
-                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(colors.iconOnDanger, BlendMode.srcIn),
                   ),
                 ),
               ),

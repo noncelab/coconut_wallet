@@ -6,6 +6,12 @@ import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:flutter/material.dart';
 
+/// 이 색상값은 의도적으로 theme-independent하다.
+///
+/// 지갑 태그 색은 사용자가 지갑을 시각적으로 구분하는 식별자라서, 앱 테마가 바뀌어도
+/// 같은 지갑은 항상 같은 색으로 보여야 한다.
+/// 따라서, `context.coconutColors` 토큰으로 옮기지 않는다
+/// hardcoded color guardrail을 도입할 때 이 파일 전체를 exemption 목록에 포함해야 한다.
 const defaultIconColor = Color.fromRGBO(218, 216, 228, 1);
 const defaultBackgroundColor = Color.fromRGBO(255, 255, 255, 0.1);
 

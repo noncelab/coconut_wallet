@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -48,7 +49,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     await showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black54,
+      barrierColor: context.coconutColors.dimOverlay.withValues(alpha: 0.54),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (BuildContext buildContext, Animation animation, Animation secondaryAnimation) {
         Future.delayed(const Duration(milliseconds: 1300), () {
@@ -57,11 +58,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           }
         });
 
-        return AnimatedDialog(
-          context: buildContext,
-          lottieAddress: AuthLottiePath.pinLockedSuccess,
-          duration: 400,
-        );
+        return AnimatedDialog(context: buildContext, lottieAddress: AuthLottiePath.pinLockedSuccess, duration: 400);
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         return SlideTransition(
