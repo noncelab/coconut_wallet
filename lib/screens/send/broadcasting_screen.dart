@@ -278,8 +278,17 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                       viewModel.isNetworkOn,
                     ),
                     if (_isBroadcasting)
-                      Positioned(
-                        top: MediaQuery.sizeOf(context).height * 0.3 - appBar.preferredSize.height,
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 320),
+                        curve: Curves.easeInOutCubic,
+                        top:
+                            _isBroadcastCompletionPhase
+                                ? MediaQuery.sizeOf(context).height * 0.3 - appBar.preferredSize.height
+                                : (MediaQuery.sizeOf(context).height -
+                                        MediaQuery.paddingOf(context).vertical -
+                                        appBar.preferredSize.height -
+                                        118) /
+                                    2,
                         left: 0,
                         right: 0,
                         child: AnimatedOpacity(
@@ -573,27 +582,37 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
             if (!isNetworkOn) ErrorTooltip(isShown: !isNetworkOn, errorMessage: t.errors.network_error),
             CoconutLayout.spacing_1000h,
             AnimatedSlide(
-              offset: _isBroadcasting ? const Offset(0, -0.12) : Offset.zero,
+              offset:
+                  _isBroadcastCompletionPhase
+                      ? const Offset(0, -0.35)
+                      : _isBroadcasting
+                      ? const Offset(0, -0.12)
+                      : Offset.zero,
               duration: const Duration(milliseconds: 320),
               curve: Curves.easeInOutCubic,
-              child: Column(
-                children: [
-                  Text(
-                    t.broadcasting_screen.description,
-                    style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-                    textAlign: TextAlign.center,
-                  ),
-                  CoconutLayout.spacing_400h,
-                  SendAmountHeader(
-                    amountText: confirmText,
-                    unit: _currentUnit,
-                    satoshiAmount: amount ?? widget.initialAmount ?? 0,
-                    totalCostAmountText: totalCostText,
-                    onTap: _toggleUnit,
-                    topMargin: 0,
-                    fiatTextStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
-                  ),
-                ],
+              child: AnimatedOpacity(
+                opacity: _isBroadcastCompletionPhase ? 0 : 1,
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
+                child: Column(
+                  children: [
+                    Text(
+                      t.broadcasting_screen.description,
+                      style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+                      textAlign: TextAlign.center,
+                    ),
+                    CoconutLayout.spacing_400h,
+                    SendAmountHeader(
+                      amountText: confirmText,
+                      unit: _currentUnit,
+                      satoshiAmount: amount ?? widget.initialAmount ?? 0,
+                      totalCostAmountText: totalCostText,
+                      onTap: _toggleUnit,
+                      topMargin: 0,
+                      fiatTextStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
+                    ),
+                  ],
+                ),
               ),
             ),
             CoconutLayout.spacing_300h,

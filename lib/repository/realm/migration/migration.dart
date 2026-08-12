@@ -49,11 +49,11 @@ import 'package:realm/realm.dart';
 ///    포함 필드: keyPathSeedInfosInJsonSerialization, scriptPathSeedInfosInJsonSerialization,
 ///    createdAtInVault, defaultSpendTypeName(nullable, 사용자 사전 선택 경로)
 ///
-/// [addRealmLocalSignerMetadata] (8 -> 9)
-/// 1. RealmLocalSignerMetadata 스키마 추가 (기존 지갑은 모두 로컬 키 없음)
-///
-/// [addEnterPassphraseWhenSigning] (9 -> 10)
-/// 1. RealmLocalSignerMetadata에 enterPassphraseWhenSigning 추가 (기본값 false)
+/// [addHotWalletAndScopeScriptStatusByWallet] (8 -> 9)
+/// 1. RealmHotWalletMetadata 스키마 추가 (기존 지갑은 모두 로컬 키 없음)
+/// 2. enterPassphraseWhenSigning 추가 (기본값 false)
+/// 3. RealmScriptStatus 기본키를 walletId + scriptPubKey 조합으로 변경
+/// 4. 스크립트 상태는 노드에서 다시 동기화할 수 있으므로 기존 데이터 삭제
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
@@ -66,11 +66,18 @@ void defaultMigration(Migration migration, int oldVersion) {
     if (oldVersion < 3) removeIsLatestTxBlockHeightZero(migration.newRealm);
     if (oldVersion < 4) addIsDeletedToUtxo(migration.newRealm);
     if (oldVersion < 5) migrationV5(migration);
-    if (oldVersion < 7) migrateExtendedPublicKeyToDescriptor(migration.newRealm);
+    if (oldVersion < 7) {
+      migrateExtendedPublicKeyToDescriptor(migration.newRealm);
+    }
+    if (oldVersion < 9) scopeScriptStatusByWallet(migration);
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
   }
+}
+
+void scopeScriptStatusByWallet(Migration migration) {
+  migration.newRealm.deleteAll<RealmScriptStatus>();
 }
 
 /// extendedPublicKey로 저장된 지갑 중 masterFingerprint가 00000000이 아닌 경우 descriptor로 마이그레이션

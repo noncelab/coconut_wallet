@@ -29,6 +29,7 @@ enum WalletSyncResult {
   existingWalletNoUpdate,
   existingName, // fail sync
   existingWalletUpdateImpossible, // 이미 추가된 descriptor를 서드파티 방법으로 또 추가한 경우
+  existingWalletDifferentType, // 동일 싱글시그 지갑이 핫월렛/보기 전용의 다른 형태로 존재
 }
 
 enum WalletLoadState { never, loadingFromDB, loadCompleted }

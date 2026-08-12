@@ -15,7 +15,7 @@ final realmAllSchemas = [
   RealmMultisigWallet.schema,
   RealmExternalWallet.schema,
   RealmTaprootWallet.schema,
-  RealmLocalSignerMetadata.schema,
+  RealmHotWalletMetadata.schema,
   RealmTransaction.schema,
   RealmIntegerId.schema,
   RealmUtxoTag.schema,
@@ -80,7 +80,7 @@ class _RealmTaprootWallet {
 }
 
 @RealmModel()
-class _RealmLocalSignerMetadata {
+class _RealmHotWalletMetadata {
   @PrimaryKey()
   late int walletId;
   late String secureStorageKey;
@@ -184,6 +184,8 @@ class _RealmBlockTimestamp {
 @RealmModel()
 class _RealmScriptStatus {
   @PrimaryKey()
+  late String id;
+  @Indexed()
   late String scriptPubKey;
   late String status;
   @Indexed()

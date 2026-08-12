@@ -30,7 +30,8 @@ class SocketManager {
 
   /// Response
   final Map<int, Completer<dynamic>> _completerMap = {};
-  final Map<String, Function(String, String?)> _scriptSubscribeCallbacks = {}; // ScriptPubKey -> Callback
+  // ScriptPubKey -> (subscriber id -> Callback)
+  final Map<String, Map<int, Function(String, String?)>> _scriptSubscribeCallbacks = {};
 
   /// On Reconnect callback
   void Function()? onReconnect;
@@ -54,12 +55,28 @@ class SocketManager {
     _completerMap[id] = completer;
   }
 
-  setSubscriptionCallback(String scriptReverseHash, Function(String, String?) callback) {
-    _scriptSubscribeCallbacks[scriptReverseHash] = callback;
+  void setSubscriptionCallback(String scriptReverseHash, Function(String, String?) callback) {
+    (_scriptSubscribeCallbacks[scriptReverseHash] ??= {})[0] = callback;
   }
 
-  removeSubscriptionCallback(String scriptReverseHash) {
+  void removeSubscriptionCallback(String scriptReverseHash) {
     _scriptSubscribeCallbacks.remove(scriptReverseHash);
+  }
+
+  void setWalletSubscriptionCallback(String scriptReverseHash, int walletId, Function(String, String?) callback) {
+    (_scriptSubscribeCallbacks[scriptReverseHash] ??= {})[walletId] = callback;
+  }
+
+  /// 해당 스크립트의 지갑 구독자가 더 이상 남아 있지 않으면 true를 반환한다.
+  bool removeWalletSubscriptionCallback(String scriptReverseHash, int walletId) {
+    final callbacks = _scriptSubscribeCallbacks[scriptReverseHash];
+    if (callbacks == null) return true;
+
+    callbacks.remove(walletId);
+    if (callbacks.isNotEmpty) return false;
+
+    _scriptSubscribeCallbacks.remove(scriptReverseHash);
+    return true;
   }
 
   // .onion 주소인 경우 타임아웃을 길게 설정
@@ -307,9 +324,11 @@ class SocketManager {
         if (jsonObject['params'] != null && jsonObject['params'].length >= 2) {
           final scriptReversedHash = jsonObject['params'][0];
           final status = jsonObject['params'][1];
-          final callback = _scriptSubscribeCallbacks[scriptReversedHash];
-          if (callback != null) {
-            callback(scriptReversedHash, status);
+          final callbacks = _scriptSubscribeCallbacks[scriptReversedHash];
+          if (callbacks != null) {
+            for (final callback in callbacks.values.toList()) {
+              callback(scriptReversedHash, status);
+            }
           }
         } else {
           Logger.log('유효하지 않은 구독 이벤트: $jsonObject');

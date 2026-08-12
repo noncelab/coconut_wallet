@@ -30,7 +30,7 @@ class RealmDebugService {
     'RealmTransactionMemo': ['id', 'createdAt'],
     'RealmWalletPreferences': ['id'],
     'RealmTransactionDraft': ['id', 'walletId', 'createdAt', 'feeRate'],
-    'RealmLocalSignerMetadata': ['walletId', 'accountIndex', 'backupVerified', 'createdAt'],
+    'RealmHotWalletMetadata': ['walletId', 'accountIndex', 'backupVerified', 'createdAt'],
   };
 
   /// Realm 쿼리 실행
@@ -48,8 +48,8 @@ class RealmDebugService {
         return _convertToMapList(realm.query<RealmMultisigWallet>(query));
       case 'RealmExternalWallet':
         return _convertToMapList(realm.query<RealmExternalWallet>(query));
-      case 'RealmLocalSignerMetadata':
-        return _convertToMapList(realm.query<RealmLocalSignerMetadata>(query));
+      case 'RealmHotWalletMetadata':
+        return _convertToMapList(realm.query<RealmHotWalletMetadata>(query));
       case 'RealmTransaction':
         return _convertToMapList(realm.query<RealmTransaction>(query));
       case 'RealmUtxo':
@@ -176,7 +176,7 @@ class RealmDebugService {
           map['walletBase'] = external.walletBase?.name ?? 'null';
           break;
 
-        case RealmLocalSignerMetadata metadata:
+        case RealmHotWalletMetadata metadata:
           map['walletId'] = metadata.walletId;
           map['secureStorageKey'] = metadata.secureStorageKey;
           map['masterFingerprint'] = metadata.masterFingerprint;
@@ -381,7 +381,7 @@ class RealmDebugService {
       'RealmWalletBase': realm.all<RealmWalletBase>().length,
       'RealmMultisigWallet': realm.all<RealmMultisigWallet>().length,
       'RealmExternalWallet': realm.all<RealmExternalWallet>().length,
-      'RealmLocalSignerMetadata': realm.all<RealmLocalSignerMetadata>().length,
+      'RealmHotWalletMetadata': realm.all<RealmHotWalletMetadata>().length,
       'RealmTransaction': realm.all<RealmTransaction>().length,
       'RealmUtxo': realm.all<RealmUtxo>().length,
       'RealmWalletAddress': realm.all<RealmWalletAddress>().length,

@@ -99,10 +99,10 @@ class SendConfirmViewModel extends ChangeNotifier {
       List<int?>.filled(transaction?.inputs.length ?? 0, null);
   double? get totalSendAmount => _totalSendAmount; // BTC
   WalletImportSource get walletImportSource => _walletListItemBase.walletImportSource;
-  bool get isHotWallet => _walletListItemBase.hasLocalKey && _walletListItemBase.localSignerMetadata != null;
+  bool get isHotWallet => _walletListItemBase.hasLocalKey && _walletListItemBase.hotWalletMetadata != null;
   bool get shouldEnterPassphraseWhenSigning =>
-      _walletListItemBase.localSignerMetadata?.enterPassphraseWhenSigning ?? false;
-  String? get hotWalletSecretStorageKey => _walletListItemBase.localSignerMetadata?.secureStorageKey;
+      _walletListItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false;
+  String? get hotWalletSecretStorageKey => _walletListItemBase.hotWalletMetadata?.secureStorageKey;
 
   String get walletFingerprint {
     final wallet = _walletListItemBase.walletBase;
@@ -165,7 +165,7 @@ class SendConfirmViewModel extends ChangeNotifier {
   }
 
   Future<void> signHotWallet({required String mnemonic, required String passphrase}) async {
-    final metadata = _walletListItemBase.localSignerMetadata;
+    final metadata = _walletListItemBase.hotWalletMetadata;
     final watchOnlyWallet = _walletListItemBase.walletBase;
     if (!isHotWallet || metadata == null || watchOnlyWallet is! SingleSignatureWallet || _unsignedPsbt == null) {
       throw StateError('Local signer is not available');
@@ -185,7 +185,7 @@ class SendConfirmViewModel extends ChangeNotifier {
   }
 
   Future<bool> validateHotWalletPassphrase({required String mnemonic, required String passphrase}) async {
-    final metadata = _walletListItemBase.localSignerMetadata;
+    final metadata = _walletListItemBase.hotWalletMetadata;
     final wallet = _walletListItemBase.walletBase;
     if (!isHotWallet || metadata == null || wallet is! SingleSignatureWallet) {
       return false;

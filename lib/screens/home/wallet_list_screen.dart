@@ -1118,7 +1118,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         bool isExcludedFromTotalBalance = data.item2.contains(walletItem.id);
         final shouldWarnUnbackedHotWallet =
             walletItem.hasLocalKey &&
-            !(walletItem.localSignerMetadata?.backupVerified ?? false) &&
+            !(walletItem.hotWalletMetadata?.backupVerified ?? false) &&
             animatedBalanceData.current > 0;
 
         return WalletItemCard(

@@ -7,7 +7,7 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/wallet/local_signer_metadata.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -15,7 +15,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
-import 'package:coconut_wallet/repository/realm/converter/local_signer_metadata.dart';
+import 'package:coconut_wallet/repository/realm/converter/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/taproot_wallet.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -40,9 +40,9 @@ class WalletRepository extends BaseRepository {
     var multisigWallets = realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id DESC)');
     var externalWallets = realm.all<RealmExternalWallet>().query('TRUEPREDICATE SORT(id DESC)');
     final taprootWalletMap = {for (var w in realm.all<RealmTaprootWallet>()) w.id: w};
-    final localSignerMetadataMap = {
-      for (final metadata in realm.all<RealmLocalSignerMetadata>())
-        metadata.walletId: mapRealmToLocalSignerMetadata(metadata),
+    final hotWalletMetadataMap = {
+      for (final metadata in realm.all<RealmHotWalletMetadata>())
+        metadata.walletId: mapRealmToHotWalletMetadata(metadata),
     };
 
     for (var i = 0; i < walletBases.length; i++) {
@@ -65,7 +65,7 @@ class WalletRepository extends BaseRepository {
               walletBases[i],
               walletBases[i].descriptor,
               null,
-              localSignerMetadataMap[walletBases[i].id],
+              hotWalletMetadataMap[walletBases[i].id],
             ),
           );
         }
@@ -116,7 +116,7 @@ class WalletRepository extends BaseRepository {
     );
   }
 
-  /// 새 싱글시그 핫월렛과 로컬 서명자 메타데이터를 함께 생성한다.
+  /// 새 싱글시그 핫월렛과 핫월렛 메타데이터를 함께 생성한다.
   /// 기존 Watch-only 지갑에 로컬 서명자를 연결하는 용도로 사용할 수 없다.
   Future<SinglesigWalletItem> addHotWallet(
     WatchOnlyWallet wallet, {
@@ -147,7 +147,7 @@ class WalletRepository extends BaseRepository {
       wallet.name,
       WalletType.singleSignature.name,
     );
-    final metadata = LocalSignerMetadata(
+    final metadata = HotWalletMetadata(
       walletId: id,
       secureStorageKey: secureStorageKey,
       masterFingerprint: singlesigWallet.keyStore.masterFingerprint,
@@ -157,7 +157,7 @@ class WalletRepository extends BaseRepository {
       enterPassphraseWhenSigning: enterPassphraseWhenSigning,
       createdAt: createdAt,
     );
-    final realmMetadata = RealmLocalSignerMetadata(
+    final realmMetadata = RealmHotWalletMetadata(
       id,
       metadata.secureStorageKey,
       metadata.masterFingerprint,
@@ -186,9 +186,9 @@ class WalletRepository extends BaseRepository {
   }
 
   Future<void> updateHotWalletBackupVerified(int walletId, {required bool backupVerified}) async {
-    final metadata = realm.find<RealmLocalSignerMetadata>(walletId);
+    final metadata = realm.find<RealmHotWalletMetadata>(walletId);
     if (metadata == null) {
-      throw StateError('Local signer metadata not found');
+      throw StateError('Hot wallet metadata not found');
     }
     await realm.writeAsync(() {
       metadata.backupVerified = backupVerified;
@@ -319,7 +319,7 @@ class WalletRepository extends BaseRepository {
     final realmTaprootWalletResults =
         walletBase.walletType == WalletType.taproot.name ? realm.query<RealmTaprootWallet>('id == $walletId') : null;
     final realmTaprootWallet = realmTaprootWalletResults?.firstOrNull;
-    final localSignerMetadata = realm.find<RealmLocalSignerMetadata>(walletId);
+    final hotWalletMetadata = realm.find<RealmHotWalletMetadata>(walletId);
 
     await realm.writeAsync(() {
       realm.delete(walletBase);
@@ -335,8 +335,8 @@ class WalletRepository extends BaseRepository {
       if (realmTaprootWallet != null) {
         realm.delete(realmTaprootWallet);
       }
-      if (localSignerMetadata != null) {
-        realm.delete(localSignerMetadata);
+      if (hotWalletMetadata != null) {
+        realm.delete(hotWalletMetadata);
       }
       if (walletBalance.isNotEmpty) {
         realm.deleteMany(walletBalance);
@@ -402,8 +402,12 @@ class WalletRepository extends BaseRepository {
     return realmWalletBalance;
   }
 
-  Future<RealmWalletBalance> accumulateWalletBalance(int walletId, Balance balanceDiff) async {
+  Future<RealmWalletBalance?> accumulateWalletBalance(int walletId, Balance balanceDiff) async {
     final realmWalletBalance = getWalletBalance(walletId);
+    if (realmWalletBalance == null) {
+      Logger.log('[accumulateWalletBalance] Skipped balance update for deleted wallet: $walletId');
+      return null;
+    }
 
     await realm.writeAsync(() {
       realmWalletBalance.total += balanceDiff.total;
@@ -432,11 +436,16 @@ class WalletRepository extends BaseRepository {
     return realmWalletBalance;
   }
 
-  RealmWalletBalance getWalletBalance(int walletId) {
+  RealmWalletBalance? getWalletBalance(int walletId) {
+    final realmWalletBase = realm.find<RealmWalletBase>(walletId);
+    if (realmWalletBase == null) {
+      return null;
+    }
+
     final realmWalletBalance = realm.query<RealmWalletBalance>('walletId == $walletId').firstOrNull;
 
     if (realmWalletBalance == null) {
-      return _createNewWalletBalance(realm.find<RealmWalletBase>(walletId)!, Balance(0, 0));
+      return _createNewWalletBalance(realmWalletBase, Balance(0, 0));
     }
 
     return realmWalletBalance;

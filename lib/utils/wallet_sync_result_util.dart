@@ -8,6 +8,17 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+TextSpan buildDuplicateWalletDescriptionSpan({required String name, required String type}) {
+  final strings = t.wallet_home_screen.hot_wallet_restore;
+  return TextSpan(
+    children: [
+      TextSpan(text: strings.duplicate_wallet_description_prefix),
+      TextSpan(text: '$name($type)', style: CoconutTypography.heading4_18_Bold),
+      TextSpan(text: strings.duplicate_wallet_description_suffix),
+    ],
+  );
+}
+
 /// Resolves a localized (title, description) pair for a [ResultOfSyncFromVault]
 /// that is not [WalletSyncResult.newWalletAdded] or [WalletSyncResult.existingWalletUpdated].
 ///
@@ -33,6 +44,15 @@ import 'package:provider/provider.dart';
         t.alert.wallet_add.already_exist_description(
           name: TextUtils.ellipsisIfLonger(walletProvider.getWalletById(result.walletId!).name, maxLength: 15),
         ),
+      );
+    case WalletSyncResult.existingWalletDifferentType:
+      final existingWallet = walletProvider.getWalletById(result.walletId!);
+      return (
+        t.wallet_home_screen.hot_wallet_restore.duplicate_wallet_title,
+        '${t.wallet_home_screen.hot_wallet_restore.duplicate_wallet_description_prefix}'
+            '${TextUtils.ellipsisIfLonger(existingWallet.name, maxLength: 15)}'
+            '(${t.wallet_home_screen.hot_wallet_restore.hot_wallet_type})'
+            '${t.wallet_home_screen.hot_wallet_restore.duplicate_wallet_description_suffix}',
       );
     case WalletSyncResult.newWalletAdded:
     case WalletSyncResult.existingWalletUpdated: // only CoconutVault update

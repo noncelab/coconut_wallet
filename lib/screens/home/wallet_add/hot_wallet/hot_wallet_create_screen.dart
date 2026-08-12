@@ -24,6 +24,7 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
@@ -213,7 +214,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                 colorIndex: _selectedColorIndex,
                 iconIndex: _selectedIconIndex,
                 badgeSvgAssetPath: 'assets/svg/edit-outlined.svg',
-                badgeColor: context.coconutColors.iconDefault,
+                badgeColor: context.coconutColors.iconSubDefault,
               ),
             ),
           ),
@@ -437,7 +438,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                     ),
                                   ),
                                 ),
-                                if (wordCount == 12) CoconutLayout.spacing_300w,
+                                if (wordCount == 12) CoconutLayout.spacing_100w,
                               ],
                             ],
                           ),
@@ -475,10 +476,12 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                     child: CoconutTextField(
                                       controller: _passphraseController,
                                       focusNode: _passphraseFocusNode,
+                                      maxLength: 100,
                                       maxLines: 1,
+                                      textInputFormatter: [LengthLimitingTextInputFormatter(100)],
                                       height: 52,
                                       obscureText: !_isPassphraseVisible,
-                                      isLengthVisible: false,
+                                      isLengthVisible: true,
                                       padding: const EdgeInsets.symmetric(horizontal: 16),
                                       placeholderText: t.wallet_home_screen.hot_wallet_create.passphrase_placeholder,
                                       backgroundColor: context.coconutColors.inputSurface,
@@ -516,10 +519,12 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                     child: CoconutTextField(
                                       controller: _passphraseConfirmController,
                                       focusNode: _passphraseConfirmFocusNode,
+                                      maxLength: 100,
                                       maxLines: 1,
+                                      textInputFormatter: [LengthLimitingTextInputFormatter(100)],
                                       height: 52,
                                       obscureText: !_isPassphraseVisible,
-                                      isLengthVisible: false,
+                                      isLengthVisible: true,
                                       padding: const EdgeInsets.symmetric(horizontal: 16),
                                       placeholderText:
                                           t.wallet_home_screen.hot_wallet_create.passphrase_confirm_placeholder,

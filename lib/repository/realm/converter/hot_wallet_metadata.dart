@@ -1,8 +1,8 @@
-import 'package:coconut_wallet/model/wallet/local_signer_metadata.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
-LocalSignerMetadata mapRealmToLocalSignerMetadata(RealmLocalSignerMetadata metadata) {
-  return LocalSignerMetadata(
+HotWalletMetadata mapRealmToHotWalletMetadata(RealmHotWalletMetadata metadata) {
+  return HotWalletMetadata(
     walletId: metadata.walletId,
     secureStorageKey: metadata.secureStorageKey,
     masterFingerprint: metadata.masterFingerprint,

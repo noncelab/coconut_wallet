@@ -29,7 +29,7 @@ class RealmManager {
       realm.deleteAll<RealmMultisigWallet>();
       realm.deleteAll<RealmExternalWallet>();
       realm.deleteAll<RealmTaprootWallet>();
-      realm.deleteAll<RealmLocalSignerMetadata>();
+      realm.deleteAll<RealmHotWalletMetadata>();
       realm.deleteAll<RealmTransaction>();
       realm.deleteAll<RealmUtxoTag>();
       realm.deleteAll<RealmWalletBalance>();

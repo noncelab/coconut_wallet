@@ -4,7 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
-import 'package:coconut_wallet/model/wallet/local_signer_metadata.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
@@ -148,9 +148,9 @@ SinglesigWalletItem _createSinglesigWalletListItem({
     colorIndex: colorIndex,
     iconIndex: iconIndex,
     descriptor: _singlesigDescriptor,
-    localSignerMetadata:
+    hotWalletMetadata:
         isHotWallet
-            ? LocalSignerMetadata(
+            ? HotWalletMetadata(
               walletId: id,
               secureStorageKey: 'local_wallet_seed_$id',
               masterFingerprint: 'D45AA182',
@@ -379,7 +379,7 @@ void main() {
       provider.dispose();
     });
 
-    test('같은 descriptor의 핫월렛이 있어도 Watch-only 지갑을 별도로 추가함', () async {
+    test('같은 descriptor의 핫월렛이 있으면 Watch-only 지갑을 추가하지 않고 알림 결과를 반환함', () async {
       final existingHotWallet = _createSinglesigWalletListItem(isHotWallet: true);
       final walletRepo = FakeWalletRepository()..walletItems = [existingHotWallet];
       walletRepo.addSinglesigWalletResult = _createSinglesigWalletListItem(id: 2, name: 'My Wallet Account 0');
@@ -387,8 +387,9 @@ void main() {
       final provider = await _buildProvider(walletRepo);
       final result = await provider.syncFromCoconutVault(_createSinglesigWatchOnlyWallet());
 
-      expect(result.result, WalletSyncResult.newWalletAdded);
-      expect(walletRepo.addSinglesigWalletCallCount, 1);
+      expect(result.result, WalletSyncResult.existingWalletDifferentType);
+      expect(result.walletId, existingHotWallet.id);
+      expect(walletRepo.addSinglesigWalletCallCount, 0);
 
       provider.dispose();
     });

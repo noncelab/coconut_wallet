@@ -347,6 +347,34 @@ class ElectrumService {
     return response.result;
   }
 
+  Future<String?> subscribeScriptForWallet(
+    AddressType addressType,
+    String address, {
+    required int walletId,
+    required Function(String, String?) onUpdate,
+  }) async {
+    final reversedScriptHash = ElectrumUtil.addressToReversedScriptHash(addressType, address);
+    final response = await _call(
+      _BlockchainScripthashSubscribeReq(reversedScriptHash),
+      (json, {int? id}) => ElectrumResponse(result: json),
+    );
+
+    _socketManager.setWalletSubscriptionCallback(reversedScriptHash, walletId, onUpdate);
+    return response.result;
+  }
+
+  Future<bool> unsubscribeScriptForWallet(AddressType addressType, String address, {required int walletId}) async {
+    final reversedScriptHash = ElectrumUtil.addressToReversedScriptHash(addressType, address);
+    final hasNoSubscriber = _socketManager.removeWalletSubscriptionCallback(reversedScriptHash, walletId);
+    if (!hasNoSubscriber) return true;
+
+    final response = await _call(
+      _BlockchainScripthashUnsubscribeReq(reversedScriptHash),
+      (json, {int? id}) => ElectrumResponse(result: json),
+    );
+    return response.result;
+  }
+
   Future<void> close() async {
     _pingTimer?.cancel();
     try {

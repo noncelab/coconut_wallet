@@ -208,7 +208,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       child: Selector<WalletDetailViewModel, Tuple3<int, bool, bool>>(
         selector: (_, viewModel) {
           final wallet = viewModel.walletListBaseItem;
-          return Tuple3(viewModel.balance, wallet.hasLocalKey, wallet.localSignerMetadata?.backupVerified ?? false);
+          return Tuple3(viewModel.balance, wallet.hasLocalKey, wallet.hotWalletMetadata?.backupVerified ?? false);
         },
         builder: (context, walletSecurityState, _) {
           final balance = walletSecurityState.item1;

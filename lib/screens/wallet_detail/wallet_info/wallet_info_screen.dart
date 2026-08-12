@@ -285,13 +285,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   key: _mnemonicBackupButtonKey,
                                   showWarning:
                                       viewModel.walletBalance.total > 0 &&
-                                      !(viewModel.walletItemBase.localSignerMetadata?.backupVerified ?? false),
+                                      !(viewModel.walletItemBase.hotWalletMetadata?.backupVerified ?? false),
                                   onPressed: () {
                                     _removeTooltip();
                                     _showMnemonicBackup(viewModel);
                                   },
                                 ),
-                              if (viewModel.walletItemBase.localSignerMetadata?.enterPassphraseWhenSigning ?? false)
+                              if (viewModel.walletItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false)
                                 SingleButton(
                                   enableShrinkAnim: true,
                                   title: t.wallet_home_screen.hot_wallet_setup.passphrase_check_title,
@@ -653,7 +653,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   Future<void> _showMnemonicBackup(WalletInfoViewModel viewModel) async {
-    final metadata = viewModel.walletItemBase.localSignerMetadata;
+    final metadata = viewModel.walletItemBase.hotWalletMetadata;
     if (metadata == null) return;
 
     try {
@@ -687,7 +687,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   Future<void> _showPassphraseCheck(WalletInfoViewModel viewModel) async {
-    final metadata = viewModel.walletItemBase.localSignerMetadata;
+    final metadata = viewModel.walletItemBase.hotWalletMetadata;
     if (metadata == null || !metadata.enterPassphraseWhenSigning) return;
 
     try {

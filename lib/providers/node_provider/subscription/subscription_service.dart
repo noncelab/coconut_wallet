@@ -268,9 +268,10 @@ class SubscriptionService {
       _handleScriptUpdate(reversedScriptHash, scriptStatus, walletItem, scriptStatusController);
     }
 
-    final status = await _electrumService.subscribeScript(
+    final status = await _electrumService.subscribeScriptForWallet(
       walletItem.walletBase.addressType,
       address,
+      walletId: walletItem.id,
       onUpdate: onUpdate,
     );
 
@@ -379,7 +380,11 @@ class SubscriptionService {
 
     await Future.wait(
       addresses.values.map((address) {
-        return _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
+        return _electrumService.unsubscribeScriptForWallet(
+          walletItem.walletBase.addressType,
+          address,
+          walletId: walletItem.id,
+        );
       }),
     );
   }

@@ -2,7 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/multisig_config.dart';
-import 'package:coconut_wallet/model/wallet/local_signer_metadata.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 
 abstract class WalletItemBase {
   static const String walletTypeField = 'walletType';
@@ -32,9 +32,9 @@ abstract class WalletItemBase {
     this.changeUsedIndex = -1,
   });
 
-  LocalSignerMetadata? get localSignerMetadata => null;
+  HotWalletMetadata? get hotWalletMetadata => null;
 
-  bool get hasLocalKey => localSignerMetadata != null;
+  bool get hasLocalKey => hotWalletMetadata != null;
 
   WalletSigningMethod get signingMethod {
     if (hasLocalKey) return WalletSigningMethod.localSigner;

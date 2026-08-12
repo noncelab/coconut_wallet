@@ -44,6 +44,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   MobileScannerController? controller;
   bool _isProcessing = false;
+  bool _skipNextFinalizeVibration = false;
   bool _clipboardContentAvailable = false;
   late WalletAddScannerViewModel _viewModel;
 
@@ -599,6 +600,55 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           }
           break;
         }
+      case WalletSyncResult.existingWalletDifferentType:
+        await _showHotWalletDuplicatePopup(addResult);
+        break;
+    }
+  }
+
+  Future<void> _showHotWalletDuplicatePopup(ResultOfSyncFromVault duplicateResult) async {
+    final walletProvider = context.read<WalletProvider>();
+    final existingHotWallet = walletProvider.getWalletById(duplicateResult.walletId!);
+    var removeHotWallet = false;
+    final shouldAdd = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => CoconutPopup(
+                  languageCode: context.read<PreferenceProvider>().language,
+                  title: t.wallet_home_screen.hot_wallet_restore.duplicate_wallet_title,
+                  description: '',
+                  descriptionSpan: buildDuplicateWalletDescriptionSpan(
+                    name: existingHotWallet.name,
+                    type: t.wallet_home_screen.hot_wallet_restore.hot_wallet_type,
+                  ),
+                  backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
+                  checkboxText: t.wallet_home_screen.hot_wallet_restore.remove_hot_wallet,
+                  isCheckboxSelected: removeHotWallet,
+                  onCheckboxChanged: (value) => setDialogState(() => removeHotWallet = value),
+                  rightButtonText: t.wallet_home_screen.add_wallet_action,
+                  rightButtonColor: context.coconutColors.primaryText,
+                  onTapRight: () => Navigator.of(dialogContext).pop(true),
+                ),
+          ),
+    );
+    if (shouldAdd != true) {
+      _skipNextFinalizeVibration = true;
+      return;
+    }
+    if (!mounted) return;
+
+    context.loaderOverlay.show();
+    try {
+      final result = await walletProvider.confirmWatchOnlyWalletAddition(
+        duplicateResult,
+        removeExistingHotWallet: removeHotWallet,
+      );
+      if (!mounted) return;
+      await _handleAddWalletResult(result);
+    } finally {
+      if (mounted) context.loaderOverlay.hide();
     }
   }
 
@@ -619,7 +669,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
   void _finalizeAddWallet() {
     FileLogger.log(className, '_finalizeAddWallet', 'finalize');
-    vibrateMedium();
+    _isProcessing = false;
+    if (_skipNextFinalizeVibration) {
+      _skipNextFinalizeVibration = false;
+    } else {
+      vibrateMedium();
+    }
     if (mounted) {
       context.loaderOverlay.hide();
       controller?.start();

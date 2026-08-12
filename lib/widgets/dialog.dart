@@ -11,6 +11,7 @@ Future<void> showInfoDialog(
   String? buttonText,
   Function? onTapButton,
   bool barrierDismissible = true,
+  InlineSpan? descriptionSpan,
 }) async {
   await showDialog(
     context: context,
@@ -21,6 +22,7 @@ Future<void> showInfoDialog(
         title: title,
         backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
         description: description,
+        descriptionSpan: descriptionSpan,
         descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
         insetPadding: const EdgeInsets.symmetric(horizontal: 50),
         rightButtonText: buttonText ?? t.OK,

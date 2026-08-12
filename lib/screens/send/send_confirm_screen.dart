@@ -29,11 +29,12 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
-enum _HotWalletSigningStage { idle, passphraseInput, authentication, signing, completed, finalReview }
+enum _HotWalletSigningStage { idle, authentication, signing, completed, finalReview }
 
 class SendConfirmScreen extends StatefulWidget {
   final BitcoinUnit? currentUnit;
@@ -108,8 +109,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
                                           duration: const Duration(milliseconds: 220),
                                           curve: Curves.easeOutCubic,
                                           child: AnimatedContainer(
-                                            height:
-                                                _signingStage == _HotWalletSigningStage.passphraseInput ? 50.4 : 25.2,
+                                            height: 25.2,
                                             duration: const Duration(milliseconds: 280),
                                             curve: Curves.easeInOutCubic,
                                             child: AnimatedSwitcher(
@@ -181,8 +181,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
                       ),
                     ),
                   ),
-                  if (_signingStage != _HotWalletSigningStage.idle &&
-                      _signingStage != _HotWalletSigningStage.passphraseInput)
+                  if (_signingStage != _HotWalletSigningStage.idle)
                     Positioned.fill(
                       child: IgnorePointer(
                         child: Center(
@@ -297,10 +296,6 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
 
   Widget _buildSigningStatus() {
     final (text, emphasized) = switch (_signingStage) {
-      _HotWalletSigningStage.passphraseInput => (
-        t.send_confirm_screen.passphrase_required(walletName: _viewModel.walletName),
-        _viewModel.walletName,
-      ),
       _HotWalletSigningStage.authentication => (
         t.send_confirm_screen.authentication_required,
         t.send_confirm_screen.authentication_emphasis,
@@ -336,28 +331,31 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     );
   }
 
-  Future<void> _enterAuthenticationStage({
-    required bool isPassphraseInput,
-    required bool requiresAuthentication,
-  }) async {
+  Future<void> _enterAuthenticationStage({required bool requiresAuthentication}) async {
     setState(() {
       _isLocalSigning = true;
-      _signingStage =
-          isPassphraseInput
-              ? _HotWalletSigningStage.passphraseInput
-              : requiresAuthentication
-              ? _HotWalletSigningStage.authentication
-              : _HotWalletSigningStage.signing;
+      _signingStage = requiresAuthentication ? _HotWalletSigningStage.authentication : _HotWalletSigningStage.signing;
       _showTransactionFlow = false;
       _showSigningStatus = false;
     });
-    if (!isPassphraseInput && requiresAuthentication) {
+    if (requiresAuthentication) {
       _signatureController.value = 1;
     }
     await Future.delayed(const Duration(milliseconds: 100));
     if (mounted) setState(() => _showOutputDetail = false);
     await Future.delayed(const Duration(milliseconds: 220));
     if (mounted) setState(() => _showSigningStatus = true);
+  }
+
+  void _resumePassphraseInput() {
+    if (!mounted) return;
+    _signatureController.stop();
+    setState(() {
+      _signingStage = _HotWalletSigningStage.idle;
+      _showTransactionFlow = true;
+      _showOutputDetail = true;
+      _showSigningStatus = false;
+    });
   }
 
   void _restoreConfirmationContent() {
@@ -427,15 +425,17 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     }
 
     final requiresAuthentication = context.read<AuthProvider>().isAuthEnabled;
-    await _enterAuthenticationStage(
-      isPassphraseInput: viewModel.shouldEnterPassphraseWhenSigning,
-      requiresAuthentication: requiresAuthentication,
-    );
+    final requiresPassphrase = viewModel.shouldEnterPassphraseWhenSigning;
+    if (requiresPassphrase) {
+      setState(() => _isLocalSigning = true);
+    } else {
+      await _enterAuthenticationStage(requiresAuthentication: requiresAuthentication);
+    }
     if (!mounted) return;
     var shouldRestore = true;
     try {
       _HotWalletSigningCredentials? credentials;
-      if (viewModel.shouldEnterPassphraseWhenSigning) {
+      if (requiresPassphrase) {
         credentials = await CommonBottomSheets.showBottomSheet<_HotWalletSigningCredentials>(
           context: context,
           title: t.send_confirm_screen.passphrase_input_title,
@@ -454,19 +454,15 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
             validatePassphrase:
                 (mnemonic, passphrase) =>
                     viewModel.validateHotWalletPassphrase(mnemonic: mnemonic, passphrase: passphrase),
-            onAuthenticationStarted: () {
-              if (!mounted) return;
-              setState(() => _signingStage = _HotWalletSigningStage.authentication);
-              _signatureController.value = 1;
-            },
-            onPassphraseInputResumed: () {
-              if (!mounted) return;
-              _signatureController.stop();
-              setState(() => _signingStage = _HotWalletSigningStage.passphraseInput);
-            },
+            onAuthenticationStarted: () => _enterAuthenticationStage(requiresAuthentication: true),
+            onPassphraseInputResumed: _resumePassphraseInput,
           ),
         );
         if (!mounted || credentials == null) return;
+        if (!requiresAuthentication) {
+          await _enterAuthenticationStage(requiresAuthentication: false);
+          if (!mounted) return;
+        }
       } else {
         final plaintext = await AppGuard.runWithoutPrivacyScreen(
           () => HotWalletUnlockService().unlockPreferBiometrics(
@@ -742,7 +738,7 @@ class _HotWalletPassphraseInputSheet extends StatefulWidget {
   final String storageKey;
   final bool requiresAuthentication;
   final Future<bool> Function(String mnemonic, String passphrase) validatePassphrase;
-  final VoidCallback onAuthenticationStarted;
+  final Future<void> Function() onAuthenticationStarted;
   final VoidCallback onPassphraseInputResumed;
 
   @override
@@ -754,14 +750,15 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
   final FocusNode _focusNode = FocusNode();
   bool _isSubmitting = false;
   bool _isIncorrect = false;
+  bool _isPassphraseVisible = false;
 
   @override
   void initState() {
     super.initState();
     _controller.addListener(_handleChanged);
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   if (mounted) _focusNode.requestFocus();
-    // });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
   }
 
   void _handleChanged() {
@@ -775,7 +772,8 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
     _focusNode.unfocus();
     setState(() => _isSubmitting = true);
     if (widget.requiresAuthentication) {
-      widget.onAuthenticationStarted();
+      await widget.onAuthenticationStarted();
+      if (!mounted) return;
     }
 
     try {
@@ -854,23 +852,29 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                t.send_confirm_screen.passphrase_input_description,
-                style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-              ),
-              CoconutLayout.spacing_500h,
               CoconutTextField(
                 controller: _controller,
                 focusNode: _focusNode,
                 onChanged: (_) {},
                 isError: _isIncorrect,
                 errorText: _isIncorrect ? t.wallet_home_screen.hot_wallet_setup.passphrase_incorrect : null,
-                obscureText: true,
+                obscureText: !_isPassphraseVisible,
                 autocorrect: false,
                 enableSuggestions: false,
                 maxLines: 1,
                 textInputAction: TextInputAction.done,
                 placeholderText: t.passphrase_input_text_field.placeholder,
+                suffix: IconButton(
+                  iconSize: 16,
+                  padding: EdgeInsets.zero,
+                  onPressed: () => setState(() => _isPassphraseVisible = !_isPassphraseVisible),
+                  icon: SvgPicture.asset(
+                    _isPassphraseVisible ? 'assets/svg/eye.svg' : 'assets/svg/eye-crossed.svg',
+                    width: 16,
+                    height: 16,
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+                  ),
+                ),
                 onEditingComplete: _complete,
               ),
               CoconutLayout.spacing_500h,
