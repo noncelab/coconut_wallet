@@ -13,8 +13,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class LabelManagementScreen extends StatefulWidget {
   final int? walletId;
+  final bool importMemosFromOtherWalletsFixed;
 
-  const LabelManagementScreen({super.key, this.walletId});
+  const LabelManagementScreen({super.key, this.walletId, this.importMemosFromOtherWalletsFixed = false});
 
   @override
   State<LabelManagementScreen> createState() => _LabelManagementScreenState();
@@ -177,7 +178,11 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
   void _navigateToImportFilePicker(BuildContext context, {int? walletId}) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => LabelImportFilePickerScreen(walletId: walletId),
+        pageBuilder:
+            (context, animation, secondaryAnimation) => LabelImportFilePickerScreen(
+              walletId: walletId,
+              importMemosFromOtherWalletsFixed: widget.importMemosFromOtherWalletsFixed,
+            ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
         },

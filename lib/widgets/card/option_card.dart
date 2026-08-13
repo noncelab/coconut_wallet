@@ -9,6 +9,7 @@ class OptionCard extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final bool showBorder;
+  final bool isEnabled;
 
   const OptionCard({
     super.key,
@@ -17,14 +18,28 @@ class OptionCard extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.showBorder = false,
+    this.isEnabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = isSelected ? context.coconutColors.primaryText : context.coconutColors.border;
+    final borderColor =
+        !isEnabled
+            ? context.coconutColors.iconDisabled
+            : isSelected
+            ? context.coconutColors.primaryText
+            : context.coconutColors.border;
+    final iconColor =
+        !isEnabled
+            ? context.coconutColors.iconDisabled
+            : isSelected
+            ? context.coconutColors.iconDefault
+            : context.coconutColors.iconSubDefault;
+    final titleColor = isEnabled ? context.coconutColors.primaryText : context.coconutColors.mutedText;
+    final subtitleColor = isEnabled ? context.coconutColors.secondaryText : context.coconutColors.mutedText;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: isEnabled ? onTap : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration:
@@ -41,23 +56,22 @@ class OptionCard extends StatelessWidget {
             SvgPicture.asset(
               isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
               width: 24,
-              colorFilter: ColorFilter.mode(
-                isSelected ? context.coconutColors.iconDefault : context.coconutColors.iconSubDefault,
-                BlendMode.srcIn,
-              ),
+              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: CoconutTypography.body1_16, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    title,
+                    style: CoconutTypography.body1_16.setColor(titleColor),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 8),
                   Text.rich(
-                    TextSpan(
-                      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                      children: subtitle,
-                    ),
+                    TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: subtitle),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

@@ -380,7 +380,9 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
   void _showLabelsManagementBottomSheet(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const LabelManagementScreen(),
+        pageBuilder:
+            (context, animation, secondaryAnimation) =>
+                const LabelManagementScreen(importMemosFromOtherWalletsFixed: true),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
         },

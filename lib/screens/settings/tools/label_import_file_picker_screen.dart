@@ -20,8 +20,9 @@ enum LabelImportStep { fileSelection, optionSelection, loading, success, error, 
 
 class LabelImportFilePickerScreen extends StatefulWidget {
   final int? walletId;
+  final bool importMemosFromOtherWalletsFixed;
 
-  const LabelImportFilePickerScreen({super.key, this.walletId});
+  const LabelImportFilePickerScreen({super.key, this.walletId, this.importMemosFromOtherWalletsFixed = false});
 
   @override
   State<LabelImportFilePickerScreen> createState() => _LabelImportFilePickerScreenState();
@@ -37,11 +38,12 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   double _successCardHeight = 150;
   bool _deleteFileOnSuccess = true;
   bool _addMemoToExisting = false;
-  bool _importMemosFromOtherWallets = false;
+  late bool _importMemosFromOtherWallets;
 
   @override
   void initState() {
     super.initState();
+    _importMemosFromOtherWallets = widget.importMemosFromOtherWalletsFixed;
     _filesFuture = LabelJsonLManager().getImportableLabelFiles();
   }
 
@@ -329,6 +331,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
             TextSpan(text: t.label_import_file_picker_screen.option_selection.import_memos_from_other_wallets.subtitle),
           ],
           isSelected: _importMemosFromOtherWallets,
+          isEnabled: !widget.importMemosFromOtherWalletsFixed,
           onTap: () {
             setState(() {
               _importMemosFromOtherWallets = !_importMemosFromOtherWallets;
