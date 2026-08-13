@@ -9,9 +9,9 @@ class RightTriangleBubbleClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     var path = Path();
 
-    // 삼각형 꼭지점 부분
-    path.moveTo(size.width - 15 - arrowOffset, 15);
-    path.lineTo(size.width - 10 - arrowOffset, 15);
+    // 삼각형 꼭지점 부분 (클릭 지점 기준 위치라서 이동하지 않음)
+    // 모서리 접점을 삼각형 밑변점과 같은 좌표로 합쳐서 gap 없이 이어지도록 함
+    path.moveTo(size.width - 10 - arrowOffset, 15);
     path.lineTo(size.width - 19 - arrowOffset, 5);
     path.lineTo(size.width - 28 - arrowOffset, 15);
     path.lineTo(15, 15);
@@ -21,7 +21,7 @@ class RightTriangleBubbleClipper extends CustomClipper<Path> {
     path.lineTo(size.width - 15, size.height);
     path.quadraticBezierTo(size.width, size.height, size.width, size.height - 15);
     path.lineTo(size.width, 30);
-    path.quadraticBezierTo(size.width, 15, size.width - 15, 15);
+    path.quadraticBezierTo(size.width, 15, size.width - 10 - arrowOffset, 15);
     return path;
   }
 

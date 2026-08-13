@@ -588,7 +588,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   onPressed: _onUtxoSelectionModeButtonPressed,
                   backgroundColor:
                       isUtxoSelectionAuto || selectedUtxoListLength == 0
-                          ? Color.alphaBlend(Colors.white.withValues(alpha: 0.08), context.coconutColors.background)
+                          ? context.coconutColors.surfaceButton
                           : context.coconutColors.brandAccentBackground,
                   textColor:
                       isUtxoSelectionAuto
@@ -2242,8 +2242,7 @@ class _SendOptionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final resolvedBackground =
-        backgroundColor ?? Color.alphaBlend(Colors.white.withValues(alpha: 0.08), colors.background);
+    final resolvedBackground = backgroundColor ?? colors.surfaceButton;
     final resolvedTextColor = textColor ?? colors.primaryText;
     return ShrinkAnimationButton(
       onPressed: onPressed,

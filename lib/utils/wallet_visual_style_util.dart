@@ -81,7 +81,7 @@ class TaprootCardStyle {
 
     const begin = Alignment(0.97, -0.25);
     const end = Alignment(-0.97, 0.25);
-    const stops = [0.18, 0.89];
+    const stops = [0.35, 0.75];
 
     return TaprootCardStyle(
       borderGradient: LinearGradient(begin: begin, end: end, colors: colors, stops: stops),

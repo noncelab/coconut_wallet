@@ -80,7 +80,7 @@ class RoleDescriptionTheme {
 
   static RoleDescriptionTheme get cosigner => RoleDescriptionTheme(
     themeColor: CoconutColors.purple,
-    backgroundColor: CoconutColors.purple.withValues(alpha: 0.2),
+    backgroundColor: CoconutColors.purple.withValues(alpha: 0.08),
     highlightPattern: RegExp(
       '${t.taproot.role_description_card.signer}|${t.taproot.role_description_card.co_signer}',
       caseSensitive: false,
@@ -89,7 +89,7 @@ class RoleDescriptionTheme {
 
   static RoleDescriptionTheme get heir => RoleDescriptionTheme(
     themeColor: CoconutColors.sky,
-    backgroundColor: CoconutColors.sky.withValues(alpha: 0.2),
+    backgroundColor: CoconutColors.sky.withValues(alpha: 0.08),
     highlightPattern: RegExp(t.taproot.role_description_card.heir, caseSensitive: false),
   );
 }

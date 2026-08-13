@@ -1,4 +1,12 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -531,7 +539,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
           _isByAmount
               ? (isLockedFilter
                   ? BottomActionButton(
-                    iconPath: CommonSecurityIconPath.unlockSimple,
+                    iconPath: CommonSecurityIconPath.unlock,
                     label: t.utxo_list_screen.utxo_unlocked_button,
                     onTap: () => _updateSelectedUtxosLock(lock: false),
                     buttonLayout: BottomActionButtonLayout.horizontal,
@@ -557,7 +565,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: BottomActionButton(
-                              iconPath: CommonSecurityIconPath.lockSimple,
+                              iconPath: CommonSecurityIconPath.lock,
                               label: t.utxo_list_screen.utxo_locked_button,
                               onTap: () => _updateSelectedUtxosLock(lock: true),
                               buttonLayout: BottomActionButtonLayout.horizontal,

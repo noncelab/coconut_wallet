@@ -110,7 +110,7 @@ class UtxoItemCard extends StatelessWidget {
                           const SizedBox(width: 4),
                         ] else if (utxo.status == UtxoStatus.locked) ...[
                           SvgPicture.asset(
-                            CommonSecurityIconPath.lockSimple,
+                            CommonSecurityIconPath.lock,
                             width: 16,
                             height: 16,
                             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),

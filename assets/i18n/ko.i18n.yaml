@@ -1403,7 +1403,7 @@ taproot:
     signer: "서명자"
     co_signer: "공동 서명자"
     heir: "상속자"
-    single_parent_description: "나는 이 지갑의 서명자예요.\n평소에 이 지갑을 사용할 수 있어요."
+    single_parent_description: "나는 이 지갑의 서명자예요.\n평소에도 이 지갑을 사용할 수 있어요."
     multi_parent_description: "나는 이 지갑의 공동 서명자예요.\n다른 공동 서명자와 함께 서명해야 자산을 사용할 수 있어요."
     child_description: "나는 이 지갑의 상속자예요.\n정해진 시점이 지나면 자산을 사용할 수 있어요."
   participant_card:

@@ -114,11 +114,19 @@ class TaprootParticipantCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     if (locktime != null) ...[
-                      Flexible(child: Text(_formattedLocktime, style: CoconutTypography.body3_12)),
+                      Flexible(
+                        child: Text(
+                          _formattedLocktime,
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                        ),
+                      ),
                     ] else ...[
-                      Text(walletName ?? '', style: CoconutTypography.body3_12_Bold),
+                      Text(
+                        walletName ?? '',
+                        style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
+                      ),
                     ],
-                    if (_lockStatusIcon != null) ...[CoconutLayout.spacing_200w, _lockStatusIcon!],
+                    if (_lockStatusIcon != null) ...[CoconutLayout.spacing_100w, _lockStatusIcon!],
                   ],
                 ),
                 Text(
@@ -136,7 +144,7 @@ class TaprootParticipantCard extends StatelessWidget {
 
   _TaprootParticipantCardStyle _style(BuildContext context) {
     // 1. isValid가 false 인 경우 우선적으로 error 스타일 적용
-    // 2. isMine 여부는 roleLabel에만 영향을 주도록 변경 (카드 전체 스타일에는 영향 X)
+    // 2. isMine이 아니면 role에 상관없이 neutral 스타일 적용
     // 3. hasBackgroundColor이 true인 경우에만 배경색과 테두리 색상이 적용
     if (!isValid) {
       return _TaprootParticipantCardStyle(
@@ -148,7 +156,7 @@ class TaprootParticipantCard extends StatelessWidget {
         iconAssetPath: _iconAssetPath,
       );
     }
-    if (!hasBackgroundColor || (!isMine && role != TaprootParticipantRole.child)) {
+    if (!hasBackgroundColor || !isMine) {
       return _neutralStyle(context);
     }
 

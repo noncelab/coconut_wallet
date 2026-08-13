@@ -432,7 +432,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               ),
               Expanded(
                 child: _buildSelectionActionButton(
-                  iconPath: CommonSecurityIconPath.lockSimple,
+                  iconPath: CommonSecurityIconPath.lock,
                   text: t.utxo_list_screen.utxo_locked_button,
                   onTap:
                       () => _handleActionUtxoSelected(() {
@@ -442,7 +442,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               ),
               Expanded(
                 child: _buildSelectionActionButton(
-                  iconPath: CommonSecurityIconPath.unlockSimple,
+                  iconPath: CommonSecurityIconPath.unlock,
                   text: t.utxo_list_screen.utxo_unlocked_button,
                   onTap:
                       () => _handleActionUtxoSelected(() {

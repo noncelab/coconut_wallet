@@ -80,10 +80,8 @@ abstract final class CommonNavigationIconPath {
 abstract final class CommonSecurityIconPath {
   static const String faceId = 'assets/svg/common/security/face-id.svg';
   static const String fingerprint = 'assets/svg/common/security/fingerprint.svg';
-  static const String lock = 'assets/svg/common/security/lock.svg';
-  static const String lockSimple = 'assets/svg/common/security/lock_simple.svg';
-  static const String unlock = 'assets/svg/common/security/unlock.svg';
-  static const String unlockSimple = 'assets/svg/common/security/unlock_simple.svg';
+  static const String lock = 'assets/svg/common/security/lock_simple.svg';
+  static const String unlock = 'assets/svg/common/security/unlock_simple.svg';
 }
 
 abstract final class CommonStateIconPath {

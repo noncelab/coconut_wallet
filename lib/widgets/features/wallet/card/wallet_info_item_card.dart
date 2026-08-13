@@ -27,6 +27,10 @@ class WalletInfoItemCard extends StatefulWidget {
   final GlobalKey tooltipKey;
   final Function(String) onNameChanged;
   final Function() onShowMfpInputBottomSheet;
+
+  /// 탭루트 지갑에서 현재 선택된 서명 방식이 key path(부모 키)인지 여부.
+  /// 그라디언트 방향(부모: 보라→파랑, 자식: 파랑→보라)을 결정하는 데 쓰인다.
+  final bool taprootKeyPathSelected;
   const WalletInfoItemCard({
     super.key,
     required this.id,
@@ -35,6 +39,7 @@ class WalletInfoItemCard extends StatefulWidget {
     required this.tooltipKey,
     required this.onNameChanged,
     required this.onShowMfpInputBottomSheet,
+    this.taprootKeyPathSelected = true,
   });
 
   @override
@@ -132,7 +137,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     }
 
     final localDateTime = createdAtInVault.toLocal();
-    final year = localDateTime.year.toString().padLeft(4, '0');
+    final year = (localDateTime.year % 100).toString().padLeft(2, '0');
     final month = localDateTime.month.toString().padLeft(2, '0');
     final day = localDateTime.day.toString().padLeft(2, '0');
     final hour = localDateTime.hour.toString().padLeft(2, '0');
@@ -143,7 +148,8 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
 
   @override
   Widget build(BuildContext context) {
-    final taprootStyle = TaprootCardStyle.from(widget.walletItem);
+    final taprootStyle =
+        widget.walletItem is TaprootWalletItem ? TaprootCardStyle.fromKeyPath(widget.taprootKeyPathSelected) : null;
     final List<Color>? gradientColors =
         signers != null
             ? WalletVisualStyleUtil.getGradientColors(signers!, lighten: true)
@@ -165,13 +171,13 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                 : null,
       ),
       child: Container(
-        margin: hasGradient ? const EdgeInsets.all(2) : null,
+        margin: hasGradient ? const EdgeInsets.all(1) : null,
         padding: const EdgeInsets.all(20),
         decoration:
             hasGradient
                 ? BoxDecoration(
                   color: context.coconutColors.surface,
-                  borderRadius: BorderRadius.circular(22), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
+                  borderRadius: BorderRadius.circular(23), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
                 )
                 : null,
         child: Row(
@@ -206,7 +212,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                     Expanded(
                       child: Text(
                         nameText,
-                        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+                        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -233,9 +239,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerRight,
                               child: TooltipButton(
-                                textStyle: CoconutTypography.heading4_18_NumberBold.setColor(
-                                  context.coconutColors.primaryText,
-                                ),
+                                textStyle: (walletItem is TaprootWalletItem
+                                        ? CoconutTypography.body3_12_Bold
+                                        : CoconutTypography.body3_12_NumberBold)
+                                    .setColor(context.coconutColors.primaryText),
                                 isSelected: false,
                                 text: rightText.replaceAllMapped(
                                   RegExp(r'[a-z]+'),
@@ -249,7 +256,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                                     _isWithoutMfp() || _isExtendedPublicKey() ? _onMfpEditTap : widget.onTooltipClicked,
                                 pressedTextStyle:
                                     _isWithoutMfp() || _isExtendedPublicKey()
-                                        ? CoconutTypography.heading4_18_NumberBold.setColor(
+                                        ? CoconutTypography.body2_14_NumberBold.setColor(
                                           context.coconutColors.mutedText,
                                         )
                                         : null,
@@ -265,7 +272,14 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                                             BlendMode.srcIn,
                                           ),
                                         )
-                                        : null,
+                                        : (isPressed) => Icon(
+                                          Icons.info_outline_rounded,
+                                          color:
+                                              isPressed
+                                                  ? context.coconutColors.mutedText
+                                                  : context.coconutColors.iconSecondary,
+                                          size: 18,
+                                        ),
                                 extraIcons:
                                     _isWithoutMfp() || _isExtendedPublicKey()
                                         ? [
@@ -347,6 +361,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     final colors = context.coconutColors;
     final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
     final bool shouldShowEditIcon = isExternalWallet || isCustomAccount;
+    final pressedIconBackgroundSubtle = Color.alphaBlend(
+      colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity),
+      colors.iconBackgroundSubtle,
+    );
 
     return Stack(
       clipBehavior: Clip.none,
@@ -364,7 +382,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             child: Container(
               padding: const EdgeInsets.all(1),
               decoration: BoxDecoration(
-                color: isItemTapped ? colors.surfacePressOverlay : colors.iconBackgroundSubtle,
+                color: isItemTapped ? pressedIconBackgroundSubtle : colors.iconBackgroundSubtle,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(color: colors.shadowDefault, offset: const Offset(1, 1), blurRadius: 6, spreadRadius: 0),
@@ -373,7 +391,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
               child: Container(
                 padding: const EdgeInsets.all(3.3),
                 decoration: BoxDecoration(
-                  color: isItemTapped ? colors.surfacePressOverlay : colors.iconBackgroundSubtle,
+                  color: isItemTapped ? pressedIconBackgroundSubtle : colors.iconBackgroundSubtle,
                   shape: BoxShape.circle,
                 ),
                 child: SvgPicture.asset(

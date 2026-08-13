@@ -224,14 +224,14 @@ class _StickyFilterBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _FilterChip(
-            iconPath: CommonSecurityIconPath.unlockSimple,
+            iconPath: CommonSecurityIconPath.unlock,
             label: t.utxo_detail_screen.utxo_unlocked,
             isSelected: lockFilterIndex == 0,
             onTap: () => onLockFilterSelected(0),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            iconPath: CommonSecurityIconPath.lockSimple,
+            iconPath: CommonSecurityIconPath.lock,
             label: t.utxo_detail_screen.utxo_locked,
             isSelected: lockFilterIndex == 1,
             onTap: () => onLockFilterSelected(1),

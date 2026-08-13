@@ -46,16 +46,16 @@ class WalletSignerSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
             child: Text(
               t.wallet_signer_section.title,
               style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText),
             ),
           ),
-          CoconutLayout.spacing_200h,
+          CoconutLayout.spacing_100h,
           if (viewModel.canSpendBothPaths) ...[
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 4),
               child: CoconutSegmentedControl(
                 selectedColor: context.coconutColors.segmentedControlSelected,
                 segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
@@ -86,7 +86,6 @@ class WalletSignerSection extends StatelessWidget {
               ),
             ),
           ],
-          CoconutLayout.spacing_100h,
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _buildRoleDescriptionCard(effectiveIndex, viewModel),
@@ -116,8 +115,8 @@ class WalletSignerSection extends StatelessWidget {
           subTitle,
           style: CoconutTypography.caption_10.setColor(
             isSelected
-                ? context.coconutColors.segmentedControlSelectedText
-                : context.coconutColors.secondaryText.withValues(alpha: 0.5),
+                ? context.coconutColors.segmentedControlSelectedText.withValues(alpha: 0.7)
+                : context.coconutColors.primaryText.withValues(alpha: 0.2),
           ),
         ),
       ],

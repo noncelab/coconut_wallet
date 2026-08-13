@@ -119,7 +119,7 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
             ),
           ),
           SvgPicture.asset(
-            CommonSecurityIconPath.lockSimple,
+            CommonSecurityIconPath.lock,
             width: 24,
             height: 24,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary.withValues(alpha: 0.3), BlendMode.srcIn),

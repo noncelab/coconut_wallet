@@ -104,6 +104,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           child: WalletInfoItemCard(
                             id: widget.id,
                             walletItem: viewModel.walletItemBase,
+                            taprootKeyPathSelected: viewModel.taprootSpendTypeIndex == 0,
                             onTooltipClicked: () {
                               if (_tooltipRemainingTime > 0) {
                                 _removeTooltip();

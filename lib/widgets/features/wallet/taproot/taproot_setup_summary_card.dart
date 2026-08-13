@@ -174,7 +174,10 @@ class _SummarySection extends StatelessWidget {
       children: [
         _GuideContentRow(
           showGuideLine: showGuideLine,
-          child: Text(title, style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText)),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(title, style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText)),
+          ),
         ),
         _GuideSpacer(height: TaprootSetupSummaryCard._sectionTitleSpacing, showGuideLine: showGuideLine),
         for (int index = 0; index < children.length; index++) ...[
