@@ -248,6 +248,25 @@ class LabelJsonLManager {
     return results;
   }
 
+  Future<List<LabelImportResult>> importLabelsForWallet(
+    int walletId,
+    WalletProvider walletProvider,
+    String filePath, {
+    bool addMemoToExisting = false,
+  }) async {
+    final result = await importLabelsFromJsonLFile(
+      walletId,
+      walletProvider,
+      filePath,
+      addMemoToExisting: addMemoToExisting,
+    );
+
+    if (result.txMemoCount == 0 && result.utxoTagCount == 0 && result.utxoLockCount == 0) {
+      return [];
+    }
+    return [result];
+  }
+
   String? _parseRefToUtxoId(String ref) {
     final parts = ref.split(':');
     return parts.length == 2 ? '${parts[0]}${parts[1]}' : null;

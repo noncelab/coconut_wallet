@@ -100,7 +100,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
               SingleButton(
                 title: t.label_management_screen.import_title,
                 subtitle: t.label_management_screen.import_description,
-                onPressed: () => _navigateToImportFilePicker(context),
+                onPressed: () => _navigateToImportFilePicker(context, walletId: widget.walletId),
                 isVerticalSubtitle: true,
               ),
               SingleButton(
@@ -174,10 +174,10 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
     );
   }
 
-  void _navigateToImportFilePicker(BuildContext context) {
+  void _navigateToImportFilePicker(BuildContext context, {int? walletId}) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const LabelImportFilePickerScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) => LabelImportFilePickerScreen(walletId: walletId),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
         },

@@ -19,7 +19,9 @@ import 'package:provider/provider.dart';
 enum LabelImportStep { fileSelection, optionSelection, loading, success, error, noLabelsToApply }
 
 class LabelImportFilePickerScreen extends StatefulWidget {
-  const LabelImportFilePickerScreen({super.key});
+  final int? walletId;
+
+  const LabelImportFilePickerScreen({super.key, this.walletId});
 
   @override
   State<LabelImportFilePickerScreen> createState() => _LabelImportFilePickerScreenState();
@@ -585,6 +587,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   Future<void> _onApplyButtonPressed() async {
     if (_selectedItemIndex == null) return;
 
+    final walletProvider = context.read<WalletProvider>();
     final files = await _filesFuture;
     final selectedFile = files[_selectedItemIndex!];
 
@@ -593,11 +596,19 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
 
     try {
       await Future.delayed(const Duration(milliseconds: 2500));
-      final result = await LabelJsonLManager().importLabelsForAllWallets(
-        context.read<WalletProvider>(),
-        selectedFile.path,
-        addMemoToExisting: _addMemoToExisting,
-      );
+      final result =
+          widget.walletId != null && !_importMemosFromOtherWallets
+              ? await LabelJsonLManager().importLabelsForWallet(
+                widget.walletId!,
+                walletProvider,
+                selectedFile.path,
+                addMemoToExisting: _addMemoToExisting,
+              )
+              : await LabelJsonLManager().importLabelsForAllWallets(
+                walletProvider,
+                selectedFile.path,
+                addMemoToExisting: _addMemoToExisting,
+              );
       if (mounted) {
         if (result.isEmpty) {
           setState(() => _step = LabelImportStep.noLabelsToApply);
