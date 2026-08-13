@@ -596,6 +596,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       final result = await LabelJsonLManager().importLabelsForAllWallets(
         context.read<WalletProvider>(),
         selectedFile.path,
+        addMemoToExisting: _addMemoToExisting,
       );
       if (mounted) {
         if (result.isEmpty) {

@@ -134,8 +134,9 @@ class LabelJsonLManager {
   Future<LabelImportResult> importLabelsFromJsonLFile(
     int walletId,
     WalletProvider walletProvider,
-    String filePath,
-  ) async {
+    String filePath, {
+    bool addMemoToExisting = false,
+  }) async {
     final file = File(filePath);
     if (!await file.exists()) {
       throw ErrorCodes.withMessage(ErrorCodes.storageReadError, 'File not found: $filePath');
@@ -169,11 +170,18 @@ class LabelJsonLManager {
         }
 
         if (type == 'tx') {
-          if (walletProvider.getTransactionRecord(walletId, ref) == null) {
+          final existingRecord = walletProvider.getTransactionRecord(walletId, ref);
+          if (existingRecord == null) {
             continue;
           }
           if (label == null || label.isEmpty) {
             debugPrint('Invalid or empty label for tx in line: $line');
+            continue;
+          }
+          if (addMemoToExisting && existingRecord.memo!.isNotEmpty) {
+            final newMemo = '${existingRecord.memo}\n$label';
+            await walletProvider.updateTransactionMemo(walletId, ref, newMemo);
+            result.txMemoCount++;
             continue;
           }
           await walletProvider.updateTransactionMemo(walletId, ref, label);
@@ -216,12 +224,21 @@ class LabelJsonLManager {
     return result;
   }
 
-  Future<List<LabelImportResult>> importLabelsForAllWallets(WalletProvider walletProvider, String filePath) async {
+  Future<List<LabelImportResult>> importLabelsForAllWallets(
+    WalletProvider walletProvider,
+    String filePath, {
+    bool addMemoToExisting = false,
+  }) async {
     final allWallets = walletProvider.walletItemList;
     final List<LabelImportResult> results = [];
 
     for (final wallet in allWallets) {
-      final singleWalletResult = await importLabelsFromJsonLFile(wallet.id, walletProvider, filePath);
+      final singleWalletResult = await importLabelsFromJsonLFile(
+        wallet.id,
+        walletProvider,
+        filePath,
+        addMemoToExisting: addMemoToExisting,
+      );
       if (singleWalletResult.txMemoCount > 0 ||
           singleWalletResult.utxoTagCount > 0 ||
           singleWalletResult.utxoLockCount > 0) {
