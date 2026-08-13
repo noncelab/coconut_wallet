@@ -76,7 +76,6 @@ class WalletHomeScreen extends StatefulWidget {
 }
 
 class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProviderStateMixin {
-  static const _warningDismissDuration = Duration(seconds: 10);
   static const _nextWarningDelay = Duration(milliseconds: 400);
 
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
@@ -970,7 +969,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     });
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
         child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
@@ -1540,9 +1539,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         LongPressedMenuItem(
           title: t.wallet_home_screen.wallet_menu.backup,
           iconPath: 'assets/svg/download.svg',
-          onSelected: () {
-            // TODO: 핫월렛 백업 화면 연결
-          },
+          onSelected: () => _openMnemonicBackup(walletItem),
         ),
       LongPressedMenuItem(
         title: t.wallet_home_screen.wallet_menu.wallet_info,
@@ -1561,6 +1558,25 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         onSelected: () => _showDeleteWalletDialog(walletItem.id),
       ),
     ];
+  }
+
+  Future<void> _openMnemonicBackup(WalletItemBase walletItem) async {
+    final metadata = walletItem.hotWalletMetadata;
+    if (metadata == null) return;
+
+    await Navigator.pushNamed(
+      context,
+      '/hot-wallet-mnemonic-backup-guide',
+      arguments: {
+        'walletName': walletItem.name,
+        'walletId': walletItem.id,
+        'secureStorageKey': metadata.secureStorageKey,
+        'enterPassphraseWhenSigning': metadata.enterPassphraseWhenSigning,
+        'showWalletCreatedIntro': false,
+        'continueToAppLockGuide': false,
+        'returnToPreviousOnExit': true,
+      },
+    );
   }
 
   void _showWalletRenameBottomSheet(WalletItemBase walletItem) {
@@ -1595,7 +1611,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     final dismissedAt = _sharedPrefs.getInt(type.dismissedAtKey);
     if (dismissedAt == 0) return true;
-    return DateTime.now().millisecondsSinceEpoch - dismissedAt >= _warningDismissDuration.inMilliseconds;
+    return DateTime.now().millisecondsSinceEpoch - dismissedAt >= securityWarningDismissDuration.inMilliseconds;
   }
 
   Future<void> _dismissSecurityWarning(_HomeSecurityWarningType type, {required bool showNextWarning}) async {

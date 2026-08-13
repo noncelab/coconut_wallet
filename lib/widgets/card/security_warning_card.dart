@@ -6,6 +6,8 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+const securityWarningDismissDuration = Duration(days: 7);
+
 class SecurityWarningCard extends StatefulWidget {
   const SecurityWarningCard({
     super.key,

@@ -110,12 +110,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
                           alignment: Alignment.centerLeft,
                           child: ClipRRect(
                             borderRadius:
-                                _progress == 1
-                                    ? BorderRadius.zero
-                                    : const BorderRadius.only(
-                                      topRight: Radius.circular(6),
-                                      bottomRight: Radius.circular(6),
-                                    ),
+                                _progress == 1 ? BorderRadius.zero : const BorderRadius.all(Radius.circular(6)),
                             child: AnimatedContainer(
                               width: constraints.maxWidth * _progress,
                               height: 4,
