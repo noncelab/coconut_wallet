@@ -198,7 +198,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                CommonActionIconPath.pen,
+                CommonActionIconPath.editOutlined,
                 colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
@@ -237,7 +237,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                CommonActionIconPath.pen,
+                CommonActionIconPath.editOutlined,
                 colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),

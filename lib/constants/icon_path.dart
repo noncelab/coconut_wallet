@@ -30,7 +30,6 @@ abstract final class CommonActionIconPath {
   static const String editOutlined = 'assets/svg/common/actions/edit-outlined.svg';
   static const String export = 'assets/svg/common/actions/export.svg';
   static const String openScanner = 'assets/svg/common/actions/open-scanner.svg';
-  static const String pen = 'assets/svg/common/actions/pen.svg';
   static const String plus = 'assets/svg/common/actions/plus.svg';
   static const String removeMinus = 'assets/svg/common/actions/remove-minus.svg';
   static const String scan = 'assets/svg/common/actions/scan.svg';

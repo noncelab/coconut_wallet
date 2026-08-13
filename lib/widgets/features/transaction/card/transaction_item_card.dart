@@ -127,7 +127,7 @@ class TransactionItemCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         SvgPicture.asset(
-          CommonActionIconPath.pen,
+          CommonActionIconPath.editOutlined,
           colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
           width: Sizes.size12,
         ),
