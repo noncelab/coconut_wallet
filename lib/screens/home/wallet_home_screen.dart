@@ -276,10 +276,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               child: Column(
                                 children: [
                                   if (walletItem.isEmpty) ...[
-                                    if (shouldShowOpenStoreIntroCard) ...[
-                                      CoconutLayout.spacing_400h,
-                                      _buildOpenStoreIntroCard(),
-                                    ],
+                                    _buildOpenStoreIntroCard(
+                                      visible: shouldShowOpenStoreIntroCard,
+                                      leading: CoconutLayout.spacing_400h,
+                                    ),
                                     CoconutLayout.spacing_400h,
                                     WalletAdditionGuideCard(onPressed: _onAddWalletPressed),
                                   ],
@@ -404,6 +404,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               );
             },
           ),
+      'open_store': () => openCoconutOpenStoreIntroScreen(context),
       'home_screen_settings': _navigateToWalletHomeEdit,
       'app_settings':
           () => CommonBottomSheets.showCustomHeightBottomSheet(
@@ -953,7 +954,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       child: Column(
         children: [
           CoconutLayout.spacing_500h,
-          if (showOpenStoreIntroCard) _buildOpenStoreIntroCard(bottomPadding: 12),
+          _buildOpenStoreIntroCard(visible: showOpenStoreIntroCard, trailing: const SizedBox(height: 12)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
             child: ShrinkAnimationButton(
@@ -1005,19 +1006,52 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildOpenStoreIntroCard({double bottomPadding = 0}) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(_horizontalPadding, 0, _horizontalPadding, bottomPadding),
-      child: AnimatedSize(
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeInOutCubic,
-        alignment: Alignment.topCenter,
-        child: CoconutOpenStoreIntroCard(
-          intro: CcosOpenStoreContentSource.intro,
-          onTap: () => openCoconutOpenStoreIntroScreen(context),
-          onDismiss: () => context.read<PreferenceProvider>().hideOpenStoreIntroCardForOneMonth(),
+  Widget _buildOpenStoreIntroCard({required bool visible, Widget? leading, Widget? trailing}) {
+    const duration = Duration(milliseconds: 500);
+    return AnimatedSize(
+      duration: duration,
+      curve: Curves.easeInOutCubic,
+      alignment: Alignment.topCenter,
+      child: ClipRect(
+        child: Align(
+          alignment: Alignment.topCenter,
+          heightFactor: visible ? 1 : 0,
+          child: IgnorePointer(
+            ignoring: !visible,
+            child: AnimatedOpacity(
+              duration: duration,
+              curve: Curves.easeOut,
+              opacity: visible ? 1 : 0,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+                child: Column(
+                  children: [
+                    if (leading != null) leading,
+                    CoconutOpenStoreIntroCard(
+                      intro: CcosOpenStoreContentSource.intro,
+                      onTap: () => openCoconutOpenStoreIntroScreen(context),
+                      onDismiss: () => _handleDismissOpenStoreIntroCard(context),
+                    ),
+                    if (trailing != null) trailing,
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Future<void> _handleDismissOpenStoreIntroCard(BuildContext context) async {
+    await context.read<PreferenceProvider>().hideOpenStoreIntroCardForOneMonth();
+    if (!context.mounted) return;
+    CoconutToast.showToast(
+      context: context,
+      text: t.ccos.intro_card.dismissed_toast,
+      isVisibleIcon: true,
+      iconPath: CommonStateIconPath.circleInfo,
+      seconds: 5,
     );
   }
 
@@ -2140,6 +2174,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     CoconutPulldownMenuItem(title: t.tutorial),
                   ],
                 ),
+                CoconutPulldownMenuItem(title: t.ccos.menu_item_title),
                 CoconutPulldownMenuItem(title: t.home_screen_settings),
                 CoconutPulldownMenuItem(title: t.app_settings),
                 // CoconutPulldownMenuItem(title: t.view_app_info),
@@ -2182,6 +2217,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
     if (selectedText == t.mnemonic_wordlist) return 'mnemonic_wordlist';
     if (selectedText == t.tutorial) return 'tutorial';
+    if (selectedText == t.ccos.menu_item_title) return 'open_store';
     if (selectedText == t.home_screen_settings) return 'home_screen_settings';
     if (selectedText == t.app_settings) return 'app_settings';
     return '';

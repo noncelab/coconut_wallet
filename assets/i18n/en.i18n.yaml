@@ -1416,13 +1416,15 @@ passphrase_input_text_field:
   placeholder: "Enter passphrase"
 
 ccos:
+  menu_item_title: "Open Store"
   intro_card:
     title: "Introducing Coconut Open Store"
     headline: "Anyone can build Coconut's next feature."
     description: "Your PoW becomes a new feature and joins Coconut, leading to a better experience. Great features reach more people and grow together, and that process gently moves Bitcoin Standard forward."
     cta_label: "Explore Open Store"
+    dismissed_toast: "You can find Open Store anytime from the Home menu or Theme settings."
   intro_screen:
-    theme_activated: "Coconut Pulp theme has been added. Set the theme and give it a try."
+    theme_activated: "Coconut Pulp theme has been added. Go to the Theme Settings screen to set it up and give it a try."
     delete_popup_title: "Remove Coconut Pulp theme?"
     delete_popup_description: "You are currently using the Coconut Pulp theme. If you remove it, the default theme will be applied."
     theme_removed: "Coconut Pulp theme has been removed. You can add it again anytime."

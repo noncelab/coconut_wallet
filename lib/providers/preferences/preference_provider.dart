@@ -24,7 +24,7 @@ import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:tuple/tuple.dart';
 
 class PreferenceProvider extends ChangeNotifier {
@@ -138,6 +138,11 @@ class PreferenceProvider extends ChangeNotifier {
   Map<String, CcosFeatureEntitlement> _ccosEntitlements = <String, CcosFeatureEntitlement>{};
   bool _isCcosRuntimeReady = false;
   bool get shouldShowOpenStoreIntroCard {
+    // CCOS 기능을 활성화한 사용자는 카드를 더이상 띄우지 않는다.
+    if (getCcosFeatureAvailability(CcosFeatureRegistrySource.featuredListing.id).isActivated) {
+      return false;
+    }
+    // 활성화하지 않은 사용자는 30일 재노출 로직 적용
     final hiddenUntil = _openStoreIntroCardHiddenUntil;
     return hiddenUntil == null || DateTime.now().isAfter(hiddenUntil);
   }
@@ -611,8 +616,10 @@ class PreferenceProvider extends ChangeNotifier {
     return DateTime.tryParse(stored);
   }
 
+  static const Duration _openStoreIntroCardHiddenDuration = kDebugMode ? Duration(minutes: 1) : Duration(days: 30);
+
   Future<void> hideOpenStoreIntroCardForOneMonth() async {
-    _openStoreIntroCardHiddenUntil = DateTime.now().add(const Duration(days: 30));
+    _openStoreIntroCardHiddenUntil = DateTime.now().add(_openStoreIntroCardHiddenDuration);
     await _sharedPrefs.setString(
       SharedPrefKeys.kOpenStoreIntroCardHiddenUntil,
       _openStoreIntroCardHiddenUntil!.toIso8601String(),

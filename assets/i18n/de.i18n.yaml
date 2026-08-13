@@ -1381,13 +1381,15 @@ passphrase_input_text_field:
   placeholder: "Passphrase eingeben"
 
 ccos:
+  menu_item_title: "Open Store"
   intro_card:
     title: "Coconut Open Store vorgestellt"
     headline: "Jeder kann Coconuts nächste Funktion bauen."
     description: "Dein PoW wird zu einer neuen Funktion, die in Coconut aufgenommen wird und zu einer besseren Nutzungserfahrung führt. Gute Funktionen erreichen mehr Menschen und wachsen gemeinsam, und dieser Prozess bringt den Bitcoin-Standard Schritt für Schritt voran."
     cta_label: "Open Store entdecken"
+    dismissed_toast: "Du findest den Open Store jederzeit im Menü oben rechts auf der Startseite oder in den Design-Einstellungen."
   intro_screen:
-    theme_activated: "Das Kokosfleisch-Design wurde hinzugefügt. Stelle das Design ein und probiere es aus."
+    theme_activated: "Das Kokosfleisch-Design wurde hinzugefügt. Stelle es im Bildschirm Design-Einstellungen ein und probiere es aus."
     delete_popup_title: "Kokosfleisch-Design entfernen?"
     delete_popup_description: "Du verwendest derzeit das Kokosfleisch-Design. Wenn du es entfernst, wird das Standarddesign angewendet."
     theme_removed: "Das Kokosfleisch-Design wurde entfernt. Du kannst es jederzeit wieder hinzufügen."

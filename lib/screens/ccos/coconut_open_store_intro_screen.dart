@@ -102,6 +102,7 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
       text: t.ccos.intro_screen.theme_activated,
       isVisibleIcon: true,
       iconPath: CommonStateIconPath.circleInfo,
+      seconds: 5,
     );
   }
 
@@ -567,7 +568,7 @@ class _OpenStoreLoadingSequence extends StatelessWidget {
         const ringOpacityDuration = 160 / totalMs;
         const polishStart = ringStart + ringDrawDuration;
         const beatStart = 4720 / totalMs;
-        const beatDuration = 620 / totalMs;
+        const beatDuration = 560 / totalMs;
         const fadeStart = 5350 / totalMs;
         const fadeDuration = 350 / totalMs;
 
@@ -596,18 +597,14 @@ class _OpenStoreLoadingSequence extends StatelessWidget {
         final polishValue = ((value - polishStart) / 0.05).clamp(0.0, 1.0);
         final polishGlowOpacity = Curves.easeOut.transform(polishValue) * 0.22;
         final beatT = ((value - beatStart) / beatDuration).clamp(0.0, 1.0);
-        final heartbeatScale = TweenSequence<double>([
+        final ringHeartbeatScale = TweenSequence<double>([
           TweenSequenceItem(
-            tween: Tween<double>(begin: 1.0, end: 1.12).chain(CurveTween(curve: Curves.easeOutCubic)),
-            weight: 34,
+            tween: Tween<double>(begin: 1.0, end: 1.1).chain(CurveTween(curve: Curves.easeOut)),
+            weight: 78,
           ),
           TweenSequenceItem(
-            tween: Tween<double>(begin: 1.12, end: 0.98).chain(CurveTween(curve: Curves.easeInOut)),
-            weight: 28,
-          ),
-          TweenSequenceItem(
-            tween: Tween<double>(begin: 0.98, end: 1.0).chain(CurveTween(curve: Curves.easeOutCubic)),
-            weight: 38,
+            tween: Tween<double>(begin: 1.1, end: 1.0).chain(CurveTween(curve: Curves.easeInCubic)),
+            weight: 22,
           ),
         ]).transform(beatT);
         final loadingOpacity = 1 - Curves.easeOut.transform(((value - fadeStart) / fadeDuration).clamp(0.0, 1.0));
@@ -622,7 +619,7 @@ class _OpenStoreLoadingSequence extends StatelessWidget {
               Align(
                 alignment: Alignment.center,
                 child: Transform.scale(
-                  scale: iconScale * heartbeatScale,
+                  scale: iconScale,
                   child: SizedBox(
                     width: startIconSize,
                     height: startIconSize,
@@ -649,11 +646,14 @@ class _OpenStoreLoadingSequence extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Opacity(
-                          opacity: ringOpacity,
-                          child: CustomPaint(
-                            size: const Size.square(86.4),
-                            painter: _LoadingProgressRingPainter(progress: ringProgress),
+                        Transform.scale(
+                          scale: ringHeartbeatScale,
+                          child: Opacity(
+                            opacity: ringOpacity,
+                            child: CustomPaint(
+                              size: const Size.square(86.4),
+                              painter: _LoadingProgressRingPainter(progress: ringProgress),
+                            ),
                           ),
                         ),
                         SvgPicture.asset(

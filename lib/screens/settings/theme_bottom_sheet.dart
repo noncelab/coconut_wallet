@@ -36,6 +36,50 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
   // 스와이프로 삭제 가능한 테마
   CoconutThemeVariant? _swipedVariant;
 
+  Future<void> _handleDismissOpenStoreIntroCard(BuildContext context) async {
+    await context.read<PreferenceProvider>().hideOpenStoreIntroCardForOneMonth();
+    if (!context.mounted) return;
+    CoconutToast.showToast(
+      context: context,
+      text: t.ccos.intro_card.dismissed_toast,
+      isVisibleIcon: true,
+      iconPath: CommonStateIconPath.circleInfo,
+    );
+  }
+
+  Widget _buildOpenStoreIntroCard(BuildContext context, bool visible) {
+    const duration = Duration(milliseconds: 500);
+    return AnimatedSize(
+      duration: duration,
+      curve: Curves.easeInOutCubic,
+      alignment: Alignment.topCenter,
+      child: ClipRect(
+        child: Align(
+          alignment: Alignment.topCenter,
+          heightFactor: visible ? 1 : 0,
+          child: IgnorePointer(
+            ignoring: !visible,
+            child: AnimatedOpacity(
+              duration: duration,
+              curve: Curves.easeOut,
+              opacity: visible ? 1 : 0,
+              child: Column(
+                children: [
+                  CoconutOpenStoreIntroCard(
+                    intro: CcosOpenStoreContentSource.intro,
+                    onTap: () => openCoconutOpenStoreIntroScreen(context),
+                    onDismiss: () => _handleDismissOpenStoreIntroCard(context),
+                  ),
+                  const SizedBox(height: Sizes.size20),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _onThemeSelected(BuildContext context, CoconutThemeVariant variant) async {
     if (_swipedVariant != null) {
       setState(() => _swipedVariant = null);
@@ -138,14 +182,7 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
               padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
               children: [
                 const SizedBox(height: Sizes.size8),
-                if (provider.shouldShowOpenStoreIntroCard) ...[
-                  CoconutOpenStoreIntroCard(
-                    intro: CcosOpenStoreContentSource.intro,
-                    onTap: () => openCoconutOpenStoreIntroScreen(context),
-                    onDismiss: provider.hideOpenStoreIntroCardForOneMonth,
-                  ),
-                  const SizedBox(height: Sizes.size20),
-                ],
+                _buildOpenStoreIntroCard(context, provider.shouldShowOpenStoreIntroCard),
                 ..._buildThemeRows(context, provider, builtInThemes),
               ],
             ),
