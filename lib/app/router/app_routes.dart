@@ -66,9 +66,15 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             mnemonic: args['mnemonic'],
             passphrase: args['passphrase'] ?? '',
             enterPassphraseWhenSigning: args['enterPassphraseWhenSigning'] ?? false,
+            showWalletCreatedIntro: args['showWalletCreatedIntro'] ?? true,
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? true,
+            returnToPreviousOnExit: args['returnToPreviousOnExit'] ?? false,
           ),
         ),
-    '/hot-wallet-app-lock-guide-screen': (context) => const HotWalletAppLockGuideScreen(),
+    '/hot-wallet-app-lock-guide-screen': (context) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      return HotWalletAppLockGuideScreen(walletId: args?['walletId'] as int?);
+    },
     '/hot-wallet-mnemonic-backup':
         (context) => _buildScreenWithArgs(
           context,

@@ -5,8 +5,10 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 
 class HotWalletMnemonicBackupGuideScreen extends StatefulWidget {
@@ -17,6 +19,9 @@ class HotWalletMnemonicBackupGuideScreen extends StatefulWidget {
     required this.mnemonic,
     required this.passphrase,
     required this.enterPassphraseWhenSigning,
+    this.showWalletCreatedIntro = true,
+    this.continueToAppLockGuide = true,
+    this.returnToPreviousOnExit = false,
   });
 
   final String walletName;
@@ -24,6 +29,9 @@ class HotWalletMnemonicBackupGuideScreen extends StatefulWidget {
   final Uint8List mnemonic;
   final Uint8List passphrase;
   final bool enterPassphraseWhenSigning;
+  final bool showWalletCreatedIntro;
+  final bool continueToAppLockGuide;
+  final bool returnToPreviousOnExit;
 
   @override
   State<HotWalletMnemonicBackupGuideScreen> createState() => _HotWalletMnemonicBackupGuideScreenState();
@@ -39,11 +47,24 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
   bool _isBackupLottieVisible = false;
   bool _isBottomButtonVisible = false;
   bool _hasStartedLottie = false;
+  bool _isBackupPreparationStage = false;
+  bool _isPreparationTitleVisible = false;
+  bool _isPreparationDescriptionVisible = false;
+  bool _isPreparationContentVisible = false;
+  bool _isStageTransitioning = false;
 
   @override
   void initState() {
     super.initState();
     _lottieController = AnimationController(vsync: this);
+    if (!widget.showWalletCreatedIntro) {
+      _isIntroVisible = false;
+      _isBackupStageVisible = true;
+      _isBackupTitleMoved = true;
+      _isBackupLottieVisible = true;
+      _isBackupPreparationStage = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showBackupPreparation());
+    }
   }
 
   Future<void> _playIntroAnimation(LottieComposition composition) async {
@@ -67,6 +88,11 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
     await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
 
+    await _showBackupGuide();
+  }
+
+  Future<void> _showBackupGuide() async {
+    if (!mounted || _isBackupStageVisible) return;
     setState(() => _isBackupStageVisible = true);
     await Future<void>.delayed(const Duration(seconds: 2));
     if (!mounted) return;
@@ -93,124 +119,288 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
   @override
   Widget build(BuildContext context) {
     final strings = t.wallet_home_screen.hot_wallet_setup;
-    return Scaffold(
-      backgroundColor: context.coconutColors.background,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: IgnorePointer(
-          ignoring: !_isBackupStageVisible,
-          child: AnimatedOpacity(
-            opacity: _isBackupStageVisible ? 1 : 0,
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeOut,
-            child: CoconutAppBar.build(
-              title: strings.backup_title,
-              context: context,
-              onBackPressed: _finish,
-              isBottom: true,
-              backgroundColor: context.coconutColors.background,
+    return PopScope(
+      canPop: widget.returnToPreviousOnExit,
+      child: Scaffold(
+        backgroundColor: context.coconutColors.background,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: IgnorePointer(
+            ignoring: !_isBackupStageVisible,
+            child: AnimatedOpacity(
+              opacity: _isBackupStageVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOut,
+              child: CoconutAppBar.build(
+                title: strings.backup_title,
+                context: context,
+                onBackPressed: _onAppBarBackPressed,
+                isBottom: true,
+                isBackButton: _isBackupPreparationStage,
+                backgroundColor: context.coconutColors.background,
+              ),
             ),
           ),
         ),
-      ),
-      body: Stack(
-        children: [
-          AnimatedOpacity(
-            opacity: _isIntroVisible ? 1 : 0,
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeOut,
-            child: IgnorePointer(
-              ignoring: !_isIntroVisible,
-              child: Align(
-                alignment: const Alignment(0, -0.14),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 72,
-                      height: 72,
-                      child: Lottie.asset(
-                        'assets/lottie/check-complete.json',
-                        controller: _lottieController,
-                        fit: BoxFit.contain,
-                        repeat: false,
-                        onLoaded: _playIntroAnimation,
-                      ),
-                    ),
-                    CoconutLayout.spacing_300h,
-                    AnimatedSlide(
-                      offset: _isCreatedTitleVisible ? Offset.zero : const Offset(0, 0.15),
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.easeOutCubic,
-                      child: AnimatedOpacity(
-                        opacity: _isCreatedTitleVisible ? 1 : 0,
-                        duration: const Duration(milliseconds: 350),
-                        child: Text(
-                          strings.wallet_created_title,
-                          textAlign: TextAlign.center,
-                          style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+        body: Stack(
+          children: [
+            AnimatedOpacity(
+              opacity: _isIntroVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOut,
+              child: IgnorePointer(
+                ignoring: !_isIntroVisible,
+                child: Align(
+                  alignment: const Alignment(0, -0.14),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 72,
+                        height: 72,
+                        child: Lottie.asset(
+                          'assets/lottie/check-complete.json',
+                          controller: _lottieController,
+                          fit: BoxFit.contain,
+                          repeat: false,
+                          onLoaded: _playIntroAnimation,
                         ),
                       ),
-                    ),
-                  ],
+                      CoconutLayout.spacing_300h,
+                      AnimatedSlide(
+                        offset: _isCreatedTitleVisible ? Offset.zero : const Offset(0, 0.15),
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeOutCubic,
+                        child: AnimatedOpacity(
+                          opacity: _isCreatedTitleVisible ? 1 : 0,
+                          duration: const Duration(milliseconds: 350),
+                          child: Text(
+                            strings.wallet_created_title,
+                            textAlign: TextAlign.center,
+                            style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          if (_isBackupStageVisible)
-            Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    AnimatedAlign(
-                      alignment: _isBackupTitleMoved ? const Alignment(0, -0.72) : Alignment.center,
-                      duration: const Duration(milliseconds: 650),
-                      curve: Curves.easeInOutCubic,
-                      child: AnimatedContainer(
+            if (_isBackupStageVisible)
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      AnimatedAlign(
+                        alignment: _isBackupTitleMoved ? const Alignment(0, -0.72) : Alignment.center,
                         duration: const Duration(milliseconds: 650),
                         curve: Curves.easeInOutCubic,
-                        transform: Matrix4.translationValues(0, _isBackupTitleMoved ? 0 : -30, 0),
-                        child: Text(
-                          strings.backup_intro_title,
-                          textAlign: TextAlign.center,
-                          style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
-                        ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
-                      ),
-                    ),
-                    if (_isBackupLottieVisible)
-                      Align(
-                        alignment: Alignment.center,
-                        child: Transform.translate(
-                          offset: const Offset(0, -30),
-                          child: SizedBox(
-                            width: 96,
-                            height: 96,
-                            child: Lottie.asset(
-                              'assets/lottie/note-write-pencil.json',
-                              fit: BoxFit.contain,
-                              repeat: false,
-                            ),
-                          ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 650),
+                          curve: Curves.easeInOutCubic,
+                          transform: Matrix4.translationValues(0, _isBackupTitleMoved ? 0 : -30, 0),
+                          child: AnimatedOpacity(
+                            opacity: _isBackupPreparationStage ? 0 : 1,
+                            duration: const Duration(milliseconds: 250),
+                            child: Text(
+                              strings.backup_intro_title,
+                              textAlign: TextAlign.center,
+                              style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+                            ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
+                          ),
                         ),
                       ),
-                  ],
+                      if (_isBackupLottieVisible)
+                        AnimatedAlign(
+                          alignment: _isBackupPreparationStage ? const Alignment(0, -0.72) : Alignment.center,
+                          duration: const Duration(milliseconds: 650),
+                          curve: Curves.easeInOutCubic,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 650),
+                            curve: Curves.easeInOutCubic,
+                            transform: Matrix4.translationValues(0, _isBackupPreparationStage ? 0 : -30, 0),
+                            child: SizedBox(
+                              width: 96,
+                              height: 96,
+                              child: Lottie.asset(
+                                'assets/lottie/note-write-pencil.json',
+                                fit: BoxFit.contain,
+                                repeat: false,
+                              ),
+                            ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
+                          ),
+                        ),
+                      if (_isBackupPreparationStage) ...[
+                        Positioned.fill(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              const lottieHeight = 96.0;
+                              const gapBelowLottie = 30.0;
+                              final lottieTop = (constraints.maxHeight - lottieHeight) * 0.14;
+
+                              return Padding(
+                                padding: EdgeInsets.only(top: lottieTop + lottieHeight + gapBelowLottie),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _SequentialEntry(
+                                      visible: _isPreparationTitleVisible,
+                                      child: Text(
+                                        strings.backup_preparation_title,
+                                        textAlign: TextAlign.center,
+                                        style: CoconutTypography.heading3_21_Bold.setColor(
+                                          context.coconutColors.primaryText,
+                                        ),
+                                      ),
+                                    ),
+                                    CoconutLayout.spacing_300h,
+                                    _SequentialEntry(
+                                      visible: _isPreparationDescriptionVisible,
+                                      child: Text(
+                                        strings.backup_preparation_description,
+                                        textAlign: TextAlign.center,
+                                        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 30),
+                                    _SequentialEntry(
+                                      visible: _isPreparationContentVisible,
+                                      child: Container(
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                          color: context.coconutColors.surface,
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  width: 24,
+                                                  height: 24,
+                                                  decoration: BoxDecoration(
+                                                    color: context.coconutColors.iconDefault,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  alignment: Alignment.center,
+                                                  child: SvgPicture.asset(
+                                                    'assets/svg/pen.svg',
+                                                    width: 14,
+                                                    height: 14,
+                                                    colorFilter: ColorFilter.mode(
+                                                      context.coconutColors.iconHighlight,
+                                                      BlendMode.srcIn,
+                                                    ),
+                                                  ),
+                                                ),
+                                                CoconutLayout.spacing_200w,
+                                                Expanded(
+                                                  child: Text(
+                                                    strings.backup_tips_1,
+                                                    style: CoconutTypography.body2_14.setColor(
+                                                      context.coconutColors.primaryText,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            CoconutLayout.spacing_400h,
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  width: 24,
+                                                  height: 24,
+                                                  decoration: BoxDecoration(
+                                                    color: context.coconutColors.iconDefault,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  alignment: Alignment.center,
+                                                  child: SvgPicture.asset(
+                                                    'assets/svg/stop-sign.svg',
+                                                    width: 14,
+                                                    height: 14,
+                                                    colorFilter: ColorFilter.mode(
+                                                      context.coconutColors.iconHighlight,
+                                                      BlendMode.srcIn,
+                                                    ),
+                                                  ),
+                                                ),
+                                                CoconutLayout.spacing_200w,
+                                                Expanded(
+                                                  child: Text(
+                                                    strings.backup_tips_2,
+                                                    style: CoconutTypography.body2_14.setColor(
+                                                      context.coconutColors.primaryText,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            CoconutLayout.spacing_400h,
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  width: 24,
+                                                  height: 24,
+                                                  decoration: BoxDecoration(
+                                                    color: context.coconutColors.iconDefault,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  alignment: Alignment.center,
+                                                  child: SvgPicture.asset(
+                                                    'assets/svg/lock_simple.svg',
+                                                    width: 14,
+                                                    height: 14,
+                                                    colorFilter: ColorFilter.mode(
+                                                      context.coconutColors.iconHighlight,
+                                                      BlendMode.srcIn,
+                                                    ),
+                                                  ),
+                                                ),
+                                                CoconutLayout.spacing_200w,
+                                                Expanded(
+                                                  child: Text(
+                                                    strings.backup_tips_3,
+                                                    style: CoconutTypography.body2_14.setColor(
+                                                      context.coconutColors.primaryText,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          if (_isBottomButtonVisible)
-            FixedBottomButton(
-              onButtonClicked: _startMnemonicBackupFlow,
-              text: strings.backup_title,
-              subWidget: CoconutUnderlinedButton(onTap: _finish, text: strings.skip),
-            ).slideUpAnimation(
-              duration: const Duration(milliseconds: 350),
-              delay: const Duration(milliseconds: 200),
-              offset: const Offset(0, 8),
-              curve: Curves.easeOutCubic,
-            ),
-        ],
+            if (_isBottomButtonVisible)
+              FixedBottomButton(
+                onButtonClicked: _isBackupPreparationStage ? _startMnemonicBackupFlow : _showBackupPreparation,
+                text: _isBackupPreparationStage ? strings.backup_start : strings.backup_title,
+                subWidget:
+                    _isBackupPreparationStage ? null : CoconutUnderlinedButton(onTap: _finish, text: strings.skip),
+              ).slideUpAnimation(
+                duration: const Duration(milliseconds: 350),
+                delay: const Duration(milliseconds: 200),
+                offset: const Offset(0, 8),
+                curve: Curves.easeOutCubic,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -224,13 +414,107 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
         'passphrase': utf8.decode(widget.passphrase),
         'enterPassphraseWhenSigning': widget.enterPassphraseWhenSigning,
         'walletId': widget.walletId,
-        'continueToAppLockGuide': true,
+        'continueToAppLockGuide': widget.continueToAppLockGuide,
       },
     );
     if (!mounted || isBackupConfirmed != true) return;
+    if (!widget.continueToAppLockGuide) {
+      _finish();
+    }
+  }
+
+  Future<void> _showBackupPreparation() async {
+    if (_isStageTransitioning) return;
+    _isStageTransitioning = true;
+    setState(() {
+      _isBottomButtonVisible = false;
+      _isBackupPreparationStage = true;
+    });
+
+    await Future<void>.delayed(const Duration(milliseconds: 650));
+    if (!mounted) return;
+    setState(() => _isPreparationTitleVisible = true);
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    if (!mounted) return;
+    setState(() => _isPreparationDescriptionVisible = true);
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    if (!mounted) return;
+    setState(() => _isPreparationContentVisible = true);
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    if (!mounted) return;
+    setState(() {
+      _isBottomButtonVisible = true;
+      _isStageTransitioning = false;
+    });
+  }
+
+  Future<void> _hideBackupPreparation() async {
+    if (_isStageTransitioning) return;
+    _isStageTransitioning = true;
+    setState(() => _isBottomButtonVisible = false);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+    setState(() => _isPreparationContentVisible = false);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+    setState(() => _isPreparationDescriptionVisible = false);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+    setState(() => _isPreparationTitleVisible = false);
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    if (!mounted) return;
+    setState(() => _isBackupPreparationStage = false);
+    await Future<void>.delayed(const Duration(milliseconds: 650));
+    if (!mounted) return;
+    setState(() {
+      _isBottomButtonVisible = true;
+      _isStageTransitioning = false;
+    });
+  }
+
+  void _onAppBarBackPressed() {
+    if (widget.returnToPreviousOnExit) {
+      _finish();
+      return;
+    }
+    if (_isBackupPreparationStage) {
+      _hideBackupPreparation();
+      return;
+    }
+    _finish();
   }
 
   void _finish() {
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    if (widget.returnToPreviousOnExit) {
+      Navigator.of(context).pop();
+      return;
+    }
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      '/wallet-detail',
+      (route) => route.isFirst,
+      arguments: {'id': widget.walletId, 'entryPoint': kEntryPointWalletHome},
+    );
+  }
+}
+
+class _SequentialEntry extends StatelessWidget {
+  const _SequentialEntry({required this.visible, required this.child});
+
+  final bool visible;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSlide(
+      offset: visible ? Offset.zero : const Offset(0, 0.12),
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+        child: IgnorePointer(ignoring: !visible, child: child),
+      ),
+    );
   }
 }

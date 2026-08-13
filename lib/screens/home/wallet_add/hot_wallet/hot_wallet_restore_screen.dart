@@ -9,6 +9,7 @@ import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_restore_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -1274,10 +1275,19 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       }
       if (!mounted) return;
       setState(() => _isCheckingDuplicate = false);
-      Navigator.of(context).popUntil((route) => route.isFirst);
-      Navigator.of(
-        context,
-      ).pushNamed('/wallet-detail', arguments: {'id': restoredWallet.id, 'entryPoint': kEntryPointWalletHome});
+      if (context.read<AuthProvider>().isAuthEnabled) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/wallet-detail',
+          (route) => route.isFirst,
+          arguments: {'id': restoredWallet.id, 'entryPoint': kEntryPointWalletHome},
+        );
+      } else {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/hot-wallet-app-lock-guide-screen',
+          (route) => route.isFirst,
+          arguments: {'walletId': restoredWallet.id},
+        );
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _isCheckingDuplicate = false);

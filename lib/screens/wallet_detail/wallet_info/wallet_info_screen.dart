@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -663,18 +665,20 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       );
       if (!mounted || plaintext == null) return;
 
-      final isBackupConfirmed = await Navigator.pushNamed(
+      await Navigator.pushNamed(
         context,
-        '/hot-wallet-mnemonic-backup',
+        '/hot-wallet-mnemonic-backup-guide',
         arguments: {
-          'mnemonic': plaintext.mnemonic,
-          'passphrase': plaintext.passphrase,
+          'walletName': viewModel.walletItemBase.name,
+          'walletId': widget.id,
+          'mnemonic': Uint8List.fromList(utf8.encode(plaintext.mnemonic)),
+          'passphrase': Uint8List.fromList(utf8.encode(plaintext.passphrase)),
           'enterPassphraseWhenSigning': metadata.enterPassphraseWhenSigning,
-          'descriptor': viewModel.walletItemBase.descriptor,
+          'showWalletCreatedIntro': false,
+          'continueToAppLockGuide': false,
+          'returnToPreviousOnExit': true,
         },
       );
-      if (!mounted || isBackupConfirmed != true) return;
-      await context.read<WalletProvider>().updateHotWalletBackupVerified(widget.id, backupVerified: true);
     } catch (error) {
       if (!mounted) return;
       await showInfoDialog(

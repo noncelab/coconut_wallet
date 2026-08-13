@@ -94,7 +94,7 @@ class _SecurityWarningCardState extends State<SecurityWarningCard> with SingleTi
         onTap: widget.onTap,
         child: Container(
           width: double.infinity,
-          margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
           decoration: BoxDecoration(
             color: widget.useUnbackedWalletGradient ? null : context.coconutColors.appLockWarningBackground,

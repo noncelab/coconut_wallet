@@ -3,6 +3,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -77,21 +78,38 @@ class MnemonicBackupCompleteScreen extends StatelessWidget {
   }
 
   Future<void> _complete(BuildContext context, bool isAppLockSet) async {
-    if (!continueToAppLockGuide) {
-      Navigator.pop(context, true);
-      return;
-    }
-
     if (walletId != null) {
       await context.read<WalletProvider>().updateHotWalletBackupVerified(walletId!, backupVerified: true);
       if (!context.mounted) return;
     }
 
-    if (isAppLockSet) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+    if (!continueToAppLockGuide) {
+      Navigator.pop(context, true);
       return;
     }
 
-    await Navigator.pushNamedAndRemoveUntil(context, '/hot-wallet-app-lock-guide-screen', (route) => route.isFirst);
+    if (isAppLockSet) {
+      _openWalletDetail(context);
+      return;
+    }
+
+    await Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/hot-wallet-app-lock-guide-screen',
+      (route) => route.isFirst,
+      arguments: {'walletId': walletId},
+    );
+  }
+
+  void _openWalletDetail(BuildContext context) {
+    if (walletId == null) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      '/wallet-detail',
+      (route) => route.isFirst,
+      arguments: {'id': walletId, 'entryPoint': kEntryPointWalletHome},
+    );
   }
 }

@@ -344,6 +344,7 @@ flutter:
     - assets/svg/hot-wallet-fire.svg
     - assets/svg/hot-wallet-fire-thin.svg
     - assets/svg/watch-only-eyes.svg
+    - assets/svg/stop-sign.svg
 
   fonts:
     - family: SpaceGrotesk
