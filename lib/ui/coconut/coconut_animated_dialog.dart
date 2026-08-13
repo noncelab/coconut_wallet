@@ -50,7 +50,18 @@ class _CoconutAnimatedDialogState extends State<CoconutAnimatedDialog> with Sing
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Lottie.asset(widget.lottieAddress, width: 120, height: 120, fit: BoxFit.fill, repeat: false),
+              Lottie.asset(
+                widget.lottieAddress,
+                width: 120,
+                height: 120,
+                fit: BoxFit.fill,
+                repeat: false,
+                delegates: LottieDelegates(
+                  values: [
+                    ValueDelegate.colorFilter(['**'], value: ColorFilter.mode(colors.primaryText, BlendMode.srcATop)),
+                  ],
+                ),
+              ),
               if (widget.body.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),

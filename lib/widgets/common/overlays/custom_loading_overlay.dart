@@ -20,9 +20,7 @@ class CustomLoadingOverlay extends StatelessWidget {
               dismissible: false,
               color: Colors.transparent, // 투명하게 유지
             ),
-            Center(
-              child: FullscreenLoadingIndicator(padding: EdgeInsets.zero),
-            ),
+            Center(child: FullscreenLoadingIndicator(padding: EdgeInsets.zero)),
           ],
         );
       },

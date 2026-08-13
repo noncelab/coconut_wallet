@@ -14,6 +14,8 @@
 .svn/
 .claude/
 .local/
+.zed/*
+CLAUDE.md
 
 # IntelliJ related
 *.iml
@@ -203,6 +205,3 @@ rust/trezor-bridge/target/
 rust/trezor-connect-rs/target/
 
 /META-INF
-
-.zed/*
-.local/

@@ -1,4 +1,3 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -6,36 +5,32 @@ import 'package:flutter/material.dart';
 class FullscreenLoadingIndicator extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final Color? color;
-  final double size;
-  final int duration;
-  final bool loop;
-  final bool reverse;
+  final double? size;
 
-  const FullscreenLoadingIndicator({
-    super.key,
-    this.padding = EdgeInsets.zero,
-    this.color,
-    this.size = 200,
-    this.duration = 2,
-    this.loop = true,
-    this.reverse = false,
-  });
+  const FullscreenLoadingIndicator({super.key, this.padding = EdgeInsets.zero, this.color, this.size});
 
   @override
   Widget build(BuildContext context) {
     final resolvedColor = color ?? context.coconutColors.loadingIndicatorColor;
+    final resolvedSize = size ?? MediaQuery.of(context).size.width * 0.15;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
       child: Padding(
         padding: padding,
-        child: CoconutCircularIndicator(
-          size: size,
-          duration: duration,
-          loop: loop,
-          reverse: reverse,
-          colorFilter: resolvedColor,
+        // coconut_design_system의 CoconutCircularIndicator(Lottie 기반)는
+        // 로티 패키지 자체의 resolveKeyPath null-check 버그로 인해
+        // 앱 진입 시 크래시가 발생해서, 네이티브 CircularProgressIndicator로 대체함.
+        child: SizedBox(
+          width: resolvedSize,
+          height: resolvedSize,
+          child: CircularProgressIndicator(
+            color: resolvedColor,
+            backgroundColor: resolvedColor.withValues(alpha: 0.15),
+            strokeWidth: resolvedSize / 5.5,
+            strokeCap: StrokeCap.round,
+          ),
         ),
       ),
     );

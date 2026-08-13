@@ -764,6 +764,7 @@ class _TargetQuantityCard extends StatelessWidget {
             child: IgnorePointer(
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(topRight: Radius.circular(24)),
+                // 목표 수량 달성 축하 효과는 의도된 디자인이라 테마 색상을 적용하지 않음
                 child: Lottie.asset(
                   CommonLottiePath.fireworks,
                   width: 140,
