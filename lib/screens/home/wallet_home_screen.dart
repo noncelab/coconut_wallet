@@ -106,6 +106,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   static const double _horizontalPadding = 16;
   // 섹션 라벨(예: "지난 24시간 거래", "최근 N일 · 전체")이 _horizontalPadding보다 추가로 더 들여지는 간격
   static const double _sectionLabelExtraPadding = 4;
+  // FiatPrice가 네트워크/설정 상태에 따라 비어도
+  // 아래 잔액 영역의 Y 위치가 흔들리지 않도록 유지하는 높이
+  static const double _fiatPriceSlotHeight = 17;
 
   double? itemCardWidth;
   double? itemCardHeight;
@@ -591,14 +594,22 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                       (entry) => !excludedIds.contains(entry.key),
                                     ),
                                   ).values.map((e) => e.current).fold(0, (current, element) => current + element);
-                          return Visibility(
-                            maintainSize: true,
-                            maintainAnimation: true,
-                            maintainState: true,
-                            visible: !isFiatBalanceHidden,
-                            child: FiatPrice(
-                              satoshiAmount: balance,
-                              textStyle: CoconutTypography.body3_12_Number.setColor(context.coconutColors.tertiaryText),
+                          return SizedBox(
+                            height: _fiatPriceSlotHeight,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Visibility(
+                                maintainSize: true,
+                                maintainAnimation: true,
+                                maintainState: true,
+                                visible: !isFiatBalanceHidden,
+                                child: FiatPrice(
+                                  satoshiAmount: balance,
+                                  textStyle: CoconutTypography.body3_12_Number.setColor(
+                                    context.coconutColors.tertiaryText,
+                                  ),
+                                ),
+                              ),
                             ),
                           );
                         },
@@ -1992,33 +2003,40 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     return CoconutAppBar.buildHomeAppbar(
       context: context,
-      leadingSvgAsset: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 400),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child:
-            shouldShow
-                ? Row(
-                  key: const ValueKey('error_message'),
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    SvgPicture.asset(FeatureConnectivityIconPath.cloudDisconnected, width: 16),
-                    CoconutLayout.spacing_100w,
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width - 160,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          message,
-                          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.danger),
+      leadingSvgAsset: Transform.translate(
+        // HACK: 임시 오프셋
+        // CDS 내 buildHomeAppbar 좌우 padding 16, leading widget에 자체 horizontal padding 8
+        // CDS에서 leadingPadding 또는 appBarInnerMargin을 받도록 수정하는 것이 구조적 해결이지만
+        // OTransform.translate으로 앱 내에서 해결함.
+        offset: const Offset(-8, 2),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          transitionBuilder: (child, animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child:
+              shouldShow
+                  ? Row(
+                    key: const ValueKey('error_message'),
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SvgPicture.asset(FeatureConnectivityIconPath.cloudDisconnected, width: 16),
+                      CoconutLayout.spacing_150w,
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width - 160,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            message,
+                            style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.danger),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                )
-                : const SizedBox.shrink(key: ValueKey('empty')),
+                    ],
+                  )
+                  : const SizedBox.shrink(key: ValueKey('empty')),
+        ),
       ),
       appTitle: '',
       actionButtonList: [
