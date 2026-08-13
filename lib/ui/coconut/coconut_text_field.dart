@@ -103,6 +103,7 @@ class CoconutTextField extends StatefulWidget {
   final double? height;
   final double fontSize;
   final String fontFamily;
+  final double? letterSpacing;
   final FontWeight fontWeight;
   final TextAlign? textAlign;
   final bool isLengthVisible;
@@ -155,6 +156,7 @@ class CoconutTextField extends StatefulWidget {
     this.height,
     this.fontSize = 14,
     this.fontFamily = 'Pretendard',
+    this.letterSpacing,
     this.fontWeight = FontWeight.normal,
     this.textAlign,
     this.isLengthVisible = true,
@@ -547,6 +549,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                     color: resolvedTextColor,
                     fontSize: widget.fontSize,
                     fontFamily: widget.fontFamily,
+                    letterSpacing: widget.letterSpacing,
                     fontWeight: widget.fontWeight,
                     height: resolvedTextHeight,
                   ),

@@ -6,11 +6,9 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/features/utxo/header/selected_utxo_amount_header.dart';
-import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_dropdown_button.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UtxoListStickyHeader extends StatelessWidget {
   final GlobalKey stickyHeaderGlobalKey;
@@ -172,47 +170,14 @@ class UtxoListStickyHeader extends StatelessWidget {
         ),
 
         // 드롭다운 행
-        Row(
-          children: [
-            const Spacer(),
-            if (!isLoadComplete)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: SizedBox(
-                  width: 12,
-                  height: 12,
-                  child: InlineLoadingIndicator(
-                    padding: EdgeInsets.zero,
-                    color: context.coconutColors.secondaryText,
-                    radius: 6,
-                  ),
-                ),
-              ),
-            CupertinoButton(
-              key: dropdownGlobalKey,
-              padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8).copyWith(right: 26),
-              minSize: 0,
-              onPressed: enableDropdown ? () => onTapDropdown() : null,
-              child: Row(
-                children: [
-                  Text(
-                    activeOption,
-                    style: CoconutTypography.body3_12.setColor(
-                      enableDropdown ? context.coconutColors.primaryText : context.coconutColors.mutedText,
-                    ),
-                  ),
-                  CoconutLayout.spacing_200w,
-                  SvgPicture.asset(
-                    CommonNavigationIconPath.arrowDown,
-                    colorFilter: ColorFilter.mode(
-                      enableDropdown ? context.coconutColors.iconPrimary : context.coconutColors.iconDisabled,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        Padding(
+          padding: const EdgeInsets.only(right: 20.0),
+          child: UtxoListDropdownButton(
+            dropdownGlobalKey: dropdownGlobalKey,
+            activeOption: activeOption,
+            isEnabled: enableDropdown,
+            onTapDropdown: () => onTapDropdown(),
+          ),
         ),
       ],
     );

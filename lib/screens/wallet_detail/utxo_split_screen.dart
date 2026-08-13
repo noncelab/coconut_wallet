@@ -922,6 +922,8 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
               underlineSpacing: CoconutTextFieldUnderlineSpacing.standard,
               backgroundColor: context.coconutColors.background,
               fontSize: 18,
+              fontFamily: CoconutTypography.kNumberFontFamily,
+              letterSpacing: -0.04,
               fontWeight: FontWeight.bold,
               isError: data.splitAmountErrorText != null,
               errorText: data.splitAmountErrorText ?? '',
@@ -1346,22 +1348,28 @@ class _HeaderTitleErrorText extends StatelessWidget {
           builder: (context, _) {
             final isFocused = focusNodes.any((node) => node.hasFocus);
 
+            double height = 20;
+            if (selectedMethod == SplitMethod.manually) {
+              final isResultBoxActuallyVisible = vmShowSplitResultBox && !isFocused;
+              height = isResultBoxActuallyVisible ? 16 : 24;
+            }
+
             if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
-              double height = 20;
-              if (selectedMethod == SplitMethod.manually) {
-                final isResultBoxActuallyVisible = vmShowSplitResultBox && !isFocused;
-                height = isResultBoxActuallyVisible ? 16 : 24;
-              }
               return SizedBox(height: height);
             }
 
-            return Padding(
-              padding: const EdgeInsets.only(top: 2, bottom: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  headerTitleErrorMessage,
-                  style: CoconutTypography.caption_10.setColor(context.coconutColors.danger).copyWith(height: 1.0),
+            return SizedBox(
+              height: height,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 2, bottom: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    headerTitleErrorMessage,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: CoconutTypography.caption_10.setColor(context.coconutColors.danger).copyWith(height: 1.0),
+                  ),
                 ),
               ),
             );
@@ -1407,6 +1415,7 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
     if (widget.splitSummaryTitle.isNotEmpty) {
       _lastTitle = widget.splitSummaryTitle;
     }
+    _syncLottieState();
   }
 
   @override
@@ -1418,6 +1427,10 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
     if (widget.splitSummaryTitle.isNotEmpty) {
       _lastTitle = widget.splitSummaryTitle;
     }
+    _syncLottieState();
+  }
+
+  void _syncLottieState() {
     final isPreparing = widget.showSkeletonResultBox;
     final isReady = widget.splitResult != null || widget.usePreview;
     final isDone = isReady && !isPreparing;
@@ -1425,9 +1438,11 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
     if (isDone) {
       _lottieController.stop();
       _lottieController.value = 1;
-    } else if (isPreparing && !_lottieController.isAnimating) {
-      _lottieController.repeat(period: _lottieController.duration ?? const Duration(seconds: 1));
-    } else if (!isPreparing && !isReady) {
+    } else if (isPreparing) {
+      if (!_lottieController.isAnimating) {
+        _lottieController.repeat(period: _lottieController.duration ?? const Duration(seconds: 1));
+      }
+    } else {
       _lottieController.stop();
       _lottieController.reset();
     }
@@ -1457,13 +1472,7 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
             lottieController: _lottieController,
             onLottieLoaded: (composition) {
               _lottieController.duration = composition.duration;
-              if (isDone) {
-                _lottieController.value = 1;
-              } else if (isPreparing && !_lottieController.isAnimating) {
-                _lottieController.repeat(period: _lottieController.duration ?? composition.duration);
-              } else if (!isPreparing) {
-                _lottieController.reset();
-              }
+              _syncLottieState();
             },
             child:
                 isDone
@@ -1942,12 +1951,15 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                             /// 금액 입력란
                             Expanded(
                               child: CoconutTextField(
+                                backgroundColor: context.coconutColors.background,
                                 enabled: !_isDeleteButtonVisible,
                                 controller: widget.item.amountController,
                                 focusNode: widget.item.amountFocusNode,
                                 style: CoconutTextFieldStyle.underline,
                                 underlineSpacing: CoconutTextFieldUnderlineSpacing.compact,
                                 fontSize: 18,
+                                fontFamily: CoconutTypography.kNumberFontFamily,
+                                letterSpacing: -0.04,
                                 onChanged: (_) {},
                                 onEditingComplete: () => widget.item.amountFocusNode.unfocus(),
                                 textInputAction: TextInputAction.done,
@@ -2141,7 +2153,7 @@ class _SplitCountStepButton extends StatelessWidget {
         height: 32,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: isActive ? context.coconutColors.iconDisabled : context.coconutColors.iconDisabled),
+          border: Border.all(color: isActive ? context.coconutColors.iconPrimary : context.coconutColors.iconDisabled),
         ),
         child: Icon(icon, color: isActive ? context.coconutColors.iconPrimary : context.coconutColors.iconDisabled),
       ),

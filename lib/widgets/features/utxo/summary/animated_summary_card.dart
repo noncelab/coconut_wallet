@@ -53,7 +53,6 @@ class AnimatedSummaryCard extends StatelessWidget {
                 width: 24,
                 height: 24,
                 fit: BoxFit.contain,
-                repeat: false,
                 delegates: LottieDelegates(
                   values: [
                     ValueDelegate.colorFilter([

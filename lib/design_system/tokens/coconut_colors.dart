@@ -733,7 +733,7 @@ class CoconutColors {
       iconBackgroundSubtle: dim,
       iconPrimary: huskDeep,
       iconSecondary: husk,
-      iconDisabled: caramel,
+      iconDisabled: sand,
       iconOnDanger: ds.CoconutColors.white,
       iconButtonHighlight: dim,
       warning: kCoconutWarning,

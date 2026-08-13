@@ -1,6 +1,5 @@
 abstract final class CommonLottiePath {
   static const String fireworks = 'assets/lottie/fireworks.json';
-  static const String statusLoading = 'assets/lottie/status_loading.json';
   static const String swipeLeft = 'assets/lottie/swipe-left.json';
 }
 

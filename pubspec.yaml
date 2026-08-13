@@ -171,7 +171,6 @@ flutter:
     - assets/lottie/online-offline-switch.json
     - assets/lottie/fireworks.json
     - assets/lottie/three-stars-growing.json
-    - assets/lottie/status_loading.json
     - assets/images/x-logo.jpg
     - assets/images/discord-full-logo.png
     - assets/images/mail-icon.png

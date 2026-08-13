@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:coconut_wallet/constants/icon_path.dart';
-import 'package:coconut_wallet/constants/lottie_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -37,6 +36,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_sticky_header.dart';
@@ -49,7 +49,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
-import 'package:lottie/lottie.dart';
 
 class WalletDetailScreen extends StatefulWidget {
   final int id;
@@ -174,8 +173,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             width: 18,
             height: 18,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-            ),
           ),
+        ),
         CoconutAppBarActionButton(
           onPressed: () => _navigateToWalletInfo(context),
           icon: SvgPicture.asset(
@@ -282,14 +281,19 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: InlineLoadingIndicator(
+                            padding: EdgeInsets.zero,
+                            color: context.coconutColors.primary,
+                            radius: 8,
+                          ),
+                        ),
+                        CoconutLayout.spacing_100w,
                         Text(
                           t.status_updating,
                           style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primary),
-                        ),
-                        CoconutLayout.spacing_100w,
-                        ColorFiltered(
-                          colorFilter: ColorFilter.mode(context.coconutColors.accentForeground, BlendMode.srcATop),
-                          child: LottieBuilder.asset(CommonLottiePath.statusLoading, width: 16, height: 16),
                         ),
                       ],
                     ),
