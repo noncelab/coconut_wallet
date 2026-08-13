@@ -212,20 +212,29 @@ class _DeletableSettingsRowState extends State<DeletableSettingsRow> with Single
                 scale: _isPressed ? 0.97 : 1.0,
                 duration: const Duration(milliseconds: 100),
                 curve: Curves.easeInOut,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 100),
-                  color:
-                      _isPressed
-                          ? Color.alphaBlend(colors.primaryText.withValues(alpha: 0.12), colors.background)
-                          : colors.background,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: Sizes.size20),
-                    child: SelectableSettingsRowContent(
-                      title: widget.title,
-                      subtitle: widget.subtitle,
-                      subtitleStyle: widget.subtitleStyle,
-                      isSelected: widget.isSelected,
-                    ),
+                child: Container(
+                  color: colors.background,
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: Sizes.size20),
+                        child: SelectableSettingsRowContent(
+                          title: widget.title,
+                          subtitle: widget.subtitle,
+                          subtitleStyle: widget.subtitleStyle,
+                          isSelected: widget.isSelected,
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 100),
+                            opacity: _isPressed ? 1 : 0,
+                            child: Container(color: colors.primaryText.withValues(alpha: 0.12)),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
