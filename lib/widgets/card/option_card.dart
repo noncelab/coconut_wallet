@@ -8,6 +8,7 @@ class OptionCard extends StatelessWidget {
   final List<TextSpan> subtitle;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool showBorder;
 
   const OptionCard({
     super.key,
@@ -15,14 +16,25 @@ class OptionCard extends StatelessWidget {
     required this.subtitle,
     required this.isSelected,
     required this.onTap,
+    this.showBorder = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = isSelected ? context.coconutColors.primaryText : context.coconutColors.border;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        decoration:
+            showBorder
+                ? BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor, width: 1),
+                )
+                : null,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/widgets/card/option_card.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 
@@ -20,54 +18,16 @@ class FileListItemCard extends StatelessWidget {
     final fileName = p.basename(file.path);
     final modifiedDate = DateFormat('yy-MM-dd HH:mm').format(file.lastModifiedSync());
 
-    return GestureDetector(
+    return OptionCard(
+      title: fileName,
+      subtitle: [
+        TextSpan(text: _formatBytes(file.lengthSync())),
+        const TextSpan(text: ' • '),
+        TextSpan(text: modifiedDate),
+      ],
+      isSelected: isSelected,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? context.coconutColors.primaryText : context.coconutColors.border,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SvgPicture.asset(
-              isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
-              width: 24,
-              colorFilter: ColorFilter.mode(
-                isSelected ? context.coconutColors.iconDefault : context.coconutColors.iconSubDefault,
-                BlendMode.srcIn,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(fileName, style: CoconutTypography.body1_16, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 8),
-                  Text.rich(
-                    TextSpan(
-                      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-                      children: [
-                        TextSpan(text: _formatBytes(file.lengthSync())),
-                        const TextSpan(text: ' • '),
-                        TextSpan(text: modifiedDate),
-                      ],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      showBorder: true,
     );
   }
 }
