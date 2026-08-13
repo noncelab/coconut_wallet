@@ -669,7 +669,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
             colorIndex: colorIndex,
             iconIndex: iconIndex,
             badgeSvgAssetPath: 'assets/svg/hot-wallet-fire.svg',
-            badgeSize: 22,
+            badgeSize: 18,
           ),
           CoconutLayout.spacing_300w,
           Expanded(
