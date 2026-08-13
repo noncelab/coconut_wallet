@@ -1125,6 +1125,7 @@ label_management_screen:
     import: "BIP-329メモファイル（.jsonl）をインポートしてCoconut Walletに適用します。"
   file:
     select: "選択"
+    select_button: "選択する"
     apply: "適用"
     apply_description: "$fileName\nファイルを適用しますか？"
     delete: "ファイルを削除"
@@ -1144,6 +1145,15 @@ label_import_file_picker_screen:
     step2: "取引メモ"
     step3: "UTXOタグ"
     step4: "ロックされたUTXO"
+  option_selection:
+    description_1: "ファイルに保存されたメモをココナッツウォレットに適用します。"
+    description_2: "既存のメモはインポートしたメモに変更されます。"
+    add_memo_to_existing:
+      title: "既存のメモに追加する"
+      subtitle: "既存のメモを維持し、インポートしたメモを追加します"
+    import_memos_from_other_wallets:
+      title: "他のウォレットのメモもインポートする"
+      subtitle: "選択したウォレットに該当しないメモも一緒にインポートします"
   widget:
     count_unit(cardinal):
       zero: "個"

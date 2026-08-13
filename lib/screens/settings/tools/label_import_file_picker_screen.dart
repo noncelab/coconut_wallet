@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
+import 'package:coconut_wallet/widgets/card/option_card.dart';
 import 'package:coconut_wallet/widgets/label_import_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -15,7 +16,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
-enum LabelImportStep { fileSelection, loading, success, error, noLabelsToApply }
+enum LabelImportStep { fileSelection, optionSelection, loading, success, error, noLabelsToApply }
 
 class LabelImportFilePickerScreen extends StatefulWidget {
   const LabelImportFilePickerScreen({super.key});
@@ -33,6 +34,8 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   int _currentPage = 0;
   double _successCardHeight = 150;
   bool _deleteFileOnSuccess = true;
+  bool _addMemoToExisting = false;
+  bool _importMemosFromOtherWallets = false;
 
   @override
   void initState() {
@@ -90,9 +93,18 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           Align(
             alignment: Alignment.bottomCenter,
             child: FixedBottomButton(
-              text: t.label_management_screen.file.apply,
+              text: t.label_management_screen.file.select_button,
               isActive: _selectedItemIndex != null,
-              onButtonClicked: () => _onApplyButtonPressed(snapshot.data!),
+              onButtonClicked: () => _onSelectButtonPressed(snapshot.data!),
+            ),
+          ),
+        if (_step == LabelImportStep.optionSelection)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FixedBottomButton(
+              text: t.label_management_screen.file.apply,
+              isActive: true,
+              onButtonClicked: _onApplyButtonPressed,
             ),
           ),
         if (_step == LabelImportStep.error)
@@ -143,6 +155,8 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     switch (_step) {
       case LabelImportStep.fileSelection:
         return noFiles ? _buildNoFilesFound(context) : _buildFileListView(context, snapshot.data!);
+      case LabelImportStep.optionSelection:
+        return _buildOptionSelectionView();
       case LabelImportStep.loading:
         return Center(child: _buildLoadingCard());
       case LabelImportStep.success:
@@ -270,6 +284,56 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildOptionSelectionView() {
+    return ImportOptionCard(
+      title: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+          children: [
+            TextSpan(text: t.label_import_file_picker_screen.loading_title),
+            const TextSpan(text: '\n'),
+            TextSpan(text: _fileName, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+            const TextSpan(text: '\n'),
+            TextSpan(
+              text: t.label_import_file_picker_screen.option_selection.description_1,
+              style: CoconutTypography.body3_12,
+            ),
+            const TextSpan(text: '\n'),
+            TextSpan(
+              text: t.label_import_file_picker_screen.option_selection.description_2,
+              style: CoconutTypography.body3_12_Bold,
+            ),
+          ],
+        ),
+      ),
+      buttons: [
+        OptionCard(
+          title: t.label_import_file_picker_screen.option_selection.add_memo_to_existing.title,
+          subtitle: [TextSpan(text: t.label_import_file_picker_screen.option_selection.add_memo_to_existing.subtitle)],
+          isSelected: _addMemoToExisting,
+          onTap: () {
+            setState(() {
+              _addMemoToExisting = !_addMemoToExisting;
+            });
+          },
+        ),
+        OptionCard(
+          title: t.label_import_file_picker_screen.option_selection.import_memos_from_other_wallets.title,
+          subtitle: [
+            TextSpan(text: t.label_import_file_picker_screen.option_selection.import_memos_from_other_wallets.subtitle),
+          ],
+          isSelected: _importMemosFromOtherWallets,
+          onTap: () {
+            setState(() {
+              _importMemosFromOtherWallets = !_importMemosFromOtherWallets;
+            });
+          },
+        ),
+      ],
     );
   }
 
@@ -492,7 +556,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     );
   }
 
-  void _onApplyButtonPressed(List<File> files) async {
+  void _onSelectButtonPressed(List<File> files) async {
     if (_selectedItemIndex == null) return;
 
     final selectedFile = files[_selectedItemIndex!];
@@ -511,33 +575,40 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     );
 
     if (confirmed == true && mounted) {
-      await Future.delayed(const Duration(milliseconds: 100));
       setState(() {
-        _step = LabelImportStep.loading;
+        _step = LabelImportStep.optionSelection;
         _fileName = fileName;
       });
-      try {
-        await Future.delayed(const Duration(milliseconds: 2500));
-        final result = await LabelJsonLManager().importLabelsForAllWallets(
-          context.read<WalletProvider>(),
-          selectedFile.path,
-        );
-        if (mounted) {
-          if (result.isEmpty) {
-            setState(() => _step = LabelImportStep.noLabelsToApply);
-          } else {
-            setState(() {
-              _step = LabelImportStep.success;
-              _importResults = result;
-            });
-          }
+    }
+  }
+
+  Future<void> _onApplyButtonPressed() async {
+    if (_selectedItemIndex == null) return;
+
+    final files = await _filesFuture;
+    final selectedFile = files[_selectedItemIndex!];
+
+    await Future.delayed(const Duration(milliseconds: 100));
+    setState(() => _step = LabelImportStep.loading);
+
+    try {
+      await Future.delayed(const Duration(milliseconds: 2500));
+      final result = await LabelJsonLManager().importLabelsForAllWallets(
+        context.read<WalletProvider>(),
+        selectedFile.path,
+      );
+      if (mounted) {
+        if (result.isEmpty) {
+          setState(() => _step = LabelImportStep.noLabelsToApply);
+        } else {
+          setState(() {
+            _step = LabelImportStep.success;
+            _importResults = result;
+          });
         }
-      } catch (e) {
-        if (!mounted) return;
-        setState(() {
-          _step = LabelImportStep.error;
-        });
       }
+    } catch (e) {
+      if (mounted) setState(() => _step = LabelImportStep.error);
     }
   }
 

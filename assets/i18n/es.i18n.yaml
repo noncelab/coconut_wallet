@@ -1128,6 +1128,7 @@ label_management_screen:
     import: "Importa un archivo de notas BIP-329 (.jsonl) y lo aplica a Coconut Wallet."
   file:
     select: "Seleccionar"
+    select_button: "Seleccionar"
     apply: "Aplicar"
     apply_description: "¿Deseas aplicar el archivo\n$fileName?"
     delete: "Eliminar archivo"
@@ -1147,6 +1148,15 @@ label_import_file_picker_screen:
     step2: "Notas de transacción"
     step3: "Etiquetas UTXO"
     step4: "UTXOs bloqueados"
+  option_selection:
+    description_1: "Aplica las notas guardadas en el archivo a Coconut Wallet."
+    description_2: "Las notas existentes se reemplazarán con las notas importadas."
+    add_memo_to_existing:
+      title: "Agregar a las notas existentes"
+      subtitle: "Conserva las notas existentes y agrega las notas importadas"
+    import_memos_from_other_wallets:
+      title: "Importar también notas de otras billeteras"
+      subtitle: "Importa también las notas que no pertenecen a la billetera seleccionada"
   widget:
     count_unit(cardinal):
       zero: " unidades"

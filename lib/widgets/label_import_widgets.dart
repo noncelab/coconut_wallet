@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
@@ -63,8 +64,45 @@ class ImportLabelProgressCard extends StatelessWidget {
   final Widget title;
   final List<Object> steps;
   final bool showSkeleton;
+  final bool isProgressing;
 
-  const ImportLabelProgressCard({super.key, required this.title, required this.steps, this.showSkeleton = false});
+  const ImportLabelProgressCard({
+    super.key,
+    required this.title,
+    required this.steps,
+    this.showSkeleton = false,
+    this.isProgressing = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child:
+                isProgressing
+                    ? CircularProgressIndicator(color: context.coconutColors.loadingIndicatorColor, strokeWidth: 3)
+                    : const SizedBox.shrink(),
+          ),
+          CoconutLayout.spacing_400h,
+          title,
+          CoconutLayout.spacing_500h,
+          ImportLabelInstructionToolTip(steps: steps, showSkeleton: showSkeleton),
+        ],
+      ),
+    );
+  }
+}
+
+class ImportOptionCard extends StatelessWidget {
+  final Widget title;
+  final List<Widget> buttons;
+
+  const ImportOptionCard({super.key, required this.title, required this.buttons});
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +118,7 @@ class ImportLabelProgressCard extends StatelessWidget {
           CoconutLayout.spacing_400h,
           title,
           CoconutLayout.spacing_500h,
-          ImportLabelInstructionToolTip(steps: steps, showSkeleton: showSkeleton),
+          ButtonGroup(buttons: buttons),
         ],
       ),
     );
