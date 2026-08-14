@@ -324,10 +324,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return Container(
       key: _toolTipKey,
       width: MediaQuery.sizeOf(context).width,
-      padding: const EdgeInsets.only(top: 14, left: 12, right: 12, bottom: 2),
+      padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
       decoration: BoxDecoration(
         color: context.coconutColors.surface,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_250),
+        border: Border.all(width: 1, color: context.coconutColors.surface),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +336,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           SvgPicture.asset(
             CommonStateIconPath.circleInfo,
             width: 20,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
           Expanded(
@@ -403,6 +404,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             CommonBottomSheets.showCustomHeightBottomSheet(
                               context: context,
                               heightRatio: 0.9,
+                              enableDragToResize: false,
                               childBuilder:
                                   (scrollController) => QrWithCopyTextScreen(
                                     scrollController: scrollController,
