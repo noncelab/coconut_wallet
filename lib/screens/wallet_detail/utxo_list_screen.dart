@@ -33,7 +33,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
-import 'package:coconut_wallet/widgets/features/utxo/card/utxo_item_card.dart';
+import 'package:coconut_wallet/widgets/features/utxo/card/utxo_list_item_card.dart';
 import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_sticky_header.dart';
 import 'package:coconut_wallet/widgets/features/utxo/dropdown/utxo_filter_dropdown.dart';
@@ -873,7 +873,7 @@ class _UtxoListState extends State<UtxoList> {
       position: offsetAnimation,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: UtxoItemCard(
+        child: UtxoListItemCard(
           key: Key(utxo.utxoId),
           currentUnit: widget.currentUnit,
           utxo: utxo,
@@ -937,7 +937,7 @@ class _UtxoListState extends State<UtxoList> {
         position: AnimationUtil.buildSlideOutAnimation(animation),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: UtxoItemCard(
+          child: UtxoListItemCard(
             key: Key(utxo.utxoId),
             currentUnit: widget.currentUnit,
             utxo: utxo,

@@ -29,8 +29,7 @@ import 'package:coconut_wallet/providers/view_model/send/utxo_selection_view_mod
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/features/utxo/card/locked_utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/features/utxo/card/selectable_utxo_item_card.dart';
+import 'package:coconut_wallet/widgets/features/utxo/card/utxo_selection_card.dart';
 import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/features/utxo/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/material.dart';
@@ -437,9 +436,10 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         if (utxo.isLocked) {
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
-            child: LockedUtxoItemCard(
+            child: UtxoSelectionCard(
               key: ValueKey(utxo.utxoId),
               utxo: utxo,
+              isLocked: true,
               utxoTags: viewModel.utxoTagMap[utxo.utxoId],
               currentUnit: widget.currentUnit,
             ),
@@ -454,7 +454,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
             ignoring: isDisabledForSplit,
             child: Opacity(
               opacity: isDisabledForSplit ? 0.4 : 1.0,
-              child: SelectableUtxoItemCard(
+              child: UtxoSelectionCard(
                 key: ValueKey(utxo.utxoId),
                 currentUnit: widget.currentUnit,
                 utxo: utxo,
