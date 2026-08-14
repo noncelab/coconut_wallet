@@ -59,7 +59,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   // ──────────────────────────────
   final ScrollController _scrollController = ScrollController();
 
-  final GlobalKey _appBarKey = GlobalKey();
   final GlobalKey _headerKey = GlobalKey();
   final GlobalKey _stickyHeaderKey = GlobalKey();
   final GlobalKey _headerDropdownKey = GlobalKey();
@@ -76,7 +75,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   final ValueNotifier<bool> _dropdownVisible = ValueNotifier(false);
 
   double _topPadding = 0;
-  Size _appBarSize = Size.zero;
 
   Offset _headerDropdownPos = Offset.zero;
   Offset _stickyDropdownPos = Offset.zero;
@@ -198,7 +196,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
-      entireWidgetKey: _appBarKey,
       title: t.utxo_list,
       context: context,
       backgroundColor: context.coconutColors.background,
@@ -312,7 +309,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   key: ValueKey('sticky_$tagKey'),
                   stickyHeaderGlobalKey: _stickyHeaderKey,
                   dropdownGlobalKey: _stickyHeaderDropdownKey,
-                  height: _appBarSize.height,
+                  height: MediaQuery.paddingOf(context).top + kToolbarHeight,
                   isVisible: isVisible,
                   isLoadComplete: _firstLoaded.value,
                   enableDropdown: enableDropdown,
@@ -614,12 +611,10 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   void _calculateTopPadding() {
-    final appBarBox = _appBarKey.currentContext?.findRenderObject() as RenderBox?;
     final headerBox = _headerKey.currentContext?.findRenderObject() as RenderBox?;
     final stickyBox = _stickyHeaderKey.currentContext?.findRenderObject() as RenderBox?;
 
     setState(() {
-      _appBarSize = appBarBox?.size ?? Size.zero;
       _topPadding = (headerBox?.size.height ?? 0) - (stickyBox?.size.height ?? 0);
     });
   }

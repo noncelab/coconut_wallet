@@ -3,6 +3,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/common/buttons/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_dropdown_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -115,23 +116,12 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
     final colors = context.coconutColors;
     return Row(
       children: [
-        CupertinoButton(
-          key: orderDropdownButtonKey,
-          onPressed: onToggleOrderDropdown,
-          pressedOpacity: 0.8,
-          minSize: 0,
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(orderText, style: CoconutTypography.caption_10.setColor(colors.primaryText)),
-              const SizedBox(width: 4),
-              SvgPicture.asset(
-                CommonNavigationIconPath.arrowDown,
-                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
-              ),
-            ],
-          ),
+        UtxoListDropdownButton(
+          dropdownGlobalKey: orderDropdownButtonKey,
+          activeOption: orderText,
+          isEnabled: true,
+          onTapDropdown: onToggleOrderDropdown,
+          alignRight: false,
         ),
         Expanded(
           child: Align(

@@ -41,14 +41,13 @@ class UtxoSelectionCard extends StatelessWidget {
     const chipMinWidth = 40.0;
     const chipLabelSize = 10.0;
     final indicatorColor = isSelected ? colors.borderStrong : colors.borderStrong.withAlpha(40);
-    final borderColor = isLocked ? colors.border : indicatorColor;
     final dimmedTextColor = colors.primaryText.withValues(alpha: 0.3);
 
     return ShrinkAnimationButton(
       isActive: isSelectable && !isLocked,
       onPressed: () => onSelected?.call(utxo),
       defaultColor: colors.surface,
-      disabledColor: isLocked ? colors.background : colors.surface,
+      disabledColor: colors.surface,
       pressedOverlayColor: colors.surfacePressOverlay,
       pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
       borderRadius: 20,
@@ -56,7 +55,7 @@ class UtxoSelectionCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(width: 1, color: borderColor),
+          border: Border.all(width: 1, color: indicatorColor),
         ),
         padding: const EdgeInsets.all(20),
         child: Row(

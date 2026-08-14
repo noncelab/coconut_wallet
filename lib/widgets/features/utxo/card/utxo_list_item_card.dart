@@ -51,7 +51,9 @@ class UtxoListItemCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelectionMode ? colors.borderStrong.withValues(alpha: isSelected ? 1 : 0.2) : Colors.transparent,
+            color: isSelectionMode
+                ? (isSelected ? colors.borderStrong : colors.borderStrong.withAlpha(40))
+                : Colors.transparent,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
