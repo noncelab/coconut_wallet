@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
@@ -18,12 +19,11 @@ class TutorialLinkDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
 
     return AlertDialog(
       backgroundColor: colors.surface,
-      title: Text(title, style: typography.title.copyWith(color: colors.primaryText)),
-      content: Text(description, style: typography.body.copyWith(color: colors.secondaryText)),
+      title: Text(title, style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText)),
+      content: Text(description, style: CoconutTypography.body1_16.setColor(colors.secondaryText)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),

@@ -1,4 +1,16 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -7,12 +19,13 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/air-gapped/unsigned_transaction_qr_view_model.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/adaptive_qr_image.dart';
-import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/qr/adaptive_qr_image.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UnsignedTransactionQrScreen extends StatefulWidget {
   final String walletName;
@@ -191,7 +204,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
       backgroundColor: context.coconutColors.tooltipBackground,
       borderColor: context.coconutColors.tooltipBackground,
       icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
+        CommonStateIconPath.circleInfo,
         width: 20,
         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),

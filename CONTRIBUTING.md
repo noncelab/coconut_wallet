@@ -27,13 +27,26 @@
 
   ```bash
   #!/bin/bash
-  dart format . --set-exit-if-changed --line-length=100
+  dart format . --set-exit-if-changed --line-length=120
   if [[ $? -ne 0 ]]; then
     echo "Code formatting issues found. Please reformat and commit again."
     exit 1
   fi
   exit 0
   ```
+
+---
+
+## CCOS Contributions | CCOS 기여
+
+- If your change is a new feature or extension — not a fix or improvement to something that already exists — start with the [CCOS docs](./docs/ccos/README.md) instead of the general flow below.</br>
+  기존 기능의 수정이나 개선이 아니라 새로운 기능·확장을 제안하는 경우, 아래 일반 절차 대신 [CCOS 문서](./docs/ccos/README.md)부터 확인해 주세요.
+
+- Every CCOS proposal is classified as 🟢 Green / 🟡 Yellow / 🔴 Red before implementation. See [feature_boundary.md](./docs/ccos/getting_started/feature_boundary.md).</br>
+  모든 CCOS 제안은 구현 전에 🟢 Green / 🟡 Yellow / 🔴 Red로 분류됩니다. [feature_boundary.md](./docs/ccos/getting_started/feature_boundary.md)를 참고해 주세요.
+
+- CCOS PRs use a dedicated template: [ccos_contribution.md](./.github/PULL_REQUEST_TEMPLATE/ccos_contribution.md).</br>
+  CCOS PR은 별도 템플릿([ccos_contribution.md](./.github/PULL_REQUEST_TEMPLATE/ccos_contribution.md))을 사용합니다.
 
 ---
 
@@ -79,9 +92,12 @@ release-x.y 배포가 완료되면 GitHub TAG를 추가합니다. 예를 들어 
 
 ## Localization (i18n) | 문구 수정
 
-When modifying text strings, edit `kr.i18n.yaml` and run the following command to regenerate the localization files:</br>
-문구 변경 시 `kr.i18n.yaml` 파일을 수정한 후 아래 명령어를 실행하면 `lib/localization/`의 `strings_kr.g.dart`, `strings.g.dart` 파일이 업데이트됩니다.
+When modifying text strings, edit the base locale file `assets/i18n/ko.i18n.yaml`, and update the other locale files under `assets/i18n/` (`en`, `ja`, `es`, `de`). Then run the following command to regenerate the localization files:</br>
+문구 변경 시 기준 언어 파일인 `assets/i18n/ko.i18n.yaml`을 수정하고, `assets/i18n/` 아래의 다른 언어 파일(`en`, `ja`, `es`, `de`)도 함께 수정해 주세요. 이후 아래 명령어를 실행하면 `lib/localization/`의 `strings_ko.g.dart`, `strings.g.dart` 파일이 업데이트됩니다.
 
 ```bash
 flutter pub run slang
 ```
+You can also run this via `make slang` (defined in the `Makefile`).</br>
+`make slang`으로도 동일하게 실행할 수 있어요 (Makefile에 정의되어 있습니다).
+

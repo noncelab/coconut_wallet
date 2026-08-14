@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -203,8 +205,8 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: ShrinkAnimationButton(
-                      defaultColor: context.coconutColors.surfaceCard,
-                      pressedColor: context.coconutColors.surfacePressed,
+                      defaultColor: context.coconutColors.surface,
+                      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                       borderRadius: 12,
                       onPressed: () {
                         if (link != null) {
@@ -260,7 +262,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                       if (link != null) ...[
                                         CoconutLayout.spacing_100w,
                                         SvgPicture.asset(
-                                          'assets/svg/clip.svg',
+                                          CommonCommunicationIconPath.clip,
                                           width: 12,
                                           height: 12,
                                           colorFilter: ColorFilter.mode(
@@ -277,7 +279,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                       message,
                                       overflow: TextOverflow.ellipsis,
                                       style: CoconutTypography.body2_14
-                                          .setColor(context.coconutColors.secondaryTextStrong)
+                                          .setColor(context.coconutColors.secondaryText)
                                           .copyWith(height: 1.2),
                                       maxLines: 2,
                                     ),

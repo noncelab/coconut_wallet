@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -83,7 +84,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(color: context.coconutColors.surfaceCard, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(color: context.coconutColors.surface, borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -104,7 +105,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _isConnected ? context.coconutColors.textHighlight : context.coconutColors.surfaceDisabled,
+                    color: _isConnected ? context.coconutColors.accentForeground : context.coconutColors.surfaceDisabled,
                   ),
                 ),
                 CoconutLayout.spacing_100w,
@@ -113,7 +114,7 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                       ? t.wallet_info_screen.connected_hardware_wallet.connected
                       : t.wallet_info_screen.connected_hardware_wallet.disconnected,
                   style: CoconutTypography.body3_12_Bold.setColor(
-                    _isConnected ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
+                    _isConnected ? context.coconutColors.accentForeground : context.coconutColors.secondaryText,
                   ),
                 ),
                 if (_isConnected) ...[

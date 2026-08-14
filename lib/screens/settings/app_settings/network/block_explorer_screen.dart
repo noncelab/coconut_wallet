@@ -1,13 +1,18 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutAppBar, CoconutTextField, CoconutTextFieldStyle;
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/block_explorer_view_model.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -121,7 +126,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
             children: [
               Text(
                 t.settings_screen.block_explorer.default_explorer,
-                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryTextStrong),
+                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
               ),
               Text('Mempool.space', style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
             ],
@@ -182,22 +187,11 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
                         focusNode: _customExplorerFocusNode,
                         onChanged: (value) {},
                         placeholderText: t.settings_screen.block_explorer.custom_explorer_input_placeholder,
-                        borderColor: context.coconutColors.inputBorder,
-                        suffix:
-                            _customExplorerController.text.isNotEmpty
-                                ? IconButton(
-                                  iconSize: 14,
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () {
-                                    _customExplorerController.clear();
-                                    _viewModel.clearCustomUrl();
-                                  },
-                                  icon: SvgPicture.asset(
-                                    'assets/svg/text-field-clear.svg',
-                                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                                  ),
-                                )
-                                : null,
+                        clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                        onClear: () {
+                          _customExplorerController.clear();
+                          _viewModel.clearCustomUrl();
+                        },
                         onEditingComplete: () {
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             _clearFocus();
@@ -220,27 +214,28 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 34),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
       child: Row(
         children: [
           if (_viewModel.isConnecting)
             SizedBox(
               height: 20,
               width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(context.coconutColors.iconDefault),
+              child: InlineLoadingIndicator(
+                padding: EdgeInsets.zero,
+                color: context.coconutColors.iconPrimary,
+                radius: 10,
               ),
             )
           else if (_viewModel.isConnectionSuccessful)
             SvgPicture.asset(
-              'assets/svg/circle-check.svg',
+              CommonFormIconPath.circleCheck,
               height: 24,
               colorFilter: ColorFilter.mode(CoconutColors.colorPalette[3], BlendMode.srcIn),
             )
           else
             SvgPicture.asset(
-              CustomIcons.triangleWarning,
+              CustomWalletIcons.triangleWarning,
               height: 24,
               colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
             ),
@@ -268,12 +263,12 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SvgPicture.asset(
-            'assets/svg/circle-warning.svg',
+            CommonStateIconPath.circleWarning,
             height: 24,
             colorFilter: const ColorFilter.mode(CoconutColors.yellow, BlendMode.srcIn),
           ),

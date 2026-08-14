@@ -1,10 +1,12 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutAppBar, CoconutTextField, CoconutTextFieldStyle;
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
 
 /// 하이라이트 처리 함수
 List<TextSpan> highlightOccurrences(
@@ -217,44 +219,27 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         maxLines: 1,
         maxLength: 11,
         isLengthVisible: false,
-        padding: const EdgeInsets.only(),
-        height: Sizes.size48,
+        size: CoconutTextFieldSize.search,
         prefix: IgnorePointer(
           ignoring: true,
           child: IconButton(
             onPressed: null,
-            icon: Icon(Icons.search_rounded, color: colors.tertiaryText),
+            icon: Icon(Icons.search_rounded, color: colors.iconSecondary),
             iconSize: Sizes.size22,
           ),
         ),
-        suffix:
-            _searchController.text.isNotEmpty
-                ? IconButton(
-                  iconSize: 14,
-                  padding: EdgeInsets.zero,
-                  onPressed: () {
-                    _searchFocusNode.requestFocus();
-                    _searchController.clear();
-                  },
-                  icon: SvgPicture.asset(
-                    'assets/svg/text-field-clear.svg',
-                    colorFilter: ColorFilter.mode(colors.iconDefault, BlendMode.srcIn),
-                  ),
-                )
-                : null,
+        clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+        onClear: () {
+          _searchFocusNode.requestFocus();
+          _searchController.clear();
+        },
         placeholderText: _hintText,
-        activeColor: colors.primaryText,
-        cursorColor: colors.primaryText,
-        placeholderColor: colors.inputPlaceholder,
-        borderColor: colors.inputBorder,
-        backgroundColor: colors.inputSurface,
       ),
     );
   }
 
   Widget _resultWidget() {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
 
     return _searchController.text.isEmpty
         ? Container()
@@ -266,7 +251,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   t.bip39_list_screen.result(text: _searchController.text),
-                  style: typography.body.copyWith(color: colors.primaryText),
+                  style: CoconutTypography.body1_16.setColor(colors.primaryText),
                 ),
               ),
             ),
@@ -276,7 +261,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                   child: Center(
                     child: Text(
                       t.bip39_list_screen.no_result,
-                      style: typography.bodyBold.copyWith(color: colors.secondaryText),
+                      style: CoconutTypography.body2_14_Bold.setColor(colors.secondaryText),
                     ),
                   ),
                 )
@@ -287,7 +272,6 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
 
   Widget _buildListItem(BuildContext context, int index) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
     final data = _filteredItems[index];
     final item = data['item'] as String;
     final indexNum = data['index'] as int;
@@ -304,12 +288,12 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           title: RichText(
             text: TextSpan(
               children: highlightOccurrences(context, item, query),
-              style: typography.title.copyWith(fontWeight: FontWeight.w600, color: colors.primaryText),
+              style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText),
             ),
           ),
           trailing: RichText(
             text: TextSpan(
-              style: typography.caption.copyWith(color: colors.tertiaryText, fontSize: 16),
+              style: CoconutTypography.body1_16_Number.setColor(colors.tertiaryText),
               children: [
                 ...highlightOccurrences(
                   context,
