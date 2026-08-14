@@ -871,6 +871,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void validateAllFieldsOnFocusLost() {
+    // debugPrint('validateAllFieldsOnFocusLost called');
     if (_isMaxMode) _adjustLastReceiverAmount();
     for (int i = 0; i < _recipientList.length; ++i) {
       _updateAmountValidationState(recipientIndex: i);

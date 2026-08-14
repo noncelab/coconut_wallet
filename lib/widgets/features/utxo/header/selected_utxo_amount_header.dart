@@ -95,11 +95,13 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
                       currentUnit.isPrefixSymbol ? CrossAxisAlignment.center : CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    if (currentUnit.isPrefixSymbol)
+                    if (currentUnit.isPrefixSymbol) ...[
                       Text(unitText, style: CoconutTypography.body1_16_Number.setColor(colors.primaryText)),
+                      CoconutLayout.spacing_100w,
+                    ],
                     Text(utxoSumText, style: CoconutTypography.body1_16_NumberBold.setColor(colors.primaryText)),
                     if (!currentUnit.isPrefixSymbol) ...[
-                      CoconutLayout.spacing_50w,
+                      CoconutLayout.spacing_100w,
                       Text(unitText, style: CoconutTypography.body1_16_Number.setColor(colors.primaryText)),
                     ],
                   ],

@@ -125,6 +125,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   final List<TextEditingController> _addressControllerList = [];
   final List<FocusNode> _addressFocusNodeList = [];
   final List<VoidCallback> _addressTextListenerList = [];
+  // 주소 입력란이 focus된 시점의 텍스트 기록, focus out 시점 텍스트와 비교하기 위함
+  final List<String> _addressFocusInTextList = [];
 
   final TextEditingController _feeRateController = TextEditingController();
   final FocusNode _feeRateFocusNode = FocusNode();
@@ -331,6 +333,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _addressFocusNodeList.clear();
     _addressControllerList.clear();
     _addressTextListenerList.clear();
+    _addressFocusInTextList.clear();
 
     super.dispose();
   }
@@ -1412,14 +1415,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                             _viewModel.currentUnit.symbol,
                                             style: CoconutTypography.heading4_18_Number.setColor(amountTextColor),
                                           ),
-                                          CoconutLayout.spacing_50w,
+                                          CoconutLayout.spacing_100w,
                                         ],
                                         Text(
                                           '${amountText.isEmpty ? 0 : amountText.toBtcDisplayString()}',
                                           style: CoconutTypography.heading2_28_NumberBold.setColor(amountTextColor),
                                         ),
                                         if (!_viewModel.currentUnit.isPrefixSymbol) ...[
-                                          CoconutLayout.spacing_50w,
+                                          CoconutLayout.spacing_100w,
                                           Text(
                                             _viewModel.currentUnit.symbol,
                                             style: CoconutTypography.heading4_18_Number.setColor(amountTextColor),
@@ -1960,7 +1963,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   void _applyIncomingBitcoinUri(String scannedData, int index) {
-    if (scannedData.startsWith('bitcoin:')) {
+    if (scannedData.toLowerCase().startsWith('bitcoin:')) {
       final bip21Data = parseBip21Uri(scannedData);
       _addressControllerList[index].text = bip21Data.address;
       _viewModel.setAddressText(bip21Data.address, index);
@@ -2062,6 +2065,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     controller.addListener(addressTextListener);
     _addressTextListenerList.add(addressTextListener);
     _addressControllerList.add(controller);
+    _addressFocusInTextList.add(controller.text);
 
     final focusNode = FocusNode();
     focusNode.addListener(
@@ -2073,9 +2077,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
-          // TODO: refactoring, input에 변화가 없을 때에도 focus out만 되면 불필요하게 호출됨
-          _viewModel.validateAllFieldsOnFocusLost();
+          if (_hasAddressTextChangedSinceFocus(index, controller.text)) {
+            if (controller.text.toLowerCase().startsWith('bitcoin:')) {
+              _applyIncomingBitcoinUri(controller.text, index);
+            }
+            _viewModel.validateAllFieldsOnFocusLost();
+          }
         } else {
+          _addressFocusInTextList[index] = controller.text;
           Future.delayed(const Duration(milliseconds: 1000), () {
             if (!mounted) return;
             final context = _viewMoreButtonKey.currentContext;
@@ -2103,6 +2112,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _addressFocusNodeList.add(focusNode);
   }
 
+  bool _hasAddressTextChangedSinceFocus(int index, String currentText) {
+    return _addressFocusInTextList[index] != currentText;
+  }
+
   void _deleteAddressField(int index) {
     _addressControllerList[index].dispose();
     _addressFocusNodeList[index].dispose();
@@ -2110,6 +2123,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _addressControllerList.removeAt(index);
     _addressFocusNodeList.removeAt(index);
     _addressTextListenerList.removeAt(index);
+    _addressFocusInTextList.removeAt(index);
     _rebindAddressTextListeners(index);
   }
 
