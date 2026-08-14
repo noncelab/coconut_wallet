@@ -23,8 +23,6 @@ class ElectrumService {
 
   int get reqId => _idCounter;
 
-  bool _connectionFailed = false;
-
   ElectrumService._() : _socketManager = SocketManager();
 
   factory ElectrumService({SocketManager? socketManager}) {
@@ -36,14 +34,11 @@ class ElectrumService {
 
   /// 연결 시도 후 성공/실패를 bool로 반환
   Future<bool> connect(String host, int port, {bool ssl = true}) async {
-    _connectionFailed = false;
-
     // // 이전 타이머 정리
     // _pingTimer?.cancel();
 
     // 연결 실패/손실 콜백 설정
     _socketManager.onConnectionLost = () {
-      _connectionFailed = true;
       Logger.log('ElectrumService: $host:$port Connection lost callback triggered');
       // // 연결 손실 시 타이머 정리
       // _pingTimer?.cancel();

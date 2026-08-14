@@ -208,3 +208,4 @@ docs/ccos/*
 /META-INF
 
 .zed/*
+.local/

@@ -33,7 +33,7 @@ String getNextThirdPartyWalletName(WalletImportSource walletImportSource, List<S
   return '$baseName $nextNumber';
 }
 
-String _getThirdPartyDefaultName(WalletImportSource walletImportSource, {String? passportModel}) {
+String _getThirdPartyDefaultName(WalletImportSource walletImportSource) {
   switch (walletImportSource) {
     case WalletImportSource.keystone:
       return t.third_party.keystone;

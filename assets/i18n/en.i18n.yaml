@@ -172,7 +172,7 @@ transaction_draft:
   title: "Temporary Transaction"
   empty_message: "No temporary transaction saved"
   deleted_wallet: "Deleted Wallet"
-  save: "Temporary Save"
+  save: "Save Draft"
   update: "Save Changes"
   load: "Load Transaction"
   recipient_batch_address: "$address and $count other addresses"
@@ -508,7 +508,8 @@ wallet_add_scanner_screen:
     step2_em: "XPUB - QR Code"
     select: "Select"
   guide_passport:
-    step0: "On Passport, open the account you want to connect"
+    note: "This guide is based on Passport Prime."
+    step0: "Open the account you want to connect"
     step1: "1. "
     step1_em: "Account Details"
     step2: "2. "
@@ -527,15 +528,15 @@ wallet_add_scanner_screen:
     mainnet_wallet_error_text: "Not a mainnet wallet"
     testnet_wallet_error_text: "Not a testnet wallet"
     unsupported_wallet_error_text: "Unsupported wallet"
-    wallet_description_text: "Where can I find the wallet information?"
+    wallet_description_text: "Where to find wallet info"
     blue_wallet_texts:
       - "· BlueWallet"
-      - "· Hot Wallet - More(•••) - Show Wallet XPUB"
-      - "· Watch-only Wallet - More(•••) - Export/Backup"
+      - "  · Hot Wallet - More(•••) - Show Wallet XPUB"
+      - "  · Watch-only Wallet - More(•••) - Export/Backup"
       - "zpub6rFR7y4Q2AijBEqt..."
     nunchuck_wallet_texts:
       - "· Nunchuck"
-      - "· Keys - Select Key - Key spec info"
+      - "  · Keys - Select Key - Key spec info"
       - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
       - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
     mfp_title: "Master Fingerprint"
@@ -716,13 +717,13 @@ wallet_connect_screen:
       passphrase_where_to_enter: "Where do you want to enter your passphrase?"
       passphrase_confirm_on_device: "Please confirm the passphrase on your Trezor device."
       passphrase_enabling: "Please confirm enabling passphrase on your Trezor device."
-      suite_app_notice: "The Trezor Suite app may open automatically when connected via USB."
+      suite_app_notice: "Is the Trezor Suite App Launching Automatically?"
       suite_app_setting_guide:
-        title: "· Remove the default app setting"
+        title: "When connecting your Trezor, remove the default app setting so the Trezor Suite app doesn't open automatically."
         descriptions:
-          - "1. On your phone, go to 'Settings - Apps - Trezor Suite'"
-          - "2. Clear defaults under 'Set as default' or 'Open with default app'"
-          - "3. When reconnecting USB, select 'Cancel' in the 'Open Trezor Suite app to handle TREZOR?' dialog"
+          - "1. On your phone, go to Settings → Apps → Trezor Suite."
+          - "2. Under \"Set as default\" or \"Open by default,\" clear the current setting."
+          - "3. Unplug and reconnect the USB cable. If the \"Open Trezor Suite to handle TREZOR?\" prompt appears, select Cancel."
   common:
     ble_off: "Please turn on Bluetooth on your device."
     loading_wallet_info: "Loading wallet info"
@@ -950,6 +951,12 @@ unsigned_tx_qr_screen:
     step2_em: "PSBT"
     step3: "3. "
     step3_em: "Scan the QR code below with camera"
+  guide_passport:
+    note: "This guide is based on Passport Prime."
+    step1: "1. On the home screen, "
+    step1_em: "Scan"
+    step1_end: "select"
+    step2: "2. Scan the QR code below with camera"
   fast_scan_mode: "Fast scan mode"
   low_density_qr: "Simple QR"
   high_density_qr: "Complex QR"
@@ -1425,7 +1432,7 @@ errors:
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"
   enter_fee_directly: "Enter Manually"
-  search_mnemonic_word: "Search in English or numbers"
+  search_mnemonic_word: "English letters or numbers"
 
 tooltip:
   recommended_fee1: "Could not fetch recommended fee. Please enter fee manually."

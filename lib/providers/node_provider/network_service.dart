@@ -1,6 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
-import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -12,9 +11,8 @@ import 'package:coconut_wallet/utils/result.dart';
 /// ElectrumService의 네트워크 관련 기능을 직접 구현합니다.
 class NetworkService {
   final ElectrumService _electrumService;
-  final TransactionRepository _transactionRepository;
 
-  NetworkService(this._electrumService, this._transactionRepository);
+  NetworkService(this._electrumService);
 
   /// 네트워크 최소 수수료율을 조회합니다.
   Future<Result<int>> getNetworkMinimumFeeRate() async {

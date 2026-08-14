@@ -131,8 +131,6 @@ class ColorUtil {
         return 8;
       case CustomColor.mint:
         return 9;
-      default:
-        throw Exception('Invalid color enum: $color');
     }
   }
 

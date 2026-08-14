@@ -15,6 +15,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
@@ -298,6 +299,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         {
           if (!hasEnglishWordOrder) {
             return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.note}\n'),
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
               _em(t.wallet_add_scanner_screen.guide_passport.step1_em),
@@ -314,6 +316,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             ];
           } else {
             return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.note}\n'),
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
               TextSpan(text: t.wallet_add_scanner_screen.select),
@@ -323,7 +326,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               _em(' ${t.wallet_add_scanner_screen.guide_passport.step2_em}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
               TextSpan(text: t.wallet_add_scanner_screen.select),
-              _em(' ${t.wallet_add_scanner_screen.guide_passport.step3_em}'),
+              _em(' ${t.wallet_add_scanner_screen.guide_passport.step3_em}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step4),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(' ${t.wallet_add_scanner_screen.guide_passport.step4_em}'),
@@ -657,7 +660,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     vibrateLightDouble();
     if (mounted) {
       String errorMessage = "${t.wallet_add_scanner_screen.paste.format_error_text}\n${e.toString()}";
-      if (e.toString().contains("network type")) {
+      if (e is UnsupportedWalletTypeException) {
+        errorMessage = t.wallet_add_scanner_screen.paste.unsupported_wallet_error_text;
+      } else if (e.toString().contains("network type")) {
         errorMessage =
             NetworkType.currentNetworkType == NetworkType.mainnet
                 ? t.wallet_add_scanner_screen.paste.mainnet_wallet_error_text
@@ -677,8 +682,15 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     }
     if (mounted) {
       context.loaderOverlay.hide();
+    }
+  }
+
+  /// 에러 팝업이 아직 떠 있는 동안 카메라가 새 QR을 스캔해버리는 레이스 컨디션을 막기 위해,
+  /// 팝업이 실제로 닫힌 뒤(onTapRight)에만 카메라 재개 및 QR 핸들러 리셋 수행
+  void _resumeScanning() {
+    if (mounted) {
       controller?.start();
-      _viewModel.qrDataHandler.reset(); // TODO: 추가됨. 다른 타입 지갑 추가 시 동작 확인 필요
+      _viewModel.qrDataHandler.reset();
     }
   }
 
@@ -742,6 +754,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           rightButtonColor: context.coconutColors.primaryText,
           onTapRight: () {
             _isProcessing = false;
+            _resumeScanning();
             Navigator.pop(context);
           },
         );
