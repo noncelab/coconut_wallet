@@ -1,7 +1,8 @@
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/providers/view_model/settings/realm_debug_view_model.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
-import 'package:coconut_wallet/widgets/realm_debug/query_input_section.dart';
-import 'package:coconut_wallet/widgets/realm_debug/results_area.dart';
+import 'package:coconut_wallet/widgets/features/settings/realm_debug/query_input_section.dart';
+import 'package:coconut_wallet/widgets/features/settings/realm_debug/results_area.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -142,9 +143,10 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
     return ChangeNotifierProvider.value(
       value: _viewModel,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Realm 데이터베이스 디버거'),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        appBar: CoconutAppBar.build(
+          context: context,
+          title: 'Realm 데이터베이스 디버거',
+          isBottom: true,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),

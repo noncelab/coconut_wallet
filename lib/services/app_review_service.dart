@@ -1,9 +1,9 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
-import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -84,7 +84,7 @@ class AppReviewService {
       context: context,
       child: UserExperienceSurveyBottomSheet(isFirst: isFirst),
       enableDrag: false,
-      backgroundColor: MyColors.nero,
+      backgroundColor: context.coconutColors.background,
       isDismissible: false,
       isScrollControlled: true,
       useSafeArea: false,

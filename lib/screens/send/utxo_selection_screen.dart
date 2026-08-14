@@ -1,4 +1,20 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutPulldownMenu,
+        CoconutPulldownMenuItem,
+        CoconutPulldownMenuGroup,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
@@ -6,19 +22,20 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/utxo_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
-import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/utxo/card/locked_utxo_item_card.dart';
+import 'package:coconut_wallet/widgets/features/utxo/card/selectable_utxo_item_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
+import 'package:coconut_wallet/widgets/features/utxo/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:coconut_wallet/widgets/header/selected_utxo_amount_header.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/selected_utxo_amount_header.dart';
 
 class UtxoSelectionScreen extends StatefulWidget {
   final List<UtxoState> selectedUtxoList;
@@ -93,7 +110,8 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       backgroundColor: resolvedBackgroundColor,
                       customTitle: Text(
                         titleText,
-                        style: widget.isSplitMode ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14,
+                        style: (widget.isSplitMode ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14)
+                            .setColor(context.coconutColors.primaryText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
@@ -188,6 +206,26 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                         ? Stack(
                                           children: [
                                             Container(color: resolvedBackgroundColor, child: _buildUtxoList(viewModel)),
+                                            Positioned(
+                                              top: 0,
+                                              left: 0,
+                                              right: 0,
+                                              child: IgnorePointer(
+                                                child: Container(
+                                                  height: 16,
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      begin: Alignment.topCenter,
+                                                      end: Alignment.bottomCenter,
+                                                      colors: [
+                                                        resolvedBackgroundColor,
+                                                        resolvedBackgroundColor.withValues(alpha: 0),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
                                             FixedBottomButton(
                                               onButtonClicked: () {
                                                 vibrateLight();
@@ -197,11 +235,11 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                               isActive: _viewModel.hasSelectionChanged,
                                               showSurroundings: true,
                                               horizontalPadding: 16,
-                                              surroundingsColor: context.coconutColors.surfaceBottomSheet,
+                                              surroundingsColor: context.coconutColors.bottomActionBarBackground,
                                             ),
                                           ],
                                         )
-                                        : const Center(child: CircularProgressIndicator()),
+                                        : const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero)),
                               ),
                             ],
                           ),
@@ -390,7 +428,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     return ListView.separated(
       key: ValueKey(viewModel.selectedUtxoTagName),
       controller: _scrollController,
-      padding: const EdgeInsets.only(top: 0, bottom: 100, left: 16, right: 16),
+      padding: const EdgeInsets.only(top: 10, bottom: 100, left: 16, right: 16),
       itemCount: filteredUtxoList.length,
       separatorBuilder: (context, index) => const SizedBox(height: 0),
       itemBuilder: (context, index) {

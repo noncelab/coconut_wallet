@@ -1,8 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -132,15 +133,14 @@ class WalletAddDialog extends StatelessWidget {
                 height: 40,
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
-                  // TODO: light 모드에서 iconHighlight가 회색임....
-                  highlightColor: context.coconutColors.iconHighlight,
+                  highlightColor: context.coconutColors.iconPrimary,
                   splashRadius: 20,
                   padding: EdgeInsets.zero,
                   icon: SvgPicture.asset(
-                    'assets/svg/close-bold.svg',
+                    CommonActionIconPath.closeBold,
                     width: 14,
                     height: 14,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                   ),
                 ),
               ),
@@ -227,7 +227,6 @@ class _WalletImportSourceButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShrinkAnimationButton(
       defaultColor: context.coconutColors.homeBackground,
-      pressedColor: context.coconutColors.homeSurfaceCardPressed,
       onPressed: onPressed,
       child:
           walletImportSource == WalletImportSource.extendedPublicKey
@@ -291,7 +290,7 @@ class _WalletImportSourceButton extends StatelessWidget {
       walletImportSource.externalWalletIconPath,
       width: 24,
       height: 24,
-      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
     );
   }
 }

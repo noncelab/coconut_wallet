@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
@@ -37,7 +38,6 @@ class _CoconutAnimatedDialogState extends State<CoconutAnimatedDialog> with Sing
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
 
     return Center(
       child: SlideTransition(
@@ -50,13 +50,24 @@ class _CoconutAnimatedDialogState extends State<CoconutAnimatedDialog> with Sing
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Lottie.asset(widget.lottieAddress, width: 120, height: 120, fit: BoxFit.fill, repeat: false),
+              Lottie.asset(
+                widget.lottieAddress,
+                width: 120,
+                height: 120,
+                fit: BoxFit.fill,
+                repeat: false,
+                delegates: LottieDelegates(
+                  values: [
+                    ValueDelegate.colorFilter(['**'], value: ColorFilter.mode(colors.primaryText, BlendMode.srcATop)),
+                  ],
+                ),
+              ),
               if (widget.body.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
                   child: Text(
                     widget.body,
-                    style: typography.bodyBold.copyWith(color: colors.primaryText),
+                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
                     textAlign: TextAlign.center,
                   ),
                 ),

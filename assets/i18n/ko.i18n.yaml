@@ -44,6 +44,7 @@ general: "일반"
 theme: "테마"
 theme_dark: "어두운 테마"
 theme_light: "밝은 테마"
+theme_coconut_pulp: "코코넛 과육 테마"
 unit: "단위"
 utxo: "UTXO"
 tag: "태그"
@@ -415,7 +416,7 @@ wallet_home_screen:
       analysis: "분석"
     alert: 
       empty_fake_balance: "가짜 잔액 입력"
-      empty_fake_balance_description: "금액이 설정되지 않았어요.\n다시 입력하시거나 0 BTC로 설정할까요?"
+      empty_fake_balance_description: "금액이 설정되지 않았어요.\n금액을 다시 입력하거나,\n 0 BTC로 설정할 수 있어요."
       set_to_0: "0 BTC로 설정"
       enter_again: "다시 입력"
   last_24_hours_transactions: "지난 24시간 거래"
@@ -626,8 +627,8 @@ wallet_connect_screen:
     keep_connection_description: "트레저 연결을 유지하시겠어요?"
     error:
       title: "연결 실패"
-      ble_description: "Trezor Safe 7을 찾을 수 없어요. 블루투스를 켜고 기기를 가까이 가져다 주세요."
-      usb_description: "Trezor을 찾을 수 없어요. 기기를 다시 연결한 후 시도해 주세요."
+      ble_description: "Trezor Safe 7을 찾을 수 없어요.\n블루투스를 켜고 기기를 가까이 가져다 주세요."
+      usb_description: "Trezor을 찾을 수 없어요.\n기기를 다시 연결한 후 시도해 주세요."
     ios_peer_removed_pairing:
       title: "기존 블루투스 페어링 정보 삭제됨"
       description: "Trezor에서 이전 블루투스 페어링 정보가 삭제되었어요."
@@ -1010,7 +1011,8 @@ settings_screen:
     japanese: "日本語"
     spanish: "Español"
     german: "Deutsch"
-  electrum_server: 
+  electrum_server:
+    title: "일렉트럼 서버 설정"
     server_address: "서버 주소"
     port: "포트"
     use_ssl: "SSL 사용"
@@ -1093,7 +1095,8 @@ utxo_list_screen:
   total_balance: "총 잔액"
   tag_apply: "태그 적용"
   utxo_select_required: "UTXO를 먼저 선택해 주세요."
-  utxo_tag_updated: "UTXO 태그가 성공적으로 업데이트되었습니다."
+  utxo_tag_updated: "UTXO 태그가 업데이트되었어요."
+  utxo_tag_no_changes: "변경된 태그가 없어요."
   send_locked_utxo: "사용 잠금된 UTXO는 보낼 수 없어요."
   utxo_locked_button: "사용 잠금"
   utxo_unlocked_button: "잠금 해제"
@@ -1378,6 +1381,8 @@ user_experience_survey_bottom_sheet:
   text2: "코코넛 월렛이 도움이 되었나요?"
   text3: "네, 좋아요!"
   text4: "그냥 그래요"
+theme_bottom_sheet:
+  title: "테마 설정"
 unit_bottom_sheet:
   title: "단위 설정"
   header_text: "1 BTC = 100,000,000 sats"
@@ -1613,7 +1618,7 @@ taproot:
     signer: "서명자"
     co_signer: "공동 서명자"
     heir: "상속자"
-    single_parent_description: "나는 이 지갑의 서명자예요.\n평소에 이 지갑을 사용할 수 있어요."
+    single_parent_description: "나는 이 지갑의 서명자예요.\n평소에도 이 지갑을 사용할 수 있어요."
     multi_parent_description: "나는 이 지갑의 공동 서명자예요.\n다른 공동 서명자와 함께 서명해야 자산을 사용할 수 있어요."
     child_description: "나는 이 지갑의 상속자예요.\n정해진 시점이 지나면 자산을 사용할 수 있어요."
   participant_card:
@@ -1630,3 +1635,107 @@ passphrase_input_text_field:
   passphrase_visible: "패스프레이즈 보기"
   passphrase_hidden: "패스프레이즈 숨기기"
   placeholder: "패스프레이즈 입력"
+
+ccos:
+  menu_item_title: "오픈 스토어"
+  intro_card:
+    title: "코코넛 오픈 스토어 소개"
+    headline: "누구나 코코넛의 다음 기능을 만들 수 있습니다."
+    description: "여러분의 PoW가 새로운 기능이 되어 코코넛에 더해지고, 더 나은 사용 경험으로 이어집니다. 좋은 기능은 더 많은 사람들을 만나며 함께 성장하고, 그 과정은 비트코인 스탠다드를 한 걸음 앞당깁니다."
+    cta_label: "오픈 스토어 알아보기"
+    dismissed_toast: "오픈 스토어는 홈 화면 우측 상단 메뉴 또는 테마 설정에서 다시 볼 수 있어요"
+  intro_screen:
+    theme_activated: "코코넛 과육 테마가 추가되었어요. 테마 설정 화면에서 설정하고 사용해 보세요."
+    delete_popup_title: "코코넛 과육 테마를 삭제할까요?"
+    delete_popup_description: "현재 코코넛 과육 테마를 사용하고 있어요. 삭제하면 기본 테마가 적용돼요."
+    theme_removed: "코코넛 과육 테마가 삭제되었어요. 언제든 다시 추가하여 사용할 수 있어요."
+    loading_title: "Coconut\nOpen Store"
+    watermark_banner: "Coconut Open Store "
+    scenes:
+      idea:
+        label: "IDEA"
+        overview_title: "좋은 아이디어가\n더 큰 파급으로 이어지도록"
+        overview_highlight: "좋은"
+      build:
+        label: "BUILD"
+        overview_title: "나의 아이디어가\n모두의 기능이 되는 공간"
+        overview_highlight: "기능"
+      first_pow:
+        label: "FIRST PoW"
+        overview_title: "첫 PoW\n코코넛 과육 테마 by 코코넛 팀"
+        overview_highlight: "첫 PoW"
+      discover:
+        label: "DISCOVER"
+        overview_title: "모든 비트코인 빌더가\n코코넛 안에서 빛날 수 있도록"
+        overview_highlight: "모든"
+      contribute:
+        label: "CONTRIBUTE"
+        overview_title: "다음 PoW를\n기다립니다"
+        overview_highlight: "다음 PoW"
+  idea_scene:
+    line1: "각자의 실험이 흩어지기보다"
+    line2: "함께 연결되어\n더 큰 네트워크 효과를\n만든다면,"
+    line3: "작은 아이디어 하나도"
+    line4: "비트코인 스탠다드를\n조금씩 앞당길 수 있지 않을까?"
+    highlight_network_effect: "네트워크 효과"
+    highlight_bitcoin_standard: "비트코인 스탠다드"
+  build_scene:
+    line1: "누구나 비트코인\n빌더가 되는 세상"
+    line2: "여러분의 PoW가\n코코넛의 새로운 기능이 되어\n비트코이너의 일상이 됩니다"
+    highlight_bitcoin_builder: "비트코인\n빌더"
+    highlight_pow: "여러분의 PoW"
+    orbit:
+      widget: "Widget"
+      theme: "Theme"
+      analysis: "Analysis"
+      tool: "Tool"
+      layer2: "Layer2"
+      backup: "Backup"
+  first_pow_scene:
+    intro_line1: "코코넛 과육 테마는\n오픈 스토어의 첫 번째 PoW입니다"
+    intro_line2: "앞으로 새로운 기능이\n코코넛에 더해질 모습을\n가장 먼저 테마에 담아봤어요"
+    intro_highlight_theme: "코코넛 과육 테마"
+    intro_highlight_first_pow: "첫 번째 PoW"
+    status_applied: "적용됨"
+    status_added: "추가됨"
+    add_button: "테마 화면에 추가하기"
+    remove_button: "제거하기"
+    feature_detail:
+      panel_label: "FEATURE"
+      tag_free: "무료"
+      description: "코코넛과 해변의 따뜻한 색감을 담은\n코코넛 월렛의 새로운 밝은 테마입니다"
+    creator_detail:
+      panel_label: "CREATOR"
+      story_label: "Creator Story"
+      feedback_quote: "\"코코넛은 밝고 따뜻한 과일인데,\n지갑은 어두운 느낌이라 조금 아쉬워요.\""
+      feedback_attribution: "- 빗짱님 피드백"
+      story_paragraph1: "두 앱이 하나처럼 동작하는 코코넛 월렛과 볼트를\n구분하기 위해 의도적으로 코코넛 월렛은\n어두운 테마만 제공해 왔어요."
+      story_paragraph2: "하지만 오픈 스토어를 구상하며\n첫 사례는 '누구나 새로운 기능을 제안하고\n함께 만들어가는 경험'을 가장 잘 보여줄 수 있는\n기능이어야 한다고 생각했습니다."
+      story_paragraph3: "그래서 코코넛 과육 테마는\n단순히 새로운 색상을 추가한 것이 아니라,\n앞으로 오픈 스토어에서 다양한 아이디어가 어떻게 소개되고 사용자에게 전달될 수 있는지를 보여주는 첫 번째 예시가 되었습니다."
+      belief_statement: "새로운 기능은 코드만이 아니라, 그것을 만든 사람의 생각과 이유도 함께 전달되어야 한다고 믿습니다"
+    delivery_detail:
+      panel_label: "DELIVERY"
+      propose_title: "제안"
+      propose_body: "누구나 제작 의도를 담아 기능을 제안할 수 있어요\n무료로 나눌 수도, 지속한 가능한 방식으로 전달할 수도 있어요\n전달 방식은 제작자가 결정해요"
+      review_title: "검토"
+      review_body: "코코넛 팀과 정책과 품질을 함께 논의해요\n피드백을 주고 받으며 안전한 경계 안에서 기존 UI/UX와 어울어져 개발자의 PoW가 실현되어가요"
+      intro_title: "소개"
+      intro_body: "최종 승인된 PoW가 앱에 포함되어\n사용자와 만나요"
+  discover_scene:
+    line1: "사용자는\n새로운 기능을 발견하고"
+    line2: "사용하는 순간에도\n만든 사람을 다시 만나요"
+    line3: "모든 비트코인 빌더가\n코코넛 안에서 빛날 수 있도록\n세심히 준비하고 있어요"
+    highlight_new_feature: "새로운 기능"
+    highlight_bitcoin_builder: "비트코인 빌더"
+    highlight_can_shine: "빛날 수 있도록"
+  contribute_scene:
+    line1: "다음 PoW는\n여러분의 차례입니다"
+    line2: "작은 아이디어도 괜찮습니다"
+    line3: "여러분의 PoW는\n새로운 기능이 되어\n더 많은 사람들의 경험으로 이어지고,"
+    line4: "그 과정이 비트코인 스탠다드를\n조금씩 앞당깁니다"
+    highlight_new_feature: "새로운 기능"
+    highlight_bitcoin_standard: "비트코인 스탠다드"
+    cta_start_first_pr: "첫 PR 시작하기"
+  feature_status:
+    activated: "활성화됨"
+    purchased: "구매 완료"

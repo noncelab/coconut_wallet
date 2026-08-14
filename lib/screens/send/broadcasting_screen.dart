@@ -1,6 +1,16 @@
 import 'dart:async';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -20,17 +30,18 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
-import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
-import 'package:coconut_wallet/widgets/dialog.dart';
-import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
-import 'package:coconut_wallet/widgets/send_amount_header.dart';
-import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_tween_button.dart';
+import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
+import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
+import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
-import 'package:loader_overlay/loader_overlay.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class BroadcastingScreen extends StatefulWidget {
   final int? signedTransactionDraftId;
@@ -66,6 +77,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
   bool _isPreparingBroadcast = false;
   bool _showBroadcastLottie = false;
   bool _isBroadcastCompletionPhase = false;
+  bool _isOverlayLoading = false;
 
   int? get _displayAmount => _viewModel.amount ?? widget.initialAmount;
 
@@ -79,15 +91,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
   String get unitText => _currentUnit.symbol;
 
   void _setOverlayLoading(bool value) {
-    if (value) {
-      context.loaderOverlay.show();
-    } else {
-      context.loaderOverlay.hide();
-    }
+    if (!mounted || _isOverlayLoading == value) return;
+    setState(() => _isOverlayLoading = value);
   }
 
   Future<void> broadcast() async {
-    if (_isBroadcasting || _isPreparingBroadcast || context.loaderOverlay.visible) {
+    if (_isBroadcasting || _isPreparingBroadcast || _isOverlayLoading) {
       return;
     }
     _isPreparingBroadcast = true;
@@ -253,148 +262,155 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
         child: Consumer<BroadcastingViewModel>(
           builder: (context, viewModel, child) {
             final appBar = CoconutAppBar.build(title: t.broadcasting_screen.title, context: context);
-            return Scaffold(
-              floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-              backgroundColor: context.coconutColors.background,
-              appBar: PreferredSize(
-                preferredSize: appBar.preferredSize,
-                child: AnimatedOpacity(
-                  opacity: _showEntryChrome && !_isBroadcasting ? 1 : 0,
-                  duration: const Duration(milliseconds: 280),
-                  child: IgnorePointer(ignoring: !_showEntryChrome || _isBroadcasting, child: appBar),
-                ),
-              ),
-              body: SafeArea(
-                child: Stack(
-                  children: [
-                    _buildNormalBroadcastInfo(
-                      viewModel,
-                      viewModel.amount,
-                      viewModel.fee,
-                      viewModel.totalAmount,
-                      viewModel.sendingAmountWhenAddressIsMyChange,
-                      viewModel.isSendingToMyAddress,
-                      viewModel.recipientAddresses,
-                      viewModel.isNetworkOn,
+            return Stack(
+              children: [
+                Scaffold(
+                  floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+                  backgroundColor: context.coconutColors.background,
+                  appBar: PreferredSize(
+                    preferredSize: appBar.preferredSize,
+                    child: AnimatedOpacity(
+                      opacity: _showEntryChrome && !_isBroadcasting ? 1 : 0,
+                      duration: const Duration(milliseconds: 280),
+                      child: IgnorePointer(ignoring: !_showEntryChrome || _isBroadcasting, child: appBar),
                     ),
-                    if (_isBroadcasting)
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 320),
-                        curve: Curves.easeInOutCubic,
-                        top:
-                            _isBroadcastCompletionPhase
-                                ? MediaQuery.sizeOf(context).height * 0.3 - appBar.preferredSize.height
-                                : (MediaQuery.sizeOf(context).height -
-                                        MediaQuery.paddingOf(context).vertical -
-                                        appBar.preferredSize.height -
-                                        118) /
-                                    2,
-                        left: 0,
-                        right: 0,
-                        child: AnimatedOpacity(
-                          opacity: _showBroadcastLottie ? 1 : 0,
-                          duration: const Duration(milliseconds: 220),
-                          child: Column(
-                            children: [
-                              Lottie.asset(
-                                'assets/lottie/spinning-check.json',
-                                controller: _broadcastLottieController,
-                                width: 70,
-                                height: 70,
-                                repeat: false,
-                                onLoaded: (composition) {
-                                  _broadcastLottieController.duration = composition.duration;
-                                  if (!_broadcastLottieLoaded.isCompleted) {
-                                    _broadcastLottieLoaded.complete();
-                                  }
-                                },
-                              ),
-                              CoconutLayout.spacing_400h,
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 280),
-                                layoutBuilder:
-                                    (currentChild, previousChildren) => Stack(
-                                      alignment: Alignment.center,
-                                      children: [...previousChildren, if (currentChild != null) currentChild],
-                                    ),
-                                transitionBuilder: (child, animation) {
-                                  final isIncoming = child.key == ValueKey(_isBroadcastCompletionPhase);
-                                  final curvedAnimation = CurvedAnimation(
-                                    parent: animation,
-                                    curve: Curves.easeOutCubic,
-                                    reverseCurve: Curves.easeInCubic,
-                                  );
-                                  final slideAnimation = Tween<Offset>(
-                                    begin: isIncoming ? const Offset(0, 0.3) : const Offset(0, -0.4),
-                                    end: Offset.zero,
-                                  ).animate(curvedAnimation);
+                  ),
+                  body: SafeArea(
+                    child: Stack(
+                      children: [
+                        _buildNormalBroadcastInfo(
+                          viewModel,
+                          viewModel.amount,
+                          viewModel.fee,
+                          viewModel.totalAmount,
+                          viewModel.sendingAmountWhenAddressIsMyChange,
+                          viewModel.isSendingToMyAddress,
+                          viewModel.recipientAddresses,
+                          viewModel.isNetworkOn,
+                        ),
+                        if (_isBroadcasting)
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 320),
+                            curve: Curves.easeInOutCubic,
+                            top:
+                                _isBroadcastCompletionPhase
+                                    ? MediaQuery.sizeOf(context).height * 0.3 - appBar.preferredSize.height
+                                    : (MediaQuery.sizeOf(context).height -
+                                            MediaQuery.paddingOf(context).vertical -
+                                            appBar.preferredSize.height -
+                                            118) /
+                                        2,
+                            left: 0,
+                            right: 0,
+                            child: AnimatedOpacity(
+                              opacity: _showBroadcastLottie ? 1 : 0,
+                              duration: const Duration(milliseconds: 220),
+                              child: Column(
+                                children: [
+                                  Lottie.asset(
+                                    'assets/lottie/spinning-check.json',
+                                    controller: _broadcastLottieController,
+                                    width: 70,
+                                    height: 70,
+                                    repeat: false,
+                                    onLoaded: (composition) {
+                                      _broadcastLottieController.duration = composition.duration;
+                                      if (!_broadcastLottieLoaded.isCompleted) {
+                                        _broadcastLottieLoaded.complete();
+                                      }
+                                    },
+                                  ),
+                                  CoconutLayout.spacing_400h,
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 280),
+                                    layoutBuilder:
+                                        (currentChild, previousChildren) => Stack(
+                                          alignment: Alignment.center,
+                                          children: [...previousChildren, if (currentChild != null) currentChild],
+                                        ),
+                                    transitionBuilder: (child, animation) {
+                                      final isIncoming = child.key == ValueKey(_isBroadcastCompletionPhase);
+                                      final curvedAnimation = CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                        reverseCurve: Curves.easeInCubic,
+                                      );
+                                      final slideAnimation = Tween<Offset>(
+                                        begin: isIncoming ? const Offset(0, 0.3) : const Offset(0, -0.4),
+                                        end: Offset.zero,
+                                      ).animate(curvedAnimation);
 
-                                  return FadeTransition(
-                                    opacity: curvedAnimation,
-                                    child: SlideTransition(position: slideAnimation, child: child),
-                                  );
-                                },
-                                child: Text(
-                                  _isBroadcastCompletionPhase
-                                      ? t.broadcasting_complete_screen.complete
-                                      : t.broadcasting_screen.requesting,
-                                  key: ValueKey(_isBroadcastCompletionPhase),
-                                  style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-                                ),
+                                      return FadeTransition(
+                                        opacity: curvedAnimation,
+                                        child: SlideTransition(position: slideAnimation, child: child),
+                                      );
+                                    },
+                                    child: Text(
+                                      _isBroadcastCompletionPhase
+                                          ? t.broadcasting_complete_screen.complete
+                                          : t.broadcasting_screen.requesting,
+                                      key: ValueKey(_isBroadcastCompletionPhase),
+                                      style: CoconutTypography.heading4_18_Bold.setColor(
+                                        context.coconutColors.primaryText,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                    if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
-                      _BroadcastEntryTransition(
-                        visible: _showBottomButton,
-                        child: FixedBottomTweenButton(
-                          leftButtonRatio: 0.35,
-                          leftButtonClicked: () async {
-                            if (viewModel.isAlreadySaved) {
-                              CoconutToast.showToast(
-                                context: context,
-                                text: t.broadcasting_screen.toast.already_saved_draft,
-                                isVisibleIcon: true,
-                              );
-                              return;
-                            }
-                            try {
-                              final result = await viewModel.saveTransactionDraft();
-                              if (result.isSuccess) {
-                                _showTransactionDraftSavedDialog();
-                              } else {
-                                _showTransactionDraftSaveFailedDialog(result.error.message);
-                              }
-                            } catch (e) {
-                              _showTransactionDraftSaveFailedDialog(e.toString());
-                            }
-                          },
-                          rightButtonClicked: () async {
-                            _onBroadcastButtonClicked(viewModel);
-                          },
-                          leftText: t.transaction_draft.save,
-                          rightText: t.broadcasting_screen.btn_submit,
-                          rightButtonBackgroundColor: context.coconutColors.primary,
-                        ),
-                      ),
-                    } else ...{
-                      _BroadcastEntryTransition(
-                        visible: _showBottomButton,
-                        child: FixedBottomButton(
-                          isActive: viewModel.isNetworkOn && viewModel.isInitDone,
-                          onButtonClicked: () async {
-                            _onBroadcastButtonClicked(viewModel);
-                          },
-                          text: t.broadcasting_screen.btn_submit,
-                          backgroundColor: context.coconutColors.primary,
-                        ),
-                      ),
-                    },
-                  ],
+                        if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
+                          _BroadcastEntryTransition(
+                            visible: _showBottomButton,
+                            child: FixedBottomTweenButton(
+                              leftButtonRatio: 0.35,
+                              leftButtonClicked: () async {
+                                if (viewModel.isAlreadySaved) {
+                                  CoconutToast.showToast(
+                                    context: context,
+                                    text: t.broadcasting_screen.toast.already_saved_draft,
+                                    isVisibleIcon: true,
+                                  );
+                                  return;
+                                }
+                                try {
+                                  final result = await viewModel.saveTransactionDraft();
+                                  if (result.isSuccess) {
+                                    _showTransactionDraftSavedDialog();
+                                  } else {
+                                    _showTransactionDraftSaveFailedDialog(result.error.message);
+                                  }
+                                } catch (e) {
+                                  _showTransactionDraftSaveFailedDialog(e.toString());
+                                }
+                              },
+                              rightButtonClicked: () async {
+                                _onBroadcastButtonClicked(viewModel);
+                              },
+                              leftText: t.transaction_draft.save,
+                              rightText: t.broadcasting_screen.btn_submit,
+                              rightButtonBackgroundColor: context.coconutColors.primary,
+                            ),
+                          ),
+                        } else ...{
+                          _BroadcastEntryTransition(
+                            visible: _showBottomButton,
+                            child: FixedBottomButton(
+                              isActive: viewModel.isNetworkOn && viewModel.isInitDone,
+                              onButtonClicked: () async {
+                                _onBroadcastButtonClicked(viewModel);
+                              },
+                              text: t.broadcasting_screen.btn_submit,
+                              backgroundColor: context.coconutColors.primary,
+                            ),
+                          ),
+                        },
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                if (_isOverlayLoading) const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true)),
+              ],
             );
           },
         ),
@@ -451,7 +467,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: ErrorCodes.networkError.message,
         level: CoconutToastLevel.warning,
       );

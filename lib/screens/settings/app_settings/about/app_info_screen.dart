@@ -1,17 +1,19 @@
 import 'dart:io';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/settings/app_info_license_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/button/button_group.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -180,7 +182,9 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault));
+          return Center(
+            child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.iconPrimary),
+          );
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {
@@ -202,10 +206,12 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.rectangle,
                   borderRadius: BorderRadius.circular(20),
-                  color: CoconutColors.black, // fixed color
+                  color: colors.surfaceMuted,
                 ),
-                child: Image.asset(
-                  'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
+                // TODO: mainnet인 경우 gradient 적용 필요
+                child: SvgPicture.asset(
+                  AppIconPath.coconut,
+                  colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                 ),
               ),
               const SizedBox(width: 30),
@@ -236,8 +242,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: ShrinkAnimationButton(
-        defaultColor: context.coconutColors.surfaceCard,
-        pressedColor: context.coconutColors.surfacePressed,
+        defaultColor: context.coconutColors.surface,
+        pressedOverlayColor: context.coconutColors.surfacePressOverlay,
         onPressed: () {
           Navigator.pushNamed(context, '/coconut-crew');
         },
@@ -327,11 +333,11 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
 
   Widget githubWidget() {
     Widget githubLogo = SvgPicture.asset(
-      'assets/svg/github-logo-white.svg',
+      CommonCommunicationIconPath.githubLogoWhite,
       width: 24,
       height: 24,
       fit: BoxFit.cover,
-      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
     );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -442,7 +448,9 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault));
+          return Center(
+            child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.iconPrimary),
+          );
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {
@@ -476,6 +484,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     COPYRIGHT_TEXT,
                     style: CoconutTypography.body2_14.merge(
                       TextStyle(
+                        color: colors.primaryText,
                         decoration: TextDecoration.underline,
                         decorationColor: colors.primaryText.withValues(alpha: 0.3),
                       ),

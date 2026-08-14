@@ -1,14 +1,17 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class TagSelectResult {
   final String? selectedTagName;
@@ -44,10 +47,17 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
     super.initState();
     final utxoTagProvider = context.read<UtxoTagProvider>();
     final utxoRepository = context.read<UtxoRepository>();
-    _currentUtxoIds = utxoRepository.getUtxoStateList(widget.walletId).map((utxo) => utxo.utxoId).toSet();
+    _currentUtxoIds =
+        utxoRepository
+            .getUtxoStateList(widget.walletId)
+            .map((utxo) => utxo.utxoId)
+            .toSet();
 
     _utxoTags =
-        utxoTagProvider.getUtxoTagList(widget.walletId).where((tag) => _selectedTagUtxoCount(tag) >= 2).toList();
+        utxoTagProvider
+            .getUtxoTagList(widget.walletId)
+            .where((tag) => _selectedTagUtxoCount(tag) >= 2)
+            .toList();
     _selectedTagName = widget.initialSelectedTagName;
   }
 
@@ -97,7 +107,10 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
         ),
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding + 3),
+            padding: const EdgeInsets.only(
+              bottom:
+                  FixedBottomButton.fixedBottomButtonDefaultBottomPadding + 3,
+            ),
             child: SizedBox(width: double.infinity, child: _buildContent()),
           ),
         ),
@@ -120,7 +133,8 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
                   isSelected: _selectedTagName == tag.name,
                   onTap: () {
                     setState(() {
-                      _selectedTagName = _selectedTagName == tag.name ? null : tag.name;
+                      _selectedTagName =
+                          _selectedTagName == tag.name ? null : tag.name;
                     });
                   },
                 );
@@ -148,7 +162,8 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
                       isSelected: _selectedTagName == tag.name,
                       onTap: () {
                         setState(() {
-                          _selectedTagName = _selectedTagName == tag.name ? null : tag.name;
+                          _selectedTagName =
+                              _selectedTagName == tag.name ? null : tag.name;
                         });
                       },
                     );
@@ -167,7 +182,9 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
                     ? null
                     : Text(
                       '${t.merge_utxos_screen.count(n: _selectedTagUtxoCountValue!, count: _selectedTagUtxoCountValue!)} ➔ ${t.merge_utxos_screen.count(n: 1, count: 1)}',
-                      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                      style: CoconutTypography.body3_12.setColor(
+                        context.coconutColors.secondaryText,
+                      ),
                     ),
             onButtonClicked: _confirm,
           ),
@@ -182,7 +199,11 @@ class _SelectableTagChip extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _SelectableTagChip({required this.tag, required this.isSelected, required this.onTap});
+  const _SelectableTagChip({
+    required this.tag,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +220,10 @@ class _SelectableTagChip extends StatelessWidget {
       ),
       child: AnimatedDefaultTextStyle(
         duration: const Duration(milliseconds: 200),
-        style: CoconutTypography.body3_12.copyWith(color: style.textColor, fontWeight: style.fontWeight),
+        style: CoconutTypography.body3_12.copyWith(
+          color: style.textColor,
+          fontWeight: style.fontWeight,
+        ),
         child: Text('#${tag.name}'),
       ),
     );
@@ -209,7 +233,10 @@ class _SelectableTagChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: chipForeground,
       ),
     );
@@ -222,7 +249,7 @@ class _SelectableTagChip extends StatelessWidget {
         textColor: foregroundColor,
         fontWeight: FontWeight.w700,
         icon: SvgPicture.asset(
-          'assets/svg/circle-check.svg',
+          CommonFormIconPath.circleCheck,
           key: const ValueKey('selected'),
           width: 16,
           height: 16,
@@ -236,7 +263,7 @@ class _SelectableTagChip extends StatelessWidget {
       borderColor: inactiveColor,
       textColor: inactiveColor,
       icon: SvgPicture.asset(
-        'assets/svg/circle.svg',
+        CommonFormIconPath.circle,
         key: const ValueKey('unselected'),
         width: 16,
         height: 16,

@@ -1,6 +1,17 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
@@ -16,19 +27,20 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
-import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
-import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
-import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
+import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
+import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_input_output_card.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/underline_button_item_card.dart';
+import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
+import 'package:coconut_wallet/widgets/common/info/highlighted_info_area.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
+import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -177,7 +189,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                 children: [
                   _buildSuspiciousDustUtxoWarning(isSuspiciousDustUtxo, utxoStatus == UtxoStatus.locked),
                   if (tx == null)
-                    const Center(child: CircularProgressIndicator())
+                    const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero))
                   else ...{
                     _buildDateTime(dateString),
                     _buildAmount(),
@@ -229,8 +241,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         IconButton(
           key: _utxoTooltipIconKey,
           icon: SvgPicture.asset(
-            'assets/svg/question-mark.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            CommonStateIconPath.questionMark,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
           onPressed: _toggleUtxoTooltip,
         ),
@@ -498,7 +510,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
+          iconPath: CommonStateIconPath.circleInfo,
           text: t.utxo_list_screen.utxo_tag_updated,
         );
       }
@@ -511,7 +523,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: lock ? t.errors.utxo_lock_error : t.errors.utxo_unlock_error,
         level: CoconutToastLevel.warning,
       );
@@ -523,7 +535,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/circle-info.svg',
+        iconPath: CommonStateIconPath.circleInfo,
         text: lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg,
       );
     }
@@ -549,7 +561,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 2.0),
               child: SvgPicture.asset(
-                'assets/svg/dust.svg',
+                FeatureUtxoIconPath.dust,
                 width: 14,
                 height: 14,
                 colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
@@ -612,7 +624,7 @@ class _UtxoLockStatusChip extends State<UtxoLockStatusChip> {
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/svg/${widget.isLocked ? 'lock_simple' : 'unlock_simple'}.svg',
+                  widget.isLocked ? CommonSecurityIconPath.lock : CommonSecurityIconPath.unlock,
                   width: 14,
                   height: 14,
                   colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
