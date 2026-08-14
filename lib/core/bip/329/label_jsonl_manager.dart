@@ -148,6 +148,7 @@ class LabelJsonLManager {
     final currentWalletOrigin = _getOriginFromDescriptor(currentWallet.descriptor);
 
     final lines = await file.readAsLines();
+    final lockedUtxoIds = <String>{};
 
     for (final line in lines) {
       if (line.trim().isEmpty) continue;
@@ -211,8 +212,11 @@ class LabelJsonLManager {
 
           final spendable = data['spendable'] as bool?;
           if (spendable == false) {
-            await walletProvider.lockUtxo(walletId, utxoId);
-            result.utxoLockCount++;
+            if (!lockedUtxoIds.contains(utxoId)) {
+              await walletProvider.lockUtxo(walletId, utxoId);
+              result.utxoLockCount++;
+              lockedUtxoIds.add(utxoId);
+            }
           }
         }
       } catch (e, stackTrace) {
