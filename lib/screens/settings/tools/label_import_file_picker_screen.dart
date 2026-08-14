@@ -247,17 +247,17 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           borderRadius: BorderRadius.circular(12),
         ),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 27),
+          padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 27),
           decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(12)),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               SvgPicture.asset(
                 'assets/svg/plus.svg',
-                width: 12,
+                width: 14,
                 colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Text(
                 t.label_management_screen.file.select,
                 style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),

@@ -52,29 +52,26 @@ class OptionCard extends StatelessWidget {
                 : null,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            SvgPicture.asset(
-              isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
-              width: 24,
-              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+            Padding(
+              padding: const EdgeInsets.only(top: 2.0),
+              child: SvgPicture.asset(
+                isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
+                width: 20,
+                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: CoconutTypography.body1_16.setColor(titleColor),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text.rich(
-                    TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: subtitle),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(title, style: CoconutTypography.body1_16.setColor(titleColor)),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text.rich(TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: subtitle)),
+                  ],
                 ],
               ),
             ),
