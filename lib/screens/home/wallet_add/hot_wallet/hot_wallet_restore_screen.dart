@@ -21,7 +21,7 @@ import 'package:coconut_wallet/utils/app_settings_util.dart' as app_settings;
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

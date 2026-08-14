@@ -4,7 +4,7 @@ import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/hot_wallet_passphrase_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';

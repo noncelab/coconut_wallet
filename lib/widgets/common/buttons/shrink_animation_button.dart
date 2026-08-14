@@ -121,7 +121,7 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
     final pressedColor = widget.pressedColor ?? colors.surfacePressOverlay;
     final defaultColor = widget.defaultColor ?? colors.surface;
     final disabledColor = widget.disabledColor ?? colors.surface;
-    
+
     final Color solidColor = widget.isActive ? (_isPressed ? pressedColor : defaultColor) : disabledColor;
     final Color baseColor = widget.isActive ? defaultColor : disabledColor;
     final bool useGradientBorder = widget.borderGradient != null;
@@ -138,7 +138,7 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(widget.borderRadius + 2),
             gradient: useGradientBorder ? widget.borderGradient : null,
-            border: useGradientBorder ? null : widget.border ?? Border.all(color: solidColor),
+            border: useGradientBorder ? null : widget.border ?? Border.all(color: Colors.transparent),
           ),
           child: AnimatedContainer(
             margin: EdgeInsets.all(useGradientBorder ? widget.borderWidth : 0),
@@ -146,30 +146,13 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(widget.borderRadius)),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(widget.borderRadius),
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(widget.borderRadius),
-                    ),
-                    child: child,
-                  ),
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 100),
-                        opacity: widget.isActive && _isPressed ? overlayOpacity : 0,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: overlayColor,
-                            borderRadius: BorderRadius.circular(widget.borderRadius),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 100),
+                decoration: BoxDecoration(
+                  color: _isPressed ? overlayColor.withValues(alpha: overlayOpacity) : baseColor,
+                  borderRadius: BorderRadius.circular(widget.borderRadius),
+                ),
+                child: child,
               ),
             ),
           ),

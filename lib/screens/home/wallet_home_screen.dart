@@ -19,7 +19,6 @@ import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
-import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
@@ -54,13 +53,11 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
-import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/text/animated_dots_text.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/features/ccos/card/coconut_open_store_intro_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/security_warning_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/icon/transaction_status_gradient_mask.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
@@ -75,7 +72,6 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
-import 'package:coconut_wallet/widgets/card/security_warning_card.dart';
 import 'package:coconut_wallet/screens/settings/tools/glossary_bottom_sheet.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
@@ -1532,7 +1528,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           useGlassOverlay: true,
           alignMenuToChildRight: true,
           spacing: 16,
-          menuBackgroundColor: context.coconutColors.surfacePressOverlay,
+          menuBackgroundColor: context.coconutColors.homeSurfacePressOverlay,
           menuItems: buildWalletMenuItems(walletItem),
           child: WalletItemCard(
             key: key,
@@ -1574,18 +1570,18 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       if (isManuallyImported)
         LongPressedMenuItem(
           title: t.wallet_home_screen.wallet_menu.rename,
-          iconPath: 'assets/svg/edit-outlined.svg',
+          iconPath: CommonActionIconPath.editOutlined,
           onSelected: () => showWalletRenameBottomSheet(walletItem),
         ),
       if (walletItem.hasLocalKey)
         LongPressedMenuItem(
           title: t.wallet_home_screen.wallet_menu.backup,
-          iconPath: 'assets/svg/download.svg',
+          iconPath: CommonActionIconPath.download,
           onSelected: () => openMnemonicBackup(walletItem),
         ),
       LongPressedMenuItem(
         title: t.wallet_home_screen.wallet_menu.wallet_info,
-        iconPath: 'assets/svg/circle-info.svg',
+        iconPath: CommonStateIconPath.circleInfo,
         onSelected: () => _openWalletInfo(walletItem),
       ),
       LongPressedMenuItem(
@@ -1595,7 +1591,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       ),
       LongPressedMenuItem(
         title: t.wallet_home_screen.wallet_menu.delete,
-        iconPath: 'assets/svg/trash.svg',
+        iconPath: CommonActionIconPath.trash,
         isDanger: true,
         onSelected: () => showDeleteWalletDialog(walletItem.id),
       ),
@@ -2428,7 +2424,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   SliverAppBar _buildAppBar(NetworkStatus networkStatus) {
     final shouldShow = networkStatus != NetworkStatus.online;
-    final addWalletIconPath = switch (context.read<PreferenceProvider>().homeAddWalletOption) {
+    final homeAddWalletOption = context.read<PreferenceProvider>().homeAddWalletOption;
+    final addWalletIconPath = switch (homeAddWalletOption) {
       HomeAddWalletOption.all => FeatureWalletIconPath.walletAddDefault,
       HomeAddWalletOption.watchOnly => FeatureWalletIconPath.walletEyes,
       HomeAddWalletOption.hotWallet => FeatureWalletIconPath.walletAddHot,
@@ -2497,6 +2494,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             key: GlobalKey(),
             icon: SvgPicture.asset(
               addWalletIconPath,
+              width: homeAddWalletOption == HomeAddWalletOption.all ? 18 : null,
+              height: homeAddWalletOption == HomeAddWalletOption.all ? 18 : null,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
             onPressed: () {

@@ -402,7 +402,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                                       colorFilter: ColorFilter.mode(
                                                         widget.menuItems[index].isDanger
                                                             ? context.coconutColors.danger
-                                                            : context.coconutColors.primaryText,
+                                                            : context.coconutColors.iconPrimary,
                                                         BlendMode.srcIn,
                                                       ),
                                                     ),

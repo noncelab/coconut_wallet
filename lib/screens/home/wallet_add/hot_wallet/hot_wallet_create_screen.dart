@@ -20,9 +20,9 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -214,7 +214,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                 walletImportSource: WalletImportSource.coconutVault,
                 colorIndex: _selectedColorIndex,
                 iconIndex: _selectedIconIndex,
-                badgeSvgAssetPath: 'assets/svg/edit-outlined.svg',
+                badgeSvgAssetPath: CommonActionIconPath.editOutlined,
                 badgeColor: context.coconutColors.iconSecondary,
               ),
             ),
