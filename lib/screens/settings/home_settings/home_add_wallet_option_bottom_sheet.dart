@@ -1,10 +1,11 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -149,7 +150,7 @@ class _HomeScreenPreview extends StatelessWidget {
                           width: 18,
                           height: 18,
                           fit: BoxFit.contain,
-                          colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                         ),
                         CoconutLayout.spacing_300w,
                       ],
@@ -250,11 +251,11 @@ class _HomeScreenPreview extends StatelessWidget {
   String? get _iconPath {
     switch (option) {
       case HomeAddWalletOption.all:
-        return 'assets/svg/wallet-add-default.svg';
+        return FeatureWalletIconPath.walletAddDefault;
       case HomeAddWalletOption.watchOnly:
-        return 'assets/svg/wallet-eyes.svg';
+        return FeatureWalletIconPath.walletEyes;
       case HomeAddWalletOption.hotWallet:
-        return 'assets/svg/wallet-add-hot.svg';
+        return FeatureWalletIconPath.walletAddHot;
       case HomeAddWalletOption.hidden:
         return null;
     }
@@ -289,7 +290,7 @@ class _HomeAddWalletOptionButton extends StatelessWidget {
         child: ShrinkAnimationButton(
           onPressed: onPressed,
           defaultColor: Colors.transparent,
-          pressedColor: context.coconutColors.surfacePressed,
+          pressedColor: context.coconutColors.surfacePressOverlay,
           borderRadius: 16,
           animationEndValue: 0.94,
           child: AnimatedContainer(
@@ -313,7 +314,7 @@ class _HomeAddWalletOptionButton extends StatelessWidget {
                 _iconPath,
                 fit: BoxFit.contain,
                 colorFilter: ColorFilter.mode(
-                  isSelected ? context.coconutColors.iconDefault : context.coconutColors.iconSubDefault,
+                  isSelected ? context.coconutColors.iconPrimary : context.coconutColors.iconSecondary,
                   BlendMode.srcIn,
                 ),
               ),
@@ -327,13 +328,13 @@ class _HomeAddWalletOptionButton extends StatelessWidget {
   String get _iconPath {
     switch (option) {
       case HomeAddWalletOption.all:
-        return 'assets/svg/wallet-add-default.svg';
+        return FeatureWalletIconPath.walletAddDefault;
       case HomeAddWalletOption.watchOnly:
-        return 'assets/svg/wallet-eyes.svg';
+        return FeatureWalletIconPath.walletEyes;
       case HomeAddWalletOption.hotWallet:
-        return 'assets/svg/wallet-add-hot.svg';
+        return FeatureWalletIconPath.walletAddHot;
       case HomeAddWalletOption.hidden:
-        return 'assets/svg/eye-crossed.svg';
+        return CommonVisibilityIconPath.eyeCrossed;
     }
   }
 }

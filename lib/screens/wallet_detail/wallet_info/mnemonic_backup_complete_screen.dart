@@ -4,7 +4,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -44,7 +44,7 @@ class MnemonicBackupCompleteScreen extends StatelessWidget {
                         'assets/svg/circle-check.svg',
                         width: 72,
                         height: 72,
-                        colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                        colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                       ),
                       CoconutLayout.spacing_600h,
                       Text(

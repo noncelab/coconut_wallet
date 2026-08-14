@@ -2,8 +2,7 @@ import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -30,7 +29,7 @@ class HotWalletUnlockService {
         final pinVerified = await CommonBottomSheets.showCustomHeightBottomSheet<bool>(
           context: context,
           heightRatio: 0.9,
-          child: const CustomLoadingOverlay(child: PinCheckScreen(allowBiometrics: false)),
+          child: const PinCheckScreen(allowBiometrics: false),
         );
         if (pinVerified != true) return null;
       }

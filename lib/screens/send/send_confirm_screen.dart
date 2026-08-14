@@ -220,7 +220,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
                                   values: [
                                     ValueDelegate.colorFilter([
                                       '**',
-                                    ], value: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcATop)),
+                                    ], value: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcATop)),
                                   ],
                                 ),
                                 onLoaded: (composition) {
@@ -449,12 +449,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
         credentials = await CommonBottomSheets.showBottomSheet<_HotWalletSigningCredentials>(
           context: context,
           title: t.send_confirm_screen.passphrase_input_title,
-          appBar: CoconutAppBar.build(
-            isBottom: true,
-            context: context,
-            onBackPressed: () => Navigator.pop(context),
-            title: t.send_confirm_screen.passphrase_input_title,
-          ),
+          showCloseButton: true,
           backgroundColor: context.coconutColors.surfaceBottomSheet,
           showDragHandle: true,
           titlePadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),

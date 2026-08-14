@@ -46,7 +46,7 @@ class _WalletBalanceHistoryChartState extends State<WalletBalanceHistoryChart> w
             painter: _WalletBalanceHistoryPainter(
               points: widget.points,
               progress: Curves.easeOutCubic.transform(_controller.value),
-              lineColor: context.coconutColors.textHighlight,
+              lineColor: context.coconutColors.primary,
             ),
             size: Size.infinite,
           ),

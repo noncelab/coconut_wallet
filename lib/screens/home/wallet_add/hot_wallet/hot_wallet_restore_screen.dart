@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
@@ -17,9 +18,9 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_scr
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/utils/seed_qr_decoder.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart' as app_settings;
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/dialog.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -318,10 +319,10 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
                           : t.wallet_home_screen.hot_wallet_restore.enter_mnemonic,
                   onPressed: _toggleInputMode,
                   icon: SvgPicture.asset(
-                    _inputMode == _RestoreInputMode.mnemonic ? 'assets/svg/scan.svg' : 'assets/svg/paste.svg',
+                    _inputMode == _RestoreInputMode.mnemonic ? CommonActionIconPath.scan : CommonActionIconPath.paste,
                     width: 22,
                     height: 22,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                   ),
                 ),
               ],
@@ -551,9 +552,9 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: context.coconutColors.surfaceCard,
+              color: context.coconutColors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: context.coconutColors.inputBorder),
+              border: Border.all(color: context.coconutColors.border),
             ),
             child: Column(
               children: [
@@ -724,13 +725,13 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 SvgPicture.asset(
-                  'assets/svg/eraser.svg',
+                  CommonActionIconPath.eraser,
                   width: 18,
                   height: 18,
                   colorFilter: ColorFilter.mode(
                     canClear
-                        ? context.coconutColors.iconDefault
-                        : context.coconutColors.iconDefault.withValues(alpha: 0.3),
+                        ? context.coconutColors.iconPrimary
+                        : context.coconutColors.iconPrimary.withValues(alpha: 0.3),
                     BlendMode.srcIn,
                   ),
                 ),
@@ -761,7 +762,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
                 SvgPicture.asset(
                   'assets/svg/arrow-down.svg',
                   width: 16,
-                  colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                 ),
               ],
             ),
@@ -872,8 +873,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
                 isInvalid
                     ? context.coconutColors.danger.withValues(alpha: 0.7)
                     : hasFocus
-                    ? context.coconutColors.primaryText.withValues(alpha: 0.35)
-                    : context.coconutColors.inputBorder,
+                    ? context.coconutColors.inputBorderFocused
+                    : context.coconutColors.inputBorderUnfocused,
           ),
         ),
         child: Column(
@@ -992,9 +993,9 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
                                       _applySuggestion(activeIndex, word);
                                     }
                                   },
-                                  defaultColor: context.coconutColors.surfaceCard,
-                                  pressedColor: context.coconutColors.surfacePressed,
-                                  border: Border.all(color: context.coconutColors.inputBorder),
+                                  defaultColor: context.coconutColors.surface,
+                                  pressedColor: context.coconutColors.surfacePressOverlay,
+                                  border: Border.all(color: context.coconutColors.border),
                                   borderRadius: 100,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1060,7 +1061,6 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
             obscureText: !_passphraseVisible,
             placeholderText: t.wallet_home_screen.hot_wallet_create.passphrase_placeholder,
             backgroundColor: context.coconutColors.inputSurface,
-            borderColor: context.coconutColors.inputBorder,
             activeColor: context.coconutColors.primaryText,
             cursorColor: context.coconutColors.primaryText,
             suffix: IconButton(
@@ -1068,10 +1068,10 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
               padding: EdgeInsets.zero,
               onPressed: () => setState(() => _passphraseVisible = !_passphraseVisible),
               icon: SvgPicture.asset(
-                _passphraseVisible ? 'assets/svg/eye.svg' : 'assets/svg/eye-crossed.svg',
+                _passphraseVisible ? CommonVisibilityIconPath.eye : CommonVisibilityIconPath.eyeCrossed,
                 width: 16,
                 height: 16,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
               ),
             ),
             onChanged: (value) {
@@ -1147,7 +1147,6 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
           isLengthVisible: true,
           placeholderText: _suggestedName,
           backgroundColor: context.coconutColors.inputSurface,
-          borderColor: context.coconutColors.inputBorder,
           activeColor: context.coconutColors.primaryText,
           cursorColor: context.coconutColors.primaryText,
           onChanged: (_) => setState(() {}),

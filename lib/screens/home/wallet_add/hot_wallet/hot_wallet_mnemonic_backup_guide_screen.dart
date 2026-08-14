@@ -2,14 +2,15 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/dialog.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
@@ -40,12 +41,10 @@ class HotWalletMnemonicBackupGuideScreen extends StatefulWidget {
   final bool returnToPreviousOnExit;
 
   @override
-  State<HotWalletMnemonicBackupGuideScreen> createState() =>
-      _HotWalletMnemonicBackupGuideScreenState();
+  State<HotWalletMnemonicBackupGuideScreen> createState() => _HotWalletMnemonicBackupGuideScreenState();
 }
 
-class _HotWalletMnemonicBackupGuideScreenState
-    extends State<HotWalletMnemonicBackupGuideScreen>
+class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBackupGuideScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _lottieController;
   bool _isCreatedTitleVisible = false;
@@ -71,9 +70,7 @@ class _HotWalletMnemonicBackupGuideScreenState
       _isBackupTitleMoved = true;
       _isBackupLottieVisible = true;
       _isBackupPreparationStage = true;
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _showBackupPreparation(),
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showBackupPreparation());
     }
   }
 
@@ -84,9 +81,7 @@ class _HotWalletMnemonicBackupGuideScreenState
     await Future<void>.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
 
-    final visibleFrameDuration = Duration(
-      milliseconds: (composition.duration.inMilliseconds * 0.85).round(),
-    );
+    final visibleFrameDuration = Duration(milliseconds: (composition.duration.inMilliseconds * 0.85).round());
     _lottieController.duration = composition.duration;
     await _lottieController.animateTo(0.85, duration: visibleFrameDuration);
     if (!mounted) return;
@@ -180,10 +175,7 @@ class _HotWalletMnemonicBackupGuideScreenState
                       ),
                       CoconutLayout.spacing_300h,
                       AnimatedSlide(
-                        offset:
-                            _isCreatedTitleVisible
-                                ? Offset.zero
-                                : const Offset(0, 0.15),
+                        offset: _isCreatedTitleVisible ? Offset.zero : const Offset(0, 0.15),
                         duration: const Duration(milliseconds: 350),
                         curve: Curves.easeOutCubic,
                         child: AnimatedOpacity(
@@ -192,9 +184,7 @@ class _HotWalletMnemonicBackupGuideScreenState
                           child: Text(
                             strings.wallet_created_title,
                             textAlign: TextAlign.center,
-                            style: CoconutTypography.heading3_21_Bold.setColor(
-                              context.coconutColors.primaryText,
-                            ),
+                            style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
                           ),
                         ),
                       ),
@@ -211,50 +201,33 @@ class _HotWalletMnemonicBackupGuideScreenState
                     fit: StackFit.expand,
                     children: [
                       AnimatedAlign(
-                        alignment:
-                            _isBackupTitleMoved
-                                ? const Alignment(0, -0.72)
-                                : Alignment.center,
+                        alignment: _isBackupTitleMoved ? const Alignment(0, -0.72) : Alignment.center,
                         duration: const Duration(milliseconds: 650),
                         curve: Curves.easeInOutCubic,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 650),
                           curve: Curves.easeInOutCubic,
-                          transform: Matrix4.translationValues(
-                            0,
-                            _isBackupTitleMoved ? 0 : -30,
-                            0,
-                          ),
+                          transform: Matrix4.translationValues(0, _isBackupTitleMoved ? 0 : -30, 0),
                           child: AnimatedOpacity(
                             opacity: _isBackupPreparationStage ? 0 : 1,
                             duration: const Duration(milliseconds: 250),
                             child: Text(
                               strings.backup_intro_title,
                               textAlign: TextAlign.center,
-                              style: CoconutTypography.heading3_21_Bold
-                                  .setColor(context.coconutColors.primaryText),
-                            ).fadeInAnimation(
-                              duration: const Duration(milliseconds: 350),
-                            ),
+                              style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+                            ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
                           ),
                         ),
                       ),
                       if (_isBackupLottieVisible)
                         AnimatedAlign(
-                          alignment:
-                              _isBackupPreparationStage
-                                  ? const Alignment(0, -0.72)
-                                  : Alignment.center,
+                          alignment: _isBackupPreparationStage ? const Alignment(0, -0.72) : Alignment.center,
                           duration: const Duration(milliseconds: 650),
                           curve: Curves.easeInOutCubic,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 650),
                             curve: Curves.easeInOutCubic,
-                            transform: Matrix4.translationValues(
-                              0,
-                              _isBackupPreparationStage ? 0 : -30,
-                              0,
-                            ),
+                            transform: Matrix4.translationValues(0, _isBackupPreparationStage ? 0 : -30, 0),
                             child: SizedBox(
                               width: 96,
                               height: 96,
@@ -263,9 +236,7 @@ class _HotWalletMnemonicBackupGuideScreenState
                                 fit: BoxFit.contain,
                                 repeat: false,
                               ),
-                            ).fadeInAnimation(
-                              duration: const Duration(milliseconds: 350),
-                            ),
+                            ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
                           ),
                         ),
                       if (_isBackupPreparationStage) ...[
@@ -274,14 +245,10 @@ class _HotWalletMnemonicBackupGuideScreenState
                             builder: (context, constraints) {
                               const lottieHeight = 96.0;
                               const gapBelowLottie = 30.0;
-                              final lottieTop =
-                                  (constraints.maxHeight - lottieHeight) * 0.14;
+                              final lottieTop = (constraints.maxHeight - lottieHeight) * 0.14;
 
                               return Padding(
-                                padding: EdgeInsets.only(
-                                  top:
-                                      lottieTop + lottieHeight + gapBelowLottie,
-                                ),
+                                padding: EdgeInsets.only(top: lottieTop + lottieHeight + gapBelowLottie),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -290,11 +257,9 @@ class _HotWalletMnemonicBackupGuideScreenState
                                       child: Text(
                                         strings.backup_preparation_title,
                                         textAlign: TextAlign.center,
-                                        style: CoconutTypography
-                                            .heading3_21_Bold
-                                            .setColor(
-                                              context.coconutColors.primaryText,
-                                            ),
+                                        style: CoconutTypography.heading3_21_Bold.setColor(
+                                          context.coconutColors.primaryText,
+                                        ),
                                       ),
                                     ),
                                     CoconutLayout.spacing_300h,
@@ -303,12 +268,7 @@ class _HotWalletMnemonicBackupGuideScreenState
                                       child: Text(
                                         strings.backup_preparation_description,
                                         textAlign: TextAlign.center,
-                                        style: CoconutTypography.body2_14
-                                            .setColor(
-                                              context
-                                                  .coconutColors
-                                                  .secondaryText,
-                                            ),
+                                        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                                       ),
                                     ),
                                     const SizedBox(height: 30),
@@ -318,14 +278,9 @@ class _HotWalletMnemonicBackupGuideScreenState
                                         width: double.infinity,
                                         decoration: BoxDecoration(
                                           color: context.coconutColors.surface,
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
+                                          borderRadius: BorderRadius.circular(16),
                                         ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 20,
-                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
@@ -335,10 +290,7 @@ class _HotWalletMnemonicBackupGuideScreenState
                                                   width: 24,
                                                   height: 24,
                                                   decoration: BoxDecoration(
-                                                    color:
-                                                        context
-                                                            .coconutColors
-                                                            .iconDefault,
+                                                    color: context.coconutColors.iconPrimary,
                                                     shape: BoxShape.circle,
                                                   ),
                                                   alignment: Alignment.center,
@@ -346,26 +298,19 @@ class _HotWalletMnemonicBackupGuideScreenState
                                                     'assets/svg/pen.svg',
                                                     width: 14,
                                                     height: 14,
-                                                    colorFilter:
-                                                        ColorFilter.mode(
-                                                          context
-                                                              .coconutColors
-                                                              .iconHighlight,
-                                                          BlendMode.srcIn,
-                                                        ),
+                                                    colorFilter: ColorFilter.mode(
+                                                      context.coconutColors.iconButtonHighlight,
+                                                      BlendMode.srcIn,
+                                                    ),
                                                   ),
                                                 ),
                                                 CoconutLayout.spacing_200w,
                                                 Expanded(
                                                   child: Text(
                                                     strings.backup_tips_1,
-                                                    style: CoconutTypography
-                                                        .body2_14
-                                                        .setColor(
-                                                          context
-                                                              .coconutColors
-                                                              .primaryText,
-                                                        ),
+                                                    style: CoconutTypography.body2_14.setColor(
+                                                      context.coconutColors.primaryText,
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -377,37 +322,27 @@ class _HotWalletMnemonicBackupGuideScreenState
                                                   width: 24,
                                                   height: 24,
                                                   decoration: BoxDecoration(
-                                                    color:
-                                                        context
-                                                            .coconutColors
-                                                            .iconDefault,
+                                                    color: context.coconutColors.iconPrimary,
                                                     shape: BoxShape.circle,
                                                   ),
                                                   alignment: Alignment.center,
                                                   child: SvgPicture.asset(
-                                                    'assets/svg/stop-sign.svg',
+                                                    CommonStateIconPath.stopSign,
                                                     width: 14,
                                                     height: 14,
-                                                    colorFilter:
-                                                        ColorFilter.mode(
-                                                          context
-                                                              .coconutColors
-                                                              .iconHighlight,
-                                                          BlendMode.srcIn,
-                                                        ),
+                                                    colorFilter: ColorFilter.mode(
+                                                      context.coconutColors.iconButtonHighlight,
+                                                      BlendMode.srcIn,
+                                                    ),
                                                   ),
                                                 ),
                                                 CoconutLayout.spacing_200w,
                                                 Expanded(
                                                   child: Text(
                                                     strings.backup_tips_2,
-                                                    style: CoconutTypography
-                                                        .body2_14
-                                                        .setColor(
-                                                          context
-                                                              .coconutColors
-                                                              .primaryText,
-                                                        ),
+                                                    style: CoconutTypography.body2_14.setColor(
+                                                      context.coconutColors.primaryText,
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -419,10 +354,7 @@ class _HotWalletMnemonicBackupGuideScreenState
                                                   width: 24,
                                                   height: 24,
                                                   decoration: BoxDecoration(
-                                                    color:
-                                                        context
-                                                            .coconutColors
-                                                            .iconDefault,
+                                                    color: context.coconutColors.iconPrimary,
                                                     shape: BoxShape.circle,
                                                   ),
                                                   alignment: Alignment.center,
@@ -430,26 +362,19 @@ class _HotWalletMnemonicBackupGuideScreenState
                                                     'assets/svg/lock_simple.svg',
                                                     width: 14,
                                                     height: 14,
-                                                    colorFilter:
-                                                        ColorFilter.mode(
-                                                          context
-                                                              .coconutColors
-                                                              .iconHighlight,
-                                                          BlendMode.srcIn,
-                                                        ),
+                                                    colorFilter: ColorFilter.mode(
+                                                      context.coconutColors.iconButtonHighlight,
+                                                      BlendMode.srcIn,
+                                                    ),
                                                   ),
                                                 ),
                                                 CoconutLayout.spacing_200w,
                                                 Expanded(
                                                   child: Text(
                                                     strings.backup_tips_3,
-                                                    style: CoconutTypography
-                                                        .body2_14
-                                                        .setColor(
-                                                          context
-                                                              .coconutColors
-                                                              .primaryText,
-                                                        ),
+                                                    style: CoconutTypography.body2_14.setColor(
+                                                      context.coconutColors.primaryText,
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -471,21 +396,10 @@ class _HotWalletMnemonicBackupGuideScreenState
               ),
             if (_isBottomButtonVisible)
               FixedBottomButton(
-                onButtonClicked:
-                    _isBackupPreparationStage
-                        ? _startMnemonicBackupFlow
-                        : _showBackupPreparation,
-                text:
-                    _isBackupPreparationStage
-                        ? strings.backup_start
-                        : strings.backup_title,
+                onButtonClicked: _isBackupPreparationStage ? _startMnemonicBackupFlow : _showBackupPreparation,
+                text: _isBackupPreparationStage ? strings.backup_start : strings.backup_title,
                 subWidget:
-                    _isBackupPreparationStage
-                        ? null
-                        : CoconutUnderlinedButton(
-                          onTap: _finish,
-                          text: strings.skip,
-                        ),
+                    _isBackupPreparationStage ? null : CoconutUnderlinedButton(onTap: _finish, text: strings.skip),
               ).slideUpAnimation(
                 duration: const Duration(milliseconds: 350),
                 delay: const Duration(milliseconds: 200),

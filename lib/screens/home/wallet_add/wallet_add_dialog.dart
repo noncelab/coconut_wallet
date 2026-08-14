@@ -1,33 +1,49 @@
+import 'dart:io';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 enum WalletAddDialogMode { walletType, watchOnlySource, hotWalletAction }
+
+final topSheetWalletOptions = [
+  WalletImportSource.coconutVault,
+  WalletImportSource.keystone,
+  WalletImportSource.seedSigner,
+  WalletImportSource.jade,
+  WalletImportSource.coldCard,
+  WalletImportSource.krux,
+  WalletImportSource.passport,
+  WalletImportSource.trezor,
+  WalletImportSource.bitbox02,
+];
 
 class WalletAddDialog extends StatelessWidget {
   final Animation<double> animation;
   final WalletAddDialogMode mode;
-  final ValueChanged<WalletImportSource> onWalletSelected;
-  final VoidCallback onWatchOnlySelected;
-  final VoidCallback onHotWalletSelected;
-  final VoidCallback onCreateHotWallet;
-  final VoidCallback onRestoreHotWallet;
 
-  const WalletAddDialog({
-    super.key,
-    required this.animation,
-    required this.mode,
-    required this.onWalletSelected,
-    required this.onWatchOnlySelected,
-    required this.onHotWalletSelected,
-    required this.onCreateHotWallet,
-    required this.onRestoreHotWallet,
-  });
+  const WalletAddDialog({super.key, required this.animation, required this.mode});
+
+  static Future<void> show(BuildContext context, WalletAddDialogMode mode) async {
+    await showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: context.coconutColors.surface.withValues(alpha: 0.5),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (_, animation, secondaryAnimation) => WalletAddDialog(animation: animation, mode: mode),
+      transitionBuilder: (_, animation, secondaryAnimation, child) => child,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +61,7 @@ class WalletAddDialog extends StatelessWidget {
               elevation: 4,
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
               color: context.coconutColors.homeBackground,
-              child: Padding(padding: const EdgeInsets.all(16), child: _buildContent()),
+              child: Padding(padding: const EdgeInsets.all(16), child: _buildContent(context)),
             ),
           ),
         ),
@@ -54,67 +70,218 @@ class WalletAddDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
+    Widget buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType, {bool isWide = false}) {
+      return ShrinkAnimationButton(
+        // top sheet의 background 색상과 동일하게 homeBackground로 지정
+        defaultColor: context.coconutColors.homeBackground,
+        pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+        pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
+        onPressed: () => onPressed(),
+        borderRadius: isWide ? 12 : 24,
+        child:
+            isWide
+                ? Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: context.coconutColors.border.withAlpha(60)),
+                          borderRadius: const BorderRadius.all(Radius.circular(6.0)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: SvgPicture.asset(
+                            scanType.externalWalletIconPath,
+                            width: 20,
+                            height: 20,
+                            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                          ),
+                        ),
+                      ),
+                      CoconutLayout.spacing_400w,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              scanType.displayName,
+                              style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                            CoconutLayout.spacing_50h,
+                            Text(
+                              t.wallet_add_scanner_screen.self_description,
+                              style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                : Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: SizedBox.expand(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(
+                          scanType.externalWalletIconPath,
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                        ),
+                        CoconutLayout.spacing_100h,
+                        Text(
+                          scanType.displayName,
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: switch (mode) {
         WalletAddDialogMode.walletType => [
           _WalletActionButton(
-            iconPath: 'assets/svg/wallet-eyes.svg',
+            iconPath: FeatureWalletIconPath.walletEyes,
             title: t.wallet_home_screen.wallet_type_selection.watch_only.title,
             description: t.wallet_home_screen.wallet_type_selection.watch_only.description,
-            onPressed: onWatchOnlySelected,
+            onPressed: () => _showMode(context, WalletAddDialogMode.watchOnlySource),
           ),
           _WalletActionButton(
-            iconPath: 'assets/svg/wallet-add-hot.svg',
+            iconPath: FeatureWalletIconPath.walletAddHot,
             title: t.wallet_home_screen.wallet_type_selection.hot_wallet.title,
             description: t.wallet_home_screen.wallet_type_selection.hot_wallet.description,
-            onPressed: onHotWalletSelected,
+            onPressed: () => _showMode(context, WalletAddDialogMode.hotWalletAction),
           ),
         ],
         WalletAddDialogMode.watchOnlySource => [
-          _buildWalletRow([
-            WalletImportSource.coconutVault,
-            WalletImportSource.keystone,
-            WalletImportSource.seedSigner,
-          ]),
-          _buildWalletRow([WalletImportSource.jade, WalletImportSource.coldCard, WalletImportSource.krux]),
-          _buildWalletRow([WalletImportSource.passport, WalletImportSource.trezor, WalletImportSource.bitbox02]),
-          CoconutLayout.spacing_400h,
-          _buildWalletRow([WalletImportSource.extendedPublicKey]),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                itemCount: topSheetWalletOptions.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 0,
+                  crossAxisSpacing: 0,
+                  childAspectRatio: 1.2,
+                ),
+                itemBuilder: (context, index) {
+                  if (index >= topSheetWalletOptions.length) {
+                    return const SizedBox.expand();
+                  }
+
+                  final scanType = topSheetWalletOptions[index];
+                  return buildWalletIconShrinkButton(() => _onWalletSelected(context, scanType), scanType);
+                },
+              ),
+              CoconutLayout.spacing_200h,
+              Row(
+                children: [
+                  Expanded(
+                    child: buildWalletIconShrinkButton(
+                      () => _onWalletSelected(context, WalletImportSource.extendedPublicKey),
+                      WalletImportSource.extendedPublicKey,
+                      isWide: true,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
         WalletAddDialogMode.hotWalletAction => [
           _WalletActionButton(
-            iconPath: 'assets/svg/wallet-add-hot.svg',
+            iconPath: FeatureWalletIconPath.walletAddHot,
             title: t.wallet_home_screen.hot_wallet_add.create.title,
             description: t.wallet_home_screen.hot_wallet_add.create.description,
-            onPressed: onCreateHotWallet,
+            onPressed: () => _openHotWalletScreen(context, '/hot-wallet-create'),
           ),
           _WalletActionButton(
-            iconPath: 'assets/svg/wallet-import-hot.svg',
+            iconPath: FeatureWalletIconPath.walletImportHot,
             title: t.wallet_home_screen.hot_wallet_add.restore.title,
             description: t.wallet_home_screen.hot_wallet_add.restore.description,
-            onPressed: onRestoreHotWallet,
+            onPressed: () => _openHotWalletScreen(context, '/hot-wallet-restore'),
           ),
         ],
       },
     );
   }
 
-  Widget _buildWalletRow(List<WalletImportSource> walletImportSources) {
-    return Row(
-      children:
-          walletImportSources
-              .map(
-                (source) => Expanded(
-                  child: _WalletImportSourceButton(
-                    walletImportSource: source,
-                    onPressed: () => onWalletSelected(source),
-                  ),
-                ),
-              )
-              .toList(),
+  void _showMode(BuildContext context, WalletAddDialogMode nextMode) {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (navigator.mounted) {
+        WalletAddDialog.show(navigator.context, nextMode);
+      }
+    });
+  }
+
+  Future<void> _openHotWalletScreen(BuildContext context, String routeName) async {
+    if (!await _ensureDevicePasscodeIsSet(context) || !context.mounted) return;
+
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    navigator.pushNamed(routeName);
+  }
+
+  Future<bool> _ensureDevicePasscodeIsSet(BuildContext context) async {
+    final authProvider = context.read<AuthProvider>();
+    final isDevicePasscodeSet = await authProvider.isDevicePasscodeSet();
+    if (!context.mounted) return false;
+    if (isDevicePasscodeSet) return true;
+
+    await showConfirmDialog(
+      context,
+      context.read<PreferenceProvider>().language,
+      t.wallet_home_screen.hot_wallet_add.device_passcode_required.title,
+      t.wallet_home_screen.hot_wallet_add.device_passcode_required.description,
+      leftButtonText: t.close,
+      rightButtonText: t.go_to_settings,
+      onTapLeft: () => Navigator.pop(context),
+      onTapRight: () async {
+        Navigator.pop(context);
+        await authProvider.openDeviceSecuritySettings();
+      },
     );
+    return false;
+  }
+
+  void _onWalletSelected(BuildContext context, WalletImportSource walletImportSource) {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+
+    switch (walletImportSource) {
+      case WalletImportSource.bitbox02:
+        navigator.pushNamed('/bitbox02-connect', arguments: {'walletImportSource': WalletImportSource.bitbox02});
+        return;
+      case WalletImportSource.trezor:
+        navigator.pushNamed(
+          Platform.isAndroid ? '/trezor-transport-select' : '/trezor-ble-connect',
+          arguments: const <String, dynamic>{},
+        );
+        return;
+      default:
+        navigator.pushNamed('/wallet-add-scanner', arguments: {'walletImportSource': walletImportSource});
+        return;
+    }
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -176,7 +343,7 @@ class _WalletActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShrinkAnimationButton(
       defaultColor: context.coconutColors.homeBackground,
-      pressedColor: context.coconutColors.homeSurfaceCardPressed,
+      pressedColor: context.coconutColors.homeSurfacePressOverlay,
       onPressed: onPressed,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
@@ -186,7 +353,7 @@ class _WalletActionButton extends StatelessWidget {
               iconPath,
               width: 24,
               height: 19,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
             CoconutLayout.spacing_400w,
             Expanded(
@@ -213,84 +380,6 @@ class _WalletActionButton extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _WalletImportSourceButton extends StatelessWidget {
-  final WalletImportSource walletImportSource;
-  final VoidCallback onPressed;
-
-  const _WalletImportSourceButton({required this.walletImportSource, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return ShrinkAnimationButton(
-      defaultColor: context.coconutColors.homeBackground,
-      onPressed: onPressed,
-      child:
-          walletImportSource == WalletImportSource.extendedPublicKey
-              ? _buildExtendedPublicKeyButton(context)
-              : _buildWalletTypeButton(context),
-    );
-  }
-
-  Widget _buildWalletTypeButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      child: Column(
-        children: [
-          _buildIcon(context),
-          CoconutLayout.spacing_100h,
-          Text(
-            walletImportSource.displayName,
-            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExtendedPublicKeyButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      child: Row(
-        children: [
-          _buildIcon(context),
-          CoconutLayout.spacing_400w,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  walletImportSource.displayName,
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-                CoconutLayout.spacing_50h,
-                Text(
-                  t.wallet_add_scanner_screen.self_description,
-                  style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIcon(BuildContext context) {
-    return SvgPicture.asset(
-      walletImportSource.externalWalletIconPath,
-      width: 24,
-      height: 24,
-      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
     );
   }
 }

@@ -5,10 +5,9 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/auth/pin/pin_input_pad.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,10 +17,12 @@ class HotWalletAppLockGuideScreen extends StatefulWidget {
   final int? walletId;
 
   @override
-  State<HotWalletAppLockGuideScreen> createState() => _HotWalletAppLockGuideScreenState();
+  State<HotWalletAppLockGuideScreen> createState() =>
+      _HotWalletAppLockGuideScreenState();
 }
 
-class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScreen> {
+class _HotWalletAppLockGuideScreenState
+    extends State<HotWalletAppLockGuideScreen> {
   bool _isIconVisible = false;
   bool _isPinPadVisible = false;
   bool _isBottomButtonVisible = false;
@@ -74,8 +75,12 @@ class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScree
                       child: Text(
                         strings.pin_description,
                         textAlign: TextAlign.center,
-                        style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
-                      ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
+                        style: CoconutTypography.heading3_21_Bold.setColor(
+                          context.coconutColors.primaryText,
+                        ),
+                      ).fadeInAnimation(
+                        duration: const Duration(milliseconds: 350),
+                      ),
                     ),
                     if (_isIconVisible)
                       Align(
@@ -97,12 +102,21 @@ class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScree
                                         (bounds) => const LinearGradient(
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
-                                          colors: [Colors.white, Colors.white, Colors.transparent],
+                                          colors: [
+                                            Colors.white,
+                                            Colors.white,
+                                            Colors.transparent,
+                                          ],
                                           stops: [0, 0.6, 1],
                                         ).createShader(bounds),
-                                    child: Image.asset('assets/images/pin-screen-mockup.png', fit: BoxFit.contain),
+                                    child: Image.asset(
+                                      'assets/images/pin-screen-mockup.png',
+                                      fit: BoxFit.contain,
+                                    ),
                                   ),
-                                ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
+                                ).fadeInAnimation(
+                                  duration: const Duration(milliseconds: 350),
+                                ),
                               ),
                               if (_isPinPadVisible)
                                 Positioned(
@@ -115,11 +129,16 @@ class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScree
                                     child: Container(
                                       height: 168,
                                       decoration: BoxDecoration(
-                                        border: Border.all(color: CoconutColors.gray700, width: 1),
+                                        border: Border.all(
+                                          color: CoconutColors.gray700,
+                                          width: 1,
+                                        ),
                                         borderRadius: BorderRadius.circular(16),
                                         color: context.coconutColors.background,
                                       ),
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
                                       child: PinInputPad(
                                         title: '',
                                         pin: '',
@@ -164,7 +183,10 @@ class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScree
               FixedBottomButton(
                 onButtonClicked: _openAppLockSetting,
                 text: strings.pin_action,
-                subWidget: CoconutUnderlinedButton(onTap: _finish, text: strings.skip),
+                subWidget: CoconutUnderlinedButton(
+                  onTap: _finish,
+                  text: strings.skip,
+                ),
               ).slideUpAnimation(
                 duration: const Duration(milliseconds: 350),
                 delay: const Duration(milliseconds: 200),
@@ -181,7 +203,10 @@ class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScree
     await CommonBottomSheets.showCustomHeightBottomSheet<void>(
       context: context,
       heightRatio: 0.9,
-      child: const CustomLoadingOverlay(child: PinSettingScreen(useBiometrics: true, popParentOnComplete: false)),
+      child: const PinSettingScreen(
+        useBiometrics: true,
+        popParentOnComplete: false,
+      ),
     );
     if (!mounted || !context.read<AuthProvider>().isAuthEnabled) return;
     _finish();

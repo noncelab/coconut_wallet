@@ -28,8 +28,11 @@ abstract final class CommonActionIconPath {
   static const String delete = 'assets/svg/common/actions/delete.svg';
   static const String download = 'assets/svg/common/actions/download.svg';
   static const String editOutlined = 'assets/svg/common/actions/edit-outlined.svg';
+  static const String eraser = 'assets/svg/common/actions/eraser.svg';
   static const String export = 'assets/svg/common/actions/export.svg';
+  static const String movableButton = 'assets/svg/common/actions/movable-button.svg';
   static const String openScanner = 'assets/svg/common/actions/open-scanner.svg';
+  static const String paste = 'assets/svg/common/actions/paste.svg';
   static const String plus = 'assets/svg/common/actions/plus.svg';
   static const String removeMinus = 'assets/svg/common/actions/remove-minus.svg';
   static const String scan = 'assets/svg/common/actions/scan.svg';
@@ -90,14 +93,17 @@ abstract final class CommonStateIconPath {
   static const String completionCheck = 'assets/svg/common/state/completion-check.svg';
   static const String questionMark = 'assets/svg/common/state/question-mark.svg';
   static const String searchNotFound = 'assets/svg/common/state/search-not-found.svg';
+  static const String shieldWarning = 'assets/svg/common/state/shield-warning.svg';
   static const String starFilled = 'assets/svg/common/state/star-filled.svg';
   static const String starOutlined = 'assets/svg/common/state/star-outlined.svg';
+  static const String starOutlinedBold = 'assets/svg/common/state/star-outlined-bold.svg';
   static const String starSmall = 'assets/svg/common/state/star-small.svg';
   static const String statusComplete = 'assets/svg/common/state/status-complete.svg';
   static const String statusFailure = 'assets/svg/common/state/status-failure.svg';
   static const String statusIdle = 'assets/svg/common/state/status-idle.svg';
   static const String statusImpossible = 'assets/svg/common/state/status-impossible.svg';
   static const String statusLoading = 'assets/svg/common/state/status-loading.svg';
+  static const String stopSign = 'assets/svg/common/state/stop-sign.svg';
   static const String triangleWarning = 'assets/svg/common/state/triangle-warning.svg';
 }
 
@@ -158,12 +164,18 @@ abstract final class FeatureUtxoIconPath {
 abstract final class FeatureWalletIconPath {
   static const String bitcoin = 'assets/svg/features/wallet/bitcoin.svg';
   static const String coins = 'assets/svg/features/wallet/coins.svg';
+  static const String hotWalletFire = 'assets/svg/features/wallet/hot-wallet-fire.svg';
+  static const String hotWalletFireThin = 'assets/svg/features/wallet/hot-wallet-fire-thin.svg';
   static const String pie = 'assets/svg/features/wallet/pie.svg';
   static const String piggyBank = 'assets/svg/features/wallet/piggy-bank.svg';
   static const String wallet = 'assets/svg/features/wallet/wallet.svg';
+  static const String walletAddDefault = 'assets/svg/features/wallet/wallet-add-default.svg';
+  static const String walletAddHot = 'assets/svg/features/wallet/wallet-add-hot.svg';
   static const String walletEyes = 'assets/svg/features/wallet/wallet-eyes.svg';
+  static const String walletImportHot = 'assets/svg/features/wallet/wallet-import-hot.svg';
   static const String walletInfo = 'assets/svg/features/wallet/wallet-info.svg';
   static const String walletOutlined = 'assets/svg/features/wallet/wallet-outlined.svg';
+  static const String watchOnlyEyes = 'assets/svg/features/wallet/watch-only-eyes.svg';
 }
 
 abstract final class ThirdPartyWalletTypeIconPath {

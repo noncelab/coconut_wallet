@@ -36,7 +36,7 @@ class WalletIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = _buildIcon(context);
-    final resolvedBadgeSvgAssetPath = badgeSvgAssetPath ?? (isHotWallet ? 'assets/svg/hot-wallet-fire.svg' : null);
+    final resolvedBadgeSvgAssetPath = badgeSvgAssetPath ?? (isHotWallet ? FeatureWalletIconPath.hotWalletFire : null);
 
     return Stack(
       clipBehavior: Clip.none,

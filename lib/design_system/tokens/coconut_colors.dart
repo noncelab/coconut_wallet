@@ -17,7 +17,7 @@ const Gradient kCoconutMainnetLogoGradient = LinearGradient(
 const Color kCoconutSuccess = ds.CoconutColors.green;
 const Color kCoconutWarning = ds.CoconutColors.warningYellow;
 const Color kCoconutDanger = ds.CoconutColors.hotPink;
-const Color kCoconutWarningCard = Color(0xFFFFCC00);
+const Color kCoconutWarningCard = ds.CoconutColors.warningAmber;
 
 /// 탭루트 지갑 정보 화면에서 부모 키/자식 키를 구분하는 고정 색상입니다.
 ///
@@ -68,10 +68,12 @@ class CoconutColors {
 
   /// 텍스트 색상
   /// primaryText: 기본 본문/제목 텍스트
+  /// secondaryTextStrong: primary보다 약하고 secondary보다 강한 보조 텍스트
   /// secondaryText: 보조 정보, 설명, 메타 텍스트
   /// tertiaryText: secondary보다 한 단계 더 약한 보조 정보 텍스트
   /// mutedText: 선택되지 않음, 입력 전, 비활성, 약한 상태 표현에 쓰는 subdued foreground
   final Color primaryText;
+  final Color secondaryTextStrong;
   final Color secondaryText;
   final Color tertiaryText;
   final Color mutedText;
@@ -318,6 +320,7 @@ class CoconutColors {
     required this.surfaceInfoChip,
     required this.primary,
     required this.primaryText,
+    required this.secondaryTextStrong,
     required this.secondaryText,
     required this.tertiaryText,
     required this.mutedText,
@@ -457,6 +460,7 @@ class CoconutColors {
       surfaceInfoChip: ds.CoconutColors.gray750,
       primary: ds.CoconutColors.primary,
       primaryText: ds.CoconutColors.white,
+      secondaryTextStrong: ds.CoconutColors.gray300,
       secondaryText: ds.CoconutColors.gray400,
       tertiaryText: ds.CoconutColors.gray600,
       mutedText: ds.CoconutColors.gray500,
@@ -599,6 +603,7 @@ class CoconutColors {
       surfaceInfoChip: ds.CoconutColors.gray300,
       primary: ds.CoconutColors.purple,
       primaryText: ds.CoconutColors.black,
+      secondaryTextStrong: ds.CoconutColors.gray800,
       secondaryText: ds.CoconutColors.gray700,
       tertiaryText: ds.CoconutColors.gray600,
       mutedText: ds.CoconutColors.gray500,
@@ -759,6 +764,7 @@ class CoconutColors {
       surfaceInfoChip: sand.withAlpha(90),
       primary: palmGreen,
       primaryText: huskDeep,
+      secondaryTextStrong: huskDeep,
       secondaryText: husk,
       tertiaryText: toast,
       mutedText: huskSoft,

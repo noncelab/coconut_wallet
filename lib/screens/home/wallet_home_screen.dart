@@ -59,6 +59,7 @@ import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart
 import 'package:coconut_wallet/widgets/common/text/animated_dots_text.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/ccos/card/coconut_open_store_intro_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/icon/transaction_status_gradient_mask.dart';
@@ -112,8 +113,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   late PageController _walletPageController;
 
   DateTime? _lastPressedAt;
-  ResultOfSyncFromVault? _resultOfSyncFromVault;
-
   late List<WalletItemBase> _previousWalletList = [];
   final GlobalKey<SliverAnimatedListState> _walletListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
@@ -1452,8 +1451,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: ShrinkAnimationButton(
-          defaultColor: context.coconutColors.homeSurfaceCard,
-          pressedColor: context.coconutColors.surfacePressed,
+          defaultColor: context.coconutColors.homeSurface,
+          pressedColor: context.coconutColors.homeSurfacePressOverlay,
           borderRadius: 12,
           onPressed: () => _onAddWalletPressed(filter),
           child: CustomPaint(
@@ -1471,7 +1470,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     iconPath,
                     width: 18,
                     height: 18,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                   ),
                   CoconutLayout.spacing_400w,
                   Expanded(
@@ -1533,7 +1532,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           useGlassOverlay: true,
           alignMenuToChildRight: true,
           spacing: 16,
-          menuBackgroundColor: context.coconutColors.surfacePressed,
+          menuBackgroundColor: context.coconutColors.surfacePressOverlay,
           menuItems: buildWalletMenuItems(walletItem),
           child: WalletItemCard(
             key: key,
@@ -1558,7 +1557,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               CommonNavigationIconPath.arrowRight,
               width: 6,
               height: 10,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
             ),
           ),
         );
@@ -1709,13 +1708,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: CustomLoadingOverlay(
-        child: PinCheckScreen(
-          onComplete: () async {
-            if (dialogContext.mounted) Navigator.pop(dialogContext);
-            await walletProvider.deleteWallet(walletId);
-          },
-        ),
+      child: PinCheckScreen(
+        onComplete: () async {
+          if (dialogContext.mounted) Navigator.pop(dialogContext);
+          await walletProvider.deleteWallet(walletId);
+        },
       ),
     );
   }
@@ -2401,35 +2398,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  void goToScannerScreen(WalletImportSource walletImportSource) async {
-    Navigator.pop(context);
-    final ResultOfSyncFromVault? scanResult =
-        (await Navigator.pushNamed(
-              context,
-              '/wallet-add-scanner',
-              arguments: {
-                'walletImportSource': walletImportSource,
-                'onNewWalletAdded': (scanResult) {
-                  setState(() {
-                    _resultOfSyncFromVault = scanResult;
-                  });
-                },
-              },
-            )
-            as ResultOfSyncFromVault?);
-
-    setState(() {
-      _resultOfSyncFromVault = scanResult;
-    });
-
-    if (_resultOfSyncFromVault == null) return;
-  }
-
-  void goToBitBox02Screen() async {
-    Navigator.pop(context);
-    Navigator.pushNamed(context, '/bitbox02-connect', arguments: {'walletImportSource': WalletImportSource.bitbox02});
-  }
-
   void _onAddWalletPressed([WalletFilter? filter]) {
     switch (filter ?? _walletFilter) {
       case WalletFilter.all:
@@ -2454,96 +2422,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
   }
 
-  void goToTrezorScreen() {
-    Navigator.pop(context);
-    if (Platform.isAndroid) {
-      Navigator.pushNamed(context, '/trezor-transport-select');
-    } else {
-      Navigator.pushNamed(context, '/trezor-ble-connect', arguments: {'walletImportSource': WalletImportSource.trezor});
-    }
-  }
-
   void _showAddWalletMenu(WalletAddDialogMode mode) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: "Dismiss",
-      barrierColor: context.coconutColors.surface.withValues(alpha: 0.5),
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder:
-          (dialogContext, animation, secondaryAnimation) => WalletAddDialog(
-            animation: animation,
-            mode: mode,
-            onWatchOnlySelected: () {
-              Navigator.pop(dialogContext);
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  _showAddWalletMenu(WalletAddDialogMode.watchOnlySource);
-                }
-              });
-            },
-            onHotWalletSelected: () {
-              Navigator.pop(dialogContext);
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  _showAddWalletMenu(WalletAddDialogMode.hotWalletAction);
-                }
-              });
-            },
-            onCreateHotWallet: onCreateHotWalletPressed,
-            onRestoreHotWallet: onRestoreHotWalletPressed,
-            onWalletSelected: (walletImportSource) {
-              switch (walletImportSource) {
-                case WalletImportSource.bitbox02:
-                  goToBitBox02Screen();
-                  break;
-                case WalletImportSource.trezor:
-                  goToTrezorScreen();
-                  break;
-                default:
-                  goToScannerScreen(walletImportSource);
-              }
-            },
-          ),
-      transitionBuilder: (context, animation, secondaryAnimation, child) => child,
-    );
-  }
-
-  Future<void> onCreateHotWalletPressed() async {
-    if (!await ensureDevicePasscodeIsSet()) return;
-    if (!mounted) return;
-
-    Navigator.pop(context);
-    Navigator.pushNamed(context, '/hot-wallet-create');
-  }
-
-  Future<void> onRestoreHotWalletPressed() async {
-    if (!await ensureDevicePasscodeIsSet()) return;
-    if (!mounted) return;
-
-    Navigator.pop(context);
-    Navigator.pushNamed(context, '/hot-wallet-restore');
-  }
-
-  Future<bool> ensureDevicePasscodeIsSet() async {
-    final isDevicePasscodeSet = await context.read<AuthProvider>().isDevicePasscodeSet();
-    if (!mounted) return false;
-    if (isDevicePasscodeSet) return true;
-
-    await showConfirmDialog(
-      context,
-      context.read<PreferenceProvider>().language,
-      t.wallet_home_screen.hot_wallet_add.device_passcode_required.title,
-      t.wallet_home_screen.hot_wallet_add.device_passcode_required.description,
-      leftButtonText: t.close,
-      rightButtonText: t.go_to_settings,
-      onTapLeft: () => Navigator.pop(context),
-      onTapRight: () async {
-        Navigator.pop(context);
-        await context.read<AuthProvider>().openDeviceSecuritySettings();
-      },
-    );
-    return false;
+    WalletAddDialog.show(context, mode);
   }
 
   SliverAppBar _buildAppBar(NetworkStatus networkStatus) {
@@ -2761,90 +2641,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     return '';
   }
 
-  Widget buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType, {bool isWide = false}) {
-    return ShrinkAnimationButton(
-      // top sheet의 background 색상과 동일하게 homeBackground로 지정
-      defaultColor: context.coconutColors.homeBackground,
-      pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
-      pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
-      onPressed: () => onPressed(),
-      borderRadius: isWide ? 12 : 24,
-      child:
-          isWide
-              ? Padding(
-                padding: const EdgeInsets.all(8),
-                child: Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: context.coconutColors.border.withAlpha(60)),
-                        borderRadius: const BorderRadius.all(Radius.circular(6.0)),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: SvgPicture.asset(
-                          scanType.externalWalletIconPath,
-                          width: 20,
-                          height: 20,
-                          colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                        ),
-                      ),
-                    ),
-                    CoconutLayout.spacing_400w,
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            scanType.displayName,
-                            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                          CoconutLayout.spacing_50h,
-                          Text(
-                            t.wallet_add_scanner_screen.self_description,
-                            style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )
-              : Padding(
-                padding: const EdgeInsets.all(8),
-                child: SizedBox.expand(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SvgPicture.asset(
-                        scanType.externalWalletIconPath,
-                        colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                      ),
-                      CoconutLayout.spacing_100h,
-                      Text(
-                        scanType.displayName,
-                        style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-    );
-  }
-
   void _setDropdownMenuVisiblility(bool value) {
     _isDropdownMenuVisible.value = value;
   }
 
-  void scrollToIndicator(int index) {
+  void _scrollToIndicator(int index) {
     if (!_pageIndicatorController.hasClients) return;
 
     // 실제 화면 너비를 기반으로 보이는 점 개수 계산

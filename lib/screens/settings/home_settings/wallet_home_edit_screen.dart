@@ -466,11 +466,11 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
             width: 20,
             height: 16,
             fit: BoxFit.contain,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
         ],
-        Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSubDefault),
+        Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary),
       ],
     );
   }

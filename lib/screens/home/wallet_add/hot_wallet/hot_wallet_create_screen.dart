@@ -7,20 +7,21 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
-import 'package:coconut_wallet/widgets/dialog.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -214,7 +215,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                 colorIndex: _selectedColorIndex,
                 iconIndex: _selectedIconIndex,
                 badgeSvgAssetPath: 'assets/svg/edit-outlined.svg',
-                badgeColor: context.coconutColors.iconSubDefault,
+                badgeColor: context.coconutColors.iconSecondary,
               ),
             ),
           ),
@@ -234,7 +235,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 placeholderText: _suggestedWalletName,
                 backgroundColor: context.coconutColors.inputSurface,
-                borderColor: context.coconutColors.inputBorder,
                 activeColor: context.coconutColors.primaryText,
                 cursorColor: context.coconutColors.primaryText,
                 placeholderColor: context.coconutColors.inputPlaceholder,
@@ -325,9 +325,9 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(shape: BoxShape.circle, color: context.coconutColors.iconBackgroundSubtle),
               child: SvgPicture.asset(
-                CustomIcons.getPathByIndex(iconIndex),
+                CustomWalletIcons.getPathByIndex(iconIndex),
                 fit: BoxFit.contain,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
               ),
             ),
           ),
@@ -340,7 +340,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: context.coconutColors.surfaceCard,
+        color: context.coconutColors.surface,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       child: Column(
@@ -376,7 +376,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                 AnimatedRotation(
                   turns: _isAdvancedSettingsExpanded ? 0.5 : 0,
                   duration: const Duration(milliseconds: 200),
-                  child: Icon(Icons.keyboard_arrow_down_rounded, color: context.coconutColors.iconSubDefault),
+                  child: Icon(Icons.keyboard_arrow_down_rounded, color: context.coconutColors.iconSecondary),
                 ),
               ],
             ),
@@ -404,7 +404,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                     child: ShrinkAnimationButton(
                                       onPressed: () => setState(() => _mnemonicWordCount = wordCount),
                                       defaultColor: Colors.transparent,
-                                      pressedColor: context.coconutColors.surfacePressed,
+                                      pressedColor: context.coconutColors.surfacePressOverlay,
                                       borderRadius: 16,
                                       animationEndValue: 0.94,
                                       child: AnimatedContainer(
@@ -449,7 +449,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                             isVerticalSubtitle: true,
                             subtitleStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                             customPadding: EdgeInsets.zero,
-                            backgroundColor: context.coconutColors.surfaceCard,
+                            backgroundColor: context.coconutColors.surface,
                             onPressed: () => _setUsePassphrase(!_usePassphrase),
                             rightElement: CoconutSwitch(
                               isOn: _usePassphrase,
@@ -485,7 +485,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                       padding: const EdgeInsets.symmetric(horizontal: 16),
                                       placeholderText: t.wallet_home_screen.hot_wallet_create.passphrase_placeholder,
                                       backgroundColor: context.coconutColors.inputSurface,
-                                      borderColor: context.coconutColors.inputBorder,
                                       activeColor: context.coconutColors.primaryText,
                                       cursorColor: context.coconutColors.primaryText,
                                       placeholderColor: context.coconutColors.inputPlaceholder,
@@ -529,7 +528,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                       placeholderText:
                                           t.wallet_home_screen.hot_wallet_create.passphrase_confirm_placeholder,
                                       backgroundColor: context.coconutColors.inputSurface,
-                                      borderColor: context.coconutColors.inputBorder,
                                       activeColor: context.coconutColors.primaryText,
                                       cursorColor: context.coconutColors.primaryText,
                                       placeholderColor: context.coconutColors.inputPlaceholder,
@@ -618,7 +616,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
         height: 32,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: context.coconutColors.surfaceCard,
+          color: context.coconutColors.surface,
           borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
         ),
         child: Row(
@@ -632,10 +630,10 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
             ),
             CoconutLayout.spacing_100w,
             SvgPicture.asset(
-              _isPassphraseVisible ? 'assets/svg/eye.svg' : 'assets/svg/eye-crossed.svg',
+              _isPassphraseVisible ? CommonVisibilityIconPath.eye : CommonVisibilityIconPath.eyeCrossed,
               width: 16,
               height: 16,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
             ),
           ],
         ),
@@ -659,7 +657,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: context.coconutColors.surfaceCard,
+        color: context.coconutColors.surface,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       child: Row(
@@ -668,7 +666,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
             walletImportSource: WalletImportSource.coconutVault,
             colorIndex: colorIndex,
             iconIndex: iconIndex,
-            badgeSvgAssetPath: 'assets/svg/hot-wallet-fire.svg',
+            badgeSvgAssetPath: FeatureWalletIconPath.hotWalletFire,
             badgeSize: 18,
           ),
           CoconutLayout.spacing_300w,
@@ -731,7 +729,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                 mainAxisSpacing: 10,
                                 crossAxisSpacing: 24,
                               ),
-                              itemCount: CustomIcons.totalCount,
+                              itemCount: CustomWalletIcons.totalCount,
                               itemBuilder:
                                   (context, index) => _buildIconItem(
                                     iconIndex: index,
@@ -756,15 +754,17 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                             });
                             Navigator.pop(bottomSheetContext);
                           },
-                          defaultColor: context.coconutColors.actionButtonBackground,
-                          pressedColor: context.coconutColors.actionButtonPressed,
+                          defaultColor: context.coconutColors.buttonPrimaryBackground,
+                          pressedColor: context.coconutColors.buttonPrimaryPressOverlay,
                           borderRadius: CoconutStyles.radius_200,
                           child: SizedBox(
                             height: 52,
                             child: Center(
                               child: Text(
                                 t.done,
-                                style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.actionButtonText),
+                                style: CoconutTypography.body1_16_Bold.setColor(
+                                  context.coconutColors.buttonPrimaryForeground,
+                                ),
                               ),
                             ),
                           ),

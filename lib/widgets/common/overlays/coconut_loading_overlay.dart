@@ -8,12 +8,19 @@ class CoconutLoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (applyFullScreen) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          ModalBarrier(dismissible: false, color: context.coconutColors.loadingOverlay),
+          const Center(child: FullscreenLoadingIndicator(padding: EdgeInsets.zero)),
+        ],
+      );
+    }
+
     return Container(
       color: context.coconutColors.loadingOverlay,
-      padding:
-          applyFullScreen
-              ? EdgeInsets.zero
-              : EdgeInsets.only(bottom: kToolbarHeight + MediaQuery.of(context).padding.top + kToolbarHeight),
+      padding: EdgeInsets.only(bottom: kToolbarHeight + MediaQuery.of(context).padding.top + kToolbarHeight),
       child: const Center(child: FullscreenLoadingIndicator(padding: EdgeInsets.zero)),
     );
   }

@@ -1,10 +1,11 @@
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -160,7 +161,7 @@ class _PassphraseCard extends StatelessWidget {
     final strings = t.wallet_home_screen.hot_wallet_setup;
 
     return Material(
-      color: context.coconutColors.surfaceCard,
+      color: context.coconutColors.surface,
       borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       child: InkWell(
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
@@ -188,10 +189,10 @@ class _PassphraseCard extends StatelessWidget {
               ),
               CoconutLayout.spacing_300w,
               SvgPicture.asset(
-                isVisible ? 'assets/svg/eye.svg' : 'assets/svg/eye-crossed.svg',
+                isVisible ? CommonVisibilityIconPath.eye : CommonVisibilityIconPath.eyeCrossed,
                 width: 18,
                 height: 18,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
               ),
             ],
           ),
@@ -258,7 +259,7 @@ class _MnemonicWarningCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SvgPicture.asset(
-              'assets/svg/triangle-warning.svg',
+              CommonStateIconPath.triangleWarning,
               width: 32,
               colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
             ),

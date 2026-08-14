@@ -656,6 +656,10 @@ class CoconutPopup extends StatefulWidget {
     this.rightButtonColor,
     this.titleTextStyle,
     this.descriptionTextStyle,
+    this.descriptionSpan,
+    this.checkboxText,
+    this.isCheckboxSelected = false,
+    this.onCheckboxChanged,
     this.leftButtonTextStyle,
     this.rightButtonTextStyle,
     this.titlePadding,
@@ -679,6 +683,10 @@ class CoconutPopup extends StatefulWidget {
   final Color? rightButtonColor;
   final TextStyle? titleTextStyle;
   final TextStyle? descriptionTextStyle;
+  final InlineSpan? descriptionSpan;
+  final String? checkboxText;
+  final bool isCheckboxSelected;
+  final ValueChanged<bool>? onCheckboxChanged;
   final TextStyle? leftButtonTextStyle;
   final TextStyle? rightButtonTextStyle;
   final EdgeInsets? titlePadding;
@@ -691,12 +699,16 @@ class CoconutPopup extends StatefulWidget {
 }
 
 class _CoconutPopupState extends State<CoconutPopup> {
+  bool _isCheckboxTextPressing = false;
   bool _isLeftButtonPressing = false;
   bool _isRightButtonPressing = false;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final descriptionStyle =
+        widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.primaryText) ??
+        CoconutTypography.body1_16.setColor(widget.descriptionColor ?? colors.primaryText);
 
     final content = Container(
       decoration: BoxDecoration(
@@ -721,14 +733,53 @@ class _CoconutPopupState extends State<CoconutPopup> {
               alignment: Alignment.topCenter,
               padding: widget.descriptionPadding ?? const EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 12),
               constraints: const BoxConstraints(minHeight: 66),
-              child: Text(
-                widget.description,
-                textAlign: widget.centerDescription ? TextAlign.center : null,
-                style:
-                    widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.primaryText) ??
-                    CoconutTypography.body1_16.setColor(widget.descriptionColor ?? colors.primaryText),
-              ),
+              child:
+                  widget.descriptionSpan != null
+                      ? RichText(
+                        text: TextSpan(style: descriptionStyle, children: [widget.descriptionSpan!]),
+                        textAlign: widget.centerDescription ? TextAlign.center : TextAlign.start,
+                        textScaler:
+                            widget.useFixedFontSize ? const TextScaler.linear(1) : MediaQuery.textScalerOf(context),
+                      )
+                      : Text(
+                        widget.description,
+                        textAlign: widget.centerDescription ? TextAlign.center : null,
+                        style: descriptionStyle,
+                      ),
             ),
+            if (widget.checkboxText != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 24, right: 24, bottom: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    CoconutCheckbox(
+                      isSelected: widget.isCheckboxSelected,
+                      onChanged: (value) => widget.onCheckboxChanged?.call(value),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          setState(() => _isCheckboxTextPressing = false);
+                          widget.onCheckboxChanged?.call(!widget.isCheckboxSelected);
+                        },
+                        onTapCancel: () => setState(() => _isCheckboxTextPressing = false),
+                        onTapDown: (_) => setState(() => _isCheckboxTextPressing = true),
+                        child: Text(
+                          widget.checkboxText!,
+                          style: CoconutTypography.body3_12.setColor(
+                            _isCheckboxTextPressing ? colors.mutedText : colors.secondaryText,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Row(
               children: [
                 if (widget.onTapLeft != null)
