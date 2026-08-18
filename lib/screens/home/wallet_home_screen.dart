@@ -18,11 +18,12 @@ import 'package:coconut_design_system/coconut_design_system.dart'
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
-import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/constants/security_warning_constants.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -56,6 +57,7 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/text/animated_dots_text.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/features/ccos/card/coconut_open_store_intro_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/security_warning_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
@@ -80,6 +82,8 @@ import 'package:collection/collection.dart';
 class WalletHomeScreen extends StatefulWidget {
   const WalletHomeScreen({super.key});
 
+  static CcosOpenStoreIntro get _openStoreIntro => CcosOpenStoreContentSource.intro;
+
   /// P2P 등 외부에서 홈의 "지갑 추가" 바텀시트를 띄울 때 호출.
   static void openAddWalletIfActive() => _currentState?._showAddWalletMenu(WalletAddDialogMode.walletType);
 
@@ -90,11 +94,12 @@ class WalletHomeScreen extends StatefulWidget {
 }
 
 class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProviderStateMixin {
-  static const _nextWarningDelay = Duration(milliseconds: 400);
+  static const _nextWarningDelay = Duration(milliseconds: 200);
 
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final Set<_HomeSecurityWarningType> _dismissedWarningsThisSession = {};
   _HomeSecurityWarningType? _nextWarningAfterDismissal;
+  bool _showOpenStoreAfterSecurityWarning = false;
   final GlobalKey _dropdownButtonKey = GlobalKey();
   Size _dropdownButtonSize = const Size(0, 0);
   Offset _dropdownButtonPosition = Offset.zero;
@@ -222,10 +227,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           final shouldShowOpenStoreIntroCard = context.select<PreferenceProvider, bool>(
             (provider) => provider.shouldShowOpenStoreIntroCard,
           );
-          final openStoreFeatureStatusLabel = context.select<PreferenceProvider, String?>(
-            (provider) => provider.getCcosFeatureStatusLabel(CcosFeatureRegistrySource.featuredListing.id),
-          );
-
           final walletItem = data.item1;
           final favoriteWallets = data.item2;
           final balanceVisibilityData = data.item3;
@@ -253,6 +254,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       _canShowSecurityWarning(_HomeSecurityWarningType.appLock)
                   ? _HomeSecurityWarningType.appLock
                   : null;
+          final showOpenStoreIntroCard = securityWarningType == null && shouldShowOpenStoreIntroCard;
+          final showHomeAlertSlot = securityWarningType != null || showOpenStoreIntroCard;
 
           if (viewModel.isWalletListChanged(_previousWalletList, walletItem, walletBalanceMap)) {
             _handleWalletListUpdate(walletItem);
@@ -305,68 +308,75 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             walletItem.isEmpty,
                           ),
 
+                          SliverToBoxAdapter(
+                            child:
+                                securityWarningType != null
+                                    ? SecurityWarningCard(
+                                      key: ValueKey(securityWarningType),
+                                      showDelay:
+                                          _nextWarningAfterDismissal == securityWarningType
+                                              ? _nextWarningDelay
+                                              : const Duration(seconds: 2),
+                                      title:
+                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                              ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
+                                              : t.wallet_home_screen.app_lock_warning.title,
+                                      useUnbackedWalletGradient:
+                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet,
+                                      description:
+                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                              ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
+                                              : t.wallet_home_screen.app_lock_warning.description,
+                                      onTap:
+                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                              ? () => _openWalletInfo(
+                                                firstUnbackedHotWalletWithBalance!,
+                                                highlightMnemonicBackup: true,
+                                              )
+                                              : _openAppLockSettings,
+                                      onClosed:
+                                          () => _dismissSecurityWarning(
+                                            securityWarningType,
+                                            showNextWarning:
+                                                securityWarningType == _HomeSecurityWarningType.unbackedHotWallet &&
+                                                hasHotWalletWithBalance &&
+                                                !isAppLockEnabled &&
+                                                _canShowSecurityWarning(_HomeSecurityWarningType.appLock),
+                                          ),
+                                      icon:
+                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                              ? SvgPicture.asset(
+                                                CommonStateIconPath.triangleWarning,
+                                                width: 20,
+                                                height: 20,
+                                                colorFilter: ColorFilter.mode(
+                                                  context.coconutColors.iconOnDanger,
+                                                  BlendMode.srcIn,
+                                                ),
+                                              )
+                                              : SvgPicture.asset(
+                                                CommonStateIconPath.shieldWarning,
+                                                width: 20,
+                                                height: 20,
+                                                colorFilter: ColorFilter.mode(
+                                                  context.coconutColors.appLockWarningForeground,
+                                                  BlendMode.srcIn,
+                                                ),
+                                              ),
+                                    )
+                                    : showOpenStoreIntroCard
+                                    ? _buildOpenStoreIntroCard(
+                                      showDelay:
+                                          _showOpenStoreAfterSecurityWarning
+                                              ? _nextWarningDelay
+                                              : const Duration(seconds: 3),
+                                    )
+                                    : const SizedBox.shrink(),
+                          ),
+
                           if (walletItem.isNotEmpty) ...[
                             SliverToBoxAdapter(
-                              child:
-                                  securityWarningType == null
-                                      ? const SizedBox.shrink()
-                                      : SecurityWarningCard(
-                                        key: ValueKey(securityWarningType),
-                                        showDelay:
-                                            _nextWarningAfterDismissal == securityWarningType
-                                                ? _nextWarningDelay
-                                                : const Duration(seconds: 3),
-                                        title:
-                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
-                                                ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
-                                                : t.wallet_home_screen.app_lock_warning.title,
-                                        useUnbackedWalletGradient:
-                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet,
-                                        description:
-                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
-                                                ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
-                                                : t.wallet_home_screen.app_lock_warning.description,
-                                        onTap:
-                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
-                                                ? () => _openWalletInfo(
-                                                  firstUnbackedHotWalletWithBalance!,
-                                                  highlightMnemonicBackup: true,
-                                                )
-                                                : _openAppLockSettings,
-                                        onClosed:
-                                            () => _dismissSecurityWarning(
-                                              securityWarningType,
-                                              showNextWarning:
-                                                  securityWarningType == _HomeSecurityWarningType.unbackedHotWallet &&
-                                                  hasHotWalletWithBalance &&
-                                                  !isAppLockEnabled &&
-                                                  _canShowSecurityWarning(_HomeSecurityWarningType.appLock),
-                                            ),
-                                        icon:
-                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
-                                                ? SvgPicture.asset(
-                                                  CommonStateIconPath.triangleWarning,
-                                                  width: 20,
-                                                  height: 20,
-                                                  colorFilter: ColorFilter.mode(
-                                                    context.coconutColors.iconOnDanger,
-                                                    BlendMode.srcIn,
-                                                  ),
-                                                )
-                                                : SvgPicture.asset(
-                                                  CommonStateIconPath.shieldWarning,
-                                                  width: 20,
-                                                  height: 20,
-                                                  colorFilter: ColorFilter.mode(
-                                                    context.coconutColors.appLockWarningForeground,
-                                                    BlendMode.srcIn,
-                                                  ),
-                                                ),
-                                      ),
-                            ),
-                            SliverToBoxAdapter(
-                              child:
-                                  securityWarningType != null ? CoconutLayout.spacing_300h : CoconutLayout.spacing_500h,
+                              child: showHomeAlertSlot ? CoconutLayout.spacing_300h : CoconutLayout.spacing_500h,
                             ),
                             _buildViewAllWallets(walletItem.length),
                           ],
@@ -1076,6 +1086,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
+  Widget _buildOpenStoreIntroCard({required Duration showDelay}) {
+    return _AnimatedOpenStoreIntroCard(
+      showDelay: showDelay,
+      intro: WalletHomeScreen._openStoreIntro,
+      onTap: () => openCoconutOpenStoreIntroScreen(context),
+      onClosed: () => context.read<PreferenceProvider>().hideOpenStoreIntroCardForOneMonth(),
+    );
+  }
+
   Widget _buildWalletOverviewSkeleton() {
     return SizedBox(
       height: 208,
@@ -1649,14 +1668,17 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     final dismissedAt = _sharedPrefs.getInt(type.dismissedAtKey);
     if (dismissedAt == 0) return true;
-    return DateTime.now().millisecondsSinceEpoch - dismissedAt >= securityWarningDismissDuration.inMilliseconds;
+    return DateTime.now().millisecondsSinceEpoch - dismissedAt >= kSecurityWarningDismissDuration.inMilliseconds;
   }
 
   Future<void> _dismissSecurityWarning(_HomeSecurityWarningType type, {required bool showNextWarning}) async {
     _dismissedWarningsThisSession.add(type);
     await _sharedPrefs.setInt(type.dismissedAtKey, DateTime.now().millisecondsSinceEpoch);
     if (!mounted) return;
-    setState(() => _nextWarningAfterDismissal = showNextWarning ? _HomeSecurityWarningType.appLock : null);
+    setState(() {
+      _nextWarningAfterDismissal = showNextWarning ? _HomeSecurityWarningType.appLock : null;
+      _showOpenStoreAfterSecurityWarning = !showNextWarning;
+    });
   }
 
   void _openAppLockSettings() {
@@ -2663,6 +2685,82 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       clampedOffset,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
+    );
+  }
+}
+
+class _AnimatedOpenStoreIntroCard extends StatefulWidget {
+  const _AnimatedOpenStoreIntroCard({
+    required this.showDelay,
+    required this.intro,
+    required this.onTap,
+    required this.onClosed,
+  });
+
+  final Duration showDelay;
+  final CcosOpenStoreIntro intro;
+  final VoidCallback onTap;
+  final VoidCallback onClosed;
+
+  @override
+  State<_AnimatedOpenStoreIntroCard> createState() => _AnimatedOpenStoreIntroCardState();
+}
+
+class _AnimatedOpenStoreIntroCardState extends State<_AnimatedOpenStoreIntroCard> with SingleTickerProviderStateMixin {
+  static const _animationDuration = Duration(milliseconds: 240);
+
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+  Timer? _showDelayTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: _animationDuration);
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+    _showDelayTimer = Timer(widget.showDelay, () {
+      if (mounted) _controller.forward(from: 0);
+    });
+  }
+
+  @override
+  void dispose() {
+    _showDelayTimer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _close() async {
+    _showDelayTimer?.cancel();
+    await _controller.reverse();
+    if (mounted) widget.onClosed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        final value = _animation.value;
+        return ClipRect(
+          child: Align(
+            heightFactor: value,
+            child: Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 4 * (1 - value)),
+                child: Transform.scale(scale: 0.96 + (0.04 * value), child: child),
+              ),
+            ),
+          ),
+        );
+      },
+      child: CoconutOpenStoreIntroCard(
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        intro: widget.intro,
+        onTap: widget.onTap,
+        onDismiss: _close,
+      ),
     );
   }
 }

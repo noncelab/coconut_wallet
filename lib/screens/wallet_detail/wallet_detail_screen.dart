@@ -14,6 +14,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/constants/security_warning_constants.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -284,7 +285,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (_dismissedWarningsThisSession.contains(type)) return false;
     final dismissedAt = _sharedPrefs.getInt(type.dismissedAtKey);
     if (dismissedAt == 0) return true;
-    return DateTime.now().millisecondsSinceEpoch - dismissedAt >= securityWarningDismissDuration.inMilliseconds;
+    return DateTime.now().millisecondsSinceEpoch - dismissedAt >= kSecurityWarningDismissDuration.inMilliseconds;
   }
 
   Future<void> _dismissSecurityWarning(_WalletDetailSecurityWarningType type, {required bool showNextWarning}) async {
