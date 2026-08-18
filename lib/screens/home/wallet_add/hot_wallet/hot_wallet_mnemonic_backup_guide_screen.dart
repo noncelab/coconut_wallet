@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -166,7 +167,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                         width: 72,
                         height: 72,
                         child: Lottie.asset(
-                          'assets/lottie/check-complete.json',
+                          StateLottiePath.checkComplete,
                           controller: _lottieController,
                           fit: BoxFit.contain,
                           repeat: false,
@@ -231,11 +232,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                             child: SizedBox(
                               width: 96,
                               height: 96,
-                              child: Lottie.asset(
-                                'assets/lottie/note-write-pencil.json',
-                                fit: BoxFit.contain,
-                                repeat: false,
-                              ),
+                              child: Lottie.asset(ActionLottiePath.noteWriting, fit: BoxFit.contain, repeat: false),
                             ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
                           ),
                         ),
