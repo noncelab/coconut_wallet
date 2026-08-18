@@ -113,6 +113,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   final GlobalKey _nameFieldKey = GlobalKey();
   final GlobalKey _passphraseFieldKey = GlobalKey();
   final GlobalKey _bottomButtonKey = GlobalKey();
+  final GlobalKey _wordCountSelectorKey = GlobalKey();
+  final GlobalKey _wordCountDropdownKey = GlobalKey();
   final ScrollController _scrollController = ScrollController();
   final Set<int> _invalidWordIndexes = {};
   final Set<int> _resetOnNextEditAfterRefocus = {};
@@ -294,6 +296,22 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
     );
   }
 
+  void _handlePointerDown(PointerDownEvent event) {
+    if (!_isWordCountDropdownVisible) return;
+    if (_isPositionInside(_wordCountSelectorKey, event.position) ||
+        _isPositionInside(_wordCountDropdownKey, event.position)) {
+      return;
+    }
+    setState(() => _isWordCountDropdownVisible = false);
+  }
+
+  bool _isPositionInside(GlobalKey key, Offset globalPosition) {
+    final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null || !renderBox.hasSize) return false;
+    final localPosition = renderBox.globalToLocal(globalPosition);
+    return (Offset.zero & renderBox.size).contains(localPosition);
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<HotWalletRestoreViewModel>();
@@ -301,66 +319,70 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       canPop: _canPop,
       child: Stack(
         children: [
-          Scaffold(
-            resizeToAvoidBottomInset: true,
-            backgroundColor: context.coconutColors.background,
-            appBar: CoconutAppBar.build(
-              title:
-                  _inputMode == _RestoreInputMode.mnemonic
-                      ? t.wallet_home_screen.hot_wallet_restore.title
-                      : t.wallet_home_screen.hot_wallet_restore.seed_qr_title,
-              context: context,
-              onBackPressed: _handleAppBarBackPressed,
-              actionButtonList: [
-                IconButton(
-                  tooltip:
-                      _inputMode == _RestoreInputMode.mnemonic
-                          ? t.wallet_home_screen.hot_wallet_restore.scan_seed_qr
-                          : t.wallet_home_screen.hot_wallet_restore.enter_mnemonic,
-                  onPressed: _toggleInputMode,
-                  icon: SvgPicture.asset(
-                    _inputMode == _RestoreInputMode.mnemonic ? CommonActionIconPath.scan : CommonActionIconPath.paste,
-                    width: 22,
-                    height: 22,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+          Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: _handlePointerDown,
+            child: Scaffold(
+              resizeToAvoidBottomInset: true,
+              backgroundColor: context.coconutColors.background,
+              appBar: CoconutAppBar.build(
+                title:
+                    _inputMode == _RestoreInputMode.mnemonic
+                        ? t.wallet_home_screen.hot_wallet_restore.title
+                        : t.wallet_home_screen.hot_wallet_restore.seed_qr_title,
+                context: context,
+                onBackPressed: _handleAppBarBackPressed,
+                actionButtonList: [
+                  IconButton(
+                    tooltip:
+                        _inputMode == _RestoreInputMode.mnemonic
+                            ? t.wallet_home_screen.hot_wallet_restore.scan_seed_qr
+                            : t.wallet_home_screen.hot_wallet_restore.enter_mnemonic,
+                    onPressed: _toggleInputMode,
+                    icon: SvgPicture.asset(
+                      _inputMode == _RestoreInputMode.mnemonic ? CommonActionIconPath.scan : CommonActionIconPath.paste,
+                      width: 22,
+                      height: 22,
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            body: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                FocusScope.of(context).unfocus();
-                if (_isWordCountDropdownVisible) {
-                  setState(() => _isWordCountDropdownVisible = false);
-                }
-              },
-              child: SafeArea(
-                top: false,
-                child: Stack(
-                  children: [
-                    if (_inputMode == _RestoreInputMode.mnemonic)
-                      Column(
-                        children: [
-                          _buildWordCountSelector(viewModel),
-                          Expanded(child: _buildMnemonicInputSection(viewModel)),
-                        ],
-                      )
-                    else
-                      _buildSeedQrSection(viewModel),
-                    if (_inputMode == _RestoreInputMode.mnemonic && viewModel.suggestions.isNotEmpty)
-                      _buildSuggestions(viewModel),
-                    if ((_inputMode == _RestoreInputMode.mnemonic && viewModel.suggestions.isEmpty) ||
-                        (_inputMode == _RestoreInputMode.seedQr && viewModel.hasScannedMnemonic))
-                      FixedBottomButton(
-                        buttonKey: _bottomButtonKey,
-                        text: t.wallet_home_screen.hot_wallet_restore.restore_wallet,
-                        isActive: viewModel.canRestore,
-                        subWidget: _inputMode == _RestoreInputMode.mnemonic ? _buildMnemonicError(viewModel) : null,
-                        surroundingsColor: context.coconutColors.background,
-                        onButtonClicked: _restore,
-                      ),
-                  ],
+                ],
+              ),
+              body: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  FocusScope.of(context).unfocus();
+                  if (_isWordCountDropdownVisible) {
+                    setState(() => _isWordCountDropdownVisible = false);
+                  }
+                },
+                child: SafeArea(
+                  top: false,
+                  child: Stack(
+                    children: [
+                      if (_inputMode == _RestoreInputMode.mnemonic)
+                        Column(
+                          children: [
+                            _buildWordCountSelector(viewModel),
+                            Expanded(child: _buildMnemonicInputSection(viewModel)),
+                          ],
+                        )
+                      else
+                        _buildSeedQrSection(viewModel),
+                      if (_inputMode == _RestoreInputMode.mnemonic && viewModel.suggestions.isNotEmpty)
+                        _buildSuggestions(viewModel),
+                      if ((_inputMode == _RestoreInputMode.mnemonic && viewModel.suggestions.isEmpty) ||
+                          (_inputMode == _RestoreInputMode.seedQr && viewModel.hasScannedMnemonic))
+                        FixedBottomButton(
+                          buttonKey: _bottomButtonKey,
+                          text: t.wallet_home_screen.hot_wallet_restore.restore_wallet,
+                          isActive: viewModel.canRestore,
+                          subWidget: _inputMode == _RestoreInputMode.mnemonic ? _buildMnemonicError(viewModel) : null,
+                          surroundingsColor: context.coconutColors.background,
+                          onButtonClicked: _restore,
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -718,6 +740,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           CupertinoButton(
+            key: _wordCountSelectorKey,
             minSize: 0,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             onPressed: canClear ? _showClearAllDialog : null,
@@ -820,6 +843,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       top: 0,
       right: 16,
       child: CoconutPulldownMenu(
+        key: _wordCountDropdownKey,
         backgroundColor: context.coconutColors.pulldownMenuBackground,
         shadowColor: context.coconutColors.shadowDefault,
         dividerColor: context.coconutColors.pulldownMenuDividerColor,
