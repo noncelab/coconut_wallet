@@ -1167,6 +1167,7 @@ label_export_wallet_picker_screen:
   all_wallets: "Todas las billeteras"
   create_file: "Crear archivo"
   view_list: "Ver lista"
+  no_wallet: "No se encontró la billetera"
   no_file: "No se encontró el archivo.\nPrimero presione [Crear archivo] para generar un archivo."
   loading_title: "Creando archivo..."
   success_title: "¿Quieres compartir el archivo?"

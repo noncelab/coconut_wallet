@@ -1176,6 +1176,7 @@ label_export_wallet_picker_screen:
   all_wallets: "All Wallets"
   create_file: "Create File"
   view_list: "View List"
+  no_wallet: "Wallet not found"
   no_file: "File not found.\nPlease tap [Create File] first to generate a file."
   loading_title: "Creating file..."
   success_title: "Would you like to share the file?"

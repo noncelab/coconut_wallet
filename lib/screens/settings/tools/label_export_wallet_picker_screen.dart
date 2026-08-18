@@ -273,6 +273,10 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Widget _buildWalletListView(BuildContext context, List<WalletItemBase> wallets) {
+    if (wallets.isEmpty) {
+      return _buildNoWalletsFound(context);
+    }
+
     return ShaderMask(
       shaderCallback: (Rect bounds) {
         return LinearGradient(
@@ -307,6 +311,23 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
           );
         },
       ),
+    );
+  }
+
+  Widget _buildNoWalletsFound(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const SizedBox(height: 100),
+        () {
+          return Text(
+            t.label_export_wallet_picker_screen.no_wallet,
+            style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.center,
+          );
+        }(),
+      ],
     );
   }
 

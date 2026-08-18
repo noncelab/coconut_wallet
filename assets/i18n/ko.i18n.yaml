@@ -1182,6 +1182,7 @@ label_export_wallet_picker_screen:
   all_wallets: "모든 지갑"
   create_file: "파일 만들기"
   view_list: "목록 보기"
+  no_wallet: "지갑을 찾을 수 없어요."
   no_file: "파일을 찾을 수 없어요.\n먼저 [파일 만들기]를 눌러 파일을 생성해 주세요."
   loading_title: "파일을 만들고 있어요"
   success_title: "파일을 공유할까요?"
