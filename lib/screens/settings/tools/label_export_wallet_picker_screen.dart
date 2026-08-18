@@ -52,11 +52,16 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   @override
   Widget build(BuildContext context) {
     final walletProvider = context.watch<WalletProvider>();
+    final preferenceProvider = context.watch<PreferenceProvider>();
+
     List<WalletItemBase> wallets;
     if (widget.initialSelectedWalletId != null) {
       wallets = walletProvider.walletItemList.where((w) => w.id == widget.initialSelectedWalletId).toList();
     } else {
-      wallets = walletProvider.walletItemList;
+      final walletList = walletProvider.walletItemList.toList();
+      final walletOrder = preferenceProvider.walletOrder;
+      walletList.sort((a, b) => walletOrder.indexOf(a.id).compareTo(walletOrder.indexOf(b.id)));
+      wallets = walletList;
     }
 
     final canPop = _step != LabelExportStep.exporting;

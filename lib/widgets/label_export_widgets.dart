@@ -74,7 +74,10 @@ class ExportLabelProgressCard extends StatelessWidget {
           SizedBox(
             width: 48,
             height: 48,
-            child: CircularProgressIndicator(color: context.coconutColors.loadingIndicatorColor, strokeWidth: 3),
+            child: Transform.scale(
+              scale: 0.8,
+              child: CircularProgressIndicator(color: context.coconutColors.loadingIndicatorColor, strokeWidth: 3),
+            ),
           ),
           CoconutLayout.spacing_400h,
           title,
