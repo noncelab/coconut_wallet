@@ -820,8 +820,10 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       top: 0,
       right: 16,
       child: CoconutPulldownMenu(
+        backgroundColor: context.coconutColors.pulldownMenuBackground,
         shadowColor: context.coconutColors.shadowDefault,
-        dividerColor: context.coconutColors.border,
+        dividerColor: context.coconutColors.pulldownMenuDividerColor,
+        splashColor: context.coconutColors.pulldownMenuPressedColor,
         entries: [
           CoconutPulldownMenuItem(title: t.wallet_home_screen.hot_wallet_create.word_count(count: 12)),
           CoconutPulldownMenuItem(title: t.wallet_home_screen.hot_wallet_create.word_count(count: 24)),

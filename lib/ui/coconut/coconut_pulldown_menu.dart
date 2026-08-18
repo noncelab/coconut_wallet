@@ -121,85 +121,91 @@ class CoconutPulldownMenu extends StatelessWidget {
             ),
           ],
         ),
-        child: IntrinsicWidth(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: List.generate(flattenedEntries.length, (index) {
-              final entry = flattenedEntries[index];
-              final isLast = index == flattenedEntries.length - 1;
-
-              if (entry.isGroupTitle) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: groupTitlePadding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                      alignment: Alignment.centerLeft,
-                      decoration: BoxDecoration(
-                        color: backgroundColor ?? colors.pulldownMenuBackground,
-                        borderRadius:
-                            index == 0
-                                ? BorderRadius.only(
-                                  topLeft: Radius.circular(borderRadius),
-                                  topRight: Radius.circular(borderRadius),
-                                )
-                                : null,
-                      ),
-                      child: Text(
-                        entry.groupTitle!,
-                        style:
-                            groupTitleStyle ??
-                            CoconutTypography.body3_12.copyWith(color: groupTitleColor ?? colors.secondaryText),
-                      ),
-                    ),
-                    if (!isLast) _buildDivider(context, entry.groupItemIndex),
-                  ],
-                );
-              }
-
-              return Column(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: ColoredBox(
+            color: backgroundColor ?? colors.pulldownMenuBackground,
+            child: IntrinsicWidth(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  _PulldownMenuItemButton(
-                    title: entry.item!.title,
-                    index: entry.itemIndex!,
-                    isDisabled: entry.item!.isDisabled,
-                    hasSwitch: entry.item!.hasSwitch,
-                    switchValue: entry.item!.switchValue,
-                    isTopRounded: _isTopRounded(flattenedEntries, index),
-                    isBottomRounded: _isBottomRounded(flattenedEntries, index),
-                    borderRadius: borderRadius,
-                    backgroundColor: backgroundColor ?? colors.pulldownMenuBackground,
-                    buttonHeight: buttonHeight,
-                    buttonPadding: buttonPadding,
-                    textColor: textColor ?? colors.pulldownMenuTextColor,
-                    disabledTextColor: colors.mutedText,
-                    isSelectedItemBold: isSelectedItemBold ?? false,
-                    selectedIndex: selectedIndex,
-                    iconSize: iconSize,
-                    iconColor: iconColor ?? colors.pulldownMenuTextColor,
-                    splashColor: splashColor ?? colors.pulldownMenuPressedColor,
-                    switchActiveTrackColor: switchActiveTrackColor,
-                    switchThumbColor: switchThumbColor,
-                    switchInactiveTrackColor: switchInactiveTrackColor,
-                    onTap:
-                        entry.item!.isDisabled
-                            ? null
-                            : () {
-                              if (entry.item!.hasSwitch) {
-                                final nextValue = !entry.item!.switchValue;
-                                onSwitchChanged?.call(entry.itemIndex!, nextValue);
-                                entry.item!.onSwitchChanged?.call(nextValue);
-                              } else {
-                                onSelected(entry.itemIndex!, entry.item!.title);
-                              }
-                            },
-                  ),
-                  if (!isLast) _buildDivider(context, entry.itemIndex),
-                ],
-              );
-            }),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: List.generate(flattenedEntries.length, (index) {
+                  final entry = flattenedEntries[index];
+                  final isLast = index == flattenedEntries.length - 1;
+
+                  if (entry.isGroupTitle) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: groupTitlePadding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                          alignment: Alignment.centerLeft,
+                          decoration: BoxDecoration(
+                            color: backgroundColor ?? colors.pulldownMenuBackground,
+                            borderRadius:
+                                index == 0
+                                    ? BorderRadius.only(
+                                      topLeft: Radius.circular(borderRadius),
+                                      topRight: Radius.circular(borderRadius),
+                                    )
+                                    : null,
+                          ),
+                          child: Text(
+                            entry.groupTitle!,
+                            style:
+                                groupTitleStyle ??
+                                CoconutTypography.body3_12.copyWith(color: groupTitleColor ?? colors.secondaryText),
+                          ),
+                        ),
+                        if (!isLast) _buildDivider(context, entry.groupItemIndex),
+                      ],
+                    );
+                  }
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _PulldownMenuItemButton(
+                        title: entry.item!.title,
+                        index: entry.itemIndex!,
+                        isDisabled: entry.item!.isDisabled,
+                        hasSwitch: entry.item!.hasSwitch,
+                        switchValue: entry.item!.switchValue,
+                        isTopRounded: _isTopRounded(flattenedEntries, index),
+                        isBottomRounded: _isBottomRounded(flattenedEntries, index),
+                        borderRadius: borderRadius,
+                        backgroundColor: backgroundColor ?? colors.pulldownMenuBackground,
+                        buttonHeight: buttonHeight,
+                        buttonPadding: buttonPadding,
+                        textColor: textColor ?? colors.pulldownMenuTextColor,
+                        disabledTextColor: colors.mutedText,
+                        isSelectedItemBold: isSelectedItemBold ?? false,
+                        selectedIndex: selectedIndex,
+                        iconSize: iconSize,
+                        iconColor: iconColor ?? colors.pulldownMenuTextColor,
+                        splashColor: splashColor ?? colors.pulldownMenuPressedColor,
+                        switchActiveTrackColor: switchActiveTrackColor,
+                        switchThumbColor: switchThumbColor,
+                        switchInactiveTrackColor: switchInactiveTrackColor,
+                        onTap:
+                            entry.item!.isDisabled
+                                ? null
+                                : () {
+                                  if (entry.item!.hasSwitch) {
+                                    final nextValue = !entry.item!.switchValue;
+                                    onSwitchChanged?.call(entry.itemIndex!, nextValue);
+                                    entry.item!.onSwitchChanged?.call(nextValue);
+                                  } else {
+                                    onSelected(entry.itemIndex!, entry.item!.title);
+                                  }
+                                },
+                      ),
+                      if (!isLast) _buildDivider(context, entry.itemIndex),
+                    ],
+                  );
+                }),
+              ),
+            ),
           ),
         ),
       ),
