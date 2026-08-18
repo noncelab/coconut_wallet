@@ -11,7 +11,9 @@ import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
-class UtxoItemCard extends StatelessWidget {
+/// utxo_list_screen에서 사용
+/// [isSelectionMode]가 true면 체크 아이콘이 나타남
+class UtxoListItemCard extends StatelessWidget {
   final UtxoState utxo;
   final Function onPressed;
   final VoidCallback? onLongPress;
@@ -19,7 +21,7 @@ class UtxoItemCard extends StatelessWidget {
   final bool isSelected;
   final bool isSelectionMode;
 
-  const UtxoItemCard({
+  const UtxoListItemCard({
     super.key,
     required this.utxo,
     required this.onPressed,
@@ -49,7 +51,9 @@ class UtxoItemCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelectionMode ? colors.borderStrong.withValues(alpha: isSelected ? 1 : 0.2) : Colors.transparent,
+            color: isSelectionMode
+                ? (isSelected ? colors.borderStrong : colors.borderStrong.withAlpha(40))
+                : Colors.transparent,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
@@ -70,19 +74,21 @@ class UtxoItemCard extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               SizedBox(
-                                width: 16,
-                                height: 16,
+                                width: 20,
+                                height: 20,
                                 child: SvgPicture.asset(
-                                  isSelected
-                                      ? CommonFormIconPath.circleCheckFilled
-                                      : CommonFormIconPath.circleCheckOutline,
+                                  CommonFormIconPath.circleCheck,
+                                  width: 20,
+                                  height: 20,
                                   colorFilter: ColorFilter.mode(
-                                    isSelected ? context.coconutColors.iconPrimary : context.coconutColors.iconDisabled,
+                                    isSelected
+                                        ? context.coconutColors.borderStrong
+                                        : context.coconutColors.borderStrong.withAlpha(40),
                                     BlendMode.srcIn,
                                   ),
                                 ),
                               ),
-                              CoconutLayout.spacing_200w,
+                              CoconutLayout.spacing_100w,
                             ],
                           )
                           : const SizedBox.shrink(),

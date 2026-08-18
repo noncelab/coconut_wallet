@@ -5,14 +5,17 @@ import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
 
-/// UTXO 목록 헤더/스티키 헤더에서 공용으로 쓰는 정렬 드롭다운 트리거.
+/// UTXO 목록 헤더/스티키 헤더/선택 모드 헤더에서 공용으로 쓰는 정렬 드롭다운 트리거.
 ///
 /// [isEnabled]가 false면 로딩 인디케이터를 보여주고 버튼을 비활성화한다.
+/// [alignRight]가 true면(기본값) 남는 공간을 오른쪽으로 밀어 우측 정렬하고,
+/// false면 다른 위젯과 나란히 놓일 수 있도록 내용 크기만큼만 차지한다.
 class UtxoListDropdownButton extends StatelessWidget {
   final GlobalKey dropdownGlobalKey;
   final String activeOption;
   final bool isEnabled;
   final VoidCallback onTapDropdown;
+  final bool alignRight;
 
   const UtxoListDropdownButton({
     super.key,
@@ -20,6 +23,7 @@ class UtxoListDropdownButton extends StatelessWidget {
     required this.activeOption,
     required this.isEnabled,
     required this.onTapDropdown,
+    this.alignRight = true,
   });
 
   @override
@@ -27,8 +31,9 @@ class UtxoListDropdownButton extends StatelessWidget {
     final colors = context.coconutColors;
 
     return Row(
+      mainAxisSize: alignRight ? MainAxisSize.max : MainAxisSize.min,
       children: [
-        const Spacer(),
+        if (alignRight) const Spacer(),
         if (!isEnabled)
           Padding(
             padding: const EdgeInsets.only(right: 6),

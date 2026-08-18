@@ -139,6 +139,12 @@ class CommonBottomSheets {
     Widget Function(ScrollController scrollController)? childBuilder,
     required double heightRatio,
     Color? backgroundColor,
+    // false로 주면 DraggableScrollableSheet 없이 고정 높이로 렌더링한다.
+    // 내부 콘텐츠가 시트 높이보다 짧아 스크롤할 여백이 없는 경우, 그 드래그가
+    // DraggableScrollableSheet의 "시트 크기 줄이기" 제스처로 흡수되면서
+    // 배경은 그대로인 채 콘텐츠만 아래로 밀려나다 닫히는 것처럼 보이는 문제를 피한다.
+    // 기본값 true는 기존 호출부 동작을 그대로 유지한다.
+    bool enableDragToResize = true,
   }) async {
     assert(heightRatio >= 0.4 && heightRatio <= 1.0);
     assert(child != null || childBuilder != null);
@@ -157,54 +163,57 @@ class CommonBottomSheets {
                   : SizedBox(
                     height: sheetHeight,
                     width: MediaQuery.of(context).size.width,
-                    child: DraggableScrollableSheet(
-                      controller: draggableController,
-                      expand: false,
-                      initialChildSize: 1.0,
-                      minChildSize: 0.01,
-                      maxChildSize: 1.0,
-                      shouldCloseOnMinExtent: true,
-                      builder: (context, scrollController) {
-                        void handleDragEnd() {
-                          if (isAnimating || !draggableController.isAttached) return;
+                    child:
+                        !enableDragToResize
+                            ? _FixedHeightSheetBody(builder: childBuilder)
+                            : DraggableScrollableSheet(
+                              controller: draggableController,
+                              expand: false,
+                              initialChildSize: 1.0,
+                              minChildSize: 0.01,
+                              maxChildSize: 1.0,
+                              shouldCloseOnMinExtent: true,
+                              builder: (context, scrollController) {
+                                void handleDragEnd() {
+                                  if (isAnimating || !draggableController.isAttached) return;
 
-                          final extent = draggableController.size;
-                          const closeThreshold = 0.7;
-                          if ((extent - 1.0).abs() < 0.001) return;
+                                  final extent = draggableController.size;
+                                  const closeThreshold = 0.7;
+                                  if ((extent - 1.0).abs() < 0.001) return;
 
-                          isAnimating = true;
-                          final animation =
-                              extent <= closeThreshold
-                                  ? draggableController.animateTo(
-                                    0.01,
-                                    duration: const Duration(milliseconds: 180),
-                                    curve: Curves.easeOut,
-                                  )
-                                  : draggableController.animateTo(
-                                    1.0,
-                                    duration: const Duration(milliseconds: 180),
-                                    curve: Curves.easeOut,
-                                  );
+                                  isAnimating = true;
+                                  final animation =
+                                      extent <= closeThreshold
+                                          ? draggableController.animateTo(
+                                            0.01,
+                                            duration: const Duration(milliseconds: 180),
+                                            curve: Curves.easeOut,
+                                          )
+                                          : draggableController.animateTo(
+                                            1.0,
+                                            duration: const Duration(milliseconds: 180),
+                                            curve: Curves.easeOut,
+                                          );
 
-                          animation.whenComplete(() {
-                            if (extent <= closeThreshold && context.mounted) {
-                              // Navigator.of(context).pop();
-                            }
-                            isAnimating = false;
-                          });
-                        }
+                                  animation.whenComplete(() {
+                                    if (extent <= closeThreshold && context.mounted) {
+                                      // Navigator.of(context).pop();
+                                    }
+                                    isAnimating = false;
+                                  });
+                                }
 
-                        return NotificationListener<ScrollNotification>(
-                          onNotification: (notification) {
-                            if (notification is ScrollEndNotification) {
-                              handleDragEnd();
-                            }
-                            return false;
-                          },
-                          child: childBuilder(scrollController),
-                        );
-                      },
-                    ),
+                                return NotificationListener<ScrollNotification>(
+                                  onNotification: (notification) {
+                                    if (notification is ScrollEndNotification) {
+                                      handleDragEnd();
+                                    }
+                                    return false;
+                                  },
+                                  child: childBuilder(scrollController),
+                                );
+                              },
+                            ),
                   ),
         );
       },
@@ -496,6 +505,28 @@ class CommonBottomSheets {
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
     );
   }
+}
+
+class _FixedHeightSheetBody extends StatefulWidget {
+  const _FixedHeightSheetBody({required this.builder});
+
+  final Widget Function(ScrollController scrollController) builder;
+
+  @override
+  State<_FixedHeightSheetBody> createState() => _FixedHeightSheetBodyState();
+}
+
+class _FixedHeightSheetBodyState extends State<_FixedHeightSheetBody> {
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(_scrollController);
 }
 
 class SelectableBottomSheetTextItem extends StatefulWidget {
