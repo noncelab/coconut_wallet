@@ -356,7 +356,6 @@ class _WalletActionButton extends StatelessWidget {
             SvgPicture.asset(
               iconPath,
               width: 24,
-              height: 19,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
             CoconutLayout.spacing_400w,
