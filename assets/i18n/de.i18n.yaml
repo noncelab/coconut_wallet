@@ -1055,7 +1055,7 @@ split_utxo_screen:
 label_management_screen:
   title: "Notizen verwalten"
   subtitle: "Importieren oder exportieren Sie Ihre gespeicherten Notizen"
-  description: "BIP-329 ist ein offener Standard, der den Austausch von Notizen zwischen Wallets ermöglicht. Wenn Sie Ihre Notizen exportieren, können Sie diese durch einfaches Importieren wiederherstellen, selbst wenn Sie das Gerät wechseln oder die App neu installieren."
+  description: "BIP-329 ist ein offener Standard zum Austauschen von Notizen zwischen Wallets. Wenn Sie Ihre Notizen exportieren, können Sie diese selbst nach einem Gerätewechsel oder einer Neuinstallation der App wieder importieren und wiederherstellen."
   import_title: "Importieren"
   import_description: "Notizen aus einer anderen Wallet importieren"
   export_title: "Exportieren"

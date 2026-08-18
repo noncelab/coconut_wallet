@@ -1124,7 +1124,7 @@ split_utxo_screen:
 label_management_screen:
   title: "Manage Notes"
   subtitle: "Import or export recorded notes"
-  description: "BIP-329 is an open standard that allows wallets to exchange notes with each other. Exporting your notes lets you restore them simply by importing, even if you switch devices or reinstall the app."
+  description: "BIP-329 is an open standard designed to import and export wallet labels. By backing up your labels, you can import and restore them even after changing devices or reinstalling the app."
   import_title: "Import"
   import_description: "Import notes from another wallet"
   export_title: "Export"
