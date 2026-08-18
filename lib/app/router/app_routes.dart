@@ -55,64 +55,6 @@ import 'package:flutter/widgets.dart';
 Map<String, WidgetBuilder> buildAppRoutes() {
   return {
     '/wallet-list': (context) => const WalletListScreen(),
-    '/hot-wallet-create': (context) => const HotWalletCreateScreen(),
-    '/hot-wallet-restore': (context) => const HotWalletRestoreScreen(),
-    '/hot-wallet-mnemonic-backup-guide':
-        (context) => _buildScreenWithArgs(
-          context,
-          (args) => HotWalletMnemonicBackupGuideScreen(
-            walletName: args['walletName'],
-            walletId: args['walletId'],
-            mnemonic: args['mnemonic'],
-            passphrase: args['passphrase'],
-            secureStorageKey: args['secureStorageKey'] as String?,
-            enterPassphraseWhenSigning: args['enterPassphraseWhenSigning'] ?? false,
-            showWalletCreatedIntro: args['showWalletCreatedIntro'] ?? true,
-            continueToAppLockGuide: args['continueToAppLockGuide'] ?? true,
-            returnToPreviousOnExit: args['returnToPreviousOnExit'] ?? false,
-          ),
-        ),
-    '/hot-wallet-app-lock-guide-screen': (context) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      return HotWalletAppLockGuideScreen(walletId: args?['walletId'] as int?);
-    },
-    '/hot-wallet-mnemonic-backup':
-        (context) => _buildScreenWithArgs(
-          context,
-          (args) => HotWalletMnemonicBackupScreen(
-            mnemonic: args['mnemonic'],
-            passphrase: args['passphrase'] ?? '',
-            enterPassphraseWhenSigning: args['enterPassphraseWhenSigning'] ?? false,
-            descriptor: args['descriptor'] ?? '',
-            walletId: args['walletId'],
-            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
-          ),
-        ),
-    '/mnemonic-backup-confirm':
-        (context) => _buildScreenWithArgs(
-          context,
-          (args) => MnemonicBackupConfirmScreen(
-            mnemonic: args['mnemonic'],
-            passphrase: args['passphrase'] ?? '',
-            descriptor: args['descriptor'] ?? '',
-            confirmPassphrase: args['confirmPassphrase'] ?? false,
-            walletId: args['walletId'],
-            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
-          ),
-        ),
-    '/mnemonic-backup-complete':
-        (context) => _buildScreenWithArgs(
-          context,
-          (args) => MnemonicBackupCompleteScreen(
-            walletId: args['walletId'],
-            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
-          ),
-        ),
-    '/hot-wallet-passphrase-check':
-        (context) => _buildScreenWithArgs(
-          context,
-          (args) => HotWalletPassphraseCheckScreen(mnemonic: args['mnemonic'], descriptor: args['descriptor']),
-        ),
     '/home-settings': (context) => const HomeSettingsScreen(),
     '/app-info': (context) => const AppInfoScreen(),
     '/signed-psbt-scanner': (context) => const SignedPsbtScannerScreen(),
@@ -280,6 +222,64 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             isFromSendFlow: args['isFromSendFlow'] ?? false,
             transport: args['transport'] == 'usb' ? TrezorTransport.usb : TrezorTransport.ble,
           ),
+        ),
+    '/hot-wallet-create': (context) => const HotWalletCreateScreen(),
+    '/hot-wallet-restore': (context) => const HotWalletRestoreScreen(),
+    '/hot-wallet-mnemonic-backup-guide':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => HotWalletMnemonicBackupGuideScreen(
+            walletName: args['walletName'],
+            walletId: args['walletId'],
+            mnemonic: args['mnemonic'],
+            passphrase: args['passphrase'],
+            secureStorageKey: args['secureStorageKey'] as String?,
+            enterPassphraseWhenSigning: args['enterPassphraseWhenSigning'] ?? false,
+            showWalletCreatedIntro: args['showWalletCreatedIntro'] ?? true,
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? true,
+            returnToPreviousOnExit: args['returnToPreviousOnExit'] ?? false,
+          ),
+        ),
+    '/hot-wallet-app-lock-guide-screen': (context) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      return HotWalletAppLockGuideScreen(walletId: args?['walletId'] as int?);
+    },
+    '/hot-wallet-mnemonic-backup':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => HotWalletMnemonicBackupScreen(
+            mnemonic: args['mnemonic'],
+            passphrase: args['passphrase'] ?? '',
+            enterPassphraseWhenSigning: args['enterPassphraseWhenSigning'] ?? false,
+            descriptor: args['descriptor'] ?? '',
+            walletId: args['walletId'],
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
+          ),
+        ),
+    '/mnemonic-backup-confirm':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => MnemonicBackupConfirmScreen(
+            mnemonic: args['mnemonic'],
+            passphrase: args['passphrase'] ?? '',
+            descriptor: args['descriptor'] ?? '',
+            confirmPassphrase: args['confirmPassphrase'] ?? false,
+            walletId: args['walletId'],
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
+          ),
+        ),
+    '/mnemonic-backup-complete':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => MnemonicBackupCompleteScreen(
+            walletId: args['walletId'],
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
+          ),
+        ),
+    '/hot-wallet-passphrase-check':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => HotWalletPassphraseCheckScreen(mnemonic: args['mnemonic'], descriptor: args['descriptor']),
         ),
   };
 }

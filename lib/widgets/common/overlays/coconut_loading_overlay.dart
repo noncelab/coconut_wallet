@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 class CoconutLoadingOverlay extends StatelessWidget {
   final bool applyFullScreen;
-  const CoconutLoadingOverlay({super.key, this.applyFullScreen = false});
+  final double indicatorSize;
+
+  const CoconutLoadingOverlay({super.key, this.applyFullScreen = false, this.indicatorSize = 48.0});
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +15,7 @@ class CoconutLoadingOverlay extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           ModalBarrier(dismissible: false, color: context.coconutColors.loadingOverlay),
-          const Center(child: FullscreenLoadingIndicator(padding: EdgeInsets.zero)),
+          Center(child: FullscreenLoadingIndicator(padding: EdgeInsets.zero, size: indicatorSize)),
         ],
       );
     }
@@ -21,7 +23,7 @@ class CoconutLoadingOverlay extends StatelessWidget {
     return Container(
       color: context.coconutColors.loadingOverlay,
       padding: EdgeInsets.only(bottom: kToolbarHeight + MediaQuery.of(context).padding.top + kToolbarHeight),
-      child: const Center(child: FullscreenLoadingIndicator(padding: EdgeInsets.zero)),
+      child: Center(child: FullscreenLoadingIndicator(padding: EdgeInsets.zero, size: indicatorSize)),
     );
   }
 }
