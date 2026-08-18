@@ -312,7 +312,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
     );
     SvgPicture tabOrderIcon = SvgPicture.asset(
-      'assets/svg/arrow-top-down.svg',
+      CommonNavigationIconPath.arrowTopDown,
       width: 16,
       height: 16,
       colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
@@ -869,7 +869,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               CoconutLayout.spacing_100w,
               if (filter == WalletFilter.all)
                 SvgPicture.asset(
-                  'assets/svg/lock_simple.svg',
+                  CommonSecurityIconPath.lock,
                   width: 16,
                   height: 16,
                   colorFilter: ColorFilter.mode(chipTextColor, BlendMode.srcIn),
@@ -878,7 +878,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 RotatedBox(
                   quarterTurns: 1,
                   child: SvgPicture.asset(
-                    'assets/svg/arrow-top-down.svg',
+                    CommonNavigationIconPath.arrowTopDown,
                     width: 16,
                     height: 16,
                     colorFilter: ColorFilter.mode(chipTextColor, BlendMode.srcIn),
@@ -1334,7 +1334,7 @@ class _WalletListAppBarMenuButtonState extends State<_WalletListAppBarMenuButton
           padding: EdgeInsets.zero,
           onPressed: _toggleMenu,
           icon: SvgPicture.asset(
-            'assets/svg/kebab.svg',
+            CommonMenuIconPath.kebab,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
         ),
@@ -1688,7 +1688,7 @@ class _BitcoinPriceInfoButtonState extends State<_BitcoinPriceInfoButton> with S
           child: Align(
             alignment: Alignment.centerRight,
             child: SvgPicture.asset(
-              'assets/svg/circle-info.svg',
+              CommonStateIconPath.circleInfo,
               width: 16,
               height: 16,
               colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),

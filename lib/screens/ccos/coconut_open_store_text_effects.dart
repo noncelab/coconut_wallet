@@ -7,41 +7,20 @@ import 'package:flutter/material.dart';
 const int kTypewriterMsPerCharacter = 50;
 const double kTypewriterMsPerCharacterDouble = 50.0;
 
-int typewriterDurationMs(String source) =>
-    source.characters.length * kTypewriterMsPerCharacter;
+int typewriterDurationMs(String source) => source.characters.length * kTypewriterMsPerCharacter;
 
-Interval intervalFromMs(
-  int startMs,
-  int endMs,
-  int totalMs, {
-  Curve curve = Curves.linear,
-}) {
+Interval intervalFromMs(int startMs, int endMs, int totalMs, {Curve curve = Curves.linear}) {
   final safeTotalMs = totalMs <= 0 ? 1 : totalMs;
-  return Interval(
-    (startMs / safeTotalMs).clamp(0.0, 1.0),
-    (endMs / safeTotalMs).clamp(0.0, 1.0),
-    curve: curve,
-  );
+  return Interval((startMs / safeTotalMs).clamp(0.0, 1.0), (endMs / safeTotalMs).clamp(0.0, 1.0), curve: curve);
 }
 
 Interval typewriterIntervalFromMs(String source, int startMs, int totalMs) {
-  return intervalFromMs(
-    startMs,
-    startMs + typewriterDurationMs(source),
-    totalMs,
-  );
+  return intervalFromMs(startMs, startMs + typewriterDurationMs(source), totalMs);
 }
 
-String typewriterText(
-  String source,
-  Animation<double> animation,
-  Interval interval,
-) {
+String typewriterText(String source, Animation<double> animation, Interval interval) {
   final progress = interval.transform(animation.value);
-  final visibleLength =
-      (source.characters.length * progress)
-          .clamp(0, source.characters.length)
-          .round();
+  final visibleLength = (source.characters.length * progress).clamp(0, source.characters.length).round();
   return source.characters.take(visibleLength).toString();
 }
 
@@ -107,12 +86,7 @@ TextSpan styledSpanFromVisibleText({
     }
     if (range != null) {
       final end = math.min(range.end, visibleText.length);
-      spans.add(
-        TextSpan(
-          text: visibleText.substring(cursor, end),
-          style: highlightStyle,
-        ),
-      );
+      spans.add(TextSpan(text: visibleText.substring(cursor, end), style: highlightStyle));
       cursor = end;
       continue;
     }
@@ -122,12 +96,7 @@ TextSpan styledSpanFromVisibleText({
         .map((range) => range.start)
         .fold<int>(visibleText.length, math.min);
     final nextCursor = math.min(nextHighlightStart, visibleText.length);
-    spans.add(
-      TextSpan(
-        text: visibleText.substring(cursor, nextCursor),
-        style: baseStyle,
-      ),
-    );
+    spans.add(TextSpan(text: visibleText.substring(cursor, nextCursor), style: baseStyle));
     cursor = nextCursor;
   }
 

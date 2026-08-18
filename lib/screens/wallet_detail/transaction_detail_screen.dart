@@ -58,19 +58,13 @@ class TransactionDetailScreen extends StatefulWidget {
 
   final String txHash;
 
-  const TransactionDetailScreen({
-    super.key,
-    required this.id,
-    required this.txHash,
-  });
+  const TransactionDetailScreen({super.key, required this.id, required this.txHash});
 
   @override
-  State<TransactionDetailScreen> createState() =>
-      _TransactionDetailScreenState();
+  State<TransactionDetailScreen> createState() => _TransactionDetailScreenState();
 }
 
-class _TransactionDetailScreenState extends State<TransactionDetailScreen>
-    with TickerProviderStateMixin {
+class _TransactionDetailScreenState extends State<TransactionDetailScreen> with TickerProviderStateMixin {
   Timer? _timer; // timeGap을 최신화 하기 위한 타이머
   late TransactionDetailViewModel _viewModel;
   late AnimationController _animationController;
@@ -87,11 +81,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<
-      WalletProvider,
-      TransactionProvider,
-      TransactionDetailViewModel
-    >(
+    return ChangeNotifierProxyProvider2<WalletProvider, TransactionProvider, TransactionDetailViewModel>(
       create: (_) {
         _viewModel = TransactionDetailViewModel(
           widget.id,
@@ -106,9 +96,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
         _viewModel.showDialogNotifier.addListener(_showDialogListener);
         _viewModel.setTransactionStatus(
-          TransactionUtil.getStatus(
-            _viewModel.transactionList![_viewModel.selectedTransactionIndex],
-          ),
+          TransactionUtil.getStatus(_viewModel.transactionList![_viewModel.selectedTransactionIndex]),
         );
 
         _updateAnimation();
@@ -122,20 +110,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
         builder: (_, viewModel, child) {
           final txList = viewModel.transactionList;
           if (txList == null || txList.isEmpty) {
-            return const Center(
-              child: InlineLoadingIndicator(padding: EdgeInsets.zero),
-            );
+            return const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero));
           }
-          final tx =
-              viewModel.transactionList![viewModel.selectedTransactionIndex];
+          final tx = viewModel.transactionList![viewModel.selectedTransactionIndex];
           final txMemo = viewModel.fetchTransactionMemo();
 
           return Scaffold(
             backgroundColor: context.coconutColors.background,
-            appBar: CoconutAppBar.build(
-              title: t.view_tx_details,
-              context: context,
-            ),
+            appBar: CoconutAppBar.build(title: t.view_tx_details, context: context),
             body: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
@@ -145,23 +127,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                 ),
                 SliverToBoxAdapter(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 20,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        HighlightedInfoArea(
-                          textList: DateTimeUtil.formatTimestamp(
-                            tx.timestamp.toLocal(),
-                          ),
-                        ),
+                        HighlightedInfoArea(textList: DateTimeUtil.formatTimestamp(tx.timestamp.toLocal())),
                         CoconutLayout.spacing_500h,
                         _buildAmount(tx),
                         CoconutLayout.spacing_400h,
-                        if (_isTransactionStatusPending(txList.last) &&
-                            viewModel.isSendType != null) ...[
+                        if (_isTransactionStatusPending(txList.last) && viewModel.isSendType != null) ...[
                           _buildFeeBumpingWidget(txList, viewModel),
                         ],
                         if (viewModel.isFetchingFromMempool) ...[
@@ -207,10 +181,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   void initState() {
     super.initState();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
+    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animationController.value = 1.0;
@@ -218,23 +189,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   }
 
   void _updateAnimation() {
-    final bool slideRight =
-        _viewModel.selectedTransactionIndex >
-        _viewModel.previousTransactionIndex;
+    final bool slideRight = _viewModel.selectedTransactionIndex > _viewModel.previousTransactionIndex;
 
     _slideInAnimation = Tween<Offset>(
       begin: slideRight ? const Offset(1.0, 0.0) : const Offset(-1.0, 0.0),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
 
     _slideOutAnimation = Tween<Offset>(
       begin: Offset.zero,
       end: slideRight ? const Offset(-1.0, 0.0) : const Offset(1.0, 0.0),
-    ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
   }
 
   Widget _rbfHistoryWidget() {
@@ -243,25 +208,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
-        children: List.generate(_viewModel.feeBumpingHistoryList!.length, (
-          index,
-        ) {
+        children: List.generate(_viewModel.feeBumpingHistoryList!.length, (index) {
           final feeHistory = _viewModel.feeBumpingHistoryList![index];
           bool isLast = index == _viewModel.feeBumpingHistoryList!.length - 1;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (index == 0)
-                SizedBox(
-                  width: 7,
-                  child: Center(
-                    child: Container(
-                      width: 1,
-                      height: 4,
-                      color: rbfHistoryLineColor,
-                    ),
-                  ),
-                ),
+                SizedBox(width: 7, child: Center(child: Container(width: 1, height: 4, color: rbfHistoryLineColor))),
               // 타임라인 선
               Row(
                 children: [
@@ -270,26 +224,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                     children: [
                       Column(
                         children: [
-                          Container(
-                            width: 1,
-                            height: isLast ? 16 : 33,
-                            color: rbfHistoryLineColor,
-                          ),
-                          if (isLast)
-                            Container(
-                              width: 1,
-                              height: 16,
-                              color: Colors.transparent,
-                            ),
+                          Container(width: 1, height: isLast ? 16 : 33, color: rbfHistoryLineColor),
+                          if (isLast) Container(width: 1, height: 16, color: Colors.transparent),
                         ],
                       ),
                       Container(
                         width: 7,
                         height: 7,
-                        decoration: BoxDecoration(
-                          color: rbfHistoryLineColor,
-                          shape: BoxShape.circle,
-                        ),
+                        decoration: BoxDecoration(color: rbfHistoryLineColor, shape: BoxShape.circle),
                       ),
                       // )
                     ],
@@ -311,8 +253,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             _viewModel.selectedTransactionIndex == index
                                 ? context.coconutColors.background
                                 : context.coconutColors.primaryText,
-                        isSelected:
-                            _viewModel.selectedTransactionIndex == index,
+                        isSelected: _viewModel.selectedTransactionIndex == index,
                         onTap: () {
                           _changeTransaction(index);
                         },
@@ -322,9 +263,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         t.transaction_fee_bumping_screen.existing_fee_value(
                           value: _formatFeeRateForDisplay(feeHistory.feeRate),
                         ),
-                        style: CoconutTypography.body2_14_Number.setColor(
-                          context.coconutColors.primaryText,
-                        ),
+                        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
                         textScaler: const TextScaler.linear(1.0),
                       ),
                     ],
@@ -339,8 +278,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   }
 
   void _changeTransaction(int newIndex) {
-    if (newIndex == _viewModel.selectedTransactionIndex ||
-        _animationController.isAnimating) {
+    if (newIndex == _viewModel.selectedTransactionIndex || _animationController.isAnimating) {
       return;
     }
 
@@ -356,9 +294,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
-        children: List.generate(_viewModel.feeBumpingHistoryList!.length, (
-          index,
-        ) {
+        children: List.generate(_viewModel.feeBumpingHistoryList!.length, (index) {
           final feeHistory = _viewModel.feeBumpingHistoryList![index];
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,17 +311,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           padding: const EdgeInsets.only(left: 2.5),
                           child: Column(
                             children: [
-                              Container(
-                                width: 1,
-                                height: 22,
-                                color:
-                                    context.coconutColors.feeBumpingHistoryLine,
-                              ),
-                              Container(
-                                width: 1,
-                                height: 11,
-                                color: Colors.transparent,
-                              ),
+                              Container(width: 1, height: 22, color: context.coconutColors.feeBumpingHistoryLine),
+                              Container(width: 1, height: 11, color: Colors.transparent),
                             ],
                           ),
                         ),
@@ -395,8 +322,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             width: 7,
                             height: 7,
                             decoration: BoxDecoration(
-                              color:
-                                  context.coconutColors.feeBumpingHistoryLine,
+                              color: context.coconutColors.feeBumpingHistoryLine,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -410,9 +336,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           color: context.coconutColors.surface,
                           label:
                               index == 0
-                                  ? t
-                                      .transaction_fee_bumping_screen
-                                      .existing_fee
+                                  ? t.transaction_fee_bumping_screen.existing_fee
                                   : t.transaction_fee_bumping_screen.new_fee,
                           labelColor: context.coconutColors.primaryText,
                         ),
@@ -421,9 +345,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           t.transaction_fee_bumping_screen.existing_fee_value(
                             value: _formatFeeRateForDisplay(feeHistory.feeRate),
                           ),
-                          style: CoconutTypography.body2_14_Number.setColor(
-                            context.coconutColors.primaryText,
-                          ),
+                          style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
                           textScaler: const TextScaler.linear(1.0),
                         ),
                       ],
@@ -466,10 +388,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     return Container(
       width: MediaQuery.sizeOf(context).width,
       decoration: BoxDecoration(
-        border: Border.all(
-          width: 1,
-          color: context.coconutColors.feeBumpingHistoryLine,
-        ),
+        border: Border.all(width: 1, color: context.coconutColors.feeBumpingHistoryLine),
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       padding: const EdgeInsets.all(10),
@@ -478,10 +397,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
         children: [
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 8),
-            child: PendingTransactionLottieIcon(
-              isIncoming: !_viewModel.isSendType!,
-              size: 24,
-            ),
+            child: PendingTransactionLottieIcon(isIncoming: !_viewModel.isSendType!, size: 24),
           ),
           Expanded(
             child: FittedBox(
@@ -489,10 +405,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
               alignment: Alignment.centerLeft,
               child: Text.rich(
                 TextSpan(
-                  text:
-                      _viewModel.isSendType!
-                          ? t.status_sending
-                          : t.status_receiving,
+                  text: _viewModel.isSendType! ? t.status_sending : t.status_receiving,
                   style: CoconutTypography.body2_14
                       .setColor(context.coconutColors.primaryText)
                       .copyWith(fontWeight: FontWeight.w500),
@@ -516,9 +429,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
               child: Align(
                 alignment: Alignment.centerRight,
                 child: Visibility(
-                  visible:
-                      _viewModel.isSendType! ||
-                      (_viewModel.feeBumpingHistoryList?.length ?? 0) < 2,
+                  visible: _viewModel.isSendType! || (_viewModel.feeBumpingHistoryList?.length ?? 0) < 2,
                   maintainSize: true,
                   maintainAnimation: true,
                   maintainState: true,
@@ -565,10 +476,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         '/transaction-fee-bumping',
                         arguments: {
                           'transaction': tx,
-                          'feeBumpingType':
-                              _viewModel.isSendType!
-                                  ? FeeBumpingType.rbf
-                                  : FeeBumpingType.cpfp,
+                          'feeBumpingType': _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
                           'walletId': widget.id,
                           'walletName': _viewModel.getWalletName(),
                         },
@@ -609,17 +517,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     if (difference.inMinutes < 1) {
       return t.transaction_detail_screen.time_ago.just_now; // 1분 미만일 경우
     } else if (difference.inMinutes < 60) {
-      return t.transaction_detail_screen.time_ago.minutes(
-        count: difference.inMinutes,
-      ); // 1~59분
+      return t.transaction_detail_screen.time_ago.minutes(count: difference.inMinutes); // 1~59분
     } else if (difference.inHours < 24) {
-      return t.transaction_detail_screen.time_ago.hours(
-        count: difference.inHours,
-      ); // 1~23시간
+      return t.transaction_detail_screen.time_ago.hours(count: difference.inHours); // 1~23시간
     } else {
-      return t.transaction_detail_screen.time_ago.days(
-        count: difference.inDays,
-      ); // 1일 이상
+      return t.transaction_detail_screen.time_ago.days(count: difference.inDays); // 1일 이상
     }
   }
 
@@ -638,12 +540,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     );
   }
 
-  bool _isOutputNavigable(
-    BuildContext context,
-    TransactionRecord tx,
-    String address,
-    int outputIndex,
-  ) {
+  bool _isOutputNavigable(BuildContext context, TransactionRecord tx, String address, int outputIndex) {
     final walletProvider = context.read<WalletProvider>();
     if (!walletProvider.containsAddressInAnyWallet(address)) return false;
     final walletId = walletProvider.findWalletIdContainingAddress(address);
@@ -652,55 +549,36 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     return walletProvider.getUtxoState(walletId, utxoId) != null;
   }
 
-  Widget _buildTxInputOutputDetail(
-    BuildContext context,
-    TransactionRecord tx,
-    TransactionDetailViewModel viewModel,
-  ) {
+  Widget _buildTxInputOutputDetail(BuildContext context, TransactionRecord tx, TransactionDetailViewModel viewModel) {
     return Stack(
       children: [
-        if (viewModel.previousTransactionIndex !=
-            viewModel.selectedTransactionIndex)
+        if (viewModel.previousTransactionIndex != viewModel.selectedTransactionIndex)
           AnimatedBuilder(
             animation: _animationController,
             builder: (context, child) {
               return SlideTransition(
                 position: _slideOutAnimation,
-                child: Opacity(
-                  opacity: 1.0 - _animationController.value,
-                  child: child,
-                ),
+                child: Opacity(opacity: 1.0 - _animationController.value, child: child),
               );
             },
             child: TransactionInputOutputCard(
-              key: ValueKey(
-                viewModel.getTransactionKey(viewModel.previousTransactionIndex),
-              ),
-              transaction:
-                  viewModel.transactionList![viewModel
-                      .previousTransactionIndex],
+              key: ValueKey(viewModel.getTransactionKey(viewModel.previousTransactionIndex)),
+              transaction: viewModel.transactionList![viewModel.previousTransactionIndex],
               isSameAddress: viewModel.isSameAddress,
               currentUnit: _currentUnit,
               isOutputNavigable:
                   (address, outputIndex) => _isOutputNavigable(
                     context,
-                    viewModel.transactionList![viewModel
-                        .previousTransactionIndex],
+                    viewModel.transactionList![viewModel.previousTransactionIndex],
                     address,
                     outputIndex,
                   ),
               onOutputTap:
-                  (address, outputIndex, amount) =>
-                      _navigateToUtxoDetailFromFlow(
-                        viewModel.transactionList![viewModel
-                            .previousTransactionIndex],
-                        FlowOutputTapTarget(
-                          address: address,
-                          amount: amount,
-                          outputIndex: outputIndex,
-                        ),
-                        viewModel,
-                      ),
+                  (address, outputIndex, amount) => _navigateToUtxoDetailFromFlow(
+                    viewModel.transactionList![viewModel.previousTransactionIndex],
+                    FlowOutputTapTarget(address: address, amount: amount, outputIndex: outputIndex),
+                    viewModel,
+                  ),
             ),
           ),
         AnimatedBuilder(
@@ -712,29 +590,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
             );
           },
           child: TransactionInputOutputCard(
-            key: ValueKey(
-              viewModel.getTransactionKey(viewModel.selectedTransactionIndex),
-            ),
-            transaction:
-                viewModel.transactionList![viewModel.selectedTransactionIndex],
+            key: ValueKey(viewModel.getTransactionKey(viewModel.selectedTransactionIndex)),
+            transaction: viewModel.transactionList![viewModel.selectedTransactionIndex],
             isSameAddress: viewModel.isSameAddress,
             currentUnit: _currentUnit,
             isOutputNavigable:
                 (address, outputIndex) => _isOutputNavigable(
                   context,
-                  viewModel.transactionList![viewModel
-                      .selectedTransactionIndex],
+                  viewModel.transactionList![viewModel.selectedTransactionIndex],
                   address,
                   outputIndex,
                 ),
             onOutputTap:
                 (address, outputIndex, amount) => _navigateToUtxoDetailFromFlow(
                   tx,
-                  FlowOutputTapTarget(
-                    address: address,
-                    amount: amount,
-                    outputIndex: outputIndex,
-                  ),
+                  FlowOutputTapTarget(address: address, amount: amount, outputIndex: outputIndex),
                   viewModel,
                 ),
           ),
@@ -760,23 +630,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           CoconutLayout.spacing_100h,
           FiatPrice(
             satoshiAmount: tx.amount.abs(),
-            textStyle: CoconutTypography.body2_14_Number.setColor(
-              context.coconutColors.secondaryText,
-            ),
+            textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
           ),
         ],
       ),
     );
   }
 
-  List<UtxoTag> _getOutputTagsForTransaction(
-    BuildContext context,
-    int walletId,
-    TransactionRecord tx,
-  ) {
+  List<UtxoTag> _getOutputTagsForTransaction(BuildContext context, int walletId, TransactionRecord tx) {
     final tagProvider = context.read<UtxoTagProvider>();
-    final isOutputMine =
-        context.read<WalletProvider>().containsAddressInAnyWallet;
+    final isOutputMine = context.read<WalletProvider>().containsAddressInAnyWallet;
     final selectedTags = <String, UtxoTag>{};
 
     for (var i = 0; i < tx.outputAddressList.length; i++) {
@@ -792,11 +655,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     return selectedTags.values.toList();
   }
 
-  Widget _buildTagSection(
-    BuildContext context,
-    int walletId,
-    TransactionRecord tx,
-  ) {
+  Widget _buildTagSection(BuildContext context, int walletId, TransactionRecord tx) {
     final selectedTags = _getOutputTagsForTransaction(context, walletId, tx);
     return UnderlineButtonItemCard(
       label: 'UTXO ${t.tag}',
@@ -809,26 +668,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (selectedTags.isEmpty)
-              Text(
-                '-',
-                style: CoconutTypography.body2_14_Number.setColor(
-                  context.coconutColors.primaryText,
-                ),
-              )
+              Text('-', style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText))
             else
               Wrap(
                 spacing: 4,
                 runSpacing: 4,
                 children: List.generate(selectedTags.length, (index) {
-                  final foregroundColor =
-                      tagColorPalette[selectedTags[index].colorIndex];
+                  final foregroundColor = tagColorPalette[selectedTags[index].colorIndex];
                   return IntrinsicWidth(
                     child: CoconutChip(
                       minWidth: 40,
-                      color:
-                          CoconutColors
-                              .backgroundColorPaletteDark[selectedTags[index]
-                              .colorIndex],
+                      color: CoconutColors.backgroundColorPaletteDark[selectedTags[index].colorIndex],
                       borderColor: foregroundColor,
                       label: '#${selectedTags[index].name}',
                       labelSize: 12,
@@ -843,11 +693,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     );
   }
 
-  Widget _buildTxMemo(
-    BuildContext context,
-    String? txMemo,
-    TransactionDetailViewModel viewModel,
-  ) {
+  Widget _buildTxMemo(BuildContext context, String? txMemo, TransactionDetailViewModel viewModel) {
     return Column(
       children: [
         UnderlineButtonItemCard(
@@ -875,32 +721,23 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           },
           child: Text(
             txMemo?.isNotEmpty == true ? txMemo! : '-',
-            style: CoconutTypography.body2_14_Number.setColor(
-              context.coconutColors.primaryText,
-            ),
+            style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTxId(
-    TransactionRecord tx,
-    TransactionDetailViewModel viewModel,
-  ) {
+  Widget _buildTxId(TransactionRecord tx, TransactionDetailViewModel viewModel) {
     return UnderlineButtonItemCard(
       label: t.tx_id,
       underlineButtonLabel: t.view_mempool,
       onTapUnderlineButton: () {
-        launchUrl(
-          Uri.parse('${viewModel.mempoolHost}/tx/${tx.transactionHash}'),
-        );
+        launchUrl(Uri.parse('${viewModel.mempoolHost}/tx/${tx.transactionHash}'));
       },
       child: CopyTextContainer(
         text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
-        textStyle: CoconutTypography.body2_14_Number.setColor(
-          context.coconutColors.primaryText,
-        ),
+        textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }
@@ -912,29 +749,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       onTapUnderlineButton: () {},
       child: Text(
         // 인풋을 조회할 수 없는 경우, 수수료 표시 안 함.
-        tx.inputAddressList.isNotEmpty
-            ? '${tx.feeRate.toLocaleString(maxDecimalPlaces: 2)} sats/vB'
-            : '-',
-        style: CoconutTypography.body2_14_Number.setColor(
-          context.coconutColors.primaryText,
-        ),
+        tx.inputAddressList.isNotEmpty ? '${tx.feeRate.toLocaleString(maxDecimalPlaces: 2)} sats/vB' : '-',
+        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }
 
-  Widget _buildBlockHeight(
-    TransactionRecord tx,
-    TransactionDetailViewModel viewModel,
-  ) {
+  Widget _buildBlockHeight(TransactionRecord tx, TransactionDetailViewModel viewModel) {
     return UnderlineButtonItemCard(
       label: t.block_num,
       underlineButtonLabel: tx.blockHeight != 0 ? t.view_mempool : '',
       onTapUnderlineButton: () {
-        tx.blockHeight != 0
-            ? launchUrl(
-              Uri.parse('${_viewModel.mempoolHost}/block/${tx.blockHeight}'),
-            )
-            : ();
+        tx.blockHeight != 0 ? launchUrl(Uri.parse('${_viewModel.mempoolHost}/block/${tx.blockHeight}')) : ();
       },
 
       child: Text(
@@ -944,23 +770,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
               count: _confirmedCountText(tx, viewModel.currentBlock?.height),
             )
             : '-',
-        style: CoconutTypography.body2_14_Number.setColor(
-          context.coconutColors.primaryText,
-        ),
+        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }
 
-  Widget _buildFeeBumpingWidget(
-    List<TransactionRecord> txList,
-    TransactionDetailViewModel viewModel,
-  ) {
+  Widget _buildFeeBumpingWidget(List<TransactionRecord> txList, TransactionDetailViewModel viewModel) {
     return Column(
       children: [
         _pendingWidget(txList.first),
         if (viewModel.isSendType!)
-          (txList.last.rbfHistoryList != null &&
-                  txList.last.rbfHistoryList!.isNotEmpty)
+          (txList.last.rbfHistoryList != null && txList.last.rbfHistoryList!.isNotEmpty)
               ? _rbfHistoryWidget()
               : Container()
         else
@@ -970,13 +790,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     );
   }
 
-  Widget _buildTransactionFlowCard(
-    BuildContext context,
-    TransactionRecord tx,
-    TransactionDetailViewModel viewModel,
-  ) {
-    final inputAmounts =
-        tx.inputAddressList.map((a) => a.amount.abs()).toList();
+  Widget _buildTransactionFlowCard(BuildContext context, TransactionRecord tx, TransactionDetailViewModel viewModel) {
+    final inputAmounts = tx.inputAddressList.map((a) => a.amount.abs()).toList();
     final externalOutputAmounts = <int>[];
     final changeOutputAmounts = <int>[];
     final externalOutputTapTargets = <FlowOutputTapTarget>[];
@@ -995,12 +810,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       final output = tx.outputAddressList[i];
       final amount = output.amount.abs();
       final isChangeOutput =
-          isOutputMine(output.address) &&
-          walletProvider.containsAddress(
-            widget.id,
-            output.address,
-            isChange: true,
-          );
+          isOutputMine(output.address) && walletProvider.containsAddress(widget.id, output.address, isChange: true);
 
       final target = FlowOutputTapTarget(
         address: output.address,
@@ -1016,9 +826,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           externalOutputAmounts.add(amount);
           externalOutputTapTargets.add(target);
         }
-        final walletId = walletProvider.findWalletIdContainingAddress(
-          output.address,
-        );
+        final walletId = walletProvider.findWalletIdContainingAddress(output.address);
         if (walletId != null) {
           final utxoId = getUtxoId(tx.transactionHash, i);
           final utxoState = walletProvider.getUtxoState(walletId, utxoId);
@@ -1040,8 +848,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       navigableOutputTapTargets.insert(0, changeTapTarget);
     }
 
-    if (inputAmounts.isEmpty ||
-        (externalOutputAmounts.isEmpty && changeOutputAmounts.isEmpty)) {
+    if (inputAmounts.isEmpty || (externalOutputAmounts.isEmpty && changeOutputAmounts.isEmpty)) {
       return const SizedBox.shrink();
     }
 
@@ -1057,8 +864,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       isOutputMine: isOutputMine,
       walletId: widget.id,
       isOutputToMyWallet: isOutputToMyWallet,
-      onOutputTap:
-          (target) => _navigateToUtxoDetailFromFlow(tx, target, viewModel),
+      onOutputTap: (target) => _navigateToUtxoDetailFromFlow(tx, target, viewModel),
       transactionStatus: viewModel.transactionStatus,
       orderedOutputs: orderedOutputs,
     );
@@ -1070,20 +876,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     TransactionDetailViewModel viewModel,
   ) {
     final walletProvider = context.read<WalletProvider>();
-    final walletId = walletProvider.findWalletIdContainingAddress(
-      target.address,
-    );
+    final walletId = walletProvider.findWalletIdContainingAddress(target.address);
     if (walletId == null) return;
 
-    final derivationPath = context.read<AddressRepository>().getDerivationPath(
-      walletId,
-      target.address,
-    );
+    final derivationPath = context.read<AddressRepository>().getDerivationPath(walletId, target.address);
     final status =
         tx.blockHeight == 0
-            ? (viewModel.isSendType == true
-                ? UtxoStatus.outgoing
-                : UtxoStatus.incoming)
+            ? (viewModel.isSendType == true ? UtxoStatus.outgoing : UtxoStatus.incoming)
             : UtxoStatus.unspent;
 
     final utxo = UtxoState(
@@ -1097,11 +896,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       status: status,
     );
 
-    Navigator.pushNamed(
-      context,
-      '/utxo-detail',
-      arguments: {'utxo': utxo, 'id': walletId},
-    );
+    Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': walletId});
   }
 
   String _getPrefix(TransactionRecord tx) {
@@ -1121,20 +916,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
   Widget _amountText(BuildContext context, TransactionRecord tx) {
     final bool isPositive = _getPrefix(tx) != '-';
-    final Color color =
-        isPositive
-            ? context.coconutColors.receivingColor
-            : context.coconutColors.sendingColor;
+    final Color color = isPositive ? context.coconutColors.receivingColor : context.coconutColors.sendingColor;
     final String sign = isPositive ? '+' : '-';
     final String absAmount = _currentUnit.displayBitcoinAmount(tx.amount.abs());
     final String symbol = _currentUnit.symbol;
-    final boldStyle = CoconutTypography.heading2_28_NumberBold.copyWith(
-      fontSize: 24,
-      color: color,
-    );
-    final unitStyle = CoconutTypography.heading4_18_NumberBold.copyWith(
-      color: color,
-    );
+    final boldStyle = CoconutTypography.heading2_28_NumberBold.copyWith(fontSize: 24, color: color);
+    final unitStyle = CoconutTypography.heading4_18_NumberBold.copyWith(color: color);
 
     if (_currentUnit.isPrefixSymbol) {
       return Row(
@@ -1153,11 +940,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
-      children: [
-        Text('$sign$absAmount', style: boldStyle),
-        CoconutLayout.spacing_50w,
-        Text(symbol, style: unitStyle),
-      ],
+      children: [Text('$sign$absAmount', style: boldStyle), CoconutLayout.spacing_50w, Text(symbol, style: unitStyle)],
     );
   }
 

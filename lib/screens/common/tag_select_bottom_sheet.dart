@@ -1,5 +1,4 @@
-import 'package:coconut_design_system/coconut_design_system.dart'
-    hide CoconutAppBar;
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -47,17 +46,10 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
     super.initState();
     final utxoTagProvider = context.read<UtxoTagProvider>();
     final utxoRepository = context.read<UtxoRepository>();
-    _currentUtxoIds =
-        utxoRepository
-            .getUtxoStateList(widget.walletId)
-            .map((utxo) => utxo.utxoId)
-            .toSet();
+    _currentUtxoIds = utxoRepository.getUtxoStateList(widget.walletId).map((utxo) => utxo.utxoId).toSet();
 
     _utxoTags =
-        utxoTagProvider
-            .getUtxoTagList(widget.walletId)
-            .where((tag) => _selectedTagUtxoCount(tag) >= 2)
-            .toList();
+        utxoTagProvider.getUtxoTagList(widget.walletId).where((tag) => _selectedTagUtxoCount(tag) >= 2).toList();
     _selectedTagName = widget.initialSelectedTagName;
   }
 
@@ -107,10 +99,7 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
         ),
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(
-              bottom:
-                  FixedBottomButton.fixedBottomButtonDefaultBottomPadding + 3,
-            ),
+            padding: const EdgeInsets.only(bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding + 3),
             child: SizedBox(width: double.infinity, child: _buildContent()),
           ),
         ),
@@ -133,8 +122,7 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
                   isSelected: _selectedTagName == tag.name,
                   onTap: () {
                     setState(() {
-                      _selectedTagName =
-                          _selectedTagName == tag.name ? null : tag.name;
+                      _selectedTagName = _selectedTagName == tag.name ? null : tag.name;
                     });
                   },
                 );
@@ -162,8 +150,7 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
                       isSelected: _selectedTagName == tag.name,
                       onTap: () {
                         setState(() {
-                          _selectedTagName =
-                              _selectedTagName == tag.name ? null : tag.name;
+                          _selectedTagName = _selectedTagName == tag.name ? null : tag.name;
                         });
                       },
                     );
@@ -182,9 +169,7 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
                     ? null
                     : Text(
                       '${t.merge_utxos_screen.count(n: _selectedTagUtxoCountValue!, count: _selectedTagUtxoCountValue!)} ➔ ${t.merge_utxos_screen.count(n: 1, count: 1)}',
-                      style: CoconutTypography.body3_12.setColor(
-                        context.coconutColors.secondaryText,
-                      ),
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                     ),
             onButtonClicked: _confirm,
           ),
@@ -199,11 +184,7 @@ class _SelectableTagChip extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _SelectableTagChip({
-    required this.tag,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const _SelectableTagChip({required this.tag, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -220,10 +201,7 @@ class _SelectableTagChip extends StatelessWidget {
       ),
       child: AnimatedDefaultTextStyle(
         duration: const Duration(milliseconds: 200),
-        style: CoconutTypography.body3_12.copyWith(
-          color: style.textColor,
-          fontWeight: style.fontWeight,
-        ),
+        style: CoconutTypography.body3_12.copyWith(color: style.textColor, fontWeight: style.fontWeight),
         child: Text('#${tag.name}'),
       ),
     );
@@ -233,10 +211,7 @@ class _SelectableTagChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(20),
-        ),
+        decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(20)),
         child: chipForeground,
       ),
     );

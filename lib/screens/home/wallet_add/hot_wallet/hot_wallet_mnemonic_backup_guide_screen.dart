@@ -295,7 +295,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                                                   ),
                                                   alignment: Alignment.center,
                                                   child: SvgPicture.asset(
-                                                    'assets/svg/pen.svg',
+                                                    CommonActionIconPath.editOutlinedSmall,
                                                     width: 14,
                                                     height: 14,
                                                     colorFilter: ColorFilter.mode(
@@ -359,7 +359,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                                                   ),
                                                   alignment: Alignment.center,
                                                   child: SvgPicture.asset(
-                                                    'assets/svg/lock_simple.svg',
+                                                    CommonSecurityIconPath.lock,
                                                     width: 14,
                                                     height: 14,
                                                     colorFilter: ColorFilter.mode(

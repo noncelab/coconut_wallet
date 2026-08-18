@@ -143,11 +143,7 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
     return ChangeNotifierProvider.value(
       value: _viewModel,
       child: Scaffold(
-        appBar: CoconutAppBar.build(
-          context: context,
-          title: 'Realm 데이터베이스 디버거',
-          isBottom: true,
-        ),
+        appBar: CoconutAppBar.build(context: context, title: 'Realm 데이터베이스 디버거', isBottom: true),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(

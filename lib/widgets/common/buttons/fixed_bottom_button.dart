@@ -118,15 +118,8 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                     },
                     isActive: widget.isActive,
                     defaultColor: resolvedBackgroundColor,
-                    pressedOverlayColor:
-                        widget.pressedBackgroundColor ??
-                        (resolvedBackgroundColor == colors.buttonPrimaryBackground
-                            ? colors.buttonPrimaryPressOverlay
-                            : getDarkerColor(resolvedBackgroundColor)),
-                    pressedOverlayOpacity:
-                        widget.pressedBackgroundColor == null && resolvedBackgroundColor == colors.buttonPrimaryBackground
-                            ? colors.buttonPrimaryPressOverlayOpacity
-                            : null,
+                    pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+                    pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
                     disabledColor: colors.buttonPrimaryDisabledBackground,
                     borderRadius: 12,
                     child: SizedBox(

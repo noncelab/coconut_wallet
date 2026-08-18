@@ -65,7 +65,10 @@ class PositiveFeedbackScreen extends StatelessWidget {
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: colors.brandAccentBackground),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color: colors.brandAccentBackground,
+                      ),
                       child: Text(
                         t.positive_feedback_screen.text3,
                         style: CoconutTypography.body2_14_Bold.setColor(colors.brandAccentForeground),

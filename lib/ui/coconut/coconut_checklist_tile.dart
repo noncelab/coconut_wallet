@@ -47,10 +47,7 @@ class _CoconutChecklistTileState extends State<CoconutChecklistTile> {
             Expanded(
               child: Text(
                 widget.title,
-                style: CoconutTypography.body2_14.copyWith(
-                  color: colors.primaryText,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: CoconutTypography.body2_14.copyWith(color: colors.primaryText, fontWeight: FontWeight.w500),
                 textAlign: TextAlign.start,
               ),
             ),

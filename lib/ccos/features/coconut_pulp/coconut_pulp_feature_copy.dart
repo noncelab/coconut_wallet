@@ -44,16 +44,14 @@ class CoconutPulpFeatureCopySource {
     author: '코코넛 팀',
     authorBio: '비트코인만을 위한 더 나은 지갑 경험을 만듭니다',
     authorIntent: '오픈 스토어를 통해 새로운 기능이 코코넛에 자연스럽게 더해질 수 있다는 첫 번째 예시를 만들고 싶었어요.',
-    whyItBelongs:
-        '오픈 스토어는 좋은 PoW를 발견하고 함께 사용하는 공간입니다. 이 테마는 앞으로 다양한 기능이 추가될 모습을 보여주는 첫 번째 PoW예요.',
+    whyItBelongs: '오픈 스토어는 좋은 PoW를 발견하고 함께 사용하는 공간입니다. 이 테마는 앞으로 다양한 기능이 추가될 모습을 보여주는 첫 번째 PoW예요.',
     featureHelp: '오픈 스토어뿐 아니라 실제로 사용하는 테마 화면에서도 기능을 확인하고 사용할 수 있어요.',
     tags: ['밝은 테마'],
   );
 
   static const CoconutPulpFeatureCopy _en = CoconutPulpFeatureCopy(
     title: 'Coconut Pulp Theme',
-    description:
-        'A bright new Coconut Wallet theme inspired by the warm colors of coconut flesh and the beach.',
+    description: 'A bright new Coconut Wallet theme inspired by the warm colors of coconut flesh and the beach.',
     author: 'Coconut Team',
     authorBio: 'Building a better wallet experience',
     authorIntent:
@@ -82,8 +80,7 @@ class CoconutPulpFeatureCopySource {
 
   static const CoconutPulpFeatureCopy _es = CoconutPulpFeatureCopy(
     title: 'Tema Coconut Pulp',
-    description:
-        'Un nuevo tema claro para Coconut Wallet inspirado en los tonos calidos del coco y la playa.',
+    description: 'Un nuevo tema claro para Coconut Wallet inspirado en los tonos calidos del coco y la playa.',
     author: 'Equipo Coconut',
     authorBio: 'Creamos una mejor experiencia de wallet',
     authorIntent:
@@ -101,8 +98,7 @@ class CoconutPulpFeatureCopySource {
     author: 'Coconut Team',
     authorBio: 'Bitcoin 専用のより良いウォレット体験をつくっています',
     authorIntent: 'Open Store を通じて、新しい機能が Coconut に自然に加わっていく最初の例をつくりたかったのです。',
-    whyItBelongs:
-        'Open Store は、良い PoW を見つけて一緒に使うための場所です。このテーマは、これからさまざまな機能が Coconut に加わっていく姿を見せる最初の PoW です。',
+    whyItBelongs: 'Open Store は、良い PoW を見つけて一緒に使うための場所です。このテーマは、これからさまざまな機能が Coconut に加わっていく姿を見せる最初の PoW です。',
     featureHelp: 'Open Store だけでなく、実際のテーマ画面でもこの機能を確認して使えます。',
     tags: ['明るいテーマ'],
   );

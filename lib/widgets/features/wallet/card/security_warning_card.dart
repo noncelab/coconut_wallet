@@ -33,8 +33,7 @@ class SecurityWarningCard extends StatefulWidget {
   State<SecurityWarningCard> createState() => _SecurityWarningCardState();
 }
 
-class _SecurityWarningCardState extends State<SecurityWarningCard>
-    with SingleTickerProviderStateMixin {
+class _SecurityWarningCardState extends State<SecurityWarningCard> with SingleTickerProviderStateMixin {
   static const _animationDuration = Duration(milliseconds: 240);
 
   late final AnimationController _controller;
@@ -44,15 +43,8 @@ class _SecurityWarningCardState extends State<SecurityWarningCard>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: _animationDuration,
-    );
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
+    _controller = AnimationController(vsync: this, duration: _animationDuration);
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
     _showDelayTimer = Timer(widget.showDelay, () {
       if (mounted) _controller.forward(from: 0);
     });
@@ -94,10 +86,7 @@ class _SecurityWarningCardState extends State<SecurityWarningCard>
               opacity: value,
               child: Transform.translate(
                 offset: Offset(0, 4 * (1 - value)),
-                child: Transform.scale(
-                  scale: 0.96 + (0.04 * value),
-                  child: child,
-                ),
+                child: Transform.scale(scale: 0.96 + (0.04 * value), child: child),
               ),
             ),
           ),
@@ -111,19 +100,13 @@ class _SecurityWarningCardState extends State<SecurityWarningCard>
           margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
           decoration: BoxDecoration(
-            color:
-                widget.useUnbackedWalletGradient
-                    ? null
-                    : context.coconutColors.appLockWarningBackground,
+            color: widget.useUnbackedWalletGradient ? null : context.coconutColors.appLockWarningBackground,
             gradient:
                 widget.useUnbackedWalletGradient
                     ? LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        context.coconutColors.danger,
-                        const Color(0xFFE18A99),
-                      ],
+                      colors: [context.coconutColors.danger, const Color(0xFFE18A99)],
                     )
                     : null,
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
@@ -131,28 +114,15 @@ class _SecurityWarningCardState extends State<SecurityWarningCard>
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: widget.icon,
-              ),
+              Padding(padding: const EdgeInsets.only(top: 2), child: widget.icon),
               CoconutLayout.spacing_200w,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.title,
-                      style: CoconutTypography.body1_16_Bold.setColor(
-                        textColor,
-                      ),
-                    ),
+                    Text(widget.title, style: CoconutTypography.body1_16_Bold.setColor(textColor)),
                     const SizedBox(height: 10),
-                    Text(
-                      widget.description,
-                      style: CoconutTypography.body3_12_Bold.setColor(
-                        textColor,
-                      ),
-                    ),
+                    Text(widget.description, style: CoconutTypography.body3_12_Bold.setColor(textColor)),
                   ],
                 ),
               ),

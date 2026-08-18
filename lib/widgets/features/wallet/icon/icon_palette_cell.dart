@@ -9,12 +9,7 @@ class IconPaletteCell extends StatelessWidget {
   final int? colorIndex;
   final bool enableBorder;
 
-  const IconPaletteCell({
-    super.key,
-    required this.index,
-    this.colorIndex,
-    this.enableBorder = true,
-  });
+  const IconPaletteCell({super.key, required this.index, this.colorIndex, this.enableBorder = true});
 
   @override
   Widget build(BuildContext context) {
@@ -23,16 +18,11 @@ class IconPaletteCell extends StatelessWidget {
             ? context.coconutColors.iconBackgroundSubtle
             : WalletVisualStyleUtil.getBackgroundColorByIndex(colorIndex!);
     final iconColor =
-        colorIndex == null
-            ? context.coconutColors.iconPrimary
-            : WalletVisualStyleUtil.getColorByIndex(colorIndex!);
+        colorIndex == null ? context.coconutColors.iconPrimary : WalletVisualStyleUtil.getColorByIndex(colorIndex!);
 
     return Container(
       margin: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        color: bgColor,
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), color: bgColor),
       // 배경색 지정
       child: Padding(
         padding: const EdgeInsets.all(8.0), // 내부 여백 추가

@@ -156,9 +156,9 @@ class _HomeScreenPreview extends StatelessWidget {
                       ],
                       CoconutLayout.spacing_300w,
                       SvgPicture.asset(
-                        'assets/svg/kebab.svg',
-                        width: 18,
-                        height: 18,
+                        CommonMenuIconPath.kebab,
+                        width: 16,
+                        height: 16,
                         colorFilter: ColorFilter.mode(context.coconutColors.tertiaryText, BlendMode.srcIn),
                       ),
                       CoconutLayout.spacing_500w,

@@ -28,6 +28,7 @@ abstract final class CommonActionIconPath {
   static const String delete = 'assets/svg/common/actions/delete.svg';
   static const String download = 'assets/svg/common/actions/download.svg';
   static const String editOutlined = 'assets/svg/common/actions/edit-outlined.svg';
+  static const String editOutlinedSmall = 'assets/svg/common/actions/edit-outlined-small.svg';
   static const String eraser = 'assets/svg/common/actions/eraser.svg';
   static const String export = 'assets/svg/common/actions/export.svg';
   static const String movableButton = 'assets/svg/common/actions/movable-button.svg';

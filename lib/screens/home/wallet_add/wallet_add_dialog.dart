@@ -61,7 +61,10 @@ class WalletAddDialog extends StatelessWidget {
               elevation: 4,
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
               color: context.coconutColors.homeBackground,
-              child: Padding(padding: const EdgeInsets.all(16), child: _buildContent(context)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                child: _buildContent(context),
+              ),
             ),
           ),
         ),
@@ -343,10 +346,11 @@ class _WalletActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShrinkAnimationButton(
       defaultColor: context.coconutColors.homeBackground,
-      pressedColor: context.coconutColors.homeSurfacePressOverlay,
+      pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+      pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
       onPressed: onPressed,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         child: Row(
           children: [
             SvgPicture.asset(

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -113,7 +114,7 @@ class _HotWalletPassphraseCheckScreenState extends State<HotWalletPassphraseChec
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         SvgPicture.asset(
-                                          'assets/svg/circle-check-filled.svg',
+                                          CommonFormIconPath.circleCheckFilled,
                                           width: 52,
                                           height: 52,
                                           colorFilter: ColorFilter.mode(

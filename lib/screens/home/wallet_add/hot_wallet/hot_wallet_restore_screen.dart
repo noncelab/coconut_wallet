@@ -526,7 +526,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
               borderColor: context.coconutColors.surface,
               tooltipType: CoconutTooltipType.fixed,
               icon: SvgPicture.asset(
-                'assets/svg/circle-info.svg',
+                CommonStateIconPath.circleInfo,
                 width: 20,
                 height: 20,
                 colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
@@ -754,14 +754,17 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  t.wallet_home_screen.hot_wallet_create.word_count(count: viewModel.wordCount),
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                Transform.translate(
+                  offset: const Offset(0, -2),
+                  child: Text(
+                    t.wallet_home_screen.hot_wallet_create.word_count(count: viewModel.wordCount),
+                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                  ),
                 ),
                 CoconutLayout.spacing_200w,
                 SvgPicture.asset(
-                  'assets/svg/arrow-down.svg',
-                  width: 16,
+                  CommonNavigationIconPath.arrowDown,
+                  width: 12,
                   colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                 ),
               ],

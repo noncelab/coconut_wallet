@@ -125,10 +125,7 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
               children: [
                 Text(
                   title,
-                  style: CoconutTypography.body2_14.copyWith(
-                    color: colors.primaryText,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: CoconutTypography.body2_14.copyWith(color: colors.primaryText, fontWeight: FontWeight.w500),
                 ),
                 if (_selectedIndex == index) SvgPicture.asset(CommonActionIconPath.check),
               ],
@@ -136,10 +133,7 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
           ),
         ),
         if (!isLast)
-          Container(
-            height: dividerHeight,
-            color: dividerHeight == 1 ? dividerColor : colors.surfacePressOverlay,
-          ),
+          Container(height: dividerHeight, color: dividerHeight == 1 ? dividerColor : colors.surfacePressOverlay),
       ],
     );
   }

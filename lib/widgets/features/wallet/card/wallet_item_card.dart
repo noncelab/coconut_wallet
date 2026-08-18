@@ -267,7 +267,7 @@ class WalletItemCard extends StatelessWidget {
                 children: [
                   if (shouldWarnUnbackedHotWallet) ...[
                     SvgPicture.asset(
-                      'assets/svg/circle-warning.svg',
+                      CommonStateIconPath.circleWarning,
                       colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
                     ),
                     CoconutLayout.spacing_200w,
@@ -291,7 +291,7 @@ class WalletItemCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SvgPicture.asset(
-                    'assets/svg/circle-warning.svg',
+                    CommonStateIconPath.circleWarning,
                     colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
                   ),
                   CoconutLayout.spacing_200w,

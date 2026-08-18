@@ -250,7 +250,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                             setState(() {});
                           },
                           icon: SvgPicture.asset(
-                            'assets/svg/text-field-clear.svg',
+                            CommonFormIconPath.textFieldClear,
                             colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
                           ),
                         ),
@@ -498,7 +498,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                                   setState(() {});
                                                 },
                                                 icon: SvgPicture.asset(
-                                                  'assets/svg/text-field-clear.svg',
+                                                  CommonFormIconPath.textFieldClear,
                                                   colorFilter: ColorFilter.mode(
                                                     context.coconutColors.secondaryText,
                                                     BlendMode.srcIn,
@@ -541,7 +541,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                                   setState(() {});
                                                 },
                                                 icon: SvgPicture.asset(
-                                                  'assets/svg/text-field-clear.svg',
+                                                  CommonFormIconPath.textFieldClear,
                                                   colorFilter: ColorFilter.mode(
                                                     context.coconutColors.secondaryText,
                                                     BlendMode.srcIn,

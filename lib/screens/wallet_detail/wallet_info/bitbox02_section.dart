@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -105,7 +106,8 @@ class _BitBox02SectionState extends State<BitBox02Section> {
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _isConnected ? context.coconutColors.accentForeground : context.coconutColors.surfaceDisabled,
+                    color:
+                        _isConnected ? context.coconutColors.accentForeground : context.coconutColors.surfaceDisabled,
                   ),
                 ),
                 CoconutLayout.spacing_100w,

@@ -1,7 +1,6 @@
 import 'dart:math';
 
-import 'package:coconut_design_system/coconut_design_system.dart'
-    hide CoconutUnderlinedButton;
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutUnderlinedButton;
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
@@ -11,16 +10,10 @@ class CustomTagChipColorButton extends StatefulWidget {
   final Function(int) onTap;
   final int colorIndex;
   final bool isCreate;
-  const CustomTagChipColorButton({
-    super.key,
-    required this.onTap,
-    required this.colorIndex,
-    this.isCreate = false,
-  });
+  const CustomTagChipColorButton({super.key, required this.onTap, required this.colorIndex, this.isCreate = false});
 
   @override
-  State<CustomTagChipColorButton> createState() =>
-      _CustomTagChipColorButtonState();
+  State<CustomTagChipColorButton> createState() => _CustomTagChipColorButtonState();
 }
 
 class _CustomTagChipColorButtonState extends State<CustomTagChipColorButton> {
@@ -64,10 +57,7 @@ class _CustomTagChipColorButtonState extends State<CustomTagChipColorButton> {
         decoration: BoxDecoration(
           color: WalletVisualStyleUtil.getColor(_colorIndex).backgroundColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: WalletVisualStyleUtil.getColor(_colorIndex).color,
-            width: 1,
-          ),
+          border: Border.all(color: WalletVisualStyleUtil.getColor(_colorIndex).color, width: 1),
         ),
         child: Center(
           child: FittedBox(

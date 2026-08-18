@@ -14,11 +14,7 @@ import 'package:flutter/material.dart';
 /// Scene 1 ("IDEA") of the open-store intro story: a handful of lines that fly in and
 /// type themselves out in a staggered, cascading sequence.
 class IdeaSceneBody extends StatelessWidget {
-  const IdeaSceneBody({
-    super.key,
-    required this.animation,
-    required this.sceneDurationMs,
-  });
+  const IdeaSceneBody({super.key, required this.animation, required this.sceneDurationMs});
 
   final Animation<double> animation;
   final int sceneDurationMs;
@@ -30,12 +26,9 @@ class IdeaSceneBody extends StatelessWidget {
 
   static List<int> typingStartMs(List<String> lines) {
     const line1Start = _firstTypingStartMs;
-    final line2Start =
-        line1Start + typewriterDurationMs(lines[0]) + _line1PauseMs;
-    final line3Start =
-        line2Start + typewriterDurationMs(lines[1]) + _line2PauseMs;
-    final line4Start =
-        line3Start + typewriterDurationMs(lines[2]) + _line3PauseMs;
+    final line2Start = line1Start + typewriterDurationMs(lines[0]) + _line1PauseMs;
+    final line3Start = line2Start + typewriterDurationMs(lines[1]) + _line2PauseMs;
+    final line4Start = line3Start + typewriterDurationMs(lines[2]) + _line3PauseMs;
     return [line1Start, line2Start, line3Start, line4Start];
   }
 
@@ -115,9 +108,7 @@ class IdeaSceneBody extends StatelessWidget {
                 entranceEndMs: starts[3],
                 typingStartMs: starts[3],
                 text: lines[3],
-                highlightPhrases: {
-                  t.ccos.idea_scene.highlight_bitcoin_standard,
-                },
+                highlightPhrases: {t.ccos.idea_scene.highlight_bitcoin_standard},
                 textAlign: TextAlign.right,
                 entryOffset: const Offset(64, 30),
               ),
@@ -154,9 +145,7 @@ class _IdeaTypeLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = CoconutTypography.heading3_21_Bold
-        .setColor(Colors.white)
-        .copyWith(height: 1.32);
+    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(Colors.white).copyWith(height: 1.32);
     final highlightStyle = baseStyle.copyWith(
       fontSize: (baseStyle.fontSize ?? 18) * 1.4,
       fontWeight: FontWeight.w900,
@@ -165,20 +154,11 @@ class _IdeaTypeLine extends StatelessWidget {
     final strutStyle =
         highlightPhrases.isEmpty
             ? null
-            : StrutStyle(
-              fontSize: highlightStyle.fontSize,
-              height: 1.2,
-              forceStrutHeight: true,
-            );
+            : StrutStyle(fontSize: highlightStyle.fontSize, height: 1.2, forceStrutHeight: true);
 
     return _AnimatedTypeBlock(
       animation: animation,
-      entranceInterval: intervalFromMs(
-        entranceStartMs,
-        entranceEndMs,
-        sceneDurationMs,
-        curve: Curves.easeOutCubic,
-      ),
+      entranceInterval: intervalFromMs(entranceStartMs, entranceEndMs, sceneDurationMs, curve: Curves.easeOutCubic),
       entryOffset: entryOffset,
       textAlign: textAlign,
       builder:
@@ -188,11 +168,7 @@ class _IdeaTypeLine extends StatelessWidget {
             text: typewriterSpan(
               source: text,
               animation: animation,
-              interval: typewriterIntervalFromMs(
-                text,
-                typingStartMs,
-                sceneDurationMs,
-              ),
+              interval: typewriterIntervalFromMs(text, typingStartMs, sceneDurationMs),
               baseStyle: baseStyle,
               highlightStyle: highlightStyle,
               highlightPhrases: highlightPhrases,
@@ -229,8 +205,7 @@ class _IdeaQuestionMorphLine extends StatefulWidget {
   State<_IdeaQuestionMorphLine> createState() => _IdeaQuestionMorphLineState();
 }
 
-class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine>
-    with SingleTickerProviderStateMixin {
+class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with SingleTickerProviderStateMixin {
   late final AnimationController _suffixController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2300),
@@ -262,11 +237,7 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine>
 
   void _handleParentAnimation() {
     final value = widget.animation.value;
-    final typingInterval = typewriterIntervalFromMs(
-      widget.text,
-      widget.typingStartMs,
-      widget.sceneDurationMs,
-    );
+    final typingInterval = typewriterIntervalFromMs(widget.text, widget.typingStartMs, widget.sceneDurationMs);
     if (value < typingInterval.begin) {
       if (_hasStartedSuffixAnimation || _suffixController.value != 0) {
         _hasStartedSuffixAnimation = false;
@@ -283,9 +254,7 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine>
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = CoconutTypography.heading3_21_Bold
-        .setColor(Colors.white)
-        .copyWith(height: 1.32);
+    final baseStyle = CoconutTypography.heading3_21_Bold.setColor(Colors.white).copyWith(height: 1.32);
     final highlightStyle = baseStyle.copyWith(
       fontSize: (baseStyle.fontSize ?? 18) * 1.4,
       fontWeight: FontWeight.w900,
@@ -294,22 +263,10 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine>
     final strutStyle =
         widget.highlightPhrases.isEmpty
             ? null
-            : StrutStyle(
-              fontSize: highlightStyle.fontSize,
-              height: 1.2,
-              forceStrutHeight: true,
-            );
+            : StrutStyle(fontSize: highlightStyle.fontSize, height: 1.2, forceStrutHeight: true);
 
-    final typingInterval = typewriterIntervalFromMs(
-      widget.text,
-      widget.typingStartMs,
-      widget.sceneDurationMs,
-    );
-    final visibleText = typewriterText(
-      widget.text,
-      widget.animation,
-      typingInterval,
-    );
+    final typingInterval = typewriterIntervalFromMs(widget.text, widget.typingStartMs, widget.sceneDurationMs);
+    final visibleText = typewriterText(widget.text, widget.animation, typingInterval);
     final hasQuestionMark = widget.text.endsWith('?');
 
     if (!hasQuestionMark || visibleText != widget.text) {
@@ -387,20 +344,15 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine>
 
   String _suffixText(double progress) {
     if (progress < _typeDotsEnd) {
-      final count = (_trailingDots.length * (progress / _typeDotsEnd))
-          .floor()
-          .clamp(0, _trailingDots.length);
+      final count = (_trailingDots.length * (progress / _typeDotsEnd)).floor().clamp(0, _trailingDots.length);
       return _trailingDots.substring(0, count);
     }
     if (progress < _eraseStart) {
       return _trailingDots;
     }
     if (progress < _eraseEnd) {
-      final eraseProgress =
-          (progress - _eraseStart) / (_eraseEnd - _eraseStart);
-      final remaining = (_trailingDots.length * (1 - eraseProgress))
-          .ceil()
-          .clamp(0, _trailingDots.length);
+      final eraseProgress = (progress - _eraseStart) / (_eraseEnd - _eraseStart);
+      final remaining = (_trailingDots.length * (1 - eraseProgress)).ceil().clamp(0, _trailingDots.length);
       return _trailingDots.substring(0, remaining);
     }
     if (progress < _finalMarkStart) {
@@ -423,8 +375,7 @@ class _AnimatedTypeBlock extends StatelessWidget {
   final Interval entranceInterval;
   final Offset entryOffset;
   final TextAlign textAlign;
-  final Widget Function(Animation<double> animation, TextAlign textAlign)
-  builder;
+  final Widget Function(Animation<double> animation, TextAlign textAlign) builder;
 
   @override
   Widget build(BuildContext context) {
@@ -443,10 +394,7 @@ class _AnimatedTypeBlock extends StatelessWidget {
             offset: Offset(dx, dy),
             child: Transform.scale(
               scale: settleScale,
-              alignment:
-                  textAlign == TextAlign.right
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
+              alignment: textAlign == TextAlign.right ? Alignment.centerRight : Alignment.centerLeft,
               child: builder(animation, textAlign),
             ),
           ),

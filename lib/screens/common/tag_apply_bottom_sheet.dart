@@ -47,11 +47,7 @@ class TagApplyBottomSheet extends StatefulWidget {
   final int walletId;
   final List<String> selectedUtxoIds;
 
-  const TagApplyBottomSheet({
-    super.key,
-    required this.walletId,
-    required this.selectedUtxoIds,
-  });
+  const TagApplyBottomSheet({super.key, required this.walletId, required this.selectedUtxoIds});
 
   @override
   State<TagApplyBottomSheet> createState() => _TagApplyBottomSheetState();
@@ -69,9 +65,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
   bool _isTagListModified = false;
 
   List<UtxoTag> get _deletableTags {
-    return _utxoTags
-        .where((tag) => tag.utxoIdList == null || tag.utxoIdList!.isEmpty)
-        .toList();
+    return _utxoTags.where((tag) => tag.utxoIdList == null || tag.utxoIdList!.isEmpty).toList();
   }
 
   List<UtxoTag> get _displayedTags {
@@ -82,20 +76,14 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
   void initState() {
     super.initState();
 
-    _viewModel = UtxoTagCrudViewModel(
-      context.read<UtxoTagProvider>(),
-      widget.walletId,
-    );
+    _viewModel = UtxoTagCrudViewModel(context.read<UtxoTagProvider>(), widget.walletId);
 
     _tagNamesToDelete = [];
     _utxoTags = List.from(_viewModel.utxoTagList);
 
     _tagStates = {};
     for (var tag in _utxoTags) {
-      int matchCount =
-          widget.selectedUtxoIds
-              .where((id) => tag.utxoIdList?.contains(id) ?? false)
-              .length;
+      int matchCount = widget.selectedUtxoIds.where((id) => tag.utxoIdList?.contains(id) ?? false).length;
 
       if (matchCount == 0) {
         _tagStates[tag.name] = TagApplyState.unchecked;
@@ -118,11 +106,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
     if (_isTagListModified) {
       Navigator.pop(
         context,
-        TagApplyResult(
-          mode: UtxoTagApplyEditMode.update,
-          tagStates: _tagStates,
-          hasChanges: true,
-        ),
+        TagApplyResult(mode: UtxoTagApplyEditMode.update, tagStates: _tagStates, hasChanges: true),
       );
     } else {
       Navigator.pop(context);
@@ -156,10 +140,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
         child: Consumer<UtxoTagCrudViewModel>(
           builder: (context, model, child) {
             return ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(32),
-                topRight: Radius.circular(32),
-              ),
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
               child: CoconutBottomSheet(
                 useIntrinsicHeight: true,
                 backgroundColor: context.coconutColors.surfaceBottomSheet,
@@ -173,10 +154,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
                     CoconutUnderlinedButton(
                       text: t.done,
                       isActive: !_isDeletionMode,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       onTap: () {
                         Navigator.pop(
                           context,
@@ -196,10 +174,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
                       child: Container(
                         color: context.coconutColors.surfaceBottomSheet,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: _buildUpdateView(),
-                        ),
+                        child: SizedBox(width: double.infinity, child: _buildUpdateView()),
                       ),
                     );
                   },
@@ -216,11 +191,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildTagList(),
-        _buildTagAdditionMenu(),
-        _buildTagDeletionMenu(),
-      ],
+      children: [_buildTagList(), _buildTagAdditionMenu(), _buildTagDeletionMenu()],
     );
   }
 
@@ -250,17 +221,14 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
                 runSpacing: 8,
                 children: List.generate(tagsToShow.length, (index) {
                   final tag = tagsToShow[index];
-                  final applyState =
-                      _tagStates[tag.name] ?? TagApplyState.original;
+                  final applyState = _tagStates[tag.name] ?? TagApplyState.original;
 
                   return TagChip(
                     tag: tag,
                     applyState: applyState,
                     isDeletionMode: _isDeletionMode,
                     onTap: () => _handleTagChipTap(context, index, tagsToShow),
-                    onLongPress:
-                        () =>
-                            _handleTagChipLongPress(context, tagsToShow[index]),
+                    onLongPress: () => _handleTagChipLongPress(context, tagsToShow[index]),
                   );
                 }),
               ),
@@ -273,11 +241,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
     );
   }
 
-  void _handleTagChipTap(
-    BuildContext context,
-    int index,
-    List<UtxoTag> currentTagList,
-  ) {
+  void _handleTagChipTap(BuildContext context, int index, List<UtxoTag> currentTagList) {
     final tagToDelete = currentTagList[index];
     final tag = tagToDelete.name;
 
@@ -314,10 +278,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
       }
 
       if (nextState == TagApplyState.checked) {
-        final checkedCount =
-            _tagStates.values
-                .where((state) => state == TagApplyState.checked)
-                .length;
+        final checkedCount = _tagStates.values.where((state) => state == TagApplyState.checked).length;
         if (checkedCount >= 5) {
           CoconutToast.showToast(
             context: context,
@@ -406,14 +367,9 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Divider(color: context.coconutColors.divider, height: 1),
-          _buildMenuItem(
-            _isDeletionMode
-                ? t.tag_bottom_sheet.exit_deletion
-                : t.tag_bottom_sheet.delete_tag,
-            () {
-              _toggleDeletionMode();
-            },
-          ),
+          _buildMenuItem(_isDeletionMode ? t.tag_bottom_sheet.exit_deletion : t.tag_bottom_sheet.delete_tag, () {
+            _toggleDeletionMode();
+          }),
         ],
       ),
     );
@@ -431,12 +387,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
         width: double.infinity,
         color: Colors.transparent,
         padding: padding,
-        child: Text(
-          title,
-          style: CoconutTypography.body2_14_Bold.setColor(
-            context.coconutColors.primaryText,
-          ),
-        ),
+        child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)),
       ),
     );
   }
@@ -469,17 +420,11 @@ class TagChip extends StatelessWidget {
       children: [
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
-          child: Padding(
-            padding: const EdgeInsets.only(right: 4.0),
-            child: style.icon,
-          ),
+          child: Padding(padding: const EdgeInsets.only(right: 4.0), child: style.icon),
         ),
         AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 200),
-          style: CoconutTypography.body3_12.copyWith(
-            color: style.textColor,
-            fontWeight: style.fontWeight,
-          ),
+          style: CoconutTypography.body3_12.copyWith(color: style.textColor, fontWeight: style.fontWeight),
           child: Text('#${tag.name}'),
         ),
       ],
@@ -509,10 +454,7 @@ class TagChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(20),
-        ),
+        decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(20)),
         child: chipForeground,
       ),
     );
@@ -523,12 +465,7 @@ class TagChip extends StatelessWidget {
       return _ChipStyle(
         borderColor: foregroundColor,
         textColor: foregroundColor,
-        icon: Icon(
-          Icons.close,
-          key: const ValueKey('delete'),
-          size: 16,
-          color: context.coconutColors.iconPrimary,
-        ),
+        icon: Icon(Icons.close, key: const ValueKey('delete'), size: 16, color: context.coconutColors.iconPrimary),
       );
     }
 
@@ -542,18 +479,12 @@ class TagChip extends StatelessWidget {
             key: const ValueKey('original'),
             width: 16,
             height: 16,
-            colorFilter: ColorFilter.mode(
-              foregroundColor.withValues(alpha: 0.6),
-              BlendMode.srcIn,
-            ),
+            colorFilter: ColorFilter.mode(foregroundColor.withValues(alpha: 0.6), BlendMode.srcIn),
           ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              CoconutColors.backgroundColorPaletteDark[tag.colorIndex],
-              foregroundColor,
-            ],
+            colors: [CoconutColors.backgroundColorPaletteDark[tag.colorIndex], foregroundColor],
           ),
         );
       case TagApplyState.checked:
