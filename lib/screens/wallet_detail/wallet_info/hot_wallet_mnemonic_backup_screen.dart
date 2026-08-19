@@ -266,7 +266,9 @@ class _MnemonicWarningCard extends StatelessWidget {
             ),
             CoconutLayout.spacing_300h,
             Text(
-              strings.mnemonic_warning_title,
+              LocaleSettings.currentLocale == AppLocale.ko
+                  ? TextUtils.preventLineBreakInsideWords(strings.mnemonic_warning_title)
+                  : strings.mnemonic_warning_title,
               style: CoconutTypography.heading3_21_Bold.setColor(Colors.white),
               textAlign: TextAlign.center,
             ),
