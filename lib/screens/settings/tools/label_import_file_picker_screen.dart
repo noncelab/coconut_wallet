@@ -1,16 +1,16 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/label/label_result.dart';
+import 'package:coconut_wallet/providers/view_model/settings/label_import_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
 import 'package:coconut_wallet/widgets/card/option_card.dart';
 import 'package:coconut_wallet/widgets/label_import_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
@@ -28,6 +28,7 @@ class LabelImportFilePickerScreen extends StatefulWidget {
 }
 
 class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScreen> {
+  late final LabelImportViewModel _importViewModel;
   late Future<List<File>> _filesFuture;
   LabelImportStep _step = LabelImportStep.fileSelection;
   int? _selectedItemIndex;
@@ -41,8 +42,9 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   @override
   void initState() {
     super.initState();
+    _importViewModel = LabelImportViewModel(walletProvider: context.read<WalletProvider>());
     _importMemosFromOtherWallets = widget.importMemosFromOtherWalletsFixed;
-    _filesFuture = LabelJsonLManager().getImportableLabelFiles();
+    _filesFuture = _importViewModel.getImportableLabelFiles();
   }
 
   @override
@@ -132,7 +134,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
                 if (_deleteFileOnSuccess && _selectedItemIndex != null) {
                   final files = await _filesFuture;
                   final fileToDelete = files[_selectedItemIndex!];
-                  await fileToDelete.delete();
+                  await _importViewModel.deleteFile(fileToDelete);
                 }
                 Navigator.of(context).pop();
               },
@@ -501,7 +503,6 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   Future<void> _onApplyButtonPressed() async {
     if (_selectedItemIndex == null) return;
 
-    final walletProvider = context.read<WalletProvider>();
     final files = await _filesFuture;
     final selectedFile = files[_selectedItemIndex!];
 
@@ -512,14 +513,12 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       await Future.delayed(const Duration(milliseconds: 2500));
       final result =
           widget.walletId != null && !_importMemosFromOtherWallets
-              ? await LabelJsonLManager().importLabelsForWallet(
+              ? await _importViewModel.importLabelsForWallet(
                 widget.walletId!,
-                walletProvider,
                 selectedFile.path,
                 addMemoToExisting: _addMemoToExisting,
               )
-              : await LabelJsonLManager().importLabelsForAllWallets(
-                walletProvider,
+              : await _importViewModel.importLabelsForAllWallets(
                 selectedFile.path,
                 addMemoToExisting: _addMemoToExisting,
               );
@@ -540,14 +539,14 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
 
   void _refreshFiles() {
     setState(() {
-      _filesFuture = LabelJsonLManager().getImportableLabelFiles();
+      _filesFuture = _importViewModel.getImportableLabelFiles();
       _selectedItemIndex = null;
     });
   }
 
   Future<void> _addExternalFile() async {
     try {
-      final addedFile = await LabelJsonLManager().pickAndSaveExternalLabelFile();
+      final addedFile = await _importViewModel.pickAndSaveExternalLabelFile();
       if (addedFile != null && mounted) {
         _refreshFiles();
       }

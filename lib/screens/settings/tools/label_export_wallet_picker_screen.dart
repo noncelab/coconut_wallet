@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/label/label_result.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/view_model/settings/label_export_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
@@ -38,15 +38,17 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   List<LabelExportResult> _exportResults = [];
   int _currentPage = 0;
 
+  late final LabelExportViewModel _exportViewModel;
   late Future<List<File>> _filesFuture;
 
   @override
   void initState() {
     super.initState();
+    _exportViewModel = LabelExportViewModel(walletProvider: context.read<WalletProvider>());
     if (widget.initialSelectedWalletId != null) {
       _selectedWalletIds.add(widget.initialSelectedWalletId!);
     }
-    _filesFuture = LabelJsonLManager().getImportableLabelFiles();
+    _filesFuture = _exportViewModel.getImportableLabelFiles();
   }
 
   @override
@@ -430,33 +432,17 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       setState(() => _step = LabelExportStep.exporting);
     }
 
-    final walletProvider = context.read<WalletProvider>();
-    final labelManager = LabelJsonLManager();
-
     try {
-      final result = await labelManager.createLabelsJsonLFileForWallets(_selectedWalletIds.toList(), walletProvider);
+      final result = await _exportViewModel.exportLabelsForWallets(_selectedWalletIds.toList());
 
       if (result.xFile != null) {
         setState(() {
-          _filesFuture = LabelJsonLManager().getImportableLabelFiles();
+          _filesFuture = _exportViewModel.getImportableLabelFiles();
           _selectedFileIndices.clear();
         });
         await Future.delayed(const Duration(milliseconds: 2500));
 
-        final List<LabelExportResult> exportResults = [];
-
-        for (final walletId in _selectedWalletIds) {
-          final wallet = walletProvider.getWalletById(walletId);
-          exportResults.add(
-            LabelExportResult(
-              xFile: result.xFile,
-              wallet: wallet,
-              txMemoCount: walletProvider.getAllTransactionMemos(walletId).where((m) => m.memo.isNotEmpty).length,
-              utxoTagCount: walletProvider.getUtxoTags(walletId).fold(0, (sum, tag) => sum + tag.utxoIdList.length),
-              utxoLockCount: walletProvider.getUtxoList(walletId).where((u) => u.status == UtxoStatus.locked).length,
-            ),
-          );
-        }
+        final exportResults = _exportViewModel.buildExportResults(_selectedWalletIds.toList(), result.xFile!);
 
         if (mounted) {
           setState(() {
@@ -573,12 +559,10 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Future<void> _shareFiles(List<File> files) async {
-    final labelManager = LabelJsonLManager();
-    final xFiles = files.map((file) => labelManager.createXFileFromFile(file)).toList();
     final renderBox = context.findRenderObject() as RenderBox?;
     final sharePositionOrigin =
         renderBox != null && renderBox.hasSize ? renderBox.localToGlobal(Offset.zero) & renderBox.size : null;
-    await labelManager.shareFiles(xFiles, sharePositionOrigin: sharePositionOrigin);
+    await _exportViewModel.shareFiles(files, sharePositionOrigin: sharePositionOrigin);
   }
 
   Future<void> _deleteSelectedFile() async {
@@ -609,9 +593,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
 
     if (confirmed == true && mounted) {
       try {
-        for (final file in filesToDelete) {
-          await file.delete();
-        }
+        await _exportViewModel.deleteFiles(filesToDelete);
         CoconutToast.showToast(
           context: context,
           text: t.label_management_screen.file.delete_success,
@@ -632,7 +614,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
 
   void _refreshFiles() {
     setState(() {
-      _filesFuture = LabelJsonLManager().getImportableLabelFiles();
+      _filesFuture = _exportViewModel.getImportableLabelFiles();
       _selectedFileIndices.clear();
     });
   }

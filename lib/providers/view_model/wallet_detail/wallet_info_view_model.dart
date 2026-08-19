@@ -14,7 +14,7 @@ import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
+import 'package:coconut_wallet/providers/view_model/settings/label_export_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -33,7 +33,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
-  final LabelJsonLManager _labelExportJsonL = LabelJsonLManager();
+  late final LabelExportViewModel _labelExportViewModel = LabelExportViewModel(walletProvider: _walletProvider);
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
 
   late String _walletName;
@@ -301,10 +301,10 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   Future<XFile?> createLabelsJsonLFile() async {
-    return _labelExportJsonL.createLabelsJsonLFile(_walletId, _walletProvider);
+    return _labelExportViewModel.exportLabelsForWallet(_walletId);
   }
 
   Future<void> shareLabelsFile(XFile file) async {
-    await _labelExportJsonL.shareFile(file);
+    await _labelExportViewModel.shareFile(file);
   }
 }
