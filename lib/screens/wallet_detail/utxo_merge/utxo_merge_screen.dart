@@ -938,7 +938,6 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     final method = _viewModel.currentMethod;
 
     try {
-      debugPrint('sjkdjkansjdknasndkjnajksdnjaksn');
       await CommonBottomSheets.showDraggableBottomSheet<void>(
         minChildSize: 0.6,
         maxChildSize: 0.9,

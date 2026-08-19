@@ -1186,7 +1186,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         duration: const Duration(milliseconds: 150),
                         height: _walletFilter == filter ? 2 : 1,
                         color:
-                            _walletFilter == filter ? context.coconutColors.primaryText : context.coconutColors.divider,
+                            _walletFilter == filter
+                                ? context.coconutColors.primaryText
+                                : context.coconutColors.surfaceMuted,
                       ),
                     ],
                   ),
