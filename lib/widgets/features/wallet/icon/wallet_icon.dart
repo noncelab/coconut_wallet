@@ -15,6 +15,7 @@ class WalletIcon extends StatelessWidget {
   final bool isHotWallet;
   final String? badgeSvgAssetPath;
   final Color? badgeColor;
+  final Color? badgeBorderColor;
   final double badgeSize;
   final double badgeRight;
   final double badgeBottom;
@@ -28,6 +29,7 @@ class WalletIcon extends StatelessWidget {
     this.isHotWallet = false,
     this.badgeSvgAssetPath,
     this.badgeColor,
+    this.badgeBorderColor,
     this.badgeSize = 18,
     this.badgeRight = -1,
     this.badgeBottom = -0.5,
@@ -94,7 +96,7 @@ class WalletIcon extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: context.coconutColors.iconBackground,
-        border: Border.all(color: context.coconutColors.background),
+        border: Border.all(color: badgeBorderColor ?? context.coconutColors.background),
       ),
       child: SvgPicture.asset(
         badgeAssetPath,

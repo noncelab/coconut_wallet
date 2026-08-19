@@ -211,7 +211,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                 },
                 child: Row(
                   children: [
-                    _buildIcon(),
+                    _buildIcon(hasGradient: hasGradient),
 
                     CoconutLayout.spacing_200w,
                     // 지갑 유형 및 이름
@@ -406,53 +406,35 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildIcon({required bool hasGradient}) {
     final colors = context.coconutColors;
     final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
     final bool shouldShowEditIcon = isExternalWallet || isCustomAccount;
+    final cardBackgroundColor = hasGradient ? colors.surface : colors.background;
     final pressedIconBackgroundSubtle = Color.alphaBlend(
       colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity),
-      colors.iconBackgroundSubtle,
+      cardBackgroundColor,
     );
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        WalletIcon(
-          walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
-          colorIndex: colorIndex,
-          iconIndex: iconIndex,
-          isInnerWallet: !isExternalWallet,
-          isHotWallet: walletItem.hasLocalKey,
-        ),
-        if (shouldShowEditIcon)
-          Positioned(
-            right: -3,
-            bottom: -3,
-            child: Container(
-              padding: const EdgeInsets.all(1),
-              decoration: BoxDecoration(
-                color: isItemTapped ? pressedIconBackgroundSubtle : colors.iconBackgroundSubtle,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: colors.shadowDefault, offset: const Offset(1, 1), blurRadius: 6, spreadRadius: 0),
-                ],
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(3.3),
-                decoration: BoxDecoration(
-                  color: isItemTapped ? pressedIconBackgroundSubtle : colors.iconBackgroundSubtle,
-                  shape: BoxShape.circle,
-                ),
-                child: SvgPicture.asset(
-                  CommonActionIconPath.editOutlined,
-                  width: 10,
-                  colorFilter: ColorFilter.mode(colors.iconSecondary, BlendMode.srcIn),
-                ),
-              ),
-            ),
-          ),
-      ],
+    if (shouldShowEditIcon) {
+      return WalletIcon(
+        walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
+        colorIndex: colorIndex,
+        iconIndex: iconIndex,
+        isInnerWallet: !isExternalWallet,
+        isHotWallet: walletItem.hasLocalKey,
+        badgeSvgAssetPath: CommonActionIconPath.editOutlined,
+        badgeColor: colors.iconSecondary,
+        badgeBorderColor: isItemTapped ? pressedIconBackgroundSubtle : cardBackgroundColor,
+      );
+    }
+
+    return WalletIcon(
+      walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
+      colorIndex: colorIndex,
+      iconIndex: iconIndex,
+      isInnerWallet: !isExternalWallet,
+      isHotWallet: walletItem.hasLocalKey,
     );
   }
 }
