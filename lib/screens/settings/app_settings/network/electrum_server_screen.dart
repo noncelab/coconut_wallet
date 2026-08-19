@@ -812,7 +812,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                   Flexible(
                     flex: 2,
                     child: InlineActionButton(
-                      isActive: hasActualChanges && nodeConnectionStatus != NodeConnectionStatus.connecting,
+                      isActive:
+                          hasActualChanges &&
+                          nodeConnectionStatus != NodeConnectionStatus.connecting &&
+                          nodeConnectionStatus != NodeConnectionStatus.networkMismatch,
                       onPressed: () {
                         _unFocus();
                         _onSave();

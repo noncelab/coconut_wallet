@@ -686,7 +686,6 @@ class NodeProvider extends ChangeNotifier {
     try {
       final chainCheckResult = await _verifyChainCompatibility(electrumServer);
       if (chainCheckResult.isFailure) {
-        _stateManager?.setNodeSyncStateToFailed();
         notifyListeners();
         return Result.failure(chainCheckResult.error);
       }
