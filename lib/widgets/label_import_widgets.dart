@@ -278,42 +278,48 @@ class ImportLabelInstructionToolTip extends StatelessWidget {
               final stepText = e.value as String;
 
               return WidgetSpan(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Text(
-                        stepText,
-                        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                      ),
-                    ),
-                    if (showSkeleton) ...[
-                      const SizedBox(width: 8),
-                      Shimmer.fromColors(
-                        baseColor: context.coconutColors.surfaceSkeletonBase,
-                        highlightColor: context.coconutColors.surfaceSkeletonHighlight,
-                        child: Container(
-                          width: 60,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: context.coconutColors.surfaceSkeletonBase,
-                            borderRadius: BorderRadius.circular(4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            stepText,
+                            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                           ),
                         ),
-                      ),
-                    ],
-                    if (!showSkeleton && stepResults != null && e.key < stepResults!.length) ...[
-                      ...[
-                        const SizedBox(width: 8),
-                        Text(() {
-                          final result = stepResults![e.key];
-                          if (result is int) {
-                            return '$result${t.label_import_file_picker_screen.widget.count_unit(n: result)}';
-                          }
-                          return result.toString();
-                        }(), style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
+                        if (showSkeleton) ...[
+                          const SizedBox(width: 8),
+                          Shimmer.fromColors(
+                            baseColor: context.coconutColors.surfaceSkeletonBase,
+                            highlightColor: context.coconutColors.surfaceSkeletonHighlight,
+                            child: Container(
+                              width: 60,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: context.coconutColors.surfaceSkeletonBase,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (!showSkeleton && stepResults != null && e.key < stepResults!.length) ...[
+                          ...[
+                            const SizedBox(width: 8),
+                            Text(() {
+                              final result = stepResults![e.key];
+                              if (result is int) {
+                                return '$result${t.label_import_file_picker_screen.widget.count_unit(n: result)}';
+                              }
+                              return result.toString();
+                            }(), style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
+                          ],
+                        ],
                       ],
-                    ],
+                    ),
+                    if (e.key < steps.length - 1) CoconutLayout.spacing_300h,
                   ],
                 ),
               );

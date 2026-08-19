@@ -434,7 +434,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
             height: 48,
             width: 48,
           ),
-          CoconutLayout.spacing_200h,
+          CoconutLayout.spacing_1000h,
           RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
