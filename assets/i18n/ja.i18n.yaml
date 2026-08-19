@@ -951,7 +951,7 @@ wallet_info_screen:
   error:
     delete: "ウォレットの削除に失敗しました"
     no_memos: "ウォレットに記録されたメモがありません。"
-    invalid_file_type: "無効なファイル形式です。JSONLファイルを選択してください。"
+    invalid_file_type: "無効なファイル形式です。jsonlファイルを選択してください。"
   connected_hardware_wallet:
     title: "デバイス情報"
     connection_status: "接続状態"

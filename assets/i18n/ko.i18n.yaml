@@ -967,7 +967,7 @@ wallet_info_screen:
   error:
     delete: "지갑 삭제 실패"
     no_memos: "지갑에 기록한 메모가 없어요"
-    invalid_file_type: "잘 못된 파일 형식입니다. JSONL 파일을 선택해주세요."
+    invalid_file_type: "잘 못된 파일 형식입니다. jsonl 파일을 선택해주세요."
   connected_hardware_wallet:
     title: "기기 정보"
     connection_status: "연결 상태"

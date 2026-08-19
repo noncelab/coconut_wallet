@@ -301,7 +301,7 @@ class LabelJsonLManager {
     int counter = 1;
 
     while (await File(filePath).exists()) {
-      fileName = '$baseName ($counter)$extension';
+      fileName = '$baseName($counter)$extension';
       filePath = p.join(directory.path, fileName);
       counter++;
     }
@@ -454,7 +454,7 @@ class LabelJsonLManager {
       int counter = 1;
 
       while (await File(targetPath).exists()) {
-        targetFileName = '$baseName ($counter)$extension';
+        targetFileName = '$baseName($counter)$extension';
         targetPath = p.join(directory.path, targetFileName);
         counter++;
       }

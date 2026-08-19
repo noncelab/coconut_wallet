@@ -963,7 +963,7 @@ wallet_info_screen:
   error:
     delete: "Failed to delete wallet"
     no_memos: "There are no memos recorded in the wallet."
-    invalid_file_type: "Invalid file type. Please select a JSONL file."
+    invalid_file_type: "Invalid file type. Please select a jsonl file."
   connected_hardware_wallet:
     title: "Device Info"
     connection_status: "Connection Status"

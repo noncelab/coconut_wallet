@@ -4,7 +4,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
@@ -485,25 +484,13 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     );
   }
 
-  void _onSelectButtonPressed(List<File> files) async {
+  void _onSelectButtonPressed(List<File> files) {
     if (_selectedItemIndex == null) return;
 
     final selectedFile = files[_selectedItemIndex!];
     final fileName = p.basename(selectedFile.path);
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (dialogContext) => CoconutPopup(
-            languageCode: context.read<PreferenceProvider>().language,
-            title: t.label_management_screen.file.apply,
-            description: t.label_management_screen.file.apply_description(fileName: fileName),
-            onTapRight: () => Navigator.of(dialogContext).pop(true),
-            rightButtonText: t.confirm,
-          ),
-    );
-
-    if (confirmed == true && mounted) {
+    if (mounted) {
       setState(() {
         _step = LabelImportStep.optionSelection;
         _fileName = fileName;
