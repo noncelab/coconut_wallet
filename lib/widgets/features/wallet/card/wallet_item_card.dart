@@ -147,6 +147,7 @@ class WalletItemCard extends StatelessWidget {
             colorIndex: walletItem.colorIndex,
             gradientColors: iconGradientColors,
             isHotWallet: walletItem.hasLocalKey,
+            badgeBorderColor: backgroundColor,
           ),
           CoconutLayout.spacing_200w,
           Expanded(
