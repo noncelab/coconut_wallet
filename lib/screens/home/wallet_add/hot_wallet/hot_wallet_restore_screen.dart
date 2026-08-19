@@ -4,7 +4,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutTextField,
+        CoconutTextFieldStyle;
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -15,6 +25,9 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_restore_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/utils/seed_qr_decoder.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart' as app_settings;
@@ -580,7 +593,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
             ),
             child: Column(
               children: [
-                Icon(Icons.check_circle_rounded, color: context.coconutColors.primary, size: 32),
+                SvgPicture.asset(CommonFormIconPath.circleCheck),
                 CoconutLayout.spacing_300h,
                 Text(
                   t.wallet_home_screen.hot_wallet_restore.seed_qr_scanned,
@@ -917,6 +930,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
             CoconutTextField(
               controller: _wordControllers[index],
               focusNode: _wordFocusNodes[index],
+              size: CoconutTextFieldSize.compact,
               textAlign: TextAlign.center,
               textInputAction: index == viewModel.wordCount - 1 ? TextInputAction.done : TextInputAction.next,
               autocorrect: false,
@@ -1340,7 +1354,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
                   ),
                   backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
                   checkboxText: t.wallet_home_screen.hot_wallet_restore.remove_watch_only,
-                  checkboxTextStyle: CoconutTypography.body3_12,
+                  checkboxTextStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
                   isCheckboxSelected: removeWatchOnly,
                   onCheckboxChanged: (value) => setDialogState(() => removeWatchOnly = value),
                   rightButtonText: t.wallet_home_screen.hot_wallet_restore.restore_wallet,
