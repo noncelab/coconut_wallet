@@ -584,7 +584,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                               onTap: () => _setEnterPassphraseWhenSigning(!_enterPassphraseWhenSigning),
                                               child: Text(
                                                 t.wallet_home_screen.hot_wallet_create.enter_passphrase_when_signing,
-                                                style: CoconutTypography.body2_14.setColor(
+                                                style: CoconutTypography.body3_12.setColor(
                                                   _isPassphraseOptionPressed
                                                       ? context.coconutColors.tertiaryText
                                                       : context.coconutColors.secondaryText,
