@@ -517,8 +517,9 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
             ],
           ),
         ),
+        CoconutLayout.spacing_300h,
         SizedBox(
-          height: 150,
+          height: 160,
           child: PageView.builder(
             itemCount: _exportResults.length,
             onPageChanged: (index) => setState(() => _currentPage = index),

@@ -14,7 +14,7 @@ class ExportLabelSuccessCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.only(top: 24),
       child: Column(
         children: [
           SvgPicture.asset(
@@ -83,7 +83,7 @@ class ExportLabelProgressCard extends StatelessWidget {
           title,
           const SizedBox(height: 43),
           ExportLabelInstructionToolTip(steps: topSteps, showSkeleton: true),
-          CoconutLayout.spacing_600h,
+          CoconutLayout.spacing_300h,
           ExportLabelInstructionToolTip(steps: bottomSteps, showSkeleton: true),
         ],
       ),
@@ -113,37 +113,43 @@ class ExportLabelInstructionToolTip extends StatelessWidget {
               final stepText = e.value as String;
 
               return WidgetSpan(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Text(
-                        stepText,
-                        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                      ),
-                    ),
-                    if (showSkeleton) ...[
-                      const SizedBox(width: 8),
-                      Shimmer.fromColors(
-                        baseColor: context.coconutColors.surfaceSkeletonBase,
-                        highlightColor: context.coconutColors.surfaceSkeletonHighlight,
-                        child: Container(
-                          width: 60,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: context.coconutColors.surfaceSkeletonBase,
-                            borderRadius: BorderRadius.circular(4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            stepText,
+                            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                           ),
                         ),
-                      ),
-                    ],
-                    if (!showSkeleton && stepResults != null && e.key < stepResults!.length) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        stepResults![e.key].toString().isNotEmpty ? stepResults![e.key].toString() : '-',
-                        style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                      ),
-                    ],
+                        if (showSkeleton) ...[
+                          const SizedBox(width: 8),
+                          Shimmer.fromColors(
+                            baseColor: context.coconutColors.surfaceSkeletonBase,
+                            highlightColor: context.coconutColors.surfaceSkeletonHighlight,
+                            child: Container(
+                              width: 60,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: context.coconutColors.surfaceSkeletonBase,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (!showSkeleton && stepResults != null && e.key < stepResults!.length) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            stepResults![e.key].toString().isNotEmpty ? stepResults![e.key].toString() : '-',
+                            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (e.key < steps.length - 1) CoconutLayout.spacing_300h,
                   ],
                 ),
               );
