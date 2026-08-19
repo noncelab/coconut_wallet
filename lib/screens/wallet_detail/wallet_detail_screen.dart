@@ -42,7 +42,7 @@ import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/security_warning_card.dart';
+import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_sticky_header.dart';
@@ -245,8 +245,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
           return Column(
             children: [
-              SecurityWarningCard(
+              HomeAlertCard.security(
                 key: ValueKey(warningType),
+                type: isMnemonicWarning ? HomeAlertCardType.mnemonicBackup : HomeAlertCardType.appLock,
                 showDelay: _nextWarningAfterDismissal == warningType ? _nextWarningDelay : const Duration(seconds: 1),
                 title:
                     isMnemonicWarning
@@ -256,7 +257,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     isMnemonicWarning
                         ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
                         : t.wallet_home_screen.app_lock_warning.description,
-                useUnbackedWalletGradient: isMnemonicWarning,
                 onTap: isMnemonicWarning ? _openWalletInfoForMnemonicBackup : _openAppLockSettings,
                 onClosed:
                     () => _dismissSecurityWarning(

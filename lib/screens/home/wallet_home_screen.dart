@@ -57,8 +57,7 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/text/animated_dots_text.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/features/ccos/card/coconut_open_store_intro_card.dart';
-import 'package:coconut_wallet/widgets/features/wallet/card/security_warning_card.dart';
+import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/icon/transaction_status_gradient_mask.dart';
@@ -311,8 +310,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           SliverToBoxAdapter(
                             child:
                                 securityWarningType != null
-                                    ? SecurityWarningCard(
+                                    ? HomeAlertCard.security(
                                       key: ValueKey(securityWarningType),
+                                      type:
+                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                              ? HomeAlertCardType.mnemonicBackup
+                                              : HomeAlertCardType.appLock,
                                       showDelay:
                                           _nextWarningAfterDismissal == securityWarningType
                                               ? _nextWarningDelay
@@ -321,8 +324,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                           securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
                                               ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
                                               : t.wallet_home_screen.app_lock_warning.title,
-                                      useUnbackedWalletGradient:
-                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet,
                                       description:
                                           securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
                                               ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
@@ -1087,7 +1088,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildOpenStoreIntroCard({required Duration showDelay}) {
-    return _AnimatedOpenStoreIntroCard(
+    return HomeAlertCard.openStore(
       showDelay: showDelay,
       intro: WalletHomeScreen._openStoreIntro,
       onTap: () => openCoconutOpenStoreIntroScreen(context),
@@ -2686,82 +2687,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       clampedOffset,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-    );
-  }
-}
-
-class _AnimatedOpenStoreIntroCard extends StatefulWidget {
-  const _AnimatedOpenStoreIntroCard({
-    required this.showDelay,
-    required this.intro,
-    required this.onTap,
-    required this.onClosed,
-  });
-
-  final Duration showDelay;
-  final CcosOpenStoreIntro intro;
-  final VoidCallback onTap;
-  final VoidCallback onClosed;
-
-  @override
-  State<_AnimatedOpenStoreIntroCard> createState() => _AnimatedOpenStoreIntroCardState();
-}
-
-class _AnimatedOpenStoreIntroCardState extends State<_AnimatedOpenStoreIntroCard> with SingleTickerProviderStateMixin {
-  static const _animationDuration = Duration(milliseconds: 240);
-
-  late final AnimationController _controller;
-  late final Animation<double> _animation;
-  Timer? _showDelayTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: _animationDuration);
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
-    _showDelayTimer = Timer(widget.showDelay, () {
-      if (mounted) _controller.forward(from: 0);
-    });
-  }
-
-  @override
-  void dispose() {
-    _showDelayTimer?.cancel();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _close() async {
-    _showDelayTimer?.cancel();
-    await _controller.reverse();
-    if (mounted) widget.onClosed();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        final value = _animation.value;
-        return ClipRect(
-          child: Align(
-            heightFactor: value,
-            child: Opacity(
-              opacity: value,
-              child: Transform.translate(
-                offset: Offset(0, 4 * (1 - value)),
-                child: Transform.scale(scale: 0.96 + (0.04 * value), child: child),
-              ),
-            ),
-          ),
-        );
-      },
-      child: CoconutOpenStoreIntroCard(
-        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        intro: widget.intro,
-        onTap: widget.onTap,
-        onDismiss: _close,
-      ),
     );
   }
 }
