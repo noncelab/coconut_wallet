@@ -1089,6 +1089,7 @@ label_import_file_picker_screen:
     step3: "UTXO-Tags"
     step4: "Gesperrte UTXOs"
   option_selection:
+    title: "Notizen anwenden?"
     description_1: "Wenden Sie die in der Datei gespeicherten Notizen auf Coconut Wallet an."
     description_2: "Bestehende Notizen werden durch die importierten Notizen ersetzt."
     add_memo_to_existing:

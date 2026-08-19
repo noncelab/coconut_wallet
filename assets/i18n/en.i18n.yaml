@@ -1158,6 +1158,7 @@ label_import_file_picker_screen:
     step3: "UTXO Tags"
     step4: "Locked UTXOs"
   option_selection:
+    title: "Apply labels?"
     description_1: "Apply the notes saved in the file to Coconut Wallet."
     description_2: "Existing notes will be replaced with the imported notes."
     add_memo_to_existing:

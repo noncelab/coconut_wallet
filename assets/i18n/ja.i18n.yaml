@@ -1146,6 +1146,7 @@ label_import_file_picker_screen:
     step3: "UTXOタグ"
     step4: "ロックされたUTXO"
   option_selection:
+    title: "メモを適用しますか？"
     description_1: "ファイルに保存されたメモをココナッツウォレットに適用します。"
     description_2: "既存のメモはインポートしたメモに変更されます。"
     add_memo_to_existing:

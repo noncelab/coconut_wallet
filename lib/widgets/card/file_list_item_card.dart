@@ -38,5 +38,5 @@ String _formatBytes(int bytes, {int decimals = 1}) {
   const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
   var i = (log(bytes) / log(1024)).floor();
   final size = (bytes / pow(1024, i));
-  return '${size.toStringAsFixed(size > 10 || i == 0 ? 0 : decimals)} ${suffixes[i]}';
+  return '${size.toStringAsFixed(size > 10 || i == 0 ? 0 : decimals)}${suffixes[i]}';
 }

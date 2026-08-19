@@ -1149,6 +1149,7 @@ label_import_file_picker_screen:
     step3: "Etiquetas UTXO"
     step4: "UTXOs bloqueados"
   option_selection:
+    title: "¿Aplicar notas?"
     description_1: "Aplica las notas guardadas en el archivo a Coconut Wallet."
     description_2: "Las notas existentes se reemplazarán con las notas importadas."
     add_memo_to_existing:

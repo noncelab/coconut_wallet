@@ -67,9 +67,9 @@ class OptionCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: CoconutTypography.body1_16.setColor(titleColor)),
+                  Text(title, style: CoconutTypography.body2_14.setColor(titleColor)),
                   if (subtitle.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    CoconutLayout.spacing_50h,
                     Text.rich(TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: subtitle)),
                   ],
                 ],

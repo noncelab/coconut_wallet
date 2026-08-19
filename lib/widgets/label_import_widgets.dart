@@ -1,22 +1,78 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/core/bip/329/label_jsonl_manager.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
 
-class ImportLabelSuccessCard extends StatelessWidget {
+class ImportLabelSuccessCard extends StatefulWidget {
   final Widget title;
-  final List<Object> steps;
-  final List<Object>? stepResults;
-  const ImportLabelSuccessCard({super.key, required this.title, required this.steps, this.stepResults});
+  final List<LabelImportResult> importResults;
+  final ValueChanged<int> onPageChanged;
+  final int currentPage;
+
+  const ImportLabelSuccessCard({
+    super.key,
+    required this.title,
+    required this.importResults,
+    required this.onPageChanged,
+    required this.currentPage,
+  });
+
+  @override
+  State<ImportLabelSuccessCard> createState() => _ImportLabelSuccessCardState();
+}
+
+class _ImportLabelSuccessCardState extends State<ImportLabelSuccessCard> {
+  double _successCardHeight = 150;
+
+  Widget _buildSuccessCard(BuildContext context, LabelImportResult importResult) {
+    return ImportLabelInstructionToolTip(
+      steps: [
+        t.label_import_file_picker_screen.instruction_tooltip.step1,
+        t.label_import_file_picker_screen.instruction_tooltip.step2,
+        t.label_import_file_picker_screen.instruction_tooltip.step3,
+        t.label_import_file_picker_screen.instruction_tooltip.step4,
+      ],
+      stepResults: [
+        importResult.wallet?.name ?? '',
+        importResult.txMemoCount,
+        importResult.utxoTagCount,
+        importResult.utxoLockCount,
+      ],
+      showSkeleton: false,
+    );
+  }
+
+  Widget _buildPageIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(widget.importResults.length, (index) {
+        return Container(
+          width: 8.0,
+          height: 8.0,
+          margin: const EdgeInsets.symmetric(horizontal: 4.0),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color:
+                widget.currentPage == index
+                    ? context.coconutColors.primaryText
+                    : context.coconutColors.secondaryText.withOpacity(0.5),
+          ),
+        );
+      }),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           SvgPicture.asset(
             'assets/svg/circle-check.svg',
@@ -24,10 +80,34 @@ class ImportLabelSuccessCard extends StatelessWidget {
             height: 48,
             width: 48,
           ),
-          CoconutLayout.spacing_200h,
-          title,
-          CoconutLayout.spacing_400h,
-          ImportLabelInstructionToolTip(steps: steps, showSkeleton: false, stepResults: stepResults),
+          CoconutLayout.spacing_1000h,
+          widget.title,
+          CoconutLayout.spacing_500h,
+          Offstage(
+            child: _SizeReportingWidget(
+              onSizeChanged: (size) {
+                if (!mounted || _successCardHeight == size.height) return;
+                setState(() => _successCardHeight = size.height);
+              },
+              child: _buildSuccessCard(context, widget.importResults[widget.currentPage]),
+            ),
+          ),
+          SizedBox(
+            height: _successCardHeight,
+            child: PageView.builder(
+              itemCount: widget.importResults.length,
+              onPageChanged: widget.onPageChanged,
+              itemBuilder: (context, index) => _buildSuccessCard(context, widget.importResults[index]),
+            ),
+          ),
+
+          if (widget.importResults.length > 1) ...[
+            const SizedBox(height: 14),
+            _buildPageIndicator(),
+            const SizedBox(height: 13),
+          ] else ...[
+            const SizedBox(height: 18),
+          ],
         ],
       ),
     );
@@ -51,12 +131,43 @@ class ImportLabelErrorCard extends StatelessWidget {
             height: 48,
             width: 48,
           ),
-          CoconutLayout.spacing_200h,
+          CoconutLayout.spacing_1000h,
           title,
-          CoconutLayout.spacing_400h,
+          CoconutLayout.spacing_500h,
         ],
       ),
     );
+  }
+}
+
+class _SizeReportingWidget extends SingleChildRenderObjectWidget {
+  final ValueChanged<Size> onSizeChanged;
+
+  const _SizeReportingWidget({required this.onSizeChanged, required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _SizeReportingRenderObject(onSizeChanged);
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, covariant _SizeReportingRenderObject renderObject) {
+    renderObject.onSizeChanged = onSizeChanged;
+  }
+}
+
+class _SizeReportingRenderObject extends RenderProxyBox {
+  _SizeReportingRenderObject(this.onSizeChanged);
+
+  ValueChanged<Size> onSizeChanged;
+  Size? _reportedSize;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    if (size == _reportedSize) return;
+    _reportedSize = size;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onSizeChanged(size));
   }
 }
 
@@ -81,14 +192,17 @@ class ImportLabelProgressCard extends StatelessWidget {
       child: Column(
         children: [
           SizedBox(
-            width: 40,
-            height: 40,
-            child:
-                isProgressing
-                    ? CircularProgressIndicator(color: context.coconutColors.loadingIndicatorColor, strokeWidth: 3)
-                    : const SizedBox.shrink(),
+            width: 48,
+            height: 48,
+            child: Transform.scale(
+              scale: 0.8,
+              child:
+                  isProgressing
+                      ? CircularProgressIndicator(color: context.coconutColors.loadingIndicatorColor, strokeWidth: 3)
+                      : const SizedBox.shrink(),
+            ),
           ),
-          CoconutLayout.spacing_400h,
+          CoconutLayout.spacing_1000h,
           title,
           CoconutLayout.spacing_500h,
           ImportLabelInstructionToolTip(steps: steps, showSkeleton: showSkeleton),
@@ -111,11 +225,14 @@ class ImportOptionCard extends StatelessWidget {
       child: Column(
         children: [
           SizedBox(
-            width: 40,
-            height: 40,
-            child: CircularProgressIndicator(color: context.coconutColors.loadingIndicatorColor, strokeWidth: 3),
+            width: 48,
+            height: 48,
+            child: Transform.scale(
+              scale: 0.8,
+              child: CircularProgressIndicator(color: context.coconutColors.loadingIndicatorColor, strokeWidth: 3),
+            ),
           ),
-          CoconutLayout.spacing_400h,
+          CoconutLayout.spacing_1000h,
           title,
           CoconutLayout.spacing_500h,
           ButtonGroup(buttons: buttons),

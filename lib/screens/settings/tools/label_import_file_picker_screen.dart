@@ -35,7 +35,6 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   String? _fileName;
   List<LabelImportResult> _importResults = [];
   int _currentPage = 0;
-  double _successCardHeight = 150;
   bool _deleteFileOnSuccess = true;
   bool _addMemoToExisting = false;
   late bool _importMemosFromOtherWallets;
@@ -293,26 +292,29 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
 
   Widget _buildOptionSelectionView() {
     return ImportOptionCard(
-      title: RichText(
-        textAlign: TextAlign.center,
-        text: TextSpan(
-          style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-          children: [
-            TextSpan(text: t.label_import_file_picker_screen.loading_title),
-            const TextSpan(text: '\n'),
-            TextSpan(text: _fileName, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
-            const TextSpan(text: '\n'),
-            TextSpan(
-              text: t.label_import_file_picker_screen.option_selection.description_1,
-              style: CoconutTypography.body3_12,
+      title: Column(
+        children: [
+          Text(
+            t.label_import_file_picker_screen.option_selection.title,
+            style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+          ),
+          Text(_fileName ?? '', style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+          CoconutLayout.spacing_100h,
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+              children: [
+                TextSpan(text: t.label_import_file_picker_screen.option_selection.description_1),
+                const TextSpan(text: '\n'),
+                TextSpan(
+                  text: t.label_import_file_picker_screen.option_selection.description_2,
+                  style: CoconutTypography.body3_12_Bold,
+                ),
+              ],
             ),
-            const TextSpan(text: '\n'),
-            TextSpan(
-              text: t.label_import_file_picker_screen.option_selection.description_2,
-              style: CoconutTypography.body3_12_Bold,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       buttons: [
         OptionCard(
@@ -365,114 +367,56 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     );
   }
 
-  Widget _buildSuccessCard(BuildContext context, LabelImportResult importResult) {
-    return ImportLabelInstructionToolTip(
-      steps: [
-        t.label_import_file_picker_screen.instruction_tooltip.step1,
-        t.label_import_file_picker_screen.instruction_tooltip.step2,
-        t.label_import_file_picker_screen.instruction_tooltip.step3,
-        t.label_import_file_picker_screen.instruction_tooltip.step4,
+  Widget _buildSuccessView(BuildContext context) {
+    return Column(
+      children: [
+        CoconutLayout.spacing_600h,
+        ImportLabelSuccessCard(
+          title: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+                children: [
+                  TextSpan(text: t.label_import_file_picker_screen.success_title),
+                  const TextSpan(text: '\n'),
+                  TextSpan(
+                    text: _fileName,
+                    style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          importResults: _importResults,
+          currentPage: _currentPage,
+          onPageChanged: (index) {
+            setState(() {
+              _currentPage = index;
+            });
+          },
+        ),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: _buildDeleteFileCheckbox()),
       ],
-      stepResults: [
-        importResult.wallet?.name ?? '',
-        importResult.txMemoCount,
-        importResult.utxoTagCount,
-        importResult.utxoLockCount,
-      ],
-      showSkeleton: false,
     );
   }
 
-  Widget _buildSuccessView(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24.0, bottom: 90),
-      child: Column(
+  Widget _buildDeleteFileCheckbox() {
+    return GestureDetector(
+      onTap: () => setState(() => _deleteFileOnSuccess = !_deleteFileOnSuccess),
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SvgPicture.asset(
-            'assets/svg/circle-check.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
-            height: 48,
-            width: 48,
+            _deleteFileOnSuccess ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
+            width: 20,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
           ),
-          CoconutLayout.spacing_200h,
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-              children: [
-                TextSpan(text: t.label_import_file_picker_screen.success_title),
-                const TextSpan(text: '\n'),
-                TextSpan(
-                  text: _fileName,
-                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-                ),
-              ],
-            ),
-          ),
-          CoconutLayout.spacing_500h,
-          Column(
-            children: [
-              Offstage(
-                child: _SizeReportingWidget(
-                  onSizeChanged: (size) {
-                    if (!mounted || _successCardHeight == size.height) return;
-                    setState(() => _successCardHeight = size.height);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _buildSuccessCard(context, _importResults[_currentPage]),
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: _successCardHeight,
-                child: PageView.builder(
-                  itemCount: _importResults.length,
-                  onPageChanged: (index) {
-                    setState(() => _currentPage = index);
-                  },
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: _buildSuccessCard(context, _importResults[index]),
-                    );
-                  },
-                ),
-              ),
-              if (_importResults.length > 1) ...[
-                const SizedBox(height: 14),
-                _buildPageIndicator(),
-                const SizedBox(height: 14),
-              ] else ...[
-                const SizedBox(height: 18),
-              ],
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _deleteFileOnSuccess = !_deleteFileOnSuccess;
-                  });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      SvgPicture.asset(
-                        _deleteFileOnSuccess ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
-                        width: 20,
-                        colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        t.label_import_file_picker_screen.delete_file,
-                        style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(width: 8),
+          Text(
+            t.label_import_file_picker_screen.delete_file,
+            style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
           ),
         ],
       ),
@@ -538,26 +482,6 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPageIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_importResults.length, (index) {
-        return Container(
-          width: 8.0,
-          height: 8.0,
-          margin: const EdgeInsets.symmetric(horizontal: 4.0),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color:
-                _currentPage == index
-                    ? context.coconutColors.primaryText
-                    : context.coconutColors.secondaryText.withOpacity(0.5),
-          ),
-        );
-      }),
     );
   }
 
@@ -699,37 +623,5 @@ class DashedBorderPainter extends CustomPainter {
         oldDelegate.dashWidth != dashWidth ||
         oldDelegate.gapWidth != gapWidth ||
         oldDelegate.borderRadius != borderRadius;
-  }
-}
-
-class _SizeReportingWidget extends SingleChildRenderObjectWidget {
-  final ValueChanged<Size> onSizeChanged;
-
-  const _SizeReportingWidget({required this.onSizeChanged, required super.child});
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return _SizeReportingRenderObject(onSizeChanged);
-  }
-
-  @override
-  void updateRenderObject(BuildContext context, covariant _SizeReportingRenderObject renderObject) {
-    renderObject.onSizeChanged = onSizeChanged;
-  }
-}
-
-class _SizeReportingRenderObject extends RenderProxyBox {
-  _SizeReportingRenderObject(this.onSizeChanged);
-
-  ValueChanged<Size> onSizeChanged;
-  Size? _reportedSize;
-
-  @override
-  void performLayout() {
-    super.performLayout();
-    if (size == _reportedSize) return;
-
-    _reportedSize = size;
-    WidgetsBinding.instance.addPostFrameCallback((_) => onSizeChanged(size));
   }
 }

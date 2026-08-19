@@ -1164,6 +1164,7 @@ label_import_file_picker_screen:
     step3: "UTXO 태그"
     step4: "잠금 UTXO"
   option_selection:
+    title: "메모를 적용할까요?"
     description_1: '파일에 저장된 메모를 코코넛 월렛에 적용해요.'
     description_2: '기존 메모는 가져온 메모로 변경돼요.'
     add_memo_to_existing: 
