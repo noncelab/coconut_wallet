@@ -31,6 +31,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
+  bool _disposed = false;
 
   late String _walletName;
   late String _extendedPublicKey;
@@ -47,11 +48,11 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   void _onWalletProviderChanged() {
-    if (!_walletProvider.walletItemList.any((w) => w.id == _walletId)) {
+    if (_disposed || !_walletProvider.walletItemList.any((w) => w.id == _walletId)) {
       return;
     }
     _loadWalletData();
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _loadWalletData() {
@@ -78,6 +79,8 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo newInfo) {
+    if (_disposed) return;
+
     final prev = _prevWalletUpdateInfo;
     _prevWalletUpdateInfo = newInfo;
 
@@ -87,8 +90,12 @@ class WalletInfoViewModel extends ChangeNotifier {
     final utxoCompleted = prev.utxo != WalletSyncState.completed && newInfo.utxo == WalletSyncState.completed;
 
     if (balanceCompleted || txCompleted || utxoCompleted) {
-      notifyListeners();
+      _safeNotifyListeners();
     }
+  }
+
+  void _safeNotifyListeners() {
+    if (!_disposed) notifyListeners();
   }
 
   bool get isSetPin => _authProvider.isSetPin;
@@ -284,6 +291,7 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _syncWalletStateSubscription?.cancel();
     _walletProvider.removeListener(_onWalletProviderChanged);
 

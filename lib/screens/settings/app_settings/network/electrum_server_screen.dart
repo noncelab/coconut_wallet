@@ -724,6 +724,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   Widget _buildAlertIcon(NodeConnectionStatus status) {
     switch (status) {
       case NodeConnectionStatus.failed:
+      case NodeConnectionStatus.networkMismatch:
         {
           return SvgPicture.asset(
             CustomIcons.triangleWarning,
@@ -755,6 +756,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       case NodeConnectionStatus.failed:
         {
           return t.settings_screen.electrum_server.alert.connection_failed;
+        }
+      case NodeConnectionStatus.networkMismatch:
+        {
+          return t.settings_screen.electrum_server.alert.network_mismatch;
         }
       case NodeConnectionStatus.connecting:
         {
@@ -831,5 +836,6 @@ enum NodeConnectionStatus {
   connecting, // 연결 중입니다
   connected, // 연결되었습니다
   failed, // 연결할 수 없습니다!
+  networkMismatch, // 네트워크가 달라 연결할 수 없어요
   waiting, // 대기중
 }

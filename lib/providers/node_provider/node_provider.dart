@@ -5,6 +5,7 @@ import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/constants/isolate_constants.dart';
+import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -17,6 +18,7 @@ import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -29,6 +31,7 @@ class NodeProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final ValueNotifier<WalletLoadState> _walletLoadStateNotifier;
   final ValueNotifier<List<WalletItemBase>> _walletItemListNotifier;
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   ElectrumServer _electrumServer;
   final NetworkType _networkType;
   final AnalyticsService? _analyticsService;
@@ -324,6 +327,7 @@ class NodeProvider extends ChangeNotifier {
       _createNewCompleter();
       _createStateManager();
       await _isolateManager.initialize(host, port, ssl, _networkType);
+      unawaited(_recordCurrentServerGenesisHash());
 
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
         _initCompleter!.complete();
@@ -585,14 +589,113 @@ class NodeProvider extends ChangeNotifier {
     await service.serverVersion().timeout(const Duration(seconds: 5));
   }
 
-  Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
-    _isServerChanging = true;
-    await closeConnection();
-    _electrumServer = electrumServer;
-
-    Logger.log('NodeProvider: 서버 변경: $host:$port, ssl=$ssl');
+  /// 새 서버가 이전에 동기화하던 것과 같은 체인인지 genesis hash로 확인합니다.
+  /// 다른 체인의 서버로 전환하면, 그 서버 입장에서는 지갑 주소들이 전부 "본 적 없는" 상태라
+  /// 잔액이 0으로 조회되고, 그 결과가 기존 잔액에 그대로 diff 반영되어 덮어써지는 문제가 있어
+  /// 전환 자체를 막습니다. 이전에 기록된 genesis hash가 없으면(최초 연결) 그대로 통과시킵니다.
+  Future<Result<bool>> _verifyChainCompatibility(ElectrumServer electrumServer) async {
+    final electrumService = ElectrumService();
 
     try {
+      await _establishSocketConnection(electrumService, electrumServer);
+      final features = await electrumService.serverFeatures().timeout(const Duration(seconds: 5));
+      final genesisHash = features.genesisHash;
+
+      if (isBuildNetworkGenesisMismatch(buildNetworkType: _networkType, genesisHash: genesisHash)) {
+        Logger.error(
+          'NodeProvider: 서버 변경 차단 - 빌드 네트워크($_networkType)와 다른 체인의 서버 (genesis: $genesisHash, '
+          '${electrumServer.host}:${electrumServer.port})',
+        );
+        return Result.failure(ErrorCodes.chainMismatchError);
+      }
+
+      // mainnet/testnet은 위 하드코딩 상수 비교만으로 이미 배타적으로 검증되므로,
+      // 기준값 비교는 그런 고정값이 없는 regtest에서만 의미가 있다.
+      if (_networkType == NetworkType.regtest) {
+        final baselineGenesisHash = _sharedPrefs.getBaselineGenesisHash();
+        if (isChainGenesisMismatch(baselineGenesisHash: baselineGenesisHash, newGenesisHash: genesisHash)) {
+          Logger.error(
+            'NodeProvider: 서버 변경 차단 - 체인 불일치 (기준값: $baselineGenesisHash, 새 서버: $genesisHash, '
+            '${electrumServer.host}:${electrumServer.port})',
+          );
+          return Result.failure(ErrorCodes.chainMismatchError);
+        }
+      }
+
+      return Result.success(true);
+    } catch (e) {
+      Logger.error('NodeProvider: 체인 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
+      return Result.failure(ErrorCodes.networkError);
+    } finally {
+      await electrumService.close();
+    }
+  }
+
+  static const String _kMainnetGenesisHash = '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f';
+  static const String _kTestnetGenesisHash = '000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943';
+
+  /// 이 앱 빌드의 네트워크(mainnet/testnet/regtest)와 다른 체인인지,
+  /// genesis hash와 직접 대조해서 판단합니다.
+  @visibleForTesting
+  static bool isBuildNetworkGenesisMismatch({required NetworkType buildNetworkType, required String genesisHash}) {
+    if (buildNetworkType == NetworkType.mainnet) {
+      return genesisHash != _kMainnetGenesisHash;
+    }
+    if (buildNetworkType == NetworkType.testnet) {
+      return genesisHash != _kTestnetGenesisHash;
+    }
+    return genesisHash == _kMainnetGenesisHash || genesisHash == _kTestnetGenesisHash;
+  }
+
+  /// 두 genesis hash가 다르면(그리고 기준값이 확립되어 있으면) 체인이 다른 것으로 판단합니다.
+  /// 기준값이 아직 없으면(최초 연결) 항상 false를 반환합니다.
+  @visibleForTesting
+  static bool isChainGenesisMismatch({required String? baselineGenesisHash, required String newGenesisHash}) {
+    return baselineGenesisHash != null && baselineGenesisHash != newGenesisHash;
+  }
+
+  /// 이 앱 빌드의 네트워크(flavor)에 해당하는 coconut 기본 서버에 연결해 genesis hash를
+  /// 기준값으로 기록합니다. mainnet/testnet은 하드코딩된 genesis hash로 검증되므로,
+  /// 기준값이 필요한 건 regtest뿐이다.
+  Future<void> _recordCurrentServerGenesisHash() async {
+    if (_networkType != NetworkType.regtest) {
+      return;
+    }
+
+    if (_sharedPrefs.getBaselineGenesisHash() != null) {
+      return;
+    }
+
+    final trustedServer = DefaultElectrumServer.regtestServers.first;
+    final electrumService = ElectrumService();
+
+    try {
+      await _establishSocketConnection(electrumService, trustedServer);
+      final features = await electrumService.serverFeatures().timeout(const Duration(seconds: 5));
+      await _sharedPrefs.setBaselineGenesisHash(features.genesisHash);
+    } catch (e) {
+      Logger.error('NodeProvider: 기본 서버 genesis hash 기록 실패 - ${trustedServer.host}:${trustedServer.port}: $e');
+    } finally {
+      await electrumService.close();
+    }
+  }
+
+  Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
+    _isServerChanging = true;
+
+    try {
+      final chainCheckResult = await _verifyChainCompatibility(electrumServer);
+      if (chainCheckResult.isFailure) {
+        _stateManager?.setNodeSyncStateToFailed();
+        notifyListeners();
+        return Result.failure(chainCheckResult.error);
+      }
+
+      await closeConnection();
+      _electrumServer = electrumServer;
+
+      Logger.log('NodeProvider: 서버 변경: $host:$port, ssl=$ssl');
+
       await initialize();
 
       subscribeWallets().then((result) {

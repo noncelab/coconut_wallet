@@ -231,4 +231,13 @@ class SharedPrefsRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(SharedPrefKeys.kUserServers);
   }
+
+  /// 최초 연결 시 확립되어 이후 고정되는 genesis hash 기준값
+  String? getBaselineGenesisHash() {
+    return getStringOrNull(SharedPrefKeys.kBaselineGenesisHash);
+  }
+
+  Future<void> setBaselineGenesisHash(String genesisHash) async {
+    await setString(SharedPrefKeys.kBaselineGenesisHash, genesisHash);
+  }
 }

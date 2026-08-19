@@ -23,20 +23,38 @@ class BalanceSyncService {
     // 동기화 시작 state 업데이트
     _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
 
-    final balanceResponse = await _electrumService.getBalance(walletItem.walletBase.addressType, scriptStatus.address);
+    await syncAddressBalance(
+      walletItem,
+      address: scriptStatus.address,
+      index: scriptStatus.index,
+      isChange: scriptStatus.isChange,
+    );
+
+    _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
+  }
+
+  /// 주소의 잔액을 Electrum에서 조회해 지갑 총 잔액에 반영합니다.
+  /// [fetchScriptBalance]가 내부적으로
+  /// 사용하는 것 외에도 다른 주소 이벤트가 발견한 co-spent 주소의 잔액을 재조회할 때도 사용합니다.
+  Future<void> syncAddressBalance(
+    WalletItemBase walletItem, {
+    required String address,
+    required int index,
+    required bool isChange,
+  }) async {
+    final balanceResponse = await _electrumService.getBalance(walletItem.walletBase.addressType, address);
 
     // GetBalanceRes에서 Balance 객체로 변환
     final addressBalance = Balance(balanceResponse.confirmed, balanceResponse.unconfirmed);
 
     final balanceDiff = _addressRepository.updateAddressBalance(
       walletId: walletItem.id,
-      index: scriptStatus.index,
-      isChange: scriptStatus.isChange,
+      index: index,
+      isChange: isChange,
       balance: addressBalance,
     );
 
     await _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
-    _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
   }
 
   /// 여러 스크립트의 잔액을 일괄적으로 조회하고 업데이트합니다.
@@ -78,13 +96,14 @@ class BalanceSyncService {
             );
           } catch (e) {
             Logger.error('BalanceSyncService: Error fetching balance for ${script.address}: $e');
-            // 에러가 발생한 경우 기본값 반환
-            return UpdateAddressBalanceDto(scriptStatus: script, confirmed: 0, unconfirmed: 0);
+            // 조회 실패를 잔액 0으로 간주하면 기존에 저장된 잔액을 잘못 덮어쓸 수 있으므로,
+            // 이번 배치에서는 제외하고 기존 저장값을 그대로 유지한다.
+            return null;
           }
         });
 
         final batchResults = await Future.wait(batchFutures);
-        balanceUpdates.addAll(batchResults);
+        balanceUpdates.addAll(batchResults.whereType<UpdateAddressBalanceDto>());
 
         // .onion 주소인 경우 배치 간 짧은 대기
         if (isOnionHost && i + batchSize < scriptStatuses.length) {

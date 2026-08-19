@@ -39,11 +39,22 @@ class SubscriptionService {
     this._scriptSyncService,
   ) : _scriptStatusController = StreamController<SubscribeScriptStreamDto>.broadcast() {
     _scriptStatusController.stream.listen(_scriptSyncService.syncScriptStatus);
-    _scriptSyncService.subscribeWallet = subscribeWallet;
+    // ScriptSyncService 내부(_processScriptStatus)에서 gap-limit 확장을 위해 호출하는 경로.
+    // 이미 그 지갑의 큐 슬롯을 점유한 상태에서 호출되므로, 큐를 타는 subscribeWallet이 아니라
+    // 큐를 거치지 않는 _subscribeWalletGuarded를 직접 연결해야 데드락이 나지 않는다.
+    _scriptSyncService.subscribeWallet = _subscribeWalletGuarded;
   }
 
-  /// 지갑의 스크립트 구독
-  Future<Result<bool>> subscribeWallet(WalletItemBase walletItem) async {
+  /// 지갑의 스크립트 구독 (외부 진입점).
+  /// 라이브 구독 이벤트(syncScriptStatus)와 같은 지갑에 대해 동시에 잔액/UTXO를 쓰지 않도록
+  /// ScriptSyncService의 지갑별 큐를 거쳐서 실행한다.
+  Future<Result<bool>> subscribeWallet(WalletItemBase walletItem) {
+    return _scriptSyncService.runQueued(walletItem.id, () => _subscribeWalletGuarded(walletItem));
+  }
+
+  /// 지갑의 스크립트 구독 (중복 방지 가드 포함). 큐를 거치지 않으므로,
+  /// 이미 그 지갑의 큐 안에서 실행 중인 코드에서만 직접 호출해야 한다.
+  Future<Result<bool>> _subscribeWalletGuarded(WalletItemBase walletItem) async {
     final walletId = walletItem.id;
 
     // 이미 구독 중이면 기존 작업 완료 대기
@@ -282,7 +293,7 @@ class SubscriptionService {
     return (scriptStatus: scriptStatus, isSubscribed: false);
   }
 
-  /// 스크립트 변경사항이 있는경우 처리
+  /// 스크립트 변경사항이 있는 경우 처리
   ///
   /// 1. 사용한 인덱스 갱신
   /// 2. 인덱스가 확장된 경우 스캔 범위 확장

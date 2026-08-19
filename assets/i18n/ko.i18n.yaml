@@ -807,8 +807,9 @@ settings_screen:
     error_msg:
       invalid_domain_format: "도메인 형식이 아니에요"
       port_out_of_range: "유효한 포트를 입력해주세요 (1~65535)"
-    alert: 
+    alert:
       connection_failed: "연결할 수 없습니다!"
+      network_mismatch: "네트워크가 달라 연결할 수 없어요"
       connecting: "연결 중입니다"
       connected: "연결되었습니다"
     popup:
@@ -1185,6 +1186,7 @@ errors:
   realm_exception: "Realm 작업 중 오류가 발생했습니다."
   node_unknown: "노드 연결 중 알 수 없는 오류가 발생했습니다."
   broadcast_error: "트랜잭션 전송에 실패했습니다."
+  chain_mismatch_error: "네트워크가 달라 연결할 수 없어요"
   network_connect: "네트워크 연결이 없습니다."
   network_not_found: "네트워크가 연결되어 있지 않아요!"
   network_disconnected: "네트워크 끊김"

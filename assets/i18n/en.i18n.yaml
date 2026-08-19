@@ -804,8 +804,9 @@ settings_screen:
     error_msg:
       invalid_domain_format: "Not a valid domain format"
       port_out_of_range: "Please enter a valid port number (1–65535)"
-    alert: 
+    alert:
       connection_failed: "Cannot connect!"
+      network_mismatch: "Can't connect — different network"
       connecting: "Connecting..."
       connected: "Connected"
     popup:
@@ -1179,6 +1180,7 @@ errors:
   realm_exception: "An error occurred during Realm operation."
   node_unknown: "An unknown error occurred while connecting to node."
   broadcast_error: "Failed to broadcast transaction."
+  chain_mismatch_error: "Can't connect — different network"
   network_connect: "No network connection."
   network_disconnected: "Network disconnected"
   network_not_found: "Network is not connected!"

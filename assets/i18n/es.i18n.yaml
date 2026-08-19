@@ -795,8 +795,9 @@ settings_screen:
     error_msg:
       invalid_domain_format: "No es un formato de dominio válido"
       port_out_of_range: "Por favor, ingrese un número de puerto válido (1–65535)"
-    alert: 
+    alert:
       connection_failed: "¡No se puede conectar!"
+      network_mismatch: "No se puede conectar: red incompatible"
       connecting: "Conectando..."
       connected: "Conectado"
     popup:
@@ -1170,6 +1171,7 @@ errors:
   realm_exception: "Se produjo un error durante la operación Realm."
   node_unknown: "Se produjo un error desconocido al conectar con el nodo."
   broadcast_error: "Fallo al enviar la transacción."
+  chain_mismatch_error: "No se puede conectar: red incompatible"
   network_connect: "No hay conexión a la red."
   network_disconnected: "Red desconectada"
   network_not_found: "¡Red no conectada!"

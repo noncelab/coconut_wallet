@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
@@ -187,6 +188,11 @@ class ElectrumServerViewModel extends ChangeNotifier {
     }
 
     final result = await _nodeProvider.changeServer(newServer);
+
+    if (result.isFailure && result.error.code == ErrorCodes.chainMismatchError.code) {
+      setNodeConnectionStatus(NodeConnectionStatus.networkMismatch);
+      return false;
+    }
 
     // 서버 연결 상태 상관없이 서버 정보 업데이트
     _setCurrentServer(newServer);

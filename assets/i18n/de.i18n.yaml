@@ -737,6 +737,7 @@ settings_screen:
       port_out_of_range: "Bitte geben Sie eine gültige Portnummer ein (1–65535)"
     alert:
       connection_failed: "Verbindung nicht möglich!"
+      network_mismatch: "Verbindung nicht möglich – falsches Netzwerk"
       connecting: "Verbinde..."
       connected: "Verbunden"
     popup:
@@ -1110,6 +1111,7 @@ errors:
   realm_exception: "Während der Realm-Operation ist ein Fehler aufgetreten."
   node_unknown: "Ein unbekannter Fehler ist beim Verbinden mit dem Knoten aufgetreten."
   broadcast_error: "Transaktion konnte nicht gesendet werden."
+  chain_mismatch_error: "Verbindung nicht möglich – falsches Netzwerk"
   network_connect: "Keine Netzwerkverbindung."
   network_disconnected: "Netzwerk getrennt"
   network_not_found: "Netzwerk ist nicht verbunden!"

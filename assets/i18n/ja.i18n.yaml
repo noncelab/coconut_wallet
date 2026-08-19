@@ -791,8 +791,9 @@ settings_screen:
     error_msg:
       invalid_domain_format: "有効なドメインフォーマットではありません"
       port_out_of_range: "有効なポート番号（1-65535）を入力してください"
-    alert: 
+    alert:
       connection_failed: "接続できません！"
+      network_mismatch: "ネットワークが異なるため接続できません"
       connecting: "接続中..."
       connected: "接続済み"
     popup:
@@ -1167,6 +1168,7 @@ errors:
   realm_exception: "Realm操作中にエラーが発生しました。"
   node_unknown: "ノード接続中に不明なエラーが発生しました。"
   broadcast_error: "トランザクションの送信に失敗しました。"
+  chain_mismatch_error: "ネットワークが異なるため接続できません"
   network_connect: "ネットワーク接続がありません。"
   network_disconnected: "ネットワークが切断されました"
   network_not_found: "ネットワークが接続されていません！"

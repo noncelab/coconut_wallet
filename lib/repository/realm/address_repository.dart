@@ -560,6 +560,17 @@ class AddressRepository extends BaseRepository {
     return '';
   }
 
+  /// 주소로 index/isChange 정보를 조회합니다. 주소가 없으면 null을 반환합니다.
+  ({int index, bool isChange})? getIndexAndIsChange(int walletId, String address) {
+    final existingAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).firstOrNull;
+
+    if (existingAddress == null) {
+      return null;
+    }
+    return (index: existingAddress.index, isChange: existingAddress.isChange);
+  }
+
   Future<void> syncWalletWithSubscriptionData(
     WalletItemBase walletItem,
     List<ScriptStatus> scriptStatuses,
