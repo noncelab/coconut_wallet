@@ -699,10 +699,10 @@ wallet_list:
   excluded_balance: "Saldo Excluido"
   settings:
     primary_wallet: "Establecer como Cartera Principal"
-    primary_wallet_disabled_description: "Esta cartera se usa como predeterminada para Send/Receive en la pantalla principal."
-    primary_wallet_abled_description: "Establecer otra cartera como principal automáticamente deshabilitará esta configuración."
+    primary_wallet_disabled_description: "Esta cartera se usa como predeterminada para Send/Receive en la pantalla principal"
+    primary_wallet_abled_description: "Establecer otra cartera como principal automáticamente deshabilitará esta configuración"
     exclude_from_total_amount: "Excluir del Total"
-    exclude_from_total_amount_description: "Esta cartera será excluida del cálculo del saldo total en la pantalla principal."
+    exclude_from_total_amount_description: "Esta cartera será excluida del cálculo del saldo total en la pantalla principal"
   edit:
     order: "Editar orden"
     order_description: "para cambiar el orden de las carteras."
@@ -719,11 +719,11 @@ wallet_list:
     show_hot_wallet_tab: "Mostrar pestaña de billeteras calientes"
     show_hot_wallet_tab_description: "Muestra la pestaña de billeteras calientes en la pantalla de inicio"
     show_fiat_price: "Mostrar saldo en moneda fiduciaria"
-    show_fiat_price_description: "Muestra el saldo en moneda fiduciaria en esta pantalla."
+    show_fiat_price_description: "Muestra el saldo en moneda fiduciaria en esta pantalla"
     show_bitcoin_price: "Mostrar información del precio de 1 BTC"
-    show_bitcoin_price_description: "Muestra el precio de 1 BTC y sus cambios en el tiempo."
+    show_bitcoin_price_description: "Muestra el precio de 1 BTC y sus cambios en el tiempo"
     show_balance_chart: "Mostrar gráfico del saldo"
-    show_balance_chart_description: "Muestra los cambios del saldo total de todas las billeteras."
+    show_balance_chart_description: "Muestra los cambios del saldo total de todas las billeteras"
     visible: "Visible"
 
 # lib/screens/review

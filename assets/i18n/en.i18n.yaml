@@ -575,10 +575,10 @@ wallet_list:
   excluded_balance: "Excluded Balance"
   settings:
     primary_wallet: "Set as Primary Wallet"
-    primary_wallet_disabled_description: "This wallet is used as default for Send/Receive on the home screen."
-    primary_wallet_abled_description: "Setting another wallet as primary will automatically disable this setting."
+    primary_wallet_disabled_description: "This wallet is used as default for Send/Receive on the home screen"
+    primary_wallet_abled_description: "Setting another wallet as primary will automatically disable this setting"
     exclude_from_total_amount: "Exclude from Total"
-    exclude_from_total_amount_description: "This wallet will be excluded from the total balance calculation on the home screen."
+    exclude_from_total_amount_description: "This wallet will be excluded from the total balance calculation on the home screen"
   edit:
     order: "Edit Order"
     order_description: "to change the order of wallets."
@@ -595,11 +595,11 @@ wallet_list:
     show_hot_wallet_tab: "Show Hot Wallet Tab"
     show_hot_wallet_tab_description: "Show the hot wallet tab on the home screen"
     show_fiat_price: "Show Fiat Balance"
-    show_fiat_price_description: "Display the fiat balance on this screen."
+    show_fiat_price_description: "Display the fiat balance on this screen"
     show_bitcoin_price: "Show 1 BTC Price Information"
-    show_bitcoin_price_description: "Display the 1 BTC price and changes over time."
+    show_bitcoin_price_description: "Display the 1 BTC price and changes over time"
     show_balance_chart: "Show Balance Change Chart"
-    show_balance_chart_description: "Display changes in the total balance across all wallets."
+    show_balance_chart_description: "Display changes in the total balance across all wallets"
     visible: "Visible"
 
 wallet_connect_screen:

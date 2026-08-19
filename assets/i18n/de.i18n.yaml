@@ -697,10 +697,10 @@ wallet_list:
   excluded_balance: "Ausgeschlossenes Guthaben"
   settings:
     primary_wallet: "Als primäre Wallet festlegen"
-    primary_wallet_disabled_description: "Diese Wallet wird als Standard für Senden/Empfangen auf dem Startbildschirm verwendet."
-    primary_wallet_abled_description: "Das Festlegen einer anderen Wallet als primär deaktiviert diese Einstellung automatisch."
+    primary_wallet_disabled_description: "Diese Wallet wird als Standard für Senden/Empfangen auf dem Startbildschirm verwendet"
+    primary_wallet_abled_description: "Das Festlegen einer anderen Wallet als primär deaktiviert diese Einstellung automatisch"
     exclude_from_total_amount: "Von der Gesamtsumme ausschließen"
-    exclude_from_total_amount_description: "Diese Wallet wird von der Berechnung des Gesamtguthabens auf dem Startbildschirm ausgeschlossen."
+    exclude_from_total_amount_description: "Diese Wallet wird von der Berechnung des Gesamtguthabens auf dem Startbildschirm ausgeschlossen"
   edit:
     order: "Reihenfolge bearbeiten"
     order_description: "um die Reihenfolge der Wallets zu ändern."
@@ -717,11 +717,11 @@ wallet_list:
     show_hot_wallet_tab: "Hot-Wallet-Tab anzeigen"
     show_hot_wallet_tab_description: "Zeigt den Hot-Wallet-Tab auf der Startseite an"
     show_fiat_price: "Fiat-Guthaben anzeigen"
-    show_fiat_price_description: "Zeigt das Fiat-Guthaben auf diesem Bildschirm an."
+    show_fiat_price_description: "Zeigt das Fiat-Guthaben auf diesem Bildschirm an"
     show_bitcoin_price: "1-BTC-Preisinformationen anzeigen"
-    show_bitcoin_price_description: "Zeigt den Preis von 1 BTC und dessen zeitliche Veränderung an."
+    show_bitcoin_price_description: "Zeigt den Preis von 1 BTC und dessen zeitliche Veränderung an"
     show_balance_chart: "Bestandsverlauf anzeigen"
-    show_balance_chart_description: "Zeigt die Entwicklung des Gesamtbestands aller Wallets an."
+    show_balance_chart_description: "Zeigt die Entwicklung des Gesamtbestands aller Wallets an"
     visible: "Sichtbar"
 
 # lib/screens/review

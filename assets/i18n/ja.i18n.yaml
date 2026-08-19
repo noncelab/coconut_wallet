@@ -575,10 +575,10 @@ wallet_list:
   excluded_balance: "除外残高"
   settings:
     primary_wallet: "プライマリウォレットに設定"
-    primary_wallet_disabled_description: "このウォレットはホーム画面の送信/受信でデフォルトとして使用されます。"
-    primary_wallet_abled_description: "他のウォレットをプライマリに設定すると、この設定は自動的に無効になります。"
+    primary_wallet_disabled_description: "このウォレットはホーム画面の送信/受信でデフォルトとして使用されます"
+    primary_wallet_abled_description: "他のウォレットをプライマリに設定すると、この設定は自動的に無効になります"
     exclude_from_total_amount: "合計から除外"
-    exclude_from_total_amount_description: "このウォレットはホーム画面の合計残高計算から除外されます。"
+    exclude_from_total_amount_description: "このウォレットはホーム画面の合計残高計算から除外されます"
   edit:
     order: "順序を編集"
     order_description: "タップしてウォレットの順序を変更できます。"
@@ -595,11 +595,11 @@ wallet_list:
     show_hot_wallet_tab: "ホットウォレットタブを表示"
     show_hot_wallet_tab_description: "ホーム画面にホットウォレットタブを表示します"
     show_fiat_price: "法定通貨残高を表示"
-    show_fiat_price_description: "この画面に法定通貨残高を表示します。"
+    show_fiat_price_description: "この画面に法定通貨残高を表示します"
     show_bitcoin_price: "1 BTCの価格情報を表示"
-    show_bitcoin_price_description: "1 BTCの価格と期間ごとの変化率を表示します。"
+    show_bitcoin_price_description: "1 BTCの価格と期間ごとの変化率を表示します"
     show_balance_chart: "保有量推移グラフを表示"
-    show_balance_chart_description: "すべてのウォレットの総保有量の推移を表示します。"
+    show_balance_chart_description: "すべてのウォレットの総保有量の推移を表示します"
     visible: "表示中"
 
 wallet_connect_screen:

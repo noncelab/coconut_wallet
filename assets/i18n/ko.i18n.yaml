@@ -697,10 +697,10 @@ wallet_list:
   excluded_balance: "제외 총액"
   settings:
     primary_wallet: "대표 지갑 설정"
-    primary_wallet_disabled_description: "홈 화면에서 받기•보내기할 때 기본으로 지정돼요."
-    primary_wallet_abled_description: "다른 지갑을 대표 지갑으로 설정하면, 자동 해제돼요."
+    primary_wallet_disabled_description: "홈 화면에서 받기•보내기할 때 기본으로 지정돼요"
+    primary_wallet_abled_description: "다른 지갑을 대표 지갑으로 설정하면, 자동 해제돼요"
     exclude_from_total_amount: "총액에서 제외"
-    exclude_from_total_amount_description: "홈 화면 총 잔액 계산에서 제외돼요."
+    exclude_from_total_amount_description: "홈 화면 총 잔액 계산에서 제외돼요"
   edit:
     order: "순서 편집"
     order_description: "을 눌러 지갑 순서를 변경할 수 있어요."
@@ -717,11 +717,11 @@ wallet_list:
     show_hot_wallet_tab: "핫월렛 탭 표시"
     show_hot_wallet_tab_description: "홈 화면에 핫월렛 탭을 표시해요"
     show_fiat_price: "법정 화폐 잔액 표시"
-    show_fiat_price_description: "이 화면에 법정 화폐 잔액을 표시해요."
+    show_fiat_price_description: "이 화면에 법정 화폐 잔액을 표시해요"
     show_bitcoin_price: "1 BTC 가격 정보 표시"
-    show_bitcoin_price_description: "1 BTC 가격과 기간별 변화율을 표시해요."
+    show_bitcoin_price_description: "1 BTC 가격과 기간별 변화율을 표시해요"
     show_balance_chart: "보유 수량 변화 그래프 표시"
-    show_balance_chart_description: "전체 지갑의 보유 수량 변화를 표시해요."
+    show_balance_chart_description: "전체 지갑의 보유 수량 변화를 표시해요"
     visible: "표시 중"
 
 # lib/screens/review
