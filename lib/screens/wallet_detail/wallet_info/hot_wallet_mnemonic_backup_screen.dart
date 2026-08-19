@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -271,7 +272,9 @@ class _MnemonicWarningCard extends StatelessWidget {
             ),
             CoconutLayout.spacing_400h,
             Text(
-              strings.mnemonic_warning_description,
+              LocaleSettings.currentLocale == AppLocale.ko
+                  ? TextUtils.preventLineBreakInsideWords(strings.mnemonic_warning_description)
+                  : strings.mnemonic_warning_description,
               style: CoconutTypography.heading4_18.setColor(Colors.white),
               textAlign: TextAlign.center,
             ),
