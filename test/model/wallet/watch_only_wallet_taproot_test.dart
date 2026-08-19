@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -214,9 +215,9 @@ void main() {
   });
 
   group('isSupportedTaprootConfiguration', () {
-    test('oneParentDescriptor: keypath 1개 + scriptpath 1개: 지원됨', () {
+    test('oneParentDescriptor: older miniscript는 지원되지 않음', () {
       final json = {
-        'name': 'Valid1',
+        'name': 'Unsupported Older',
         'colorIndex': 0,
         'iconIndex': 0,
         'descriptor': oneParentDescriptor,
@@ -229,10 +230,29 @@ void main() {
         ],
       };
       final wallet = WatchOnlyWallet.fromJson(json);
+      expect(wallet.isSupportedTaprootConfiguration, false);
+    });
+
+    test('oneParentDescriptor: after miniscript는 지원됨', () {
+      final descriptorBody = oneParentDescriptor.split('#').first.replaceFirst('older(', 'after(');
+      final json = {
+        'name': 'Valid After',
+        'colorIndex': 0,
+        'iconIndex': 0,
+        'descriptor': '$descriptorBody#${Checksum.getChecksum(descriptorBody)}',
+        'keyPathSeedInfos': ['vpub1'],
+        'scriptPathSeedInfos': [
+          {
+            'miniscript': 'and_v(v:pk(key_1),after(500000000))',
+            'extendedPublicKeys': ['vpub2'],
+          },
+        ],
+      };
+      final wallet = WatchOnlyWallet.fromJson(json);
       expect(wallet.isSupportedTaprootConfiguration, true);
     });
 
-    test('twoParentDescriptor: keyPathSeedInfos 1개 + scriptpath 1개: 지원됨', () {
+    test('twoParentDescriptor: older miniscript는 지원되지 않음', () {
       final json = {
         'name': 'Valid2',
         'colorIndex': 0,
@@ -247,7 +267,7 @@ void main() {
         ],
       };
       final wallet = WatchOnlyWallet.fromJson(json);
-      expect(wallet.isSupportedTaprootConfiguration, true);
+      expect(wallet.isSupportedTaprootConfiguration, false);
     });
 
     test('keypath 3개 + scriptpath 1개: 지원 안됨', () {
@@ -290,7 +310,7 @@ void main() {
       expect(wallet.isSupportedTaprootConfiguration, false);
     });
 
-    test('keyPathSeedInfo 0개 + scriptPathSeedInfo 1개: 지원 됨', () {
+    test('keyPathSeedInfo 0개 + scriptPathSeedInfo 1개, older miniscript: 지원되지 않음', () {
       final json = {
         'name': 'Invalid3',
         'colorIndex': 0,
@@ -305,7 +325,7 @@ void main() {
         ],
       };
       final wallet = WatchOnlyWallet.fromJson(json);
-      expect(wallet.isSupportedTaprootConfiguration, true);
+      expect(wallet.isSupportedTaprootConfiguration, false);
     });
 
     test('purpose가 86이 아닌 descriptor: 지원 안됨', () {

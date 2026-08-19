@@ -85,6 +85,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   List<int> get changeOutputAmounts => UnmodifiableListView(_changeOutputAmounts);
   List<BroadcastingOutputDetailItem> get outputDetailItems => UnmodifiableListView(_outputDetailItems);
   AddressType? get walletAddressType => _walletBase?.addressType;
+  WalletBase get _wallet => _walletBase!;
   int? get walletId => _walletId;
   SendEntryPoint? get sendEntryPoint => _sendInfoProvider.sendEntryPoint;
   FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
@@ -232,9 +233,9 @@ class BroadcastingViewModel extends ChangeNotifier {
         continue;
       }
       _outputDetailItems.add(
-        BroadcastingOutputDetailItem(address: output.outAddress, amount: amount, isChange: output.isChange),
+        BroadcastingOutputDetailItem(address: output.outAddress, amount: amount, isChange: output.isChange(_wallet)),
       );
-      if (output.isChange) {
+      if (output.isChange(_wallet)) {
         _changeOutputAmounts.add(amount);
       } else {
         _externalOutputAmounts.add(amount);
@@ -250,9 +251,9 @@ class BroadcastingViewModel extends ChangeNotifier {
     List<PsbtOutput> outputToMyChangeAddress = [];
     List<PsbtOutput> outputsToOther = [];
     for (int i = 0; i < outputs.length; i++) {
-      if (outputs[i].bip32Derivation == null) {
+      if (!outputs[i].isOwnedBy(_wallet)) {
         outputsToOther.add(outputs[i]);
-      } else if (outputs[i].isChange) {
+      } else if (outputs[i].isChange(_wallet)) {
         outputToMyChangeAddress.add(outputs[i]);
         _outputIndexesToMyAddress.add(i);
       } else {
@@ -280,7 +281,7 @@ class BroadcastingViewModel extends ChangeNotifier {
           recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
       }
-      _sendingAmount = psbt.sendingAmount;
+      _sendingAmount = psbt.sendingAmount(_wallet);
       _recipientAddresses.addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value} ${t.btc})'));
     } else {
       PsbtOutput? output;
@@ -303,13 +304,13 @@ class BroadcastingViewModel extends ChangeNotifier {
         _isSendingToMyAddress = true;
       }
 
-      _sendingAmount = psbt.sendingAmount;
+      _sendingAmount = psbt.sendingAmount(_wallet);
       if (output != null) {
         _recipientAddresses.add(output.outAddress);
       }
     }
     _fee = psbt.fee;
-    _totalAmount = psbt.sendingAmount + psbt.fee;
+    _totalAmount = psbt.sendingAmount(_wallet) + psbt.fee;
 
     _setSignedTransaction(psbt);
 
