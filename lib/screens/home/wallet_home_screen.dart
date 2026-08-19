@@ -1282,7 +1282,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     const listTopPadding = 8.0;
     const addWalletRowTopGap = 4.0;
-    const pageBottomGap = 6.0;
+    const pageBottomGap = 8.0;
     return listTopPadding +
         (walletCount * _walletListItemHeight()) +
         addWalletRowTopGap +
