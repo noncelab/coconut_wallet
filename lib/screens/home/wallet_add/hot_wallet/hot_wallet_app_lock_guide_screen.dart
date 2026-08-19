@@ -1,10 +1,11 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/auth/pin/pin_input_pad.dart';
@@ -114,7 +115,7 @@ class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScree
                                     child: Container(
                                       height: 168,
                                       decoration: BoxDecoration(
-                                        border: Border.all(color: CoconutColors.gray700, width: 1),
+                                        border: Border.all(color: context.coconutColors.border, width: 1),
                                         borderRadius: BorderRadius.circular(16),
                                         color: context.coconutColors.background,
                                       ),
@@ -163,7 +164,11 @@ class _HotWalletAppLockGuideScreenState extends State<HotWalletAppLockGuideScree
               FixedBottomButton(
                 onButtonClicked: _openAppLockSetting,
                 text: strings.pin_action,
-                subWidget: CoconutUnderlinedButton(onTap: _finish, text: strings.skip),
+                subWidget: CoconutUnderlinedButton(
+                  onTap: _finish,
+                  text: strings.skip,
+                  defaultColor: context.coconutColors.mutedText,
+                ),
               ).slideUpAnimation(
                 duration: const Duration(milliseconds: 350),
                 delay: const Duration(milliseconds: 200),

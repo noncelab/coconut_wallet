@@ -28,6 +28,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_scr
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/utils/seed_qr_decoder.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart' as app_settings;
@@ -438,7 +439,9 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       context,
       context.read<PreferenceProvider>().language,
       t.wallet_home_screen.hot_wallet_restore.clear_all_title,
-      t.wallet_home_screen.hot_wallet_restore.clear_all_description,
+      LocaleSettings.currentLocale == AppLocale.ko
+          ? TextUtils.preventLineBreakInsideWords(t.wallet_home_screen.hot_wallet_restore.clear_all_description)
+          : t.wallet_home_screen.hot_wallet_restore.clear_all_description,
       leftButtonText: t.no,
       rightButtonText: t.yes,
       onTapRight: () {

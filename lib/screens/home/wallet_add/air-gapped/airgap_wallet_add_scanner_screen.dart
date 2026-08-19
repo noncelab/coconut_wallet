@@ -29,6 +29,7 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
@@ -755,7 +756,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           languageCode: context.read<PreferenceProvider>().language,
           title: title,
           backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
-          description: description,
+          description:
+              LocaleSettings.currentLocale == AppLocale.ko
+                  ? TextUtils.preventLineBreakInsideWords(description)
+                  : description,
           descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
           insetPadding: const EdgeInsets.symmetric(horizontal: 50),
           rightButtonText: t.confirm,
