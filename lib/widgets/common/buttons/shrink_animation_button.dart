@@ -149,7 +149,10 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 100),
                 decoration: BoxDecoration(
-                  color: _isPressed ? overlayColor.withValues(alpha: overlayOpacity) : baseColor,
+                  color:
+                      _isPressed
+                          ? Color.alphaBlend(overlayColor.withValues(alpha: overlayOpacity), baseColor)
+                          : baseColor,
                   borderRadius: BorderRadius.circular(widget.borderRadius),
                 ),
                 child: child,
