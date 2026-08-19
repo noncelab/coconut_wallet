@@ -221,10 +221,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildWalletTypeBadge(),
-                          CoconutLayout.spacing_100h,
+                          CoconutLayout.spacing_50h,
                           Text(
                             nameText,
-                            style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+                            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -255,9 +255,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                               child: TooltipButton(
                                 textStyle: (walletItem is TaprootWalletItem
                                         ? CoconutTypography.body3_12_Bold
-                                        : isMfpDisplayed
-                                        ? CoconutTypography.body2_14_NumberBold
-                                        : CoconutTypography.body3_12_NumberBold)
+                                        : CoconutTypography.body2_14_NumberBold)
                                     .setColor(context.coconutColors.primaryText),
                                 isSelected: false,
                                 text: rightText.replaceAllMapped(
@@ -376,7 +374,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   Widget _buildWalletTypeBadge() {
     final isHotWallet = walletItem.hasLocalKey;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: context.coconutColors.chipUnselectedBackground,
         borderRadius: BorderRadius.circular(20),
@@ -391,7 +389,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
               child: SvgPicture.asset(
                 isHotWallet ? FeatureWalletIconPath.hotWalletFire : FeatureWalletIconPath.watchOnlyEyes,
                 width: isHotWallet ? 10 : 14,
-                height: isHotWallet ? 10 : 9,
+                height: isHotWallet ? 10 : 14,
                 colorFilter: isHotWallet ? null : ColorFilter.mode(context.coconutColors.primary, BlendMode.srcIn),
               ),
             ),
@@ -399,7 +397,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
           CoconutLayout.spacing_100w,
           Text(
             isHotWallet ? t.wallet_home_screen.wallet_filter.hot : t.wallet_home_screen.wallet_filter.watch_only,
-            style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+            style: CoconutTypography.caption_10.setColor(context.coconutColors.primaryText),
           ),
         ],
       ),
