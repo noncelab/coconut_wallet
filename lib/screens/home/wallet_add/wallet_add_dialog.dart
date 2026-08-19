@@ -303,7 +303,7 @@ class WalletAddDialog extends StatelessWidget {
                 height: 40,
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
-                  highlightColor: context.coconutColors.iconPrimary,
+                  highlightColor: context.coconutColors.iconButtonHighlight,
                   splashRadius: 20,
                   padding: EdgeInsets.zero,
                   icon: SvgPicture.asset(
