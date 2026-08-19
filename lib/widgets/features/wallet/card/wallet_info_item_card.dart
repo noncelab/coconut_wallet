@@ -422,7 +422,6 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
         colorIndex: colorIndex,
         iconIndex: iconIndex,
         isInnerWallet: !isExternalWallet,
-        isHotWallet: walletItem.hasLocalKey,
         badgeSvgAssetPath: CommonActionIconPath.editOutlined,
         badgeColor: colors.iconSecondary,
         badgeBorderColor: isItemTapped ? pressedIconBackgroundSubtle : cardBackgroundColor,
@@ -434,7 +433,6 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
       colorIndex: colorIndex,
       iconIndex: iconIndex,
       isInnerWallet: !isExternalWallet,
-      isHotWallet: walletItem.hasLocalKey,
     );
   }
 }
