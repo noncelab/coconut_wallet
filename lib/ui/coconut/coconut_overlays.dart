@@ -658,6 +658,7 @@ class CoconutPopup extends StatefulWidget {
     this.descriptionTextStyle,
     this.descriptionSpan,
     this.checkboxText,
+    this.checkboxTextStyle,
     this.isCheckboxSelected = false,
     this.onCheckboxChanged,
     this.leftButtonTextStyle,
@@ -683,6 +684,7 @@ class CoconutPopup extends StatefulWidget {
   final Color? rightButtonColor;
   final TextStyle? titleTextStyle;
   final TextStyle? descriptionTextStyle;
+  final TextStyle? checkboxTextStyle;
   final InlineSpan? descriptionSpan;
   final String? checkboxText;
   final bool isCheckboxSelected;
@@ -709,6 +711,10 @@ class _CoconutPopupState extends State<CoconutPopup> {
     final descriptionStyle =
         widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.primaryText) ??
         CoconutTypography.body1_16.setColor(widget.descriptionColor ?? colors.primaryText);
+    final checkboxTextStyle = widget.checkboxTextStyle ?? CoconutTypography.body3_12;
+    final checkboxTextColor = checkboxTextStyle.color ?? colors.secondaryText;
+    final checkboxTextPressingColor =
+        widget.checkboxTextStyle?.color?.withValues(alpha: checkboxTextColor.a * 0.5) ?? colors.mutedText;
 
     final content = Container(
       decoration: BoxDecoration(
@@ -771,8 +777,8 @@ class _CoconutPopupState extends State<CoconutPopup> {
                         onTapDown: (_) => setState(() => _isCheckboxTextPressing = true),
                         child: Text(
                           widget.checkboxText!,
-                          style: CoconutTypography.body3_12.setColor(
-                            _isCheckboxTextPressing ? colors.mutedText : colors.secondaryText,
+                          style: checkboxTextStyle.setColor(
+                            _isCheckboxTextPressing ? checkboxTextPressingColor : checkboxTextColor,
                           ),
                         ),
                       ),
