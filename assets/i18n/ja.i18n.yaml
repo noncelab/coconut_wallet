@@ -1056,7 +1056,7 @@ utxo_overview_screen:
   view_mode_list: "リスト"
   view_mode_grid: "グリッド"
   no_tag_applied: "適用されたタグがありません"
-  no_tag_applied_desc: "UTXOにタグを適用すると、タグ別の内訳を確認できます。"
+  no_tag_applied_desc: "UTXOにタグを適用すると、タグ別の内訳を確認できます"
   total: "合計"
   untagged: "未分類"
   tagged: "タグ適用"

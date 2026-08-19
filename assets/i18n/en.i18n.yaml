@@ -1067,7 +1067,7 @@ utxo_overview_screen:
   view_mode_list: "List"
   view_mode_grid: "Grid"
   no_tag_applied: "No tags applied"
-  no_tag_applied_desc: "Apply tags to UTXOs to see the breakdown by tag."
+  no_tag_applied_desc: "Apply tags to UTXOs to see the breakdown by tag"
   total: "Total"
   untagged: "Untagged"
   tagged: "Tagged"

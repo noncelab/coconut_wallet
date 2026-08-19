@@ -998,7 +998,7 @@ utxo_overview_screen:
   view_mode_list: "Liste"
   view_mode_grid: "Gitter"
   no_tag_applied: "Keine Tags angewendet"
-  no_tag_applied_desc: "Wenden Sie Tags auf UTXOs an, um die Aufschlüsselung nach Tags zu sehen."
+  no_tag_applied_desc: "Wenden Sie Tags auf UTXOs an, um die Aufschlüsselung nach Tags zu sehen"
   total: "Gesamt"
   untagged: "Ohne Tag"
   tagged: "Getaggt"

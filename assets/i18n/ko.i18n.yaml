@@ -1070,7 +1070,7 @@ utxo_overview_screen:
   view_mode_list: "리스트"
   view_mode_grid: "그리드"
   no_tag_applied: "적용된 태그가 없어요"
-  no_tag_applied_desc: "UTXO에 태그를 적용하면 태그별 구성을 확인할 수 있어요."
+  no_tag_applied_desc: "UTXO에 태그를 적용하면 태그별 구성을 확인할 수 있어요"
   total: "총액"
   untagged: "미분류"
   tagged: "태그 적용"

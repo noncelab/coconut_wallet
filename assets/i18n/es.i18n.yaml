@@ -1059,7 +1059,7 @@ utxo_overview_screen:
   view_mode_list: "Lista"
   view_mode_grid: "Cuadrícula"
   no_tag_applied: "No hay etiquetas aplicadas"
-  no_tag_applied_desc: "Aplica etiquetas a los UTXOs para ver el desglose por etiqueta."
+  no_tag_applied_desc: "Aplica etiquetas a los UTXOs para ver el desglose por etiqueta"
   total: "Total"
   untagged: "Sin etiqueta"
   tagged: "Etiquetado"
