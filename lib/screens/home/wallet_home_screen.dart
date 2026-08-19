@@ -1549,7 +1549,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           useGlassOverlay: true,
           alignMenuToChildRight: true,
           spacing: 16,
-          menuBackgroundColor: context.coconutColors.homeSurfacePressOverlay,
           menuItems: buildWalletMenuItems(walletItem),
           child: WalletItemCard(
             key: key,
