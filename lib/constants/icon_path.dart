@@ -166,7 +166,6 @@ abstract final class FeatureWalletIconPath {
   static const String bitcoin = 'assets/svg/features/wallet/bitcoin.svg';
   static const String coins = 'assets/svg/features/wallet/coins.svg';
   static const String hotWalletFire = 'assets/svg/features/wallet/hot-wallet-fire.svg';
-  static const String hotWalletFireThin = 'assets/svg/features/wallet/hot-wallet-fire-thin.svg';
   static const String pie = 'assets/svg/features/wallet/pie.svg';
   static const String piggyBank = 'assets/svg/features/wallet/piggy-bank.svg';
   static const String wallet = 'assets/svg/features/wallet/wallet.svg';

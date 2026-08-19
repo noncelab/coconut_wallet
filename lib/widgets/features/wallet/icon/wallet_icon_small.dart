@@ -111,11 +111,11 @@ class WalletIconSmall extends StatelessWidget {
     return Container(
       width: badgeSize,
       height: badgeSize,
-      padding: EdgeInsets.all(badgeSize * 2 / 9),
+      padding: EdgeInsets.all(badgeSize * 1.5 / 12),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: context.coconutColors.iconBackground,
-        border: Border.all(color: badgeBorderColor ?? context.coconutColors.background),
+        border: Border.all(color: badgeBorderColor ?? context.coconutColors.background, width: 1.5),
       ),
       child: SvgPicture.asset(
         badgeAssetPath,

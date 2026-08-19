@@ -89,14 +89,17 @@ class WalletIcon extends StatelessWidget {
   }
 
   Widget _buildBadge(BuildContext context, String badgeAssetPath) {
+    final isEditBadge = badgeAssetPath == CommonActionIconPath.editOutlined;
+    final badgePadding = badgeSize * (isEditBadge ? 2 : 1.5) / 12;
+
     return Container(
       width: badgeSize,
       height: badgeSize,
-      padding: EdgeInsets.all(badgeSize * 2 / 9),
+      padding: EdgeInsets.all(badgePadding),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: context.coconutColors.iconBackground,
-        border: Border.all(color: badgeBorderColor ?? context.coconutColors.background),
+        border: Border.all(color: badgeBorderColor ?? context.coconutColors.background, width: 1.5),
       ),
       child: SvgPicture.asset(
         badgeAssetPath,
