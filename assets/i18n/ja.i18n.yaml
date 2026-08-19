@@ -574,6 +574,7 @@ wallet_list:
   home_balance: "ホーム残高"
   excluded_balance: "除外残高"
   settings:
+    title: "このウォレットの設定"
     primary_wallet: "プライマリウォレットに設定"
     primary_wallet_disabled_description: "このウォレットはホーム画面の送信/受信でデフォルトとして使用されます"
     primary_wallet_abled_description: "他のウォレットをプライマリに設定すると、この設定は自動的に無効になります"

@@ -696,6 +696,7 @@ wallet_list:
   home_balance: "Startseiten-Guthaben"
   excluded_balance: "Ausgeschlossenes Guthaben"
   settings:
+    title: "Einstellungen für dieses Wallet"
     primary_wallet: "Als primäre Wallet festlegen"
     primary_wallet_disabled_description: "Diese Wallet wird als Standard für Senden/Empfangen auf dem Startbildschirm verwendet"
     primary_wallet_abled_description: "Das Festlegen einer anderen Wallet als primär deaktiviert diese Einstellung automatisch"

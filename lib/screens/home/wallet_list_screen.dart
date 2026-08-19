@@ -1156,8 +1156,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           onLongPressed: () {
             vibrateExtraLight();
             CommonBottomSheets.showBottomSheet(
-              title: '',
-              titlePadding: EdgeInsets.zero,
+              title: t.wallet_list.settings.title,
+              showCloseButton: true,
+              showDragHandle: true,
               context: context,
               child: WalletItemSettingBottomSheet(id: walletItem.id),
             );

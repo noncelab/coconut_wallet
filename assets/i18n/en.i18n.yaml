@@ -574,6 +574,7 @@ wallet_list:
   home_balance: "Home Balance"
   excluded_balance: "Excluded Balance"
   settings:
+    title: "Wallet Settings"
     primary_wallet: "Set as Primary Wallet"
     primary_wallet_disabled_description: "This wallet is used as default for Send/Receive on the home screen"
     primary_wallet_abled_description: "Setting another wallet as primary will automatically disable this setting"

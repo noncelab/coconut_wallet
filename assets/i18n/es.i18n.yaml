@@ -698,6 +698,7 @@ wallet_list:
   home_balance: "Saldo en la Pantalla Principal"
   excluded_balance: "Saldo Excluido"
   settings:
+    title: "Configuración de esta billetera"
     primary_wallet: "Establecer como Cartera Principal"
     primary_wallet_disabled_description: "Esta cartera se usa como predeterminada para Send/Receive en la pantalla principal"
     primary_wallet_abled_description: "Establecer otra cartera como principal automáticamente deshabilitará esta configuración"
