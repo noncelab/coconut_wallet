@@ -1129,6 +1129,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
               CoconutCheckbox(
                 isSelected: viewModel.enterPassphraseWhenSigning,
                 onChanged: _setEnterPassphraseWhenSigning,
+                disabledColor: context.coconutColors.chipSelectedBackground,
+                color: context.coconutColors.chipSelectedBackground,
               ),
               CoconutLayout.spacing_200w,
               Expanded(

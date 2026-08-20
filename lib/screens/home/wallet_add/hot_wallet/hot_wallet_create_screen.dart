@@ -576,6 +576,8 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                           CoconutCheckbox(
                                             isSelected: _enterPassphraseWhenSigning,
                                             onChanged: _setEnterPassphraseWhenSigning,
+                                            disabledColor: context.coconutColors.chipSelectedBackground,
+                                            color: context.coconutColors.chipSelectedBackground,
                                           ),
                                           CoconutLayout.spacing_200w,
                                           Expanded(
