@@ -32,8 +32,8 @@ class WalletIconSmall extends StatelessWidget {
     this.badgeColor,
     this.badgeBorderColor,
     this.badgeSize = 18,
-    this.badgeRight = -1,
-    this.badgeBottom = -0.5,
+    this.badgeRight = -2,
+    this.badgeBottom = -2,
   });
   @override
   Widget build(BuildContext context) {
@@ -115,7 +115,7 @@ class WalletIconSmall extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: context.coconutColors.iconBackground,
-        border: Border.all(color: badgeBorderColor ?? context.coconutColors.background, width: 1.5),
+        border: Border.all(color: badgeBorderColor ?? context.coconutColors.background, width: 2),
       ),
       child: SvgPicture.asset(
         badgeAssetPath,

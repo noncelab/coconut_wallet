@@ -1016,7 +1016,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     });
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(color: context.coconutColors.homeSurface, borderRadius: BorderRadius.circular(20)),
@@ -1426,7 +1426,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     addWalletIconSrc,
                     width: 20,
                     height: 20,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.tertiaryText, BlendMode.srcIn),
                   ),
                   CoconutLayout.spacing_200w,
                   Column(
@@ -1436,11 +1436,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       if (addWalletDescription != null)
                         Text(
                           addWalletDescription,
-                          style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
                         ),
                       Text(
                         addWalletTitle,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.tertiaryText),
                       ),
                     ],
                   ),
@@ -1488,7 +1488,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     iconPath,
                     width: 18,
                     height: 18,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(context.coconutColors.tertiaryText, BlendMode.srcIn),
                   ),
                   CoconutLayout.spacing_400w,
                   Expanded(
@@ -1496,7 +1496,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                      style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.tertiaryText),
                     ),
                   ),
                 ],

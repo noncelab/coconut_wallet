@@ -107,13 +107,14 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
       animation: _highlightController,
       builder: (context, child) {
         final progress = Curves.easeInOut.transform(_highlightController.value);
+        final colors = context.coconutColors;
+        final pressedColor = Color.alphaBlend(
+          colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity),
+          colors.surface,
+        );
         return SingleButton(
           enableShrinkAnim: true,
-          backgroundColor: Color.lerp(
-            context.coconutColors.surface,
-            context.coconutColors.surfacePressOverlay,
-            progress,
-          ),
+          backgroundColor: Color.lerp(colors.surface, pressedColor, progress),
           title: t.wallet_home_screen.hot_wallet_setup.backup_title,
           rightElement:
               widget.showWarning

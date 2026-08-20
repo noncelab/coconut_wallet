@@ -113,7 +113,9 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
   Widget _buildSecurityCard(BuildContext context) {
     final isMnemonicBackup = widget.type == HomeAlertCardType.mnemonicBackup;
     final textColor =
-        isMnemonicBackup ? context.coconutColors.primaryText : context.coconutColors.appLockWarningForeground;
+        isMnemonicBackup
+            ? context.coconutColors.unbackedWarningForeground
+            : context.coconutColors.appLockWarningForeground;
     final iconColor =
         isMnemonicBackup ? context.coconutColors.iconOnDanger : context.coconutColors.appLockWarningForeground;
 

@@ -18,6 +18,8 @@ const Color kCoconutSuccess = ds.CoconutColors.green;
 const Color kCoconutWarning = ds.CoconutColors.warningYellow;
 const Color kCoconutDanger = ds.CoconutColors.hotPink;
 const Color kCoconutWarningCard = ds.CoconutColors.warningAmber;
+const Color kCoconutAppLockWarningForeground = ds.CoconutColors.black;
+const Color kCoconutUnbackedWarningForeground = ds.CoconutColors.white;
 
 /// 탭루트 지갑 정보 화면에서 부모 키/자식 키를 구분하는 고정 색상입니다.
 ///
@@ -115,6 +117,7 @@ class CoconutColors {
   final Color success;
   final Color appLockWarningBackground;
   final Color appLockWarningForeground;
+  final Color unbackedWarningForeground;
 
   /// 구분선
   final Color divider;
@@ -341,6 +344,7 @@ class CoconutColors {
     required this.success,
     required this.appLockWarningBackground,
     required this.appLockWarningForeground,
+    required this.unbackedWarningForeground,
     required this.divider,
     required this.brandAccentBackground,
     required this.brandAccentForeground,
@@ -480,7 +484,8 @@ class CoconutColors {
       danger: kCoconutDanger,
       success: kCoconutSuccess,
       appLockWarningBackground: kCoconutWarningCard,
-      appLockWarningForeground: ds.CoconutColors.black,
+      appLockWarningForeground: kCoconutAppLockWarningForeground,
+      unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: ds.CoconutColors.gray800,
 
       brandAccentBackground: ds.CoconutColors.primary,
@@ -623,7 +628,8 @@ class CoconutColors {
       danger: kCoconutDanger,
       success: kCoconutSuccess,
       appLockWarningBackground: kCoconutWarningCard,
-      appLockWarningForeground: ds.CoconutColors.black,
+      appLockWarningForeground: kCoconutAppLockWarningForeground,
+      unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: ds.CoconutColors.gray200,
 
       brandAccentBackground: ds.CoconutColors.purple,
@@ -784,7 +790,8 @@ class CoconutColors {
       danger: kCoconutDanger,
       success: palmGreen, // 코코넛 과육 테마 배경에서 기본 success 색보다 잘 보이는 조정값
       appLockWarningBackground: kCoconutWarningCard,
-      appLockWarningForeground: ds.CoconutColors.black,
+      appLockWarningForeground: kCoconutAppLockWarningForeground,
+      unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: lagoon.withAlpha(30),
 
       brandAccentBackground: lagoon,
