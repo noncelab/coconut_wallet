@@ -92,7 +92,10 @@ dependencies:
   firebase_analytics: ^11.6.0
   vpn_detector: ^1.2.0
   file_picker: ^8.0.5
-  coconut_design_system: 0.10.3
+  coconut_design_system: #0.11.0
+    git:
+      url: https://github.com/noncelab/coconut_design_system.git
+      ref: fix/check-box
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2

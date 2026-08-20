@@ -650,12 +650,6 @@ class _WalletListItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDisabled = isLocked && isSelected;
-    final iconColor =
-        isDisabled
-            ? context.coconutColors.iconDisabled
-            : isSelected
-            ? context.coconutColors.iconDefault
-            : context.coconutColors.iconSubDefault;
     final textColor = isDisabled ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
     final Color borderColor;
     if (isDisabled) {
@@ -677,10 +671,14 @@ class _WalletListItemCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            SvgPicture.asset(
-              isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
+            CoconutCheckbox(
+              isSelected: isSelected,
+              onChanged: (_) => onTap(),
               width: 24,
-              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+              color: context.coconutColors.iconDefault,
+              unSelectedColor: context.coconutColors.iconSubDefault,
+              inactiveColor: context.coconutColors.iconDisabled,
+              isDisabled: isDisabled,
             ),
             const SizedBox(width: 16),
             Expanded(

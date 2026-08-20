@@ -1,7 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class OptionCard extends StatelessWidget {
   final String title;
@@ -29,12 +28,6 @@ class OptionCard extends StatelessWidget {
             : isSelected
             ? context.coconutColors.primaryText
             : context.coconutColors.border;
-    final iconColor =
-        !isEnabled
-            ? context.coconutColors.iconDisabled
-            : isSelected
-            ? context.coconutColors.iconDefault
-            : context.coconutColors.iconSubDefault;
     final titleColor = isEnabled ? context.coconutColors.primaryText : context.coconutColors.mutedText;
     final subtitleColor = isEnabled ? context.coconutColors.secondaryText : context.coconutColors.mutedText;
 
@@ -56,10 +49,14 @@ class OptionCard extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 2.0),
-              child: SvgPicture.asset(
-                isSelected ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
+              child: CoconutCheckbox(
+                isSelected: isSelected,
+                onChanged: (_) => onTap(),
                 width: 20,
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                color: context.coconutColors.iconDefault,
+                unSelectedColor: context.coconutColors.iconSubDefault,
+                inactiveColor: context.coconutColors.iconDisabled,
+                isDisabled: !isEnabled,
               ),
             ),
             const SizedBox(width: 8),

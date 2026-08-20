@@ -409,10 +409,11 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          SvgPicture.asset(
-            _deleteFileOnSuccess ? 'assets/svg/square_check.svg' : 'assets/svg/square.svg',
+          CoconutCheckbox(
+            isSelected: _deleteFileOnSuccess,
+            onChanged: (_) => setState(() => _deleteFileOnSuccess = !_deleteFileOnSuccess),
             width: 20,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            color: context.coconutColors.iconDefault,
           ),
           const SizedBox(width: 8),
           Text(
