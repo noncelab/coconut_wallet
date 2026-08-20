@@ -37,21 +37,31 @@ class LabelFileService {
     bool useTimestampOrCounter = true,
   }) async {
     final directory = await getApplicationDocumentsDirectory();
-    const extension = '.jsonl';
-    String fileName = '$baseName$extension';
-    String filePath = p.join(directory.path, fileName);
+    const finalExtension = '.jsonl';
+    const tempExtension = '.tmp';
+    String finalFileName = '$baseName$finalExtension';
+    String finalFilePath = p.join(directory.path, finalFileName);
     int counter = 1;
 
-    while (await File(filePath).exists()) {
-      fileName = '$baseName($counter)$extension';
-      filePath = p.join(directory.path, fileName);
+    while (await File(finalFilePath).exists()) {
+      finalFileName = '$baseName($counter)$finalExtension';
+      finalFilePath = p.join(directory.path, finalFileName);
       counter++;
     }
 
-    final file = File(filePath);
-    await file.writeAsString(content);
+    final tempFilePath = '$finalFilePath$tempExtension';
+    final tempFile = File(tempFilePath);
 
-    return XFile(file.path, name: fileName, mimeType: 'application/jsonl');
+    try {
+      await tempFile.writeAsString(content);
+      final finalFile = await tempFile.rename(finalFilePath);
+      return XFile(finalFile.path, name: finalFileName, mimeType: 'application/jsonl');
+    } catch (e) {
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+      rethrow;
+    }
   }
 
   /// Prompts user to pick a `.jsonl` file and copies it to the app documents directory.
