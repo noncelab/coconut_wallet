@@ -267,6 +267,7 @@ wallet_home_screen:
     passphrase_used: "Passphrase aktiviert"
     passphrase_unused: "Passphrase deaktiviert"
     create_wallet: "Wallet erstellen"
+    mnemonic_backup_guide: "Die erstellte Mnemonik wird im nächsten Sicherungsbildschirm angezeigt"
     mnemonic_length: "Anzahl der Mnemonik-Wörter"
     word_count(count): "$count Wörter"
     use_passphrase: "Passphrase verwenden"

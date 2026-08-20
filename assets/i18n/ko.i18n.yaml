@@ -267,6 +267,7 @@ wallet_home_screen:
     passphrase_used: "패스프레이즈 사용"
     passphrase_unused: "패스프레이즈 미사용"
     create_wallet: "지갑 생성하기"
+    mnemonic_backup_guide: "생성된 니모닉은 다음 백업 화면에서 확인할 수 있어요"
     mnemonic_length: "니모닉 문구 수"
     word_count(count): "${count}단어"
     use_passphrase: "패스프레이즈 사용"

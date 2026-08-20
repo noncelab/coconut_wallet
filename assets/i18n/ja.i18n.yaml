@@ -266,6 +266,7 @@ wallet_home_screen:
     passphrase_used: "パスフレーズ使用"
     passphrase_unused: "パスフレーズ未使用"
     create_wallet: "ウォレットを作成"
+    mnemonic_backup_guide: "生成されたニーモニックは次のバックアップ画面で確認できます"
     mnemonic_length: "ニーモニックの単語数"
     word_count(count): "$count単語"
     use_passphrase: "パスフレーズを使用"
