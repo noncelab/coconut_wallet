@@ -342,7 +342,7 @@ wallet_home_screen:
     passphrase_incorrect: "Die Passphrase stimmt nicht überein"
     passphrase_correct: "Die Passphrase stimmt überein"
     backup_complete_title: "Backup bestätigt!"
-    backup_complete_description: "Du hast alle ausgewählten Wörter bestätigt.\nDeine Mnemonik gilt damit als gesichert."
+    backup_complete_description: "Du hast alle ausgewählten Wörter bestätigt\nDeine Mnemonik gilt damit als gesichert"
     set: "Eingerichtet"
     skip: "Später erledigen"
   add_wallet: "Wallet hinzufügen"

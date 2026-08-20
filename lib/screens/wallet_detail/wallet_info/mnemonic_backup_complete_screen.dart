@@ -4,17 +4,25 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-class MnemonicBackupCompleteScreen extends StatelessWidget {
+class MnemonicBackupCompleteScreen extends StatefulWidget {
   const MnemonicBackupCompleteScreen({super.key, this.walletId, this.continueToAppLockGuide = false});
 
   final int? walletId;
   final bool continueToAppLockGuide;
+
+  @override
+  State<MnemonicBackupCompleteScreen> createState() => _MnemonicBackupCompleteScreenState();
+}
+
+class _MnemonicBackupCompleteScreenState extends State<MnemonicBackupCompleteScreen> {
+  bool _isCompleting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -67,9 +75,10 @@ class MnemonicBackupCompleteScreen extends StatelessWidget {
                 ),
               ),
               FixedBottomButton(
-                text: continueToAppLockGuide && !isAppLockSet ? t.next : t.complete,
+                text: widget.continueToAppLockGuide && !isAppLockSet ? t.next : t.complete,
+                isActive: !_isCompleting,
                 surroundingsColor: context.coconutColors.background,
-                onButtonClicked: () => _complete(context, isAppLockSet),
+                onButtonClicked: () => _handleComplete(isAppLockSet),
               ),
             ],
           ),
@@ -78,39 +87,48 @@ class MnemonicBackupCompleteScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _complete(BuildContext context, bool isAppLockSet) async {
-    if (walletId != null) {
-      await context.read<WalletProvider>().updateHotWalletBackupVerified(walletId!, backupVerified: true);
-      if (!context.mounted) return;
+  Future<void> _handleComplete(bool isAppLockSet) async {
+    if (_isCompleting) return;
+    setState(() => _isCompleting = true);
+
+    try {
+      await _complete(isAppLockSet);
+    } catch (_) {
+      if (mounted) setState(() => _isCompleting = false);
+      rethrow;
+    }
+  }
+
+  Future<void> _complete(bool isAppLockSet) async {
+    if (widget.walletId != null) {
+      await context.read<WalletProvider>().updateHotWalletBackupVerified(widget.walletId!, backupVerified: true);
+      if (!mounted) return;
     }
 
-    if (!continueToAppLockGuide) {
+    if (!widget.continueToAppLockGuide) {
       Navigator.pop(context, true);
       return;
     }
 
     if (isAppLockSet) {
-      _openWalletDetail(context);
+      _openWalletDetail();
       return;
     }
 
-    await Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/hot-wallet-app-lock-guide-screen',
-      (route) => route.isFirst,
-      arguments: {'walletId': walletId},
-    );
+    await showHotWalletAppLockGuideBottomSheet(context);
+    if (!mounted) return;
+    _openWalletDetail();
   }
 
-  void _openWalletDetail(BuildContext context) {
-    if (walletId == null) {
+  void _openWalletDetail() {
+    if (widget.walletId == null) {
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
     Navigator.of(context).pushNamedAndRemoveUntil(
       '/wallet-detail',
       (route) => route.isFirst,
-      arguments: {'id': walletId, 'entryPoint': kEntryPointWalletHome},
+      arguments: {'id': widget.walletId, 'entryPoint': kEntryPointWalletHome},
     );
   }
 }

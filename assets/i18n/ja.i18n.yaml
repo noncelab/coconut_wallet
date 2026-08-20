@@ -341,7 +341,7 @@ wallet_home_screen:
     passphrase_incorrect: "パスフレーズが一致しません"
     passphrase_correct: "パスフレーズが一致しました"
     backup_complete_title: "バックアップ確認完了！"
-    backup_complete_description: "選択された単語の確認にすべて通過しました。\nニーモニックはバックアップ済みと確認されました。"
+    backup_complete_description: "選択された単語の確認にすべて通過しました\nニーモニックはバックアップ済みと確認されました"
     set: "設定済み"
     skip: "あとで行う"
   add_wallet: "ウォレットを追加"

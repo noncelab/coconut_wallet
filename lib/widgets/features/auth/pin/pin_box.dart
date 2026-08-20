@@ -7,8 +7,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 class PinBox extends StatelessWidget {
   final bool isSet;
   final double? size;
+  final Color? pinColor;
+  final Color? backgroundColor;
 
-  const PinBox({super.key, required this.isSet, this.size});
+  const PinBox({super.key, required this.isSet, this.size, this.pinColor, this.backgroundColor});
 
   @override
   Widget build(BuildContext context) {
@@ -18,14 +20,17 @@ class PinBox extends StatelessWidget {
       child: AspectRatio(
         aspectRatio: 1.0,
         child: Container(
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: context.coconutColors.surfaceMuted),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: backgroundColor ?? context.coconutColors.surfaceMuted,
+          ),
           child:
               isSet
                   ? Padding(
                     padding: const EdgeInsets.all(Sizes.size12),
                     child: SvgPicture.asset(
                       AppIconPath.coconut,
-                      colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(pinColor ?? context.coconutColors.primaryText, BlendMode.srcIn),
                     ),
                   )
                   : null,

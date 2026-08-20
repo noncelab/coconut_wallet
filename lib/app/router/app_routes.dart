@@ -2,7 +2,6 @@ import 'package:coconut_wallet/screens/home/wallet_add/air-gapped/airgap_wallet_
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_create_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_restore_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_mnemonic_backup_guide_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
@@ -240,10 +239,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             returnToPreviousOnExit: args['returnToPreviousOnExit'] ?? false,
           ),
         ),
-    '/hot-wallet-app-lock-guide-screen': (context) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      return HotWalletAppLockGuideScreen(walletId: args?['walletId'] as int?);
-    },
     '/hot-wallet-mnemonic-backup':
         (context) => _buildScreenWithArgs(
           context,

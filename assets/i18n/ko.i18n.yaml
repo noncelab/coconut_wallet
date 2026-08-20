@@ -342,7 +342,7 @@ wallet_home_screen:
     passphrase_incorrect: "패스프레이즈가 일치하지 않아요"
     passphrase_correct: "패스프레이즈가 일치해요"
     backup_complete_title: "백업 확인 완료!"
-    backup_complete_description: "선택된 단어 확인을 모두 통과했어요.\n니모닉 문구를 백업한 것으로 확인했어요."
+    backup_complete_description: "선택된 단어 확인을 모두 통과했어요\n니모닉 문구를 백업한 것으로 확인했어요"
     set: "설정됨"
     skip: "나중에 할게요"
   add_wallet: "지갑 추가"

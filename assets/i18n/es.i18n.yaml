@@ -343,7 +343,7 @@ wallet_home_screen:
     passphrase_incorrect: "La frase de contraseña no coincide"
     passphrase_correct: "La frase de contraseña coincide"
     backup_complete_title: "¡Copia verificada!"
-    backup_complete_description: "Has superado la comprobación de las palabras seleccionadas.\nTu frase mnemónica se considera respaldada."
+    backup_complete_description: "Has superado la comprobación de las palabras seleccionadas\nTu frase mnemónica se considera respaldada"
     set: "Configurado"
     skip: "Lo haré más tarde"
   add_wallet: "Añadir billetera"

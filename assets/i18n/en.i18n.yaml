@@ -342,7 +342,7 @@ wallet_home_screen:
     passphrase_incorrect: "The passphrase doesn't match"
     passphrase_correct: "The passphrase matches"
     backup_complete_title: "Backup verified!"
-    backup_complete_description: "You passed all selected word checks.\nYour mnemonic phrase is considered backed up."
+    backup_complete_description: "You passed all selected word checks\nYour mnemonic phrase is considered backed up"
     set: "Set"
     skip: "I'll do it later"
   add_wallet: "Add wallet"

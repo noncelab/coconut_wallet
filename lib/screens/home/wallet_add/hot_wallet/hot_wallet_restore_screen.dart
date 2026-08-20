@@ -23,6 +23,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_restore_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -1327,10 +1328,12 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
           arguments: {'id': restoredWallet.id, 'entryPoint': kEntryPointWalletHome},
         );
       } else {
+        await showHotWalletAppLockGuideBottomSheet(context);
+        if (!mounted) return;
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/hot-wallet-app-lock-guide-screen',
+          '/wallet-detail',
           (route) => route.isFirst,
-          arguments: {'walletId': restoredWallet.id},
+          arguments: {'id': restoredWallet.id, 'entryPoint': kEntryPointWalletHome},
         );
       }
     } catch (_) {
