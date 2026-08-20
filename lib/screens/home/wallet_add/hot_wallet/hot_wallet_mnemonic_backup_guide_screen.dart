@@ -249,7 +249,18 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                               child: SizedBox(
                                 width: 96,
                                 height: 96,
-                                child: Lottie.asset(ActionLottiePath.noteWriting, fit: BoxFit.contain, repeat: false),
+                                child: Lottie.asset(
+                                  ActionLottiePath.noteWriting,
+                                  fit: BoxFit.contain,
+                                  repeat: false,
+                                  delegates: LottieDelegates(
+                                    values: [
+                                      ValueDelegate.colorFilter([
+                                        '**',
+                                      ], value: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcATop)),
+                                    ],
+                                  ),
+                                ),
                               ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
                             ),
                           ),
