@@ -19,7 +19,9 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/utils/migration/taproot_older_to_after_migration.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/suspicious_transaction_util.dart';
@@ -172,14 +174,41 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
+  ({WatchOnlyWallet wallet, bool changed}) _migrateTaprootOlderToAfter(WatchOnlyWallet wallet) {
+    if (!wallet.isTaproot) return (wallet: wallet, changed: false);
+
+    final result = TaprootOlderToAfterMigration.migrate(
+      descriptor: wallet.descriptor,
+      scriptPathSeedInfos: wallet.scriptPathSeedInfos ?? const [],
+    );
+    if (!result.hasChanges) return (wallet: wallet, changed: false);
+
+    return (
+      wallet: WatchOnlyWallet(
+        wallet.name,
+        wallet.colorIndex,
+        wallet.iconIndex,
+        result.descriptor,
+        wallet.requiredSignatureCount,
+        wallet.signers,
+        wallet.walletImportSource.name,
+        keyPathSeedInfos: wallet.keyPathSeedInfos,
+        scriptPathSeedInfos: result.scriptPathSeedInfos,
+        createdAtInVault: wallet.createdAtInVault,
+      ),
+      changed: true,
+    );
+  }
+
   /// case1. 이미 존재하는 fingerprint이지만 이름/계정/칼라 중 하나라도 변경되었을 경우 ("동기화를 완료했습니다.")
   /// case2. 이미 존재하고 변화가 없는 경우 ("이미 추가된 지갑입니다.")
   /// case3. 외부 지갑 형태로 이미 추가된 지갑 ("이미 추가된 지갑입니다. ([지갑 이름])")
   /// case4. 새로운 pubkey인지 확인 후 지갑으로 추가하기 ("지갑을 추가했습니다.")
   /// case5. 같은 이름과 MFP를 가졌지만 다른 derivation path의 지갑이 있는 경우 ("다른 계정 번호의 지갑을 추가했습니다.")
   /// case6. 같은 이름을 가진 다른 지갑이 있는 경우 ("같은 이름을 가진 지갑이 있습니다. 이름을 변경한 후 동기화 해주세요.")
-
   Future<ResultOfSyncFromVault> syncFromCoconutVault(WatchOnlyWallet watchOnlyWallet) async {
+    final migration = _migrateTaprootOlderToAfter(watchOnlyWallet);
+    watchOnlyWallet = migration.wallet;
     final isSingleSig = watchOnlyWallet.walletType == WalletType.singleSignature;
     final index = _findSameWalletIndex(watchOnlyWallet.descriptor, watchOnlyWallet.walletType);
 
@@ -231,6 +260,9 @@ class WalletProvider extends ChangeNotifier {
 
     watchOnlyWallet = _copyWithNewName(watchOnlyWallet, resolvedName);
     final newWallet = await _addNewWallet(watchOnlyWallet);
+    if (migration.changed) {
+      await SharedPrefsRepository().addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(newWallet.id);
+    }
 
     Logger.log('--> syncFromCoconutVault:::::: ${_walletItemList.map((e) => e.id).toList()}');
     _handleNewWalletAdded(newWallet.id);
@@ -422,6 +454,7 @@ class WalletProvider extends ChangeNotifier {
     await _preferenceProvider.removeFavoriteWalletId(walletId);
     await _preferenceProvider.removeExcludedFromTotalBalanceWalletId(walletId);
     await _preferenceProvider.removeManualUtxoSelectionWalletId(walletId);
+    await SharedPrefsRepository().removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
     if (_walletItemList.isEmpty) {
       await _preferenceProvider.changeIsBalanceHidden(false); // 잔액 숨기기 비활성화, fakeBalance 초기화
       await _preferenceProvider.clearFakeBalanceTotalAmount();

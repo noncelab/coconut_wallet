@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/migration/taproot_older_to_after_migration.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
 /// 코코넛 볼트 - 지갑 내보내기 스캔용
@@ -16,11 +17,32 @@ class CoconutWalletAddQrScanDataHandler implements IQrScanDataHandler {
   @override
   bool joinData(String data) {
     try {
-      Map<String, dynamic> jsonData = jsonDecode(data);
-      final wallet = WatchOnlyWallet.fromJson(jsonData);
-      if (wallet.isTaproot && !wallet.isSupportedTaprootConfiguration) {
-        Logger.error('Unsupported Taproot configuration');
-        return false;
+      final jsonData = jsonDecode(data) as Map<String, dynamic>;
+      var wallet = WatchOnlyWallet.fromJson(jsonData);
+      if (wallet.isTaproot) {
+        final migration = TaprootOlderToAfterMigration.migrate(
+          descriptor: wallet.descriptor,
+          scriptPathSeedInfos: wallet.scriptPathSeedInfos ?? const [],
+        );
+        if (migration.hasChanges) {
+          wallet = WatchOnlyWallet(
+            wallet.name,
+            wallet.colorIndex,
+            wallet.iconIndex,
+            migration.descriptor,
+            wallet.requiredSignatureCount,
+            wallet.signers,
+            wallet.walletImportSource.name,
+            keyPathSeedInfos: wallet.keyPathSeedInfos,
+            scriptPathSeedInfos: migration.scriptPathSeedInfos,
+            createdAtInVault: wallet.createdAtInVault,
+          );
+        }
+
+        if (!wallet.isSupportedTaprootConfiguration) {
+          Logger.error('Unsupported Taproot configuration');
+          return false;
+        }
       }
       _result = wallet;
       return true;
@@ -45,9 +67,10 @@ class CoconutWalletAddQrScanDataHandler implements IQrScanDataHandler {
   @override
   bool validateFormat(String data) {
     try {
-      jsonDecode(data);
+      final jsonData = jsonDecode(data) as Map<String, dynamic>;
+      WatchOnlyWallet.fromJson(jsonData);
       return true;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }

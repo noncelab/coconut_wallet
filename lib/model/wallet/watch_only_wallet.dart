@@ -69,7 +69,7 @@ class WatchOnlyWallet {
     for (int i = 0; i < _descriptor.totalSigner; i++) {
       if (!_hasPurpose86(_descriptor.getDerivationPath(i))) return false;
     }
-    // miniscript가 InheritancePolicy로 파싱 가능하고, beneficiary purpose도 86'인지 검증
+    // inheritance miniscript 구조와 beneficiary purpose가 86'인지 검증
     final miniscriptRegex = RegExp(r'and_v\(v:pk\(\[(.+?)\].+?\),after\(\d+\)\)');
     try {
       final miniScript = _descriptor.miniscriptList.first;

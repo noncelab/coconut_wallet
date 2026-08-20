@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/realm_constants.dart';
+import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
+import 'package:coconut_wallet/utils/migration/taproot_older_to_after_migration.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:realm/realm.dart';
@@ -48,7 +52,11 @@ import 'package:realm/realm.dart';
 /// 1. RealmTaprootWallet 스키마 추가 (신규 스키마이므로 Realm이 자동 처리)
 ///    포함 필드: keyPathSeedInfosInJsonSerialization, scriptPathSeedInfosInJsonSerialization,
 ///    createdAtInVault, defaultSpendTypeName(nullable, 사용자 사전 선택 경로)
-void defaultMigration(Migration migration, int oldVersion) {
+///
+/// [migrateTaprootWalletBackupData] (8 -> 9)
+/// 1. coconut_lib의 inheritance miniscript 직렬화 오류로 저장된 older를 after로 변환
+/// 2. descriptor와 scriptPathSeedInfos의 checksum/miniscript를 재생성
+void defaultMigration(Migration migration, int oldVersion, {Set<int>? migratedWalletIds}) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
     return;
@@ -61,10 +69,47 @@ void defaultMigration(Migration migration, int oldVersion) {
     if (oldVersion < 4) addIsDeletedToUtxo(migration.newRealm);
     if (oldVersion < 5) migrationV5(migration);
     if (oldVersion < 7) migrateExtendedPublicKeyToDescriptor(migration.newRealm);
+    if (oldVersion < 9) {
+      migrateTaprootWalletBackupData(migration.newRealm, migratedWalletIds: migratedWalletIds);
+    }
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
   }
+}
+
+void migrateTaprootWalletBackupData(Realm realm, {Set<int>? migratedWalletIds}) {
+  Logger.log('migrateTaprootWalletBackupData migration start');
+  var migratedCount = 0;
+
+  for (final taprootWallet in realm.all<RealmTaprootWallet>()) {
+    final walletBase = taprootWallet.walletBase;
+    if (walletBase == null) continue;
+
+    try {
+      final scriptPathSeedInfos =
+          (jsonDecode(taprootWallet.scriptPathSeedInfosInJsonSerialization) as List<dynamic>)
+              .map((item) => TaprootScriptPathSeedInfo.fromJson(Map<String, dynamic>.from(item as Map)))
+              .toList();
+      final result = TaprootOlderToAfterMigration.migrate(
+        descriptor: walletBase.descriptor,
+        scriptPathSeedInfos: scriptPathSeedInfos,
+      );
+
+      if (!result.hasChanges) continue;
+
+      walletBase.descriptor = result.descriptor;
+      taprootWallet.scriptPathSeedInfosInJsonSerialization = jsonEncode(
+        result.scriptPathSeedInfos.map((item) => item.toJson()).toList(),
+      );
+      migratedWalletIds?.add(taprootWallet.id);
+      migratedCount++;
+    } catch (e, stackTrace) {
+      Logger.error('migrateTaprootWalletBackupData: skip wallet ${taprootWallet.id} - $e\n$stackTrace');
+    }
+  }
+
+  Logger.log('migrateTaprootWalletBackupData migration end (migrated: $migratedCount)');
 }
 
 /// extendedPublicKey로 저장된 지갑 중 masterFingerprint가 00000000이 아닌 경우 descriptor로 마이그레이션
@@ -170,7 +215,13 @@ void addRealmTransactionMemo(Migration migration) {
   final oldTxs = migration.oldRealm.all("RealmTransaction");
   final memos = List<RealmTransactionMemo>.empty(growable: true);
   for (var oldTx in oldTxs) {
-    final memo = oldTx.dynamic.get("memo");
+    dynamic memo;
+    try {
+      memo = oldTx.dynamic.get("memo");
+    } on RealmException {
+      // 테스트 fixture 또는 memo 필드가 없던 구버전 Realm에서는 변환할 memo가 없습니다.
+      continue;
+    }
     if (memo != null) {
       final transactionHash = oldTx.dynamic.get("transactionHash") as String;
       final walletId = oldTx.dynamic.get("walletId") as int;

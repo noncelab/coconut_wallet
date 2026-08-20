@@ -92,4 +92,8 @@ class SharedPrefKeys {
 
   /// 테마 variant
   static const String kThemeVariant = 'THEME_VARIANT';
+
+  // coconut_lib older -> after 변환으로 백업 정보가 변경되었지만 아직 확인하지 않은 지갑 ID 목록
+  static const String kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate =
+      'WALLET_IDS_WITH_UNACKNOWLEDGED_OLDER_TO_AFTER_BACKUP_UPDATE';
 }
