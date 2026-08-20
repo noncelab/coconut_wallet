@@ -240,10 +240,10 @@ wallet_home_screen:
   wallet_type_selection:
     watch_only:
       title: "보기 전용 지갑 추가하기"
-      description: "안전한 조회용"
+      description: "키를 보관하지 않아요"
     hot_wallet:
       title: "핫월렛 추가하기"
-      description: "즉시 송금 가능한"
+      description: "이 기기에 키를 보관해요"
   hot_wallet_add:
     create:
       title: "새 지갑 생성하기"
@@ -256,24 +256,8 @@ wallet_home_screen:
       description: "핫월렛을 안전하게 보호하려면 먼저 기기 설정에서 화면 잠금 비밀번호를 설정해 주세요."
   hot_wallet_create:
     title: "새 지갑 생성하기"
-    default_name(adjective, noun): "$adjective $noun"
-    default_names:
-      adjectives:
-        - "알뜰한"
-        - "넉넉한"
-        - "든든한"
-        - "계획적인"
-        - "여유로운"
-        - "소중한"
-        - "미리 준비한"
-        - "아껴 쓰는"
-        - "나만의"
-      nouns:
-        - "비상금"
-        - "용돈"
-        - "생활비"
-        - "교통비"
-        - "식비"
+    default_name: "내 지갑"
+    default_name_with_number(number): "내 지갑 $number"
     wallet_name: "지갑 이름"
     appearance_settings: "지갑 스타일 설정"
     color: "색상"

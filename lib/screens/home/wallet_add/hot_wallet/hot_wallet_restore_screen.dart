@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'dart:ui';
 import 'dart:async';
 import 'dart:convert';
@@ -30,6 +29,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
+import 'package:coconut_wallet/utils/wallet_name_util.dart';
 import 'package:coconut_wallet/utils/seed_qr_decoder.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart' as app_settings;
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
@@ -301,12 +301,10 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   String _generateSuggestedName() {
-    final random = Random.secure();
-    final adjectives = t.wallet_home_screen.hot_wallet_create.default_names.adjectives;
-    final nouns = t.wallet_home_screen.hot_wallet_create.default_names.nouns;
-    return t.wallet_home_screen.hot_wallet_create.default_name(
-      adjective: adjectives[random.nextInt(adjectives.length)],
-      noun: nouns[random.nextInt(nouns.length)],
+    return WalletNameUtil.findAvailableDefaultName(
+      existingNames: context.read<WalletProvider>().walletItemList.map((wallet) => wallet.name),
+      firstName: t.wallet_home_screen.hot_wallet_create.default_name,
+      numberedName: (number) => t.wallet_home_screen.hot_wallet_create.default_name_with_number(number: number),
     );
   }
 

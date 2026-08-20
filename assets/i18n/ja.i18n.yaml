@@ -239,10 +239,10 @@ wallet_home_screen:
   wallet_type_selection:
     watch_only:
       title: "閲覧専用ウォレットを追加"
-      description: "安全な閲覧用"
+      description: "この端末にキーを保存しません"
     hot_wallet:
       title: "ホットウォレットを追加"
-      description: "すぐに送金可能"
+      description: "この端末にキーを保存します"
   hot_wallet_add:
     create:
       title: "新しいウォレットを作成"
@@ -255,24 +255,8 @@ wallet_home_screen:
       description: "ホットウォレットを安全に保護するため、先にデバイスの設定で画面ロックのパスコードを設定してください。"
   hot_wallet_create:
     title: "ホットウォレットを作成"
-    default_name(adjective, noun): "$adjective$noun"
-    default_names:
-      adjectives:
-        - "節約上手な"
-        - "ゆとりのある"
-        - "頼もしい"
-        - "計画的な"
-        - "余裕のある"
-        - "大切な"
-        - "準備しておいた"
-        - "大事に使う"
-        - "自分だけの"
-      nouns:
-        - "緊急資金"
-        - "お小遣い"
-        - "生活費"
-        - "交通費"
-        - "食費"
+    default_name: "ウォレット1"
+    default_name_with_number(number): "ウォレット$number"
     wallet_name: "ウォレット名"
     appearance_settings: "ウォレットをカスタマイズ"
     color: "カラー"

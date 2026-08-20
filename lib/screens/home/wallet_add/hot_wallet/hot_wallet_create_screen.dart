@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutTextField;
 import 'package:coconut_lib/coconut_lib.dart';
@@ -18,6 +17,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/wallet_name_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
@@ -934,12 +934,10 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   }
 
   String _generateDefaultWalletName() {
-    final random = Random.secure();
-    final adjectives = t.wallet_home_screen.hot_wallet_create.default_names.adjectives;
-    final nouns = t.wallet_home_screen.hot_wallet_create.default_names.nouns;
-    return t.wallet_home_screen.hot_wallet_create.default_name(
-      adjective: adjectives[random.nextInt(adjectives.length)],
-      noun: nouns[random.nextInt(nouns.length)],
+    return WalletNameUtil.findAvailableDefaultName(
+      existingNames: context.read<WalletProvider>().walletItemList.map((wallet) => wallet.name),
+      firstName: t.wallet_home_screen.hot_wallet_create.default_name,
+      numberedName: (number) => t.wallet_home_screen.hot_wallet_create.default_name_with_number(number: number),
     );
   }
 }

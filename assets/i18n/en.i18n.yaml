@@ -240,10 +240,10 @@ wallet_home_screen:
   wallet_type_selection:
     watch_only:
       title: "Add a watch-only wallet"
-      description: "For secure viewing"
+      description: "No keys stored here"
     hot_wallet:
       title: "Add a hot wallet"
-      description: "Ready to send instantly"
+      description: "Keys stored on this device"
   hot_wallet_add:
     create:
       title: "Create a new wallet"
@@ -256,24 +256,8 @@ wallet_home_screen:
       description: "To protect your hot wallet, first set a screen lock passcode in your device settings."
   hot_wallet_create:
     title: "Create a Hot Wallet"
-    default_name(adjective, noun): "$adjective $noun"
-    default_names:
-      adjectives:
-        - "Thrifty"
-        - "Plentiful"
-        - "Reliable"
-        - "Planned"
-        - "Comfortable"
-        - "Precious"
-        - "Prepared"
-        - "Frugal"
-        - "Personal"
-      nouns:
-        - "Emergency Fund"
-        - "Allowance"
-        - "Living Expenses"
-        - "Transportation"
-        - "Food Budget"
+    default_name: "Wallet 1"
+    default_name_with_number(number): "Wallet $number"
     wallet_name: "Wallet name"
     appearance_settings: "Customize wallet"
     color: "Color"

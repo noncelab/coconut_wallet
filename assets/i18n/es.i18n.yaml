@@ -241,10 +241,10 @@ wallet_home_screen:
   wallet_type_selection:
     watch_only:
       title: "Añadir billetera de solo lectura"
-      description: "Para consultar con seguridad"
+      description: "Sin claves en este dispositivo"
     hot_wallet:
       title: "Añadir billetera caliente"
-      description: "Lista para enviar al instante"
+      description: "Claves guardadas en este dispositivo"
   hot_wallet_add:
     create:
       title: "Crear una billetera nueva"
@@ -257,24 +257,8 @@ wallet_home_screen:
       description: "Para proteger tu billetera caliente, configura primero un código de bloqueo de pantalla en los ajustes del dispositivo."
   hot_wallet_create:
     title: "Crear billetera caliente"
-    default_name(adjective, noun): "$noun $adjective"
-    default_names:
-      adjectives:
-        - "Ahorrador"
-        - "Holgado"
-        - "Seguro"
-        - "Planificado"
-        - "Tranquilo"
-        - "Valioso"
-        - "Preparado"
-        - "Económico"
-        - "Personal"
-      nouns:
-        - "Fondo de emergencia"
-        - "Dinero personal"
-        - "Presupuesto doméstico"
-        - "Presupuesto de transporte"
-        - "Presupuesto de comida"
+    default_name: "Billetera 1"
+    default_name_with_number(number): "Billetera $number"
     wallet_name: "Nombre de la billetera"
     appearance_settings: "Personalizar billetera"
     color: "Color"
