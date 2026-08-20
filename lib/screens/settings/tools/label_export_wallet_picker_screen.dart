@@ -12,6 +12,7 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/label_export_widgets.dart';
+import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -37,6 +38,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   File? _exportedFile;
   List<LabelExportResult> _exportResults = [];
   int _currentPage = 0;
+  double _successCardHeight = 150;
 
   late final LabelExportViewModel _exportViewModel;
   late Future<List<File>> _filesFuture;
@@ -504,8 +506,20 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
           ),
         ),
         CoconutLayout.spacing_300h,
+        Offstage(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SizeReportingWidget(
+              onSizeChanged: (size) {
+                if (!mounted || _successCardHeight == size.height) return;
+                setState(() => _successCardHeight = size.height);
+              },
+              child: _buildSuccessBottomCard(_exportResults[_currentPage]),
+            ),
+          ),
+        ),
         SizedBox(
-          height: 160,
+          height: _successCardHeight,
           child: PageView.builder(
             itemCount: _exportResults.length,
             onPageChanged: (index) => setState(() => _currentPage = index),
@@ -516,7 +530,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
                 ),
           ),
         ),
-        if (_exportResults.length > 1) _buildPageIndicator(),
+        if (_exportResults.length > 1) ...[const SizedBox(height: 14), _buildPageIndicator()],
       ],
     );
   }
@@ -545,7 +559,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         return Container(
           width: 8.0,
           height: 8.0,
-          margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+          margin: const EdgeInsets.symmetric(horizontal: 4.0),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color:

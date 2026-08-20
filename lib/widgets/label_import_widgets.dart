@@ -3,8 +3,8 @@ import 'package:coconut_wallet/model/label/label_result.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
+import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -69,22 +69,22 @@ class _ImportLabelSuccessCardState extends State<ImportLabelSuccessCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SvgPicture.asset(
-            'assets/svg/circle-check.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
-            height: 48,
-            width: 48,
-          ),
-          CoconutLayout.spacing_1000h,
-          widget.title,
-          CoconutLayout.spacing_500h,
-          Offstage(
-            child: _SizeReportingWidget(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SvgPicture.asset(
+          'assets/svg/circle-check.svg',
+          colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
+          height: 48,
+          width: 48,
+        ),
+        CoconutLayout.spacing_1000h,
+        widget.title,
+        CoconutLayout.spacing_500h,
+        Offstage(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SizeReportingWidget(
               onSizeChanged: (size) {
                 if (!mounted || _successCardHeight == size.height) return;
                 setState(() => _successCardHeight = size.height);
@@ -92,24 +92,27 @@ class _ImportLabelSuccessCardState extends State<ImportLabelSuccessCard> {
               child: _buildSuccessCard(context, widget.importResults[widget.currentPage]),
             ),
           ),
-          SizedBox(
-            height: _successCardHeight,
-            child: PageView.builder(
-              itemCount: widget.importResults.length,
-              onPageChanged: widget.onPageChanged,
-              itemBuilder: (context, index) => _buildSuccessCard(context, widget.importResults[index]),
-            ),
+        ),
+        SizedBox(
+          height: _successCardHeight,
+          child: PageView.builder(
+            itemCount: widget.importResults.length,
+            onPageChanged: widget.onPageChanged,
+            itemBuilder:
+                (context, index) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _buildSuccessCard(context, widget.importResults[index]),
+                ),
           ),
-
-          if (widget.importResults.length > 1) ...[
-            const SizedBox(height: 14),
-            _buildPageIndicator(),
-            const SizedBox(height: 13),
-          ] else ...[
-            const SizedBox(height: 18),
-          ],
+        ),
+        if (widget.importResults.length > 1) ...[
+          const SizedBox(height: 14),
+          _buildPageIndicator(),
+          const SizedBox(height: 13),
+        ] else ...[
+          const SizedBox(height: 18),
         ],
-      ),
+      ],
     );
   }
 }
@@ -137,37 +140,6 @@ class ImportLabelErrorCard extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _SizeReportingWidget extends SingleChildRenderObjectWidget {
-  final ValueChanged<Size> onSizeChanged;
-
-  const _SizeReportingWidget({required this.onSizeChanged, required super.child});
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return _SizeReportingRenderObject(onSizeChanged);
-  }
-
-  @override
-  void updateRenderObject(BuildContext context, covariant _SizeReportingRenderObject renderObject) {
-    renderObject.onSizeChanged = onSizeChanged;
-  }
-}
-
-class _SizeReportingRenderObject extends RenderProxyBox {
-  _SizeReportingRenderObject(this.onSizeChanged);
-
-  ValueChanged<Size> onSizeChanged;
-  Size? _reportedSize;
-
-  @override
-  void performLayout() {
-    super.performLayout();
-    if (size == _reportedSize) return;
-    _reportedSize = size;
-    WidgetsBinding.instance.addPostFrameCallback((_) => onSizeChanged(size));
   }
 }
 
