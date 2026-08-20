@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_v
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
@@ -52,6 +53,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   List<WalletAddress> _watchedReceivingAddressList = [];
   List<WalletAddress> _watchedChangeAddressList = [];
   StreamSubscription<WalletUpdateInfo>? _watchedAddressesRefreshSubscription;
+  StreamSubscription<List<WalletAddress>>? _discoveredAddressesSubscription;
 
   final GlobalKey _appBarKey = GlobalKey();
   Size _appBarSize = const Size(0, 0);
@@ -122,9 +124,23 @@ class _AddressListScreenState extends State<AddressListScreen> {
   void dispose() {
     _controller.dispose();
     _watchedAddressesRefreshSubscription?.cancel();
+    _discoveredAddressesSubscription?.cancel();
     _segmentTooltipTimer?.cancel();
     viewModel.dispose();
     super.dispose();
+  }
+
+  /// 스크롤 중 gap window 밖에서 잔액이 있는 주소가 발견되면 진동 + 토스트로 알림
+  void _onAddressesDiscovered(List<WalletAddress> addresses) {
+    if (!mounted) return;
+    vibrateLight();
+    CoconutToast.showToast(
+      context: context,
+      isVisibleIcon: true,
+      iconPath: 'assets/svg/circle-check.svg',
+      text: t.address_list_screen.discovered_new_balance_address(count: addresses.length),
+      seconds: 5,
+    );
   }
 
   @override
@@ -147,6 +163,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
         _loadWatchedAddresses();
       }
     });
+
+    _discoveredAddressesSubscription = viewModel.discoveredAddressesStream.listen(_onAddressesDiscovered);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_appBarKey.currentContext?.mounted ?? false) {
@@ -211,7 +229,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
       context: context,
       entireWidgetKey: _appBarKey,
       backgroundColor: _isScrollOverTitleHeight ? backgroundColor.withValues(alpha: 0.5) : backgroundColor,
-      title: t.address_list_screen.wallet_name(name: viewModel.walletBaseItem!.name),
+      title: t.address_list_screen.wallet_name(name: viewModel.walletBaseItem.name),
       actionButtonList: [
         IconButton(
           onPressed: () {
@@ -479,7 +497,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                         address: addressList[index].address,
                         derivationPath: addressList[index].derivationPath,
                         isUsed: addressList[index].isUsed,
-                        isWatched: viewModel.isAddressWatched(addressList[index]),
+                        isWatched: _showOnlyWatchedAddresses ? true : viewModel.isAddressWatched(addressList[index]),
                         balanceInSats: addressList[index].total,
                         currentUnit: _currentUnit,
                       ),
@@ -517,7 +535,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
     try {
       final cursor = !_isReceivingSelected ? viewModel.changeInitialCursor : viewModel.receivingInitialCursor;
       newAddresses = await viewModel.getWalletAddressList(
-        viewModel.walletBaseItem!,
+        viewModel.walletBaseItem,
         cursor,
         kAddressLoadCount,
         !_isReceivingSelected,
@@ -552,14 +570,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   /// 추후 다시 조회할 경우 조회 속도 향상을 위해 백그라운드에서 주소를 저장
   void _addAddressesWithGapLimit(List<WalletAddress> newAddresses, bool isChange) {
-    if (viewModel.walletBaseItem == null) {
-      return;
-    }
     // 백그라운드에서 비동기적으로 실행하여 UI 블로킹 방지
     Future.microtask(() async {
       try {
         await viewModel.walletProvider.addAddressesWithGapLimit(
-          walletItemBase: viewModel.walletBaseItem!,
+          walletItemBase: viewModel.walletBaseItem,
           newAddresses: newAddresses,
           isChange: isChange,
         );

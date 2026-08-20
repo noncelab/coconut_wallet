@@ -842,6 +842,7 @@ address_list_screen:
   set_amount: "establecer importe"
   share: "compartir"
   enter_receive_amount: "Ingrese la cantidad que debe recibir"
+  discovered_new_balance_address: "Se encontraron $count direcciones con nuevo saldo"
 utxo_overview_screen:
   by_amount: "Monto"
   by_tag: "Etiqueta"

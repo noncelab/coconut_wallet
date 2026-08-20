@@ -98,9 +98,27 @@ class ScriptSyncService {
     await _balanceSyncService.fetchScriptBalanceBatch(walletItem, dormantScriptStatuses);
 
     for (final addr in dormantAddresses) {
-      if (!_addressRepository.isAddressDormant(walletItem.id, addr.address)) {
-        await _subscribeAddress(walletItem, addr.index, addr.address, addr.isChange);
+      if (_addressRepository.isAddressDormant(walletItem.id, addr.address)) {
+        continue;
       }
+
+      await _subscribeAddress(walletItem, addr.index, addr.address, addr.isChange);
+
+      await _processScriptStatus(
+        SubscribeScriptStreamDto(
+          walletItem: walletItem,
+          scriptStatus: ScriptStatus(
+            derivationPath: addr.derivationPath,
+            address: addr.address,
+            index: addr.index,
+            isChange: addr.isChange,
+            scriptPubKey: '',
+            status: null,
+            timestamp: DateTime.now(),
+          ),
+        ),
+        DateTime.now(),
+      );
     }
   }
 
@@ -108,7 +126,8 @@ class ScriptSyncService {
   /// 최근에 이미 확인한 주소는 세션 내 짧은 시간 동안 다시 확인하지 않는다.
   /// gap 윈도우 밖이라 아직 미사용으로 표시된 주소에서 잔액이 발견되면, usedIndex(모니터링 윈도우)는
   /// 그대로 두고 그 주소만 개별적으로 사용됨으로 표시 + 구독 대상에 추가한다.
-  Future<void> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) async {
+  /// 새로 사용이 발견된 주소 목록을 반환
+  Future<List<WalletAddress>> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) async {
     final now = DateTime.now();
     final addressesToCheck =
         addresses.where((addr) {
@@ -117,7 +136,7 @@ class ScriptSyncService {
         }).toList();
 
     if (addressesToCheck.isEmpty) {
-      return;
+      return [];
     }
 
     for (final addr in addressesToCheck) {
@@ -141,6 +160,7 @@ class ScriptSyncService {
 
     await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses);
 
+    final discoveredAddresses = <WalletAddress>[];
     for (final addr in addressesToCheck) {
       if (addr.isUsed) {
         continue;
@@ -150,7 +170,27 @@ class ScriptSyncService {
       }
       await _addressRepository.setWalletAddressUsed(walletItem, addr.index, addr.isChange);
       await _subscribeAddress(walletItem, addr.index, addr.address, addr.isChange);
+      discoveredAddresses.add(addr);
+
+      await _processScriptStatus(
+        SubscribeScriptStreamDto(
+          walletItem: walletItem,
+          scriptStatus: ScriptStatus(
+            derivationPath: addr.derivationPath,
+            address: addr.address,
+            index: addr.index,
+            isChange: addr.isChange,
+            scriptPubKey: '',
+            status: null,
+            timestamp: now,
+          ),
+          updateUsedIndex: false,
+        ),
+        now,
+      );
     }
+
+    return discoveredAddresses;
   }
 
   /// 지갑 ID별로 작업을 도착 순서대로 직렬 처리합니다.
@@ -185,6 +225,8 @@ class ScriptSyncService {
     return runQueued(dto.walletItem.id, () => _processScriptStatus(dto, receivedAt));
   }
 
+  /// [dto.updateUsedIndex]가 false면 usedIndex(모니터링 윈도우) 갱신과 그에 따른 구독 확장을 건너뛴다.
+  /// 예: gap window 밖에서 개별적으로 사용된 주소 발견
   Future<void> _processScriptStatus(SubscribeScriptStreamDto dto, DateTime receivedAt) async {
     try {
       final remainingIndexingDelay = _electrumIndexingDelay - DateTime.now().difference(receivedAt);
@@ -210,11 +252,13 @@ class ScriptSyncService {
       final oldUsedIndex = dto.scriptStatus.isChange ? dto.walletItem.changeUsedIndex : dto.walletItem.receiveUsedIndex;
 
       // 지갑 인덱스 업데이트
-      await _addressRepository.updateWalletUsedIndex(
-        dto.walletItem,
-        dto.scriptStatus.index,
-        isChange: dto.scriptStatus.isChange,
-      );
+      if (dto.updateUsedIndex) {
+        await _addressRepository.updateWalletUsedIndex(
+          dto.walletItem,
+          dto.scriptStatus.index,
+          isChange: dto.scriptStatus.isChange,
+        );
+      }
 
       // 스크립트 상태가 변경되었으면 주소 사용 여부 업데이트
       if (dto.scriptStatus.status != null) {
@@ -250,7 +294,7 @@ class ScriptSyncService {
       }
 
       // 새 스크립트 구독 여부 확인 및 처리
-      if (_needSubscriptionUpdate(dto.walletItem, oldUsedIndex, dto.scriptStatus.isChange)) {
+      if (dto.updateUsedIndex && _needSubscriptionUpdate(dto.walletItem, oldUsedIndex, dto.scriptStatus.isChange)) {
         final subResult = await _subscribeWallet(dto.walletItem);
 
         if (subResult.isSuccess) {

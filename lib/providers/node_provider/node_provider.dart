@@ -415,7 +415,10 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.syncDormantAddresses(walletItem);
   }
 
-  Future<Result<bool>> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) async {
+  Future<Result<List<WalletAddress>>> syncViewedAddresses(
+    WalletItemBase walletItem,
+    List<WalletAddress> addresses,
+  ) async {
     return _isolateManager.syncViewedAddresses(walletItem, addresses);
   }
 

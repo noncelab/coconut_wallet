@@ -516,6 +516,10 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.getGeneratedAddressIndexes(wallet);
   }
 
+  (int receiveUsedIndex, int changeUsedIndex) getUsedIndexes(int walletId) {
+    return _addressRepository.getUsedIndexes(walletId);
+  }
+
   WalletAddress generateAddress(WalletBase wallet, int index, bool isChange) {
     return _addressRepository.generateAddress(wallet, index, isChange);
   }

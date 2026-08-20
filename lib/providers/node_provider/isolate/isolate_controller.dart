@@ -1,5 +1,6 @@
 import 'dart:isolate';
 
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/state/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_service.dart';
@@ -91,7 +92,9 @@ class IsolateController {
     } catch (e, stack) {
       Logger.error('IsolateController: Error in $messageType: $e');
       Logger.error(stack);
-      isolateToMainSendPort.send(Exception('Error in isolate processing: $e'));
+      // 원시 Exception을 보내면 수신 측(IsolateManager._send) Result<T> 캐스팅이 실패
+      // 진짜 에러 내용을 볼 수 없음. 항상 Result.failure로 감싸서 보낸다.
+      isolateToMainSendPort.send(Result.failure(ErrorCodes.withMessage(ErrorCodes.nodeIsolateError, e.toString())));
     }
   }
 }

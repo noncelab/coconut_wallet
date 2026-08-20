@@ -854,6 +854,7 @@ address_list_screen:
   set_amount: "금액 입력하기"
   share: "공유하기"
   enter_receive_amount: "받을 금액을 입력해 주세요"
+  discovered_new_balance_address: "잔액이 있는 주소 $count개를 발견했어요"
 utxo_overview_screen:
   by_amount: "금액별"
   by_tag: "태그별"

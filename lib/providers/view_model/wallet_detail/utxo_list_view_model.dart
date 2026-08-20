@@ -37,6 +37,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   // State Variables
   WalletSyncState _prevUpdateStatus = WalletSyncState.completed;
+  WalletUpdateInfo? _prevWalletUpdateInfo;
 
   List<UtxoState> _utxoList = [];
   List<UtxoState> _confirmedUtxoList = [];
@@ -136,11 +137,23 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
     Logger.log('${DateTime.now()}--> 지갑$_walletId 업데이트 체크 (UTXO)');
-    if (_prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == WalletSyncState.completed) {
+
+    // balance/transaction 중 하나라도 completed로 바뀌면 재조회
+    final prev = _prevWalletUpdateInfo;
+    final utxoCompleted = _prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == WalletSyncState.completed;
+    final balanceCompleted =
+        prev != null && prev.balance != WalletSyncState.completed && updateInfo.balance == WalletSyncState.completed;
+    final txCompleted =
+        prev != null &&
+        prev.transaction != WalletSyncState.completed &&
+        updateInfo.transaction == WalletSyncState.completed;
+
+    if (utxoCompleted || balanceCompleted || txCompleted) {
       _getUtxoAndTagList();
     }
 
     _prevUpdateStatus = updateInfo.utxo;
+    _prevWalletUpdateInfo = updateInfo;
     notifyListeners();
   }
 

@@ -64,10 +64,11 @@ class SubscriptionService {
   }
 
   /// 화면에서 실제로 보고 있는 주소들의 잔액을 온디맨드로 확인한다 (외부 진입점, 지갑별 큐를 거쳐서 실행한다)
-  Future<Result<bool>> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) {
+  /// 반환값은 이번 호출로 새로 사용됨이 발견된 주소 목록이다.
+  Future<Result<List<WalletAddress>>> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) {
     return _scriptSyncService.runQueued(walletItem.id, () async {
-      await _scriptSyncService.syncViewedAddresses(walletItem, addresses);
-      return Result.success(true);
+      final discovered = await _scriptSyncService.syncViewedAddresses(walletItem, addresses);
+      return Result.success(discovered);
     });
   }
 
@@ -399,8 +400,12 @@ class SubscriptionService {
       currentIndex = walletItem.receiveUsedIndex;
     }
 
+    // gap window 밖에서 발견한 이벤트는 usedIndex에 영향을 주면 안됨
+    final withinGapReach = scriptStatus.index <= currentIndex + kSubscriptionGapLimit;
+
     // 인덱스가 더 크거나, 상태가 변경되었고 현재 인덱스와 같은 경우
-    if (scriptStatus.index > currentIndex || (statusChanged && scriptStatus.index >= currentIndex)) {
+    if (withinGapReach &&
+        (scriptStatus.index > currentIndex || (statusChanged && scriptStatus.index >= currentIndex))) {
       currentIndex = max(currentIndex, scriptStatus.index);
 
       if (scriptStatus.isChange) {
@@ -429,7 +434,9 @@ class SubscriptionService {
       timestamp: scriptStatus.timestamp,
     );
 
-    scriptStatusController.add(SubscribeScriptStreamDto(scriptStatus: scriptStatus, walletItem: walletItem));
+    scriptStatusController.add(
+      SubscribeScriptStreamDto(scriptStatus: scriptStatus, walletItem: walletItem, updateUsedIndex: withinGapReach),
+    );
   }
 
   /// 스캔 범위 확장을 위한 메서드

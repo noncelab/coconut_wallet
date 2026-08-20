@@ -782,6 +782,7 @@ address_list_screen:
   set_amount: "Betrag festlegen"
   share: "Teilen"
   enter_receive_amount: "Geben Sie den zu empfangenden Betrag ein"
+  discovered_new_balance_address: "$count Adresse(n) mit neuem Guthaben gefunden"
 utxo_overview_screen:
   by_amount: "Betrag"
   by_tag: "Tag"

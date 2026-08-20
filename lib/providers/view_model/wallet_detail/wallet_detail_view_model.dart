@@ -207,16 +207,25 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   // balance, transaction만 고려
   void _onWalletUpdateInfoChanged(WalletUpdateInfo newInfo) {
+    // balance/transaction/utxo 중 하나라도 완료로 바뀌면 잔액과 tx 목록을 함께 새로고침
+    final balanceCompleted =
+        _prevWalletUpdateInfo.balance != WalletSyncState.completed && newInfo.balance == WalletSyncState.completed;
+    final txCompleted =
+        _prevWalletUpdateInfo.transaction != WalletSyncState.completed &&
+        newInfo.transaction == WalletSyncState.completed;
+    final utxoCompleted =
+        _prevWalletUpdateInfo.utxo != WalletSyncState.completed && newInfo.utxo == WalletSyncState.completed;
+    final anyCompleted = balanceCompleted || txCompleted || utxoCompleted;
+
     // balance
-    if (_prevWalletUpdateInfo.balance != WalletSyncState.completed && newInfo.balance == WalletSyncState.completed) {
+    if (anyCompleted) {
       _balance = _getBalance();
       _setReceiveAddress();
       notifyListeners();
       Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.: $_balance');
     }
     // transaction
-    if (_prevWalletUpdateInfo.transaction != WalletSyncState.completed &&
-        newInfo.transaction == WalletSyncState.completed) {
+    if (anyCompleted) {
       _txProvider.initTxList(_walletId);
       _setReceiveAddress();
       notifyListeners();

@@ -851,6 +851,7 @@ address_list_screen:
   set_amount: "Set amount"
   share: "Share"
   enter_receive_amount: "Enter the amount to receive"
+  discovered_new_balance_address: "Found $count address(es) with new balance"
 utxo_overview_screen:
   by_amount: "Amount"
   by_tag: "Tag"

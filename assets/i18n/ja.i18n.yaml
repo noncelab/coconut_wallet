@@ -838,7 +838,8 @@ address_list_screen:
   set_amount: "金額設定"
   share: "共有する"
   enter_receive_amount: "受け取る金額を入力"
-  
+  discovered_new_balance_address: "新しい残高があるアドレスを$count件発見しました"
+
 utxo_overview_screen:
   by_amount: "金額別"
   by_tag: "タグ別"

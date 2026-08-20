@@ -51,14 +51,7 @@ class AddressItemCard extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (isWatched) ...[
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(color: context.coconutColors.success, shape: BoxShape.circle),
-                    ),
-                    const SizedBox(width: 4),
-                  ],
+                  if (isWatched) ...[_WatchedGlowDot(color: context.coconutColors.success), const SizedBox(width: 4)],
                   Text(
                     index,
                     style: CoconutTypography.caption_10
@@ -116,6 +109,55 @@ class AddressItemCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _WatchedGlowDot extends StatefulWidget {
+  final Color color;
+  const _WatchedGlowDot({required this.color});
+
+  @override
+  State<_WatchedGlowDot> createState() => _WatchedGlowDotState();
+}
+
+class _WatchedGlowDotState extends State<_WatchedGlowDot> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        return Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: widget.color,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withValues(alpha: 0.2 + 0.4 * t),
+                blurRadius: 1 + 3 * t,
+                spreadRadius: 0.5 + 1.5 * t,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

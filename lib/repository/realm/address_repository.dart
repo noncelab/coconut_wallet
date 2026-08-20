@@ -361,6 +361,14 @@ class AddressRepository extends BaseRepository {
     return realmWalletBase;
   }
 
+  /// receiveUsedIndex/changeUsedIndex 조회
+  /// [NOTE] 백그라운드 isolate의 구독 처리가 다른 isolate에 캐시된 WalletItemBase를 갱신하지 않으므로,
+  /// 최신 값이 필요한 곳에서는 이 메서드를 사용해야 한다.
+  (int receiveUsedIndex, int changeUsedIndex) getUsedIndexes(int walletId) {
+    final realmWalletBase = getWalletBase(walletId);
+    return (realmWalletBase.usedReceiveIndex, realmWalletBase.usedChangeIndex);
+  }
+
   Future<void> setWalletAddressUsed(WalletItemBase walletItem, int addressIndex, bool isChange) async {
     final realmWalletAddress =
         realm.query<RealmWalletAddress>(r'walletId == $0 AND index == $1 AND isChange == $2', [

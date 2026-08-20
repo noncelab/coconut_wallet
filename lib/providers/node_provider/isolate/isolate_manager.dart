@@ -513,7 +513,10 @@ class IsolateManager {
     return _send(IsolateControllerCommand.syncDormantAddresses, [walletItem]);
   }
 
-  Future<Result<bool>> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) async {
+  Future<Result<List<WalletAddress>>> syncViewedAddresses(
+    WalletItemBase walletItem,
+    List<WalletAddress> addresses,
+  ) async {
     return _send(IsolateControllerCommand.syncViewedAddresses, [walletItem, addresses]);
   }
 
