@@ -379,6 +379,7 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
+  watched_addresses: "監視中 $count"
   primary_wallet: "プライマリウォレット"
   exclude_from_total_amount: "ホーム合計から除外"
   home_balance: "ホーム残高"
@@ -832,6 +833,8 @@ address_list_screen:
   receiving: "受信"
   change: "おつり"
   show_only_unused_address: "未使用アドレスのみ表示"
+  show_only_watched_address: "監視中アドレスのみ表示"
+  show_only_watched_address_count: "監視中アドレスのみ表示 ($count件)"
   set_amount: "金額設定"
   share: "共有する"
   enter_receive_amount: "受け取る金額を入力"
@@ -907,6 +910,7 @@ wallet_info_screen:
   title: "$name情報"
   transaction: "トランザクション"
   utxo: "UTXO"
+  watched_addresses: "監視アドレス"
   target_quantity: "目標数量"
   target_progress: "$percent% / $target"
   target_not_set_secondary: "目標数量を設定すると達成率を表示します"

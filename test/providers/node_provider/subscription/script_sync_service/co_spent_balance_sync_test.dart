@@ -153,6 +153,7 @@ void main() {
 
       final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
       scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;
+      scriptSyncService.unsubscribeAddress = ScriptSyncServiceMock.unsubscribeAddress;
 
       // When: receive 주소 이벤트가 먼저 처리되며 잔액 조회 실패로 트랜잭션 동기화까지 진행하지 못하고,
       // 이어서 change 주소 이벤트가 처리되며 스윕 트랜잭션을 감지해 UTXO를 삭제하고
@@ -168,6 +169,12 @@ void main() {
 
       final balance = ScriptSyncServiceMock.walletRepository.getWalletBalance(wallet.id);
       expect(balance.total, 0, reason: 'receive 주소의 최초 잔액 조회가 실패했더라도, co-spent 잔액 동기화를 통해 지갑 총 잔액이 0으로 정확히 반영되어야 한다.');
+
+      expect(
+        ScriptSyncServiceMock.unsubscribedAddresses,
+        containsAll([addressReceive, addressChange]),
+        reason: '스윕으로 잔액이 0이 된 두 주소는 모두 dormant 처리되어 구독 해제되어야 한다.',
+      );
     });
   });
 }

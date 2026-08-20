@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
@@ -25,7 +27,6 @@ class SubscriptionService {
   final ScriptSyncService _scriptSyncService;
 
   final StreamController<SubscribeScriptStreamDto> _scriptStatusController;
-  final int _gapLimit = 20; // 기본 gap limit 설정
 
   // 중복 구독 방지를 위한 상태 관리
   final Set<int> _subscribingWallets = {};
@@ -39,17 +40,35 @@ class SubscriptionService {
     this._scriptSyncService,
   ) : _scriptStatusController = StreamController<SubscribeScriptStreamDto>.broadcast() {
     _scriptStatusController.stream.listen(_scriptSyncService.syncScriptStatus);
-    // ScriptSyncService 내부(_processScriptStatus)에서 gap-limit 확장을 위해 호출하는 경로.
+    // ScriptSyncService 내부(_processScriptStatus)에서 gap-limit 확장을 위해 호출하는 경로
     // 이미 그 지갑의 큐 슬롯을 점유한 상태에서 호출되므로, 큐를 타는 subscribeWallet이 아니라
     // 큐를 거치지 않는 _subscribeWalletGuarded를 직접 연결해야 데드락이 나지 않는다.
     _scriptSyncService.subscribeWallet = _subscribeWalletGuarded;
+    _scriptSyncService.unsubscribeAddress = unsubscribeAddress;
+    _scriptSyncService.subscribeAddress = subscribeAddress;
   }
 
-  /// 지갑의 스크립트 구독 (외부 진입점).
+  /// 지갑의 스크립트 구독 (외부 진입점)
   /// 라이브 구독 이벤트(syncScriptStatus)와 같은 지갑에 대해 동시에 잔액/UTXO를 쓰지 않도록
   /// ScriptSyncService의 지갑별 큐를 거쳐서 실행한다.
   Future<Result<bool>> subscribeWallet(WalletItemBase walletItem) {
     return _scriptSyncService.runQueued(walletItem.id, () => _subscribeWalletGuarded(walletItem));
+  }
+
+  /// dormant 주소들의 잔액을 재검증한다 (외부 진입점, 지갑별 큐를 거쳐서 실행한다)
+  Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) {
+    return _scriptSyncService.runQueued(walletItem.id, () async {
+      await _scriptSyncService.syncDormantAddresses(walletItem);
+      return Result.success(true);
+    });
+  }
+
+  /// 화면에서 실제로 보고 있는 주소들의 잔액을 온디맨드로 확인한다 (외부 진입점, 지갑별 큐를 거쳐서 실행한다)
+  Future<Result<bool>> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) {
+    return _scriptSyncService.runQueued(walletItem.id, () async {
+      await _scriptSyncService.syncViewedAddresses(walletItem, addresses);
+      return Result.success(true);
+    });
   }
 
   /// 지갑의 스크립트 구독 (중복 방지 가드 포함). 큐를 거치지 않으므로,
@@ -142,19 +161,80 @@ class SubscriptionService {
     return Result.success(true);
   }
 
+  /// 단일 주소의 스크립트 구독을 해제합니다.
+  /// 잔액이 소진되어 더 이상 감시할 필요가 없어진(dormant) 주소를 구독에서 제외할 때 사용
+  Future<void> unsubscribeAddress(WalletItemBase walletItem, String address) async {
+    final script = ElectrumUtil.getScriptForAddress(walletItem.walletBase.addressType, address);
+    if (!walletItem.subscribedScriptMap.containsKey(script)) {
+      return;
+    }
+
+    await _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
+    walletItem.subscribedScriptMap.remove(script);
+    Logger.log('UnsubscribeAddress: ${walletItem.name} - $address dormant, unsubscribed');
+  }
+
+  /// 단일 주소를 실시간 구독합니다. dormant였던 주소가 재검증으로 다시 활성화됐을 때 사용
+  Future<void> subscribeAddress(WalletItemBase walletItem, int index, String address, bool isChange) async {
+    await _subscribeAddress(walletItem, index, address, isChange, _scriptStatusController);
+  }
+
   /// 특정 유형(receive/change)의 주소에 대한 구독 처리
+  /// 이미 사용 이력이 알려진 지갑(lastUsedIndex >= 0)이면, DB에 남아있는 잔액/미확정 트랜잭션이 있는
+  /// 주소만 재구독하고, gap limit 트레일링 윈도우만 새로 스캔한다(0부터 재스캔하지 않음).
+  /// 사용 이력이 전혀 없는 지갑(최초 구독)은 0부터 전체를 스캔해서 사용 여부를 새로 발견해야 한다.
   Future<({List<ScriptStatus> scriptStatuses, int lastUsedIndex})> _subscribeWallet(
     WalletItemBase walletItem,
     bool isChange,
     StreamController<SubscribeScriptStreamDto> scriptStatusController,
   ) async {
-    int currentAddressIndex = 0;
-    int addressScanLimit = _gapLimit;
-    int lastUsedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
+    final lastUsedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
+
+    if (lastUsedIndex < 0) {
+      return _scanAndSubscribeRange(walletItem, isChange, 0, -1, scriptStatusController);
+    }
+
+    List<ScriptStatus> scriptStatuses = [];
+    final activeAddresses = _addressRepository.getActiveUsedAddresses(walletItem.id, isChange);
+    for (final activeAddress in activeAddresses) {
+      final result = await _subscribeAddress(
+        walletItem,
+        activeAddress.index,
+        activeAddress.address,
+        isChange,
+        scriptStatusController,
+      );
+      if (!result.isSubscribed) {
+        scriptStatuses.add(result.scriptStatus);
+      }
+    }
+
+    final scanResult = await _scanAndSubscribeRange(
+      walletItem,
+      isChange,
+      lastUsedIndex + 1,
+      lastUsedIndex,
+      scriptStatusController,
+    );
+    scriptStatuses.addAll(scanResult.scriptStatuses);
+
+    return (scriptStatuses: scriptStatuses, lastUsedIndex: scanResult.lastUsedIndex);
+  }
+
+  /// [startIndex]부터 시작해서, 사용된 주소가 발견될 때마다 gap limit만큼 범위를 확장하며 구독한다.
+  Future<({List<ScriptStatus> scriptStatuses, int lastUsedIndex})> _scanAndSubscribeRange(
+    WalletItemBase walletItem,
+    bool isChange,
+    int startIndex,
+    int knownLastUsedIndex,
+    StreamController<SubscribeScriptStreamDto> scriptStatusController,
+  ) async {
+    int currentAddressIndex = startIndex;
+    int lastUsedIndex = knownLastUsedIndex;
+    int addressScanLimit = lastUsedIndex + kSubscriptionGapLimit + 1;
     List<ScriptStatus> scriptStatuses = [];
 
     while (currentAddressIndex < addressScanLimit) {
-      // 주소 범위에 대한 구독 처리
       final result = await _subscribeAddressRange(
         walletItem,
         currentAddressIndex,
@@ -163,10 +243,8 @@ class SubscriptionService {
         scriptStatusController,
       );
 
-      // 새로 구독된 스크립트 상태 추가
       scriptStatuses.addAll(result.newScriptStatuses);
 
-      // 마지막 사용된 인덱스 업데이트
       if (result.maxUsedIndex > lastUsedIndex) {
         lastUsedIndex = result.maxUsedIndex;
 
@@ -175,13 +253,10 @@ class SubscriptionService {
         } else {
           walletItem.receiveUsedIndex = lastUsedIndex;
         }
-
-        // Logger.log('Updated ${isChange ? "change" : "receive"} lastUsedIndex to $lastUsedIndex');
       }
 
-      // 사용된 주소가 발견된 경우 스캔 범위 확장
       if (lastUsedIndex >= currentAddressIndex) {
-        addressScanLimit = lastUsedIndex + _gapLimit + 1;
+        addressScanLimit = lastUsedIndex + kSubscriptionGapLimit + 1;
       }
 
       currentAddressIndex = result.nextIndex;
@@ -365,7 +440,7 @@ class SubscriptionService {
   ) async {
     final usedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
     final startIndex = usedIndex + 1;
-    final endIndex = usedIndex + _gapLimit + 1;
+    final endIndex = usedIndex + kSubscriptionGapLimit + 1;
 
     Logger.log(
       'Extending subscription: isChange=$isChange, startIndex=$startIndex, endIndex=$endIndex, usedIndex=$usedIndex',
@@ -382,14 +457,23 @@ class SubscriptionService {
   }
 
   /// 특정 유형(receive/change)의 스크립트 구독 해제
+  /// 실제로 구독 중일 수 있는 범위(활성 사용 주소 + gap limit 트레일링 윈도우)만 대상으로 한다.
   Future<void> _unsubscribeScript(WalletItemBase walletItem, bool isChange) async {
-    final addressScanLimit =
-        isChange ? walletItem.changeUsedIndex + _gapLimit + 1 : walletItem.receiveUsedIndex + _gapLimit + 1;
+    final lastUsedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
 
-    Map<int, String> addresses = ElectrumUtil.prepareAddressesMap(walletItem.walletBase, 0, addressScanLimit, isChange);
+    final activeAddresses = _addressRepository.getActiveUsedAddresses(walletItem.id, isChange);
+    final gapWindowAddresses =
+        ElectrumUtil.prepareAddressesMap(
+          walletItem.walletBase,
+          lastUsedIndex + 1,
+          lastUsedIndex + kSubscriptionGapLimit + 1,
+          isChange,
+        ).values;
+
+    final addressesToUnsubscribe = [...activeAddresses.map((a) => a.address), ...gapWindowAddresses];
 
     await Future.wait(
-      addresses.values.map((address) {
+      addressesToUnsubscribe.map((address) {
         return _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
       }),
     );

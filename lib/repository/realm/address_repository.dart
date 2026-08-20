@@ -571,6 +571,46 @@ class AddressRepository extends BaseRepository {
     return (index: existingAddress.index, isChange: existingAddress.isChange);
   }
 
+  /// 주소에 잔액이나 미확정 트랜잭션이 있는지 확인합니다(사용 여부 플래그와 무관).
+  bool isAddressActive(int walletId, String address) {
+    final existingAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).firstOrNull;
+
+    if (existingAddress == null) {
+      return false;
+    }
+    return existingAddress.total != 0 || existingAddress.unconfirmed != 0;
+  }
+
+  /// 주소가 사용된 적 있지만 지금은 잔액도 미확정 트랜잭션도 없는지 확인합니다.
+  bool isAddressDormant(int walletId, String address) {
+    final existingAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).firstOrNull;
+
+    if (existingAddress == null) {
+      return false;
+    }
+    return existingAddress.isUsed && existingAddress.total == 0 && existingAddress.unconfirmed == 0;
+  }
+
+  /// 과거에 사용됐지만 지금은 잔액도 미확정 트랜잭션도 없는 주소 목록을 조회합니다.
+  List<WalletAddress> getDormantUsedAddresses(int walletId) {
+    final realmWalletAddresses = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isUsed == true AND total == 0 AND unconfirmed == 0 SORT(index ASC)',
+      [walletId],
+    );
+    return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
+  }
+
+  /// 사용된 주소 중 잔액이나 미확정 트랜잭션이 남아있는(=여전히 감시가 필요한) 주소 목록을 조회합니다.
+  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) {
+    final realmWalletAddresses = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isChange == $1 AND isUsed == true AND (total != 0 OR unconfirmed != 0) SORT(index ASC)',
+      [walletId, isChange],
+    );
+    return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
+  }
+
   Future<void> syncWalletWithSubscriptionData(
     WalletItemBase walletItem,
     List<ScriptStatus> scriptStatuses,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
@@ -23,9 +24,15 @@ class ScriptSyncService {
   final AddressRepository _addressRepository;
   final ScriptCallbackService _scriptCallbackService;
   late Future<Result<bool>> Function(WalletItemBase walletItem) _subscribeWallet;
+  late Future<void> Function(WalletItemBase walletItem, String address) _unsubscribeAddress;
+  late Future<void> Function(WalletItemBase walletItem, int index, String address, bool isChange) _subscribeAddress;
   final Map<int, Future<void>> _walletSyncQueues = {};
+  final Map<int, DateTime> _lastDormantSyncAt = {};
+  final Map<String, DateTime> _lastAddressCheckAt = {};
 
   static const Duration _electrumIndexingDelay = Duration(seconds: 1);
+  static const Duration _dormantSyncThrottle = Duration(seconds: 30);
+  static const Duration _addressCheckThrottle = Duration(minutes: 1);
 
   ScriptSyncService(
     this._stateManager,
@@ -38,6 +45,112 @@ class ScriptSyncService {
 
   set subscribeWallet(Future<Result<bool>> Function(WalletItemBase walletItem) subscribeWallet) {
     _subscribeWallet = subscribeWallet;
+  }
+
+  set unsubscribeAddress(Future<void> Function(WalletItemBase walletItem, String address) unsubscribeAddress) {
+    _unsubscribeAddress = unsubscribeAddress;
+  }
+
+  set subscribeAddress(
+    Future<void> Function(WalletItemBase walletItem, int index, String address, bool isChange) subscribeAddress,
+  ) {
+    _subscribeAddress = subscribeAddress;
+  }
+
+  /// 주소가 dormant(사용됐지만 잔액/미확정 트랜잭션 없음) 상태가 됐으면 실시간 구독에서 제외한다.
+  Future<void> _unsubscribeIfDormant(WalletItemBase walletItem, String address) async {
+    if (!_addressRepository.isAddressDormant(walletItem.id, address)) {
+      return;
+    }
+    await _unsubscribeAddress(walletItem, address);
+  }
+
+  /// dormant 주소(실시간 구독에서 제외된, 과거 사용됐지만 잔액이 없던 주소)들의 잔액을 배치로
+  /// 다시 확인한다. 재사용이나 리오그로 잔액이 다시 생긴 주소가 있으면 재구독한다.
+  /// 짧은 시간 안에 여러 화면에서 중복 호출되는 것을 막기 위해 지갑별로 스로틀한다.
+  Future<void> syncDormantAddresses(WalletItemBase walletItem) async {
+    final lastSyncAt = _lastDormantSyncAt[walletItem.id];
+    if (lastSyncAt != null && DateTime.now().difference(lastSyncAt) < _dormantSyncThrottle) {
+      return;
+    }
+    _lastDormantSyncAt[walletItem.id] = DateTime.now();
+
+    final dormantAddresses = _addressRepository.getDormantUsedAddresses(walletItem.id);
+    if (dormantAddresses.isEmpty) {
+      return;
+    }
+
+    final dormantScriptStatuses =
+        dormantAddresses
+            .map(
+              (addr) => ScriptStatus(
+                derivationPath: addr.derivationPath,
+                address: addr.address,
+                index: addr.index,
+                isChange: addr.isChange,
+                scriptPubKey: '',
+                status: null,
+                timestamp: DateTime.now(),
+              ),
+            )
+            .toList();
+
+    await _balanceSyncService.fetchScriptBalanceBatch(walletItem, dormantScriptStatuses);
+
+    for (final addr in dormantAddresses) {
+      if (!_addressRepository.isAddressDormant(walletItem.id, addr.address)) {
+        await _subscribeAddress(walletItem, addr.index, addr.address, addr.isChange);
+      }
+    }
+  }
+
+  /// 사용자가 화면에서 실제로 보고 있는(스크롤로 로드된) 주소들의 잔액을 온디맨드로 확인한다.
+  /// 최근에 이미 확인한 주소는 세션 내 짧은 시간 동안 다시 확인하지 않는다.
+  /// gap 윈도우 밖이라 아직 미사용으로 표시된 주소에서 잔액이 발견되면, usedIndex(모니터링 윈도우)는
+  /// 그대로 두고 그 주소만 개별적으로 사용됨으로 표시 + 구독 대상에 추가한다.
+  Future<void> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) async {
+    final now = DateTime.now();
+    final addressesToCheck =
+        addresses.where((addr) {
+          final lastCheckedAt = _lastAddressCheckAt[addr.address];
+          return lastCheckedAt == null || now.difference(lastCheckedAt) >= _addressCheckThrottle;
+        }).toList();
+
+    if (addressesToCheck.isEmpty) {
+      return;
+    }
+
+    for (final addr in addressesToCheck) {
+      _lastAddressCheckAt[addr.address] = now;
+    }
+
+    final scriptStatuses =
+        addressesToCheck
+            .map(
+              (addr) => ScriptStatus(
+                derivationPath: addr.derivationPath,
+                address: addr.address,
+                index: addr.index,
+                isChange: addr.isChange,
+                scriptPubKey: '',
+                status: null,
+                timestamp: now,
+              ),
+            )
+            .toList();
+
+    await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses);
+
+    for (final addr in addressesToCheck) {
+      if (addr.isUsed) {
+        continue;
+      }
+      if (!_addressRepository.isAddressActive(walletItem.id, addr.address)) {
+        continue;
+      }
+      await _addressRepository.setWalletAddressUsed(walletItem, addr.index, addr.isChange);
+      await _subscribeAddress(walletItem, addr.index, addr.address, addr.isChange);
+    }
   }
 
   /// 지갑 ID별로 작업을 도착 순서대로 직렬 처리합니다.
@@ -116,6 +229,7 @@ class ScriptSyncService {
 
       // Balance 동기화
       await _balanceSyncService.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
+      await _unsubscribeIfDormant(dto.walletItem, dto.scriptStatus.address);
 
       // Transaction 동기화
       final fetchResult = await _transactionSyncService.fetchScriptTransaction(
@@ -179,6 +293,7 @@ class ScriptSyncService {
           index: addressInfo.index,
           isChange: addressInfo.isChange,
         );
+        await _unsubscribeIfDormant(walletItem, address);
       } catch (e, stackTrace) {
         Logger.error('Failed to sync balance for co-spent address $address: $e');
         Logger.error('Stack trace: $stackTrace');
@@ -198,6 +313,7 @@ class ScriptSyncService {
       // Balance 병렬 처리
       final balanceStartTime = DateTime.now();
       await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses);
+      await Future.wait(scriptStatuses.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
       final balanceEndTime = DateTime.now();
       final balanceDuration = balanceEndTime.difference(balanceStartTime);
       Logger.performance('Balance sync completed in ${balanceDuration.inMilliseconds}ms for ${walletItem.name}');

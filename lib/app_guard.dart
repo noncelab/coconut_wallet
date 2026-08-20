@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/icon/splash_logo_icon.dart';
@@ -44,6 +45,7 @@ class _AppGuardState extends State<AppGuard> {
   late PriceProvider _priceProvider;
   late AuthProvider _authProvider;
   late NodeProvider _nodeProvider;
+  late WalletProvider _walletProvider;
   late ConnectivityProvider _connectivityProvider;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   bool _isPaused = false;
@@ -58,6 +60,7 @@ class _AppGuardState extends State<AppGuard> {
 
     _priceProvider = Provider.of<PriceProvider>(context, listen: false);
     _nodeProvider = Provider.of<NodeProvider>(context, listen: false);
+    _walletProvider = Provider.of<WalletProvider>(context, listen: false);
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
 
@@ -97,6 +100,9 @@ class _AppGuardState extends State<AppGuard> {
           _priceProvider.initWebSocketService();
         }
         _handleNodeProviderReconnect();
+        for (final wallet in _walletProvider.walletItemList) {
+          unawaited(_nodeProvider.syncDormantAddresses(wallet));
+        }
         break;
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:

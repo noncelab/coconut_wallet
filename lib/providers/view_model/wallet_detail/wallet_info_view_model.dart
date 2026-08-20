@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/core/bip/129/signer_bsms.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -112,6 +113,10 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   int get transactionCount => _walletProvider.getTransactionRecordList(_walletId).length;
   int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
+  int get watchedAddressCount =>
+      2 * kSubscriptionGapLimit +
+      _walletProvider.getActiveUsedAddresses(_walletId, false).length +
+      _walletProvider.getActiveUsedAddresses(_walletId, true).length;
   Balance get walletBalance => _walletProvider.getWalletBalance(_walletId);
 
   bool get hasTaprootKeyPath =>

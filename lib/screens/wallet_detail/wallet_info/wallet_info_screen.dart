@@ -148,6 +148,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           walletId: widget.id,
                           transactionCount: viewModel.transactionCount,
                           utxoCount: viewModel.utxoCount,
+                          watchedAddressCount: viewModel.watchedAddressCount,
                           balanceSats: viewModel.walletBalance.total,
                           currentUnit: context.read<PreferenceProvider>().currentUnit,
                           targetSats: viewModel.targetSats,
@@ -556,6 +557,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
   final int walletId;
   final int transactionCount;
   final int utxoCount;
+  final int watchedAddressCount;
   final int balanceSats;
   final BitcoinUnit currentUnit;
   final int? targetSats;
@@ -565,6 +567,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
     required this.walletId,
     required this.transactionCount,
     required this.utxoCount,
+    required this.watchedAddressCount,
     required this.balanceSats,
     required this.currentUnit,
     this.targetSats,
@@ -597,6 +600,24 @@ class _WalletInfoStatsSection extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          ShrinkAnimationButton(
+            defaultColor: colors.surfaceCard,
+            pressedColor: colors.surfacePressed,
+            borderRadius: 24,
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                '/address-list',
+                arguments: {'id': walletId, 'initialShowOnlyWatchedAddresses': true},
+              );
+            },
+            child: _StatCard(
+              label: t.wallet_info_screen.watched_addresses,
+              value: '$watchedAddressCount',
+              transparentBackground: true,
+            ),
           ),
           const SizedBox(height: 12),
           ShrinkAnimationButton(

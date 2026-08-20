@@ -508,6 +508,10 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.searchWalletAddressList(wallet, keyword);
   }
 
+  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) {
+    return _addressRepository.getActiveUsedAddresses(walletId, isChange);
+  }
+
   (int, int) getGeneratedIndexes(WalletItemBase wallet) {
     return _addressRepository.getGeneratedAddressIndexes(wallet);
   }

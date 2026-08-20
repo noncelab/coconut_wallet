@@ -13,6 +13,7 @@ import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
@@ -408,6 +409,14 @@ class NodeProvider extends ChangeNotifier {
 
   Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
     return _isolateManager.unsubscribeWallet(walletItem);
+  }
+
+  Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) async {
+    return _isolateManager.syncDormantAddresses(walletItem);
+  }
+
+  Future<Result<bool>> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) async {
+    return _isolateManager.syncViewedAddresses(walletItem, addresses);
   }
 
   Future<Result<String>> broadcast(Transaction signedTx) async {

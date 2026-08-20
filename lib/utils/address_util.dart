@@ -1,7 +1,19 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+
+/// 이 주소가 실시간 구독(watch) 대상인지 판별한다. 미사용 주소는 gap limit 트레일링
+/// 윈도우 이내일 때, 사용된 주소는 잔액/미확정 트랜잭션이 남아있을 때(=dormant가 아닐 때)만
+/// watch 대상으로 본다. 실제 구독 로직(SubscriptionService)이 정확히 이 기준으로
+/// 구독/해제를 하므로, 이 값은 실제 구독 상태와 사실상 일치한다.
+bool isAddressWatched(WalletAddress address, int usedIndex) {
+  if (!address.isUsed) {
+    return address.index > usedIndex && address.index <= usedIndex + kSubscriptionGapLimit;
+  }
+  return address.total != 0 || address.unconfirmed != 0;
+}
 
 String shortenAddress(String address, {int head = 8, int tail = 8}) {
   if (address.length <= head + tail) return address;

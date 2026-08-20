@@ -33,6 +33,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectProvider;
   final PriceProvider _priceProvider;
   final PreferenceProvider _preferenceProvider;
+  final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   late final Stream<WalletUpdateInfo> _syncWalletStateStream;
   late final Stream<NodeSyncState> _nodeSyncStateStream;
@@ -96,9 +97,9 @@ class WalletDetailViewModel extends ChangeNotifier {
     this._connectProvider,
     this._priceProvider,
     this._preferenceProvider,
-    NodeProvider nodeProvider,
-  ) : _syncWalletStateStream = nodeProvider.getWalletStateStream(_walletId),
-      _nodeSyncStateStream = nodeProvider.syncStateStream {
+    this._nodeProvider,
+  ) : _syncWalletStateStream = _nodeProvider.getWalletStateStream(_walletId),
+      _nodeSyncStateStream = _nodeProvider.syncStateStream {
     // 지갑 상세 초기화
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
@@ -180,6 +181,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     _balance = _getBalance();
     _setReceiveAddress();
     _txProvider.initTxList(_walletId);
+    unawaited(_nodeProvider.syncDormantAddresses(_walletListBaseItem));
     notifyListeners();
   }
 

@@ -6,6 +6,7 @@ import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_initializer.dart';
@@ -321,6 +322,8 @@ class IsolateManager {
       case IsolateControllerCommand.subscribeWallet:
       case IsolateControllerCommand.unsubscribeWallet:
       case IsolateControllerCommand.getTransactionRecord:
+      case IsolateControllerCommand.syncDormantAddresses:
+      case IsolateControllerCommand.syncViewedAddresses:
         return kIsolateResponseTimeout;
 
       // 간단한 작업: .onion인 경우 kIsolateSimpleResponseTimeoutForOnion, 그 외 kIsolateSimpleResponseTimeout
@@ -504,6 +507,14 @@ class IsolateManager {
 
   Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
     return _send(IsolateControllerCommand.unsubscribeWallet, [walletItem]);
+  }
+
+  Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) async {
+    return _send(IsolateControllerCommand.syncDormantAddresses, [walletItem]);
+  }
+
+  Future<Result<bool>> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) async {
+    return _send(IsolateControllerCommand.syncViewedAddresses, [walletItem, addresses]);
   }
 
   Future<Result<String>> broadcast(Transaction signedTx) async {

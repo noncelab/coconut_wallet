@@ -35,6 +35,7 @@ void main() {
 
       final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
       scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;
+      scriptSyncService.unsubscribeAddress = ScriptSyncServiceMock.unsubscribeAddress;
 
       // 초기 상태 검증
       _ScriptSyncTestVerifier.verifyInitialState(testData.walletA, _TestConstants.walletId);
@@ -54,6 +55,7 @@ void main() {
 
       final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
       scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;
+      scriptSyncService.unsubscribeAddress = ScriptSyncServiceMock.unsubscribeAddress;
 
       // 초기 상태 검증
       _ScriptSyncTestVerifier.verifyInitialState(testData.walletA, _TestConstants.walletId);
@@ -82,6 +84,7 @@ void main() {
 
         final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
         scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;
+        scriptSyncService.unsubscribeAddress = ScriptSyncServiceMock.unsubscribeAddress;
 
         // Given - 1단계: 초기 상태 설정
         await _ScriptSyncTestSetup.setupRbfCpfpInitialEnvironment(testData);

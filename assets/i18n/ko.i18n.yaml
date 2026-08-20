@@ -502,6 +502,7 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
+  watched_addresses: "모니터링 중 $count개"
   primary_wallet: "대표 지갑"
   exclude_from_total_amount: "홈 화면 총액에서 제외"
   home_balance: "홈 화면 총액"
@@ -848,6 +849,8 @@ address_list_screen:
   receiving: "입금"
   change: "잔돈"
   show_only_unused_address: "사용 전 주소만 보기"
+  show_only_watched_address: "모니터링 중인 주소만 보기"
+  show_only_watched_address_count: "모니터링 중인 주소만 보기 ($count개)"
   set_amount: "금액 입력하기"
   share: "공유하기"
   enter_receive_amount: "받을 금액을 입력해 주세요"
@@ -923,6 +926,7 @@ wallet_info_screen:
   title: "$name 정보"
   transaction: "트랜잭션"
   utxo: "UTXO"
+  watched_addresses: "모니터링 중인 주소"
   target_quantity: "목표 수량"
   target_progress: "$percent% / $target"
   target_not_set_secondary: "목표 수량을 설정하면 달성률을 보여드려요"

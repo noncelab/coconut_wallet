@@ -11,6 +11,7 @@ class AddressItemCard extends StatelessWidget {
   final String address;
   final String derivationPath;
   final bool isUsed;
+  final bool isWatched;
   final int? balanceInSats;
   final BitcoinUnit currentUnit;
   const AddressItemCard({
@@ -19,6 +20,7 @@ class AddressItemCard extends StatelessWidget {
     required this.address,
     required this.derivationPath,
     required this.isUsed,
+    required this.isWatched,
     required this.currentUnit,
     this.balanceInSats,
   });
@@ -46,7 +48,25 @@ class AddressItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 color: context.coconutColors.surfaceDeep,
               ),
-              child: Text(index, style: Styles.caption.setColor(context.coconutColors.secondaryText)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isWatched) ...[
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(color: context.coconutColors.success, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(
+                    index,
+                    style: CoconutTypography.caption_10
+                        .setColor(context.coconutColors.secondaryText)
+                        .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                  ),
+                ],
+              ),
             ),
             Expanded(
               child: FittedBox(
@@ -57,36 +77,39 @@ class AddressItemCard extends StatelessWidget {
                   children: [
                     Text(
                       '${address.substring(0, 10)}...${address.substring(address.length - 10, address.length)}',
-                      style: Styles.body1Number.setColor(context.coconutColors.primaryText),
+                      style: CoconutTypography.body1_16_Number.setColor(
+                        isUsed ? context.coconutColors.primaryText : context.coconutColors.mutedText,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       currentUnit.displayBitcoinAmount(balanceInSats, withUnit: true),
-                      style: Styles.label.merge(
-                        TextStyle(
-                          fontFamily: CustomFonts.number.getFontFamily,
-                          fontWeight: FontWeight.normal,
-                          color: context.coconutColors.mutedText,
-                        ),
-                      ),
+                      style: CoconutTypography.body2_14_Number
+                          .setColor(
+                            balanceInSats == 0 ? context.coconutColors.mutedText : context.coconutColors.primaryText,
+                          )
+                          .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                     ),
                   ],
                 ),
               ),
             ),
             CoconutLayout.spacing_200w,
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: context.coconutColors.infoChipBackground,
-              ),
-              child: Text(
-                isUsed ? t.status_used : t.status_unused,
-                style: TextStyle(
-                  color: isUsed ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
-                  fontSize: 10,
-                  fontFamily: CustomFonts.text.getFontFamily,
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: context.coconutColors.background, // TODO: dark theme에서 infoChipBackgound가 보이지 않는 문제 있음
+                ),
+                child: Text(
+                  isUsed ? t.status_used : t.status_unused,
+                  style: TextStyle(
+                    color: isUsed ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
+                    fontSize: 10,
+                    fontFamily: CustomFonts.text.getFontFamily,
+                  ),
                 ),
               ),
             ),

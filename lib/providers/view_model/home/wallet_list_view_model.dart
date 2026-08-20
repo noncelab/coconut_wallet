@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -103,6 +104,11 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
+
+  int watchedAddressCount(int walletId) =>
+      2 * kSubscriptionGapLimit +
+      _walletProvider.getActiveUsedAddresses(walletId, false).length +
+      _walletProvider.getActiveUsedAddresses(walletId, true).length;
   List<WalletItemBase> get walletItemList {
     final walletList = _walletProvider.walletItemListNotifier.value;
     final order = _preferenceProvider.walletOrder;
@@ -186,6 +192,11 @@ class WalletListViewModel extends ChangeNotifier {
   Future<void> updateWalletBalances() async {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
+
+    for (final wallet in walletItemList) {
+      unawaited(_nodeProvider.syncDormantAddresses(wallet));
+    }
+
     notifyListeners();
   }
 

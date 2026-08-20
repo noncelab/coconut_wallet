@@ -3,6 +3,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/address_util.dart' as address_util;
 import 'package:flutter/material.dart';
 
 class AddressSearchViewModel extends ChangeNotifier {
@@ -37,6 +38,15 @@ class AddressSearchViewModel extends ChangeNotifier {
   WalletProvider get walletProvider => _walletProvider;
   int get generatedReceiveIndex => _generatedReceiveIndex;
   int get generatedChangeIndex => _generatedChangeIndex;
+
+  bool isAddressWatched(WalletAddress address) {
+    final walletBaseItem = _walletBaseItem;
+    if (walletBaseItem == null) {
+      return false;
+    }
+    final usedIndex = address.isChange ? walletBaseItem.changeUsedIndex : walletBaseItem.receiveUsedIndex;
+    return address_util.isAddressWatched(address, usedIndex);
+  }
 
   void _initialize(int id) {
     _walletBaseItem = _walletProvider.getWalletById(id);

@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
@@ -27,6 +28,7 @@ class UtxoListViewModel extends ChangeNotifier {
   late final ConnectivityProvider _connectProvider;
   late final PriceProvider _priceProvider;
   late final PreferenceProvider _preferenceProvider;
+  late final NodeProvider _nodeProvider;
   late final WalletItemBase _walletListBaseItem;
 
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
@@ -96,6 +98,7 @@ class UtxoListViewModel extends ChangeNotifier {
     this._connectProvider,
     this._priceProvider,
     this._preferenceProvider,
+    this._nodeProvider,
     this._syncWalletStateStream,
   ) {
     _initializeProperties();
@@ -236,6 +239,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void refetchFromDB() {
     _getUtxoAndTagList();
+    unawaited(_nodeProvider.syncDormantAddresses(_walletListBaseItem));
     notifyListeners();
   }
 

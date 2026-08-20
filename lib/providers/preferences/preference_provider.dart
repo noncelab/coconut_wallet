@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -57,14 +56,6 @@ class PreferenceProvider extends ChangeNotifier {
   /// 전체 주소 보기 화면 '사용 전 주소만 보기' 여부
   late bool _showOnlyUnusedAddresses;
   bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
-
-  /// 전체 주소 보기 화면 [입금] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
-  late bool _isReceivingTooltipDisabled;
-  bool get isReceivingTooltipDisabled => language == AppLanguage.ko.code ? _isReceivingTooltipDisabled : true;
-
-  /// 전체 주소 보기 화면 [잔돈] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
-  late bool _isChangeTooltipDisabled;
-  bool get isChangeTooltipDisabled => language == AppLanguage.ko.code ? _isChangeTooltipDisabled : true;
 
   /// 보내기 화면 [수신자 추가하기 카드] 확인 여부
   late bool _hasSeenAddRecipientCard;
@@ -152,8 +143,6 @@ class PreferenceProvider extends ChangeNotifier {
     // FeatureSettingsProvider가 없으면 내부에서 생성 (하위 호환성)
     // 주입된 경우에는 이미 초기화되어 있음
     _featureSettingsProvider ??= FeatureSettingsProvider();
-    _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
-    _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
     _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
     _utxoSortOrder =
         _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
@@ -293,18 +282,25 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 주소 리스트 화면 '입금' 툴팁 다시 보지 않기 설정
-  Future<void> setReceivingTooltipDisabledPermanently() async {
-    _isReceivingTooltipDisabled = true;
-    await _sharedPrefs.setBool(SharedPrefKeys.kIsReceivingTooltipDisabled, true);
-    notifyListeners();
+  /// 주소 리스트 화면 '입금'/'잔돈' 세그먼트 툴팁을 오늘(자정 기준) 이미 봤는지 여부
+  bool hasSeenReceivingTooltipToday() => _hasSeenTooltipToday(SharedPrefKeys.kReceivingTooltipLastShownDate);
+  bool hasSeenChangeTooltipToday() => _hasSeenTooltipToday(SharedPrefKeys.kChangeTooltipLastShownDate);
+
+  Future<void> markReceivingTooltipShownToday() =>
+      _markTooltipShownToday(SharedPrefKeys.kReceivingTooltipLastShownDate);
+  Future<void> markChangeTooltipShownToday() => _markTooltipShownToday(SharedPrefKeys.kChangeTooltipLastShownDate);
+
+  bool _hasSeenTooltipToday(String key) {
+    final lastShownDateString = _sharedPrefs.getString(key);
+    if (lastShownDateString.isEmpty) return false;
+
+    final lastShownDate = DateTime.parse(lastShownDateString);
+    final now = DateTime.now();
+    return lastShownDate.year == now.year && lastShownDate.month == now.month && lastShownDate.day == now.day;
   }
 
-  /// 주소 리스트 화면 '잔돈' 툴팁 다시 보지 않기 설정
-  Future<void> setChangeTooltipDisabledPermanently() async {
-    _isChangeTooltipDisabled = true;
-    await _sharedPrefs.setBool(SharedPrefKeys.kIsChangeTooltipDisabled, true);
-    notifyListeners();
+  Future<void> _markTooltipShownToday(String key) {
+    return _sharedPrefs.setString(key, DateTime.now().toIso8601String());
   }
 
   /// 언어 변경

@@ -17,8 +17,8 @@ class SharedPrefKeys {
   static const String kIsBtcUnit = "IS_BTC_UNIT"; // deprecated: 마이그레이션 전용
   static const String kBitcoinUnit = "BITCOIN_UNIT";
   static const String kShowOnlyUnusedAddresses = "SHOW_ONLY_UNUSED_ADDRESSES";
-  static const String kIsReceivingTooltipDisabled = "IS_RECEIVING_TOOLTIP_DISABLED";
-  static const String kIsChangeTooltipDisabled = "IS_CHANGE_TOOLTIP_DISABLED";
+  static const String kReceivingTooltipLastShownDate = "RECEIVING_TOOLTIP_LAST_SHOWN_DATE";
+  static const String kChangeTooltipLastShownDate = "CHANGE_TOOLTIP_LAST_SHOWN_DATE";
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
   static const String kIsFiatBalanceHidden = "IS_FIAT_BALANCE_HIDDEN";
   // deprecated

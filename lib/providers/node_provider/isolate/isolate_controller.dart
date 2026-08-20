@@ -58,6 +58,12 @@ class IsolateController {
         case IsolateControllerCommand.unsubscribeWallet:
           isolateToMainSendPort.send(await _subscriptionService.unsubscribeWallet(params[0]));
           break;
+        case IsolateControllerCommand.syncDormantAddresses:
+          isolateToMainSendPort.send(await _subscriptionService.syncDormantAddresses(params[0]));
+          break;
+        case IsolateControllerCommand.syncViewedAddresses:
+          isolateToMainSendPort.send(await _subscriptionService.syncViewedAddresses(params[0], params[1]));
+          break;
         case IsolateControllerCommand.broadcast:
           isolateToMainSendPort.send(await _networkManager.broadcast(params[0]));
           break;
