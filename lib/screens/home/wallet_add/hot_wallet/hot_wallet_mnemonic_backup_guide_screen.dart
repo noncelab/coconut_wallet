@@ -172,9 +172,13 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
+                      Container(
                         width: 72,
                         height: 72,
+                        decoration: BoxDecoration(
+                          color: context.coconutColors.iconBackgroundSubtle,
+                          shape: BoxShape.circle,
+                        ),
                         child: Lottie.asset(
                           StateLottiePath.checkComplete,
                           controller: _lottieController,
