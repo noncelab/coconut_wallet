@@ -6,7 +6,6 @@ import 'dart:ui' as ui;
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/svg.dart';
@@ -70,6 +69,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
   Rect? _menuRect;
   int? _hoveredMenuIndex;
   bool _isMenuPointerActive = false;
+  double _menuItemHeight = 44;
   late AnimationController _menuAnimationController;
   late AnimationController _shakeController;
   late AnimationController _closeButtonController;
@@ -286,8 +286,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                     // 메뉴의 예상 크기를 계산 (실제 RenderBox에 의존하지 않음)
                     const double minMenuWidth = 180;
                     const double maxMenuWidth = 220;
-                    const double itemHeight = 44;
-
+                    double maxTitleHeight = 0;
                     final maxTitleWidth = widget.menuItems.fold<double>(0, (maxWidth, item) {
                       final textPainter = TextPainter(
                         text: TextSpan(text: item.title, style: CoconutTypography.body2_14),
@@ -295,8 +294,11 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                         textScaler: MediaQuery.textScalerOf(context),
                         maxLines: 1,
                       )..layout();
+                      maxTitleHeight = math.max(maxTitleHeight, textPainter.height);
                       return math.max(maxWidth, textPainter.width);
                     });
+                    final itemHeight = math.max(16.0, maxTitleHeight) + 24;
+                    _menuItemHeight = itemHeight;
                     // 바깥 패딩 8 + 아이템 패딩 32 + 아이콘 16 + 아이콘/텍스트 간격 8
                     final double menuWidth = (maxTitleWidth + 64).clamp(minMenuWidth, maxMenuWidth).toDouble();
                     final double menuHeight = widget.menuItems.length * itemHeight + 16;
@@ -307,7 +309,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                     double top = childGlobalPosition.dy - menuSize.height - widget.spacing;
                     double left =
                         widget.alignMenuToChildRight
-                            ? screenSize.width - 15 - menuSize.width
+                            ? childGlobalPosition.dx + childSize.width - menuSize.width
                             : childGlobalPosition.dx + childSize.width / 2 - menuSize.width / 2;
 
                     // 세로 방향: 기본은 "위"로 띄우고, 위에 공간이 부족하면 "아래"로 표시
@@ -483,7 +485,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     if (menuRect.contains(globalPosition)) {
       final localY = globalPosition.dy - menuRect.top - 8;
       if (localY >= 0) {
-        final index = (localY / 44).floor();
+        final index = (localY / _menuItemHeight).floor();
         if (index >= 0 && index < widget.menuItems.length) nextIndex = index;
       }
     }

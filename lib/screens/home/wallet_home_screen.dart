@@ -1298,7 +1298,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       _scaledTextLineHeight(CoconutTypography.body2_14_Bold),
       _scaledTextLineHeight(CoconutTypography.body2_14_NumberBold),
     );
-    return math.max(64.0, 24 + balanceLineHeight + _scaledTextLineHeight(CoconutTypography.body3_12)).ceilToDouble();
+    const textLayoutSafetyPadding = 4.0;
+    return math
+        .max(64.0, 24 + balanceLineHeight + _scaledTextLineHeight(CoconutTypography.body3_12) + textLayoutSafetyPadding)
+        .ceilToDouble();
   }
 
   double _addWalletRowHeight() {
@@ -1547,9 +1550,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             !(walletItem.hotWalletMetadata?.backupVerified ?? false) &&
             animatedBalanceData.current > 0;
         return LongPressedMenuWidget(
-          useGlassOverlay: true,
           alignMenuToChildRight: true,
-          spacing: 16,
           menuItems: buildWalletMenuItems(walletItem),
           child: WalletItemCard(
             key: key,
@@ -1750,6 +1751,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       selector: (_, viewModel) => viewModel.isEditWidgetMode,
       builder: (context, isEditMode, child) {
         return LongPressedMenuWidget(
+          alignMenuToChildRight: true,
           onMenuOpen: () {
             _setDropdownMenuVisiblility(false);
           },
@@ -2096,6 +2098,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       selector: (_, viewModel) => viewModel.isEditWidgetMode,
       builder: (context, isEditMode, child) {
         return LongPressedMenuWidget(
+          alignMenuToChildRight: true,
           isEditMode: isEditMode,
           onRemove: () {
             _hideHomeFeature(HomeFeatureType.analysis, keepEditMode: true);
