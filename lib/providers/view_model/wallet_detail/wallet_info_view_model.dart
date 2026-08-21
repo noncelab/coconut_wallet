@@ -14,7 +14,9 @@ import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/view_model/settings/label_export_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
@@ -22,6 +24,7 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/widgets/card/taproot_participant_card.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:share_plus/share_plus.dart';
 
 class WalletInfoViewModel extends ChangeNotifier {
   final int _walletId;
@@ -30,6 +33,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
+  late final LabelExportViewModel _labelExportViewModel = LabelExportViewModel(walletProvider: _walletProvider);
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
 
   late String _walletName;
@@ -92,6 +96,8 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   bool get isSetPin => _authProvider.isSetPin;
+
+  int get walletId => _walletId;
 
   String get walletName => _walletName;
   WalletItemBase get walletItemBase => _walletItemBase;
@@ -288,5 +294,17 @@ class WalletInfoViewModel extends ChangeNotifier {
     _walletProvider.removeListener(_onWalletProviderChanged);
 
     super.dispose();
+  }
+
+  List<RealmTransactionMemo> getAllTransactionMemos() {
+    return _walletProvider.getAllTransactionMemos(_walletId);
+  }
+
+  Future<XFile?> createLabelsJsonLFile() async {
+    return _labelExportViewModel.exportLabelsForWallet(_walletId);
+  }
+
+  Future<void> shareLabelsFile(XFile file) async {
+    await _labelExportViewModel.shareFile(file);
   }
 }

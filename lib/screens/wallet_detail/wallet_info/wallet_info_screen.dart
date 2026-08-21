@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -11,9 +12,10 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/tools/label_management_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_signer_section.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_stats_section.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -24,14 +26,13 @@ import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lottie/lottie.dart';
 import 'package:loader_overlay/loader_overlay.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 const String kEntryPointWalletList = '/wallet-list';
@@ -144,7 +145,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               },
                             ),
                           ),
-                        _WalletInfoStatsSection(
+                        WalletInfoStatsSection(
                           walletId: widget.id,
                           transactionCount: viewModel.transactionCount,
                           utxoCount: viewModel.utxoCount,
@@ -153,131 +154,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           targetSats: viewModel.targetSats,
                           onEditTargetTap: () => _showTargetSettingBottomSheet(context, viewModel),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: ButtonGroup(
-                            buttons: [
-                              SingleButton(
-                                enableShrinkAnim: true,
-                                title: t.view_all_addresses,
-                                onPressed: () {
-                                  _removeTooltip();
-                                  Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
-                                },
-                              ),
-                              if (widget.walletType == WalletType.singleSignature) ...[
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.wallet_info_screen.view_xpub,
-                                  onPressed: () async {
-                                    _removeTooltip();
-                                    _handleAuthFlow(
-                                      onComplete: () {
-                                        _showExtendedBottomSheet(viewModel.extendedPublicKey);
-                                      },
-                                    );
-                                  },
-                                ),
-                              ],
-                              if (widget.walletType == WalletType.taproot) ...[
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.wallet_info_screen.view_wallet_backup_data,
-                                  onPressed: () {
-                                    _removeTooltip();
-
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/taproot-wallet-backup-data',
-                                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
-                                    );
-                                  },
-                                ),
-                              ],
-                              if (widget.walletType == WalletType.multiSignature) ...[
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.wallet_info_screen.view_wallet_backup_data,
-                                  onPressed: () {
-                                    _removeTooltip();
-
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/wallet-backup-data',
-                                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
-                                    );
-                                  },
-                                ),
-                              ],
-                              SingleButton(
-                                enableShrinkAnim: true,
-                                title: t.tag_manage_label,
-                                onPressed: () {
-                                  _removeTooltip();
-                                  Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        Center(
-                          child: Container(
-                            width: 65,
-                            height: 1,
-                            margin: const EdgeInsets.symmetric(vertical: 20),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(1),
-                              color: context.coconutColors.divider,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: SingleButton(
-                            enableShrinkAnim: true,
-                            title: t.delete_label,
-                            rightElement: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: context.coconutColors.primaryText.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: SvgPicture.asset(
-                                'assets/svg/trash.svg',
-                                width: 16,
-                                colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
-                              ),
-                            ),
-                            onPressed: () {
-                              _removeTooltip();
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return CoconutPopup(
-                                    languageCode: context.read<PreferenceProvider>().language,
-                                    title: t.alert.wallet_delete.confirm_delete,
-                                    description: t.alert.wallet_delete.confirm_delete_description,
-                                    onTapRight: () {
-                                      final dialogContext = context;
-                                      _handleAuthFlow(
-                                        onComplete: () async {
-                                          Navigator.of(dialogContext).pop();
-                                          await _deleteWalletAndGoToEntryPoint(viewModel);
-                                        },
-                                      );
-                                    },
-                                    onTapLeft: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    rightButtonText: t.delete,
-                                    rightButtonColor: context.coconutColors.danger,
-                                    leftButtonText: t.cancel,
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ),
+                        _buildActionButtons(innerContext, viewModel),
                         CoconutLayout.spacing_2500h,
                       ],
                     ),
@@ -396,6 +273,107 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       // debugPrint('Tooltip position initialization failed: $e');
       _walletTooltipIconPosition = Offset.zero;
     }
+  }
+
+  Widget _buildActionButtons(BuildContext context, WalletInfoViewModel viewModel) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ButtonGroup(
+            buttons: [
+              SingleButton(
+                enableShrinkAnim: true,
+                title: t.view_all_addresses,
+                onPressed: () {
+                  _removeTooltip();
+                  Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
+                },
+              ),
+              if (widget.walletType == WalletType.singleSignature)
+                SingleButton(
+                  enableShrinkAnim: true,
+                  title: t.wallet_info_screen.view_xpub,
+                  onPressed: () {
+                    _removeTooltip();
+                    _handleAuthFlow(onComplete: () => _showExtendedBottomSheet(viewModel.extendedPublicKey));
+                  },
+                ),
+              if (widget.walletType == WalletType.taproot)
+                SingleButton(
+                  enableShrinkAnim: true,
+                  title: t.wallet_info_screen.view_wallet_backup_data,
+                  onPressed: () {
+                    _removeTooltip();
+                    Navigator.pushNamed(
+                      context,
+                      '/taproot-wallet-backup-data',
+                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
+                    );
+                  },
+                ),
+              if (widget.walletType == WalletType.multiSignature)
+                SingleButton(
+                  enableShrinkAnim: true,
+                  title: t.wallet_info_screen.view_wallet_backup_data,
+                  onPressed: () {
+                    _removeTooltip();
+                    Navigator.pushNamed(
+                      context,
+                      '/wallet-backup-data',
+                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
+                    );
+                  },
+                ),
+              SingleButton(
+                enableShrinkAnim: true,
+                title: t.tag_manage_label,
+                onPressed: () {
+                  _removeTooltip();
+                  Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
+                },
+              ),
+              SingleButton(
+                enableShrinkAnim: true,
+                title: t.label_management_screen.title,
+                onPressed: () => _showLabelsManagementBottomSheet(context, viewModel),
+              ),
+            ],
+          ),
+        ),
+        Center(
+          child: Container(
+            width: 65,
+            height: 1,
+            margin: const EdgeInsets.symmetric(vertical: 20),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(1), color: context.coconutColors.divider),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SingleButton(
+            enableShrinkAnim: true,
+            title: t.delete_label,
+            rightElement: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: context.coconutColors.primaryText.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: SvgPicture.asset(
+                'assets/svg/trash.svg',
+                width: 16,
+                colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+              ),
+            ),
+            onPressed: () {
+              _removeTooltip();
+              _showDeleteWalletDialog(context, viewModel);
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   _removeTooltip() {
@@ -549,288 +527,41 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       ),
     );
   }
-}
 
-/// 트랜잭션 수, UTXO 수, 목표 수량 통계 카드
-class _WalletInfoStatsSection extends StatelessWidget {
-  final int walletId;
-  final int transactionCount;
-  final int utxoCount;
-  final int balanceSats;
-  final BitcoinUnit currentUnit;
-  final int? targetSats;
-  final VoidCallback onEditTargetTap;
-
-  const _WalletInfoStatsSection({
-    required this.walletId,
-    required this.transactionCount,
-    required this.utxoCount,
-    required this.balanceSats,
-    required this.currentUnit,
-    this.targetSats,
-    required this.onEditTargetTap,
-  });
-
-  static const int _maxBtcSats = 2100000000000000; // 21M BTC
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(child: _StatCard(label: t.wallet_info_screen.transaction, value: '$transactionCount')),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ShrinkAnimationButton(
-                  defaultColor: colors.surfaceCard,
-                  pressedColor: colors.surfacePressed,
-                  borderRadius: 24,
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
-                  },
-                  child: _StatCard(label: t.wallet_info_screen.utxo, value: '$utxoCount', transparentBackground: true),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ShrinkAnimationButton(
-            defaultColor: colors.surfaceCard,
-            pressedColor: colors.surfacePressed,
-            borderRadius: 24,
-            onPressed: onEditTargetTap,
-            child: _TargetQuantityCard(
-              balanceSats: balanceSats,
-              currentUnit: currentUnit,
-              targetSats: targetSats,
-              maxSats: _maxBtcSats,
-              transparentBackground: true,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool transparentBackground;
-
-  const _StatCard({required this.label, required this.value, this.transparentBackground = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 16, 20),
-      decoration: BoxDecoration(
-        color: transparentBackground ? Colors.transparent : context.coconutColors.surfaceCard,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(label, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText)),
-              const SizedBox(width: 4),
-              transparentBackground
-                  ? Icon(Icons.keyboard_arrow_right_rounded, size: 20, color: context.coconutColors.iconSubDefault)
-                  : const SizedBox.shrink(),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              value,
-              style: CoconutTypography.heading3_21_NumberBold.setColor(context.coconutColors.primaryText),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TargetQuantityCard extends StatelessWidget {
-  final int balanceSats;
-  final BitcoinUnit currentUnit;
-  final int? targetSats;
-  final int maxSats;
-  final bool transparentBackground;
-
-  const _TargetQuantityCard({
-    required this.balanceSats,
-    required this.currentUnit,
-    this.targetSats,
-    required this.maxSats,
-    this.transparentBackground = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveTarget = targetSats ?? maxSats;
-    final progress = effectiveTarget > 0 ? (balanceSats / effectiveTarget).clamp(0.0, 1.0) : 0.0;
-    final percent = _formatProgressPercent(progress);
-    final isTargetReached = targetSats != null && progress >= 1.0;
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          decoration: BoxDecoration(
-            color: transparentBackground ? Colors.transparent : context.coconutColors.tertiaryText,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    t.wallet_info_screen.target_quantity,
-                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
-                  ),
-                  const SizedBox(width: 4),
-                  SvgPicture.asset(
-                    'assets/svg/edit-outlined.svg',
-                    width: 12,
-                    height: 12,
-                    colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              targetSats == null
-                  ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Stay humble, stack sats!',
-                        style: CoconutTypography.heading4_18_NumberBold.setColor(context.coconutColors.secondaryText),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        t.wallet_info_screen.target_not_set_secondary,
-                        style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
-                      ),
-                    ],
-                  )
-                  : _buildTargetProgressText(
-                    context: context,
-                    percent: percent,
-                    amountText: currentUnit.displayBitcoinAmount(effectiveTarget, withUnit: false),
-                    unitSymbol: currentUnit.symbol,
-                    isPrefixUnit: currentUnit.isPrefixSymbol,
-                  ),
-              if (targetSats != null) ...[
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: context.coconutColors.pageIndicatorActive,
-                      inactiveTrackColor: context.coconutColors.pageIndicatorInactive,
-                      overlayShape: SliderComponentShape.noOverlay,
-                      trackHeight: 6,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 0),
-                    ),
-                    child: IgnorePointer(child: Slider(value: progress, onChanged: (_) {})),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ],
-          ),
-        ),
-        if (isTargetReached)
-          Positioned(
-            top: -10,
-            right: 10,
-            child: IgnorePointer(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(topRight: Radius.circular(24)),
-                child: Lottie.asset(
-                  'assets/lottie/fireworks.json',
-                  width: 140,
-                  height: 120,
-                  fit: BoxFit.contain,
-                  repeat: true,
-                ),
-              ),
-            ),
-          ),
-      ],
+  void _showDeleteWalletDialog(BuildContext context, WalletInfoViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.wallet_delete.confirm_delete,
+          description: t.alert.wallet_delete.confirm_delete_description,
+          onTapRight: () {
+            _handleAuthFlow(
+              onComplete: () async {
+                Navigator.of(dialogContext).pop();
+                await _deleteWalletAndGoToEntryPoint(viewModel);
+              },
+            );
+          },
+          onTapLeft: () => Navigator.of(dialogContext).pop(),
+          rightButtonText: t.delete,
+          rightButtonColor: context.coconutColors.danger,
+          leftButtonText: t.cancel,
+        );
+      },
     );
   }
 
-  Widget _buildTargetProgressText({
-    required BuildContext context,
-    required String percent,
-    required String amountText,
-    required String unitSymbol,
-    required bool isPrefixUnit,
-  }) {
-    final whiteStyle = CoconutTypography.heading3_21_Number.setColor(context.coconutColors.primaryText);
-    final grayStyle = CoconutTypography.body1_16_Number.setColor(context.coconutColors.secondaryText);
-
-    return RichText(
-      text: TextSpan(
-        style: whiteStyle,
-        children: [
-          TextSpan(text: percent, style: whiteStyle),
-          TextSpan(text: '%', style: grayStyle),
-          TextSpan(text: ' / ', style: whiteStyle),
-          if (isPrefixUnit) ...[
-            TextSpan(text: '$unitSymbol ', style: grayStyle),
-            TextSpan(text: amountText, style: whiteStyle),
-          ] else ...[
-            TextSpan(text: amountText, style: whiteStyle),
-            TextSpan(text: ' $unitSymbol', style: grayStyle),
-          ],
-        ],
+  void _showLabelsManagementBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => LabelManagementScreen(walletId: viewModel.walletId),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 250),
       ),
     );
-  }
-
-  String _formatProgressPercent(double progress) {
-    final percentValue = progress * 100;
-    if (percentValue == percentValue.truncateToDouble()) {
-      return percentValue.toStringAsFixed(0);
-    }
-
-    var decimalPlaces = 1;
-    var formatted = percentValue.toStringAsFixed(decimalPlaces);
-
-    while (decimalPlaces < 16 && _countNonZeroFractionDigits(formatted) < 2) {
-      decimalPlaces++;
-      formatted = percentValue.toStringAsFixed(decimalPlaces);
-    }
-
-    return formatted;
-  }
-
-  int _countNonZeroFractionDigits(String value) {
-    final dotIndex = value.indexOf('.');
-    if (dotIndex < 0 || dotIndex == value.length - 1) {
-      return 0;
-    }
-
-    var count = 0;
-    for (final char in value.substring(dotIndex + 1).split('')) {
-      if (char != '0') {
-        count++;
-      }
-    }
-
-    return count;
   }
 }

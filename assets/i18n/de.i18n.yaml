@@ -23,6 +23,7 @@ receive: "Empfangen"
 show: "Anzeigen"
 hide: "Verbergen"
 paste: "Einfügen"
+import: "Importieren"
 export: "Exportieren"
 edit: "Bearbeiten"
 max: "Max"
@@ -109,6 +110,8 @@ account: "Konto"
 merge_utxos: "Zusammenführen"
 split_utxo: "Teilen"
 apply: "Anwenden"
+retry: "Erneut versuchen"
+share: "Teilen"
 
 relative_time:
   just_now: "Gerade eben"
@@ -716,6 +719,11 @@ settings_screen:
   language: "Sprache"
   utxo_manual_selection: "Manuelle UTXO-Auswahl"
   utxo_manual_selection_description: "UTXOs manuell zum Senden auswählen"
+  import_labels: "Notizen importieren"
+  import_all_labels_description: "Wendet auf anderen Geräten aufgezeichnete Notizen\nauf Coconut Wallet an.\n\nMöchten Sie mit dem Import fortfahren?"
+  export_labels: "Notizen exportieren"
+  export_all_labels_description: "In Coconut Wallet aufgezeichnete Notizen können\nauf die gleiche Weise auf anderen Geräten\nangewendet werden.\n\nMöchten Sie mit dem Export fortfahren?"
+  export_labels_failed: "Memo-Export fehlgeschlagen"
   utxo_tier_theme: "Münzfarbe"
   locales:
     korean: "한국어"
@@ -858,6 +866,13 @@ wallet_info_screen:
   target_set_21m: "Es ist das Sats-Rennen!!!"
   view_xpub: "Erweiterten öffentlichen Schlüssel anzeigen"
   duplicated_name: "Name bereits in Verwendung"
+  import_labels_description: "Importieren Sie Labels aus einer JSONL-Datei. Die Labels in der Datei werden auf die Transaktionen und UTXOs der aktuellen Wallet angewendet. Bestehende Labels können überschrieben werden."
+  import_labels_success: "Memos erfolgreich importiert"
+  import_labels_fail: "Memo-Import fehlgeschlagen"
+  import_labels: "Memos importieren"
+  export_labels: "Memos exportieren"
+  export_labels_fail: "Memo-Export fehlgeschlagen"
+  export_labels_description: "Exportiert alle im aktuellen Wallet aufgezeichneten Memos in eine JSONL-Datei. Diese Datei kann verwendet werden, um Memos auf anderen Geräten oder Wallet-Software wiederherzustellen."
   view_descriptor: "Deskriptor anzeigen"
   view_wallet_backup_data: "Wallet-Sicherungsdaten anzeigen"
   wallet_backup_data: "Wallet-Sicherungsdaten"
@@ -878,6 +893,8 @@ wallet_info_screen:
       select: "Auswählen"
   error:
     delete: "Wallet konnte nicht gelöscht werden"
+    no_memos: "Es gibt keine im Wallet aufgezeichneten Notizen."
+    invalid_file_type: "Ungültiger Dateityp. Bitte wählen Sie eine jsonl-Datei."
   connected_hardware_wallet:
     title: "Geräteinformationen"
     connection_status: "Verbindungsstatus"
@@ -1034,6 +1051,76 @@ split_utxo_screen:
     create: "Erstellen"
     preview: "Vorschau"
     description: "Diese Teilung erzeugt viele Ausgaben, daher kann die Erstellung der Transaktion einige Zeit dauern. Zuerst das Ergebnis in der Vorschau anzeigen?"
+
+label_management_screen:
+  title: "Notizen verwalten"
+  subtitle: "Importieren oder exportieren Sie Ihre gespeicherten Notizen"
+  description: "BIP-329 ist ein offener Standard zum Austauschen von Notizen zwischen Wallets. Wenn Sie Ihre Notizen exportieren, können Sie diese selbst nach einem Gerätewechsel oder einer Neuinstallation der App wieder importieren und wiederherstellen."
+  import_title: "Importieren"
+  import_description: "Notizen aus einer anderen Wallet importieren"
+  export_title: "Exportieren"
+  export_description: "Sichern Sie Notizen oder teilen Sie sie mit einer anderen Wallet"
+  tooltip:
+    title: "Coconuts Notizen"
+    description: "Sie können Ihre eigenen Informationen aufzeichnen, um Transaktionen und UTXOs einfacher zu unterscheiden."
+    supported_title: "Unterstützte Notizen"
+    supported_list: "• Transaktionsnotizen\n• UTXO-Tags (Name/Farbe)\n• UTXO-Ausgabensperre"
+    import: "Importiert eine BIP-329-Notizdatei (.jsonl) und wendet sie auf Coconut Wallet an."
+  file:
+    select: "Auswählen"
+    select_button: "Auswählen"
+    apply: "Anwenden"
+    apply_description: "Möchten Sie die Datei\n$fileName\nanwenden?"
+    delete: "Datei löschen"
+    delete_description: "Möchten Sie\n$fileName\nwirklich löschen?"
+    delete_multiple_description: "Möchten Sie die ausgewählten $count Dateien wirklich löschen?"
+    delete_success: "Datei erfolgreich gelöscht"
+    delete_failed: "Datei konnte nicht gelöscht werden"
+    invalid_file_type: "Ungültiges Dateiformat. Bitte wählen Sie eine JSONL-Datei aus."
+label_import_file_picker_screen:
+  loading_title: "Notizen werden angewendet"
+  success_title: "Notizen importiert"
+  no_applied_memo: "Es gibt keine Wallets, auf die die Memodatei angewendet werden kann."
+  delete_file: "Löscht die Datei beim Tippen auf Fertig"
+  error_title: "Notizen konnten nicht geladen werden"
+  instruction_tooltip:
+    step1: "Auf Wallet anwenden"
+    step2: "Transaktionsnotizen"
+    step3: "UTXO-Tags"
+    step4: "Gesperrte UTXOs"
+  option_selection:
+    title: "Notizen anwenden?"
+    description_1: "Wenden Sie die in der Datei gespeicherten Notizen auf Coconut Wallet an."
+    description_2: "Bestehende Notizen werden durch die importierten Notizen ersetzt."
+    add_memo_to_existing:
+      title: "Zu bestehenden Notizen hinzufügen"
+      subtitle: "Bestehende Notizen behalten und importierte Notizen hinzufügen"
+    import_memos_from_other_wallets:
+      title: "Notizen aus anderen Wallets ebenfalls importieren"
+      subtitle: "Importieren Sie auch Notizen, die nicht zum ausgewählten Wallet gehören"
+  widget:
+    count_unit(cardinal):
+      zero: " Stück"
+      one: " Stück"
+      other: " Stück"
+label_export_wallet_picker_screen:
+  info_tooltip: "Sie können Notizen als BIP-329-Datei (.jsonl) speichern oder mit anderen Wallets teilen."
+  all_wallets: "Alle Wallets"
+  create_file: "Datei erstellen"
+  view_list: "Liste anzeigen"
+  no_wallet: "Wallet nicht gefunden"
+  no_file: "Datei nicht gefunden.\nBitte tippen Sie zuerst auf [Datei erstellen], um eine Datei zu erstellen."
+  loading_title: "Datei wird erstellt..."
+  success_title: "Möchten Sie die Datei teilen?"
+  error_title: "Datei konnte nicht erstellt werden"
+  no_labels_to_export: "Keine Notizen zum Teilen vorhanden."
+  instruction_tooltip:
+    step1: "Dateiname"
+    step2: "Erstellungsdatum und -zeit"
+    step3: "Angetendete Wallet"
+    step4: "Transaktionsnotiz"
+    step5: "UTXO-Tag"
+    step6: "Gesperrtes UTXO"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

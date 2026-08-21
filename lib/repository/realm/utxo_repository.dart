@@ -7,6 +7,7 @@ import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:realm/realm.dart';
 
 /// 선택된 UTXO의 상태를 나타내는 enum
 enum SelectedUtxoExcludedStatus {
@@ -17,13 +18,21 @@ enum SelectedUtxoExcludedStatus {
 class UtxoRepository extends BaseRepository {
   UtxoRepository(super._realmManager);
 
+  /// walletId로 RealmUtxoTag 목록을 쿼리하는 내부 메서드
+  RealmResults<RealmUtxoTag> _queryUtxoTags(int walletId) {
+    return realm.query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
+  }
+
   /// walletId 로 태그 목록 조회
   Result<List<UtxoTag>> getUtxoTags(int walletId) {
     return handleRealm<List<UtxoTag>>(() {
-      final tags = realm.query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
-
-      return tags.map(mapRealmUtxoTagToUtxoTag).toList();
+      return _queryUtxoTags(walletId).map(mapRealmUtxoTagToUtxoTag).toList();
     });
+  }
+
+  /// walletId 로 Realm 태그 목록 조회
+  List<RealmUtxoTag> getRealmUtxoTags(int walletId) {
+    return _queryUtxoTags(walletId).toList();
   }
 
   /// 사용된 UTXO의 태그 업데이트
@@ -171,6 +180,40 @@ class UtxoRepository extends BaseRepository {
       });
 
       return true;
+    });
+  }
+
+  Future<Result<void>> addUtxoToTag(int walletId, String tagName, String utxoId, {int? colorIndex}) async {
+    return handleAsyncRealm(() async {
+      await realm.writeAsync(() {
+        var tag = realm.query<RealmUtxoTag>(r'walletId == $0 AND name == $1', [walletId, tagName]).firstOrNull;
+
+        if (tag == null) {
+          int newColorIndex;
+          if (colorIndex != null) {
+            newColorIndex = colorIndex;
+          } else {
+            final existingTags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]);
+            final usedColorIndexes = existingTags.map((t) => t.colorIndex).toSet();
+
+            newColorIndex = 0;
+            while (usedColorIndexes.contains(newColorIndex)) {
+              newColorIndex++;
+            }
+          }
+
+          tag = RealmUtxoTag(Uuid.v4().toString(), walletId, tagName, newColorIndex, DateTime.now());
+          realm.add(tag);
+        }
+
+        if (colorIndex != null && tag.colorIndex != colorIndex) {
+          tag.colorIndex = colorIndex;
+        }
+
+        if (!tag.utxoIdList.contains(utxoId)) {
+          tag.utxoIdList.add(utxoId);
+        }
+      });
     });
   }
 

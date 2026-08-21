@@ -23,6 +23,7 @@ receive: "Receive"
 show: "Show"
 hide: "Hide"
 paste: "Paste"
+import: "Import"
 export: "Export"
 edit: "Edit"  
 max: "Max"
@@ -109,6 +110,8 @@ account: "Account"
 merge_utxos: "Merge"
 split_utxo: "Split"
 apply: "Apply"
+retry: "Retry"
+share: "Share"
 
 relative_time:
   just_now: "Just now"
@@ -791,6 +794,11 @@ settings_screen:
   language: "Language"
   utxo_manual_selection: "UTXO Manual Selection"
   utxo_manual_selection_description: "Select UTXOs manually for sending"
+  import_labels: "Import Notes"
+  import_all_labels_description: "Applies notes recorded on other devices\nto Coconut Wallet.\n\nDo you want to proceed with the import?"
+  export_labels: "Export Notes"
+  export_all_labels_description: "Notes recorded in Coconut Wallet can be applied\nthe same way on other devices.\n\nDo you want to proceed with the export?"
+  export_labels_failed: "Memo Export Failed"
   utxo_tier_theme: "Coin Color"
   electrum_server: 
     server_address: "Server Address"
@@ -927,6 +935,13 @@ wallet_info_screen:
   target_set_21m: "It’s the sats race!!!"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
+  import_labels_description: "Import labels from a JSONL file. The labels in the file will be applied to the transactions and UTXOs of the current wallet. Existing labels may be overwritten."
+  import_labels_success: "Memos Imported Successfully"
+  import_labels_fail: "Memo Import Failed"
+  import_labels: "Import Memos"
+  export_labels: "Export Memos"
+  export_labels_fail: "Memo Export Failed"
+  export_labels_description: "Exports all memos recorded in the current wallet to a JSONL file. This file can be used to restore memos on other devices or wallet software."
   view_descriptor: "View Descriptor"
   view_wallet_backup_data: "View Wallet Backup Data"
   wallet_backup_data: "Wallet Backup Data"
@@ -947,6 +962,8 @@ wallet_info_screen:
       select: "Select"
   error:
     delete: "Failed to delete wallet"
+    no_memos: "There are no memos recorded in the wallet."
+    invalid_file_type: "Invalid file type. Please select a jsonl file."
   connected_hardware_wallet:
     title: "Device Info"
     connection_status: "Connection Status"
@@ -1103,6 +1120,76 @@ split_utxo_screen:
     create: "Create"
     preview: "Preview"
     description: "This split creates many outputs, so creating the transaction may take some time. Preview the result first?"
+
+label_management_screen:
+  title: "Manage Notes"
+  subtitle: "Import or export recorded notes"
+  description: "BIP-329 is an open standard designed to import and export wallet labels. By backing up your labels, you can import and restore them even after changing devices or reinstalling the app."
+  import_title: "Import"
+  import_description: "Import notes from another wallet"
+  export_title: "Export"
+  export_description: "Back up notes or share them with another wallet"
+  tooltip:
+    title: "Coconut's Notes"
+    description: "You can record your own information to identify transactions and UTXOs more easily."
+    supported_title: "Supported Notes"
+    supported_list: "• Transaction notes\n• UTXO tags (Name/Color)\n• UTXO spend lock"
+    import: "Imports a BIP-329 note file (.jsonl) and applies it to Coconut Wallet."
+  file:
+    select: "Select File"
+    select_button: "Select"
+    apply: "Apply"
+    apply_description: "Do you want to apply the file\n$fileName?"
+    delete: "Delete File"
+    delete_description: "Are you sure you want to delete\n$fileName?"
+    delete_multiple_description: "Are you sure you want to delete the selected $count files?"
+    delete_success: "File deleted successfully"
+    delete_failed: "Failed to delete file"
+    invalid_file_type: "Invalid file type. Please select a JSONL file."
+label_import_file_picker_screen:
+  loading_title: "Applying notes"
+  success_title: "Notes Imported"
+  no_applied_memo: "There are no wallets available to apply the memo file."
+  delete_file: "Deletes file upon clicking Done"
+  error_title: "Couldn't load notes"
+  instruction_tooltip:
+    step1: "Apply to Wallet"
+    step2: "Transaction Memos"
+    step3: "UTXO Tags"
+    step4: "Locked UTXOs"
+  option_selection:
+    title: "Apply labels?"
+    description_1: "Apply the notes saved in the file to Coconut Wallet."
+    description_2: "Existing notes will be replaced with the imported notes."
+    add_memo_to_existing:
+      title: "Add to existing notes"
+      subtitle: "Keep existing notes and add imported notes"
+    import_memos_from_other_wallets:
+      title: "Import notes from other wallets too"
+      subtitle: "Import notes that do not belong to the selected wallet as well"
+  widget:
+    count_unit(cardinal):
+      zero: " items"
+      one: " item"
+      other: " items"
+label_export_wallet_picker_screen:
+  info_tooltip: "You can save notes as a BIP-329 file (.jsonl) or share them with other wallets."
+  all_wallets: "All Wallets"
+  create_file: "Create File"
+  view_list: "View List"
+  no_wallet: "Wallet not found"
+  no_file: "File not found.\nPlease tap [Create File] first to generate a file."
+  loading_title: "Creating file..."
+  success_title: "Would you like to share the file?"
+  error_title: "Unable to create file"
+  no_labels_to_export: "No notes to share."
+  instruction_tooltip:
+    step1: "File Name"
+    step2: "Created Date & Time"
+    step3: "Applied Wallet"
+    step4: "Transaction Note"
+    step5: "UTXO Tag"
+    step6: "Locked UTXO"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
