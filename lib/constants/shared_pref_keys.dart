@@ -17,8 +17,8 @@ class SharedPrefKeys {
   static const String kIsBtcUnit = "IS_BTC_UNIT"; // deprecated: 마이그레이션 전용
   static const String kBitcoinUnit = "BITCOIN_UNIT";
   static const String kShowOnlyUnusedAddresses = "SHOW_ONLY_UNUSED_ADDRESSES";
-  static const String kIsReceivingTooltipDisabled = "IS_RECEIVING_TOOLTIP_DISABLED";
-  static const String kIsChangeTooltipDisabled = "IS_CHANGE_TOOLTIP_DISABLED";
+  static const String kReceivingTooltipLastShownDate = "RECEIVING_TOOLTIP_LAST_SHOWN_DATE";
+  static const String kChangeTooltipLastShownDate = "CHANGE_TOOLTIP_LAST_SHOWN_DATE";
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
   static const String kIsFiatBalanceHidden = "IS_FIAT_BALANCE_HIDDEN";
   // deprecated
@@ -55,6 +55,9 @@ class SharedPrefKeys {
   /// 지갑별 목표 수량 (sats) - Map<walletId, targetSats> JSON
   static const String kWalletTargetSatsMap = "WALLET_TARGET_SATS_MAP";
 
+  /// 지갑별 마지막 재동기화 완료 시각 - Map<walletId, epochMillis> JSON
+  static const String kWalletLastResyncMap = "WALLET_LAST_RESYNC_MAP";
+
   // Electrum
   /// [DefaultElectrumServer.serverName] 또는 'CUSTOM'
   static const String kElectrumServerName = 'ELECTRUM_SERVER_NAME';
@@ -62,6 +65,7 @@ class SharedPrefKeys {
   static const String kCustomElectrumPort = 'CUSTOM_ELECTRUM_PORT';
   static const String kCustomElectrumIsSsl = 'CUSTOM_ELECTRUM_IS_SSL';
   static const String kUserServers = 'USER_SERVERS';
+  static const String kBaselineGenesisHash = 'BASELINE_GENESIS_HASH';
 
   /// kHasLaunchedBefore 절대 초기화 금지
   static const String kHasLaunchedBefore = 'hasLaunchedBefore';

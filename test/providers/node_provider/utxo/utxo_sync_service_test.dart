@@ -341,5 +341,38 @@ void main() {
       expect(result.first.index, 1);
       expect(result.first.status, UtxoStatus.unspent);
     });
+
+    test(
+      '전체 재동기화처럼 대량 콜드 스캔 도중, UTXO를 만든 트랜잭션이 아직 RealmTransaction에 없어도 '
+      'UTXO 자체는 유실되지 않고 반환된다(예전 버그: null check로 전체 리스트가 빈 리스트로 대체됨)',
+      () async {
+        // Given: RealmTransaction에는 아무 것도 저장하지 않은 상태(트랜잭션 fetch가 아직 안 됐거나
+        // 늦게 반영된 상황을 재현)
+        const String unknownTxHash = 'not_yet_recorded_tx_hash';
+
+        final scriptStatus = ScriptStatus(
+          derivationPath: "m/84'/0'/0'/0/0",
+          address: testWalletItem.walletBase.getAddress(0),
+          index: 0,
+          isChange: false,
+          scriptPubKey: 'receive_script_pub_key',
+          status: 'receive_status_hash',
+          timestamp: DateTime.now(),
+        );
+
+        when(electrumService.getUnspentList(any, any)).thenAnswer((_) async {
+          return [ListUnspentRes(height: 100, txHash: unknownTxHash, txPos: 0, value: 700000)];
+        });
+
+        // When
+        final result = await utxoSyncService.fetchUtxoStateList(testWalletItem, scriptStatus);
+
+        // Then: 예외로 인해 빈 리스트가 아니라, UTXO가 그대로(타임스탬프만 대체돼서) 반환돼야 함
+        expect(result.length, 1);
+        expect(result.first.transactionHash, unknownTxHash);
+        expect(result.first.amount, 700000);
+        expect(result.first.status, UtxoStatus.unspent);
+      },
+    );
   });
 }

@@ -4,12 +4,14 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../mock/utxo_mock.dart';
 import 'test_realm_manager.dart';
 
 const _parentTaprootXpub =
@@ -129,6 +131,112 @@ void main() {
 
       expect(realmManager.realm.all<RealmWalletBase>().length, 0);
       expect(realmManager.realm.all<RealmTaprootWallet>().length, 0);
+    });
+  });
+
+  group('WalletRepository - 재동기화', () {
+    void seedWalletData(int walletId, {int usedReceiveIndex = 5, int usedChangeIndex = 3}) {
+      realmManager.realm.write(() {
+        realmManager.realm.add(
+          RealmWalletBase(
+            walletId,
+            0,
+            0,
+            'encrypted_descriptor_$walletId',
+            'Test Wallet $walletId',
+            WalletType.singleSignature.name,
+            usedReceiveIndex: usedReceiveIndex,
+            usedChangeIndex: usedChangeIndex,
+            generatedReceiveIndex: usedReceiveIndex + 10,
+            generatedChangeIndex: usedChangeIndex + 10,
+          ),
+        );
+        realmManager.realm.add(
+          RealmTransaction(
+            walletId * 1000 + 1,
+            'tx_hash_$walletId',
+            walletId,
+            DateTime.now(),
+            100,
+            'received',
+            10000,
+            500,
+            140.5,
+            DateTime.now(),
+          ),
+        );
+        realmManager.realm.add(RealmWalletBalance(walletId, walletId, 10000, 10000, 0));
+        realmManager.realm.add(
+          RealmWalletAddress(walletId * 1000 + 1, walletId, 'address_$walletId', 0, false, "m/0/0", true, 10000, 0, 10000),
+        );
+        realmManager.realm.add(
+          UtxoMock.createMockUtxo(
+            walletId: walletId,
+            address: 'address_$walletId',
+            transactionHash: 'utxo_tx_hash_$walletId',
+          ),
+        );
+        realmManager.realm.add(RealmScriptStatus('script_pub_key_$walletId', 'status_$walletId', walletId, DateTime.now()));
+        realmManager.realm.add(
+          RealmUtxoTag('tag_id_$walletId', walletId, 'tag_name_$walletId', 0, DateTime.now(), utxoIdList: [
+            getUtxoId('utxo_tx_hash_$walletId', 0),
+          ]),
+        );
+        realmManager.realm.add(
+          RealmTransactionMemo(
+            getTransactionMemoId('tx_hash_$walletId', walletId),
+            'tx_hash_$walletId',
+            walletId,
+            'memo_$walletId',
+            DateTime.now(),
+          ),
+        );
+      });
+    }
+
+    test('트랜잭션/잔액/주소/UTXO/스크립트상태 삭제, 지갑 row는 유지하고 인덱스만 리셋', () async {
+      seedWalletData(1);
+
+      await walletRepository.resetWalletForResync(1);
+
+      expect(realmManager.realm.query<RealmTransaction>('walletId == 1').isEmpty, isTrue);
+      expect(realmManager.realm.query<RealmWalletBalance>('walletId == 1').isEmpty, isTrue);
+      expect(realmManager.realm.query<RealmWalletAddress>('walletId == 1').isEmpty, isTrue);
+      expect(realmManager.realm.query<RealmUtxo>('walletId == 1').isEmpty, isTrue);
+      expect(realmManager.realm.query<RealmScriptStatus>('walletId == 1').isEmpty, isTrue);
+
+      final walletBase = realmManager.realm.find<RealmWalletBase>(1);
+      expect(walletBase, isNotNull);
+      expect(walletBase!.usedReceiveIndex, -1);
+      expect(walletBase.usedChangeIndex, -1);
+      expect(walletBase.generatedReceiveIndex, -1);
+      expect(walletBase.generatedChangeIndex, -1);
+    });
+
+    test('UTXO 태그와 트랜잭션 메모는 건드리지 않음', () async {
+      seedWalletData(1);
+
+      await walletRepository.resetWalletForResync(1);
+
+      expect(realmManager.realm.query<RealmUtxoTag>('walletId == 1').length, 1);
+      expect(realmManager.realm.query<RealmTransactionMemo>('walletId == 1').length, 1);
+    });
+
+    test('다른 지갑의 데이터는 영향받지 않음', () async {
+      seedWalletData(1);
+      seedWalletData(2, usedReceiveIndex: 7, usedChangeIndex: 4);
+
+      await walletRepository.resetWalletForResync(1);
+
+      expect(realmManager.realm.query<RealmTransaction>('walletId == 2').length, 1);
+      expect(realmManager.realm.query<RealmWalletBalance>('walletId == 2').length, 1);
+      expect(realmManager.realm.query<RealmWalletAddress>('walletId == 2').length, 1);
+      expect(realmManager.realm.query<RealmUtxo>('walletId == 2').length, 1);
+      expect(realmManager.realm.query<RealmScriptStatus>('walletId == 2').length, 1);
+
+      final wallet2Base = realmManager.realm.find<RealmWalletBase>(2);
+      expect(wallet2Base!.usedReceiveIndex, 7);
+      expect(wallet2Base.usedChangeIndex, 4);
     });
   });
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/core/bip/129/signer_bsms.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -31,6 +32,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
+  bool _disposed = false;
 
   late String _walletName;
   late String _extendedPublicKey;
@@ -47,11 +49,11 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   void _onWalletProviderChanged() {
-    if (!_walletProvider.walletItemList.any((w) => w.id == _walletId)) {
+    if (_disposed || !_walletProvider.walletItemList.any((w) => w.id == _walletId)) {
       return;
     }
     _loadWalletData();
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _loadWalletData() {
@@ -78,6 +80,8 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo newInfo) {
+    if (_disposed) return;
+
     final prev = _prevWalletUpdateInfo;
     _prevWalletUpdateInfo = newInfo;
 
@@ -87,8 +91,12 @@ class WalletInfoViewModel extends ChangeNotifier {
     final utxoCompleted = prev.utxo != WalletSyncState.completed && newInfo.utxo == WalletSyncState.completed;
 
     if (balanceCompleted || txCompleted || utxoCompleted) {
-      notifyListeners();
+      _safeNotifyListeners();
     }
+  }
+
+  void _safeNotifyListeners() {
+    if (!_disposed) notifyListeners();
   }
 
   bool get isSetPin => _authProvider.isSetPin;
@@ -105,6 +113,10 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   int get transactionCount => _walletProvider.getTransactionRecordList(_walletId).length;
   int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
+  int get watchedAddressCount =>
+      2 * kSubscriptionGapLimit +
+      _walletProvider.getActiveUsedAddresses(_walletId, false).length +
+      _walletProvider.getActiveUsedAddresses(_walletId, true).length;
   Balance get walletBalance => _walletProvider.getWalletBalance(_walletId);
 
   bool get hasTaprootKeyPath =>
@@ -284,6 +296,7 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _syncWalletStateSubscription?.cancel();
     _walletProvider.removeListener(_onWalletProviderChanged);
 

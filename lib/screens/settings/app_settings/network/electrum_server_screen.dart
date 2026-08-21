@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
+import 'package:coconut_wallet/enums/node_connection_status.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -724,6 +725,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   Widget _buildAlertIcon(NodeConnectionStatus status) {
     switch (status) {
       case NodeConnectionStatus.failed:
+      case NodeConnectionStatus.networkMismatch:
         {
           return SvgPicture.asset(
             CustomIcons.triangleWarning,
@@ -755,6 +757,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       case NodeConnectionStatus.failed:
         {
           return t.settings_screen.electrum_server.alert.connection_failed;
+        }
+      case NodeConnectionStatus.networkMismatch:
+        {
+          return t.settings_screen.electrum_server.alert.network_mismatch;
         }
       case NodeConnectionStatus.connecting:
         {
@@ -807,7 +813,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                   Flexible(
                     flex: 2,
                     child: InlineActionButton(
-                      isActive: hasActualChanges && nodeConnectionStatus != NodeConnectionStatus.connecting,
+                      isActive:
+                          hasActualChanges &&
+                          nodeConnectionStatus != NodeConnectionStatus.connecting &&
+                          nodeConnectionStatus != NodeConnectionStatus.networkMismatch,
                       onPressed: () {
                         _unFocus();
                         _onSave();
@@ -826,10 +835,3 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 }
 
 enum ServerTab { defaultServer, userServer }
-
-enum NodeConnectionStatus {
-  connecting, // 연결 중입니다
-  connected, // 연결되었습니다
-  failed, // 연결할 수 없습니다!
-  waiting, // 대기중
-}

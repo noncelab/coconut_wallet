@@ -118,6 +118,9 @@ relative_time:
   hours_ago(cardinal):
     one: "1 hour ago"
     other: "${n} hours ago"
+  days_ago(cardinal):
+    one: "1 day ago"
+    other: "${n} days ago"
 
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
@@ -380,6 +383,7 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Items"
+  watched_addresses: "Watching $count"
   primary_wallet: "Primary Wallet"
   exclude_from_total_amount: "Excluded from Home Total"
   home_balance: "Home Balance"
@@ -804,8 +808,9 @@ settings_screen:
     error_msg:
       invalid_domain_format: "Not a valid domain format"
       port_out_of_range: "Please enter a valid port number (1–65535)"
-    alert: 
+    alert:
       connection_failed: "Cannot connect!"
+      network_mismatch: "Can't connect — different network"
       connecting: "Connecting..."
       connected: "Connected"
     popup:
@@ -844,9 +849,12 @@ address_list_screen:
   receiving: "Receiving"
   change: "Change"
   show_only_unused_address: "Show Only Unused Addresses"
+  show_only_watched_address: "Show Only Watched Addresses"
+  show_only_watched_address_count: "Show Only Watched Addresses ($count)"
   set_amount: "Set amount"
   share: "Share"
   enter_receive_amount: "Enter the amount to receive"
+  discovered_new_balance_address: "Found $count address(es) with new balance"
 utxo_overview_screen:
   by_amount: "Amount"
   by_tag: "Tag"
@@ -918,6 +926,7 @@ wallet_info_screen:
   title: "$name Information"
   transaction: "Transaction"
   utxo: "UTXO"
+  watched_addresses: "Watched addresses"
   target_quantity: "Target Quantity"
   target_progress: "$percent% / $target"
   target_not_set_secondary: "We'll show your achievement rate when you set a target quantity"
@@ -932,6 +941,7 @@ wallet_info_screen:
   wallet_backup_data: "Wallet Backup Data"
   confirm_backup_data: "Confirm Backup Data"
   no_info: "No data"
+  resync_label: "Wallet Resync"
   tooltip:
     mfp_placeholder_description: "This is a wallet added with extended public key\nand the master fingerprint was not entered\nso it is displayed as 00000000."
     wallet_backup_data: "This is the BSMS(BIP-129) backup information for this wallet. You can use this data to reconstruct the multisig wallet in case of device loss or replacement. Please keep it safe and be careful when sharing externally."
@@ -955,6 +965,31 @@ wallet_info_screen:
     disconnect_button: "Disconnect"
     disconnect_confirm_title: "Disconnect"
     disconnect_confirm_description: "Disconnect the current device.\nYou will need to reconnect for the next signing."
+wallet_resync_screen:
+  title: "Wallet Resync"
+  exit_blocked_toast: "Please wait until the resync finishes"
+  confirm:
+    title: "Erase the wallet data saved in this app\nand reload it from scratch"
+    description: "Transaction memos, UTXO tags, and locks stay intact"
+    connection_alert:
+      connecting: "Checking server connection"
+      connected: "Connected to the server"
+      failed: "Can't connect to the server"
+      network_mismatch: "Can't connect — wrong network"
+    warning:
+      title: "This is a troubleshooting feature"
+      description: "Only use this if your balance or transaction history looks wrong, or sync isn't working"
+    last_resync_hint: "Last resync: $time"
+    cta: "Start Resync"
+  progress:
+    phase_wiping: "Deleting existing wallet data"
+    phase_scanning: "Reloading wallet data"
+    scanning_hint: "More data can mean it takes longer to finish\nPlease wait until it's finished"
+    phase_restoring_metadata: "Restoring transaction memos, UTXO tags, and locks"
+    success_title: "Wallet data reloaded"
+    success_cta: "Go to Wallet"
+    error_title: "Couldn't reload wallet data"
+    error_cta: "Try Again"
 wallet_signer_section:
   title: "Signing Method"
   segmented_control:
@@ -1179,6 +1214,7 @@ errors:
   realm_exception: "An error occurred during Realm operation."
   node_unknown: "An unknown error occurred while connecting to node."
   broadcast_error: "Failed to broadcast transaction."
+  chain_mismatch_error: "Can't connect — different network"
   network_connect: "No network connection."
   network_disconnected: "Network disconnected"
   network_not_found: "Network is not connected!"
@@ -1242,8 +1278,8 @@ tooltip:
     select_wallet: "select $name"
     select_menu: "tap $menu"
     scan_qr_below: "and scan the QR code below."
-  address_receiving: "This is the address used when receiving Bitcoin. In English, it's called Receiving or External."
-  address_change: "This is the address where you get change back when sending Bitcoin. In English, it's called Change."
+  address_receiving: "This is the address used when receiving Bitcoin."
+  address_change: "This is the address where you get change back when sending Bitcoin."
   utxo: "UTXO stands for Unspent Transaction Output, meaning unused balance. Bitcoin doesn't have a balance concept. Remember that the balance shown in your wallet is the sum of UTXOs."
   faucet: "Test freely with test Bitcoin"
   multisig_wallet: "This is a multisig wallet that requires\n$count signatures out of $total keys."

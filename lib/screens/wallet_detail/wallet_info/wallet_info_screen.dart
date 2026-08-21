@@ -148,6 +148,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           walletId: widget.id,
                           transactionCount: viewModel.transactionCount,
                           utxoCount: viewModel.utxoCount,
+                          watchedAddressCount: viewModel.watchedAddressCount,
                           balanceSats: viewModel.walletBalance.total,
                           currentUnit: context.read<PreferenceProvider>().currentUnit,
                           targetSats: viewModel.targetSats,
@@ -157,14 +158,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: ButtonGroup(
                             buttons: [
-                              SingleButton(
-                                enableShrinkAnim: true,
-                                title: t.view_all_addresses,
-                                onPressed: () {
-                                  _removeTooltip();
-                                  Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
-                                },
-                              ),
                               if (widget.walletType == WalletType.singleSignature) ...[
                                 SingleButton(
                                   enableShrinkAnim: true,
@@ -231,6 +224,30 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             ),
                           ),
                         ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: SingleButton(
+                            enableShrinkAnim: true,
+                            title: t.wallet_info_screen.resync_label,
+                            rightElement: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: context.coconutColors.primaryText.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: SvgPicture.asset(
+                                'assets/svg/arrow-reload.svg',
+                                width: 16,
+                                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                              ),
+                            ),
+                            onPressed: () {
+                              _removeTooltip();
+                              Navigator.pushNamed(context, '/wallet-resync', arguments: {'id': widget.id});
+                            },
+                          ),
+                        ),
+                        CoconutLayout.spacing_200h,
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: SingleButton(
@@ -556,6 +573,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
   final int walletId;
   final int transactionCount;
   final int utxoCount;
+  final int watchedAddressCount;
   final int balanceSats;
   final BitcoinUnit currentUnit;
   final int? targetSats;
@@ -565,6 +583,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
     required this.walletId,
     required this.transactionCount,
     required this.utxoCount,
+    required this.watchedAddressCount,
     required this.balanceSats,
     required this.currentUnit,
     this.targetSats,
@@ -597,6 +616,24 @@ class _WalletInfoStatsSection extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          ShrinkAnimationButton(
+            defaultColor: colors.surfaceCard,
+            pressedColor: colors.surfacePressed,
+            borderRadius: 24,
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                '/address-list',
+                arguments: {'id': walletId, 'initialShowOnlyWatchedAddresses': true},
+              );
+            },
+            child: _StatCard(
+              label: t.wallet_info_screen.watched_addresses,
+              value: '$watchedAddressCount',
+              transparentBackground: true,
+            ),
           ),
           const SizedBox(height: 12),
           ShrinkAnimationButton(

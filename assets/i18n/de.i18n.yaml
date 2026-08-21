@@ -118,6 +118,9 @@ relative_time:
   hours_ago(cardinal):
     one: "Vor 1 Stunde"
     other: "Vor ${n} Stunden"
+  days_ago(cardinal):
+    one: "Vor 1 Tag"
+    other: "Vor ${n} Tagen"
 
 apply_item: "$count Elemente"
 fee_sats: " ($value sat/vB)"
@@ -502,6 +505,7 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elemente"
+  watched_addresses: "$count beobachtet"
   primary_wallet: "Primäre Wallet"
   exclude_from_total_amount: "Von der Gesamtsumme ausgeschlossen"
   home_balance: "Startseiten-Guthaben"
@@ -737,6 +741,7 @@ settings_screen:
       port_out_of_range: "Bitte geben Sie eine gültige Portnummer ein (1–65535)"
     alert:
       connection_failed: "Verbindung nicht möglich!"
+      network_mismatch: "Verbindung nicht möglich – falsches Netzwerk"
       connecting: "Verbinde..."
       connected: "Verbunden"
     popup:
@@ -775,9 +780,12 @@ address_list_screen:
   receiving: "Empfangen"
   change: "Wechselgeld"
   show_only_unused_address: "Nur unbenutzte Adressen anzeigen"
+  show_only_watched_address: "Nur beobachtete Adressen anzeigen"
+  show_only_watched_address_count: "Nur beobachtete Adressen anzeigen ($count)"
   set_amount: "Betrag festlegen"
   share: "Teilen"
   enter_receive_amount: "Geben Sie den zu empfangenden Betrag ein"
+  discovered_new_balance_address: "$count Adresse(n) mit neuem Guthaben gefunden"
 utxo_overview_screen:
   by_amount: "Betrag"
   by_tag: "Tag"
@@ -849,6 +857,7 @@ wallet_info_screen:
   title: "$name Informationen"
   transaction: "Transaktion"
   utxo: "UTXO"
+  watched_addresses: "Beobachtete Adressen"
   target_quantity: "Zielmenge"
   target_progress: "$percent% / $target"
   target_not_set_secondary: "Wir zeigen Ihre Erfolgsquote an, wenn Sie eine Zielmenge festlegen"
@@ -863,6 +872,7 @@ wallet_info_screen:
   wallet_backup_data: "Wallet-Sicherungsdaten"
   confirm_backup_data: "Sicherungsdaten bestätigen"
   no_info: "Keine Daten"
+  resync_label: "Wallet neu synchronisieren"
   tooltip:
     mfp_placeholder_description: "Dies ist eine mit erweitertem öffentlichen Schlüssel hinzugefügte Wallet\nund der Master-Fingerabdruck wurde nicht eingegeben\ndaher wird er als 00000000 angezeigt."
     wallet_backup_data: "Dies sind die BSMS(BIP-129)-Sicherungsinformationen für diese Wallet. Sie können diese Daten verwenden, um die Multisig-Wallet im Falle eines Geräteverlusts oder -austauschs wiederherzustellen. Bitte bewahren Sie sie sicher auf und seien Sie vorsichtig beim externen Teilen."
@@ -886,6 +896,31 @@ wallet_info_screen:
     disconnect_button: "Trennen"
     disconnect_confirm_title: "Verbindung trennen"
     disconnect_confirm_description: "Die aktuelle Geräteverbindung wird getrennt.\nBeim nächsten Signiervorgang ist eine erneute Verbindung erforderlich."
+wallet_resync_screen:
+  title: "Wallet neu synchronisieren"
+  exit_blocked_toast: "Bitte warte, bis die Synchronisierung abgeschlossen ist"
+  confirm:
+    title: "Die in der App gespeicherten Wallet-Daten werden gelöscht\nund neu geladen"
+    description: "Transaktionsnotizen, UTXO-Tags und Sperren bleiben erhalten"
+    connection_alert:
+      connecting: "Serververbindung wird geprüft"
+      connected: "Mit dem Server verbunden"
+      failed: "Verbindung zum Server nicht möglich"
+      network_mismatch: "Falsches Netzwerk, keine Verbindung möglich"
+    warning:
+      title: "Dies ist eine Funktion zur Fehlerbehebung"
+      description: "Nutze sie nur, wenn Guthaben oder Transaktionsverlauf falsch angezeigt werden oder die Synchronisierung nicht funktioniert"
+    last_resync_hint: "Letzte Synchronisierung: $time"
+    cta: "Synchronisierung starten"
+  progress:
+    phase_wiping: "Vorhandene Daten werden gelöscht"
+    phase_scanning: "Walletdaten werden neu geladen"
+    scanning_hint: "Bei vielen Daten kann es länger dauern, bis es fertig ist\nBitte warte, bis es abgeschlossen ist"
+    phase_restoring_metadata: "Transaktionsnotizen, UTXO-Tags und Sperren werden wiederhergestellt"
+    success_title: "Walletdaten neu geladen"
+    success_cta: "Zur Wallet"
+    error_title: "Walletdaten konnten nicht geladen werden"
+    error_cta: "Erneut versuchen"
 wallet_signer_section:
   title: "Signiermethode"
   segmented_control:
@@ -1110,6 +1145,7 @@ errors:
   realm_exception: "Während der Realm-Operation ist ein Fehler aufgetreten."
   node_unknown: "Ein unbekannter Fehler ist beim Verbinden mit dem Knoten aufgetreten."
   broadcast_error: "Transaktion konnte nicht gesendet werden."
+  chain_mismatch_error: "Verbindung nicht möglich – falsches Netzwerk"
   network_connect: "Keine Netzwerkverbindung."
   network_disconnected: "Netzwerk getrennt"
   network_not_found: "Netzwerk ist nicht verbunden!"
@@ -1173,8 +1209,8 @@ tooltip:
     select_wallet: "$name auswählen"
     select_menu: "$menu tippen"
     scan_qr_below: "und scannen Sie den QR-Code unten."
-  address_receiving: "Dies ist die Adresse, die beim Empfang von Bitcoin verwendet wird. Auf Englisch heißt sie Receiving oder External."
-  address_change: "Dies ist die Adresse, an die Sie Wechselgeld zurückerhalten, wenn Sie Bitcoin senden. Auf Englisch heißt sie Change."
+  address_receiving: "Dies ist die Adresse, die beim Empfang von Bitcoin verwendet wird."
+  address_change: "Dies ist die Adresse, an die Sie Wechselgeld zurückerhalten, wenn Sie Bitcoin senden."
   utxo: "UTXO steht für Unspent Transaction Output, was ungenutztes Guthaben bedeutet. Bitcoin hat kein Guthabenkonzept. Denken Sie daran, dass das in Ihrer Wallet angezeigte Guthaben die Summe der UTXOs ist."
   faucet: "Testen Sie frei mit Test-Bitcoin"
   multisig_wallet: "Dies ist eine Multisig-Wallet, die\n$count Signaturen von $total Schlüsseln erfordert."

@@ -6,6 +6,7 @@ import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_initializer.dart';
@@ -321,7 +322,18 @@ class IsolateManager {
       case IsolateControllerCommand.subscribeWallet:
       case IsolateControllerCommand.unsubscribeWallet:
       case IsolateControllerCommand.getTransactionRecord:
+      case IsolateControllerCommand.syncDormantAddresses:
+      case IsolateControllerCommand.syncViewedAddresses:
         return kIsolateResponseTimeout;
+
+      // 지갑 재동기화: 콜드 풀 스캔 + fetch, 훨씬 오래 걸릴 수 있음
+      case IsolateControllerCommand.resyncWallet:
+        return kIsolateResyncTimeout;
+
+      // 정상 종료 요청: _requestGracefulShutdown이 별도로 kIsolateGracefulShutdownTimeout을
+      // 직접 적용하므로 _send()를 거치지 않음(여기 값은 스위치 완전성을 위한 것)
+      case IsolateControllerCommand.shutdown:
+        return kIsolateGracefulShutdownTimeout;
 
       // 간단한 작업: .onion인 경우 kIsolateSimpleResponseTimeoutForOnion, 그 외 kIsolateSimpleResponseTimeout
       case IsolateControllerCommand.broadcast:
@@ -385,12 +397,8 @@ class IsolateManager {
         Logger.log('IsolateManager: Checking socket status before fast command: $messageType');
 
         final socketStatus = await getSocketConnectionStatus();
-        if (socketStatus.isFailure || socketStatus.value == SocketConnectionStatus.terminated) {
-          _logCommandFailure(
-            messageType,
-            'socket_terminated_before_command',
-            socketStatus.isFailure ? socketStatus.error : 'status=${socketStatus.value}',
-          );
+        if (socketStatus.isSuccess && socketStatus.value == SocketConnectionStatus.terminated) {
+          _logCommandFailure(messageType, 'socket_terminated_before_command', 'status=${socketStatus.value}');
           return Result.failure(ErrorCodes.nodeConnectionError);
         }
       }
@@ -441,7 +449,6 @@ class IsolateManager {
       Result<dynamic> result;
       try {
         final timeLimit = commandTimeoutOverride ?? _getTimeoutForCommand(messageType);
-        final isSocketConnectionStatusMessage = messageType == IsolateControllerCommand.getSocketConnectionStatus;
 
         result = await mainFromIsolateReceivePort.first.timeout(
           timeLimit,
@@ -452,9 +459,6 @@ class IsolateManager {
               );
             } else {
               Logger.error('IsolateManager: Command timeout: $messageType (${timeLimit.inMilliseconds}ms)');
-            }
-            if (isSocketConnectionStatusMessage) {
-              return Result.success(SocketConnectionStatus.terminated);
             }
             _logCommandFailure(messageType, 'isolate_response_timeout', '${timeLimit.inMilliseconds}ms');
             return Result<T>.failure(ErrorCodes.nodeIsolateError);
@@ -506,6 +510,21 @@ class IsolateManager {
     return _send(IsolateControllerCommand.unsubscribeWallet, [walletItem]);
   }
 
+  Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) async {
+    return _send(IsolateControllerCommand.syncDormantAddresses, [walletItem]);
+  }
+
+  Future<Result<bool>> resyncWallet(WalletItemBase walletItem) async {
+    return _send(IsolateControllerCommand.resyncWallet, [walletItem]);
+  }
+
+  Future<Result<List<WalletAddress>>> syncViewedAddresses(
+    WalletItemBase walletItem,
+    List<WalletAddress> addresses,
+  ) async {
+    return _send(IsolateControllerCommand.syncViewedAddresses, [walletItem, addresses]);
+  }
+
   Future<Result<String>> broadcast(Transaction signedTx) async {
     return _sendWithSocketCheck(IsolateControllerCommand.broadcast, [signedTx]);
   }
@@ -551,11 +570,18 @@ class IsolateManager {
     Logger.log('IsolateManager: Closing isolate');
 
     try {
+      // isolate가 Realm을 정상적으로 닫고 스스로 종료할 짧은 기회를 준다.
+      // 강제종료(Isolate.kill)로 바로 죽이는 순간, Realm write 도중이었을 경우
+      // 파일 락이 반납되지 않은 채로 남을 수 있다
+      if (_isolate != null && _mainToIsolateSendPort != null) {
+        await _requestGracefulShutdown();
+      }
+
       // StateController 정리
       _closeStateController();
 
       // 모든 활성 ReceivePort 닫기
-      for (final port in _activeReceivePorts) {
+      for (final port in _activeReceivePorts.toList()) {
         try {
           port.close();
         } catch (e) {
@@ -564,7 +590,7 @@ class IsolateManager {
       }
       _activeReceivePorts.clear();
 
-      // isolate 종료
+      // isolate 종료(위에서 이미 정상 종료됐다면 안전한 no-op)
       if (_isolate != null) {
         _isolate!.kill(priority: Isolate.immediate);
         _isolate = null;
@@ -591,6 +617,26 @@ class IsolateManager {
       _isolateReady = null; // null로 설정하여 상태 초기화
     } catch (e) {
       Logger.error('IsolateManager: Error closing isolate: $e');
+    }
+  }
+
+  /// isolate에 정상 종료(Realm 닫기 후 자진 종료)를 요청하고, 짧은 시간만 응답을 기다린다.
+  /// 응답이 없어도 예외를 던지지 않는다 — 호출부가 뒤이어 강제종료로 폴백한다.
+  Future<void> _requestGracefulShutdown() async {
+    final ackPort = ReceivePort('isolateShutdownAck');
+    try {
+      _mainToIsolateSendPort!.send([IsolateControllerCommand.shutdown, ackPort.sendPort, []]);
+      await ackPort.first.timeout(
+        kIsolateGracefulShutdownTimeout,
+        onTimeout: () {
+          Logger.error('IsolateManager: Graceful shutdown timed out, falling back to force kill');
+          return null;
+        },
+      );
+    } catch (e) {
+      Logger.error('IsolateManager: Graceful shutdown request failed: $e');
+    } finally {
+      ackPort.close();
     }
   }
 }

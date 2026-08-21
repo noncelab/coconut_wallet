@@ -11,6 +11,7 @@ class AddressItemCard extends StatelessWidget {
   final String address;
   final String derivationPath;
   final bool isUsed;
+  final bool isWatched;
   final int? balanceInSats;
   final BitcoinUnit currentUnit;
   const AddressItemCard({
@@ -19,6 +20,7 @@ class AddressItemCard extends StatelessWidget {
     required this.address,
     required this.derivationPath,
     required this.isUsed,
+    required this.isWatched,
     required this.currentUnit,
     this.balanceInSats,
   });
@@ -46,7 +48,18 @@ class AddressItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 color: context.coconutColors.surfaceDeep,
               ),
-              child: Text(index, style: Styles.caption.setColor(context.coconutColors.secondaryText)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isWatched) ...[_WatchedGlowDot(color: context.coconutColors.success), const SizedBox(width: 4)],
+                  Text(
+                    index,
+                    style: CoconutTypography.caption_10
+                        .setColor(context.coconutColors.secondaryText)
+                        .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                  ),
+                ],
+              ),
             ),
             Expanded(
               child: FittedBox(
@@ -57,42 +70,94 @@ class AddressItemCard extends StatelessWidget {
                   children: [
                     Text(
                       '${address.substring(0, 10)}...${address.substring(address.length - 10, address.length)}',
-                      style: Styles.body1Number.setColor(context.coconutColors.primaryText),
+                      style: CoconutTypography.body1_16_Number.setColor(
+                        isUsed ? context.coconutColors.primaryText : context.coconutColors.mutedText,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       currentUnit.displayBitcoinAmount(balanceInSats, withUnit: true),
-                      style: Styles.label.merge(
-                        TextStyle(
-                          fontFamily: CustomFonts.number.getFontFamily,
-                          fontWeight: FontWeight.normal,
-                          color: context.coconutColors.mutedText,
-                        ),
-                      ),
+                      style: CoconutTypography.body2_14_Number
+                          .setColor(
+                            balanceInSats == 0 ? context.coconutColors.mutedText : context.coconutColors.primaryText,
+                          )
+                          .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                     ),
                   ],
                 ),
               ),
             ),
             CoconutLayout.spacing_200w,
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: context.coconutColors.infoChipBackground,
-              ),
-              child: Text(
-                isUsed ? t.status_used : t.status_unused,
-                style: TextStyle(
-                  color: isUsed ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
-                  fontSize: 10,
-                  fontFamily: CustomFonts.text.getFontFamily,
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: context.coconutColors.background, // TODO: dark theme에서 infoChipBackgound가 보이지 않는 문제 있음
+                ),
+                child: Text(
+                  isUsed ? t.status_used : t.status_unused,
+                  style: TextStyle(
+                    color: isUsed ? context.coconutColors.textHighlight : context.coconutColors.secondaryText,
+                    fontSize: 10,
+                    fontFamily: CustomFonts.text.getFontFamily,
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _WatchedGlowDot extends StatefulWidget {
+  final Color color;
+  const _WatchedGlowDot({required this.color});
+
+  @override
+  State<_WatchedGlowDot> createState() => _WatchedGlowDotState();
+}
+
+class _WatchedGlowDotState extends State<_WatchedGlowDot> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        return Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: widget.color,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withValues(alpha: 0.2 + 0.4 * t),
+                blurRadius: 1 + 3 * t,
+                spreadRadius: 0.5 + 1.5 * t,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

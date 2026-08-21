@@ -16,7 +16,6 @@ import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/qrcode_info.dart';
 import 'package:flutter/rendering.dart';
@@ -234,15 +233,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   }
 
   void _onAddressListButtonPressed() {
-    CommonBottomSheets.showCustomHeightBottomSheet(
-      context: context,
-      heightRatio: 0.9,
-      child: AddressListScreen(
-        id: _selectedWalletItem!.id,
-        isFullScreen: false,
-        backgroundColor: context.coconutColors.surfaceBottomSheet,
-      ),
-    );
+    Navigator.pushNamed(context, '/address-list', arguments: {'id': _selectedWalletItem!.id});
   }
 
   void _onAppBarTitlePressed() {
