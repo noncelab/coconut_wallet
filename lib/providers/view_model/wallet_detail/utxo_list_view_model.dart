@@ -253,6 +253,7 @@ class UtxoListViewModel extends ChangeNotifier {
   void refetchFromDB() {
     _getUtxoAndTagList();
     unawaited(_nodeProvider.syncDormantAddresses(_walletListBaseItem));
+    _nodeProvider.reconnectIfNeeded();
     notifyListeners();
   }
 

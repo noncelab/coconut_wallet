@@ -12,6 +12,7 @@ enum IsolateControllerCommand {
   syncDormantAddresses,
   syncViewedAddresses,
   resyncWallet,
+  shutdown,
 }
 
 enum IsolateStateMethod {

@@ -118,6 +118,9 @@ relative_time:
   hours_ago(cardinal):
     one: "1時間前"
     other: "${n}時間前"
+  days_ago(cardinal):
+    one: "1日前"
+    other: "${n}日前"
 
 apply_item: "$count 項目"
 fee_sats: " ($value sat/vB)"
@@ -952,17 +955,24 @@ wallet_info_screen:
     disconnect_confirm_description: "現在接続中のデバイスを解除します。\n次回署名時に再接続が必要です。"
 wallet_resync_screen:
   title: "ウォレット再同期"
+  exit_blocked_toast: "再同期が完了するまでお待ちください"
   confirm:
-    description: "このウォレットのデータを削除して\n最初から読み込み直します。\nトランザクションメモ、UTXOタグ、ロック状態はそのまま保持されます。"
+    title: "アプリに保存されたウォレットのデータを削除して\n最初から読み込み直します"
+    description: "トランザクションメモ、UTXOタグ、ロック状態はそのまま保持されます"
     connection_alert:
       connecting: "サーバー接続を確認しています"
       connected: "サーバーに接続されました"
       failed: "サーバーに接続できません"
       network_mismatch: "ネットワークが違うため接続できません"
+    warning:
+      title: "トラブル解決用の機能です"
+      description: "残高や取引履歴が正しく表示されない、または同期がうまくいかない場合にのみ使用してください"
+    last_resync_hint: "前回の再同期: $time"
     cta: "再同期を開始"
   progress:
     phase_wiping: "既存のウォレットデータを削除しています"
     phase_scanning: "ウォレットデータを読み込み直しています"
+    scanning_hint: "データが多いと、完了までにさらに時間がかかることがあります\n完了するまでそのままお待ちください"
     phase_restoring_metadata: "既存のトランザクションメモ、UTXOタグ、ロック情報を復元しています"
     success_title: "ウォレットデータを読み込み直しました"
     success_cta: "ウォレットへ移動"

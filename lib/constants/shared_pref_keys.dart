@@ -55,6 +55,9 @@ class SharedPrefKeys {
   /// 지갑별 목표 수량 (sats) - Map<walletId, targetSats> JSON
   static const String kWalletTargetSatsMap = "WALLET_TARGET_SATS_MAP";
 
+  /// 지갑별 마지막 재동기화 완료 시각 - Map<walletId, epochMillis> JSON
+  static const String kWalletLastResyncMap = "WALLET_LAST_RESYNC_MAP";
+
   // Electrum
   /// [DefaultElectrumServer.serverName] 또는 'CUSTOM'
   static const String kElectrumServerName = 'ELECTRUM_SERVER_NAME';

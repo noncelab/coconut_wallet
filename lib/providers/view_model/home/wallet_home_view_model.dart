@@ -334,11 +334,7 @@ class WalletHomeViewModel extends ChangeNotifier {
       unawaited(_nodeProvider.syncDormantAddresses(wallet));
     }
 
-    if (networkStatus != NetworkStatus.connectionFailed) {
-      return;
-    }
-
-    _nodeProvider.reconnect();
+    _nodeProvider.reconnectIfNeeded();
   }
 
   Future<void> updateWalletBalancesAndRecentTxs() async {

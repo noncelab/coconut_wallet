@@ -89,6 +89,12 @@ class NodeProvider extends ChangeNotifier {
     });
   }
 
+  /// 새 재동기화를 시작하기 직전에 호출
+  /// getResyncProgressStream이 이전 실행의 마지막 상태를 리플레이하지 않도록 캐시 삭제
+  void clearResyncProgress(int walletId) {
+    _stateManager?.clearResyncProgress(walletId);
+  }
+
   /// 특정 지갑의 재동기화 진행 상태만 구독할 수 있는 스트림
   Stream<ResyncProgress> getResyncProgressStream(int walletId) {
     return Stream.multi((controller) {
@@ -178,6 +184,11 @@ class NodeProvider extends ChangeNotifier {
       }
       if (_isWalletLoaded && isInitialized && _isFirstInitialization) {
         _stateManager?.setNodeSyncStateToFailed();
+      }
+      final nodeSyncState = state.nodeSyncState;
+      final isBootstrapping = nodeSyncState == NodeSyncState.init || nodeSyncState == NodeSyncState.syncing;
+      if (_connectivityProvider.isInternetOn && !isBootstrapping) {
+        unawaited(reconnect());
       }
     }
   }
@@ -462,7 +473,43 @@ class NodeProvider extends ChangeNotifier {
 
   /// 지갑의 온체인 데이터를 초기화하고 처음부터 다시 동기화
   Future<Result<bool>> resyncWallet(WalletItemBase walletItem) async {
-    return _isolateManager.resyncWallet(walletItem);
+    if (_connectivityProvider.isInternetOff) {
+      Logger.log('NodeProvider: 네트워크가 연결되지 않아 재동기화를 시작하지 않습니다.');
+      return Result.failure(ErrorCodes.networkError);
+    }
+
+    final result = await raceResyncAgainstConnectionLoss(_isolateManager.resyncWallet(walletItem), syncStateStream);
+
+    if (result.isSuccess) {
+      await _sharedPrefs.setWalletLastResyncTimestamp(walletItem.id, DateTime.now());
+    }
+    return result;
+  }
+
+  /// [isolateFuture]와 [syncStateStream]의 다음 [NodeSyncState.failed] 이벤트 중
+  /// 먼저 끝나는 쪽을 채택한다. isolate 쪽 작업 자체는 취소하지 않고 흘려보낸다.
+  @visibleForTesting
+  static Future<Result<bool>> raceResyncAgainstConnectionLoss(
+    Future<Result<bool>> isolateFuture,
+    Stream<NodeSyncState> syncStateStream,
+  ) async {
+    late StreamSubscription<NodeSyncState> connectionLostSubscription;
+    final connectionLostCompleter = Completer<Result<bool>>();
+    connectionLostSubscription = syncStateStream.listen((syncState) {
+      if (syncState == NodeSyncState.failed && !connectionLostCompleter.isCompleted) {
+        connectionLostCompleter.complete(Result.failure(ErrorCodes.nodeConnectionError));
+      }
+    });
+
+    try {
+      return await Future.any([isolateFuture, connectionLostCompleter.future]);
+    } finally {
+      await connectionLostSubscription.cancel();
+    }
+  }
+
+  DateTime? getLastResyncTimestamp(int walletId) {
+    return _sharedPrefs.getWalletLastResyncTimestamp(walletId);
   }
 
   Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) async {
@@ -516,6 +563,13 @@ class NodeProvider extends ChangeNotifier {
       Logger.error('NodeProvider.getTransactionRecord failed (txHash: $txHash) - error: ${result.error}');
     }
     return result;
+  }
+
+  /// 연결이 끊긴 상태면(NodeSyncState.failed 또는 hasConnectionError) 재연결을 시도한다.
+  /// pull-to-refresh 등에서 조건 분기 없이 호출할 수 있도록, 필요 없으면 내부에서 바로 no-op한다.
+  Future<void> reconnectIfNeeded() async {
+    if (state.nodeSyncState != NodeSyncState.failed && !hasConnectionError) return;
+    await reconnect();
   }
 
   Future<void> reconnect() async {

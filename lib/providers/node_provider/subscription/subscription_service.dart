@@ -52,8 +52,21 @@ class SubscriptionService {
   /// 라이브 구독 이벤트(syncScriptStatus)와 같은 지갑에 대해 동시에 잔액/UTXO를 쓰지 않도록
   /// ScriptSyncService의 지갑별 큐를 거쳐서 실행한다.
   /// [onProgress]는 재동기화 화면 진행률 표시 등 선택적 용도로만 사용한다(기본 null, 일반 흐름에는 영향 없음).
-  Future<Result<bool>> subscribeWallet(WalletItemBase walletItem, {void Function(int completed, int total)? onProgress}) {
-    return _scriptSyncService.runQueued(walletItem.id, () => _subscribeWalletGuarded(walletItem, onProgress: onProgress));
+  Future<Result<bool>> subscribeWallet(
+    WalletItemBase walletItem, {
+    void Function(int completed, int total)? onProgress,
+  }) {
+    return _scriptSyncService.runQueued(
+      walletItem.id,
+      () => _subscribeWalletGuarded(walletItem, onProgress: onProgress),
+    );
+  }
+
+  /// 지갑별 큐를 공유해서 [task] (subscribeWallet/스크립트 상태 처리)를 실행한다.
+  /// 재동기화처럼 subscribeWallet을 거치지 않고 직접 Realm을 쓰는 작업이, 백그라운드에서 도는
+  /// 지갑의 일반 구독과 순서 없이 경합하지 않도록 도착 순서대로 직렬화한다.
+  Future<T> runExclusive<T>(int walletId, Future<T> Function() task) {
+    return _scriptSyncService.runQueued(walletId, task);
   }
 
   /// dormant 주소들의 잔액을 재검증한다 (외부 진입점, 지갑별 큐를 거쳐서 실행한다)

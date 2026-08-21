@@ -76,8 +76,10 @@ class IsolateInitializer {
     final walletResyncService = WalletResyncService(
       walletRepository,
       utxoRepository,
+      addressRepository,
       subscriptionService,
       isolateStateManager,
+      scriptCallbackService,
     );
 
     final isolateController = IsolateController(
@@ -87,6 +89,7 @@ class IsolateInitializer {
       electrumService,
       transactionRecordService,
       walletResyncService,
+      realmManager,
     );
 
     // 소켓 연결 종료 시 상태 콜백

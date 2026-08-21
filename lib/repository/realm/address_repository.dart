@@ -314,28 +314,50 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 변경 주소 가져오기
-  WalletAddress getChangeAddress(int walletId) {
+  /// [wallet]에 주소가 하나도 없으면(재동기화가 지우기 이후 재스캔에 실패하는 등)
+  /// 인덱스 0 주소를 생성해 자가 복구한다.
+  WalletAddress getChangeAddress(int walletId, {WalletBase? wallet}) {
     final realmWalletBase = getWalletBase(walletId);
     final changeIndex = realmWalletBase.usedChangeIndex + 1;
-    final realmWalletAddress = realm.query<RealmWalletAddress>(r'walletId == $0 AND isChange == true AND index == $1', [
-      walletId,
-      changeIndex,
-    ]);
+    final realmWalletAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND isChange == true AND index == $1', [
+          walletId,
+          changeIndex,
+        ]).firstOrNull;
 
-    return mapRealmToWalletAddress(realmWalletAddress.first);
+    if (realmWalletAddress != null) {
+      return mapRealmToWalletAddress(realmWalletAddress);
+    }
+
+    // 주소 파생만 하고 반환 — 여기서 realm.write를 동기 실행하면 다른 isolate가 같은 Realm 파일에
+    // 쓰기 트랜잭션을 걸고 있을 때 메인 스레드가 그 잠금을 풀릴 때까지 블로킹돼 UI가 멈추고 ANR까지 날 수 있다(실측).
+    // 영구 저장은 다음 정상 동기화/재동기화 사이클(ensureAddressesExist 등, 비동기 경로)에 맡긴다.
+    if (wallet != null && changeIndex == 0 && realmWalletBase.generatedChangeIndex < 0) {
+      return generateAddress(wallet, 0, true);
+    }
+
+    throw StateError('[getChangeAddress] No address at index $changeIndex for wallet $walletId');
   }
 
   /// 수신 주소 가져오기
-  WalletAddress getReceiveAddress(int walletId) {
+  WalletAddress getReceiveAddress(int walletId, {WalletBase? wallet}) {
     final realmWalletBase = getWalletBase(walletId);
     final receiveIndex = realmWalletBase.usedReceiveIndex + 1;
     final realmWalletAddress =
         realm.query<RealmWalletAddress>(r'walletId == $0 AND isChange == false AND index == $1', [
           walletId,
           receiveIndex,
-        ]).first;
+        ]).firstOrNull;
 
-    return mapRealmToWalletAddress(realmWalletAddress);
+    if (realmWalletAddress != null) {
+      return mapRealmToWalletAddress(realmWalletAddress);
+    }
+
+    if (wallet != null && receiveIndex == 0 && realmWalletBase.generatedReceiveIndex < 0) {
+      return generateAddress(wallet, 0, false);
+    }
+
+    throw StateError('[getReceiveAddress] No address at index $receiveIndex for wallet $walletId');
   }
 
   /// 모든 월렛의 수신 주소를 1개씩 조회

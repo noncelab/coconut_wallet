@@ -119,6 +119,9 @@ relative_time:
   hours_ago(cardinal):
     one: "Hace 1 hora"
     other: "Hace ${n} horas"
+  days_ago(cardinal):
+    one: "Hace 1 día"
+    other: "Hace ${n} días"
 
 apply_item: "Aplicar a $count elementos"
 fee_sats: " ($value sat/vB)"
@@ -955,17 +958,24 @@ wallet_info_screen:
     disconnect_confirm_description: "Se desconectará el dispositivo actual.\nNecesitará volver a conectar para la próxima firma."
 wallet_resync_screen:
   title: "Resincronizar billetera"
+  exit_blocked_toast: "Espera hasta que termine la resincronización"
   confirm:
-    description: "Borra los datos de esta billetera\ny los vuelve a cargar desde cero.\nLas notas de transacción, etiquetas UTXO y bloqueos se conservan."
+    title: "Borra los datos de la billetera guardados en la app\ny los vuelve a cargar desde cero"
+    description: "Las notas de transacción, etiquetas UTXO y bloqueos se conservan"
     connection_alert:
       connecting: "Comprobando la conexión al servidor"
       connected: "Conectado al servidor"
       failed: "No se puede conectar al servidor"
       network_mismatch: "Red distinta, no se puede conectar"
+    warning:
+      title: "Esta es una función para solucionar problemas"
+      description: "Úsala solo si el saldo o el historial de transacciones se ve incorrecto, o si la sincronización no funciona"
+    last_resync_hint: "Última resincronización: $time"
     cta: "Iniciar resincronización"
   progress:
     phase_wiping: "Eliminando los datos actuales"
     phase_scanning: "Volviendo a cargar los datos"
+    scanning_hint: "Si hay muchos datos, puede tardar más en terminar\nEspera hasta que termine"
     phase_restoring_metadata: "Restaurando notas de transacción, etiquetas UTXO y bloqueos"
     success_title: "Datos recargados"
     success_cta: "Ir a la billetera"

@@ -118,6 +118,9 @@ relative_time:
   hours_ago(cardinal):
     one: "Vor 1 Stunde"
     other: "Vor ${n} Stunden"
+  days_ago(cardinal):
+    one: "Vor 1 Tag"
+    other: "Vor ${n} Tagen"
 
 apply_item: "$count Elemente"
 fee_sats: " ($value sat/vB)"
@@ -895,17 +898,24 @@ wallet_info_screen:
     disconnect_confirm_description: "Die aktuelle Geräteverbindung wird getrennt.\nBeim nächsten Signiervorgang ist eine erneute Verbindung erforderlich."
 wallet_resync_screen:
   title: "Wallet neu synchronisieren"
+  exit_blocked_toast: "Bitte warte, bis die Synchronisierung abgeschlossen ist"
   confirm:
-    description: "Die Daten dieser Wallet werden gelöscht\nund neu geladen.\nTransaktionsnotizen, UTXO-Tags und Sperren bleiben erhalten."
+    title: "Die in der App gespeicherten Wallet-Daten werden gelöscht\nund neu geladen"
+    description: "Transaktionsnotizen, UTXO-Tags und Sperren bleiben erhalten"
     connection_alert:
       connecting: "Serververbindung wird geprüft"
       connected: "Mit dem Server verbunden"
       failed: "Verbindung zum Server nicht möglich"
       network_mismatch: "Falsches Netzwerk, keine Verbindung möglich"
+    warning:
+      title: "Dies ist eine Funktion zur Fehlerbehebung"
+      description: "Nutze sie nur, wenn Guthaben oder Transaktionsverlauf falsch angezeigt werden oder die Synchronisierung nicht funktioniert"
+    last_resync_hint: "Letzte Synchronisierung: $time"
     cta: "Synchronisierung starten"
   progress:
     phase_wiping: "Vorhandene Daten werden gelöscht"
     phase_scanning: "Walletdaten werden neu geladen"
+    scanning_hint: "Bei vielen Daten kann es länger dauern, bis es fertig ist\nBitte warte, bis es abgeschlossen ist"
     phase_restoring_metadata: "Transaktionsnotizen, UTXO-Tags und Sperren werden wiederhergestellt"
     success_title: "Walletdaten neu geladen"
     success_cta: "Zur Wallet"

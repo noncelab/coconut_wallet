@@ -158,6 +158,33 @@ class SharedPrefsRepository {
     await _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map));
   }
 
+  /// 지갑별 마지막 재동기화 완료 시각------------------------------------------------
+  DateTime? getWalletLastResyncTimestamp(int walletId) {
+    final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletLastResyncMap);
+    if (encodedData == null || encodedData.isEmpty) return null;
+    try {
+      final Map<String, dynamic> decoded = json.decode(encodedData);
+      final value = decoded[walletId.toString()];
+      if (value == null) return null;
+      final epochMillis = value is int ? value : int.tryParse(value.toString());
+      return epochMillis != null ? DateTime.fromMillisecondsSinceEpoch(epochMillis) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> setWalletLastResyncTimestamp(int walletId, DateTime timestamp) async {
+    final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletLastResyncMap);
+    final Map<String, int> map =
+        encodedData != null && encodedData.isNotEmpty
+            ? (json.decode(encodedData) as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, v is int ? v : int.parse(v.toString())),
+            )
+            : {};
+    map[walletId.toString()] = timestamp.millisecondsSinceEpoch;
+    await _sharedPrefs.setString(SharedPrefKeys.kWalletLastResyncMap, json.encode(map));
+  }
+
   /// 사용자 서버 정보-------------------------------------------------------------
   Future<List<ElectrumServer>?> getUserServers() async {
     final prefs = await SharedPreferences.getInstance();

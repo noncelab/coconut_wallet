@@ -118,6 +118,9 @@ relative_time:
   hours_ago(cardinal):
     one: "1 hour ago"
     other: "${n} hours ago"
+  days_ago(cardinal):
+    one: "1 day ago"
+    other: "${n} days ago"
 
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
@@ -964,17 +967,24 @@ wallet_info_screen:
     disconnect_confirm_description: "Disconnect the current device.\nYou will need to reconnect for the next signing."
 wallet_resync_screen:
   title: "Wallet Resync"
+  exit_blocked_toast: "Please wait until the resync finishes"
   confirm:
-    description: "Erase this wallet's data\nand reload it from scratch.\nTransaction memos, UTXO tags, and locks stay intact."
+    title: "Erase the wallet data saved in this app\nand reload it from scratch"
+    description: "Transaction memos, UTXO tags, and locks stay intact"
     connection_alert:
       connecting: "Checking server connection"
       connected: "Connected to the server"
       failed: "Can't connect to the server"
       network_mismatch: "Can't connect — wrong network"
+    warning:
+      title: "This is a troubleshooting feature"
+      description: "Only use this if your balance or transaction history looks wrong, or sync isn't working"
+    last_resync_hint: "Last resync: $time"
     cta: "Start Resync"
   progress:
     phase_wiping: "Deleting existing wallet data"
     phase_scanning: "Reloading wallet data"
+    scanning_hint: "More data can mean it takes longer to finish\nPlease wait until it's finished"
     phase_restoring_metadata: "Restoring transaction memos, UTXO tags, and locks"
     success_title: "Wallet data reloaded"
     success_cta: "Go to Wallet"

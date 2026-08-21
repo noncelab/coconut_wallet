@@ -8,3 +8,7 @@ const Duration kIsolateSimpleResponseTimeoutForOnion = Duration(seconds: 75);
 /// 0부터 전체 gap-limit 스캔 + 데이터 fetch를 수행하므로 이미 인덱싱된 구간만
 /// 스캔하는 kIsolateResponseTimeout보다 훨씬 길게 잡음.
 const Duration kIsolateResyncTimeout = Duration(minutes: 10);
+
+/// isolate 종료 전 Realm을 정상적으로 닫을 시간을 짧게 줌
+/// 타임아웃되면 기존과 동일하게 즉시 강제종료(Isolate.kill)로 폴백
+const Duration kIsolateGracefulShutdownTimeout = Duration(seconds: 2);

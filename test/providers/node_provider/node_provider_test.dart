@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// [NodeProvider.isChainGenesisMismatch]가 [DefaultElectrumServer]의 실제 서버 구성 기준으로
@@ -122,6 +127,65 @@ void main() {
       );
 
       expect(wrongChain, false);
+    });
+  });
+
+  /// 지갑 재동기화 도중 커넥션이 끊겨도 최대 [kIsolateResyncTimeout](10분)을 다 기다리지 않고,
+  /// syncStateStream이 NodeSyncState.failed로 바뀌는 즉시 실패로 반환
+  group('NodeProvider.raceResyncAgainstConnectionLoss 테스트', () {
+    test('isolate가 먼저 응답하면(성공) 그 결과를 그대로 반환한다', () async {
+      final syncStateController = StreamController<NodeSyncState>.broadcast();
+      addTearDown(syncStateController.close);
+
+      final result = await NodeProvider.raceResyncAgainstConnectionLoss(
+        Future.value(Result.success(true)),
+        syncStateController.stream,
+      );
+
+      expect(result.isSuccess, true);
+    });
+
+    test('isolate가 먼저 응답하면(실패) 그 결과를 그대로 반환한다', () async {
+      final syncStateController = StreamController<NodeSyncState>.broadcast();
+      addTearDown(syncStateController.close);
+
+      final result = await NodeProvider.raceResyncAgainstConnectionLoss(
+        Future.value(Result<bool>.failure(ErrorCodes.nodeUnknown)),
+        syncStateController.stream,
+      );
+
+      expect(result.isFailure, true);
+      expect(result.error.code, ErrorCodes.nodeUnknown.code);
+    });
+
+    test('isolate 응답 전에 NodeSyncState.failed가 오면 isolate를 기다리지 않고 즉시 연결 실패로 반환한다', () async {
+      final syncStateController = StreamController<NodeSyncState>.broadcast();
+      addTearDown(syncStateController.close);
+      final neverCompletes = Completer<Result<bool>>();
+      addTearDown(() => neverCompletes.complete(Result.success(true)));
+
+      final future = NodeProvider.raceResyncAgainstConnectionLoss(neverCompletes.future, syncStateController.stream);
+
+      syncStateController.add(NodeSyncState.syncing);
+      syncStateController.add(NodeSyncState.failed);
+
+      final result = await future.timeout(const Duration(seconds: 1));
+
+      expect(result.isFailure, true, reason: '10분 isolate 타임아웃을 기다리지 않고 연결 실패 신호로 즉시 반환되어야 한다.');
+      expect(result.error.code, ErrorCodes.nodeConnectionError.code);
+    });
+
+    test('연결 실패로 반환된 뒤에는 스트림 구독을 정리해서 리스너가 남지 않는다', () async {
+      final syncStateController = StreamController<NodeSyncState>.broadcast();
+      addTearDown(syncStateController.close);
+      final neverCompletes = Completer<Result<bool>>();
+      addTearDown(() => neverCompletes.complete(Result.success(true)));
+
+      final future = NodeProvider.raceResyncAgainstConnectionLoss(neverCompletes.future, syncStateController.stream);
+      syncStateController.add(NodeSyncState.failed);
+      await future;
+
+      expect(syncStateController.hasListener, false, reason: 'race가 끝나면 내부 구독도 정리되어야 leak이 없다.');
     });
   });
 }

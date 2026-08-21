@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/node_provider/state/isolate_state_manag
 import 'package:coconut_wallet/providers/node_provider/network_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
+import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -18,6 +19,7 @@ class IsolateController {
   final ElectrumService _electrumService;
   final TransactionRecordService _transactionRecordService;
   final WalletResyncService _walletResyncService;
+  final RealmManager _realmManager;
   IsolateController(
     this._subscriptionService,
     this._networkManager,
@@ -25,6 +27,7 @@ class IsolateController {
     this._electrumService,
     this._transactionRecordService,
     this._walletResyncService,
+    this._realmManager,
   );
 
   Future<void> executeNetworkCommand(
@@ -96,6 +99,14 @@ class IsolateController {
           Logger.log('IsolateController: getTransactionRecord executing in isolate (txHash: $txHash)');
           isolateToMainSendPort.send(await _transactionRecordService.getTransactionRecord(params[0], params[1]));
           break;
+        case IsolateControllerCommand.shutdown:
+          Logger.log('IsolateController: Shutting down, closing realm');
+          try {
+            _realmManager.dispose();
+          } catch (e) {
+            Logger.error('IsolateController: Error closing realm during shutdown: $e');
+          }
+          Isolate.exit(isolateToMainSendPort, Result.success(true));
       }
     } catch (e, stack) {
       Logger.error('IsolateController: Error in $messageType: $e');

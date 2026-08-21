@@ -36,8 +36,6 @@ class WalletProvider extends ChangeNotifier {
   List<WalletItemBase> _walletItemList = [];
   List<WalletItemBase> get walletItemList => walletItemListNotifier.value;
 
-  int gapLimit = 20;
-
   final AddressRepository _addressRepository;
   final TransactionRepository _transactionRepository;
   final UtxoRepository _utxoRepository;
@@ -438,8 +436,8 @@ class WalletProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 지갑 재동기화 완료 후, isolate에서 리셋/재구독한 최신 상태(usedReceiveIndex 등)로
-  /// 메인 isolate의 캐시된 WalletItemBase를 다시 읽어온다.
+  /// 지갑 재동기화 완료 후, isolate에서 리셋/재구독한 최신 상태로
+  /// 메인 isolate의 캐시된 WalletItemBase를 다시 읽어옴
   Future<void> refreshWalletAfterResync(int walletId) async {
     _setWalletItemList(await _fetchWalletListFromDB());
     notifyListeners();
@@ -555,11 +553,11 @@ class WalletProvider extends ChangeNotifier {
   }
 
   WalletAddress getChangeAddress(int walletId) {
-    return _addressRepository.getChangeAddress(walletId);
+    return _addressRepository.getChangeAddress(walletId, wallet: getWalletById(walletId).walletBase);
   }
 
   WalletAddress getReceiveAddress(int walletId) {
-    return _addressRepository.getReceiveAddress(walletId);
+    return _addressRepository.getReceiveAddress(walletId, wallet: getWalletById(walletId).walletBase);
   }
 
   Map<int, WalletAddress> getReceiveAddressMap() {

@@ -196,6 +196,7 @@ class WalletListViewModel extends ChangeNotifier {
     for (final wallet in walletItemList) {
       unawaited(_nodeProvider.syncDormantAddresses(wallet));
     }
+    _nodeProvider.reconnectIfNeeded();
 
     notifyListeners();
   }

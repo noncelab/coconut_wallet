@@ -118,6 +118,9 @@ relative_time:
   hours_ago(cardinal):
     one: "1시간 전"
     other: "${n}시간 전"
+  days_ago(cardinal):
+    one: "1일 전"
+    other: "${n}일 전"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sat/vB)"
@@ -968,17 +971,24 @@ wallet_info_screen:
     disconnect_confirm_description: "현재 연결된 기기를 해제합니다.\n다음 서명 시 다시 연결이 필요합니다."
 wallet_resync_screen:
   title: "지갑 재동기화"
+  exit_blocked_toast: "재동기화가 완료될 때까지 기다려주세요"
   confirm:
-    description: "기존 지갑 데이터를 지우고\n처음부터 다시 불러와요.\n트랜잭션 메모, UTXO 태그, 잠금 상태는 그대로 보존돼요."
+    title: "앱에 저장된 지갑 데이터를 지우고\n처음부터 다시 불러와요"
+    description: "트랜잭션 메모, UTXO 태그, 잠금 상태는 그대로 보존돼요"
     connection_alert:
       connecting: "서버 연결을 확인하고 있어요"
       connected: "서버에 정상적으로 연결됐어요"
       failed: "서버에 연결할 수 없어요"
       network_mismatch: "네트워크가 달라 연결할 수 없어요"
+    warning:
+      title: "문제 해결용 기능이에요"
+      description: "잔액이나 거래 내역이 잘못 보이거나 동기화가 되지 않을 때만 사용해 주세요"
+    last_resync_hint: "마지막 재동기화: $time"
     cta: "재동기화 시작"
   progress:
     phase_wiping: "기존 지갑 데이터를 삭제할게요"
     phase_scanning: "지갑 데이터를 다시 불러오고 있어요"
+    scanning_hint: "데이터가 많으면 완료까지 시간이 더 걸릴 수 있어요\n완료될 때까지 잠시만 기다려 주세요"
     phase_restoring_metadata: "기존 트랜잭션 메모, UTXO 태그, 잠금 정보를 복원하고 있어요"
     success_title: "지갑 데이터를 다시 불러왔어요"
     success_cta: "지갑으로 이동"

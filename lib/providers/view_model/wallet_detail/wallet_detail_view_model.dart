@@ -190,6 +190,8 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> reconnectIfNeeded() => _nodeProvider.reconnectIfNeeded();
+
   void _updateBitcoinPrice() {
     _fiatPriceString = _priceProvider.getFiatPrice(_balance);
     notifyListeners();

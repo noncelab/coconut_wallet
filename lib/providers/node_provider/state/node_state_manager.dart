@@ -216,6 +216,14 @@ class NodeStateManager implements StateManagerInterface {
     _setState(newConnectionState: newConnectionState, newUpdatedWallets: newUpdatedWallets);
   }
 
+  /// 지갑 재동기화 진행 상태 캐시 삭제
+  /// getResyncProgressStream은 구독 시점에 이 캐시를 그대로 리플레이하므로, 이전 실행의 이벤트가 잘못 보이는 것을 방지
+  void clearResyncProgress(int walletId) {
+    if (!_resyncProgressByWallet.containsKey(walletId)) return;
+    _resyncProgressByWallet = {..._resyncProgressByWallet}..remove(walletId);
+    _resyncProgressController.add(_resyncProgressByWallet);
+  }
+
   /// 지갑 재동기화 단계 변경
   void setWalletResyncPhase(int walletId, ResyncPhase phase, {String? errorMessage}) {
     _resyncProgressByWallet = {

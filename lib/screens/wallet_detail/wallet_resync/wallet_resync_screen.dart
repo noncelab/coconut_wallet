@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -7,6 +8,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/resync_progress.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
@@ -43,15 +45,21 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
   ResyncProgress? _progress;
   StreamSubscription<ResyncProgress>? _progressSubscription;
   bool _isRunning = false;
+  ConnectivityProvider? _connectivityProvider;
 
   final List<ResyncProgress> _phaseQueue = [];
   bool _isDrainingPhaseQueue = false;
+
+  /// 재동기화 시작 버튼을 누른 시점부터 화면 이탈을 막아야 함
+  bool _isStarting = false;
 
   bool get _isInProgress =>
       _progress != null &&
       (_progress!.phase == ResyncPhase.wiping ||
           _progress!.phase == ResyncPhase.scanning ||
           _progress!.phase == ResyncPhase.restoringMetadata);
+
+  bool get _blocksExit => _isStarting || _isInProgress;
 
   @override
   void initState() {
@@ -62,6 +70,31 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
     // 바로 구독하면 예전에 재동기화했던 적이 있는 지갑은 그 마지막 상태(예: completed)를 즉시
     // 받아버려서 확인 화면을 건너뛰고 바로 결과 화면으로 가버린다 — 그래서 사용자가 실제로
     // "시작" 버튼을 눌러 이번 재동기화를 시작한 뒤에만 구독을 시작한다(_beginResyncFlow).
+    _connectivityProvider = context.read<ConnectivityProvider>()..addListener(_onConnectivityChanged);
+  }
+
+  void _onConnectivityChanged() {
+    if (!mounted) return;
+
+    if (_progress?.phase == ResyncPhase.failed) {
+      // 실패 화면에서 재시도 버튼의 활성/비활성 상태가 네트워크에 따라 바뀌므로 다시 그려준다.
+      setState(() {});
+      return;
+    }
+
+    if (_progress != null) return;
+
+    if (_connectivityProvider!.isInternetOn) {
+      if (_connectionStatus == NodeConnectionStatus.failed ||
+          _connectionStatus == NodeConnectionStatus.networkMismatch) {
+        _checkConnection();
+      }
+      return;
+    }
+
+    if (_connectionStatus == NodeConnectionStatus.connected) {
+      setState(() => _connectionStatus = NodeConnectionStatus.failed);
+    }
   }
 
   /// [progress]가 현재(또는 큐에서 대기 중인) 단계와 같은 phase면 fetch 진행률 갱신으로 보고
@@ -97,6 +130,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
 
   @override
   void dispose() {
+    _connectivityProvider?.removeListener(_onConnectivityChanged);
     _progressSubscription?.cancel();
     super.dispose();
   }
@@ -122,13 +156,30 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
   }
 
   Future<void> _onStartPressed() async {
+    if (_isStarting || _isInProgress) return;
     if (_connectionStatus != NodeConnectionStatus.connected) return;
+
+    setState(() => _isStarting = true);
+    await _checkConnection();
+    if (!mounted) return;
+    if (_connectionStatus != NodeConnectionStatus.connected) {
+      setState(() => _isStarting = false);
+      return;
+    }
+
     await _handleAuthFlow(onComplete: _beginResyncFlow);
+    // 인증을 중간에 취소하는 등 _beginResyncFlow가 끝내 실행되지 않았다면 화면을 이탈할 수 있도록 함.
+    if (mounted && _progress == null) {
+      setState(() => _isStarting = false);
+    }
   }
 
   /// 사용자가 실제로 재동기화를 시작(또는 재시도)한 뒤에만 진행률 스트림을 구독한다.
   void _beginResyncFlow() {
-    _progressSubscription ??= context.read<NodeProvider>().getResyncProgressStream(widget.id).listen((progress) {
+    final nodeProvider = context.read<NodeProvider>();
+    // 이전 실행의 마지막 상태를 구독 직전 지워둔다
+    nodeProvider.clearResyncProgress(widget.id);
+    _progressSubscription ??= nodeProvider.getResyncProgressStream(widget.id).listen((progress) {
       if (!mounted) return;
       _enqueuePhase(progress);
     });
@@ -166,6 +217,8 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
 
     final result = await nodeProvider.resyncWallet(walletItem);
     _isRunning = false;
+
+    _isStarting = false;
     if (!mounted) return;
 
     if (result.isSuccess) {
@@ -177,8 +230,15 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
     }
   }
 
+  bool get _isOffline => !(_connectivityProvider?.isInternetOn ?? true);
+
   void _onRetryPressed() {
+    if (_isOffline) return;
     _beginResyncFlow();
+  }
+
+  void _showExitBlockedToast() {
+    CoconutToast.showToast(context: context, isVisibleIcon: true, text: t.wallet_resync_screen.exit_blocked_toast);
   }
 
   void _onDonePressed() {
@@ -192,14 +252,16 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !_isInProgress,
-      onPopInvokedWithResult: (didPop, _) {},
+      canPop: !_blocksExit,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _showExitBlockedToast();
+      },
       child: Scaffold(
         backgroundColor: context.coconutColors.background,
         appBar: CoconutAppBar.build(
           title: t.wallet_resync_screen.title,
           context: context,
-          onBackPressed: _isInProgress ? () {} : () => Navigator.of(context).pop(),
+          onBackPressed: _blocksExit ? _showExitBlockedToast : () => Navigator.of(context).pop(),
         ),
         body: SafeArea(
           child: Stack(
@@ -222,6 +284,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
                     onButtonClicked: _bottomButtonConfig!.onPressed,
                     text: _bottomButtonConfig!.text,
                     isActive: _bottomButtonConfig!.isActive,
+                    subWidget: _bottomButtonConfig!.subWidget,
                   ),
                 ),
             ],
@@ -231,24 +294,54 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
     );
   }
 
-  ({String text, VoidCallback onPressed, bool isActive})? get _bottomButtonConfig {
+  ({String text, VoidCallback onPressed, bool isActive, Widget? subWidget})? get _bottomButtonConfig {
     if (_progress == null) {
       return (
         text: t.wallet_resync_screen.confirm.cta,
         onPressed: _onStartPressed,
-        isActive: _connectionStatus == NodeConnectionStatus.connected,
+        isActive: !_isStarting && _connectionStatus == NodeConnectionStatus.connected,
+        subWidget: _buildLastResyncHint(),
       );
     }
     switch (_progress!.phase) {
       case ResyncPhase.completed:
-        return (text: t.wallet_resync_screen.progress.success_cta, onPressed: _onDonePressed, isActive: true);
+        return (
+          text: t.wallet_resync_screen.progress.success_cta,
+          onPressed: _onDonePressed,
+          isActive: true,
+          subWidget: null,
+        );
       case ResyncPhase.failed:
-        return (text: t.wallet_resync_screen.progress.error_cta, onPressed: _onRetryPressed, isActive: true);
+        return (
+          text: t.wallet_resync_screen.progress.error_cta,
+          onPressed: _onRetryPressed,
+          isActive: !_isOffline,
+          subWidget: null,
+        );
       case ResyncPhase.wiping:
       case ResyncPhase.scanning:
       case ResyncPhase.restoringMetadata:
         return null;
     }
+  }
+
+  Widget? _buildLastResyncHint() {
+    final lastResync = context.read<NodeProvider>().getLastResyncTimestamp(widget.id);
+    if (lastResync == null) return null;
+
+    return Text(
+      t.wallet_resync_screen.confirm.last_resync_hint(time: _formatRelativeTime(lastResync)),
+      style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+      textAlign: TextAlign.center,
+    );
+  }
+
+  String _formatRelativeTime(DateTime time) {
+    final diff = DateTime.now().difference(time);
+    if (diff.inMinutes < 1) return t.relative_time.just_now;
+    if (diff.inHours < 1) return t.relative_time.minutes_ago(n: diff.inMinutes);
+    if (diff.inDays < 1) return t.relative_time.hours_ago(n: diff.inHours);
+    return t.relative_time.days_ago(n: diff.inDays);
   }
 
   Widget _buildContent() {
@@ -268,15 +361,17 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
           title: t.wallet_resync_screen.progress.phase_wiping,
         );
       case ResyncPhase.scanning:
+        final hasFetchProgress =
+            _progress?.fetchCompleted != null && _progress?.fetchTotal != null && (_progress?.fetchTotal ?? 0) > 0;
         return _buildStatusColumn(
           key: const ValueKey('scanning'),
-          icon: SizedBox(
-            width: 48,
-            height: 48,
-            child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 4),
+          icon: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+            child: hasFetchProgress ? _buildFetchProgress(key: const ValueKey('progress')) : _buildScanningSpinner(),
           ),
           title: t.wallet_resync_screen.progress.phase_scanning,
-          extra: _buildFetchProgress(),
+          extra: hasFetchProgress ? _buildScanningHint() : null,
         );
       case ResyncPhase.restoringMetadata:
         return _buildStatusColumn(
@@ -319,15 +414,86 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
   Widget _buildConfirmContent() {
     return Column(
       key: const ValueKey('confirm'),
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          t.wallet_resync_screen.confirm.description,
+          t.wallet_resync_screen.confirm.title,
           style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+          textAlign: TextAlign.center,
+        ),
+        CoconutLayout.spacing_100h,
+        Text(
+          t.wallet_resync_screen.confirm.description,
+          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+          textAlign: TextAlign.center,
         ),
         CoconutLayout.spacing_600h,
         _buildConnectionAlertBox(),
+        _buildAnimatedWarningSection(),
       ],
+    );
+  }
+
+  /// connected일 때만 사용자 남용 경고 문구를 보여준다
+  Widget _buildAnimatedWarningSection() {
+    final isConnected = _connectionStatus == NodeConnectionStatus.connected;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder:
+          (child, animation) =>
+              FadeTransition(opacity: animation, child: SizeTransition(sizeFactor: animation, child: child)),
+      child:
+          isConnected
+              ? Column(
+                key: const ValueKey('warning-visible'),
+                children: [CoconutLayout.spacing_300h, _buildWarningBox()],
+              )
+              : const SizedBox.shrink(key: ValueKey('warning-hidden')),
+    );
+  }
+
+  Widget _buildWarningBox() {
+    // connection_alert 아이콘과 같은 20px 슬롯 폭 + spacing_300w(12px) 만큼,
+    // description을 들여써서 title과 텍스트 시작 x를 맞추기 위함
+    const iconSlotWidth = 20.0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: iconSlotWidth,
+                child: Center(
+                  child: SvgPicture.asset(
+                    'assets/svg/circle-info.svg',
+                    // circle-check.svg(24x24, 링이 83% 채움)와 실제 렌더링 링 지름을 맞춘 값(circle-info.svg는 16x16, 94% 채움)
+                    height: 17.78,
+                    colorFilter: ColorFilter.mode(context.coconutColors.warning, BlendMode.srcIn),
+                  ),
+                ),
+              ),
+              CoconutLayout.spacing_300w,
+              Expanded(
+                child: Text(
+                  t.wallet_resync_screen.confirm.warning.title,
+                  style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.warning),
+                ),
+              ),
+            ],
+          ),
+          CoconutLayout.spacing_100h,
+          Padding(
+            padding: const EdgeInsets.only(left: iconSlotWidth + 12),
+            child: Text(
+              t.wallet_resync_screen.confirm.warning.description,
+              style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -394,31 +560,126 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
     }
   }
 
-  Widget? _buildFetchProgress() {
-    final completed = _progress?.fetchCompleted;
-    final total = _progress?.fetchTotal;
-    if (completed == null || total == null || total <= 0) return null;
+  Widget _buildScanningSpinner() {
+    return SizedBox(
+      key: const ValueKey('spinner'),
+      width: 36,
+      height: 36,
+      child: CircularProgressIndicator(
+        color: context.coconutColors.primary,
+        strokeWidth: 5,
+        strokeCap: StrokeCap.round,
+      ),
+    );
+  }
 
-    final ratio = (completed / total).clamp(0.0, 1.0);
-    final percentText = '${(ratio * 100).round()}%';
-
+  Widget _buildScanningHint() {
     return Padding(
       padding: const EdgeInsets.only(top: 16),
-      child: Column(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: ratio,
-              minHeight: 6,
-              backgroundColor: context.coconutColors.surfaceCard,
-              color: context.coconutColors.primary,
-            ),
-          ),
-          CoconutLayout.spacing_200h,
-          Text(percentText, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
-        ],
+      child: Text(
+        t.wallet_resync_screen.progress.scanning_hint,
+        style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+        textAlign: TextAlign.center,
       ),
+    );
+  }
+
+  Widget _buildFetchProgress({required Key key}) {
+    final ratio = (_progress!.fetchCompleted! / _progress!.fetchTotal!).clamp(0.0, 1.0);
+
+    return TweenAnimationBuilder<double>(
+      key: key,
+      tween: Tween<double>(end: ratio),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedRatio, _) => _buildProgressSlider(animatedRatio),
+    );
+  }
+
+  Widget _buildProgressSlider(double ratio) {
+    const double trackHeight = 8;
+    const double thumbSize = 16;
+    const double sliderAreaTop = 32;
+    final percentText = '${(ratio * 100).round()}%';
+
+    return SizedBox(
+      height: sliderAreaTop + thumbSize,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final thumbCenterX = (width * ratio).clamp(thumbSize / 2, width - thumbSize / 2);
+
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                top: sliderAreaTop + (thumbSize - trackHeight) / 2,
+                left: 0,
+                right: 0,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(trackHeight / 2),
+                  child: Stack(
+                    children: [
+                      Container(height: trackHeight, color: context.coconutColors.surfaceCard),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: ratio,
+                          child: Container(height: trackHeight, color: context.coconutColors.primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                top: sliderAreaTop,
+                left: thumbCenterX - thumbSize / 2,
+                child: Container(
+                  width: thumbSize,
+                  height: thumbSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: context.coconutColors.primary,
+                    border: Border.all(color: context.coconutColors.background, width: 2),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                left: thumbCenterX,
+                child: FractionalTranslation(
+                  translation: const Offset(-0.5, 0),
+                  child: _buildPercentBubble(percentText),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPercentBubble(String text) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: context.coconutColors.tooltipBackground,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(text, style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText)),
+        ),
+        Transform.translate(
+          offset: const Offset(0, -3),
+          child: Transform.rotate(
+            angle: math.pi / 4,
+            child: Container(width: 6, height: 6, color: context.coconutColors.tooltipBackground),
+          ),
+        ),
+      ],
     );
   }
 
@@ -426,17 +687,13 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
     final errorMessage = _progress?.errorMessage;
     if (errorMessage == null || errorMessage.isEmpty) return null;
 
-    return Container(
-      margin: const EdgeInsets.only(top: 16),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      decoration: BoxDecoration(
-        color: context.coconutColors.surfaceCard,
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-      ),
+    final trimmedMessage = errorMessage.replaceAll(RegExp(r'[.。]+$'), '');
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
       child: Text(
-        errorMessage,
-        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+        trimmedMessage,
+        style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
         textAlign: TextAlign.center,
       ),
     );
