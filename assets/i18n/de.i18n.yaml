@@ -869,6 +869,7 @@ wallet_info_screen:
   wallet_backup_data: "Wallet-Sicherungsdaten"
   confirm_backup_data: "Sicherungsdaten bestätigen"
   no_info: "Keine Daten"
+  resync_label: "Wallet neu synchronisieren"
   tooltip:
     mfp_placeholder_description: "Dies ist eine mit erweitertem öffentlichen Schlüssel hinzugefügte Wallet\nund der Master-Fingerabdruck wurde nicht eingegeben\ndaher wird er als 00000000 angezeigt."
     wallet_backup_data: "Dies sind die BSMS(BIP-129)-Sicherungsinformationen für diese Wallet. Sie können diese Daten verwenden, um die Multisig-Wallet im Falle eines Geräteverlusts oder -austauschs wiederherzustellen. Bitte bewahren Sie sie sicher auf und seien Sie vorsichtig beim externen Teilen."
@@ -892,6 +893,24 @@ wallet_info_screen:
     disconnect_button: "Trennen"
     disconnect_confirm_title: "Verbindung trennen"
     disconnect_confirm_description: "Die aktuelle Geräteverbindung wird getrennt.\nBeim nächsten Signiervorgang ist eine erneute Verbindung erforderlich."
+wallet_resync_screen:
+  title: "Wallet neu synchronisieren"
+  confirm:
+    description: "Die Daten dieser Wallet werden gelöscht\nund neu geladen.\nTransaktionsnotizen, UTXO-Tags und Sperren bleiben erhalten."
+    connection_alert:
+      connecting: "Serververbindung wird geprüft"
+      connected: "Mit dem Server verbunden"
+      failed: "Verbindung zum Server nicht möglich"
+      network_mismatch: "Falsches Netzwerk, keine Verbindung möglich"
+    cta: "Synchronisierung starten"
+  progress:
+    phase_wiping: "Vorhandene Daten werden gelöscht"
+    phase_scanning: "Walletdaten werden neu geladen"
+    phase_restoring_metadata: "Transaktionsnotizen, UTXO-Tags und Sperren werden wiederhergestellt"
+    success_title: "Walletdaten neu geladen"
+    success_cta: "Zur Wallet"
+    error_title: "Walletdaten konnten nicht geladen werden"
+    error_cta: "Erneut versuchen"
 wallet_signer_section:
   title: "Signiermethode"
   segmented_control:

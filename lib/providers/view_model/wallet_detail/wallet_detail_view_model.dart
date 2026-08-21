@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
@@ -37,8 +38,10 @@ class WalletDetailViewModel extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   late final Stream<WalletUpdateInfo> _syncWalletStateStream;
   late final Stream<NodeSyncState> _nodeSyncStateStream;
+  late final Stream<WalletFetchProgress> _fetchProgressStream;
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
   StreamSubscription<NodeSyncState>? _nodeSyncStateSubscription;
+  StreamSubscription<WalletFetchProgress>? _fetchProgressSubscription;
 
   late WalletItemBase _walletListBaseItem;
   late WalletType _walletType;
@@ -99,7 +102,8 @@ class WalletDetailViewModel extends ChangeNotifier {
     this._preferenceProvider,
     this._nodeProvider,
   ) : _syncWalletStateStream = _nodeProvider.getWalletStateStream(_walletId),
-      _nodeSyncStateStream = _nodeProvider.syncStateStream {
+      _nodeSyncStateStream = _nodeProvider.syncStateStream,
+      _fetchProgressStream = _nodeProvider.getWalletFetchProgressStream(_walletId) {
     // 지갑 상세 초기화
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
@@ -110,8 +114,9 @@ class WalletDetailViewModel extends ChangeNotifier {
     _prevWalletUpdateInfo = WalletUpdateInfo(_walletId);
     _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdateInfoChanged);
     _nodeSyncStateSubscription = _nodeSyncStateStream.listen(_onNodeSyncStateChanged);
+    _fetchProgressSubscription = _fetchProgressStream.listen(_onFetchProgressChanged);
     _nodeSyncState = NodeSyncState.syncing;
-    _isWalletSyncing = !_allElementUpdateCompleted(_prevWalletUpdateInfo);
+    _isWalletSyncing = false;
     _balance = _getBalance();
     _isManualUtxoSelectionMode = _preferenceProvider.isManualUtxoSelectionMode;
 
@@ -232,24 +237,26 @@ class WalletDetailViewModel extends ChangeNotifier {
       Logger.log('--> 지갑$_walletId의 TX를 업데이트했습니다.: ${_txProvider.txList.length}');
     }
 
-    bool isSyncing = !_allElementUpdateCompleted(newInfo);
-    if (_isWalletSyncing != isSyncing) {
-      _isWalletSyncing = isSyncing;
-      Logger.log('--> 지갑$_walletId loading ui: $_isWalletSyncing으로 변경');
-      notifyListeners();
-    }
-
     _setPendingAmount();
     _prevWalletUpdateInfo = newInfo;
+  }
+
+  // 실제로 처리해야 할 트랜잭션 fetch 요청 수(dispatched)와 끝난 수(completed)를 직접 세서
+  // "업데이트 중"을 판단한다. syncing/completed 이진 상태만 보면 대량 배치 작업과 라이브 이벤트
+  // 1건을 구분할 수 없어(둘 다 그냥 syncing→completed 한 번으로 보임) 깜빡임이 생겼는데,
+  // dispatched > completed(진짜 outstanding한 요청이 있는지)를 직접 세면 임의의 디바운스
+  // 타이머 없이도 정확하게 판단된다.
+  void _onFetchProgressChanged(WalletFetchProgress progress) {
+    final isSyncing = progress.isFetching;
+    if (_isWalletSyncing == isSyncing) return;
+    _isWalletSyncing = isSyncing;
+    Logger.log('--> 지갑$_walletId loading ui: $_isWalletSyncing으로 변경 (${progress.completed}/${progress.dispatched})');
+    notifyListeners();
   }
 
   void _onNodeSyncStateChanged(NodeSyncState newState) {
     _nodeSyncState = newState;
     notifyListeners();
-  }
-
-  bool _allElementUpdateCompleted(WalletUpdateInfo updateInfo) {
-    return updateInfo.balance == WalletSyncState.completed && updateInfo.transaction == WalletSyncState.completed;
   }
 
   void _setPendingAmount() {
@@ -281,6 +288,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   void dispose() {
     _syncWalletStateSubscription?.cancel();
     _nodeSyncStateSubscription?.cancel();
+    _fetchProgressSubscription?.cancel();
     _walletProvider.removeListener(_onWalletProviderChanged);
     _priceProvider.removeListener(_updateBitcoinPrice);
     _txProvider.removeListener(_onTransactionProviderChanged);

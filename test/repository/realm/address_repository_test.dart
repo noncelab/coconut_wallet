@@ -528,4 +528,52 @@ void main() {
       expect(activeChangeAddresses.map((a) => a.index), contains(9));
     });
   });
+
+  group('ensureAddressesExist - 재동기화(둘 다 -1에서 시작) 회귀 테스트', () {
+    // 재동기화로 generatedReceiveIndex/generatedChangeIndex가 둘 다 -1인 상태에서, receive만
+    // 먼저 생성한 뒤 change를 생성해도 change index 0이 스킵되지 않고 정상 생성돼야 한다.
+    // (예전 버그: receive만 담긴 배치를 처리할 때 maxChangeIndex 초기값이 0이라 change 주소가
+    // 하나도 없는데도 generatedChangeIndex가 0으로 잘못 갱신되어, 이후 change 생성 시
+    // index 0이 이미 생성된 걸로 착각해 index 1부터 생성해버림)
+    test('receive를 먼저 생성해도 generatedChangeIndex가 잘못 갱신되지 않는다', () async {
+      expect(realmWalletBase.generatedReceiveIndex, -1);
+      expect(realmWalletBase.generatedChangeIndex, -1);
+
+      await addressRepository.ensureAddressesExist(
+        walletItemBase: testWalletItem,
+        cursor: 0,
+        count: 20,
+        isChange: false,
+      );
+
+      final afterReceiveOnly = realmManager.realm.find<RealmWalletBase>(testWalletId)!;
+      expect(afterReceiveOnly.generatedChangeIndex, -1);
+    });
+
+    test('receive 생성 후 change를 생성하면 change index 0도 정상적으로 생성된다', () async {
+      await addressRepository.ensureAddressesExist(
+        walletItemBase: testWalletItem,
+        cursor: 0,
+        count: 20,
+        isChange: false,
+      );
+      await addressRepository.ensureAddressesExist(
+        walletItemBase: testWalletItem,
+        cursor: 0,
+        count: 20,
+        isChange: true,
+      );
+
+      final changeAddressZeroId = getWalletAddressId(
+        testWalletId,
+        0,
+        testWalletItem.walletBase.getAddress(0, isChange: true),
+      );
+      final changeAddressZero = realmManager.realm.find<RealmWalletAddress>(changeAddressZeroId);
+
+      expect(changeAddressZero, isNotNull);
+      expect(changeAddressZero!.index, 0);
+      expect(changeAddressZero.isChange, isTrue);
+    });
+  });
 }

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/resync_progress.dart';
+import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
@@ -72,6 +74,8 @@ class ScriptSyncServiceMock {
       () {},
       StreamController<NodeSyncState>.broadcast(),
       StreamController<Map<int, WalletUpdateInfo>>.broadcast(),
+      StreamController<Map<int, ResyncProgress>>.broadcast(),
+      StreamController<Map<int, WalletFetchProgress>>.broadcast(),
     );
     if (realmManager == null) {
       realmManager = TestRealmManager();

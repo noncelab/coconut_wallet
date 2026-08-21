@@ -438,6 +438,13 @@ class WalletProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 지갑 재동기화 완료 후, isolate에서 리셋/재구독한 최신 상태(usedReceiveIndex 등)로
+  /// 메인 isolate의 캐시된 WalletItemBase를 다시 읽어온다.
+  Future<void> refreshWalletAfterResync(int walletId) async {
+    _setWalletItemList(await _fetchWalletListFromDB());
+    notifyListeners();
+  }
+
   /// [싱글시그니처] 외부지갑 이름변경
   Future<void> updateWalletName(int id, String name) async {
     final index = _walletItemList.indexWhere((element) => element.id == id);

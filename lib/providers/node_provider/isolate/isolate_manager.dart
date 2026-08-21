@@ -326,6 +326,10 @@ class IsolateManager {
       case IsolateControllerCommand.syncViewedAddresses:
         return kIsolateResponseTimeout;
 
+      // 지갑 재동기화: 콜드 풀 스캔 + fetch, 훨씬 오래 걸릴 수 있음
+      case IsolateControllerCommand.resyncWallet:
+        return kIsolateResyncTimeout;
+
       // 간단한 작업: .onion인 경우 kIsolateSimpleResponseTimeoutForOnion, 그 외 kIsolateSimpleResponseTimeout
       case IsolateControllerCommand.broadcast:
       case IsolateControllerCommand.getNetworkMinimumFeeRate:
@@ -511,6 +515,10 @@ class IsolateManager {
 
   Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) async {
     return _send(IsolateControllerCommand.syncDormantAddresses, [walletItem]);
+  }
+
+  Future<Result<bool>> resyncWallet(WalletItemBase walletItem) async {
+    return _send(IsolateControllerCommand.resyncWallet, [walletItem]);
   }
 
   Future<Result<List<WalletAddress>>> syncViewedAddresses(

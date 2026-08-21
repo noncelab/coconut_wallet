@@ -276,11 +276,13 @@ class ScriptSyncService {
       await _unsubscribeIfDormant(dto.walletItem, dto.scriptStatus.address);
 
       // Transaction 동기화
+      _stateManager.addWalletFetchDispatched(dto.walletItem.id, 1);
       final fetchResult = await _transactionSyncService.fetchScriptTransaction(
         dto.walletItem,
         dto.scriptStatus,
         now: receivedAt,
       );
+      _stateManager.addWalletFetchCompleted(dto.walletItem.id, 1);
       await _scriptCallbackService.registerTransactionDependency(
         dto.walletItem,
         dto.scriptStatus,
@@ -346,17 +348,32 @@ class ScriptSyncService {
   }
 
   /// 스크립트 상태 변경 배치 처리
+  /// [onProgress]는 재동기화 화면 진행률 표시 등 선택적 용도로만 사용한다(기본 null, 일반 흐름에는 영향 없음).
+  /// balance/transaction/utxo 세 단계 각각이 scriptStatuses 전체를 한 번씩 처리하므로, 전체 작업량을
+  /// scriptStatuses.length * 3으로 보고 각 단계의 배치/청크가 끝날 때마다 누적치를 보고한다 —
+  /// balance만 대상 스크립트가 적어도(예: transaction 청크 20개 미만) 최소 한 번은 진행률이 찍힌다.
   Future<void> syncBatchScriptStatusList({
     required WalletItemBase walletItem,
     required List<ScriptStatus> scriptStatuses,
+    void Function(int completed, int total)? onProgress,
   }) async {
     try {
       final now = DateTime.now();
       final totalStartTime = DateTime.now();
+      final progressTotal = scriptStatuses.length * 3;
+      int progressCompleted = 0;
+      void reportProgress(int delta) {
+        progressCompleted += delta;
+        onProgress?.call(progressCompleted, progressTotal);
+      }
 
       // Balance 병렬 처리
       final balanceStartTime = DateTime.now();
-      await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses);
+      await _balanceSyncService.fetchScriptBalanceBatch(
+        walletItem,
+        scriptStatuses,
+        onBatchProgress: reportProgress,
+      );
       await Future.wait(scriptStatuses.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
       final balanceEndTime = DateTime.now();
       final balanceDuration = balanceEndTime.difference(balanceStartTime);
@@ -364,6 +381,7 @@ class ScriptSyncService {
 
       // Transaction 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
+      _stateManager.addWalletFetchDispatched(walletItem.id, scriptStatuses.length);
       final transactionStartTime = DateTime.now();
 
       const chunkSize = 20;
@@ -375,6 +393,8 @@ class ScriptSyncService {
               _transactionSyncService.fetchScriptTransaction(walletItem, status, inBatchProcess: true, now: now),
         );
         await Future.wait(transactionFutures);
+        reportProgress(batch.length);
+        _stateManager.addWalletFetchCompleted(walletItem.id, batch.length);
 
         if (i + chunkSize < scriptStatuses.length) {
           await Future.delayed(const Duration(milliseconds: 100));
@@ -396,6 +416,7 @@ class ScriptSyncService {
       await Future.wait(
         scriptStatuses.map((status) => _utxoSyncService.fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
       );
+      reportProgress(scriptStatuses.length);
 
       // 최초 지갑 구독 시 Outgoing Transaction이 있을 경우 UTXO가 생성되지 않을 경우 임의로 UTXO를 생성해야 함
       await _utxoSyncService.createOutgoingUtxos(walletItem);

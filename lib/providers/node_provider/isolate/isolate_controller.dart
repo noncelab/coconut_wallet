@@ -2,6 +2,7 @@ import 'dart:isolate';
 
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
+import 'package:coconut_wallet/providers/node_provider/resync/wallet_resync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/state/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
@@ -16,12 +17,14 @@ class IsolateController {
   final IsolateStateManager _isolateStateManager;
   final ElectrumService _electrumService;
   final TransactionRecordService _transactionRecordService;
+  final WalletResyncService _walletResyncService;
   IsolateController(
     this._subscriptionService,
     this._networkManager,
     this._isolateStateManager,
     this._electrumService,
     this._transactionRecordService,
+    this._walletResyncService,
   );
 
   Future<void> executeNetworkCommand(
@@ -64,6 +67,11 @@ class IsolateController {
           break;
         case IsolateControllerCommand.syncViewedAddresses:
           isolateToMainSendPort.send(await _subscriptionService.syncViewedAddresses(params[0], params[1]));
+          break;
+        case IsolateControllerCommand.resyncWallet:
+          final walletItem = params[0];
+          _isolateStateManager.initWalletUpdateStatus(walletItem.id);
+          isolateToMainSendPort.send(await _walletResyncService.resyncWallet(walletItem));
           break;
         case IsolateControllerCommand.broadcast:
           isolateToMainSendPort.send(await _networkManager.broadcast(params[0]));

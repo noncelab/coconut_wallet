@@ -929,6 +929,7 @@ wallet_info_screen:
   wallet_backup_data: "Datos de respaldo de billetera" 
   confirm_backup_data: "Confirmar datos de respaldo"
   no_info: "No hay datos"
+  resync_label: "Resincronizar billetera"
   tooltip:
     mfp_placeholder_description: "Esta es una billetera agregada con clave pública extendida\n y la huella digital maestra no se ingresó\n por lo que se muestra como 00000000." 
     wallet_backup_data: "Esta es la información de respaldo BSMS(BIP-129) para esta billetera. Puedes usar estos datos para reconstruir la billetera multifirma en caso de pérdida o reemplazo de dispositivo. Por favor, manténgalo seguro y ten cuidado al compartir externamente." 
@@ -952,6 +953,24 @@ wallet_info_screen:
     disconnect_button: "Desconectar"
     disconnect_confirm_title: "Desconectar"
     disconnect_confirm_description: "Se desconectará el dispositivo actual.\nNecesitará volver a conectar para la próxima firma."
+wallet_resync_screen:
+  title: "Resincronizar billetera"
+  confirm:
+    description: "Borra los datos de esta billetera\ny los vuelve a cargar desde cero.\nLas notas de transacción, etiquetas UTXO y bloqueos se conservan."
+    connection_alert:
+      connecting: "Comprobando la conexión al servidor"
+      connected: "Conectado al servidor"
+      failed: "No se puede conectar al servidor"
+      network_mismatch: "Red distinta, no se puede conectar"
+    cta: "Iniciar resincronización"
+  progress:
+    phase_wiping: "Eliminando los datos actuales"
+    phase_scanning: "Volviendo a cargar los datos"
+    phase_restoring_metadata: "Restaurando notas de transacción, etiquetas UTXO y bloqueos"
+    success_title: "Datos recargados"
+    success_cta: "Ir a la billetera"
+    error_title: "No se pudieron recargar los datos"
+    error_cta: "Reintentar"
 wallet_signer_section:
   title: "Método de firma"
   segmented_control:
@@ -1300,8 +1319,8 @@ alert:
     already_exist: "Billetera duplicada"  
     already_exist_description: "Billetera ya agregada. ($name)"  
   wallet_delete:
-    confirm_delete: "Eliminar billetera"  
-    confirm_delete_description: "¿Estás seguro de querer eliminar la billetera?"  
+    confirm_delete: "Eliminar billetera"
+    confirm_delete_description: "¿Estás seguro de querer eliminar la billetera?"
   update:
     title: "Notificación de actualización"
     description: "Para un servicio estable,\npor favor, actualiza a la última versión."

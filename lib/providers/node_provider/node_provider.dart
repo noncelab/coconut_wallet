@@ -11,6 +11,8 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:coconut_wallet/model/node/resync_progress.dart';
+import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -51,6 +53,8 @@ class NodeProvider extends ChangeNotifier {
 
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
   final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
+  final _resyncProgressController = StreamController<Map<int, ResyncProgress>>.broadcast();
+  final _fetchProgressController = StreamController<Map<int, WalletFetchProgress>>.broadcast();
   final _currentBlockController = StreamController<BlockTimestamp?>.broadcast();
 
   final ValueNotifier<BlockTimestamp?> _currentBlockNotifier = ValueNotifier<BlockTimestamp?>(null);
@@ -80,6 +84,41 @@ class NodeProvider extends ChangeNotifier {
           .map((wallets) => wallets[walletId])
           .where((state) => state != null)
           .cast<WalletUpdateInfo>()
+          .listen(controller.add);
+      controller.onCancel = () => subscription.cancel();
+    });
+  }
+
+  /// 특정 지갑의 재동기화 진행 상태만 구독할 수 있는 스트림
+  Stream<ResyncProgress> getResyncProgressStream(int walletId) {
+    return Stream.multi((controller) {
+      final initialState = _stateManager?.resyncProgressByWallet[walletId];
+      if (initialState != null) {
+        controller.add(initialState);
+      }
+
+      final subscription = _resyncProgressController.stream
+          .map((wallets) => wallets[walletId])
+          .where((state) => state != null)
+          .cast<ResyncProgress>()
+          .listen(controller.add);
+      controller.onCancel = () => subscription.cancel();
+    });
+  }
+
+  /// 특정 지갑의 트랜잭션 fetch 진행 상태(dispatched/completed 카운트)를 구독할 수 있는 스트림
+  /// syncing/completed 이진 상태보다 정확하게 "지금 진짜로 처리 중인 요청이 있는지"를 알려준다.
+  Stream<WalletFetchProgress> getWalletFetchProgressStream(int walletId) {
+    return Stream.multi((controller) {
+      final initialState = _stateManager?.fetchProgressByWallet[walletId];
+      if (initialState != null) {
+        controller.add(initialState);
+      }
+
+      final subscription = _fetchProgressController.stream
+          .map((wallets) => wallets[walletId])
+          .where((state) => state != null)
+          .cast<WalletFetchProgress>()
           .listen(controller.add);
       controller.onCancel = () => subscription.cancel();
     });
@@ -281,6 +320,8 @@ class NodeProvider extends ChangeNotifier {
       },
       _syncStateController,
       _walletStateController,
+      _resyncProgressController,
+      _fetchProgressController,
     );
   }
 
@@ -409,6 +450,19 @@ class NodeProvider extends ChangeNotifier {
 
   Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
     return _isolateManager.unsubscribeWallet(walletItem);
+  }
+
+  /// 지갑 재동기화 진입 전, 현재 연결된 일렉트럼 서버 상태가 정상인지 확인
+  Future<Result<bool>> verifyCurrentConnectionHealth() async {
+    if (_hasConnectionError) {
+      return Result.failure(ErrorCodes.nodeConnectionError);
+    }
+    return _verifyChainCompatibility(_electrumServer);
+  }
+
+  /// 지갑의 온체인 데이터를 초기화하고 처음부터 다시 동기화
+  Future<Result<bool>> resyncWallet(WalletItemBase walletItem) async {
+    return _isolateManager.resyncWallet(walletItem);
   }
 
   Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) async {
@@ -741,6 +795,8 @@ class NodeProvider extends ChangeNotifier {
     // Stream Controllers 정리
     _syncStateController.close();
     _walletStateController.close();
+    _resyncProgressController.close();
+    _fetchProgressController.close();
     _currentBlockController.close();
 
     super.dispose();

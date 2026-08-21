@@ -11,6 +11,7 @@ enum IsolateControllerCommand {
   getTransactionRecord,
   syncDormantAddresses,
   syncViewedAddresses,
+  resyncWallet,
 }
 
 enum IsolateStateMethod {
@@ -21,6 +22,10 @@ enum IsolateStateMethod {
   setNodeSyncStateToSyncing,
   setNodeSyncStateToCompleted,
   setNodeSyncStateToFailed,
+  setWalletResyncPhase,
+  setWalletResyncFetchProgress,
+  addWalletFetchDispatched,
+  addWalletFetchCompleted,
 }
 
 enum IsolateManagerCommand { initializationCompleted, initializationFailed, updateState }

@@ -168,8 +168,12 @@ class AddressRepository extends BaseRepository {
       return;
     }
 
-    int maxReceiveIndex = 0;
-    int maxChangeIndex = 0;
+    // -1은 "이 배치에 해당 타입 주소가 없음"을 뜻하는 센티널. 0으로 두면 receive만 있는
+    // 배치를 처리할 때 change 인덱스가 실제로 생성된 적 없는데도 0으로 잘못 갱신되어(0 > -1),
+    // 이후 change 주소 생성 시 index 0이 이미 만들어진 걸로 착각해 건너뛰게 된다
+    // (지갑 재동기화처럼 generatedReceiveIndex/generatedChangeIndex가 -1부터 시작할 때 노출됨).
+    int maxReceiveIndex = -1;
+    int maxChangeIndex = -1;
 
     // 주소 인덱스 최대값 계산
     for (final address in addresses) {

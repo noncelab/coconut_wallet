@@ -41,6 +41,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.d
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_resync/wallet_resync_screen.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:flutter/widgets.dart';
 
@@ -119,6 +120,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/merge-utxos': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoMergeScreen(id: args['id'])),
     '/split-utxo': (context) => _buildScreenWithArgs(context, (args) => UtxoSplitScreen(id: args['id'])),
     '/utxo-tag': (context) => _buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
+    '/wallet-resync': (context) => _buildScreenWithArgs(context, (args) => WalletResyncScreen(id: args['id'])),
     '/wallet-add-scanner':
         (context) => _buildLoadingScreenWithArgs(
           context,

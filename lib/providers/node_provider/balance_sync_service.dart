@@ -58,7 +58,13 @@ class BalanceSyncService {
   }
 
   /// 여러 스크립트의 잔액을 일괄적으로 조회하고 업데이트합니다.
-  Future<void> fetchScriptBalanceBatch(WalletItemBase walletItem, List<ScriptStatus> scriptStatuses) async {
+  /// [onBatchProgress]는 재동기화 화면 진행률 표시 등 선택적 용도로만 사용한다(기본 null).
+  /// 배치(기본 50개)가 하나 끝날 때마다 그 배치에 포함된 스크립트 개수로 호출된다.
+  Future<void> fetchScriptBalanceBatch(
+    WalletItemBase walletItem,
+    List<ScriptStatus> scriptStatuses, {
+    void Function(int batchCount)? onBatchProgress,
+  }) async {
     if (scriptStatuses.isEmpty) {
       Logger.error('fetchScriptBalanceBatch: scriptStatus is empty');
       return;
@@ -104,6 +110,7 @@ class BalanceSyncService {
 
         final batchResults = await Future.wait(batchFutures);
         balanceUpdates.addAll(batchResults.whereType<UpdateAddressBalanceDto>());
+        onBatchProgress?.call(batch.length);
 
         // .onion 주소인 경우 배치 간 짧은 대기
         if (isOnionHost && i + batchSize < scriptStatuses.length) {

@@ -938,6 +938,7 @@ wallet_info_screen:
   wallet_backup_data: "Wallet Backup Data"
   confirm_backup_data: "Confirm Backup Data"
   no_info: "No data"
+  resync_label: "Wallet Resync"
   tooltip:
     mfp_placeholder_description: "This is a wallet added with extended public key\nand the master fingerprint was not entered\nso it is displayed as 00000000."
     wallet_backup_data: "This is the BSMS(BIP-129) backup information for this wallet. You can use this data to reconstruct the multisig wallet in case of device loss or replacement. Please keep it safe and be careful when sharing externally."
@@ -961,6 +962,24 @@ wallet_info_screen:
     disconnect_button: "Disconnect"
     disconnect_confirm_title: "Disconnect"
     disconnect_confirm_description: "Disconnect the current device.\nYou will need to reconnect for the next signing."
+wallet_resync_screen:
+  title: "Wallet Resync"
+  confirm:
+    description: "Erase this wallet's data\nand reload it from scratch.\nTransaction memos, UTXO tags, and locks stay intact."
+    connection_alert:
+      connecting: "Checking server connection"
+      connected: "Connected to the server"
+      failed: "Can't connect to the server"
+      network_mismatch: "Can't connect — wrong network"
+    cta: "Start Resync"
+  progress:
+    phase_wiping: "Deleting existing wallet data"
+    phase_scanning: "Reloading wallet data"
+    phase_restoring_metadata: "Restoring transaction memos, UTXO tags, and locks"
+    success_title: "Wallet data reloaded"
+    success_cta: "Go to Wallet"
+    error_title: "Couldn't reload wallet data"
+    error_cta: "Try Again"
 wallet_signer_section:
   title: "Signing Method"
   segmented_control:

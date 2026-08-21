@@ -4,6 +4,7 @@ import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_controller.dart';
 import 'package:coconut_wallet/providers/node_provider/state/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_service.dart';
+import 'package:coconut_wallet/providers/node_provider/resync/wallet_resync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
@@ -72,12 +73,20 @@ class IsolateInitializer {
       scriptSyncService,
     );
 
+    final walletResyncService = WalletResyncService(
+      walletRepository,
+      utxoRepository,
+      subscriptionService,
+      isolateStateManager,
+    );
+
     final isolateController = IsolateController(
       subscriptionService,
       networkManager,
       isolateStateManager,
       electrumService,
       transactionRecordService,
+      walletResyncService,
     );
 
     // 소켓 연결 종료 시 상태 콜백

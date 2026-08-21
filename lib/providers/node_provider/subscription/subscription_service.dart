@@ -51,8 +51,9 @@ class SubscriptionService {
   /// 지갑의 스크립트 구독 (외부 진입점)
   /// 라이브 구독 이벤트(syncScriptStatus)와 같은 지갑에 대해 동시에 잔액/UTXO를 쓰지 않도록
   /// ScriptSyncService의 지갑별 큐를 거쳐서 실행한다.
-  Future<Result<bool>> subscribeWallet(WalletItemBase walletItem) {
-    return _scriptSyncService.runQueued(walletItem.id, () => _subscribeWalletGuarded(walletItem));
+  /// [onProgress]는 재동기화 화면 진행률 표시 등 선택적 용도로만 사용한다(기본 null, 일반 흐름에는 영향 없음).
+  Future<Result<bool>> subscribeWallet(WalletItemBase walletItem, {void Function(int completed, int total)? onProgress}) {
+    return _scriptSyncService.runQueued(walletItem.id, () => _subscribeWalletGuarded(walletItem, onProgress: onProgress));
   }
 
   /// dormant 주소들의 잔액을 재검증한다 (외부 진입점, 지갑별 큐를 거쳐서 실행한다)
@@ -74,7 +75,10 @@ class SubscriptionService {
 
   /// 지갑의 스크립트 구독 (중복 방지 가드 포함). 큐를 거치지 않으므로,
   /// 이미 그 지갑의 큐 안에서 실행 중인 코드에서만 직접 호출해야 한다.
-  Future<Result<bool>> _subscribeWalletGuarded(WalletItemBase walletItem) async {
+  Future<Result<bool>> _subscribeWalletGuarded(
+    WalletItemBase walletItem, {
+    void Function(int completed, int total)? onProgress,
+  }) async {
     final walletId = walletItem.id;
 
     // 이미 구독 중이면 기존 작업 완료 대기
@@ -90,7 +94,7 @@ class SubscriptionService {
 
     try {
       Logger.log('SubscribeWallet: ${walletItem.name} - 구독 시작');
-      final result = await _performSubscribeWallet(walletItem);
+      final result = await _performSubscribeWallet(walletItem, onProgress: onProgress);
       completer.complete(result);
       return result;
     } catch (e, stackTrace) {
@@ -107,7 +111,10 @@ class SubscriptionService {
   }
 
   /// 지갑의 스크립트 구독 실제 구현부
-  Future<Result<bool>> _performSubscribeWallet(WalletItemBase walletItem) async {
+  Future<Result<bool>> _performSubscribeWallet(
+    WalletItemBase walletItem, {
+    void Function(int completed, int total)? onProgress,
+  }) async {
     _stateManager.addWalletSyncState(walletItem.id, UpdateElement.subscription);
     final [receiveResult, changeResult] = await Future.wait([
       _subscribeWallet(walletItem, false, _scriptStatusController),
@@ -147,7 +154,11 @@ class SubscriptionService {
     _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.subscription);
 
     // 변경 이력이 있는 지갑에 대해서만 balance, transaction, utxo 업데이트
-    await _scriptSyncService.syncBatchScriptStatusList(walletItem: walletItem, scriptStatuses: updatedScriptStatuses);
+    await _scriptSyncService.syncBatchScriptStatusList(
+      walletItem: walletItem,
+      scriptStatuses: updatedScriptStatuses,
+      onProgress: onProgress,
+    );
 
     // 변경된 ScriptStatus DB에 저장
     _subscriptionRepository.updateScriptStatusList(walletItem.id, updatedScriptStatuses);
