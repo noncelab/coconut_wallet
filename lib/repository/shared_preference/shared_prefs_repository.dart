@@ -9,11 +9,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPrefsRepository {
   late SharedPreferences _sharedPrefs;
+  bool _isInitialized = false;
   SharedPreferences get sharedPrefs => _sharedPrefs;
+  bool get isInitialized => _isInitialized;
 
   @Deprecated('Test code에서만 사용합니다')
   void setSharedPreferencesForTest(SharedPreferences sp) {
     _sharedPrefs = sp;
+    _isInitialized = true;
   }
 
   static final SharedPrefsRepository _instance = SharedPrefsRepository._internal();
@@ -25,6 +28,7 @@ class SharedPrefsRepository {
   Future<void> init() async {
     // init in main.dart
     _sharedPrefs = await SharedPreferences.getInstance();
+    _isInitialized = true;
   }
 
   /// Common--------------------------------------------------------------------

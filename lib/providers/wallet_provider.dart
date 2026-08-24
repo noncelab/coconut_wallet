@@ -44,6 +44,8 @@ class WalletProvider extends ChangeNotifier {
   final TransactionRepository _transactionRepository;
   final UtxoRepository _utxoRepository;
   final WalletRepository _walletRepository;
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+  final Set<int> _walletIdsWithUnacknowledgedBackupUpdate = <int>{};
 
   late final PreferenceProvider _preferenceProvider;
 
@@ -70,6 +72,11 @@ class WalletProvider extends ChangeNotifier {
     walletLoadStateNotifier = ValueNotifier(_walletLoadState);
     walletItemListNotifier = ValueNotifier(_walletItemList);
     currentBlockHeightNotifier = ValueNotifier(null);
+    if (_sharedPrefs.isInitialized) {
+      _walletIdsWithUnacknowledgedBackupUpdate.addAll(
+        _sharedPrefs.getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate(),
+      );
+    }
 
     _loadWalletListFromDB().then((_) {
       _preferenceProvider.setWalletPreferences(walletItemList); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
@@ -153,6 +160,43 @@ class WalletProvider extends ChangeNotifier {
       }
     }
     return -1;
+  }
+
+  Set<int> get walletIdsWithUnacknowledgedOlderToAfterBackupUpdate =>
+      Set.unmodifiable(_walletIdsWithUnacknowledgedBackupUpdate);
+
+  bool get hasUnacknowledgedOlderToAfterBackupUpdate => _walletIdsWithUnacknowledgedBackupUpdate.isNotEmpty;
+
+  Future<void> addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(int walletId) async {
+    if (_walletIdsWithUnacknowledgedBackupUpdate.contains(walletId)) return;
+
+    try {
+      await _sharedPrefs.addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
+    } catch (e, stackTrace) {
+      Logger.error('Failed to save backup update state: $e\n$stackTrace');
+      return;
+    }
+
+    _walletIdsWithUnacknowledgedBackupUpdate.add(walletId);
+    notifyListeners();
+  }
+
+  Future<void> removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(int walletId) async {
+    if (!_walletIdsWithUnacknowledgedBackupUpdate.contains(walletId)) return;
+
+    try {
+      await _sharedPrefs.removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
+    } catch (e, stackTrace) {
+      Logger.error('Failed to remove backup update state: $e\n$stackTrace');
+      return;
+    }
+
+    _walletIdsWithUnacknowledgedBackupUpdate.remove(walletId);
+    notifyListeners();
+  }
+
+  Future<void> acknowledgeOlderToAfterBackupUpdate(int walletId) {
+    return removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
   }
 
   Future<void> addToWalletOrder(int walletId) async {
@@ -261,7 +305,7 @@ class WalletProvider extends ChangeNotifier {
     watchOnlyWallet = _copyWithNewName(watchOnlyWallet, resolvedName);
     final newWallet = await _addNewWallet(watchOnlyWallet);
     if (migration.changed) {
-      await SharedPrefsRepository().addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(newWallet.id);
+      await addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(newWallet.id);
     }
 
     Logger.log('--> syncFromCoconutVault:::::: ${_walletItemList.map((e) => e.id).toList()}');
@@ -454,7 +498,7 @@ class WalletProvider extends ChangeNotifier {
     await _preferenceProvider.removeFavoriteWalletId(walletId);
     await _preferenceProvider.removeExcludedFromTotalBalanceWalletId(walletId);
     await _preferenceProvider.removeManualUtxoSelectionWalletId(walletId);
-    await SharedPrefsRepository().removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
+    await removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
     if (_walletItemList.isEmpty) {
       await _preferenceProvider.changeIsBalanceHidden(false); // 잔액 숨기기 비활성화, fakeBalance 초기화
       await _preferenceProvider.clearFakeBalanceTotalAmount();

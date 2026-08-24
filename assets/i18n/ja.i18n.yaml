@@ -223,6 +223,11 @@ pin_check_screen:
 wallet_home_screen: 
   view_all_wallets: "マイウォレット一覧"
   edit_home_screen: "ホーム画面を編集"
+  backup_update_notice_action: "詳しく見る"
+  backup_update_notice:
+    title: "継承ウォレットのバックアップ更新のお知らせ"
+    description: "継承ウォレットのバックアップ情報が一部変更されました。\nCoconut Walletを最新バージョンに更新してください。\nVaultを更新すると変更が自動的に反映されます。\nその後、ウォレット情報をもう一度バックアップしてください。"
+    action: "詳しく見る"
   edit:
     title: "ホーム画面で機能を\n非表示にしたり、追加したりできます"
     hide_balance: "残高を非表示"
@@ -917,6 +922,15 @@ wallet_info_screen:
   duplicated_name: "名前が既に使用されています"
   view_descriptor: "ディスクリプタを表示"
   view_wallet_backup_data: "ウォレットバックアップデータを表示"
+  backup_update_dialog:
+    title: "相続ウォレットのバックアップ更新のお知らせ"
+    step1_title: "1. 既存の相続ウォレットのバックアップフレーズを別の場所に保存している場合は、新しいバックアップフレーズに更新してください。"
+    step1_description: "「ウォレットバックアップデータを表示」を選択 > 更新されたバックアップフレーズを確認してコピー > 安全な場所に保存"
+    step2_title: "2. Vaultを3.1.0以上にアップデートしてください。"
+    step2_description: "Vaultをアップデートしなくてもウォレットの追加や署名はできますが、新しいバックアップフレーズで「準備済みの相続ウォレットをインポート」はできません。"
+    why_title: "Q. なぜ変更されたのですか？"
+    why_description: "バックアップデータは、定められたルール（Miniscript）に従って作成される情報です。相続人がビットコインを使用できる時点は「after」と表示する必要がありますが、誤って「older」と表示されていました。\n\nこれはバックアップデータの表現上の問題であり、現在のウォレットのアドレス、資産、設定した相続条件には影響しません。最初に設定したままウォレットを使用でき、新しく作成する必要もありません。"
+    confirm: "理解しました"
   wallet_backup_data: "ウォレットバックアップデータ"
   confirm_backup_data: "バックアップデータを確認"
   no_info: "データなし"

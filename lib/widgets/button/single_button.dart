@@ -49,6 +49,7 @@ class SingleButton extends StatelessWidget {
   final bool enableShrinkAnim;
   final bool isVerticalSubtitle;
   final double animationEndValue;
+  final bool showNotificationDot;
 
   const SingleButton({
     super.key,
@@ -66,6 +67,7 @@ class SingleButton extends StatelessWidget {
     this.enableShrinkAnim = false,
     this.isVerticalSubtitle = false,
     this.animationEndValue = 0.95,
+    this.showNotificationDot = false,
   });
 
   @override
@@ -123,9 +125,27 @@ class SingleButton extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      title,
+                      style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                    ),
+                  ),
+                  if (showNotificationDot)
+                    Positioned(
+                      top: -1,
+                      right: -8,
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(color: CoconutColors.hotPink, shape: BoxShape.circle),
+                      ),
+                    ),
+                ],
               ),
               if (isVerticalSubtitle) ...{
                 SizedBox(height: betweenGap),

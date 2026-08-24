@@ -224,6 +224,11 @@ pin_check_screen:
 wallet_home_screen:
   view_all_wallets: "Alle Wallets anzeigen"
   edit_home_screen: "Startbildschirm bearbeiten"
+  backup_update_notice_action: "Mehr erfahren"
+  backup_update_notice:
+    title: "Backup-Update für Vererbungs-Wallets"
+    description: "Einige Backup-Informationen der Vererbungs-Wallet haben sich geändert.\nBitte aktualisieren Sie Coconut Wallet auf die neueste Version.\nDurch die Aktualisierung des Vaults werden die Änderungen automatisch übernommen.\nErstellen Sie anschließend erneut ein Backup Ihrer Wallet-Informationen."
+    action: "Mehr erfahren"
   edit:
     title: "Wählen Sie aus, welche Funktionen\nauf dem Startbildschirm angezeigt werden."
     hide_balance: "Guthaben verbergen"
@@ -860,6 +865,15 @@ wallet_info_screen:
   duplicated_name: "Name bereits in Verwendung"
   view_descriptor: "Deskriptor anzeigen"
   view_wallet_backup_data: "Wallet-Sicherungsdaten anzeigen"
+  backup_update_dialog:
+    title: "Hinweis zur Aktualisierung der Sicherungsdaten der Vererbungs-Wallet"
+    step1_title: "1. Wenn Sie die Sicherungsphrase einer bestehenden Vererbungs-Wallet an einem anderen Ort gespeichert haben, aktualisieren Sie sie bitte mit der neuen Sicherungsphrase."
+    step1_description: "Wählen Sie „Wallet-Sicherungsdaten anzeigen“ > Prüfen und kopieren Sie die aktualisierte Sicherungsphrase > Bewahren Sie sie an einem sicheren Ort auf"
+    step2_title: "2. Bitte aktualisieren Sie Vault auf Version 3.1.0 oder höher."
+    step2_description: "Sie können Wallets auch ohne Aktualisierung von Vault hinzufügen und Transaktionen signieren. Mit der neuen Sicherungsphrase können Sie jedoch keine vorbereitete Vererbungs-Wallet importieren."
+    why_title: "F. Warum wurde dies geändert?"
+    why_description: "Sicherungsdaten werden nach festgelegten Regeln (Miniscript) erstellt. Der Zeitpunkt, ab dem ein Erbe Bitcoin verwenden kann, muss als „after“ angegeben werden, wurde aber fälschlicherweise als „older“ angegeben.\n\nDies ist ein Problem bei der Darstellung der Sicherungsdaten und betrifft weder die Adressen und Vermögenswerte der aktuellen Wallet noch die festgelegten Vererbungsbedingungen. Sie können die Wallet wie ursprünglich eingerichtet weiterverwenden und müssen keine neue erstellen."
+    confirm: "Verstanden"
   wallet_backup_data: "Wallet-Sicherungsdaten"
   confirm_backup_data: "Sicherungsdaten bestätigen"
   no_info: "Keine Daten"

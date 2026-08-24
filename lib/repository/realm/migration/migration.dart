@@ -105,7 +105,11 @@ void migrateTaprootWalletBackupData(Realm realm, {Set<int>? migratedWalletIds}) 
       migratedWalletIds?.add(taprootWallet.id);
       migratedCount++;
     } catch (e, stackTrace) {
-      Logger.error('migrateTaprootWalletBackupData: skip wallet ${taprootWallet.id} - $e\n$stackTrace');
+      Logger.error(
+        'migrateTaprootWalletBackupData: migration failed for wallet '
+        '${taprootWallet.id} - $e\n$stackTrace',
+      );
+      rethrow;
     }
   }
 

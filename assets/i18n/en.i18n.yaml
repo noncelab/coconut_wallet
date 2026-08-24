@@ -224,6 +224,11 @@ pin_check_screen:
 wallet_home_screen: 
   view_all_wallets: "View All Wallets"
   edit_home_screen: "Edit Home Screen"
+  backup_update_notice_action: "Learn more"
+  backup_update_notice:
+    title: "Inheritance Wallet Backup Update"
+    description: "Some inheritance wallet backup details have changed.\nPlease update Coconut Wallet to the latest version.\nUpdating the vault applies the changes automatically.\nThen back up your wallet information again."
+    action: "Learn more"
   edit:
     title: "Choose which features appear\non the home screen."
     hide_balance: "Hide Balance"
@@ -929,6 +934,15 @@ wallet_info_screen:
   duplicated_name: "Name already in use"
   view_descriptor: "View Descriptor"
   view_wallet_backup_data: "View Wallet Backup Data"
+  backup_update_dialog:
+    title: "Inheritance Wallet Backup Update Notice"
+    step1_title: "1. If you have stored the backup phrase for an existing inheritance wallet elsewhere, please update it with the new backup phrase."
+    step1_description: "Select 'View Wallet Backup Data' > Check and copy the updated backup phrase > Store it in a safe place"
+    step2_title: "2. Please update Vault to version 3.1.0 or later."
+    step2_description: "You can still add wallets and sign transactions without updating Vault, but you cannot import a prepared inheritance wallet using the new backup phrase."
+    why_title: "Q. Why was it changed?"
+    why_description: "Backup data is created according to agreed rules (Miniscript). The point at which an heir can use the bitcoin should be represented with 'after', but it was incorrectly represented with 'older'.\n\nThis is an issue with the representation of the backup data and does not affect the current wallet's addresses, assets, or configured inheritance conditions. You can continue using the wallet as originally configured, and you do not need to create a new one."
+    confirm: "I understand"
   wallet_backup_data: "Wallet Backup Data"
   confirm_backup_data: "Confirm Backup Data"
   no_info: "No data"

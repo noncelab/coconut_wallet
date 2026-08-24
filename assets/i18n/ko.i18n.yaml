@@ -224,6 +224,11 @@ pin_check_screen:
 wallet_home_screen: 
   view_all_wallets: "내 지갑 전체보기"
   edit_home_screen: "홈 화면 편집하기"
+  backup_update_notice_action: "자세히 보기"
+  backup_update_notice:
+    title: "상속 지갑 백업 업데이트 알림"
+    description: "상속 지갑의 백업 문구가 일부 변경되었어요.\n코코넛 볼트도 최신 버전으로 업데이트해 주세요.\n볼트를 업데이트하면 변경 사항이 자동으로 반영돼요.\n이후 구성 정보를 다시 백업해 주세요."
+    action: "자세히 보기"
   edit:
     title: "홈 화면에 기능을\n숨기거나 추가할 수 있어요"
     hide_balance: "잔액 숨기기"
@@ -933,6 +938,15 @@ wallet_info_screen:
   duplicated_name: "이미 사용중인 이름이에요"
   view_descriptor: "디스크립터 보기"
   view_wallet_backup_data: "지갑 백업 데이터 보기"
+  backup_update_dialog:
+    title: "상속 지갑 백업 업데이트 알림"
+    step1_title: "1. 기존 상속 지갑의 백업 데이터를 다른 곳에 저장하신 경우 새로운 백업 데이터로 업데이트해주세요."
+    step1_description: "'지갑 백업 데이터 보기' 메뉴 선택 > 업데이트 된 백업 데이터 확인 및 복사 > 안전한 곳에 저장"
+    step2_title: "2. 볼트를 3.1.0 이상으로 업데이트 해주세요."
+    step2_description: "볼트를 업데이트 하지 않으면 지갑 추가는 가능하지만 서명이 안돼요. 볼트를 최신 버전으로 설치하면 변경 사항이 자동으로 반영돼요."
+    why_title: "Q. 왜 변경되었나요?"
+    why_description: "백업 데이터는 약속된 규칙(Miniscript)에 따라 만들어진 정보입니다. 상속자가 비트코인을 사용할 수 있는 시점을 'after'로 표시해야 하는데 'older'로 잘못 표시하고 있었습니다.\n\n이는 백업 데이터 표현의 문제로, 현재 지갑의 주소, 자산 및 설정한 상속 조건에는 영향을 주지 않습니다. 지갑은 처음 설정한 그대로 사용하실 수 있으며, 새로 만드실 필요가 없습니다."
+    confirm: "이해했습니다"
   wallet_backup_data: "지갑 백업 데이터"
   confirm_backup_data: "백업 데이터 확인"
   no_info: "정보 없음"

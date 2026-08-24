@@ -18,32 +18,37 @@ class CoconutWalletAddQrScanDataHandler implements IQrScanDataHandler {
   bool joinData(String data) {
     try {
       final jsonData = jsonDecode(data) as Map<String, dynamic>;
-      var wallet = WatchOnlyWallet.fromJson(jsonData);
+      final wallet = WatchOnlyWallet.fromJson(jsonData);
       if (wallet.isTaproot) {
         final migration = TaprootOlderToAfterMigration.migrate(
           descriptor: wallet.descriptor,
           scriptPathSeedInfos: wallet.scriptPathSeedInfos ?? const [],
         );
-        if (migration.hasChanges) {
-          wallet = WatchOnlyWallet(
-            wallet.name,
-            wallet.colorIndex,
-            wallet.iconIndex,
-            migration.descriptor,
-            wallet.requiredSignatureCount,
-            wallet.signers,
-            wallet.walletImportSource.name,
-            keyPathSeedInfos: wallet.keyPathSeedInfos,
-            scriptPathSeedInfos: migration.scriptPathSeedInfos,
-            createdAtInVault: wallet.createdAtInVault,
-          );
-        }
+        final walletForValidation =
+            migration.hasChanges
+                ? WatchOnlyWallet(
+                  wallet.name,
+                  wallet.colorIndex,
+                  wallet.iconIndex,
+                  migration.descriptor,
+                  wallet.requiredSignatureCount,
+                  wallet.signers,
+                  wallet.walletImportSource.name,
+                  keyPathSeedInfos: wallet.keyPathSeedInfos,
+                  scriptPathSeedInfos: migration.scriptPathSeedInfos,
+                  createdAtInVault: wallet.createdAtInVault,
+                )
+                : wallet;
 
-        if (!wallet.isSupportedTaprootConfiguration) {
+        if (!walletForValidation.isSupportedTaprootConfiguration) {
           Logger.error('Unsupported Taproot configuration');
           return false;
         }
       }
+
+      // 여기서는 migration 결과를 validation에만 사용합니다.
+      // 원본 wallet을 result로 전달해야 WalletProvider가 실제 저장 전에
+      // migration을 다시 수행하고, 변경된 지갑 ID를 영속 저장할 수 있습니다.
       _result = wallet;
       return true;
     } catch (e, stackTrace) {
