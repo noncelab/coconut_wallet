@@ -595,7 +595,10 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
             ),
             child: Column(
               children: [
-                SvgPicture.asset(CommonFormIconPath.circleCheck),
+                SvgPicture.asset(
+                  CommonFormIconPath.circleCheck,
+                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                ),
                 CoconutLayout.spacing_300h,
                 Text(
                   t.wallet_home_screen.hot_wallet_restore.seed_qr_scanned,
