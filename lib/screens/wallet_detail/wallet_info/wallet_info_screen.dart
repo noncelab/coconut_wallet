@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -561,6 +562,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   Future<void> _showTaprootBackupUpdateDialog() async {
+    final vaultVersion = NetworkType.currentNetworkType == NetworkType.mainnet ? '3.1.0' : '5.1.0';
+
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -602,7 +605,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             style: bodyStyle,
                           ),
                           TextSpan(
-                            text: '${t.wallet_info_screen.backup_update_dialog.step2_title}\n',
+                            text: '${t.wallet_info_screen.backup_update_dialog.step2_title(version: vaultVersion)}\n',
                             style: emphasisStyle,
                           ),
                           TextSpan(

@@ -929,7 +929,7 @@ wallet_info_screen:
     title: "Aviso de actualización de respaldo de la billetera de herencia"
     step1_title: "1. Si guardaste en otro lugar la frase de respaldo de una billetera de herencia existente, actualízala con la nueva frase de respaldo."
     step1_description: "Selecciona 'Ver datos de respaldo de billetera' > Comprueba y copia la frase de respaldo actualizada > Guárdala en un lugar seguro"
-    step2_title: "2. Actualiza Vault a la versión 3.1.0 o posterior."
+    step2_title: "2. Actualiza Vault a la versión $version o posterior."
     step2_description: "Puedes añadir billeteras y firmar transacciones sin actualizar Vault, pero no puedes importar una billetera de herencia preparada usando la nueva frase de respaldo."
     why_title: "Q. ¿Por qué se ha cambiado?"
     why_description: "Los datos de respaldo se crean según reglas acordadas (Miniscript). El momento en que un heredero puede usar los bitcoins debe representarse como 'after', pero se estaba representando incorrectamente como 'older'.\n\nEs un problema de representación de los datos de respaldo y no afecta a las direcciones, los activos ni las condiciones de herencia configuradas de la billetera actual. Puedes seguir usando la billetera tal como se configuró originalmente y no necesitas crear una nueva."
