@@ -68,11 +68,13 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
   static const Color _textPrimary = Color(0xFF10161C);
   static const Color _accentBlue = Color(0xFF68D5FF);
 
+  static const int _sceneCount = 5;
+
   final PageController _pageController = PageController();
   late final AnimationController _loadingController = AnimationController(vsync: this, duration: _loadingDuration);
-  late final AnimationController _sceneController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 2200),
+  late final List<AnimationController> _sceneControllers = List.generate(
+    _sceneCount,
+    (_) => AnimationController(vsync: this, duration: const Duration(milliseconds: 2200)),
   );
   late final AnimationController _storyEntranceController = AnimationController(
     vsync: this,
@@ -158,6 +160,9 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
   Future<void> _animateToScene(int index) async {
     _closeSceneOverview();
     if (!_pageController.hasClients) return;
+    _sceneControllers[index]
+      ..duration = _sceneDurationFor(index)
+      ..forward(from: 0);
     await _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 700),
@@ -373,8 +378,9 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
     setState(() {
       _isLoadingUnderlayVisible = false;
     });
-    _sceneController.duration = _sceneDurationFor(_currentSceneIndex);
-    _sceneController.forward(from: 0);
+    _sceneControllers[_currentSceneIndex]
+      ..duration = _sceneDurationFor(_currentSceneIndex)
+      ..forward(from: 0);
   }
 
   @override
@@ -382,7 +388,9 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
     _pageController.dispose();
     _loadingController.removeListener(_handleLoadingProgress);
     _loadingController.dispose();
-    _sceneController.dispose();
+    for (final controller in _sceneControllers) {
+      controller.dispose();
+    }
     _storyEntranceController.removeStatusListener(_handleStoryEntranceStatus);
     _storyEntranceController.dispose();
     _overviewController.dispose();
@@ -445,7 +453,11 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
                   if (_hasCompletedLoading)
                     _StoryPagerEntrance(animation: _storyEntranceController, child: _buildStoryPager(sceneItems)),
                   if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
-                    _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
+                    _OpenStoreLoadingSequence(
+                      key: const ValueKey('open-store-loading'),
+                      animation: _loadingCurve,
+                      progress: _loadingController,
+                    ),
                 ],
               ),
             ),
@@ -470,6 +482,7 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
       key: const ValueKey('open-store-story'),
       children: [
         const Positioned.fill(child: _OpenStoreBackdrop()),
+        const Positioned.fill(child: IgnorePointer(child: _SceneWatermarkBanner())),
         PageView(
           controller: _pageController,
           scrollDirection: Axis.horizontal,
@@ -480,8 +493,6 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
                 _currentSceneIndex = index;
               });
             }
-            _sceneController.duration = _sceneDurationFor(index);
-            _sceneController.forward(from: 0);
           },
           children: [
             for (final item in sceneItems)
@@ -489,8 +500,8 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
                 sceneIndex: item.index,
                 sceneCount: sceneItems.length,
                 label: item.label,
-                hero: item.buildHero?.call(context, _sceneController),
-                sceneAnimation: _sceneController,
+                hero: item.buildHero?.call(context, _sceneControllers[item.index]),
+                sceneAnimation: _sceneControllers[item.index],
                 sceneDurationMs: _sceneDurationFor(item.index).inMilliseconds,
                 navigationRevealStartMs: _navigationRevealStartMsFor(item.index),
                 onPrevious: item.index == 0 ? null : () => _animateToScene(item.index - 1),
@@ -550,14 +561,15 @@ class _OpenStoreSceneDefinition {
 }
 
 class _OpenStoreLoadingSequence extends StatelessWidget {
-  const _OpenStoreLoadingSequence({super.key, required this.animation});
+  const _OpenStoreLoadingSequence({super.key, required this.animation, required this.progress});
 
   final Animation<double> animation;
+  final Animation<double> progress;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: animation,
+      animation: Listenable.merge([animation, progress]),
       builder: (context, child) {
         final value = animation.value;
         const totalMs = 5700;
@@ -572,7 +584,7 @@ class _OpenStoreLoadingSequence extends StatelessWidget {
         const fadeStart = 5350 / totalMs;
         const fadeDuration = 350 / totalMs;
 
-        final iconMotion = (value / iconPhaseEnd).clamp(0.0, 1.0);
+        final iconMotion = (progress.value / iconPhaseEnd).clamp(0.0, 1.0);
         final iconScale = TweenSequence<double>([
           TweenSequenceItem(
             tween: Tween<double>(begin: 15.6, end: 1.0).chain(CurveTween(curve: Curves.easeInCubic)),
@@ -1264,83 +1276,74 @@ class _StoryScene extends StatelessWidget {
         return LayoutBuilder(
           builder: (context, constraints) {
             return ClipRect(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: _SceneWatermarkBanner(animation: sceneAnimation, availableHeight: constraints.maxHeight),
-                    ),
-                  ),
-                  SafeArea(
-                    top: false,
-                    bottom: false,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(24, 4, 24, 22 + bottomInset),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '${(sceneIndex + 1).toString().padLeft(2, '0')} / 05',
-                                  style: CoconutTypography.caption_10_Bold.setColor(Colors.white),
-                                ),
-                                const SizedBox(height: 6),
-                                Transform.translate(
-                                  offset: isIdeaScene ? Offset(ideaLabelSlide.dx * 36, 0) : Offset.zero,
-                                  child: Opacity(
-                                    opacity:
-                                        isIdeaScene
-                                            ? Curves.easeOut.transform(
-                                              const Interval(0.08, 0.26).transform(sceneAnimation.value),
-                                            )
-                                            : 1,
-                                    child: Text(
-                                      label,
-                                      style: CoconutTypography.heading4_18_Bold.setColor(
-                                        _CoconutOpenStoreIntroScreenState._textPrimary.withAlpha(200),
-                                      ),
-                                    ),
+              child: SafeArea(
+                top: false,
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(24, 4, 24, 22 + bottomInset),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '${(sceneIndex + 1).toString().padLeft(2, '0')} / 05',
+                              style: CoconutTypography.caption_10_Bold.setColor(Colors.white),
+                            ),
+                            const SizedBox(height: 6),
+                            Transform.translate(
+                              offset: isIdeaScene ? Offset(ideaLabelSlide.dx * 36, 0) : Offset.zero,
+                              child: Opacity(
+                                opacity:
+                                    isIdeaScene
+                                        ? Curves.easeOut.transform(
+                                          const Interval(0.08, 0.26).transform(sceneAnimation.value),
+                                        )
+                                        : 1,
+                                child: Text(
+                                  label,
+                                  style: CoconutTypography.heading4_18_Bold.setColor(
+                                    _CoconutOpenStoreIntroScreenState._textPrimary.withAlpha(200),
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Expanded(
-                            child:
-                                isIdeaScene
-                                    ? IdeaSceneBody(animation: sceneAnimation, sceneDurationMs: sceneDurationMs)
-                                    : isBuildScene
-                                    ? BuildSceneBody(animation: sceneAnimation)
-                                    : isFirstPowScene
-                                    ? hero ?? const SizedBox.shrink()
-                                    : isDiscoverScene
-                                    ? DiscoverSceneBody(animation: sceneAnimation, sceneDurationMs: sceneDurationMs)
-                                    : ContributeSceneBody(
-                                      animation: sceneAnimation,
-                                      sceneDurationMs: sceneDurationMs,
-                                      onStartPr: () => launchURL(CONTRIBUTING_URL),
-                                    ),
-                          ),
-                          const SizedBox(height: 10),
-                          _SceneBottomNavigation(
-                            animation: sceneAnimation,
-                            sceneDurationMs: sceneDurationMs,
-                            revealStartMs: navigationRevealStartMs,
-                            currentIndex: sceneIndex,
-                            sceneCount: sceneCount,
-                            onPrevious: onPrevious,
-                            onNext: onNext,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child:
+                            isIdeaScene
+                                ? IdeaSceneBody(animation: sceneAnimation, sceneDurationMs: sceneDurationMs)
+                                : isBuildScene
+                                ? BuildSceneBody(animation: sceneAnimation)
+                                : isFirstPowScene
+                                ? hero ?? const SizedBox.shrink()
+                                : isDiscoverScene
+                                ? DiscoverSceneBody(animation: sceneAnimation, sceneDurationMs: sceneDurationMs)
+                                : ContributeSceneBody(
+                                  animation: sceneAnimation,
+                                  sceneDurationMs: sceneDurationMs,
+                                  onStartPr: () => launchURL(CONTRIBUTING_URL),
+                                ),
+                      ),
+                      const SizedBox(height: 10),
+                      _SceneBottomNavigation(
+                        animation: sceneAnimation,
+                        sceneDurationMs: sceneDurationMs,
+                        revealStartMs: navigationRevealStartMs,
+                        currentIndex: sceneIndex,
+                        sceneCount: sceneCount,
+                        onPrevious: onPrevious,
+                        onNext: onNext,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             );
           },
@@ -1351,10 +1354,7 @@ class _StoryScene extends StatelessWidget {
 }
 
 class _SceneWatermarkBanner extends StatefulWidget {
-  const _SceneWatermarkBanner({required this.animation, required this.availableHeight});
-
-  final Animation<double> animation;
-  final double availableHeight;
+  const _SceneWatermarkBanner();
 
   @override
   State<_SceneWatermarkBanner> createState() => _SceneWatermarkBannerState();
@@ -1374,8 +1374,6 @@ class _SceneWatermarkBannerState extends State<_SceneWatermarkBanner> with Singl
 
   @override
   Widget build(BuildContext context) {
-    final reveal = Curves.easeOutCubic.transform(widget.animation.value.clamp(0.0, 1.0));
-    final height = widget.availableHeight * 0.20;
     final bannerText = t.ccos.intro_screen.watermark_banner; // 배너 간격 유지를 위해 스페이스 포함
     final textStyle = CoconutTypography.heading1_32_Bold
         .setColor(Colors.white.withValues(alpha: 0.16))
@@ -1386,12 +1384,14 @@ class _SceneWatermarkBannerState extends State<_SceneWatermarkBanner> with Singl
           ..textDirection = TextDirection.ltr
           ..maxLines = 1
           ..layout();
-    final gap = math.max(12.0, height * 0.08);
-    final unitWidth = textPainter.width + gap;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final visibleWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : MediaQuery.sizeOf(context).width;
+        final availableHeight = constraints.maxHeight.isFinite ? constraints.maxHeight : visibleWidth;
+        final height = availableHeight * 0.20;
+        final gap = math.max(12.0, height * 0.08);
+        final unitWidth = textPainter.width + gap;
         final unitCount = (visibleWidth / unitWidth).ceil() + 2;
         final trackWidth = unitCount * unitWidth;
 
@@ -1413,37 +1413,34 @@ class _SceneWatermarkBannerState extends State<_SceneWatermarkBanner> with Singl
         }
 
         return AnimatedBuilder(
-          animation: Listenable.merge([widget.animation, _driftController]),
+          animation: _driftController,
           builder: (context, child) {
             final drift = Curves.linear.transform(_driftController.value);
             final dx = -trackWidth * drift;
 
-            return Opacity(
-              opacity: reveal.clamp(0.0, 1.0),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: SizedBox(
-                  width: visibleWidth,
-                  height: height,
-                  child: ClipRect(
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          left: 0,
-                          top: 0,
-                          width: trackWidth,
-                          height: height,
-                          child: Transform.translate(offset: Offset(dx, 0), child: buildTrack()),
-                        ),
-                        Positioned(
-                          left: 0,
-                          top: 0,
-                          width: trackWidth,
-                          height: height,
-                          child: Transform.translate(offset: Offset(dx + trackWidth, 0), child: buildTrack()),
-                        ),
-                      ],
-                    ),
+            return Align(
+              alignment: Alignment.bottomLeft,
+              child: SizedBox(
+                width: visibleWidth,
+                height: height,
+                child: ClipRect(
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        width: trackWidth,
+                        height: height,
+                        child: Transform.translate(offset: Offset(dx, 0), child: buildTrack()),
+                      ),
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        width: trackWidth,
+                        height: height,
+                        child: Transform.translate(offset: Offset(dx + trackWidth, 0), child: buildTrack()),
+                      ),
+                    ],
                   ),
                 ),
               ),
