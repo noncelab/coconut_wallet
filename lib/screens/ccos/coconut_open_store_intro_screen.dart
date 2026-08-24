@@ -453,11 +453,7 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
                   if (_hasCompletedLoading)
                     _StoryPagerEntrance(animation: _storyEntranceController, child: _buildStoryPager(sceneItems)),
                   if (_isLoadingUnderlayVisible || !_hasCompletedLoading)
-                    _OpenStoreLoadingSequence(
-                      key: const ValueKey('open-store-loading'),
-                      animation: _loadingCurve,
-                      progress: _loadingController,
-                    ),
+                    _OpenStoreLoadingSequence(key: const ValueKey('open-store-loading'), animation: _loadingCurve),
                 ],
               ),
             ),
@@ -561,15 +557,14 @@ class _OpenStoreSceneDefinition {
 }
 
 class _OpenStoreLoadingSequence extends StatelessWidget {
-  const _OpenStoreLoadingSequence({super.key, required this.animation, required this.progress});
+  const _OpenStoreLoadingSequence({super.key, required this.animation});
 
   final Animation<double> animation;
-  final Animation<double> progress;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([animation, progress]),
+      animation: animation,
       builder: (context, child) {
         final value = animation.value;
         const totalMs = 5700;
@@ -584,7 +579,7 @@ class _OpenStoreLoadingSequence extends StatelessWidget {
         const fadeStart = 5350 / totalMs;
         const fadeDuration = 350 / totalMs;
 
-        final iconMotion = (progress.value / iconPhaseEnd).clamp(0.0, 1.0);
+        final iconMotion = (value / iconPhaseEnd).clamp(0.0, 1.0);
         final iconScale = TweenSequence<double>([
           TweenSequenceItem(
             tween: Tween<double>(begin: 15.6, end: 1.0).chain(CurveTween(curve: Curves.easeInCubic)),
