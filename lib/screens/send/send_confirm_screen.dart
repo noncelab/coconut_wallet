@@ -60,6 +60,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
   late SendConfirmViewModel _viewModel;
   late BitcoinUnit _currentUnit;
   bool _isLocalSigning = false;
+  final ScrollController _scrollController = ScrollController();
   late final AnimationController _signatureController;
   final Completer<void> _signatureCompositionLoaded = Completer<void>();
   _HotWalletSigningStage _signingStage = _HotWalletSigningStage.idle;
@@ -101,6 +102,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
                   Padding(
                     padding: const EdgeInsets.only(left: 10, right: 10),
                     child: SingleChildScrollView(
+                      controller: _scrollController,
                       physics:
                           _signingStage == _HotWalletSigningStage.idle ? null : const NeverScrollableScrollPhysics(),
                       child: Column(
@@ -301,6 +303,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _signatureController.dispose();
     super.dispose();
   }
@@ -349,6 +352,10 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
       _showTransactionFlow = false;
       _showSigningStatus = false;
     });
+    if (_scrollController.hasClients && _scrollController.offset > 0) {
+      await _scrollController.animateTo(0, duration: const Duration(milliseconds: 320), curve: Curves.easeInOutCubic);
+      if (!mounted) return;
+    }
     if (requiresAuthentication) {
       _signatureController.value = 1;
     }
