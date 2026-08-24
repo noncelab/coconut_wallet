@@ -47,7 +47,8 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   void initState() {
     super.initState();
     _exportViewModel = LabelExportViewModel(walletProvider: context.read<WalletProvider>());
-    if (widget.initialSelectedWalletId != null) {
+    if (widget.initialSelectedWalletId != null &&
+        _exportViewModel.hasExportableLabelsForWallet(widget.initialSelectedWalletId!)) {
       _selectedWalletIds.add(widget.initialSelectedWalletId!);
     }
     _filesFuture = _exportViewModel.getImportableLabelFiles();
@@ -308,13 +309,15 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         itemBuilder: (context, index) {
           final wallet = wallets[index];
           final isLocked = widget.initialSelectedWalletId == wallet.id;
+          final hasLabels = _exportViewModel.hasExportableLabelsForWallet(wallet.id);
 
           return _WalletListItemCard(
             title: wallet.name,
             isSelected: _selectedWalletIds.contains(wallet.id),
             isLocked: isLocked,
+            isDisabled: !hasLabels,
             onTap: () {
-              if (isLocked) return;
+              if (isLocked || !hasLabels) return;
               _toggleWalletSelection(wallet.id);
             },
           );
@@ -358,7 +361,8 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
           _isCreateFileSelected = index == 0;
           _selectedWalletIds.clear();
           _selectedFileIndices.clear();
-          if (widget.initialSelectedWalletId != null) {
+          if (widget.initialSelectedWalletId != null &&
+              _exportViewModel.hasExportableLabelsForWallet(widget.initialSelectedWalletId!)) {
             _selectedWalletIds.add(widget.initialSelectedWalletId!);
           }
         });
@@ -455,13 +459,6 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
           });
         }
       } else {
-        if (mounted) {
-          CoconutToast.showToast(
-            context: context,
-            text: t.label_export_wallet_picker_screen.no_labels_to_export,
-            level: CoconutToastLevel.info,
-          );
-        }
         if (mounted) {
           setState(() => _step = LabelExportStep.selection);
         }
@@ -639,20 +636,22 @@ class _WalletListItemCard extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final bool isLocked;
+  final bool isDisabled;
 
   const _WalletListItemCard({
     required this.title,
     required this.isSelected,
     required this.onTap,
     this.isLocked = false,
+    this.isDisabled = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool isDisabled = isLocked && isSelected;
-    final textColor = isDisabled ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
+    final bool effectiveDisabled = isDisabled || (isLocked && isSelected);
+    final textColor = effectiveDisabled ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
     final Color borderColor;
-    if (isDisabled) {
+    if (effectiveDisabled) {
       borderColor = context.coconutColors.iconDisabled;
     } else if (isSelected) {
       borderColor = context.coconutColors.primaryText;
@@ -661,7 +660,7 @@ class _WalletListItemCard extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: effectiveDisabled ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
@@ -678,7 +677,7 @@ class _WalletListItemCard extends StatelessWidget {
               color: context.coconutColors.iconDefault,
               unSelectedColor: context.coconutColors.iconSubDefault,
               inactiveColor: context.coconutColors.iconDisabled,
-              isDisabled: isDisabled,
+              isDisabled: effectiveDisabled,
             ),
             const SizedBox(width: 16),
             Expanded(

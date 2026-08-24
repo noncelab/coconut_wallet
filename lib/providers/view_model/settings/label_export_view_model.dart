@@ -26,6 +26,23 @@ class LabelExportViewModel extends ChangeNotifier {
     return _fileService.getImportableLabelFiles();
   }
 
+  /// Checks if a wallet has any exportable labels (transaction memos, utxo tags, or locked UTXOs).
+  bool hasExportableLabelsForWallet(int walletId) {
+    final wallet = _walletProvider.getWalletById(walletId);
+    final txMemos = _walletProvider.getAllTransactionMemos(walletId);
+    final utxoStates = _walletProvider.getUtxoList(walletId);
+    final utxoTags = _walletProvider.getUtxoTags(walletId);
+
+    final records = _converter.generateRecordsForWallet(
+      descriptor: wallet.descriptor,
+      txMemos: txMemos.map((m) => (txHash: m.transactionHash, memo: m.memo)),
+      utxoTags: utxoTags.map((t) => (name: t.name, utxoIds: t.utxoIdList.toList(), colorIndex: t.colorIndex)),
+      lockedUtxoIds: utxoStates.where((u) => u.status == UtxoStatus.locked).map((u) => u.utxoId),
+    );
+
+    return records.isNotEmpty;
+  }
+
   /// Exports labels for a single wallet and saves to file. Returns XFile if labels exist.
   Future<XFile?> exportLabelsForWallet(int walletId) async {
     final wallet = _walletProvider.getWalletById(walletId);
