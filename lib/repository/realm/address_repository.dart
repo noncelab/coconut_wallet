@@ -468,18 +468,13 @@ class AddressRepository extends BaseRepository {
 
     int cursor = max(usedIndex, dbUsedIndex) + 1;
 
-    if (isChange) {
-      walletItem.changeUsedIndex = cursor - 1;
-    } else {
-      walletItem.receiveUsedIndex = cursor - 1;
-    }
-
     // 필요한 경우에만 새 주소 생성
     await ensureAddressesExist(walletItemBase: walletItem, cursor: cursor, count: 20, isChange: isChange);
 
-    // 지갑 인덱스 업데이트
+    // 지갑 인덱스 업데이트 (writeAsync 콜백 안에서 최신 값을 다시 읽어 비교)
     await realm.writeAsync(() {
-      if (usedIndex > dbUsedIndex) {
+      final currentDbUsedIndex = isChange ? realmWalletBase.usedChangeIndex : realmWalletBase.usedReceiveIndex;
+      if (usedIndex > currentDbUsedIndex) {
         if (isChange) {
           realmWalletBase.usedChangeIndex = usedIndex;
         } else {
@@ -487,6 +482,14 @@ class AddressRepository extends BaseRepository {
         }
       }
     });
+
+    // walletItem 인메모리 캐시도 실제로 반영된 값 기준으로만 전진시킨다
+    final persistedUsedIndex = isChange ? realmWalletBase.usedChangeIndex : realmWalletBase.usedReceiveIndex;
+    if (isChange) {
+      walletItem.changeUsedIndex = max(walletItem.changeUsedIndex, persistedUsedIndex);
+    } else {
+      walletItem.receiveUsedIndex = max(walletItem.receiveUsedIndex, persistedUsedIndex);
+    }
   }
 
   /// 주소 잔액 업데이트

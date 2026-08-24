@@ -352,7 +352,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
     );
   }
 
-  void _showSegmentTooltip(bool isReceiving) {
+  /// 세그먼트 컨트롤의 레이아웃이 아직 확정되지 않은 프레임에 호출될 시(e.g, 화면 진입 직후) 재시도 횟수
+  /// '입금' 말풍선 노출을 위함
+  static const int _kSegmentTooltipMaxRetries = 5;
+
+  void _showSegmentTooltip(bool isReceiving, {int retriesLeft = _kSegmentTooltipMaxRetries}) {
     final preferenceProvider = context.read<PreferenceProvider>();
     final hasSeenToday =
         isReceiving
@@ -366,6 +370,12 @@ class _AddressListScreenState extends State<AddressListScreen> {
     final labelRenderBox = labelKey.currentContext?.findRenderObject();
     final stackRenderBox = _screenStackKey.currentContext?.findRenderObject();
     if (labelRenderBox is! RenderBox || !labelRenderBox.hasSize || stackRenderBox is! RenderBox) {
+      if (retriesLeft > 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showSegmentTooltip(isReceiving, retriesLeft: retriesLeft - 1);
+        });
+      }
       return;
     }
 

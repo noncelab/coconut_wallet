@@ -26,8 +26,10 @@ void main() {
     });
   }
 
-  /// 실제 지갑 생성 시 초기에 receive/change 각각 20개 주소를 가지고 시작함.
-  /// 이 환경을 그대로 재현했기 때문에 주소가 추가로 저장이 안되면 20개만 저장되어야 함.
+  /// 실제 지갑도 생성 시점에 receive/change 각각 20개 주소(index 0~19)를 미리 만들어두므로,
+  /// 아래 setUp에서도 그 초기 상태를 그대로 재현한다. 그래서 아래 테스트들의 기대값은 이
+  /// "이미 있는 20 + 20"을 기준으로 계산된다 — 필터 없이 전체를 조회하면 기본 40개이고,
+  /// 특정 타입(예: isChange == false)만 조회하면 그 타입의 기존 20개를 기준으로 계산된다.
   setUp(() async {
     realmManager = await setupTestRealmManager();
     realmWalletBase = RealmWalletBase(
@@ -71,9 +73,10 @@ void main() {
     realmManager.dispose();
   });
 
+  // addAddressesWithGapLimit 규칙: (generatedIndex - usedIndex)가 kMaxAddressLimitGap(200)
+  // 이상이면 새 주소를 아예 저장하지 않는다(이미 충분히 앞서 생성돼 있으므로). 아래 테스트의
+  // "indexDifference가 199일 때" 같은 표현은 바로 이 (generatedIndex - usedIndex) 값을 뜻한다.
   group('AddressRepository addAddressesWithGapLimit 테스트', () {
-    // 테스트용 주소 생성 헬퍼 함수
-
     test('빈 주소 리스트가 전달되면 저장하지 않고 종료한다', () async {
       // Given
       realmManager.realm.write(() {

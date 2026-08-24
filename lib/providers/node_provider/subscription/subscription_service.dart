@@ -464,27 +464,26 @@ class SubscriptionService {
   }
 
   /// 스캔 범위 확장을 위한 메서드
+  /// 스캔한 범위 안에서 이미 사용된 주소를 발견하면 그 주소를 새 기준으로 다시 gapLimit만큼 계속 확장한다
   Future<void> _extendSubscription(
     WalletItemBase walletItem,
     bool isChange,
     StreamController<SubscribeScriptStreamDto> scriptStatusController,
   ) async {
     final usedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
-    final startIndex = usedIndex + 1;
-    final endIndex = usedIndex + kSubscriptionGapLimit + 1;
 
-    Logger.log(
-      'Extending subscription: isChange=$isChange, startIndex=$startIndex, endIndex=$endIndex, usedIndex=$usedIndex',
-    );
-
-    // 범위가 유효한지 확인
-    if (startIndex >= endIndex || usedIndex < 0) {
-      Logger.log('Invalid extension range: skipping (startIndex=$startIndex, endIndex=$endIndex)');
+    if (usedIndex < 0) {
+      Logger.log('Invalid extension range: skipping (usedIndex=$usedIndex)');
       return;
     }
 
-    // 주소 범위에 대한 구독 처리 (기존 _subscribeAddressRange 메서드 재사용)
-    await _subscribeAddressRange(walletItem, startIndex, endIndex, isChange, scriptStatusController);
+    Logger.log('Extending subscription: isChange=$isChange, usedIndex=$usedIndex');
+
+    final result = await _scanAndSubscribeRange(walletItem, isChange, usedIndex + 1, usedIndex, scriptStatusController);
+
+    if (result.lastUsedIndex > usedIndex) {
+      await _addressRepository.updateWalletUsedIndex(walletItem, result.lastUsedIndex, isChange: isChange);
+    }
   }
 
   /// 특정 유형(receive/change)의 스크립트 구독 해제
