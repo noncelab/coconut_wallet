@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -21,7 +22,6 @@ import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
 
 class PreferenceProvider extends ChangeNotifier {
@@ -282,7 +282,13 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 주소 리스트 화면 '입금'/'잔돈' 세그먼트 툴팁을 오늘(자정 기준) 이미 봤는지 여부
+  /// 주소 리스트 화면 '입금'/'잔돈' 세그먼트 툴팁 재노출 주기
+  /// 실기기 정식 빌드는 하루(자정 기준)에 한 번만 노출
+  /// 디버그 빌드는 반복 테스트가 어려우므로 훨씬 짧게(1분) 잡는다.
+  static const Duration _kDebugTooltipCycle = Duration(minutes: 1);
+
+  /// 주소 리스트 화면 '입금'/'잔돈' 세그먼트 툴팁을 이미 봤는지 여부
+  /// (정식 빌드: 오늘 자정 기준, 디버그 빌드: 최근 [_kDebugTooltipCycle] 이내)
   bool hasSeenReceivingTooltipToday() => _hasSeenTooltipToday(SharedPrefKeys.kReceivingTooltipLastShownDate);
   bool hasSeenChangeTooltipToday() => _hasSeenTooltipToday(SharedPrefKeys.kChangeTooltipLastShownDate);
 
@@ -296,6 +302,11 @@ class PreferenceProvider extends ChangeNotifier {
 
     final lastShownDate = DateTime.parse(lastShownDateString);
     final now = DateTime.now();
+
+    if (kDebugMode) {
+      return now.difference(lastShownDate) < _kDebugTooltipCycle;
+    }
+
     return lastShownDate.year == now.year && lastShownDate.month == now.month && lastShownDate.day == now.day;
   }
 
