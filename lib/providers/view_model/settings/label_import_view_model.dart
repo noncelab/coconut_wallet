@@ -44,51 +44,58 @@ class LabelImportViewModel extends ChangeNotifier {
     final records = _converter.decodeJsonLines(lines, targetOrigin: origin);
 
     final result = LabelImportResult(wallet: currentWallet);
-    final lockedUtxoIds = <String>{};
+    final Map<String, String> txMemos = {};
+    final Map<String, List<Map<String, dynamic>>> utxoTags = {};
+    final Set<String> utxoIdsToLock = {};
 
     for (final record in records) {
-      try {
-        if (record.type == Bip329Type.tx) {
-          final txHash = record.ref;
-          final label = record.label;
-          if (label == null || label.isEmpty) continue;
+      // Process each record; any exception will abort the import preventing partial commits
+      if (record.type == Bip329Type.tx) {
+        final txHash = record.ref;
+        final label = record.label;
+        if (label == null || label.isEmpty) continue;
 
-          final existingRecord = _walletProvider.getTransactionRecord(walletId, txHash);
-          if (existingRecord == null) continue;
+        final existingRecord = _walletProvider.getTransactionRecord(walletId, txHash);
+        if (existingRecord == null) continue;
 
-          if (!overwriteMemo && existingRecord.memo != null && existingRecord.memo!.isNotEmpty) {
-            final newMemo = '${existingRecord.memo}\n$label';
-            await _walletProvider.updateTransactionMemo(walletId, txHash, newMemo);
-            result.txMemoCount++;
-          } else {
-            await _walletProvider.updateTransactionMemo(walletId, txHash, label);
-            result.txMemoCount++;
-          }
-        } else if (record.type == Bip329Type.output) {
-          final utxoId = Bip329Converter.parseRefToUtxoId(record.ref);
-          if (utxoId == null) continue;
-
-          if (_walletProvider.getUtxoState(walletId, utxoId) == null) {
-            continue;
-          }
-
-          if (record.label != null && record.label!.isNotEmpty) {
-            await _walletProvider.addUtxoToTag(walletId, record.label!, utxoId, colorIndex: record.tagColor);
-            result.utxoTagCount++;
-          }
-
-          if (record.spendable == false) {
-            if (!lockedUtxoIds.contains(utxoId)) {
-              await _walletProvider.lockUtxo(walletId, utxoId);
-              result.utxoLockCount++;
-              lockedUtxoIds.add(utxoId);
-            }
-          }
+        String finalMemo;
+        if (!overwriteMemo && existingRecord.memo != null && existingRecord.memo!.isNotEmpty) {
+          finalMemo = '${existingRecord.memo}\n$label';
+        } else {
+          finalMemo = label;
         }
-      } catch (e, stackTrace) {
-        debugPrint('Error processing record: ${record.toJsonLine()} - $e');
-        debugPrint('StackTrace: $stackTrace');
+        txMemos[txHash] = finalMemo;
+        result.txMemoCount++;
+      } else if (record.type == Bip329Type.output) {
+        final utxoId = Bip329Converter.parseRefToUtxoId(record.ref);
+        if (utxoId == null) continue;
+
+        if (_walletProvider.getUtxoState(walletId, utxoId) == null) {
+          continue;
+        }
+
+        if (record.label != null && record.label!.isNotEmpty) {
+          utxoTags.putIfAbsent(utxoId, () => []).add({'tag': record.label!, 'colorIndex': record.tagColor});
+          result.utxoTagCount++;
+        }
+
+        if (record.spendable == false) {
+          utxoIdsToLock.add(utxoId);
+        }
       }
+    }
+
+    if (txMemos.isNotEmpty) {
+      await _walletProvider.updateTransactionMemos(walletId, txMemos);
+    }
+    for (final entry in utxoTags.entries) {
+      for (final tagInfo in entry.value) {
+        await _walletProvider.addUtxoToTag(walletId, tagInfo['tag'], entry.key, colorIndex: tagInfo['colorIndex']);
+      }
+    }
+    if (utxoIdsToLock.isNotEmpty) {
+      await _walletProvider.lockUtxos(walletId, utxoIdsToLock.toList());
+      result.utxoLockCount = utxoIdsToLock.length;
     }
 
     return result;
