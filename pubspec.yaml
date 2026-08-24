@@ -154,7 +154,7 @@ flutter:
     - assets/svg/wallet-catalog/custom-icons/
     - assets/svg/wallet-catalog/hardware-wallets/
     - assets/svg/wallet-catalog/import-formats/
-    - assets/lottie/pin-locked-success.json
+    - assets/lottie/check-mark.json
     - assets/lottie/loading-three-dots.json
     - assets/lottie/arrow-up.json
     - assets/lottie/arrow-down.json

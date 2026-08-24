@@ -4,7 +4,7 @@ abstract final class CommonLottiePath {
 }
 
 abstract final class AuthLottiePath {
-  static const String pinLockedSuccess = 'assets/lottie/pin-locked-success.json';
+  static const String pinLockedSuccess = 'assets/lottie/check-mark.json';
 }
 
 abstract final class SettingsLottiePath {
