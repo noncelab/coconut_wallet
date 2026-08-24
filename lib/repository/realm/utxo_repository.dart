@@ -314,6 +314,26 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
+  Future<Result<void>> lockAllUtxos(int walletId, List<String> utxoIds) async {
+    if (utxoIds.isEmpty) return Result.success(null);
+    return handleAsyncRealm(() async {
+      final utxosToLock =
+          realm
+              .query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [walletId, utxoIds])
+              .where((u) => u.status != utxoStatusToString(UtxoStatus.locked))
+              .toList();
+
+      if (utxosToLock.isEmpty) return;
+
+      final lockedStr = utxoStatusToString(UtxoStatus.locked);
+      await realm.writeAsync(() {
+        for (final utxo in utxosToLock) {
+          utxo.status = lockedStr;
+        }
+      });
+    });
+  }
+
   Future<void> updateUtxoStatus(int walletId, List<String> utxoList, UtxoStatus status) async {
     final statusStr = utxoStatusToString(status);
     final utxosToUpdate = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [

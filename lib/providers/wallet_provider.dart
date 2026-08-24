@@ -728,30 +728,19 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  /// Batch update transaction memos
   Future<void> updateTransactionMemos(int walletId, Map<String, String> txMemos) async {
-    for (final entry in txMemos.entries) {
-      final result = _transactionRepository.updateTransactionMemo(walletId, entry.key, entry.value);
-      if (result.isFailure) {
-        throw result.error;
-      }
+    final result = _transactionRepository.addAllTransactionMemos(walletId, txMemos);
+    if (result.isFailure) {
+      throw result.error;
     }
-    // Notify once after all updates
     notifyListeners();
   }
 
-  /// Batch lock multiple UTXOs
   Future<void> lockUtxos(int walletId, List<String> utxoIds) async {
-    for (final utxoId in utxoIds) {
-      final utxo = getUtxoState(walletId, utxoId);
-      if (utxo != null && utxo.status != UtxoStatus.locked) {
-        final result = await _utxoRepository.toggleUtxoLockStatus(walletId, utxoId);
-        if (result.isFailure) {
-          throw result.error;
-        }
-      }
+    final result = await _utxoRepository.lockAllUtxos(walletId, utxoIds);
+    if (result.isFailure) {
+      throw result.error;
     }
-    // Notify once after all locks
     notifyListeners();
   }
 

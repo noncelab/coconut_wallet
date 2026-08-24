@@ -135,6 +135,27 @@ class TransactionRepository extends BaseRepository {
     return realm.query<RealmTransactionMemo>('walletId == $walletId').toList();
   }
 
+  Result<void> addAllTransactionMemos(int walletId, Map<String, String> txMemos) {
+    if (txMemos.isEmpty) return Result.success(null);
+    return handleRealm<void>(() {
+      final existingMemos = realm.query<RealmTransactionMemo>('walletId == $walletId');
+      final existingMemoMap = {for (var m in existingMemos) m.transactionHash: m};
+
+      realm.write(() {
+        for (final entry in txMemos.entries) {
+          final txHash = entry.key;
+          final memo = entry.value;
+          final existing = existingMemoMap[txHash];
+          if (existing == null) {
+            realm.add(generateRealmTransactionMemo(txHash, walletId, memo));
+          } else {
+            existing.memo = memo;
+          }
+        }
+      });
+    });
+  }
+
   /// 트랜잭션 상태 업데이트
   Future<void> updateTransactionStates(
     int walletId,
