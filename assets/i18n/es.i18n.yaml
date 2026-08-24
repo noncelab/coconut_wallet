@@ -1151,10 +1151,10 @@ label_import_file_picker_screen:
   option_selection:
     title: "¿Aplicar notas?"
     description_1: "Aplica las notas guardadas en el archivo a Coconut Wallet."
-    description_2: "Las notas existentes se reemplazarán con las notas importadas."
+    description_2: "Si hay notas existentes, se agregarán las notas importadas."
     add_memo_to_existing:
-      title: "Agregar a las notas existentes"
-      subtitle: "Conserva las notas existentes y agrega las notas importadas"
+      title: "Sobrescribir notas existentes"
+      subtitle: "Las notas existentes se eliminarán y se aplicarán las notas importadas"
     import_memos_from_other_wallets:
       title: "Importar también notas de otras billeteras"
       subtitle: "Importa también las notas que no pertenecen a la billetera seleccionada"

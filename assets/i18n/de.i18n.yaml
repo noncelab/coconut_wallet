@@ -1091,10 +1091,10 @@ label_import_file_picker_screen:
   option_selection:
     title: "Notizen anwenden?"
     description_1: "Wenden Sie die in der Datei gespeicherten Notizen auf Coconut Wallet an."
-    description_2: "Bestehende Notizen werden durch die importierten Notizen ersetzt."
+    description_2: "Wenn Notizen vorhanden sind, werden die importierten Notizen hinzugefügt."
     add_memo_to_existing:
-      title: "Zu bestehenden Notizen hinzufügen"
-      subtitle: "Bestehende Notizen behalten und importierte Notizen hinzufügen"
+      title: "Bestehende Notizen überschreiben"
+      subtitle: "Bestehende Notizen werden gelöscht und importierte Notizen angewendet"
     import_memos_from_other_wallets:
       title: "Notizen aus anderen Wallets ebenfalls importieren"
       subtitle: "Importieren Sie auch Notizen, die nicht zum ausgewählten Wallet gehören"

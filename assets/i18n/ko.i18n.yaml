@@ -1166,10 +1166,10 @@ label_import_file_picker_screen:
   option_selection:
     title: "메모를 적용할까요?"
     description_1: '파일에 저장된 메모를 코코넛 월렛에 적용해요.'
-    description_2: '기존 메모는 가져온 메모로 변경돼요.'
+    description_2: '기존 메모가 있으면 가져온 메모를 추가해요.'
     add_memo_to_existing: 
-      title: '기존 메모에 추가하기'
-      subtitle: '기존 메모를 유지하고 가져온 메모를 추가해요'
+      title: '기존 메모 덮어쓰기'
+      subtitle: '기존 메모는 지워지고 가져온 메모가 적용돼요'
     import_memos_from_other_wallets:
       title: '다른 지갑의 메모도 가져오기'
       subtitle: '선택한 지갑에 해당하지 않는 메모도 함께 가져와요'

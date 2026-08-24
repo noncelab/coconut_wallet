@@ -36,7 +36,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   List<LabelImportResult> _importResults = [];
   int _currentPage = 0;
   bool _deleteFileOnSuccess = true;
-  bool _addMemoToExisting = false;
+  bool _overwriteMemo = false;
   late bool _importMemosFromOtherWallets;
 
   @override
@@ -321,10 +321,10 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         OptionCard(
           title: t.label_import_file_picker_screen.option_selection.add_memo_to_existing.title,
           subtitle: [TextSpan(text: t.label_import_file_picker_screen.option_selection.add_memo_to_existing.subtitle)],
-          isSelected: _addMemoToExisting,
+          isSelected: _overwriteMemo,
           onTap: () {
             setState(() {
-              _addMemoToExisting = !_addMemoToExisting;
+              _overwriteMemo = !_overwriteMemo;
             });
           },
         ),
@@ -517,12 +517,9 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
               ? await _importViewModel.importLabelsForWallet(
                 widget.walletId!,
                 selectedFile.path,
-                addMemoToExisting: _addMemoToExisting,
+                overwriteMemo: _overwriteMemo,
               )
-              : await _importViewModel.importLabelsForAllWallets(
-                selectedFile.path,
-                addMemoToExisting: _addMemoToExisting,
-              );
+              : await _importViewModel.importLabelsForAllWallets(selectedFile.path, overwriteMemo: _overwriteMemo);
       if (mounted) {
         if (result.isEmpty) {
           setState(() => _step = LabelImportStep.noLabelsToApply);

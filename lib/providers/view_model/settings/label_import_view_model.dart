@@ -36,7 +36,7 @@ class LabelImportViewModel extends ChangeNotifier {
   Future<LabelImportResult> importLabelsFromJsonLFile(
     int walletId,
     String filePath, {
-    bool addMemoToExisting = false,
+    bool overwriteMemo = false,
   }) async {
     final currentWallet = _walletProvider.getWalletById(walletId);
     final origin = Bip329Converter.getOriginFromDescriptor(currentWallet.descriptor);
@@ -56,7 +56,7 @@ class LabelImportViewModel extends ChangeNotifier {
           final existingRecord = _walletProvider.getTransactionRecord(walletId, txHash);
           if (existingRecord == null) continue;
 
-          if (addMemoToExisting && existingRecord.memo != null && existingRecord.memo!.isNotEmpty) {
+          if (!overwriteMemo && existingRecord.memo != null && existingRecord.memo!.isNotEmpty) {
             final newMemo = '${existingRecord.memo}\n$label';
             await _walletProvider.updateTransactionMemo(walletId, txHash, newMemo);
             result.txMemoCount++;
@@ -98,9 +98,9 @@ class LabelImportViewModel extends ChangeNotifier {
   Future<List<LabelImportResult>> importLabelsForWallet(
     int walletId,
     String filePath, {
-    bool addMemoToExisting = false,
+    bool overwriteMemo = false,
   }) async {
-    final result = await importLabelsFromJsonLFile(walletId, filePath, addMemoToExisting: addMemoToExisting);
+    final result = await importLabelsFromJsonLFile(walletId, filePath, overwriteMemo: overwriteMemo);
 
     if (result.txMemoCount == 0 && result.utxoTagCount == 0 && result.utxoLockCount == 0) {
       return [];
@@ -109,16 +109,12 @@ class LabelImportViewModel extends ChangeNotifier {
   }
 
   /// Imports labels for all wallets.
-  Future<List<LabelImportResult>> importLabelsForAllWallets(String filePath, {bool addMemoToExisting = false}) async {
+  Future<List<LabelImportResult>> importLabelsForAllWallets(String filePath, {bool overwriteMemo = false}) async {
     final allWallets = _walletProvider.walletItemList;
     final List<LabelImportResult> results = [];
 
     for (final wallet in allWallets) {
-      final singleWalletResult = await importLabelsFromJsonLFile(
-        wallet.id,
-        filePath,
-        addMemoToExisting: addMemoToExisting,
-      );
+      final singleWalletResult = await importLabelsFromJsonLFile(wallet.id, filePath, overwriteMemo: overwriteMemo);
       if (singleWalletResult.txMemoCount > 0 ||
           singleWalletResult.utxoTagCount > 0 ||
           singleWalletResult.utxoLockCount > 0) {

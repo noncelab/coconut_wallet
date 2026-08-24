@@ -1160,10 +1160,10 @@ label_import_file_picker_screen:
   option_selection:
     title: "Apply labels?"
     description_1: "Apply the notes saved in the file to Coconut Wallet."
-    description_2: "Existing notes will be replaced with the imported notes."
+    description_2: "If there are existing notes, imported notes will be added."
     add_memo_to_existing:
-      title: "Add to existing notes"
-      subtitle: "Keep existing notes and add imported notes"
+      title: "Overwrite existing notes"
+      subtitle: "Existing notes will be deleted and imported notes will be applied"
     import_memos_from_other_wallets:
       title: "Import notes from other wallets too"
       subtitle: "Import notes that do not belong to the selected wallet as well"

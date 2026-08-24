@@ -1148,10 +1148,10 @@ label_import_file_picker_screen:
   option_selection:
     title: "メモを適用しますか？"
     description_1: "ファイルに保存されたメモをココナッツウォレットに適用します。"
-    description_2: "既存のメモはインポートしたメモに変更されます。"
+    description_2: "既存のメモがある場合は、インポートしたメモを追加します。"
     add_memo_to_existing:
-      title: "既存のメモに追加する"
-      subtitle: "既存のメモを維持し、インポートしたメモを追加します"
+      title: "既存のメモを上書きする"
+      subtitle: "既存のメモは削除され、インポートしたメモが適用されます"
     import_memos_from_other_wallets:
       title: "他のウォレットのメモもインポートする"
       subtitle: "選択したウォレットに該当しないメモも一緒にインポートします"
