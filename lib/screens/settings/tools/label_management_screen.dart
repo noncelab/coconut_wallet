@@ -3,7 +3,6 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/settings/tools/label_export_wallet_picker_screen.dart';
 import 'package:coconut_wallet/screens/settings/tools/label_import_file_picker_screen.dart';
-import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
@@ -179,32 +178,20 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
 
   void _navigateToImportFilePicker(BuildContext context, {int? walletId}) {
     Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) => LabelImportFilePickerScreen(
+      MaterialPageRoute(
+        builder:
+            (context) => LabelImportFilePickerScreen(
               walletId: walletId,
               importMemosFromOtherWalletsFixed: widget.importMemosFromOtherWalletsFixed,
             ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 250),
       ),
     );
   }
 
   void _navigateToExportWalletPicker(BuildContext context, {int? walletId}) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) =>
-                LabelExportWalletPickerScreen(initialSelectedWalletId: walletId),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 250),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => LabelExportWalletPickerScreen(initialSelectedWalletId: walletId)));
   }
 }
 

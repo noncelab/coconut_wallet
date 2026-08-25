@@ -18,7 +18,6 @@ import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
 // import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -384,16 +383,8 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
   }
 
   void _showLabelsManagementBottomSheet(BuildContext context) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) =>
-                const LabelManagementScreen(importMemosFromOtherWalletsFixed: true),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 250),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const LabelManagementScreen(importMemosFromOtherWalletsFixed: true)));
   }
 }
