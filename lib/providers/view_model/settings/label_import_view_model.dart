@@ -7,6 +7,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/label_file_service.dart';
 import 'package:flutter/foundation.dart';
 
+typedef UtxoTagInfo = ({String tag, int? colorIndex});
+
 class LabelImportViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final LabelFileService _fileService;
@@ -45,60 +47,83 @@ class LabelImportViewModel extends ChangeNotifier {
 
     final result = LabelImportResult(wallet: currentWallet);
     final Map<String, String> txMemos = {};
-    final Map<String, List<Map<String, dynamic>>> utxoTags = {};
+    final Map<String, List<UtxoTagInfo>> utxoTags = {};
     final Set<String> utxoIdsToLock = {};
 
     for (final record in records) {
-      // Process each record; any exception will abort the import preventing partial commits
-      if (record.type == Bip329Type.tx) {
-        final txHash = record.ref;
-        final label = record.label;
-        if (label == null || label.isEmpty) continue;
-
-        final existingRecord = _walletProvider.getTransactionRecord(walletId, txHash);
-        if (existingRecord == null) continue;
-
-        String finalMemo;
-        if (!overwriteMemo && existingRecord.memo != null && existingRecord.memo!.isNotEmpty) {
-          finalMemo = '${existingRecord.memo}\n$label';
-        } else {
-          finalMemo = label;
-        }
-        txMemos[txHash] = finalMemo;
-        result.txMemoCount++;
-      } else if (record.type == Bip329Type.output) {
-        final utxoId = Bip329Converter.parseRefToUtxoId(record.ref);
-        if (utxoId == null) continue;
-
-        if (_walletProvider.getUtxoState(walletId, utxoId) == null) {
-          continue;
-        }
-
-        if (record.label != null && record.label!.isNotEmpty) {
-          utxoTags.putIfAbsent(utxoId, () => []).add({'tag': record.label!, 'colorIndex': record.tagColor});
-          result.utxoTagCount++;
-        }
-
-        if (record.spendable == false) {
-          utxoIdsToLock.add(utxoId);
-        }
-      }
+      _processRecord(
+        walletId: walletId,
+        record: record,
+        overwriteMemo: overwriteMemo,
+        txMemos: txMemos,
+        utxoTags: utxoTags,
+        utxoIdsToLock: utxoIdsToLock,
+        result: result,
+      );
     }
 
+    // Provider / DB Batch Updates
     if (txMemos.isNotEmpty) {
       await _walletProvider.updateTransactionMemos(walletId, txMemos);
     }
-    for (final entry in utxoTags.entries) {
-      for (final tagInfo in entry.value) {
-        await _walletProvider.addUtxoToTag(walletId, tagInfo['tag'], entry.key, colorIndex: tagInfo['colorIndex']);
+
+    if (utxoTags.isNotEmpty) {
+      final List<Future<void>> tagFutures = [];
+      for (final entry in utxoTags.entries) {
+        for (final tagInfo in entry.value) {
+          tagFutures.add(
+            _walletProvider.addUtxoToTag(walletId, tagInfo.tag, entry.key, colorIndex: tagInfo.colorIndex),
+          );
+        }
       }
+      await Future.wait(tagFutures);
     }
+
     if (utxoIdsToLock.isNotEmpty) {
       await _walletProvider.lockUtxos(walletId, utxoIdsToLock.toList());
       result.utxoLockCount = utxoIdsToLock.length;
     }
 
     return result;
+  }
+
+  void _processRecord({
+    required int walletId,
+    required Bip329Record record,
+    required bool overwriteMemo,
+    required Map<String, String> txMemos,
+    required Map<String, List<UtxoTagInfo>> utxoTags,
+    required Set<String> utxoIdsToLock,
+    required LabelImportResult result,
+  }) {
+    if (record.type == Bip329Type.tx) {
+      final txHash = record.ref;
+      final label = record.label;
+      if (label == null || label.isEmpty) return;
+
+      final existingRecord = _walletProvider.getTransactionRecord(walletId, txHash);
+      if (existingRecord == null) return;
+
+      final bool hasExistingMemo = existingRecord.memo != null && existingRecord.memo!.isNotEmpty;
+      final String finalMemo = (!overwriteMemo && hasExistingMemo) ? '${existingRecord.memo}\n$label' : label;
+
+      txMemos[txHash] = finalMemo;
+      result.txMemoCount++;
+    } else if (record.type == Bip329Type.output) {
+      final utxoId = Bip329Converter.parseRefToUtxoId(record.ref);
+      if (utxoId == null || _walletProvider.getUtxoState(walletId, utxoId) == null) {
+        return;
+      }
+
+      if (record.label != null && record.label!.isNotEmpty) {
+        utxoTags.putIfAbsent(utxoId, () => []).add((tag: record.label!, colorIndex: record.tagColor));
+        result.utxoTagCount++;
+      }
+
+      if (record.spendable == false) {
+        utxoIdsToLock.add(utxoId);
+      }
+    }
   }
 
   /// Imports labels for a specific wallet and returns non-empty results.

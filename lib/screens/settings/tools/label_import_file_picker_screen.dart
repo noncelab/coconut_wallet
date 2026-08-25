@@ -30,6 +30,7 @@ class LabelImportFilePickerScreen extends StatefulWidget {
 class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScreen> {
   late final LabelImportViewModel _importViewModel;
   late Future<List<File>> _filesFuture;
+
   LabelImportStep _step = LabelImportStep.fileSelection;
   int? _selectedItemIndex;
   String? _fileName;
@@ -50,108 +51,48 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   @override
   Widget build(BuildContext context) {
     final canPop = _step != LabelImportStep.loading;
+
     return PopScope(
       canPop: canPop,
-      child: Stack(
-        children: [
-          Scaffold(
-            backgroundColor: context.coconutColors.background,
-            appBar: CoconutAppBar.build(
-              title: t.label_management_screen.import_title,
-              context: context,
-              isLeadingVisible: canPop,
-            ),
-            body: FutureBuilder<List<File>>(
-              future: _filesFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return _buildBody(context, snapshot);
-              },
-            ),
-          ),
-        ],
+      child: Scaffold(
+        backgroundColor: context.coconutColors.background,
+        appBar: CoconutAppBar.build(
+          title: t.label_management_screen.import_title,
+          context: context,
+          isLeadingVisible: canPop,
+        ),
+        body: FutureBuilder<List<File>>(
+          future: _filesFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return _buildMainLayout(context, snapshot);
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, AsyncSnapshot<List<File>> snapshot) {
+  Widget _buildMainLayout(BuildContext context, AsyncSnapshot<List<File>> snapshot) {
     final bool noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
 
-    return Stack(
-      children: [
-        if (_step == LabelImportStep.success)
-          _buildContent(context, snapshot, noFiles)
-        else
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              children: <Widget>[
-                if (_step == LabelImportStep.fileSelection) _buildInfoTooltip(context),
-                Expanded(child: _buildContent(context, snapshot, noFiles)),
-              ],
-            ),
-          ),
-        if (_step == LabelImportStep.fileSelection && !noFiles)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: FixedBottomButton(
-              text: t.label_management_screen.file.select_button,
-              isActive: _selectedItemIndex != null,
-              onButtonClicked: () => _onSelectButtonPressed(snapshot.data!),
-            ),
-          ),
-        if (_step == LabelImportStep.optionSelection)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: FixedBottomButton(
-              text: t.label_management_screen.file.apply,
-              isActive: true,
-              onButtonClicked: _onApplyButtonPressed,
-            ),
-          ),
-        if (_step == LabelImportStep.error)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: FixedBottomButton(
-              text: t.retry,
-              isActive: true,
-              onButtonClicked: () {
-                setState(() {
-                  _step = LabelImportStep.fileSelection;
-                });
-              },
-            ),
-          ),
-        if (_step == LabelImportStep.success)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: FixedBottomButton(
-              text: t.complete,
-              isActive: true,
-              onButtonClicked: () async {
-                if (_deleteFileOnSuccess && _selectedItemIndex != null) {
-                  final files = await _filesFuture;
-                  final fileToDelete = files[_selectedItemIndex!];
-                  await _importViewModel.deleteFile(fileToDelete);
-                }
-                Navigator.of(context).pop();
-              },
-            ),
-          ),
-        if (_step == LabelImportStep.noLabelsToApply)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: FixedBottomButton(
-              text: t.complete,
-              isActive: true,
-              onButtonClicked: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ),
-      ],
+    return Stack(children: [_buildStepContent(context, snapshot, noFiles), _buildBottomButtonArea(snapshot.data)]);
+  }
+
+  Widget _buildStepContent(BuildContext context, AsyncSnapshot<List<File>> snapshot, bool noFiles) {
+    if (_step == LabelImportStep.success) {
+      return _buildSuccessView(context);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        children: <Widget>[
+          if (_step == LabelImportStep.fileSelection) _buildInfoTooltip(context),
+          Expanded(child: _buildContent(context, snapshot, noFiles)),
+        ],
+      ),
     );
   }
 
@@ -170,6 +111,50 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       case LabelImportStep.noLabelsToApply:
         return _buildNoLabelsToApplyView();
     }
+  }
+
+  Widget _buildBottomButtonArea(List<File>? files) {
+    String? buttonText;
+    bool isActive = true;
+    VoidCallback? onPressed;
+
+    switch (_step) {
+      case LabelImportStep.fileSelection:
+        if (files == null || files.isEmpty) return const SizedBox.shrink();
+        buttonText = t.label_management_screen.file.select_button;
+        isActive = _selectedItemIndex != null;
+        onPressed = () => _onSelectButtonPressed(files);
+        break;
+      case LabelImportStep.optionSelection:
+        buttonText = t.label_management_screen.file.apply;
+        onPressed = _onApplyButtonPressed;
+        break;
+      case LabelImportStep.error:
+        buttonText = t.retry;
+        onPressed = () => setState(() => _step = LabelImportStep.fileSelection);
+        break;
+      case LabelImportStep.success:
+        buttonText = t.complete;
+        onPressed = () async {
+          if (_deleteFileOnSuccess && _selectedItemIndex != null) {
+            final fileList = await _filesFuture;
+            await _importViewModel.deleteFile(fileList[_selectedItemIndex!]);
+          }
+          if (mounted) Navigator.of(context).pop();
+        };
+        break;
+      case LabelImportStep.noLabelsToApply:
+        buttonText = t.complete;
+        onPressed = () => Navigator.of(context).pop();
+        break;
+      case LabelImportStep.loading:
+        return const SizedBox.shrink();
+    }
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: FixedBottomButton(text: buttonText, isActive: isActive, onButtonClicked: onPressed),
+    );
   }
 
   Widget _buildNoFilesFound(BuildContext context) {
@@ -195,11 +180,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
               isSelected: _selectedItemIndex == index,
               onTap: () {
                 setState(() {
-                  if (_selectedItemIndex == index) {
-                    _selectedItemIndex = null;
-                  } else {
-                    _selectedItemIndex = index;
-                  }
+                  _selectedItemIndex = (_selectedItemIndex == index) ? null : index;
                 });
               },
             );
@@ -451,19 +432,6 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
                 ),
               ],
             ),
-          ),
-          CoconutLayout.spacing_400h,
-          Column(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _deleteFileOnSuccess = !_deleteFileOnSuccess;
-                  });
-                },
-                child: const Row(mainAxisAlignment: MainAxisAlignment.start, children: [SizedBox(width: 8)]),
-              ),
-            ],
           ),
           const Spacer(),
         ],

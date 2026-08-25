@@ -1,7 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/model/label/label_result.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/label/label_result.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
 import 'package:flutter/material.dart';
@@ -60,7 +60,7 @@ class _ImportLabelSuccessCardState extends State<ImportLabelSuccessCard> {
             color:
                 widget.currentPage == index
                     ? context.coconutColors.primaryText
-                    : context.coconutColors.secondaryText.withOpacity(0.5),
+                    : context.coconutColors.secondaryText.withValues(alpha: 0.5),
           ),
         );
       }),
@@ -228,6 +228,13 @@ class ImportLabelInstructionToolTip extends StatelessWidget {
     this.stepResults,
   });
 
+  String _formatStepResult(Object result) {
+    if (result is int) {
+      return '$result${t.label_import_file_picker_screen.widget.count_unit(n: result)}';
+    }
+    return result.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     return CoconutToolTip(
@@ -247,6 +254,7 @@ class ImportLabelInstructionToolTip extends StatelessWidget {
               const TextSpan(text: '\n\n'),
             ],
             ...steps.asMap().entries.map((e) {
+              final stepIndex = e.key;
               final stepText = e.value as String;
 
               return WidgetSpan(
@@ -276,22 +284,16 @@ class ImportLabelInstructionToolTip extends StatelessWidget {
                               ),
                             ),
                           ),
-                        ],
-                        if (!showSkeleton && stepResults != null && e.key < stepResults!.length) ...[
-                          ...[
-                            const SizedBox(width: 8),
-                            Text(() {
-                              final result = stepResults![e.key];
-                              if (result is int) {
-                                return '$result${t.label_import_file_picker_screen.widget.count_unit(n: result)}';
-                              }
-                              return result.toString();
-                            }(), style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
-                          ],
+                        ] else if (stepResults != null && stepIndex < stepResults!.length) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            _formatStepResult(stepResults![stepIndex]),
+                            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                          ),
                         ],
                       ],
                     ),
-                    if (e.key < steps.length - 1) CoconutLayout.spacing_300h,
+                    if (stepIndex < steps.length - 1) CoconutLayout.spacing_300h,
                   ],
                 ),
               );
