@@ -698,6 +698,8 @@ class _TransactionListState extends State<TransactionList> {
   final List<TransactionRecord> _displayedTxList = [];
   final GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
+  bool _isUpdatingTxList = false;
+  List<TransactionRecord>? _pendingTxList;
 
   @override
   void initState() {
@@ -711,7 +713,7 @@ class _TransactionListState extends State<TransactionList> {
       builder: (_, txList, __) {
         if (!listEquals(_displayedTxList, txList) || !_deepEquals(_displayedTxList, txList)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _handleTransactionListUpdate(txList);
+            _scheduleTransactionListUpdate(txList);
           });
         }
         return txList.isNotEmpty ? _buildSliverAnimatedList(_displayedTxList) : _buildEmptyState();
@@ -728,6 +730,22 @@ class _TransactionListState extends State<TransactionList> {
       }
     }
     return true;
+  }
+
+  void _scheduleTransactionListUpdate(List<TransactionRecord> txList) {
+    _pendingTxList = txList;
+    if (_isUpdatingTxList) return;
+    _runPendingTxListUpdates();
+  }
+
+  Future<void> _runPendingTxListUpdates() async {
+    _isUpdatingTxList = true;
+    while (_pendingTxList != null) {
+      final next = _pendingTxList!;
+      _pendingTxList = null;
+      await _handleTransactionListUpdate(next);
+    }
+    _isUpdatingTxList = false;
   }
 
   Future<void> _handleTransactionListUpdate(List<TransactionRecord> txList) async {
