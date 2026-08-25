@@ -54,13 +54,16 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
       barrierColor: context.coconutColors.dimOverlay.withValues(alpha: 0.54),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (BuildContext buildContext, Animation animation, Animation secondaryAnimation) {
-        Future.delayed(const Duration(milliseconds: 3000), () {
-          if (buildContext.mounted) {
-            Navigator.of(buildContext).pop();
-          }
-        });
-
-        return AnimatedDialog(context: buildContext, lottieAddress: AuthLottiePath.pinLockedSuccess, duration: 400);
+        return AnimatedDialog(
+          context: buildContext,
+          lottieAddress: AuthLottiePath.pinLockedSuccess,
+          duration: 400,
+          onAnimationCompleted: () {
+            if (buildContext.mounted) {
+              Navigator.of(buildContext).pop();
+            }
+          },
+        );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         return SlideTransition(

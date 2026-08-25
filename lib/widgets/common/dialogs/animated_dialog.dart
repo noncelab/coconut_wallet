@@ -6,6 +6,7 @@ class AnimatedDialog extends StatelessWidget {
   final String lottieAddress;
   final String body;
   final int duration;
+  final VoidCallback? onAnimationCompleted;
 
   const AnimatedDialog({
     super.key,
@@ -13,10 +14,16 @@ class AnimatedDialog extends StatelessWidget {
     required this.lottieAddress,
     this.body = '',
     this.duration = 300,
+    this.onAnimationCompleted,
   });
 
   @override
   Widget build(BuildContext context) {
-    return CoconutAnimatedDialog(lottieAddress: lottieAddress, body: body, duration: duration);
+    return CoconutAnimatedDialog(
+      lottieAddress: lottieAddress,
+      body: body,
+      duration: duration,
+      onAnimationCompleted: onAnimationCompleted,
+    );
   }
 }

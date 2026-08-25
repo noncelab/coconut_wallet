@@ -1408,6 +1408,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                         child: IntrinsicWidth(
                           child: CoconutTextField(
                             key: ValueKey('input_textfield_$placeholderText'),
+                            activeColor: textColor,
+                            cursorColor: textColor,
                             placeholderColor: context.coconutColors.mutedText,
                             enabled: _viewModel.isNetworkOn,
                             maxLines: 1,
@@ -1490,6 +1492,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 child: Transform.translate(
                   offset: const Offset(0, -1.5),
                   child: CoconutTextField(
+                    activeColor: context.coconutColors.primaryText,
+                    cursorColor: context.coconutColors.primaryText,
                     enabled: _viewModel.isNetworkOn,
                     controller: premiumController,
                     focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
