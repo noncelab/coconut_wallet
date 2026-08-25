@@ -2,7 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
-class OptionCard extends StatelessWidget {
+class OptionCard extends StatefulWidget {
   final String title;
   final List<TextSpan> subtitle;
   final bool isSelected;
@@ -21,22 +21,44 @@ class OptionCard extends StatelessWidget {
   });
 
   @override
+  State<OptionCard> createState() => _OptionCardState();
+}
+
+class _OptionCardState extends State<OptionCard> {
+  bool _isPressed = false;
+
+  void _handleTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+  }
+
+  void _handleTapCancel() {
+    setState(() => _isPressed = false);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final borderColor =
-        !isEnabled
+        !widget.isEnabled
             ? context.coconutColors.iconDisabled
-            : isSelected
+            : (widget.isSelected || _isPressed)
             ? context.coconutColors.primaryText
             : context.coconutColors.border;
-    final titleColor = isEnabled ? context.coconutColors.primaryText : context.coconutColors.mutedText;
-    final subtitleColor = isEnabled ? context.coconutColors.secondaryText : context.coconutColors.mutedText;
+    final titleColor = widget.isEnabled ? context.coconutColors.primaryText : context.coconutColors.mutedText;
+    final subtitleColor = widget.isEnabled ? context.coconutColors.secondaryText : context.coconutColors.mutedText;
 
     return GestureDetector(
-      onTap: isEnabled ? onTap : null,
+      onTapDown: _handleTapDown,
+      onTapUp: _handleTapUp,
+      onTapCancel: _handleTapCancel,
+      onTap: widget.isEnabled ? widget.onTap : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration:
-            showBorder
+            widget.showBorder
                 ? BoxDecoration(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
@@ -50,13 +72,13 @@ class OptionCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 2.0),
               child: CoconutCheckbox(
-                isSelected: isSelected,
-                onChanged: (_) => onTap(),
+                isSelected: widget.isSelected || _isPressed,
+                onChanged: (_) => widget.onTap(),
                 width: 20,
                 color: context.coconutColors.iconDefault,
                 unSelectedColor: context.coconutColors.iconSubDefault,
                 inactiveColor: context.coconutColors.iconDisabled,
-                isDisabled: !isEnabled,
+                isDisabled: !widget.isEnabled,
               ),
             ),
             const SizedBox(width: 8),
@@ -64,10 +86,12 @@ class OptionCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: CoconutTypography.body2_14.setColor(titleColor)),
-                  if (subtitle.isNotEmpty) ...[
+                  Text(widget.title, style: CoconutTypography.body2_14.setColor(titleColor)),
+                  if (widget.subtitle.isNotEmpty) ...[
                     CoconutLayout.spacing_50h,
-                    Text.rich(TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: subtitle)),
+                    Text.rich(
+                      TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: widget.subtitle),
+                    ),
                   ],
                 ],
               ),
