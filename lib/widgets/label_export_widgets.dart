@@ -98,6 +98,12 @@ class ExportLabelInstructionToolTip extends StatelessWidget {
 
   const ExportLabelInstructionToolTip({super.key, required this.steps, this.showSkeleton = false, this.stepResults});
 
+  String _formatStepResult(Object? result) {
+    if (result == null) return '-';
+    final str = result.toString();
+    return str.isNotEmpty ? str : '-';
+  }
+
   @override
   Widget build(BuildContext context) {
     return CoconutToolTip(
@@ -108,53 +114,52 @@ class ExportLabelInstructionToolTip extends StatelessWidget {
       richText: RichText(
         text: TextSpan(
           style: CoconutTypography.body2_14,
-          children: [
-            ...steps.asMap().entries.map((e) {
-              final stepText = e.value as String;
+          children:
+              steps.asMap().entries.map((e) {
+                final stepIndex = e.key;
+                final stepText = e.value.toString();
 
-              return WidgetSpan(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            stepText,
-                            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                          ),
-                        ),
-                        if (showSkeleton) ...[
-                          const SizedBox(width: 8),
-                          Shimmer.fromColors(
-                            baseColor: context.coconutColors.surfaceSkeletonBase,
-                            highlightColor: context.coconutColors.surfaceSkeletonHighlight,
-                            child: Container(
-                              width: 60,
-                              height: 14,
-                              decoration: BoxDecoration(
-                                color: context.coconutColors.surfaceSkeletonBase,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
+                return WidgetSpan(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              stepText,
+                              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                             ),
                           ),
+                          if (showSkeleton) ...[
+                            const SizedBox(width: 8),
+                            Shimmer.fromColors(
+                              baseColor: context.coconutColors.surfaceSkeletonBase,
+                              highlightColor: context.coconutColors.surfaceSkeletonHighlight,
+                              child: Container(
+                                width: 60,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: context.coconutColors.surfaceSkeletonBase,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ] else if (stepResults != null && stepIndex < stepResults!.length) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              _formatStepResult(stepResults![stepIndex]),
+                              style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                            ),
+                          ],
                         ],
-                        if (!showSkeleton && stepResults != null && e.key < stepResults!.length) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            stepResults![e.key].toString().isNotEmpty ? stepResults![e.key].toString() : '-',
-                            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                          ),
-                        ],
-                      ],
-                    ),
-                    if (e.key < steps.length - 1) CoconutLayout.spacing_300h,
-                  ],
-                ),
-              );
-            }),
-          ],
+                      ),
+                      if (stepIndex < steps.length - 1) CoconutLayout.spacing_300h,
+                    ],
+                  ),
+                );
+              }).toList(),
         ),
       ),
     );

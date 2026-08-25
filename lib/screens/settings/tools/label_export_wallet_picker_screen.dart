@@ -9,8 +9,8 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/label_export_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
+import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
 import 'package:coconut_wallet/widgets/label_export_widgets.dart';
 import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
 import 'package:flutter/material.dart';
@@ -86,7 +86,6 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Widget _buildBody(BuildContext context, List<WalletItemBase> wallets) {
-    final bool showBottomButtons = _step == LabelExportStep.selection && _isCreateFileSelected;
     return Stack(
       children: [
         if (_step == LabelExportStep.success)
@@ -105,23 +104,30 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
               ],
             ),
           ),
-        if (showBottomButtons) ...[
-          Align(
+        _buildBottomButtonArea(),
+      ],
+    );
+  }
+
+  Widget _buildBottomButtonArea() {
+    switch (_step) {
+      case LabelExportStep.selection:
+        if (_isCreateFileSelected) {
+          return Align(
             alignment: Alignment.bottomCenter,
             child: FixedBottomButton(
               text: t.label_management_screen.export_title,
               isActive: _selectedWalletIds.isNotEmpty,
               onButtonClicked: _onExportButtonPressed,
             ),
-          ),
-        ] else if (_step == LabelExportStep.selection && !_isCreateFileSelected) ...[
-          FutureBuilder<List<File>>(
+          );
+        } else {
+          return FutureBuilder<List<File>>(
             future: _filesFuture,
             builder: (context, snapshot) {
               final noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
-              if (noFiles) {
-                return const SizedBox.shrink();
-              }
+              if (noFiles) return const SizedBox.shrink();
+
               return Align(
                 alignment: Alignment.bottomCenter,
                 child: FixedBottomTweenButton(
@@ -135,48 +141,45 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
                     final selectedFiles = _selectedFileIndices.map((index) => files[index]).toList();
                     await _shareFiles(selectedFiles);
                   },
-                  leftButtonClicked: () async {
-                    await _deleteSelectedFile();
-                  },
+                  leftButtonClicked: _deleteSelectedFile,
                 ),
               );
             },
+          );
+        }
+      case LabelExportStep.success:
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: FixedBottomTweenButton(
+            leftText: t.complete,
+            rightText: t.share,
+            leftButtonRatio: 0.3,
+            isRightButtonActive: true,
+            leftButtonClicked: () {
+              setState(() {
+                _step = LabelExportStep.selection;
+                _isCreateFileSelected = false;
+              });
+            },
+            rightButtonClicked: () async {
+              if (_exportedFile != null) await _shareFiles([_exportedFile!]);
+            },
           ),
-        ],
-        if (_step == LabelExportStep.success)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: FixedBottomTweenButton(
-              leftText: t.complete,
-              rightText: t.share,
-              leftButtonRatio: 0.3,
-              isRightButtonActive: true,
-              leftButtonClicked: () {
-                setState(() {
-                  _step = LabelExportStep.selection;
-                  _isCreateFileSelected = false;
-                });
-              },
-              rightButtonClicked: () async {
-                if (_exportedFile != null) await _shareFiles([_exportedFile!]);
-              },
-            ),
+        );
+      case LabelExportStep.error:
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: FixedBottomButton(
+            text: t.retry,
+            isActive: true,
+            onButtonClicked: () {
+              setState(() => _step = LabelExportStep.selection);
+            },
           ),
-        if (_step == LabelExportStep.error)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: FixedBottomButton(
-              text: t.retry,
-              isActive: true,
-              onButtonClicked: () {
-                setState(() {
-                  _step = LabelExportStep.selection;
-                });
-              },
-            ),
-          ),
-      ],
-    );
+        );
+      case LabelExportStep.exporting:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildContent(BuildContext context, List<WalletItemBase> wallets) {
@@ -209,36 +212,34 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Widget _buildNoFilesFound(BuildContext context) {
+    final fullText = t.label_export_wallet_picker_screen.no_file;
+    final parts = fullText.split(RegExp(r'\[|\]'));
+
+    Widget content;
+    if (parts.length != 3) {
+      content = Text(
+        fullText,
+        style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+        textAlign: TextAlign.center,
+      );
+    } else {
+      content = RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+          children: [
+            TextSpan(text: parts[0]),
+            TextSpan(text: '[${parts[1]}]', style: CoconutTypography.body1_16_Bold),
+            TextSpan(text: parts[2]),
+          ],
+        ),
+      );
+    }
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const SizedBox(height: 100),
-        () {
-          final fullText = t.label_export_wallet_picker_screen.no_file;
-          final parts = fullText.split(RegExp(r'\[|\]'));
-
-          if (parts.length != 3) {
-            return Text(
-              fullText,
-              style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-              textAlign: TextAlign.center,
-            );
-          }
-
-          return RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-              children: [
-                TextSpan(text: parts[0]),
-                TextSpan(text: '[${parts[1]}]', style: CoconutTypography.body1_16_Bold),
-                TextSpan(text: parts[2]),
-              ],
-            ),
-          );
-        }(),
-      ],
+      children: [const SizedBox(height: 100), content],
     );
   }
 
@@ -332,13 +333,11 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const SizedBox(height: 100),
-        () {
-          return Text(
-            t.label_export_wallet_picker_screen.no_wallet,
-            style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.center,
-          );
-        }(),
+        Text(
+          t.label_export_wallet_picker_screen.no_wallet,
+          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
@@ -442,10 +441,12 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       final result = await _exportViewModel.exportLabelsForWallets(_selectedWalletIds.toList());
 
       if (result.xFile != null) {
-        setState(() {
-          _filesFuture = _exportViewModel.getImportableLabelFiles();
-          _selectedFileIndices.clear();
-        });
+        if (mounted) {
+          setState(() {
+            _filesFuture = _exportViewModel.getImportableLabelFiles();
+            _selectedFileIndices.clear();
+          });
+        }
         await Future.delayed(const Duration(milliseconds: 2500));
 
         final exportResults = _exportViewModel.buildExportResults(_selectedWalletIds.toList(), result.xFile!);
@@ -562,7 +563,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
             color:
                 _currentPage == index
                     ? context.coconutColors.primaryText
-                    : context.coconutColors.secondaryText.withOpacity(0.5),
+                    : context.coconutColors.secondaryText.withValues(alpha: 0.5),
           ),
         );
       }),
@@ -605,6 +606,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
     if (confirmed == true && mounted) {
       try {
         await _exportViewModel.deleteFiles(filesToDelete);
+        if (!mounted) return;
         CoconutToast.showToast(
           context: context,
           text: t.label_management_screen.file.delete_success,
@@ -614,6 +616,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         );
         _refreshFiles();
       } catch (e) {
+        if (!mounted) return;
         CoconutToast.showToast(
           context: context,
           text: t.label_management_screen.file.delete_failed,
