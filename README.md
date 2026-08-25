@@ -262,9 +262,9 @@ If you discover a critical security vulnerability, please report it directly to 
 
 ## License
 
-X11 Consortium License (identical to MIT, with an additional restriction that the copyright holder's name may not be used for promotional purposes).
+MIT License. See [LICENSE](https://github.com/noncelab/coconut_wallet/blob/main/LICENSE) for details.
 
-See [LICENSE](https://github.com/noncelab/coconut_wallet/blob/main/LICENSE) for details.
+The MIT license covers the source code only. It does not grant rights to the "Coconut Wallet" or "Nonce Lab" names or logos — see [TRADEMARK.md](https://github.com/noncelab/coconut_wallet/blob/main/TRADEMARK.md) for the separate trademark and brand usage policy.
 
 ### Dependencies
 
