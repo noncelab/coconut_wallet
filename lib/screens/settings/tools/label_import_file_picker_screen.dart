@@ -39,6 +39,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   bool _deleteFileOnSuccess = true;
   bool _overwriteMemo = false;
   late bool _importMemosFromOtherWallets;
+  bool _isAddButtonPressed = false;
 
   @override
   void initState() {
@@ -219,31 +220,38 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   Widget _buildAddFileButton(BuildContext context) {
     return GestureDetector(
       onTap: _addExternalFile,
-      child: CustomPaint(
-        painter: DashedBorderPainter(
-          color: context.coconutColors.border,
-          strokeWidth: 1.0,
-          dashWidth: 8.0,
-          gapWidth: 4.0,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 27),
-          decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(12)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              SvgPicture.asset(
-                'assets/svg/plus.svg',
-                width: 14,
-                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                t.label_management_screen.file.select,
-                style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-              ),
-            ],
+      onTapDown: (_) => setState(() => _isAddButtonPressed = true),
+      onTapUp: (_) => setState(() => _isAddButtonPressed = false),
+      onTapCancel: () => setState(() => _isAddButtonPressed = false),
+      child: AnimatedScale(
+        scale: _isAddButtonPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: CustomPaint(
+          painter: DashedBorderPainter(
+            color: context.coconutColors.border,
+            strokeWidth: 1.0,
+            dashWidth: 8.0,
+            gapWidth: 4.0,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 27),
+            decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(12)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                SvgPicture.asset(
+                  'assets/svg/plus.svg',
+                  width: 14,
+                  colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  t.label_management_screen.file.select,
+                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                ),
+              ],
+            ),
           ),
         ),
       ),
