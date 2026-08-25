@@ -51,11 +51,13 @@ class _OptionCardState extends State<OptionCard> {
     final subtitleColor = widget.isEnabled ? context.coconutColors.secondaryText : context.coconutColors.mutedText;
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTapDown: _handleTapDown,
       onTapUp: _handleTapUp,
       onTapCancel: _handleTapCancel,
       onTap: widget.isEnabled ? widget.onTap : null,
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration:
             widget.showBorder
