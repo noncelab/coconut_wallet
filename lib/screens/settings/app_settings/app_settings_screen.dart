@@ -265,7 +265,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                             },
                           ),
                         ),
-                        SingleButton(
+                        _buildAnimatedButton(
                           title: t.label_management_screen.title,
                           subtitle: t.label_management_screen.subtitle,
                           isVerticalSubtitle: true,
@@ -335,9 +335,15 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText)),
   );
 
-  Widget _buildAnimatedButton({required String title, required VoidCallback onPressed, String? subtitle}) {
+  Widget _buildAnimatedButton({
+    required String title,
+    required VoidCallback onPressed,
+    String? subtitle,
+    bool isVerticalSubtitle = false,
+  }) {
     return SingleButton(
       enableShrinkAnim: true,
+      isVerticalSubtitle: isVerticalSubtitle,
       animationEndValue: 0.97,
       title: title,
       subtitle: subtitle,
