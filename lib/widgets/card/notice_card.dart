@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -46,9 +47,7 @@ class _NoticeCardState extends State<NoticeCard> with SingleTickerProviderStateM
   }
 
   Future<void> _dismiss() async {
-    if (_isDismissing || _animationController.status == AnimationStatus.dismissed) {
-      return;
-    }
+    if (_isDismissing || _animationController.status == AnimationStatus.dismissed) return;
     _isDismissing = true;
     await _animationController.reverse();
     if (mounted) widget.onDismiss();
@@ -56,6 +55,7 @@ class _NoticeCardState extends State<NoticeCard> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    const backgroundColor = CoconutColors.gray800;
     return SizeTransition(
       sizeFactor: CurvedAnimation(parent: _animationController, curve: Curves.linear),
       axisAlignment: -1,
@@ -63,7 +63,7 @@ class _NoticeCardState extends State<NoticeCard> with SingleTickerProviderStateM
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
         child: Container(
           padding: const EdgeInsets.fromLTRB(21, 16, 21, 16),
-          decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(20)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -92,28 +92,39 @@ class _NoticeCardState extends State<NoticeCard> with SingleTickerProviderStateM
                     ],
                   ),
                   const Spacer(),
-                  GestureDetector(onTap: _dismiss, child: const Icon(Icons.close, size: 18, color: Colors.white70)),
+                  GestureDetector(
+                    onTap: _dismiss,
+                    child: const Icon(Icons.close, size: 18, color: CoconutColors.white),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
-              Text(widget.description, style: CoconutTypography.body2_14_Bold.setColor(Colors.white)),
+              Text(widget.description, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: widget.onDetails,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(widget.actionLabel, style: CoconutTypography.body3_12_Bold.setColor(Colors.white)),
-                      const SizedBox(width: 8),
-                      SvgPicture.asset(
-                        'assets/svg/arrow-right.svg',
-                        width: 6,
-                        height: 10,
-                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                      ),
-                    ],
+                child: ShrinkAnimationButton(
+                  onPressed: widget.onDetails,
+                  defaultColor: backgroundColor,
+                  pressedColor: backgroundColor,
+                  borderRadius: 0,
+                  borderWidth: 0,
+                  animationEndValue: 0.85,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(widget.actionLabel, style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white)),
+                        const SizedBox(width: 8),
+                        SvgPicture.asset(
+                          'assets/svg/arrow-right.svg',
+                          width: 6,
+                          height: 10,
+                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

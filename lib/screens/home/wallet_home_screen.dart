@@ -499,27 +499,30 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     if (wallet == null) return const SliverToBoxAdapter(child: SizedBox.shrink());
 
     return SliverToBoxAdapter(
-      child: NoticeCard(
-        title: t.wallet_home_screen.backup_update_notice.title,
-        description: t.wallet_home_screen.backup_update_notice.description,
-        actionLabel: t.wallet_home_screen.backup_update_notice_action,
-        onDismiss: () {
-          setState(() {
-            _dismissedBackupUpdateWalletIds.addAll(_initialBackupUpdateWalletIds ?? {wallet.id});
-          });
-        },
-        onDetails: () {
-          Navigator.pushNamed(
-            context,
-            '/wallet-info',
-            arguments: {
-              'id': wallet.id,
-              'walletType': wallet.walletType,
-              'entryPoint': kEntryPointWalletHome,
-              'showMfpInput': false,
-            },
-          );
-        },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: NoticeCard(
+          title: t.wallet_home_screen.backup_update_notice.title,
+          description: t.wallet_home_screen.backup_update_notice.description,
+          actionLabel: t.wallet_home_screen.backup_update_notice_action,
+          onDismiss: () {
+            setState(() {
+              _dismissedBackupUpdateWalletIds.addAll(_initialBackupUpdateWalletIds ?? {wallet.id});
+            });
+          },
+          onDetails: () {
+            Navigator.pushNamed(
+              context,
+              '/wallet-info',
+              arguments: {
+                'id': wallet.id,
+                'walletType': wallet.walletType,
+                'entryPoint': kEntryPointWalletHome,
+                'showMfpInput': false,
+              },
+            );
+          },
+        ),
       ),
     );
   }
