@@ -56,17 +56,18 @@ class _NoticeCardState extends State<NoticeCard> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     const backgroundColor = CoconutColors.gray800;
-    return SizeTransition(
-      sizeFactor: CurvedAnimation(parent: _animationController, curve: Curves.linear),
-      axisAlignment: -1,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(21, 16, 21, 16),
-          decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(20)),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(21, 0, 21, 0),
+        decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(20)),
+        child: SizeTransition(
+          sizeFactor: CurvedAnimation(parent: _animationController, curve: Curves.linear),
+          axisAlignment: -1,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              CoconutLayout.spacing_400h,
               Row(
                 children: [
                   SvgPicture.asset(
@@ -128,6 +129,7 @@ class _NoticeCardState extends State<NoticeCard> with SingleTickerProviderStateM
                   ),
                 ),
               ),
+              CoconutLayout.spacing_400h,
             ],
           ),
         ),
