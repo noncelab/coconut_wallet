@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 /// [SelectableSettingsRow]와 같은 [SelectableSettingsRowContent] 레이아웃을 쓰지만,
-/// 왼쪽으로 스와이프하면 오른쪽에 삭제 버튼이 드러나는 행 (예: 코코넛 과육 테마)
+/// 왼쪽으로 스와이프하면 오른쪽에 삭제 버튼이 드러나는 행 (예: 코코넛 테마)
 ///
 /// 사용자가 삭제할 수 있는 설정 항목에 사용한다.
 class DeletableSettingsRow extends StatefulWidget {

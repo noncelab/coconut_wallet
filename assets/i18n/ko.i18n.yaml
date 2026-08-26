@@ -44,7 +44,7 @@ general: "일반"
 theme: "테마"
 theme_dark: "어두운 테마"
 theme_light: "밝은 테마"
-theme_coconut_pulp: "코코넛 과육 테마"
+theme_coconut: "코코넛 테마"
 unit: "단위"
 utxo: "UTXO"
 tag: "태그"
@@ -1430,10 +1430,10 @@ ccos:
     cta_label: "오픈 스토어 알아보기"
     dismissed_toast: "오픈 스토어는 홈 화면 우측 상단 메뉴 또는 테마 설정에서 다시 볼 수 있어요"
   intro_screen:
-    theme_activated: "코코넛 과육 테마가 추가되었어요. 테마 설정 화면에서 설정하고 사용해 보세요."
-    delete_popup_title: "코코넛 과육 테마를 삭제할까요?"
-    delete_popup_description: "현재 코코넛 과육 테마를 사용하고 있어요. 삭제하면 기본 테마가 적용돼요."
-    theme_removed: "코코넛 과육 테마가 삭제되었어요. 언제든 다시 추가하여 사용할 수 있어요."
+    theme_activated: "코코넛 테마가 추가되었어요. 테마 설정 화면에서 설정하고 사용해 보세요."
+    delete_popup_title: "코코넛 테마를 삭제할까요?"
+    delete_popup_description: "현재 코코넛 테마를 사용하고 있어요. 삭제하면 기본 테마가 적용돼요."
+    theme_removed: "코코넛 테마가 삭제되었어요. 언제든 다시 추가하여 사용할 수 있어요."
     loading_title: "Coconut\nOpen Store"
     watermark_banner: "Coconut Open Store "
     scenes:
@@ -1447,7 +1447,7 @@ ccos:
         overview_highlight: "기능"
       first_pow:
         label: "FIRST PoW"
-        overview_title: "첫 PoW\n코코넛 과육 테마 by 코코넛 팀"
+        overview_title: "첫 PoW\n코코넛 테마 by 코코넛 팀"
         overview_highlight: "첫 PoW"
       discover:
         label: "DISCOVER"
@@ -1477,9 +1477,9 @@ ccos:
       layer2: "Layer2"
       backup: "Backup"
   first_pow_scene:
-    intro_line1: "코코넛 과육 테마는\n오픈 스토어의 첫 번째 PoW입니다"
+    intro_line1: "코코넛 테마는\n오픈 스토어의 첫 번째 PoW입니다"
     intro_line2: "앞으로 새로운 기능이\n코코넛에 더해질 모습을\n가장 먼저 테마에 담아봤어요"
-    intro_highlight_theme: "코코넛 과육 테마"
+    intro_highlight_theme: "코코넛 테마"
     intro_highlight_first_pow: "첫 번째 PoW"
     status_applied: "적용됨"
     status_added: "추가됨"
@@ -1496,7 +1496,7 @@ ccos:
       feedback_attribution: "- 빗짱님 피드백"
       story_paragraph1: "두 앱이 하나처럼 동작하는 코코넛 월렛과 볼트를\n구분하기 위해 의도적으로 코코넛 월렛은\n어두운 테마만 제공해 왔어요."
       story_paragraph2: "하지만 오픈 스토어를 구상하며\n첫 사례는 '누구나 새로운 기능을 제안하고\n함께 만들어가는 경험'을 가장 잘 보여줄 수 있는\n기능이어야 한다고 생각했습니다."
-      story_paragraph3: "그래서 코코넛 과육 테마는\n단순히 새로운 색상을 추가한 것이 아니라,\n앞으로 오픈 스토어에서 다양한 아이디어가 어떻게 소개되고 사용자에게 전달될 수 있는지를 보여주는 첫 번째 예시가 되었습니다."
+      story_paragraph3: "그래서 코코넛 테마는\n단순히 새로운 색상을 추가한 것이 아니라,\n앞으로 오픈 스토어에서 다양한 아이디어가 어떻게 소개되고 사용자에게 전달될 수 있는지를 보여주는 첫 번째 예시가 되었습니다."
       belief_statement: "새로운 기능은 코드만이 아니라, 그것을 만든 사람의 생각과 이유도 함께 전달되어야 한다고 믿습니다"
     delivery_detail:
       panel_label: "DELIVERY"

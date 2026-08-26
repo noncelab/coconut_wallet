@@ -110,8 +110,8 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
 
   Future<void> _handleRemoveTheme(BuildContext context, PreferenceProvider provider) async {
     final isUsingPulpTheme =
-        _featuredListing.linkedVariant == CoconutThemeVariant.coconutPulp &&
-        provider.themeVariant == CoconutThemeVariant.coconutPulp;
+        _featuredListing.linkedVariant == CoconutThemeVariant.coconutTheme &&
+        provider.themeVariant == CoconutThemeVariant.coconutTheme;
 
     if (isUsingPulpTheme) {
       final confirmed =

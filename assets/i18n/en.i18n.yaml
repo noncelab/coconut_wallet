@@ -44,7 +44,7 @@ general: "General"
 theme: "Theme"
 theme_dark: "Dark theme"
 theme_light: "Light theme"
-theme_coconut_pulp: "Coconut Pulp theme"
+theme_coconut: "Coconut theme"
 unit: "Unit"
 utxo: "UTXO"
 tag: "Tag"
@@ -1424,10 +1424,10 @@ ccos:
     cta_label: "Explore Open Store"
     dismissed_toast: "You can find Open Store anytime from the Home menu or Theme settings."
   intro_screen:
-    theme_activated: "Coconut Pulp theme has been added. Go to the Theme Settings screen to set it up and give it a try."
-    delete_popup_title: "Remove Coconut Pulp theme?"
-    delete_popup_description: "You are currently using the Coconut Pulp theme. If you remove it, the default theme will be applied."
-    theme_removed: "Coconut Pulp theme has been removed. You can add it again anytime."
+    theme_activated: "Coconut theme has been added. Go to the Theme Settings screen to set it up and give it a try."
+    delete_popup_title: "Remove Coconut theme?"
+    delete_popup_description: "You are currently using the Coconut theme. If you remove it, the default theme will be applied."
+    theme_removed: "Coconut theme has been removed. You can add it again anytime."
     loading_title: "Coconut\nOpen Store"
     watermark_banner: "Coconut Open Store "
     scenes:
@@ -1441,7 +1441,7 @@ ccos:
         overview_highlight: "feature"
       first_pow:
         label: "FIRST PoW"
-        overview_title: "First PoW\nCoconut Pulp theme by Coconut Team"
+        overview_title: "First PoW\nCoconut theme by Coconut Team"
         overview_highlight: "First PoW"
       discover:
         label: "DISCOVER"
@@ -1471,9 +1471,9 @@ ccos:
       layer2: "Layer2"
       backup: "Backup"
   first_pow_scene:
-    intro_line1: "Coconut Pulp theme\nis Open Store’s first PoW"
+    intro_line1: "Coconut theme\nis Open Store’s first PoW"
     intro_line2: "It’s the first glimpse of\nhow new features can join Coconut"
-    intro_highlight_theme: "Coconut Pulp theme"
+    intro_highlight_theme: "Coconut theme"
     intro_highlight_first_pow: "first PoW"
     status_applied: "Applied"
     status_added: "Added"
@@ -1490,7 +1490,7 @@ ccos:
       feedback_attribution: "- Feedback from Bitzzang"
       story_paragraph1: "To clearly distinguish Coconut Wallet and Vault,\nwhich work like one pair, we intentionally kept Coconut Wallet in dark themes only."
       story_paragraph2: "But while imagining Open Store,\nwe felt the first example had to best show\n‘the experience of anyone proposing a new feature and building it together.’"
-      story_paragraph3: "So Coconut Pulp theme is not just a new color set.\nIt became the first example showing how future ideas can be introduced and delivered to users through Open Store."
+      story_paragraph3: "So Coconut theme is not just a new color set.\nIt became the first example showing how future ideas can be introduced and delivered to users through Open Store."
       belief_statement: "We believe a new feature should carry not only code, but also the maker’s intent and reasoning."
     delivery_detail:
       panel_label: "DELIVERY"

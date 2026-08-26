@@ -130,9 +130,9 @@ Features registered in Coconut Open Store are grouped under `lib/ccos/features/<
 Example:
 
 ```text
-lib/ccos/features/coconut_pulp/
-  coconut_pulp_feature.dart
-  coconut_pulp_feature_copy.dart
+lib/ccos/features/coconut_theme/
+  coconut_theme_feature.dart
+  coconut_theme_feature_copy.dart
 ```
 
 Roles:
@@ -156,7 +156,7 @@ The registry (`lib/ccos/ccos_feature_registry.dart`) doesn't hold copy such as t
 
 ```dart
 class CcosFeatureRegistrySource {
-  static CcosFeatureListing get featuredListing => CoconutPulpFeature.listing;
+  static CcosFeatureListing get featuredListing => CoconutThemeFeature.listing;
 }
 ```
 

@@ -130,9 +130,9 @@ CCOS 관련 코드는 크게 두 흐름으로 나뉘어요.
 예:
 
 ```text
-lib/ccos/features/coconut_pulp/
-  coconut_pulp_feature.dart
-  coconut_pulp_feature_copy.dart
+lib/ccos/features/coconut_theme/
+  coconut_theme_feature.dart
+  coconut_theme_feature_copy.dart
 ```
 
 역할:
@@ -156,7 +156,7 @@ lib/ccos/features/coconut_pulp/
 
 ```dart
 class CcosFeatureRegistrySource {
-  static CcosFeatureListing get featuredListing => CoconutPulpFeature.listing;
+  static CcosFeatureListing get featuredListing => CoconutThemeFeature.listing;
 }
 ```
 

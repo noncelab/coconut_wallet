@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
-import 'package:coconut_wallet/ccos/features/coconut_pulp/coconut_pulp_feature.dart';
+import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 
 enum CcosListingPriceType { free, oneTimePurchase, subscription }
 
@@ -77,7 +77,7 @@ class CcosFeatureListing {
 /// 바꾸는 것을 고려한다. 지금은 기능 수가 적어 명시적 리스트가 오히려
 /// 리뷰하기 쉽다.
 class CcosFeatureRegistrySource {
-  static CcosFeatureListing get featuredListing => CoconutPulpFeature.listing;
+  static CcosFeatureListing get featuredListing => CoconutThemeFeature.listing;
 
   static List<CcosFeatureListing> get allListings => [featuredListing];
 

@@ -45,7 +45,7 @@ general: "General"
 theme: "Tema"
 theme_dark: "Tema oscuro"
 theme_light: "Tema claro"
-theme_coconut_pulp: "Tema Pulpa de Coco"
+theme_coconut: "Tema de Coco"
 unit: "Unidad"
 utxo: "UTXO"
 tag: "Etiqueta"
@@ -1415,10 +1415,10 @@ ccos:
     cta_label: "Explorar Open Store"
     dismissed_toast: "Puedes encontrar Open Store en cualquier momento desde el menú superior derecho de Inicio o la configuración de Tema."
   intro_screen:
-    theme_activated: "Se agregó el tema Pulpa de Coco. Configúralo en la pantalla Configuración de tema y pruébalo."
-    delete_popup_title: "¿Eliminar el tema Pulpa de Coco?"
-    delete_popup_description: "Actualmente estás usando el tema Pulpa de Coco. Si lo eliminas, se aplicará el tema predeterminado."
-    theme_removed: "El tema Pulpa de Coco fue eliminado. Puedes volver a agregarlo cuando quieras."
+    theme_activated: "Se agregó el tema de Coco. Configúralo en la pantalla Configuración de tema y pruébalo."
+    delete_popup_title: "¿Eliminar el tema de Coco?"
+    delete_popup_description: "Actualmente estás usando el tema de Coco. Si lo eliminas, se aplicará el tema predeterminado."
+    theme_removed: "El tema de Coco fue eliminado. Puedes volver a agregarlo cuando quieras."
     loading_title: "Coconut\nOpen Store"
     watermark_banner: "Coconut Open Store "
     scenes:
@@ -1432,7 +1432,7 @@ ccos:
         overview_highlight: "función"
       first_pow:
         label: "FIRST PoW"
-        overview_title: "Primer PoW\nTema Pulpa de Coco por Coconut Team"
+        overview_title: "Primer PoW\nTema de Coco por Coconut Team"
         overview_highlight: "Primer PoW"
       discover:
         label: "DISCOVER"
@@ -1462,9 +1462,9 @@ ccos:
       layer2: "Layer2"
       backup: "Backup"
   first_pow_scene:
-    intro_line1: "El tema Pulpa de Coco\nes el primer PoW del Open Store"
+    intro_line1: "El tema de Coco\nes el primer PoW del Open Store"
     intro_line2: "La primera muestra de\ncómo Coconut suma funciones"
-    intro_highlight_theme: "tema Pulpa de Coco"
+    intro_highlight_theme: "tema de Coco"
     intro_highlight_first_pow: "primer PoW"
     status_applied: "Aplicado"
     status_added: "Agregado"
@@ -1481,7 +1481,7 @@ ccos:
       feedback_attribution: "- Comentario de Bitzzang"
       story_paragraph1: "Para distinguir claramente Coconut Wallet y Vault, que funcionan como una sola pareja,\nmantuvimos intencionalmente Coconut Wallet solo con temas oscuros."
       story_paragraph2: "Pero al imaginar el Open Store,\nsentimos que el primer ejemplo debía mostrar mejor\n‘la experiencia de que cualquiera pudiera proponer una nueva función y construirla juntos.’"
-      story_paragraph3: "Por eso el tema Pulpa de Coco no es solo un nuevo conjunto de colores.\nSe convirtió en el primer ejemplo de cómo futuras ideas pueden presentarse y entregarse a los usuarios a través del Open Store."
+      story_paragraph3: "Por eso el tema de Coco no es solo un nuevo conjunto de colores.\nSe convirtió en el primer ejemplo de cómo futuras ideas pueden presentarse y entregarse a los usuarios a través del Open Store."
       belief_statement: "Creemos que una nueva función debe transmitir no solo código, sino también la intención y la razón de quien la creó."
     delivery_detail:
       panel_label: "DELIVERY"

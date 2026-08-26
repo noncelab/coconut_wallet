@@ -19,7 +19,7 @@ import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 /// CCOS `theme` 카테고리의 host surface(진입점)다.
-/// `CcosFeatureCategory.theme`으로 등록된 기능(현재는 `CoconutPulpFeature`)이 활성화되어 있으면
+/// `CcosFeatureCategory.theme`으로 등록된 기능(현재는 `CoconutThemeFeature`)이 활성화되어 있으면
 /// 여기 테마 목록에 실제로 노출된다.
 ///
 /// 다른 카테고리를 새로 추가하는 경우 이 파일을 그대로 복사하지 말 것
@@ -89,7 +89,7 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
 
   Future<void> _handleDeleteTheme(BuildContext context, PreferenceProvider provider) async {
     final featuredListing = CcosFeatureRegistrySource.featuredListing;
-    final isCurrentlyApplied = provider.themeVariant == CoconutThemeVariant.coconutPulp;
+    final isCurrentlyApplied = provider.themeVariant == CoconutThemeVariant.coconutTheme;
 
     if (isCurrentlyApplied) {
       final confirmed =
@@ -139,7 +139,7 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
         // PreferenceProvider.loadCcosRuntimeState()가 앱 진입 시 로컬 상태에서
         // 다시 계산한 값이다 (lib/ccos/ccos_feature_runtime.dart 참고).
         //
-        // 주의: 이 체크는 여전히 단일 CCOS 테마(Coconut Pulp) 하나만 가정한다.
+        // 주의: 이 체크는 여전히 단일 CCOS 테마(Coconut Theme) 하나만 가정한다.
         // 두 번째 CCOS 테마가 등록되더라도 이 화면은 그걸 자동으로 보여주지
         // 않는다 — 현재는 scope 밖이며, 필요해지면 allListings를 순회하는
         // 구조로 다시 설계해야 한다.
@@ -153,7 +153,7 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
           _ThemeOption(variant: CoconutThemeVariant.dark, title: t.theme_dark),
           _ThemeOption(variant: CoconutThemeVariant.light, title: t.theme_light),
           if (isCcosThemeSelectable)
-            _ThemeOption(variant: CoconutThemeVariant.coconutPulp, title: t.theme_coconut_pulp),
+            _ThemeOption(variant: CoconutThemeVariant.coconutTheme, title: t.theme_coconut),
         ];
         return Scaffold(
           backgroundColor: colors.background,
@@ -199,15 +199,15 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
     for (int index = 0; index < options.length; index++) {
       final option = options[index];
       final isSelected = option.variant == selectedVariant;
-      final isCoconutPulp = option.variant == CoconutThemeVariant.coconutPulp;
+      final isCoconutTheme = option.variant == CoconutThemeVariant.coconutTheme;
       final subtitle =
-          isCoconutPulp
+          isCoconutTheme
               ? '${CcosFeatureRegistrySource.featuredListing.author} · ${CcosFeatureRegistrySource.featuredListing.authorBio}'
               : null;
 
       widgets.add(
         // 두 기본 테마(어두운 테마, 밝은 테마)는 삭제 불가
-        isCoconutPulp
+        isCoconutTheme
             ? DeletableSettingsRow(
               title: option.title,
               subtitle: subtitle,

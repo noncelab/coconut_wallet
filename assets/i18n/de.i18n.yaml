@@ -44,7 +44,7 @@ general: "Allgemein"
 theme: "Design"
 theme_dark: "Dunkles Design"
 theme_light: "Helles Design"
-theme_coconut_pulp: "Kokosfleisch-Design"
+theme_coconut: "Kokosnuss-Design"
 unit: "Einheit"
 utxo: "UTXO"
 tag: "Tag"
@@ -1389,10 +1389,10 @@ ccos:
     cta_label: "Open Store entdecken"
     dismissed_toast: "Du findest den Open Store jederzeit im Menü oben rechts auf der Startseite oder in den Design-Einstellungen."
   intro_screen:
-    theme_activated: "Das Kokosfleisch-Design wurde hinzugefügt. Stelle es im Bildschirm Design-Einstellungen ein und probiere es aus."
-    delete_popup_title: "Kokosfleisch-Design entfernen?"
-    delete_popup_description: "Du verwendest derzeit das Kokosfleisch-Design. Wenn du es entfernst, wird das Standarddesign angewendet."
-    theme_removed: "Das Kokosfleisch-Design wurde entfernt. Du kannst es jederzeit wieder hinzufügen."
+    theme_activated: "Das Kokosnuss-Design wurde hinzugefügt. Stelle es im Bildschirm Design-Einstellungen ein und probiere es aus."
+    delete_popup_title: "Kokosnuss-Design entfernen?"
+    delete_popup_description: "Du verwendest derzeit das Kokosnuss-Design. Wenn du es entfernst, wird das Standarddesign angewendet."
+    theme_removed: "Das Kokosnuss-Design wurde entfernt. Du kannst es jederzeit wieder hinzufügen."
     loading_title: "Coconut\nOpen Store"
     watermark_banner: "Coconut Open Store "
     scenes:
@@ -1406,7 +1406,7 @@ ccos:
         overview_highlight: "Funktion"
       first_pow:
         label: "FIRST PoW"
-        overview_title: "Erstes PoW\nKokosfleisch-Design vom Coconut-Team"
+        overview_title: "Erstes PoW\nKokosnuss-Design vom Coconut-Team"
         overview_highlight: "Erstes PoW"
       discover:
         label: "DISCOVER"
@@ -1436,9 +1436,9 @@ ccos:
       layer2: "Layer2"
       backup: "Backup"
   first_pow_scene:
-    intro_line1: "Das Kokosfleisch-Design\nist das erste PoW im Open Store"
+    intro_line1: "Das Kokosnuss-Design\nist das erste PoW im Open Store"
     intro_line2: "Der erste Einblick,\nwie Coconut Funktionen bekommt"
-    intro_highlight_theme: "Kokosfleisch-Design"
+    intro_highlight_theme: "Kokosnuss-Design"
     intro_highlight_first_pow: "erste PoW"
     status_applied: "Angewendet"
     status_added: "Hinzugefügt"
@@ -1455,7 +1455,7 @@ ccos:
       feedback_attribution: "- Feedback von Bitzzang"
       story_paragraph1: "Um Coconut Wallet und Vault, die wie ein Paar zusammenarbeiten, klar voneinander zu unterscheiden,\nhaben wir Coconut Wallet bewusst nur mit dunklen Designs angeboten."
       story_paragraph2: "Doch als wir den Open Store entworfen haben,\nwaren wir überzeugt, dass das erste Beispiel am besten zeigen musste,\n‘wie jeder neue Funktionen vorschlagen und gemeinsam entwickeln kann.’"
-      story_paragraph3: "Das Kokosfleisch-Design ist deshalb nicht nur ein neues Farbschema.\nEs ist das erste Beispiel dafür, wie künftige Ideen im Open Store vorgestellt und Nutzern vermittelt werden können."
+      story_paragraph3: "Das Kokosnuss-Design ist deshalb nicht nur ein neues Farbschema.\nEs ist das erste Beispiel dafür, wie künftige Ideen im Open Store vorgestellt und Nutzern vermittelt werden können."
       belief_statement: "Wir glauben, dass eine neue Funktion nicht nur Code, sondern auch die Gedanken und Gründe der Person mitbringen sollte, die sie geschaffen hat."
     delivery_detail:
       panel_label: "DELIVERY"

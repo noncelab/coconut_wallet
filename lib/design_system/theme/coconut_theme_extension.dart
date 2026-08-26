@@ -15,8 +15,8 @@ class CoconutThemeExtension extends ThemeExtension<CoconutThemeExtension> {
     return CoconutThemeExtension(colors: CoconutColors.light());
   }
 
-  factory CoconutThemeExtension.coconutPulp() {
-    return CoconutThemeExtension(colors: CoconutColors.coconutPulp());
+  factory CoconutThemeExtension.coconutTheme() {
+    return CoconutThemeExtension(colors: CoconutColors.coconutTheme());
   }
 
   @override
