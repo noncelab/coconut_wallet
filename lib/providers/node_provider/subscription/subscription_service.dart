@@ -52,13 +52,22 @@ class SubscriptionService {
   /// 라이브 구독 이벤트(syncScriptStatus)와 같은 지갑에 대해 동시에 잔액/UTXO를 쓰지 않도록
   /// ScriptSyncService의 지갑별 큐를 거쳐서 실행한다.
   /// [onProgress]는 재동기화 화면 진행률 표시 등 선택적 용도로만 사용한다(기본 null, 일반 흐름에는 영향 없음).
+  /// [minReceiveUsedIndex], [minChangeUsedIndex]는 재동기화처럼 usedIndex가 초기화된 직후에도
+  /// 이전에 이미 사용 이력이 확인됐던 인덱스 밖으로 스캔 범위가 좁아지지 않도록 하한선을 지정할 때 사용한다.
   Future<Result<bool>> subscribeWallet(
     WalletItemBase walletItem, {
     void Function(int completed, int total)? onProgress,
+    int? minReceiveUsedIndex,
+    int? minChangeUsedIndex,
   }) {
     return _scriptSyncService.runQueued(
       walletItem.id,
-      () => _subscribeWalletGuarded(walletItem, onProgress: onProgress),
+      () => _subscribeWalletGuarded(
+        walletItem,
+        onProgress: onProgress,
+        minReceiveUsedIndex: minReceiveUsedIndex,
+        minChangeUsedIndex: minChangeUsedIndex,
+      ),
     );
   }
 
@@ -91,6 +100,8 @@ class SubscriptionService {
   Future<Result<bool>> _subscribeWalletGuarded(
     WalletItemBase walletItem, {
     void Function(int completed, int total)? onProgress,
+    int? minReceiveUsedIndex,
+    int? minChangeUsedIndex,
   }) async {
     final walletId = walletItem.id;
 
@@ -107,7 +118,12 @@ class SubscriptionService {
 
     try {
       Logger.log('SubscribeWallet: ${walletItem.name} - 구독 시작');
-      final result = await _performSubscribeWallet(walletItem, onProgress: onProgress);
+      final result = await _performSubscribeWallet(
+        walletItem,
+        onProgress: onProgress,
+        minReceiveUsedIndex: minReceiveUsedIndex,
+        minChangeUsedIndex: minChangeUsedIndex,
+      );
       completer.complete(result);
       return result;
     } catch (e, stackTrace) {
@@ -127,11 +143,13 @@ class SubscriptionService {
   Future<Result<bool>> _performSubscribeWallet(
     WalletItemBase walletItem, {
     void Function(int completed, int total)? onProgress,
+    int? minReceiveUsedIndex,
+    int? minChangeUsedIndex,
   }) async {
     _stateManager.addWalletSyncState(walletItem.id, UpdateElement.subscription);
     final [receiveResult, changeResult] = await Future.wait([
-      _subscribeWallet(walletItem, false, _scriptStatusController),
-      _subscribeWallet(walletItem, true, _scriptStatusController),
+      _subscribeWallet(walletItem, false, _scriptStatusController, minKnownUsedIndex: minReceiveUsedIndex),
+      _subscribeWallet(walletItem, true, _scriptStatusController, minKnownUsedIndex: minChangeUsedIndex),
     ]);
 
     List<ScriptStatus> fetchedScriptStatuses = [...receiveResult.scriptStatuses, ...changeResult.scriptStatuses];
@@ -208,15 +226,20 @@ class SubscriptionService {
   /// 이미 사용 이력이 알려진 지갑(lastUsedIndex >= 0)이면, DB에 남아있는 잔액/미확정 트랜잭션이 있는
   /// 주소만 재구독하고, gap limit 트레일링 윈도우만 새로 스캔한다(0부터 재스캔하지 않음).
   /// 사용 이력이 전혀 없는 지갑(최초 구독)은 0부터 전체를 스캔해서 사용 여부를 새로 발견해야 한다.
+  /// [minKnownUsedIndex]는 재동기화 등으로 usedIndex가 -1로 초기화된 직후에도, 이전에 이미
+  /// 사용 이력이 확인됐던 인덱스를 하한선으로 남겨서 gap limit 스캔 범위가 그 밖으로 좁아지지
+  /// 않도록 한다. gap limit 스캔은 연속된 미사용 구간을 만나면 멈추므로, 하한선 없이 -1부터
+  /// 시작하면 gap limit보다 먼 인덱스에서 이미 발견됐던 사용 이력을 다시 찾지 못할 수 있다.
   Future<({List<ScriptStatus> scriptStatuses, int lastUsedIndex})> _subscribeWallet(
     WalletItemBase walletItem,
     bool isChange,
-    StreamController<SubscribeScriptStreamDto> scriptStatusController,
-  ) async {
+    StreamController<SubscribeScriptStreamDto> scriptStatusController, {
+    int? minKnownUsedIndex,
+  }) async {
     final lastUsedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
 
     if (lastUsedIndex < 0) {
-      return _scanAndSubscribeRange(walletItem, isChange, 0, -1, scriptStatusController);
+      return _scanAndSubscribeRange(walletItem, isChange, 0, minKnownUsedIndex ?? -1, scriptStatusController);
     }
 
     List<ScriptStatus> scriptStatuses = [];

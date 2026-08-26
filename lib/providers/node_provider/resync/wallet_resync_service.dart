@@ -63,6 +63,10 @@ class WalletResyncService {
 
     try {
       final lockedUtxoIds = _utxoRepository.snapshotLockedUtxoIds(walletId);
+      // gap limit 밖에서 이미 발견됐던 사용 이력(예: 스크롤로 찾아낸 50번 주소)이 재동기화로
+      // usedIndex가 -1로 초기화된 뒤에도 스캔 범위에서 누락되지 않도록 재구독 시 하한선으로 넘겨준다.
+      final previousReceiveUsedIndex = walletItem.receiveUsedIndex;
+      final previousChangeUsedIndex = walletItem.changeUsedIndex;
 
       _isolateStateManager.setWalletResyncPhase(walletId, ResyncPhase.wiping);
       // 백그라운드에서 도는 이 지갑의 일반 subscribeWallet(재연결 시 자동 재구독 등)과 같은 지갑별 큐를 공유
@@ -100,6 +104,8 @@ class WalletResyncService {
         onProgress: (completed, total) {
           _isolateStateManager.setWalletResyncFetchProgress(walletId, completed, total);
         },
+        minReceiveUsedIndex: previousReceiveUsedIndex,
+        minChangeUsedIndex: previousChangeUsedIndex,
       );
 
       if (subscribeResult.isFailure) {
