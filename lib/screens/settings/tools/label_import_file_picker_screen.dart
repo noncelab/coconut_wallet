@@ -111,7 +111,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       case LabelImportStep.error:
         return Center(child: _buildErrorCard(context));
       case LabelImportStep.noLabelsToApply:
-        return _buildNoLabelsToApplyView();
+        return Center(child: _buildNoLabelsToApplyView());
     }
   }
 

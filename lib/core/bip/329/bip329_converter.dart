@@ -3,6 +3,10 @@ import 'package:coconut_wallet/core/bip/329/bip329_record.dart';
 class Bip329Converter {
   const Bip329Converter();
 
+  static String normalizeOrigin(String origin) {
+    return origin.replaceAllMapped(RegExp(r'(/|\b)(\d+)h'), (match) => "${match.group(1)}${match.group(2)}'");
+  }
+
   /// Extracts origin string from descriptor (e.g. `wpkh([mfp/path]...)` -> `wpkh([mfp/path])`).
   static String? getOriginFromDescriptor(String descriptor) {
     final mfpAndPathMatch = RegExp(r'\[([0-9a-fA-F]{8})/([m|M]?[^\]]+)\]').firstMatch(descriptor);
@@ -16,7 +20,7 @@ class Bip329Converter {
     if (path.startsWith('m/')) {
       path = path.substring(2);
     }
-    path = path.replaceAll("h", "'");
+    path = normalizeOrigin(path);
 
     final type = descriptor.split('(').first;
     final identifier = '[$mfp/$path]';
@@ -122,13 +126,17 @@ class Bip329Converter {
   /// Parses JSON Lines into list of BIP-329 records, optionally filtering by wallet origin.
   List<Bip329Record> decodeJsonLines(Iterable<String> lines, {String? targetOrigin}) {
     final List<Bip329Record> records = [];
+    final normalizedTargetOrigin = targetOrigin != null ? normalizeOrigin(targetOrigin) : null;
 
     for (final line in lines) {
       final record = Bip329Record.tryParseLine(line);
       if (record == null) continue;
 
-      if (record.origin != null && targetOrigin != null && record.origin != targetOrigin) {
-        continue;
+      if (record.origin != null && normalizedTargetOrigin != null) {
+        final normalizedRecordOrigin = normalizeOrigin(record.origin!);
+        if (normalizedRecordOrigin != normalizedTargetOrigin) {
+          continue;
+        }
       }
 
       records.add(record);
