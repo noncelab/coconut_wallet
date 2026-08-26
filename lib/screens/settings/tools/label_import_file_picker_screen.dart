@@ -40,6 +40,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   bool _overwriteMemo = false;
   late bool _importMemosFromOtherWallets;
   bool _isAddButtonPressed = false;
+  bool _isDeleteFileOptionPressed = false;
 
   @override
   void initState() {
@@ -395,6 +396,9 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
   Widget _buildDeleteFileCheckbox() {
     return GestureDetector(
       onTap: () => setState(() => _deleteFileOnSuccess = !_deleteFileOnSuccess),
+      onTapDown: (_) => setState(() => _isDeleteFileOptionPressed = true),
+      onTapUp: (_) => setState(() => _isDeleteFileOptionPressed = false),
+      onTapCancel: () => setState(() => _isDeleteFileOptionPressed = false),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -402,12 +406,16 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
             isSelected: _deleteFileOnSuccess,
             onChanged: (_) => setState(() => _deleteFileOnSuccess = !_deleteFileOnSuccess),
             width: 20,
-            color: context.coconutColors.iconDefault,
+            unSelectedColor: context.coconutColors.iconSubDefault,
+            color:
+                _isDeleteFileOptionPressed ? context.coconutColors.iconSubDefault : context.coconutColors.iconDefault,
           ),
           const SizedBox(width: 8),
           Text(
             t.label_import_file_picker_screen.delete_file,
-            style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+            style: CoconutTypography.body3_12.setColor(
+              _isDeleteFileOptionPressed ? context.coconutColors.tertiaryText : context.coconutColors.primaryText,
+            ),
           ),
         ],
       ),
