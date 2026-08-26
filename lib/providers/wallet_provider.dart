@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
@@ -515,6 +516,21 @@ class WalletProvider extends ChangeNotifier {
 
   List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) {
     return _addressRepository.getActiveUsedAddresses(walletId, isChange);
+  }
+
+  /// gap window 안에 있는 활성 사용 주소는 고정 개수(2*gapLimit)에 이미 포함되므로 중복 집계하지 않는다.
+  int getWatchedAddressCount(int walletId) {
+    final (receiveUsedIndex, changeUsedIndex) = getUsedIndexes(walletId);
+    return 2 * kSubscriptionGapLimit +
+        _countActiveUsedAddressesOutsideGapWindow(walletId, false, receiveUsedIndex) +
+        _countActiveUsedAddressesOutsideGapWindow(walletId, true, changeUsedIndex);
+  }
+
+  int _countActiveUsedAddressesOutsideGapWindow(int walletId, bool isChange, int usedIndex) {
+    return _addressRepository
+        .getActiveUsedAddresses(walletId, isChange)
+        .where((address) => address.index <= usedIndex || address.index > usedIndex + kSubscriptionGapLimit)
+        .length;
   }
 
   (int, int) getGeneratedIndexes(WalletItemBase wallet) {

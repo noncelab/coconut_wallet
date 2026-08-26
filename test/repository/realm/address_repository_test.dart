@@ -530,6 +530,51 @@ void main() {
       final activeChangeAddresses = addressRepository.getActiveUsedAddresses(testWalletId, true);
       expect(activeChangeAddresses.map((a) => a.index), contains(9));
     });
+
+    void addAddressAt(int index, bool isChange) {
+      final address = testWalletItem.walletBase.getAddress(index, isChange: isChange);
+      final derivationPath = '${testWalletItem.walletBase.derivationPath}${isChange ? '/1' : '/0'}/$index';
+      realmManager.realm.write(() {
+        realmManager.realm.add(
+          RealmWalletAddress(
+            getWalletAddressId(testWalletId, index, address),
+            testWalletId,
+            address,
+            index,
+            isChange,
+            derivationPath,
+            false,
+            0,
+            0,
+            0,
+          ),
+        );
+      });
+    }
+
+    test('getMaxUsedAddressIndex: 사용된 주소가 없으면 -1을 반환한다', () {
+      expect(addressRepository.getMaxUsedAddressIndex(testWalletId, false), -1);
+    });
+
+    test('getMaxUsedAddressIndex: isUsed로 표시된 주소 중 가장 큰 인덱스를 반환한다', () {
+      setAddressState(3, false, isUsed: true, confirmed: 0, unconfirmed: 0);
+      setAddressState(10, false, isUsed: true, confirmed: 500, unconfirmed: 0);
+
+      expect(addressRepository.getMaxUsedAddressIndex(testWalletId, false), 10);
+    });
+
+    test(
+      'getMaxUsedAddressIndex: gap limit 밖(주소 목록 화면 스크롤로만 발견된) 주소도 최댓값에 포함된다',
+      () {
+        // syncViewedAddresses(updateUsedIndex:false) 경로처럼 usedIndex는 갱신되지 않고
+        // 주소 자체의 isUsed만 true로 표시된 상황을 재현한다.
+        addAddressAt(50, false);
+        setAddressState(50, false, isUsed: true, confirmed: 1000, unconfirmed: 0);
+
+        expect(addressRepository.getMaxUsedAddressIndex(testWalletId, false), 50);
+        expect(addressRepository.getUsedIndexes(testWalletId).$1, -1, reason: 'usedIndex는 그대로여야 한다');
+      },
+    );
   });
 
   group('ensureAddressesExist - 재동기화(둘 다 -1에서 시작) 회귀 테스트', () {

@@ -648,6 +648,17 @@ class AddressRepository extends BaseRepository {
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
   }
 
+  /// isUsed로 표시된 주소 중 최대 인덱스 / 없으면 -1
+  /// (getUsedIndexes와 달리 updateUsedIndex:false로 갱신된 인덱스도 포함)
+  int getMaxUsedAddressIndex(int walletId, bool isChange) {
+    final realmWalletAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND isChange == $1 AND isUsed == true SORT(index DESC)', [
+          walletId,
+          isChange,
+        ]).firstOrNull;
+    return realmWalletAddress?.index ?? -1;
+  }
+
   Future<void> syncWalletWithSubscriptionData(
     WalletItemBase walletItem,
     List<ScriptStatus> scriptStatuses,
