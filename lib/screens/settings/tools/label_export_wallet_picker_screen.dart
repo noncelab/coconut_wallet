@@ -714,15 +714,23 @@ class _WalletListItemCardState extends State<_WalletListItemCard> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      widget.title,
-                      style: CoconutTypography.body2_14.setColor(textColor),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: CoconutTypography.body2_14.setColor(textColor),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                    if (widget.isDisabled) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        t.label_export_wallet_picker_screen.no_labels_to_export,
+                        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                      ),
+                    ],
                   ],
                 ),
               ),
