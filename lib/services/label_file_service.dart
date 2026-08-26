@@ -111,7 +111,9 @@ class LabelFileService {
     if (xFiles.isEmpty) return;
     AppGuard.disablePrivacyScreen();
     try {
-      await Share.shareXFiles(xFiles, text: 'Coconut Wallet Labels', sharePositionOrigin: sharePositionOrigin);
+      await SharePlus.instance.share(
+        ShareParams(files: xFiles, text: 'Coconut Wallet Labels', sharePositionOrigin: sharePositionOrigin),
+      );
     } finally {
       AppGuard.enablePrivacyScreen();
     }
