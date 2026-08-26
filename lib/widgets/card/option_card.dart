@@ -28,14 +28,17 @@ class _OptionCardState extends State<OptionCard> {
   bool _isPressed = false;
 
   void _handleTapDown(TapDownDetails details) {
+    if (!widget.isEnabled) return;
     setState(() => _isPressed = true);
   }
 
   void _handleTapUp(TapUpDetails details) {
+    if (!widget.isEnabled) return;
     setState(() => _isPressed = false);
   }
 
   void _handleTapCancel() {
+    if (!widget.isEnabled) return;
     setState(() => _isPressed = false);
   }
 
@@ -50,55 +53,62 @@ class _OptionCardState extends State<OptionCard> {
     final titleColor = widget.isEnabled ? context.coconutColors.primaryText : context.coconutColors.mutedText;
     final subtitleColor = widget.isEnabled ? context.coconutColors.secondaryText : context.coconutColors.mutedText;
 
+    final double scale = (_isPressed && widget.isEnabled) ? 0.96 : 1.0;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
+      onTapDown: widget.isEnabled ? _handleTapDown : null,
+      onTapUp: widget.isEnabled ? _handleTapUp : null,
+      onTapCancel: widget.isEnabled ? _handleTapCancel : null,
       onTap: widget.isEnabled ? widget.onTap : null,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration:
-            widget.showBorder
-                ? BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor, width: 1),
-                )
-                : null,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 2.0),
-              child: CoconutCheckbox(
-                isSelected: widget.isSelected || _isPressed,
-                onChanged: (_) => widget.onTap(),
-                width: 20,
-                color: context.coconutColors.iconDefault,
-                unSelectedColor: context.coconutColors.iconSubDefault,
-                inactiveColor: context.coconutColors.iconDisabled,
-                isDisabled: !widget.isEnabled,
+      child: AnimatedScale(
+        scale: scale,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeInOut,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration:
+              widget.showBorder
+                  ? BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor, width: 1),
+                  )
+                  : null,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2.0),
+                child: CoconutCheckbox(
+                  isSelected: widget.isSelected || _isPressed,
+                  onChanged: (_) => widget.onTap(),
+                  width: 20,
+                  color: context.coconutColors.iconDefault,
+                  unSelectedColor: context.coconutColors.iconSubDefault,
+                  inactiveColor: context.coconutColors.iconDisabled,
+                  isDisabled: !widget.isEnabled,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.title, style: CoconutTypography.body2_14.setColor(titleColor)),
-                  if (widget.subtitle.isNotEmpty) ...[
-                    CoconutLayout.spacing_50h,
-                    Text.rich(
-                      TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: widget.subtitle),
-                    ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.title, style: CoconutTypography.body2_14.setColor(titleColor)),
+                    if (widget.subtitle.isNotEmpty) ...[
+                      CoconutLayout.spacing_50h,
+                      Text.rich(
+                        TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: widget.subtitle),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

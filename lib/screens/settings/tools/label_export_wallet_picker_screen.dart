@@ -634,7 +634,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 }
 
-class _WalletListItemCard extends StatelessWidget {
+class _WalletListItemCard extends StatefulWidget {
   final String title;
   final bool isSelected;
   final VoidCallback onTap;
@@ -650,53 +650,84 @@ class _WalletListItemCard extends StatelessWidget {
   });
 
   @override
+  State<_WalletListItemCard> createState() => _WalletListItemCardState();
+}
+
+class _WalletListItemCardState extends State<_WalletListItemCard> {
+  bool _isPressed = false;
+
+  void _onTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+  }
+
+  void _onTapCancel() {
+    setState(() => _isPressed = false);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bool effectiveDisabled = isDisabled || (isLocked && isSelected);
+    final bool effectiveDisabled = widget.isDisabled || (widget.isLocked && widget.isSelected);
     final textColor = effectiveDisabled ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
+
     final Color borderColor;
     if (effectiveDisabled) {
       borderColor = context.coconutColors.iconDisabled;
-    } else if (isSelected) {
+    } else if (widget.isSelected) {
       borderColor = context.coconutColors.primaryText;
     } else {
       borderColor = context.coconutColors.border;
     }
 
+    final double scale = (_isPressed && !effectiveDisabled) ? 0.96 : 1.0;
+
     return GestureDetector(
-      onTap: effectiveDisabled ? null : onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1),
-        ),
-        child: Row(
-          children: [
-            CoconutCheckbox(
-              isSelected: isSelected,
-              onChanged: (_) => onTap(),
-              width: 24,
-              color: context.coconutColors.iconDefault,
-              unSelectedColor: context.coconutColors.iconSubDefault,
-              inactiveColor: context.coconutColors.iconDisabled,
-              isDisabled: effectiveDisabled,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: CoconutTypography.body2_14.setColor(textColor),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+      onTapDown: effectiveDisabled ? null : _onTapDown,
+      onTapUp: effectiveDisabled ? null : _onTapUp,
+      onTapCancel: effectiveDisabled ? null : _onTapCancel,
+      onTap: effectiveDisabled ? null : widget.onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedScale(
+        scale: scale,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeInOut,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 1),
+          ),
+          child: Row(
+            children: [
+              CoconutCheckbox(
+                isSelected: widget.isSelected,
+                onChanged: (_) => widget.onTap(),
+                width: 24,
+                color: context.coconutColors.iconDefault,
+                unSelectedColor: context.coconutColors.iconSubDefault,
+                inactiveColor: context.coconutColors.iconDisabled,
+                isDisabled: effectiveDisabled,
               ),
-            ),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: CoconutTypography.body2_14.setColor(textColor),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
