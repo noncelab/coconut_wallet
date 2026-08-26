@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -11,8 +14,10 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/address/address_list_address_item_card.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -163,11 +168,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
       backgroundColor: _isScrollOverTitleHeight ? backgroundColor.withValues(alpha: 0.5) : backgroundColor,
       title: t.address_list_screen.wallet_name(name: viewModel.walletBaseItem!.name),
       actionButtonList: [
-        IconButton(
+        CoconutAppBarActionButton(
           onPressed: () {
             Navigator.pushNamed(context, '/address-search', arguments: {'id': widget.id});
           },
-          icon: Icon(Icons.search_rounded, color: context.coconutColors.iconDefault),
+          icon: Icon(Icons.search_rounded, color: context.coconutColors.iconPrimary),
         ),
       ],
     );
@@ -207,7 +212,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/svg/check.svg',
+                  CommonActionIconPath.check,
                   colorFilter: ColorFilter.mode(
                     showOnlyUnusedAddresses ? context.coconutColors.primaryText : context.coconutColors.iconDisabled,
                     BlendMode.srcIn,
@@ -319,18 +324,19 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return Container(
       key: _toolTipKey,
       width: MediaQuery.sizeOf(context).width,
-      padding: const EdgeInsets.only(top: 14, left: 12, right: 12, bottom: 2),
+      padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
       decoration: BoxDecoration(
         color: context.coconutColors.surface,
         borderRadius: BorderRadius.circular(CoconutStyles.radius_250),
+        border: Border.all(width: 1, color: context.coconutColors.surface),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SvgPicture.asset(
-            'assets/svg/circle-info.svg',
+            CommonStateIconPath.circleInfo,
             width: 20,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
           Expanded(
@@ -355,7 +361,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   Widget _buildAddressList(List<WalletAddress> addressList, Tuple2<bool, bool> isTooltipDisabled) {
     return _isInitializing
-        ? const Center(child: CircularProgressIndicator())
+        ? const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero))
         : NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification notification) {
             if (_controller.hasClients &&
@@ -398,15 +404,24 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             CommonBottomSheets.showCustomHeightBottomSheet(
                               context: context,
                               heightRatio: 0.9,
+                              enableDragToResize: false,
                               childBuilder:
                                   (scrollController) => QrWithCopyTextScreen(
                                     scrollController: scrollController,
                                     backgroundColor: context.coconutColors.surfaceBottomSheet,
                                     showBottomActions: true,
-                                    qrcodeTopWidget: Text(
-                                      addressList[index].derivationPath,
-                                      style: CoconutTypography.body2_14.merge(
-                                        TextStyle(color: context.coconutColors.primaryText.withValues(alpha: 0.7)),
+                                    qrcodeTopWidget: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            addressList[index].derivationPath,
+                                            style: CoconutTypography.body2_14.setColor(
+                                              context.coconutColors.secondaryText,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     qrData: addressList[index].address,
@@ -433,7 +448,13 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 40, top: 20),
-                    child: Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault)),
+                    child: Center(
+                      child: InlineLoadingIndicator(
+                        padding: EdgeInsets.zero,
+                        color: context.coconutColors.iconPrimary,
+                        radius: 14,
+                      ),
+                    ),
                   ),
                 ),
             ],

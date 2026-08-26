@@ -13,6 +13,8 @@ import 'package:local_auth/local_auth.dart';
 import '../constants/secure_keys.dart';
 
 class AuthProvider extends ChangeNotifier {
+  static const MethodChannel _osChannel = MethodChannel('onl.coconut.wallet/os');
+
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final SecureStorageRepository _secureStorageService = SecureStorageRepository();
   final LocalAuthentication _auth = LocalAuthentication();
@@ -53,6 +55,30 @@ class AuthProvider extends ChangeNotifier {
   /// 생체인증 성공했는지 여부 반환
   Future<bool> isBiometricsAuthValid() async {
     return isBiometricsAuthEnabled && await authenticateWithBiometrics();
+  }
+
+  /// 기기 잠금 비밀번호(PIN, 패턴, 비밀번호)가 설정되어 있는지 확인
+  Future<bool> isDevicePasscodeSet() async {
+    try {
+      return await _osChannel.invokeMethod<bool>('isDevicePasscodeSet') ?? false;
+    } on MissingPluginException catch (e) {
+      Logger.log(e);
+      return await _auth.isDeviceSupported();
+    } on PlatformException catch (e) {
+      Logger.log(e);
+      return false;
+    }
+  }
+
+  /// 기기의 화면 잠금 설정 화면 열기
+  Future<void> openDeviceSecuritySettings() async {
+    try {
+      await _osChannel.invokeMethod<void>('openDeviceSecuritySettings');
+    } on MissingPluginException catch (e) {
+      Logger.log(e);
+    } on PlatformException catch (e) {
+      Logger.log(e);
+    }
   }
 
   /// 기기의 생체인증 가능 여부 업데이트

@@ -1,7 +1,18 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
@@ -18,10 +29,11 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
-import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/card/expandable_info_card.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/coconut_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/card/expandable_info_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -45,6 +57,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   MobileScannerController? controller;
   bool _isProcessing = false;
+  bool _skipNextFinalizeVibration = false;
   bool _clipboardContentAvailable = false;
   late WalletAddScannerViewModel _viewModel;
 
@@ -362,12 +375,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               }
             },
             icon: SvgPicture.asset(
-              'assets/svg/arrow-reload.svg',
+              CommonActionIconPath.arrowReload,
               width: 20,
               height: 20,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
-            color: context.coconutColors.iconDefault,
+            color: context.coconutColors.iconPrimary,
           ),
         ],
       ),
@@ -484,19 +497,16 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     final result = await showModalBottomSheet(
       context: context,
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: WalletAddMfpInputBottomSheet(
-            onSkip: () {
-              Navigator.pop(context, null);
-            },
-            onComplete: (text) {
-              Navigator.pop(context, text);
-            },
-          ),
+        return WalletAddMfpInputBottomSheet(
+          onSkip: () {
+            Navigator.pop(context, null);
+          },
+          onComplete: (text) {
+            Navigator.pop(context, text);
+          },
         );
       },
-      backgroundColor: context.coconutColors.background,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
@@ -519,7 +529,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       backgroundColor: context.coconutColors.surface,
       borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
+        CommonStateIconPath.circleInfo,
         width: 20,
         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
@@ -602,6 +612,55 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           }
           break;
         }
+      case WalletSyncResult.existingWalletDifferentType:
+        await _showHotWalletDuplicatePopup(addResult);
+        break;
+    }
+  }
+
+  Future<void> _showHotWalletDuplicatePopup(ResultOfSyncFromVault duplicateResult) async {
+    final walletProvider = context.read<WalletProvider>();
+    final existingHotWallet = walletProvider.getWalletById(duplicateResult.walletId!);
+    var removeHotWallet = false;
+    final shouldAdd = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => CoconutPopup(
+                  languageCode: context.read<PreferenceProvider>().language,
+                  title: t.wallet_home_screen.hot_wallet_restore.duplicate_wallet_title,
+                  description: '',
+                  descriptionSpan: buildDuplicateWalletDescriptionSpan(
+                    name: existingHotWallet.name,
+                    type: t.wallet_home_screen.hot_wallet_restore.hot_wallet_type,
+                  ),
+                  backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
+                  checkboxText: t.wallet_home_screen.hot_wallet_restore.remove_hot_wallet,
+                  isCheckboxSelected: removeHotWallet,
+                  onCheckboxChanged: (value) => setDialogState(() => removeHotWallet = value),
+                  rightButtonText: t.wallet_home_screen.add_wallet_action,
+                  rightButtonColor: context.coconutColors.primaryText,
+                  onTapRight: () => Navigator.of(dialogContext).pop(true),
+                ),
+          ),
+    );
+    if (shouldAdd != true) {
+      _skipNextFinalizeVibration = true;
+      return;
+    }
+    if (!mounted) return;
+
+    context.loaderOverlay.show();
+    try {
+      final result = await walletProvider.confirmWatchOnlyWalletAddition(
+        duplicateResult,
+        removeExistingHotWallet: removeHotWallet,
+      );
+      if (!mounted) return;
+      await _handleAddWalletResult(result);
+    } finally {
+      if (mounted) context.loaderOverlay.hide();
     }
   }
 
@@ -624,7 +683,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
   void _finalizeAddWallet() {
     FileLogger.log(className, '_finalizeAddWallet', 'finalize');
-    vibrateMedium();
+    _isProcessing = false;
+    if (_skipNextFinalizeVibration) {
+      _skipNextFinalizeVibration = false;
+    } else {
+      vibrateMedium();
+    }
     if (mounted) {
       context.loaderOverlay.hide();
     }
@@ -668,13 +732,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           languageCode: context.read<PreferenceProvider>().language,
           title: t.alert.wallet_add.add_failed,
           description: errorMessage,
+          rightButtonText: t.OK,
           onTapRight: () {
             FileLogger.log(className, methodName, 'Error dialog confirmed');
             _isProcessing = false;
 
             Navigator.pop(context);
           },
-          rightButtonText: t.OK,
         );
       },
     );
@@ -692,7 +756,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           languageCode: context.read<PreferenceProvider>().language,
           title: title,
           backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
-          description: description,
+          description:
+              LocaleSettings.currentLocale == AppLocale.ko
+                  ? TextUtils.preventLineBreakInsideWords(description)
+                  : description,
           descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
           insetPadding: const EdgeInsets.symmetric(horizontal: 50),
           rightButtonText: t.confirm,

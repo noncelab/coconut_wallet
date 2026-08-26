@@ -19,12 +19,14 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/suspicious_transaction_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
+import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
 import 'package:tuple/tuple.dart';
 
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
@@ -132,7 +134,7 @@ class WalletProvider extends ChangeNotifier {
     return await _walletRepository.getWalletItemList();
   }
 
-  int _findSameWalletIndex(String descriptorString, WalletType walletType) {
+  int _findSameWalletIndex(String descriptorString, WalletType walletType, {bool isHotWallet = false}) {
     final WalletBase walletBase = switch (walletType) {
       WalletType.multiSignature => MultisignatureWallet.fromDescriptor(descriptorString),
       WalletType.taproot => TaprootWallet.fromDescriptor(descriptorString),
@@ -141,6 +143,9 @@ class WalletProvider extends ChangeNotifier {
     final newWalletAddress = walletBase.getAddress(0);
     for (var index = 0; index < _walletItemList.length; index++) {
       final item = _walletItemList[index];
+      if (walletType == WalletType.singleSignature && item.hasLocalKey != isHotWallet) {
+        continue;
+      }
       final matches = switch (walletType) {
         WalletType.multiSignature => item is MultisigWalletItem,
         WalletType.taproot => item is TaprootWalletItem,
@@ -151,6 +156,13 @@ class WalletProvider extends ChangeNotifier {
       }
     }
     return -1;
+  }
+
+  SinglesigWalletItem? findSameSinglesigWallet(String descriptor, {required bool hasLocalKey}) {
+    final address = SingleSignatureWallet.fromDescriptor(descriptor).getAddress(0);
+    return _walletItemList.whereType<SinglesigWalletItem>().firstWhereOrNull(
+      (wallet) => wallet.hasLocalKey == hasLocalKey && wallet.walletBase.getAddress(0) == address,
+    );
   }
 
   Future<void> addToWalletOrder(int walletId) async {
@@ -179,8 +191,22 @@ class WalletProvider extends ChangeNotifier {
   /// case5. 같은 이름과 MFP를 가졌지만 다른 derivation path의 지갑이 있는 경우 ("다른 계정 번호의 지갑을 추가했습니다.")
   /// case6. 같은 이름을 가진 다른 지갑이 있는 경우 ("같은 이름을 가진 지갑이 있습니다. 이름을 변경한 후 동기화 해주세요.")
 
-  Future<ResultOfSyncFromVault> syncFromCoconutVault(WatchOnlyWallet watchOnlyWallet) async {
+  Future<ResultOfSyncFromVault> syncFromCoconutVault(
+    WatchOnlyWallet watchOnlyWallet, {
+    bool allowExistingHotWallet = false,
+  }) async {
     final isSingleSig = watchOnlyWallet.walletType == WalletType.singleSignature;
+    if (isSingleSig && !allowExistingHotWallet) {
+      final existingHotWallet = findSameSinglesigWallet(watchOnlyWallet.descriptor, hasLocalKey: true);
+      if (existingHotWallet != null) {
+        return ResultOfSyncFromVault(
+          result: WalletSyncResult.existingWalletDifferentType,
+          walletId: existingHotWallet.id,
+          pendingWatchOnlyWallet: watchOnlyWallet,
+          isCoconutVaultWallet: true,
+        );
+      }
+    }
     final index = _findSameWalletIndex(watchOnlyWallet.descriptor, watchOnlyWallet.walletType);
 
     // Existing wallet (Case 1, 2, 3)
@@ -239,7 +265,21 @@ class WalletProvider extends ChangeNotifier {
   }
 
   /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
-  Future<ResultOfSyncFromVault> syncFromThirdParty(WatchOnlyWallet watchOnlyWallet) async {
+  Future<ResultOfSyncFromVault> syncFromThirdParty(
+    WatchOnlyWallet watchOnlyWallet, {
+    bool allowExistingHotWallet = false,
+  }) async {
+    if (watchOnlyWallet.walletType == WalletType.singleSignature && !allowExistingHotWallet) {
+      final existingHotWallet = findSameSinglesigWallet(watchOnlyWallet.descriptor, hasLocalKey: true);
+      if (existingHotWallet != null) {
+        return ResultOfSyncFromVault(
+          result: WalletSyncResult.existingWalletDifferentType,
+          walletId: existingHotWallet.id,
+          pendingWatchOnlyWallet: watchOnlyWallet,
+          isCoconutVaultWallet: false,
+        );
+      }
+    }
     final index = _findSameWalletIndex(watchOnlyWallet.descriptor, watchOnlyWallet.walletType);
 
     if (index != -1) {
@@ -266,6 +306,73 @@ class WalletProvider extends ChangeNotifier {
     _handleNewWalletAdded(newWallet.id);
 
     return ResultOfSyncFromVault(result: WalletSyncResult.newWalletAdded, walletId: newWallet.id);
+  }
+
+  Future<ResultOfSyncFromVault> confirmWatchOnlyWalletAddition(
+    ResultOfSyncFromVault duplicateResult, {
+    required bool removeExistingHotWallet,
+  }) async {
+    final wallet = duplicateResult.pendingWatchOnlyWallet;
+    final existingHotWalletId = duplicateResult.walletId;
+    if (wallet == null || existingHotWalletId == null) {
+      throw StateError('Pending watch-only wallet information is missing');
+    }
+
+    final result =
+        duplicateResult.isCoconutVaultWallet == true
+            ? await syncFromCoconutVault(wallet, allowExistingHotWallet: true)
+            : await syncFromThirdParty(wallet, allowExistingHotWallet: true);
+    if (removeExistingHotWallet && result.result == WalletSyncResult.newWalletAdded) {
+      await deleteWallet(existingHotWalletId);
+    }
+    return result;
+  }
+
+  /// 동일 descriptor의 Watch-only 지갑이 있어도 별도 지갑으로 생성한다.
+  Future<SinglesigWalletItem> addHotWallet(
+    WatchOnlyWallet wallet, {
+    required String secureStorageKey,
+    required bool backupVerified,
+    required bool enterPassphraseWhenSigning,
+    required DateTime createdAt,
+    int? replacingWatchOnlyWalletId,
+  }) async {
+    if (wallet.walletType != WalletType.singleSignature) {
+      throw ArgumentError.value(wallet.walletType, 'wallet.walletType', 'Hot wallet must be single-signature');
+    }
+    if (_findSameWalletIndex(wallet.descriptor, wallet.walletType, isHotWallet: true) != -1) {
+      throw StateError('The hot wallet has already been added');
+    }
+
+    final resolvedName = _resolveWalletNameConflict(
+      desiredName: wallet.name,
+      descriptor: wallet.descriptor,
+      isSingleSig: true,
+      excludeWalletId: replacingWatchOnlyWalletId,
+    );
+    if (resolvedName == null) {
+      throw const WalletNameConflictException();
+    }
+
+    final hotWallet = await _walletRepository.addHotWallet(
+      _copyWithNewName(wallet, resolvedName),
+      secureStorageKey: secureStorageKey,
+      backupVerified: backupVerified,
+      enterPassphraseWhenSigning: enterPassphraseWhenSigning,
+      createdAt: createdAt,
+    );
+    await _addressRepository.ensureAddressesInit(walletItemBase: hotWallet);
+    final updatedList = List<WalletItemBase>.from(_walletItemList)..add(hotWallet);
+    _setWalletItemList(updatedList);
+    _saveWalletCount(updatedList.length);
+    await _handleNewWalletAdded(hotWallet.id);
+    return hotWallet;
+  }
+
+  Future<void> updateHotWalletBackupVerified(int walletId, {required bool backupVerified}) async {
+    await _walletRepository.updateHotWalletBackupVerified(walletId, backupVerified: backupVerified);
+    _setWalletItemList(await _fetchWalletListFromDB());
+    notifyListeners();
   }
 
   // MARK: - Name Conflict, MFP verification Helpers
@@ -410,17 +517,31 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
+    final secretStorageKey =
+        _walletItemList
+            .whereType<SinglesigWalletItem>()
+            .firstWhereOrNull((wallet) => wallet.id == walletId)
+            ?.hotWalletMetadata
+            ?.secureStorageKey;
     final walletToDelete = _walletItemList.firstWhereOrNull((w) => w.id == walletId);
     if (walletToDelete?.walletImportSource == WalletImportSource.trezor) {
       await TrezorDevice.lastConnected?.disconnect();
     }
 
     await _walletRepository.deleteWallet(walletId);
+    if (secretStorageKey != null) {
+      try {
+        await HotWalletSecretRepository().delete(secretStorageKey);
+      } catch (error) {
+        Logger.log('Failed to delete hot wallet secret: $error');
+      }
+    }
     _setWalletItemList(await _fetchWalletListFromDB());
     _saveWalletCount(_walletItemList.length);
     await _preferenceProvider.removeWalletOrder(walletId);
     await _preferenceProvider.removeFavoriteWalletId(walletId);
     await _preferenceProvider.removeExcludedFromTotalBalanceWalletId(walletId);
+    // ignore: deprecated_member_use_from_same_package
     await _preferenceProvider.removeManualUtxoSelectionWalletId(walletId);
     if (_walletItemList.isEmpty) {
       await _preferenceProvider.changeIsBalanceHidden(false); // 잔액 숨기기 비활성화, fakeBalance 초기화
@@ -491,6 +612,9 @@ class WalletProvider extends ChangeNotifier {
     }
 
     final realmBalance = _walletRepository.getWalletBalance(walletId);
+    if (realmBalance == null) {
+      return Balance(0, 0);
+    }
     return Balance(realmBalance.confirmed, realmBalance.unconfirmed);
   }
 
@@ -701,8 +825,10 @@ class WalletProvider extends ChangeNotifier {
 }
 
 class ResultOfSyncFromVault {
-  ResultOfSyncFromVault({required this.result, this.walletId});
+  ResultOfSyncFromVault({required this.result, this.walletId, this.pendingWatchOnlyWallet, this.isCoconutVaultWallet});
 
   final WalletSyncResult result;
   final int? walletId; // 관련있는 지갑 id
+  final WatchOnlyWallet? pendingWatchOnlyWallet;
+  final bool? isCoconutVaultWallet;
 }

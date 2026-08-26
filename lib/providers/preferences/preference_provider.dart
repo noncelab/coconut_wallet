@@ -1,9 +1,12 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
@@ -22,12 +25,15 @@ import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:tuple/tuple.dart';
 
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final WalletPreferencesRepository _walletPreferencesRepository;
+  late final CcosFeatureActivationStore _ccosFeatureActivationStore;
+  late final CcosFeatureEntitlementStore _ccosFeatureEntitlementStore;
+  static const CcosFeatureAvailabilityResolver _ccosAvailabilityResolver = CcosFeatureAvailabilityResolver();
 
   // FeatureSettingsProvider는 선택적으로 주입받을 수 있음 (Facade 패턴)
   // 주입되지 않으면 내부에서 직접 관리 (하위 호환성)
@@ -45,6 +51,16 @@ class PreferenceProvider extends ChangeNotifier {
 
   late bool _isFiatBalanceHidden;
   bool get isFiatBalanceHidden => _isFiatBalanceHidden;
+
+  late HomeAddWalletOption _homeAddWalletOption;
+  HomeAddWalletOption get homeAddWalletOption => _homeAddWalletOption;
+
+  late List<WalletFilter> _walletFilterOrder;
+  List<WalletFilter> get walletFilterOrder => List.unmodifiable(_walletFilterOrder);
+  late Set<WalletFilter> _visibleWalletFilters;
+  Set<WalletFilter> get visibleWalletFilters => Set.unmodifiable(_visibleWalletFilters);
+  bool isWalletFilterVisible(WalletFilter filter) =>
+      filter == WalletFilter.all || filter == WalletFilter.watchOnly || _visibleWalletFilters.contains(filter);
 
   /// 가짜 잔액 총량
   late int? _fakeBalanceTotalBtc;
@@ -89,6 +105,7 @@ class PreferenceProvider extends ChangeNotifier {
   /// 지갑 즐겨찾기 목록
   late List<int> _favoriteWalletIds;
   List<int> get favoriteWalletIds => _favoriteWalletIds;
+  late bool _hasInitializedFavoriteWalletIds;
 
   /// 총 잔액에서 제외할 지갑 목록
   late List<int> _excludedFromTotalBalanceWalletIds;
@@ -116,9 +133,17 @@ class PreferenceProvider extends ChangeNotifier {
   /// UTXO 구간별 색상 테마
   late UtxoTierTheme _utxoTierTheme;
   UtxoTierTheme get utxoTierTheme => _utxoTierTheme;
-  // 지갑 목록 화면 - 법정화폐 숨기기 여부
+  // 지갑 목록 화면 - 법정화폐 표시 여부
   late bool _isWalletListFiatHidden;
-  bool get isWalletListFiatHidden => _isWalletListFiatHidden;
+  bool get isWalletListFiatVisible => !_isWalletListFiatHidden;
+
+  // 지갑 목록 화면 - 1 BTC 가격 정보 표시 여부
+  late bool _isWalletListBitcoinPriceHidden;
+  bool get isWalletListBitcoinPriceVisible => !_isWalletListBitcoinPriceHidden;
+
+  // 지갑 목록 화면 - 총 보유 수량 변화 그래프 표시 여부
+  late bool _isWalletListBalanceChartHidden;
+  bool get isWalletListBalanceChartVisible => !_isWalletListBalanceChartHidden;
 
   // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록
   late List<FiatCode> _walletListVisibleFiats;
@@ -128,12 +153,31 @@ class PreferenceProvider extends ChangeNotifier {
   late CoconutThemeVariant _themeVariant;
   CoconutThemeVariant get themeVariant => _themeVariant;
 
+  late DateTime? _openStoreIntroCardHiddenUntil;
+  Set<String> _ccosActivatedFeatureIds = <String>{};
+  Map<String, CcosFeatureEntitlement> _ccosEntitlements = <String, CcosFeatureEntitlement>{};
+  bool _isCcosRuntimeReady = false;
+  bool get shouldShowOpenStoreIntroCard {
+    // CCOS 기능을 활성화한 사용자는 카드를 더이상 띄우지 않는다.
+    if (getCcosFeatureAvailability(CcosFeatureRegistrySource.featuredListing.id).isActivated) {
+      return false;
+    }
+    // 활성화하지 않은 사용자는 30일 재노출 로직 적용
+    final hiddenUntil = _openStoreIntroCardHiddenUntil;
+    return hiddenUntil == null || DateTime.now().isAfter(hiddenUntil);
+  }
+
+  bool get isCcosRuntimeReady => _isCcosRuntimeReady;
+
   PreferenceProvider(
     this._walletPreferencesRepository,
     this._electrumServerProvider,
     this._blockExplorerProvider, {
     FeatureSettingsProvider? featureSettingsProvider,
   }) : _featureSettingsProvider = featureSettingsProvider {
+    _ccosFeatureActivationStore = SharedPrefsCcosFeatureActivationStore(_sharedPrefs);
+    _ccosFeatureEntitlementStore = SharedPrefsCcosFeatureEntitlementStore(_sharedPrefs);
+
     // 통화 설정 초기화
     _initializeFiat();
     _initializeLanguageFromSystem();
@@ -144,8 +188,15 @@ class PreferenceProvider extends ChangeNotifier {
     _isFiatBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsFiatBalanceHidden);
     _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
+    _homeAddWalletOption = HomeAddWalletOption.values.firstWhere(
+      (option) => option.name == _sharedPrefs.getString(SharedPrefKeys.kHomeAddWalletOption),
+      orElse: () => HomeAddWalletOption.all,
+    );
+    _walletFilterOrder = _loadWalletFilterOrder();
+    _visibleWalletFilters = _loadVisibleWalletFilters();
     _bitcoinUnit = _loadBitcoinUnit();
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
+    _hasInitializedFavoriteWalletIds = _walletPreferencesRepository.hasWalletPreferences();
     _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
     _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
     _excludedFromTotalBalanceWalletIds = _walletPreferencesRepository.getExcludedWalletIds().toList();
@@ -166,8 +217,13 @@ class PreferenceProvider extends ChangeNotifier {
     _utxoTierTheme = UtxoTierThemes.fromId(_sharedPrefs.getString(SharedPrefKeys.kUtxoTierThemeId));
 
     _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
+    _isWalletListBitcoinPriceHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListBitcoinPriceHidden);
+    _isWalletListBalanceChartHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListBalanceChartHidden);
     _walletListVisibleFiats = _loadWalletListVisibleFiats();
     _themeVariant = _loadThemeVariant();
+    _openStoreIntroCardHiddenUntil = _loadOpenStoreIntroCardHiddenUntil();
+
+    Future<void>.microtask(loadCcosRuntimeState);
   }
 
   /// 통화 설정 초기화
@@ -236,6 +292,78 @@ class PreferenceProvider extends ChangeNotifier {
     _isFiatBalanceHidden = isOn;
     await _sharedPrefs.setBool(SharedPrefKeys.kIsFiatBalanceHidden, isOn);
 
+    notifyListeners();
+  }
+
+  /// 홈 화면 상단 지갑 추가 버튼 설정
+  Future<void> changeHomeAddWalletOption(HomeAddWalletOption option) async {
+    if (_homeAddWalletOption == option) return;
+    _homeAddWalletOption = option;
+    await _sharedPrefs.setString(SharedPrefKeys.kHomeAddWalletOption, option.name);
+    notifyListeners();
+  }
+
+  List<WalletFilter> _loadWalletFilterOrder() {
+    final storedNames = _sharedPrefs.getString(SharedPrefKeys.kWalletFilterOrder).split(',');
+    final storedFilters =
+        storedNames
+            .map((name) => WalletFilter.values.where((filter) => filter.name == name).firstOrNull)
+            .whereType<WalletFilter>()
+            .where((filter) => filter != WalletFilter.all)
+            .toSet()
+            .toList();
+    final movableFilters = WalletFilter.values.where((filter) => filter != WalletFilter.all);
+    return [WalletFilter.all, ...storedFilters, ...movableFilters.where((filter) => !storedFilters.contains(filter))];
+  }
+
+  Future<void> setWalletFilterOrder(List<WalletFilter> order) async {
+    final movableFilters =
+        order.where((filter) => filter != WalletFilter.all).toSet().toList()
+          ..addAll(WalletFilter.values.where((filter) => filter != WalletFilter.all && !order.contains(filter)));
+    _walletFilterOrder = [WalletFilter.all, ...movableFilters];
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kWalletFilterOrder,
+      _walletFilterOrder.map((filter) => filter.name).join(','),
+    );
+    notifyListeners();
+  }
+
+  Set<WalletFilter> _loadVisibleWalletFilters() {
+    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kVisibleWalletFilters);
+    if (stored == null) return {WalletFilter.watchOnly, WalletFilter.hot};
+    return {
+      WalletFilter.watchOnly,
+      ...stored
+          .split(',')
+          .map((name) => WalletFilter.values.where((filter) => filter.name == name).firstOrNull)
+          .whereType<WalletFilter>()
+          .where((filter) => filter != WalletFilter.all),
+    };
+  }
+
+  Future<void> setWalletFilterVisible(WalletFilter filter, bool isVisible) async {
+    if (filter == WalletFilter.all || filter == WalletFilter.watchOnly) return;
+    if (isVisible) {
+      _visibleWalletFilters.add(filter);
+    } else {
+      _visibleWalletFilters.remove(filter);
+    }
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kVisibleWalletFilters,
+      _visibleWalletFilters.map((filter) => filter.name).join(','),
+    );
+    notifyListeners();
+  }
+
+  Future<void> setVisibleWalletFilters(Set<WalletFilter> filters) async {
+    _visibleWalletFilters = {
+      WalletFilter.watchOnly,
+      ...filters.where((filter) => filter != WalletFilter.all && filter != WalletFilter.watchOnly),
+    };
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kVisibleWalletFilters,
+      _visibleWalletFilters.map((filter) => filter.name).join(','),
+    );
     notifyListeners();
   }
 
@@ -437,6 +565,7 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> setFavoriteWalletIds(List<int> ids) async {
     _favoriteWalletIds = ids;
     await _walletPreferencesRepository.setFavoriteWalletIds(ids);
+    _hasInitializedFavoriteWalletIds = true;
     notifyListeners();
   }
 
@@ -490,7 +619,7 @@ class PreferenceProvider extends ChangeNotifier {
       walletOrder = List.from(walletItemList.map((w) => w.id));
       await setWalletOrder(walletOrder);
     }
-    if (favoriteWalletIds.isEmpty) {
+    if (!_hasInitializedFavoriteWalletIds) {
       favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
       await setFavoriteWalletIds(favoriteWalletIds);
     }
@@ -551,10 +680,24 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 지갑 목록 화면 법정화폐 숨기기 설정
-  Future<void> setWalletListFiatHidden(bool isHidden) async {
-    _isWalletListFiatHidden = isHidden;
-    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListFiatHidden, isHidden);
+  // 지갑 목록 화면 법정화폐 표시 설정
+  Future<void> setWalletListFiatVisible(bool isVisible) async {
+    _isWalletListFiatHidden = !isVisible;
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListFiatHidden, !isVisible);
+    notifyListeners();
+  }
+
+  // 지갑 목록 화면 1 BTC 가격 정보 표시 설정
+  Future<void> setWalletListBitcoinPriceVisible(bool isVisible) async {
+    _isWalletListBitcoinPriceHidden = !isVisible;
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListBitcoinPriceHidden, !isVisible);
+    notifyListeners();
+  }
+
+  // 지갑 목록 화면 총 보유 수량 변화 그래프 표시 설정
+  Future<void> setWalletListBalanceChartVisible(bool isVisible) async {
+    _isWalletListBalanceChartHidden = !isVisible;
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListBalanceChartHidden, !isVisible);
     notifyListeners();
   }
 
@@ -579,6 +722,94 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setString(SharedPrefKeys.kThemeVariant, variant.name);
     updateSystemBarColor(variant);
     notifyListeners();
+  }
+
+  DateTime? _loadOpenStoreIntroCardHiddenUntil() {
+    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kOpenStoreIntroCardHiddenUntil);
+    if (stored == null || stored.isEmpty) {
+      return null;
+    }
+    return DateTime.tryParse(stored);
+  }
+
+  static const Duration _openStoreIntroCardHiddenDuration = kDebugMode ? Duration(minutes: 1) : Duration(days: 30);
+
+  Future<void> hideOpenStoreIntroCardForOneMonth() async {
+    _openStoreIntroCardHiddenUntil = DateTime.now().add(_openStoreIntroCardHiddenDuration);
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kOpenStoreIntroCardHiddenUntil,
+      _openStoreIntroCardHiddenUntil!.toIso8601String(),
+    );
+    notifyListeners();
+  }
+
+  Future<void> loadCcosRuntimeState() async {
+    _ccosActivatedFeatureIds = await _ccosFeatureActivationStore.loadActivatedFeatureIds();
+    _ccosEntitlements = await _ccosFeatureEntitlementStore.loadEntitlements();
+    _isCcosRuntimeReady = true;
+    notifyListeners();
+  }
+
+  CcosFeatureAvailability getCcosFeatureAvailability(String featureId) {
+    final listing = CcosFeatureRegistrySource.findListingById(featureId);
+    if (listing == null) {
+      return const CcosFeatureAvailability(
+        featureId: '',
+        isVisible: false,
+        isActivated: false,
+        isEntitled: false,
+        isAvailable: false,
+      );
+    }
+
+    return _ccosAvailabilityResolver.resolve(
+      listing: listing,
+      activatedFeatureIds: _ccosActivatedFeatureIds,
+      entitlements: _ccosEntitlements,
+    );
+  }
+
+  String? getCcosFeatureStatusLabel(String featureId) {
+    final availability = getCcosFeatureAvailability(featureId);
+    if (availability.isActivated) return t.ccos.feature_status.activated;
+    if (availability.isEntitled) return t.ccos.feature_status.purchased;
+    return null;
+  }
+
+  Future<void> activateCcosFeature(String featureId) async {
+    await _ccosFeatureActivationStore.setActivated(featureId, true);
+    _ccosActivatedFeatureIds = await _ccosFeatureActivationStore.loadActivatedFeatureIds();
+    notifyListeners();
+  }
+
+  Future<void> deactivateCcosFeature(String featureId) async {
+    await _ccosFeatureActivationStore.setActivated(featureId, false);
+    _ccosActivatedFeatureIds = await _ccosFeatureActivationStore.loadActivatedFeatureIds();
+    notifyListeners();
+  }
+
+  Future<void> markCcosFeaturePurchased(
+    String featureId, {
+    CcosFeatureEntitlementSource source = CcosFeatureEntitlementSource.localSnapshot,
+  }) async {
+    _ccosEntitlements = Map<String, CcosFeatureEntitlement>.from(_ccosEntitlements)
+      ..[featureId] = CcosFeatureEntitlement(
+        featureId: featureId,
+        isEntitled: true,
+        source: source,
+        updatedAt: DateTime.now(),
+      );
+
+    await _ccosFeatureEntitlementStore.saveEntitlements(_ccosEntitlements.values);
+    notifyListeners();
+  }
+
+  Future<void> purchaseAndActivateCcosFeature(
+    String featureId, {
+    CcosFeatureEntitlementSource source = CcosFeatureEntitlementSource.localSnapshot,
+  }) async {
+    await markCcosFeaturePurchased(featureId, source: source);
+    await activateCcosFeature(featureId);
   }
 
   List<FiatCode> _loadWalletListVisibleFiats() {

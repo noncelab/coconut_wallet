@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -18,6 +19,8 @@ const _childTaprootXpub =
     "tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8";
 const _inheritanceMiniscript = "and_v(v:pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*),older(500000000))";
 const _oneParentDescriptor = "tr([9B1441E4/86'/1'/0']$_parentTaprootXpub/<0;1>/*,{$_inheritanceMiniscript})#w0hf4lu5";
+const _singlesigDescriptor =
+    "wpkh([D45AA182/84'/1'/0']vpub5YtEovN9MqeUZxWqdpUKngsiaLCPFY34KpWGQVk9Tjq8G5SYcRFj9s5aCKeAQYGunG7LrFkA5obtH8kPJiv92JtWHfRvnir6PDvhd4p93Pp/<0;1>/*)#rcn2hj6y";
 
 void main() {
   late TestRealmManager realmManager;
@@ -37,6 +40,13 @@ void main() {
   });
 
   group('WalletRepository - 싱글시그', () {
+    WatchOnlyWallet createSinglesigWallet({
+      String name = 'Hot Wallet',
+      WalletImportSource source = WalletImportSource.coconutVault,
+    }) {
+      return WatchOnlyWallet(name, 0, 0, _singlesigDescriptor, null, null, source.name);
+    }
+
     test('지갑 삭제 테스트', () async {
       final walletBase = RealmWalletBase(
         1,
@@ -51,6 +61,81 @@ void main() {
       await walletRepository.deleteWallet(1);
 
       expect(realmManager.realm.all<RealmWalletBase>().length, 0);
+    });
+
+    test('삭제된 지갑의 잔액 조회와 누적 요청을 무시함', () async {
+      final firstHotWallet = await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Hot Wallet 1'),
+        secureStorageKey: 'local_wallet_seed_regtest_1',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 8, 11),
+      );
+      await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Hot Wallet 2'),
+        secureStorageKey: 'local_wallet_seed_regtest_2',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 8, 11),
+      );
+      final watchOnlyWallet = await walletRepository.addSinglesigWallet(
+        createSinglesigWallet(name: 'Watch-only Wallet', source: WalletImportSource.extendedPublicKey),
+      );
+
+      await walletRepository.deleteWallet(watchOnlyWallet.id);
+
+      expect(walletRepository.getWalletBalance(watchOnlyWallet.id), isNull);
+      expect(await walletRepository.accumulateWalletBalance(watchOnlyWallet.id, Balance(1, 0)), isNull);
+      expect(walletRepository.getWalletBalance(firstHotWallet.id), isNotNull);
+    });
+
+    test('핫월렛 생성 시 지갑과 hot wallet metadata가 함께 저장됨', () async {
+      final created = await walletRepository.addHotWallet(
+        createSinglesigWallet(),
+        secureStorageKey: 'local_wallet_seed_regtest_1',
+        backupVerified: true,
+        enterPassphraseWhenSigning: true,
+        createdAt: DateTime.utc(2026, 7, 20),
+      );
+
+      final wallet = (await walletRepository.getWalletItemList()).single;
+      expect(created.id, wallet.id);
+      expect(wallet.hasLocalKey, isTrue);
+      expect(wallet.signingMethod, WalletSigningMethod.localSigner);
+      expect(wallet.hotWalletMetadata?.secureStorageKey, 'local_wallet_seed_regtest_1');
+      expect(wallet.hotWalletMetadata?.masterFingerprint, 'D45AA182');
+      expect(wallet.hotWalletMetadata?.enterPassphraseWhenSigning, isTrue);
+    });
+
+    test('외부 출처 싱글시그는 핫월렛 생성 경로로 저장할 수 없음', () async {
+      expect(
+        () => walletRepository.addHotWallet(
+          createSinglesigWallet(source: WalletImportSource.keystone),
+          secureStorageKey: 'local_wallet_seed_regtest_1',
+          backupVerified: true,
+          enterPassphraseWhenSigning: false,
+          createdAt: DateTime.utc(2026, 7, 20),
+        ),
+        throwsArgumentError,
+      );
+      expect(realmManager.realm.all<RealmHotWalletMetadata>(), isEmpty);
+      expect(realmManager.realm.all<RealmWalletBase>(), isEmpty);
+    });
+
+    test('같은 descriptor의 Watch-only와 핫월렛을 각각 저장할 수 있음', () async {
+      await walletRepository.addSinglesigWallet(createSinglesigWallet(name: 'Watch-only'));
+      await walletRepository.addHotWallet(
+        createSinglesigWallet(),
+        secureStorageKey: 'local_wallet_seed_regtest_1',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 7, 20),
+      );
+
+      final wallets = await walletRepository.getWalletItemList();
+      expect(wallets, hasLength(2));
+      expect(wallets.where((wallet) => wallet.hasLocalKey), hasLength(1));
+      expect(wallets.where((wallet) => !wallet.hasLocalKey), hasLength(1));
     });
   });
 
@@ -129,6 +214,30 @@ void main() {
 
       expect(realmManager.realm.all<RealmWalletBase>().length, 0);
       expect(realmManager.realm.all<RealmTaprootWallet>().length, 0);
+    });
+
+    test('지갑 삭제 시 hot wallet metadata도 함께 삭제됨', () async {
+      final walletBase = RealmWalletBase(1, 0, 0, _oneParentDescriptor, 'Taproot Wallet', WalletType.taproot.name);
+      realmManager.realm.write(() {
+        realmManager.realm.add(walletBase);
+        realmManager.realm.add(createRealmTaprootWallet(1, walletBase));
+        realmManager.realm.add(
+          RealmHotWalletMetadata(
+            1,
+            'local_wallet_seed_regtest_1',
+            '9B1441E4',
+            "m/86'/1'/0'",
+            0,
+            true,
+            false,
+            DateTime.utc(2026, 7, 20),
+          ),
+        );
+      });
+
+      await walletRepository.deleteWallet(1);
+
+      expect(realmManager.realm.all<RealmHotWalletMetadata>(), isEmpty);
     });
   });
 }

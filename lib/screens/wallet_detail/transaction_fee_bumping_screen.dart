@@ -1,4 +1,17 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutTextField,
+        CoconutTextFieldStyle;
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
@@ -21,14 +34,15 @@ import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.da
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
+import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/panel/custom_expansion_panel.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 enum FeeBumpingType { rbf, cpfp }
 
@@ -109,8 +123,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             IconButton(
                               key: _tooltipIconKey,
                               icon: SvgPicture.asset(
-                                'assets/svg/question-mark.svg',
-                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                                CommonStateIconPath.questionMark,
+                                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                               ),
                               onPressed: _toggleTooltip,
                             ),
@@ -518,17 +532,12 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                   child: CoconutTextField(
                     controller: _textEditingController,
                     focusNode: _feeTextFieldFocusNode,
-                    cursorColor: context.coconutColors.primaryText,
+                    size: CoconutTextFieldSize.compact,
                     textInputType: const TextInputType.numberWithOptions(decimal: true),
                     textInputFormatter: const [RateInputFormatter()],
-                    errorColor: context.coconutColors.danger,
-                    activeColor: context.coconutColors.primaryText,
-                    backgroundColor: context.coconutColors.inputSurface.withValues(alpha: 0.15),
-                    borderColor: context.coconutColors.inputBorder,
                     prefix: null,
                     fontFamily: 'SpaceGrotesk',
                     maxLines: 1,
-                    padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 5),
                     isLengthVisible: false,
                     textAlign: TextAlign.center,
                     onChanged: _onFeeRateChanged,
@@ -605,8 +614,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               turns: _isRecommendFeePannelExpanded ? -0.5 : 0,
               duration: const Duration(milliseconds: 200),
               child: SvgPicture.asset(
-                'assets/svg/caret-down.svg',
-                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                CommonNavigationIconPath.caretDown,
+                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
               ),
             ),
           ],
@@ -629,7 +638,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             });
           },
           child: Container(
-            color: _isRecommendFeePannelPressed ? context.coconutColors.surfacePressed : context.coconutColors.surface,
+            color:
+                _isRecommendFeePannelPressed
+                    ? context.coconutColors.surfacePressOverlay
+                    : context.coconutColors.surface,
             padding: const EdgeInsets.only(
               left: CoconutLayout.defaultPadding,
               right: CoconutLayout.defaultPadding,
@@ -642,7 +654,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                 Padding(
                   padding: const EdgeInsets.all(1.5),
                   child: SvgPicture.asset(
-                    'assets/svg/circle-info.svg',
+                    CommonStateIconPath.circleInfo,
                     colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                   ),
                 ),
@@ -819,7 +831,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SvgPicture.asset(
-            'assets/svg/triangle-warning.svg',
+            CommonStateIconPath.triangleWarning,
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
@@ -852,7 +864,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       }
 
       Color textColor =
-          viewModel.selectedUtxoList.isNotEmpty ? context.coconutColors.textHighlight : context.coconutColors.danger;
+          viewModel.selectedUtxoList.isNotEmpty ? context.coconutColors.accentForeground : context.coconutColors.danger;
 
       child = Container(
         key: const ValueKey('content'),
@@ -860,7 +872,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 27),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-          color: context.coconutColors.surfaceCard,
+          color: context.coconutColors.surface,
         ),
         child: Column(
           children: [

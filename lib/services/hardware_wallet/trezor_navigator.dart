@@ -4,7 +4,7 @@ import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_conn
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_usb_connect_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 
 class TrezorNavigator {

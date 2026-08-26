@@ -1,4 +1,5 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
@@ -8,15 +9,22 @@ import 'package:flutter/material.dart';
 class NegativeFeedbackScreen extends StatelessWidget {
   const NegativeFeedbackScreen({super.key});
 
-  void _runKakaoOpenChat(BuildContext context) {
+  Future<void> _runKakaoOpenChat(BuildContext context) async {
     launchURL('https://open.kakao.com/me/coconutwallet');
     AppReviewService.setHasReviewed();
-    _stopGettingFeedback(context);
+    await _stopGettingFeedback(context);
   }
 
-  void _stopGettingFeedback(BuildContext context) {
-    Navigator.pop(context);
-    Navigator.pop(context);
+  Future<void> _stopGettingFeedback(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final currentRoute = ModalRoute.of(context);
+
+    navigator.pop();
+    await currentRoute?.completed;
+
+    if (navigator.mounted && navigator.canPop()) {
+      navigator.pop();
+    }
   }
 
   @override
@@ -59,28 +67,28 @@ class NegativeFeedbackScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: context.coconutColors.backgroundHighlight,
+                        color: context.coconutColors.brandAccentBackground,
                       ),
                       child: Text(
                         t.negative_feedback_screen.text3,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.backgroundHighlightText),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.brandAccentForeground),
                         textAlign: TextAlign.center,
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   GestureDetector(
-                    onTap: () => _stopGettingFeedback(context),
+                    onTap: () async => _stopGettingFeedback(context),
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: context.coconutColors.actionButtonBackground,
+                        color: context.coconutColors.buttonPrimaryBackground,
                       ),
                       child: Text(
                         t.negative_feedback_screen.text4,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.actionButtonText),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.buttonPrimaryForeground),
                         textAlign: TextAlign.center,
                       ),
                     ),

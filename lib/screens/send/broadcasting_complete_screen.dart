@@ -1,21 +1,35 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutTextField;
+import 'package:coconut_wallet/constants/lottie_path.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/ripple_effect.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class BroadcastingCompleteScreen extends StatefulWidget {
   final int id;
   final String txHash;
+  final bool animateEntry;
 
-  const BroadcastingCompleteScreen({super.key, required this.id, required this.txHash});
+  const BroadcastingCompleteScreen({super.key, required this.id, required this.txHash, this.animateEntry = false});
 
   @override
   State<BroadcastingCompleteScreen> createState() => _BroadcastingCompleteScreenState();
@@ -23,10 +37,12 @@ class BroadcastingCompleteScreen extends StatefulWidget {
 
 class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
-  final TextEditingController _memoController = TextEditingController();
+  late final AnimationController _completionLottieController;
+  final TextEditingController _memoController = LiteralTextEditingController();
   final FocusNode _memoFocusNode = FocusNode();
   final GlobalKey _memoTagsKey = GlobalKey();
   double _memoTagsHeight = 0;
+  late bool _showEntryActions;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +64,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
       alignment: Alignment.center,
       children: [
         SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
           child: SizedBox(
             height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
             child: Column(
@@ -59,15 +76,29 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                           ? MediaQuery.of(context).size.height * 0.1
                           : MediaQuery.of(context).size.height * 0.3,
                 ),
-                SvgPicture.asset('assets/svg/completion-check.svg'),
+                if (widget.animateEntry)
+                  Lottie.asset(
+                    TransactionLottiePath.checkSpinning,
+                    controller: _completionLottieController,
+                    width: 70,
+                    height: 70,
+                    repeat: false,
+                    onLoaded: (composition) {
+                      _completionLottieController.duration = composition.duration;
+                      _completionLottieController.value = 1;
+                    },
+                  )
+                else
+                  SvgPicture.asset(CommonStateIconPath.completionCheck),
                 CoconutLayout.spacing_400h,
                 Text(
                   t.broadcasting_complete_screen.complete,
                   style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
                 ),
                 CoconutLayout.spacing_400h,
-                _buildMemoInputField(),
-                if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty) _buildMemoReadOnlyText(),
+                _CompletionEntryTransition(visible: _showEntryActions, child: _buildMemoInputField()),
+                if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
+                  _CompletionEntryTransition(visible: _showEntryActions, child: _buildMemoReadOnlyText()),
                 if (_memoFocusNode.hasFocus && MediaQuery.of(context).viewInsets.bottom > 0) ...[
                   CoconutLayout.spacing_1200h,
                   _buildMemoTags(),
@@ -78,11 +109,14 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
         ),
         // if (_memoFocusNode.hasFocus && MediaQuery.of(context).viewInsets.bottom > 0)
         //   Positioned(bottom: Sizes.size16, child: _buildMemoTags()),
-        FixedBottomButton(
-          showSurroundings: false,
-          isVisibleAboveKeyboard: false,
-          onButtonClicked: () => onTapConfirmButton(context),
-          text: t.confirm,
+        _CompletionEntryTransition(
+          visible: _showEntryActions,
+          child: FixedBottomButton(
+            showSurroundings: false,
+            isVisibleAboveKeyboard: false,
+            onButtonClicked: () => onTapConfirmButton(context),
+            text: t.confirm,
+          ),
         ),
       ],
     );
@@ -91,6 +125,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _completionLottieController.dispose();
     _memoFocusNode.dispose();
     super.dispose();
   }
@@ -98,9 +133,22 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   @override
   void initState() {
     super.initState();
+    _showEntryActions = !widget.animateEntry;
     _animationController = BottomSheet.createAnimationController(this);
+    _completionLottieController = AnimationController(vsync: this, value: 1);
     _animationController.duration = const Duration(seconds: 2);
-    Provider.of<SendInfoProvider>(context, listen: false).clear();
+    if (widget.animateEntry) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) setState(() => _showEntryActions = true);
+      });
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          Provider.of<SendInfoProvider>(context, listen: false).clear();
+        }
+      });
+    } else {
+      Provider.of<SendInfoProvider>(context, listen: false).clear();
+    }
     _memoFocusNode.addListener(() {
       if (_memoFocusNode.hasFocus) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -127,7 +175,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: t.toast.memo_update_failed,
         level: CoconutToastLevel.warning,
       );
@@ -187,7 +235,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                'assets/svg/pen.svg',
+                CommonActionIconPath.editOutlined,
                 colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
@@ -226,7 +274,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                'assets/svg/pen.svg',
+                CommonActionIconPath.editOutlined,
                 colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
@@ -240,14 +288,16 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                     focusNode: _memoFocusNode,
                     maxLines: 1,
                     textAlignVertical: TextAlignVertical.center,
-                    style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                    style: CoconutTextField.withDefaultFontFeatures(
+                      CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                    ),
                     cursorColor: context.coconutColors.primaryText,
                     decoration: InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                       hintText: t.broadcasting_complete_screen.memo_placeholder,
-                      hintStyle: CoconutTypography.body1_16.setColor(context.coconutColors.inputPlaceholder),
+                      hintStyle: CoconutTypography.body2_14.setColor(context.coconutColors.inputPlaceholder),
                     ),
                   ),
                 ),
@@ -268,14 +318,32 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
           _memoController.text = text;
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sizes.size8, vertical: Sizes.size4),
+          padding: const EdgeInsets.all(Sizes.size8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Sizes.size14),
-            border: Border.all(width: 1, color: context.coconutColors.tertiaryText),
+            border: Border.all(width: 1, color: context.coconutColors.border),
           ),
           child: Text(text, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText)),
         ),
       ),
     );
   }
+}
+
+class _CompletionEntryTransition extends StatelessWidget {
+  const _CompletionEntryTransition({required this.visible, required this.child});
+
+  final bool visible;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    ignoring: !visible,
+    child: AnimatedSlide(
+      offset: visible ? Offset.zero : const Offset(0, 0.18),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(opacity: visible ? 1 : 0, duration: const Duration(milliseconds: 240), child: child),
+    ),
+  );
 }

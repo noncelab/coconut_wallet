@@ -189,6 +189,28 @@ void main() {
         final status = await completer.future;
         expect(status, equals('status123'));
       });
+
+      test('동일한 스크립트를 구독한 두 지갑 모두 콜백을 받는다', () async {
+        when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
+
+        await socketManager.connect('localhost', 8080, ssl: true);
+
+        final receivedWalletIds = <int>[];
+        socketManager.setWalletSubscriptionCallback('script123', 1, (_, __) {
+          receivedWalletIds.add(1);
+        });
+        socketManager.setWalletSubscriptionCallback('script123', 2, (_, __) {
+          receivedWalletIds.add(2);
+        });
+
+        const jsonData = '{"method":"blockchain.scripthash.subscribe","params":["script123","status123"]}';
+        streamController.add(utf8.encode(jsonData));
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        expect(receivedWalletIds, [1, 2]);
+        expect(socketManager.removeWalletSubscriptionCallback('script123', 1), isFalse);
+        expect(socketManager.removeWalletSubscriptionCallback('script123', 2), isTrue);
+      });
     });
 
     group('복잡한 JSON 데이터 처리 테스트', () {

@@ -1,6 +1,18 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -10,24 +22,25 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_signer_section.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/button_group.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/dialog.dart';
+import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_info_item_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
@@ -42,20 +55,87 @@ class WalletInfoScreen extends StatefulWidget {
   final WalletType walletType;
   final String entryPoint;
   final bool showMfpInput;
+  final bool highlightMnemonicBackup;
   const WalletInfoScreen({
     super.key,
     required this.id,
     required this.walletType,
     required this.entryPoint,
     this.showMfpInput = false,
+    this.highlightMnemonicBackup = false,
   });
 
   @override
   State<WalletInfoScreen> createState() => _WalletInfoScreenState();
 }
 
+class _MnemonicBackupButton extends StatefulWidget {
+  const _MnemonicBackupButton({super.key, required this.onPressed, required this.showWarning});
+
+  final VoidCallback onPressed;
+  final bool showWarning;
+
+  @override
+  State<_MnemonicBackupButton> createState() => _MnemonicBackupButtonState();
+}
+
+class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with SingleTickerProviderStateMixin {
+  late final AnimationController _highlightController;
+
+  @override
+  void initState() {
+    super.initState();
+    _highlightController = AnimationController(vsync: this, duration: const Duration(milliseconds: 280));
+  }
+
+  Future<void> highlight() async {
+    await _highlightController.forward(from: 0);
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    if (!mounted) return;
+    await _highlightController.reverse();
+  }
+
+  @override
+  void dispose() {
+    _highlightController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _highlightController,
+      builder: (context, child) {
+        final progress = Curves.easeInOut.transform(_highlightController.value);
+        final colors = context.coconutColors;
+        final pressedColor = Color.alphaBlend(
+          colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity),
+          colors.surface,
+        );
+        return SingleButton(
+          enableShrinkAnim: true,
+          backgroundColor: Color.lerp(colors.surface, pressedColor, progress),
+          title: t.wallet_home_screen.hot_wallet_setup.backup_title,
+          rightElement:
+              widget.showWarning
+                  ? SvgPicture.asset(
+                    CommonStateIconPath.triangleWarning,
+                    width: 20,
+                    height: 20,
+                    colorFilter: ColorFilter.mode(context.coconutColors.appLockWarningBackground, BlendMode.srcIn),
+                  )
+                  : null,
+          showRightArrowWithRightElement: widget.showWarning,
+          onPressed: widget.onPressed,
+        );
+      },
+    );
+  }
+}
+
 class _WalletInfoScreenState extends State<WalletInfoScreen> {
   final GlobalKey _walletTooltipKey = GlobalKey();
+  final GlobalKey<_MnemonicBackupButtonState> _mnemonicBackupButtonKey = GlobalKey<_MnemonicBackupButtonState>();
   static const int kTooltipDuration = 5;
   RenderBox? _walletTooltipIconRenderBox;
   Offset _walletTooltipIconPosition = Offset.zero;
@@ -92,6 +172,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           child: WalletInfoItemCard(
                             id: widget.id,
                             walletItem: viewModel.walletItemBase,
+                            taprootKeyPathSelected: viewModel.taprootSpendTypeIndex == 0,
                             onTooltipClicked: () {
                               if (_tooltipRemainingTime > 0) {
                                 _removeTooltip();
@@ -217,6 +298,26 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
                                 },
                               ),
+                              if (viewModel.walletItemBase.hasLocalKey)
+                                _MnemonicBackupButton(
+                                  key: _mnemonicBackupButtonKey,
+                                  showWarning:
+                                      viewModel.walletBalance.total > 0 &&
+                                      !(viewModel.walletItemBase.hotWalletMetadata?.backupVerified ?? false),
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    _showMnemonicBackup(viewModel);
+                                  },
+                                ),
+                              if (viewModel.walletItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false)
+                                SingleButton(
+                                  enableShrinkAnim: true,
+                                  title: t.wallet_home_screen.hot_wallet_setup.passphrase_check_title,
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    _showPassphraseCheck(viewModel);
+                                  },
+                                ),
                             ],
                           ),
                         ),
@@ -243,7 +344,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: SvgPicture.asset(
-                                'assets/svg/trash.svg',
+                                CommonActionIconPath.trash,
                                 width: 16,
                                 colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
                               ),
@@ -350,7 +451,26 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         if (!mounted) return;
         await _showMfpInputBottomSheet();
       }
+      if (widget.highlightMnemonicBackup) {
+        await _focusMnemonicBackupButton();
+      }
     });
+  }
+
+  Future<void> _focusMnemonicBackupButton() async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+    final backupButtonContext = _mnemonicBackupButtonKey.currentContext;
+    if (backupButtonContext == null || !backupButtonContext.mounted) return;
+
+    await Scrollable.ensureVisible(
+      backupButtonContext,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+      alignment: 0.5,
+    );
+    if (!mounted) return;
+    await _mnemonicBackupButtonKey.currentState?.highlight();
   }
 
   Future<String?> _showMfpInputBottomSheet() async {
@@ -366,7 +486,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           ),
         );
       },
-      backgroundColor: context.coconutColors.background,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
@@ -427,12 +547,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         return currentText.isNotEmpty && currentText != original.trim();
       },
       focusOnlyWhenOriginalNotEmpty: true,
-      fieldBackgroundColor: context.coconutColors.inputSurface,
-      errorColor: context.coconutColors.danger,
-      placeholderColor: context.coconutColors.inputPlaceholder,
-      inputBorderColor: context.coconutColors.inputBorder,
-      activeColor: context.coconutColors.primaryText,
-      cursorColor: context.coconutColors.primaryText,
       suffix: Text(
         BitcoinUnit.btc.symbol,
         style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
@@ -444,7 +558,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             CoconutToast.showToast(
               context: parentContext,
               isVisibleIcon: true,
-              iconPath: 'assets/svg/triangle-warning.svg',
+              iconPath: CommonStateIconPath.triangleWarning,
               text: t.wallet_info_screen.target_set_invalid,
               level: CoconutToastLevel.warning,
             );
@@ -457,7 +571,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             context: parentContext,
             text: t.wallet_info_screen.target_set_21m,
             isVisibleIcon: true,
-            iconPath: 'assets/svg/pie.svg',
+            iconPath: FeatureWalletIconPath.pie,
             iconSize: 16,
             iconRightPadding: 8,
           );
@@ -472,7 +586,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         CoconutToast.showToast(
           context: parentContext,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/triangle-warning.svg',
+          iconPath: CommonStateIconPath.triangleWarning,
           text: t.wallet_info_screen.target_set_invalid,
           level: CoconutToastLevel.warning,
         );
@@ -549,6 +663,51 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       ),
     );
   }
+
+  Future<void> _showMnemonicBackup(WalletInfoViewModel viewModel) async {
+    final metadata = viewModel.walletItemBase.hotWalletMetadata;
+    if (metadata == null) return;
+
+    await Navigator.pushNamed(
+      context,
+      '/hot-wallet-mnemonic-backup-guide',
+      arguments: {
+        'walletName': viewModel.walletItemBase.name,
+        'walletId': widget.id,
+        'secureStorageKey': metadata.secureStorageKey,
+        'enterPassphraseWhenSigning': metadata.enterPassphraseWhenSigning,
+        'showWalletCreatedIntro': false,
+        'continueToAppLockGuide': false,
+        'returnToPreviousOnExit': true,
+      },
+    );
+  }
+
+  Future<void> _showPassphraseCheck(WalletInfoViewModel viewModel) async {
+    final metadata = viewModel.walletItemBase.hotWalletMetadata;
+    if (metadata == null || !metadata.enterPassphraseWhenSigning) return;
+
+    try {
+      final plaintext = await HotWalletUnlockService().unlockPreferBiometrics(
+        context: context,
+        storageKey: metadata.secureStorageKey,
+      );
+      if (!mounted || plaintext == null) return;
+      await Navigator.pushNamed(
+        context,
+        '/hot-wallet-passphrase-check',
+        arguments: {'mnemonic': plaintext.mnemonic, 'descriptor': viewModel.walletItemBase.descriptor},
+      );
+    } catch (error) {
+      if (!mounted) return;
+      await showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.alert.error_occurs,
+        error.toString(),
+      );
+    }
+  }
 }
 
 /// 트랜잭션 수, UTXO 수, 목표 수량 통계 카드
@@ -587,8 +746,9 @@ class _WalletInfoStatsSection extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ShrinkAnimationButton(
-                  defaultColor: colors.surfaceCard,
-                  pressedColor: colors.surfacePressed,
+                  defaultColor: colors.surface,
+                  pressedOverlayColor: colors.surfacePressOverlay,
+                  pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
                   borderRadius: 24,
                   onPressed: () {
                     Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
@@ -600,8 +760,9 @@ class _WalletInfoStatsSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ShrinkAnimationButton(
-            defaultColor: colors.surfaceCard,
-            pressedColor: colors.surfacePressed,
+            defaultColor: colors.surface,
+            pressedOverlayColor: colors.surfacePressOverlay,
+            pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
             borderRadius: 24,
             onPressed: onEditTargetTap,
             child: _TargetQuantityCard(
@@ -630,7 +791,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 16, 20),
       decoration: BoxDecoration(
-        color: transparentBackground ? Colors.transparent : context.coconutColors.surfaceCard,
+        color: transparentBackground ? Colors.transparent : context.coconutColors.surface,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -641,7 +802,7 @@ class _StatCard extends StatelessWidget {
               Text(label, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText)),
               const SizedBox(width: 4),
               transparentBackground
-                  ? Icon(Icons.keyboard_arrow_right_rounded, size: 20, color: context.coconutColors.iconSubDefault)
+                  ? Icon(Icons.keyboard_arrow_right_rounded, size: 20, color: context.coconutColors.iconSecondary)
                   : const SizedBox.shrink(),
             ],
           ),
@@ -687,7 +848,7 @@ class _TargetQuantityCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
           decoration: BoxDecoration(
-            color: transparentBackground ? Colors.transparent : context.coconutColors.tertiaryText,
+            color: transparentBackground ? Colors.transparent : context.coconutColors.surfaceInfoChip,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
@@ -701,7 +862,7 @@ class _TargetQuantityCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   SvgPicture.asset(
-                    'assets/svg/edit-outlined.svg',
+                    CommonActionIconPath.editOutlined,
                     width: 12,
                     height: 12,
                     colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
@@ -758,8 +919,9 @@ class _TargetQuantityCard extends StatelessWidget {
             child: IgnorePointer(
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(topRight: Radius.circular(24)),
+                // 목표 수량 달성 축하 효과는 의도된 디자인이라 테마 색상을 적용하지 않음
                 child: Lottie.asset(
-                  'assets/lottie/fireworks.json',
+                  CommonLottiePath.fireworks,
                   width: 140,
                   height: 120,
                   fit: BoxFit.contain,

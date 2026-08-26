@@ -1,5 +1,8 @@
 import 'package:coconut_wallet/screens/home/wallet_add/air-gapped/airgap_wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_create_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_restore_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_mnemonic_backup_guide_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_usb_connect_screen.dart';
@@ -41,7 +44,11 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.d
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_mnemonic_backup_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_passphrase_check_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_complete_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_confirm_screen.dart';
+import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:flutter/widgets.dart';
 
 Map<String, WidgetBuilder> buildAppRoutes() {
@@ -125,6 +132,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             walletType: args['walletType'],
             entryPoint: args['entryPoint'],
             showMfpInput: args['showMfpInput'] ?? false,
+            highlightMnemonicBackup: args['highlightMnemonicBackup'] ?? false,
           ),
         ),
     '/broadcasting-complete':
@@ -213,6 +221,60 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             isFromSendFlow: args['isFromSendFlow'] ?? false,
             transport: args['transport'] == 'usb' ? TrezorTransport.usb : TrezorTransport.ble,
           ),
+        ),
+    '/hot-wallet-create': (context) => const HotWalletCreateScreen(),
+    '/hot-wallet-restore': (context) => const HotWalletRestoreScreen(),
+    '/hot-wallet-mnemonic-backup-guide':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => HotWalletMnemonicBackupGuideScreen(
+            walletName: args['walletName'],
+            walletId: args['walletId'],
+            mnemonic: args['mnemonic'],
+            passphrase: args['passphrase'],
+            secureStorageKey: args['secureStorageKey'] as String?,
+            enterPassphraseWhenSigning: args['enterPassphraseWhenSigning'] ?? false,
+            showWalletCreatedIntro: args['showWalletCreatedIntro'] ?? true,
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? true,
+            returnToPreviousOnExit: args['returnToPreviousOnExit'] ?? false,
+          ),
+        ),
+    '/hot-wallet-mnemonic-backup':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => HotWalletMnemonicBackupScreen(
+            mnemonic: args['mnemonic'],
+            passphrase: args['passphrase'] ?? '',
+            enterPassphraseWhenSigning: args['enterPassphraseWhenSigning'] ?? false,
+            descriptor: args['descriptor'] ?? '',
+            walletId: args['walletId'],
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
+          ),
+        ),
+    '/mnemonic-backup-confirm':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => MnemonicBackupConfirmScreen(
+            mnemonic: args['mnemonic'],
+            passphrase: args['passphrase'] ?? '',
+            descriptor: args['descriptor'] ?? '',
+            confirmPassphrase: args['confirmPassphrase'] ?? false,
+            walletId: args['walletId'],
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
+          ),
+        ),
+    '/mnemonic-backup-complete':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => MnemonicBackupCompleteScreen(
+            walletId: args['walletId'],
+            continueToAppLockGuide: args['continueToAppLockGuide'] ?? false,
+          ),
+        ),
+    '/hot-wallet-passphrase-check':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => HotWalletPassphraseCheckScreen(mnemonic: args['mnemonic'], descriptor: args['descriptor']),
         ),
   };
 }

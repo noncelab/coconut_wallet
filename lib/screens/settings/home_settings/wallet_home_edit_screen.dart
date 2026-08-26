@@ -1,19 +1,35 @@
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutTextField,
+        CoconutTextFieldStyle;
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/fixed_text_scale.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/common/text/fixed_text_scale.dart';
+import 'package:coconut_wallet/screens/settings/home_settings/home_add_wallet_option_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -285,6 +301,21 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                         },
                                       ),
                                     ),
+                                    SingleButton(
+                                      enableShrinkAnim: true,
+                                      isVerticalSubtitle: true,
+                                      title: t.wallet_home_screen.edit.home_add_wallet_button.title,
+                                      subtitle: _getHomeAddWalletOptionDescription(viewModel.tempHomeAddWalletOption),
+                                      subtitleStyle: CoconutTypography.body3_12.setColor(
+                                        context.coconutColors.secondaryText,
+                                      ),
+                                      customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                                      onPressed: () => _showHomeAddWalletOptionBottomSheet(viewModel),
+                                      backgroundColor: colors.background,
+                                      rightElement: _buildHomeAddWalletOptionRightElement(
+                                        viewModel.tempHomeAddWalletOption,
+                                      ),
+                                    ),
                                   ],
                                 );
                               },
@@ -364,6 +395,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
         _viewModel.tempIsFakeBalanceActive != _viewModel.isFakeBalanceActive || // 가짜잔액표시 변동
         _viewModel.tempIsBalanceHidden != _viewModel.isBalanceHidden || // 잔액숨기기 변동
         _viewModel.tempIsFiatBalanceHidden != _viewModel.isFiatBalanceHidden || // 법정화폐잔액숨기기 변동
+        _viewModel.tempHomeAddWalletOption != _viewModel.homeAddWalletOption || // 홈 상단 버튼 변동
         !_viewModel.tempHomeFeatures.every((tempFeature) {
           // 홈 화면 기능 변동
           final original = _viewModel.homeFeatures.firstWhere(
@@ -389,6 +421,58 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
   void _onComplete() async {
     if (_fakeBalanceController.text.isEmpty) {}
     await _viewModel.onComplete();
+  }
+
+  Future<void> _showHomeAddWalletOptionBottomSheet(WalletHomeEditViewModel viewModel) async {
+    final selectedOption = await showModalBottomSheet<HomeAddWalletOption>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
+      builder: (_) => HomeAddWalletOptionBottomSheet(initialOption: viewModel.tempHomeAddWalletOption),
+    );
+    if (selectedOption != null && mounted) {
+      viewModel.setTempHomeAddWalletOption(selectedOption);
+    }
+  }
+
+  String _getHomeAddWalletOptionDescription(HomeAddWalletOption option) {
+    switch (option) {
+      case HomeAddWalletOption.all:
+        return t.wallet_home_screen.edit.home_add_wallet_button.all.description;
+      case HomeAddWalletOption.watchOnly:
+        return t.wallet_home_screen.edit.home_add_wallet_button.watch_only.description;
+      case HomeAddWalletOption.hotWallet:
+        return t.wallet_home_screen.edit.home_add_wallet_button.hot_wallet.description;
+      case HomeAddWalletOption.hidden:
+        return t.wallet_home_screen.edit.home_add_wallet_button.hidden.description;
+    }
+  }
+
+  Widget _buildHomeAddWalletOptionRightElement(HomeAddWalletOption option) {
+    final iconPath = switch (option) {
+      HomeAddWalletOption.all => FeatureWalletIconPath.walletAddDefault,
+      HomeAddWalletOption.watchOnly => FeatureWalletIconPath.walletEyes,
+      HomeAddWalletOption.hotWallet => FeatureWalletIconPath.walletAddHot,
+      HomeAddWalletOption.hidden => null,
+    };
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (iconPath != null) ...[
+          SvgPicture.asset(
+            iconPath,
+            width: 20,
+            height: 16,
+            fit: BoxFit.contain,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
+          ),
+          CoconutLayout.spacing_200w,
+        ],
+        Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary),
+      ],
+    );
   }
 
   Widget _buildHomeWidgetSelector() {
@@ -462,73 +546,75 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                   // homeFeatureTypeString을 통해 토글
                                   _viewModel.toggleTempHomeFeatureEnabled(widget['homeFeatureTypeString'].toString());
                                 },
-                                defaultColor: context.coconutColors.surfaceCard,
-                                pressedColor: context.coconutColors.surfacePressed,
+                                defaultColor: context.coconutColors.surface,
+                                pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                                 child: FixedTextScale(
-                                  child: Container(
-                                    height: 100,
-                                    width: 100,
-                                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(14),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Stack(
-                                            children: [
-                                              Align(
-                                                alignment: Alignment.topLeft,
-                                                child: FixedTextScale(
-                                                  child: FittedBox(
-                                                    fit: BoxFit.scaleDown,
-                                                    alignment: Alignment.centerLeft,
-                                                    child: Text(
-                                                      _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
-                                                      maxLines: 2,
-                                                      style: CoconutTypography.body2_14.setColor(
-                                                        context.coconutColors.primaryText,
+                                  child: SizedBox.expand(
+                                    child: Container(
+                                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(14),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Stack(
+                                              children: [
+                                                Align(
+                                                  alignment: Alignment.topLeft,
+                                                  child: FixedTextScale(
+                                                    child: FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      alignment: Alignment.centerLeft,
+                                                      child: Text(
+                                                        _getHomeFeatureLabel(
+                                                          widget['homeFeatureTypeString'].toString(),
+                                                        ),
+                                                        maxLines: 2,
+                                                        style: CoconutTypography.body2_14.setColor(
+                                                          context.coconutColors.primaryText,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                              Align(
-                                                alignment: Alignment.topRight,
-                                                child: AnimatedContainer(
-                                                  duration: const Duration(milliseconds: 100),
-                                                  width: 16,
-                                                  height: 16,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color:
-                                                        (widget['isEnabled'] as bool)
-                                                            ? context.coconutColors.checkIconBackground
-                                                            : context.coconutColors.checkIconBackgroundDisabled,
-                                                    border: Border.all(
-                                                      width: (widget['isEnabled'] as bool) ? 0 : 1.5,
-                                                      color: context.coconutColors.switchInactiveTrack,
+                                                Align(
+                                                  alignment: Alignment.topRight,
+                                                  child: AnimatedContainer(
+                                                    duration: const Duration(milliseconds: 100),
+                                                    width: 16,
+                                                    height: 16,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color:
+                                                          (widget['isEnabled'] as bool)
+                                                              ? context.coconutColors.checkIconBackground
+                                                              : context.coconutColors.checkIconBackgroundDisabled,
+                                                      border: Border.all(
+                                                        width: (widget['isEnabled'] as bool) ? 0 : 1.5,
+                                                        color: context.coconutColors.switchInactiveTrack,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  child: Center(
-                                                    child: SvgPicture.asset(
-                                                      'assets/svg/check.svg',
-                                                      width: 6,
-                                                      height: 6,
-                                                      colorFilter: ColorFilter.mode(
-                                                        (widget['isEnabled'] as bool)
-                                                            ? context.coconutColors.checkIconForeground
-                                                            : context.coconutColors.checkIconForegroundDisabled,
-                                                        BlendMode.srcIn,
+                                                    child: Center(
+                                                      child: SvgPicture.asset(
+                                                        CommonActionIconPath.check,
+                                                        width: 6,
+                                                        height: 6,
+                                                        colorFilter: ColorFilter.mode(
+                                                          (widget['isEnabled'] as bool)
+                                                              ? context.coconutColors.checkIconForeground
+                                                              : context.coconutColors.checkIconForegroundDisabled,
+                                                          BlendMode.srcIn,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                          const Spacer(),
-                                          SvgPicture.asset(widget['icon']!.toString(), width: 32),
-                                        ],
+                                              ],
+                                            ),
+                                            const Spacer(),
+                                            SvgPicture.asset(widget['icon']!.toString(), width: 32),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -589,15 +675,10 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                   focusNode: _fakeBalanceFocusNode,
                   onChanged: (text) {},
                   backgroundColor: context.coconutColors.background,
-                  errorColor: context.coconutColors.danger,
-                  placeholderColor: context.coconutColors.tertiaryText,
-                  borderColor: context.coconutColors.inputBorder,
-                  activeColor: context.coconutColors.primaryText,
-                  cursorColor: context.coconutColors.primaryText,
                   maxLength: viewModel.maxInputLength,
-                  suffix: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text(t.btc, style: CoconutTypography.body2_14_Bold),
+                  suffix: Text(
+                    t.btc,
+                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                   ),
                   errorText:
                       _viewModel.inputError == FakeBalanceInputError.exceedsTotalSupply
@@ -605,6 +686,12 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                           : '',
                   isError: _viewModel.inputError != FakeBalanceInputError.none,
                   maxLines: 1,
+                  clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                  onClear: () {
+                    setState(() {
+                      _fakeBalanceController.clear();
+                    });
+                  },
                 ),
               ),
               CoconutLayout.spacing_400h,

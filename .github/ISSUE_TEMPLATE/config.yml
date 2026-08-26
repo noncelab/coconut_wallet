@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: CCOS docs (read before proposing a feature)
+    url: https://github.com/noncelab/coconut_wallet/blob/main/docs/ccos/README.md
+    about: Start here if you want to propose a new feature or extension through the Coconut Open Store (CCOS).

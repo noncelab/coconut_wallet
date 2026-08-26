@@ -1,19 +1,20 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/material.dart';
-import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
+import 'package:coconut_wallet/widgets/features/auth/pin/pin_input_pad.dart';
 import 'package:provider/provider.dart';
 
 class PinCheckScreen extends StatefulWidget {
   final bool appEntrance;
   final Function? onComplete;
-  const PinCheckScreen({super.key, this.appEntrance = false, this.onComplete});
+  final bool allowBiometrics;
+  const PinCheckScreen({super.key, this.appEntrance = false, this.onComplete, this.allowBiometrics = true});
 
   @override
   State<PinCheckScreen> createState() => _PinCheckScreenState();
@@ -29,6 +30,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
   late List<String> _shuffledPinNumbers;
   late AuthProvider _authProvider;
   bool _isPause = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -68,7 +70,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
   }
 
   void _verifyBiometric() async {
-    context.loaderOverlay.show();
+    _setLoading(true);
     _authProvider
         .authenticateWithBiometrics()
         .then((value) {
@@ -80,49 +82,58 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
           }
         })
         .whenComplete(() {
-          if (mounted) context.loaderOverlay.hide();
+          _setLoading(false);
         });
   }
 
   void _verifyPin() async {
-    context.loaderOverlay.show();
-    _authProvider
-        .verifyPin(pin)
-        .then((value) {
-          if (value) {
-            if (!widget.appEntrance && mounted) {
-              Navigator.pop(context, true);
-            }
-            widget.onComplete?.call();
-          } else {
-            if (widget.appEntrance) {
-              attempt += 1;
-              if (attempt < 3) {
-                errorMessage = t.errors.pin_check_error.trial_count(count: kMaxNumberOfAttempts - attempt);
-                _shufflePinNumbers();
-                vibrateLightDouble();
-              } else {
-                errorMessage = t.errors.pin_check_error.failed;
-              }
-            } else {
-              errorMessage = t.errors.pin_check_error.incorrect;
-              _shufflePinNumbers();
-              vibrateLightDouble();
-            }
-            pin = '';
-          }
+    _setLoading(true);
+    final inputPin = pin;
+    var isClosing = false;
+    try {
+      final isValid = await _authProvider.verifyPin(inputPin);
+      if (!mounted) return;
 
-          setState(() {});
-        })
-        .whenComplete(() {
-          if (mounted) {
-            context.loaderOverlay.hide();
-          }
-        });
+      if (isValid) {
+        _setLoading(false);
+        isClosing = true;
+        if (!widget.appEntrance) {
+          Navigator.pop(context, true);
+        }
+        widget.onComplete?.call();
+        return;
+      }
+
+      if (widget.appEntrance) {
+        attempt += 1;
+        if (attempt < 3) {
+          errorMessage = t.errors.pin_check_error.trial_count(count: kMaxNumberOfAttempts - attempt);
+          _shufflePinNumbers();
+          vibrateLightDouble();
+        } else {
+          errorMessage = t.errors.pin_check_error.failed;
+        }
+      } else {
+        errorMessage = t.errors.pin_check_error.incorrect;
+        _shufflePinNumbers();
+        vibrateLightDouble();
+      }
+      pin = '';
+      setState(() {});
+    } finally {
+      if (mounted && !isClosing) {
+        _setLoading(false);
+      }
+    }
+  }
+
+  void _setLoading(bool value) {
+    if (!mounted || _isLoading == value) return;
+    setState(() => _isLoading = value);
   }
 
   void _onKeyTap(String value) {
-    if (value == 'bio') {
+    if (value == 'bio' && widget.allowBiometrics) {
       _verifyBiometric();
       return;
     }
@@ -180,26 +191,34 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
 
   @override
   Widget build(BuildContext context) {
-    return PinInputPad(
-      key: _pinInputScreenKey,
-      appBarVisible: widget.appEntrance ? false : true,
-      title: widget.appEntrance ? '' : t.pin_check_screen.text,
-      initOptionVisible: widget.appEntrance ? true : false,
-      pin: pin,
-      errorMessage: errorMessage,
-      onKeyTap: _onKeyTap,
-      pinShuffleNumbers: _shuffledPinNumbers,
-      onClosePressed: () {
-        Navigator.pop(context);
-      },
-      onReset:
-          widget.appEntrance
-              ? () {
-                _showResetConfirmDialog();
-              }
-              : null,
-      step: 0,
-      pinLength: _authProvider.pinLength,
+    return Stack(
+      children: [
+        PinInputPad(
+          key: _pinInputScreenKey,
+          appBarVisible: !widget.appEntrance,
+          title: widget.appEntrance ? '' : t.pin_check_screen.text,
+          initOptionVisible: widget.appEntrance,
+          pin: pin,
+          errorMessage: errorMessage,
+          onKeyTap: _onKeyTap,
+          pinShuffleNumbers:
+              widget.allowBiometrics
+                  ? _shuffledPinNumbers
+                  : _shuffledPinNumbers.map((value) => value == 'bio' ? '' : value).toList(),
+          onClosePressed: () {
+            Navigator.pop(context);
+          },
+          onReset:
+              widget.appEntrance
+                  ? () {
+                    _showResetConfirmDialog();
+                  }
+                  : null,
+          step: 0,
+          pinLength: _authProvider.pinLength,
+        ),
+        if (_isLoading) const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true)),
+      ],
     );
   }
 }

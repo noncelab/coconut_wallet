@@ -10,6 +10,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_total_ba
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'dart:async';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -56,7 +57,7 @@ class UtxoSummaryChart extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [colors.background, colors.surfaceSectionBreak],
+          colors: [colors.background, colors.divider],
         ),
         borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
@@ -116,28 +117,35 @@ class UtxoSummaryChart extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
                             padding: const EdgeInsets.fromLTRB(4, 4, 4, 5),
-                            decoration: BoxDecoration(color: colors.danger, shape: BoxShape.circle),
+                            decoration: BoxDecoration(color: colors.danger.withAlpha(200), shape: BoxShape.circle),
                             child: SvgPicture.asset(
-                              'assets/svg/triangle-warning.svg',
+                              CommonStateIconPath.triangleWarning,
                               width: 10,
                               height: 10,
                               colorFilter: ColorFilter.mode(colors.iconOnDanger, BlendMode.srcIn),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            t.utxo_list_screen.reused_address_legend,
-                            style: CoconutTypography.body3_12_Bold.setColor(colors.primaryText),
+                          CoconutLayout.spacing_150w,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t.utxo_list_screen.reused_address_legend,
+                                style: CoconutTypography.body3_12_Bold.setColor(colors.danger),
+                                textAlign: TextAlign.center,
+                              ),
+                              CoconutLayout.spacing_100h,
+                              Text(
+                                t.utxo_list_screen.reused_address,
+                                style: CoconutTypography.caption_10.setColor(colors.danger),
+                              ),
+                            ],
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        t.utxo_list_screen.reused_address,
-                        style: CoconutTypography.caption_10.setColor(colors.primaryText),
                       ),
                     ],
                   ),
@@ -164,7 +172,7 @@ class _AvailabilityChip extends StatelessWidget {
     final colors = context.coconutColors;
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: colors.chartSurface, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: colors.utxoOverviewChartSurface, borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -195,9 +203,6 @@ class _BarChart extends StatefulWidget {
   @override
   State<_BarChart> createState() => _BarChartState();
 }
-
-/// 태그 차트와 동일한 overlay 불투명도
-const double _overlayOpacity = 0.6;
 
 class _BarChartState extends State<_BarChart> {
   static const double _barMaxHeight = 80;
@@ -253,7 +258,7 @@ class _BarChartState extends State<_BarChart> {
                             borderRadius: BorderRadius.circular(20),
                             child: Padding(
                               padding: const EdgeInsets.all(8),
-                              child: Icon(Icons.palette_outlined, size: 22, color: context.coconutColors.iconDefault),
+                              child: Icon(Icons.palette_outlined, size: 22, color: context.coconutColors.iconPrimary),
                             ),
                           ),
                         ),
@@ -309,6 +314,7 @@ class _BarChartState extends State<_BarChart> {
     if (widget.buckets.isEmpty) return const SizedBox.shrink();
 
     final colors = context.coconutColors;
+    final overlayOpacity = colors.utxoOverviewChartUnselectedOverlayOpacity;
     final maxCount = widget.buckets.map((b) => b.utxos.length).reduce((a, b) => a > b ? a : b).toDouble();
     final maxCountClamped = maxCount < 1 ? 1.0 : maxCount;
 
@@ -318,7 +324,7 @@ class _BarChartState extends State<_BarChart> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: colors.chartSurface,
+            color: colors.utxoOverviewChartSurface,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(24),
               topRight: Radius.circular(48),
@@ -339,7 +345,7 @@ class _BarChartState extends State<_BarChart> {
                   final isTapped = _tappedBucketIndex == index;
                   var color = widget.tierTheme.colorForSats(bucket.maxSats, dustThreshold: widget.dustThreshold);
                   if (!isTapped) {
-                    color = Color.lerp(color, colors.surfaceSectionBreak, _overlayOpacity)!;
+                    color = Color.lerp(color, colors.divider, overlayOpacity)!;
                   }
 
                   return Expanded(
@@ -376,7 +382,7 @@ class _BarChartState extends State<_BarChart> {
                                     width: 24,
                                     height: 24,
                                     decoration: BoxDecoration(
-                                      color: colors.chartSurface,
+                                      color: colors.utxoOverviewChartSurface,
                                       borderRadius: BorderRadius.circular(999),
                                       boxShadow: [
                                         BoxShadow(
@@ -421,11 +427,11 @@ class _BarChartState extends State<_BarChart> {
               child: InkWell(
                 onTap: () => _showIntervalInfoModal(context, widget.tierTheme),
                 borderRadius: BorderRadius.circular(20),
-                splashColor: colors.mutedText.withValues(alpha: 0.2),
-                highlightColor: colors.mutedText.withValues(alpha: 0.1),
+                splashColor: colors.iconSecondary.withValues(alpha: 0.2),
+                highlightColor: colors.iconSecondary.withValues(alpha: 0.1),
                 child: Padding(
                   padding: const EdgeInsets.all(4),
-                  child: Icon(Icons.info_outline_rounded, size: 18, color: colors.mutedText),
+                  child: Icon(Icons.info_outline_rounded, size: 18, color: colors.iconSecondary),
                 ),
               ),
             ),

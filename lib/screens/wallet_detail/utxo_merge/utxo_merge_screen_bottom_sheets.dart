@@ -583,48 +583,29 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
               child: CoconutTextField(
                 controller: controller,
                 focusNode: focusNode,
-                backgroundColor: context.coconutColors.background,
-                borderColor: context.coconutColors.inputBorder,
+                backgroundColor: context.coconutColors.surfaceBottomSheet,
                 height: 52,
                 padding: const EdgeInsets.only(left: 16, right: 0),
                 onChanged: onChanged,
                 maxLines: 1,
-                suffix: IconButton(
-                  iconSize: 14,
-                  padding: EdgeInsets.zero,
-                  onPressed: () async {
-                    if (controller.text.isEmpty) {
-                      final scannedData = await showAddressScannerBottomSheet(context, title: '');
-                      if (scannedData == null) return;
-                      final normalized =
-                          scannedData.startsWith('bitcoin:')
-                              ? normalizeAddress(parseBip21Uri(scannedData).address)
-                              : normalizeAddress(scannedData);
-                      controller.text = normalized;
-                      controller.selection = TextSelection.collapsed(offset: controller.text.length);
-                      onChanged(normalized);
-                      return;
-                    }
-
-                    controller.clear();
-                    onChanged('');
-                  },
-                  icon:
-                      controller.text.isEmpty
-                          ? SvgPicture.asset(
-                            'assets/svg/scan.svg',
-                            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-                          )
-                          : SvgPicture.asset(
-                            'assets/svg/text-field-clear.svg',
-                            colorFilter: ColorFilter.mode(
-                              controller.text.isNotEmpty && !_viewModel.isCustomReceiveAddressValidFormat
-                                  ? context.coconutColors.danger
-                                  : context.coconutColors.primaryText,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                ),
+                clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                onClear: () {
+                  controller.clear();
+                  onChanged('');
+                },
+                onSuffixPressed: () async {
+                  final scannedData = await showAddressScannerBottomSheet(context, title: '');
+                  if (scannedData == null) return;
+                  final normalized =
+                      scannedData.startsWith('bitcoin:')
+                          ? normalizeAddress(parseBip21Uri(scannedData).address)
+                          : normalizeAddress(scannedData);
+                  controller.text = normalized;
+                  controller.selection = TextSelection.collapsed(offset: controller.text.length);
+                  onChanged(normalized);
+                },
+                suffixIconAsset: CommonActionIconPath.scan,
+                suffixIconColor: context.coconutColors.primaryText,
                 placeholderText: t.send_screen.address_placeholder,
                 isError: controller.text.isNotEmpty && !_viewModel.isCustomReceiveAddressValidFormat,
               ),
@@ -704,26 +685,25 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                       controller: controller,
                       focusNode: focusNode,
                       fontSize: 18,
+                      fontWeight: FontWeight.bold,
                       style: CoconutTextFieldStyle.underline,
                       padding: const EdgeInsets.only(left: 5, right: 0, top: 16, bottom: 6),
                       onChanged: (_) => onAmountChanged(),
                       errorText: errorText ?? '',
                       isError: errorText != null,
-                      errorColor: context.coconutColors.danger,
                       textInputType: const TextInputType.numberWithOptions(decimal: true),
                       isErrorTextMultiline: true,
                       textInputFormatter: const [BtcAmountInputFormatter()],
                       placeholderText: '',
                       backgroundColor: context.coconutColors.surfaceBottomSheet,
-                      placeholderColor: context.coconutColors.inputPlaceholder,
-                      borderColor: context.coconutColors.inputBorder,
-                      cursorColor: context.coconutColors.primaryText,
-                      suffix: Text(
-                        t.btc,
-                        style: CoconutTypography.heading4_18.copyWith(
-                          color: context.coconutColors.primaryText,
-                          height: 1.4,
-                          letterSpacing: -0.4,
+                      suffix: Padding(
+                        padding: const EdgeInsets.only(right: 4, top: 14),
+                        child: Text(
+                          t.btc,
+                          style: CoconutTypography.heading4_18_Bold.copyWith(
+                            color: context.coconutColors.primaryText,
+                            letterSpacing: -0.4,
+                          ),
                         ),
                       ),
                     ),
@@ -734,7 +714,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
                     child: ShrinkAnimationButton(
                       onPressed: onLessThanToggle,
                       defaultColor: context.coconutColors.surfaceButton,
-                      pressedColor: context.coconutColors.surfacePressed,
+                      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
                       borderRadius: 8,
                       borderWidth: 0,
                       child: Container(

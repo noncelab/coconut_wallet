@@ -1,14 +1,16 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class TagSelectResult {
   final String? selectedTagName;
@@ -222,7 +224,7 @@ class _SelectableTagChip extends StatelessWidget {
         textColor: foregroundColor,
         fontWeight: FontWeight.w700,
         icon: SvgPicture.asset(
-          'assets/svg/circle-check.svg',
+          CommonFormIconPath.circleCheck,
           key: const ValueKey('selected'),
           width: 16,
           height: 16,
@@ -236,7 +238,7 @@ class _SelectableTagChip extends StatelessWidget {
       borderColor: inactiveColor,
       textColor: inactiveColor,
       icon: SvgPicture.asset(
-        'assets/svg/circle.svg',
+        CommonFormIconPath.circle,
         key: const ValueKey('unselected'),
         width: 16,
         height: 16,

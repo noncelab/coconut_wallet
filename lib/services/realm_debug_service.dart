@@ -30,6 +30,7 @@ class RealmDebugService {
     'RealmTransactionMemo': ['id', 'createdAt'],
     'RealmWalletPreferences': ['id'],
     'RealmTransactionDraft': ['id', 'walletId', 'createdAt', 'feeRate'],
+    'RealmHotWalletMetadata': ['walletId', 'accountIndex', 'backupVerified', 'createdAt'],
   };
 
   /// Realm 쿼리 실행
@@ -47,6 +48,8 @@ class RealmDebugService {
         return _convertToMapList(realm.query<RealmMultisigWallet>(query));
       case 'RealmExternalWallet':
         return _convertToMapList(realm.query<RealmExternalWallet>(query));
+      case 'RealmHotWalletMetadata':
+        return _convertToMapList(realm.query<RealmHotWalletMetadata>(query));
       case 'RealmTransaction':
         return _convertToMapList(realm.query<RealmTransaction>(query));
       case 'RealmUtxo':
@@ -171,6 +174,16 @@ class RealmDebugService {
           map['id'] = external.id;
           map['walletImportSource'] = external.walletImportSource;
           map['walletBase'] = external.walletBase?.name ?? 'null';
+          break;
+
+        case RealmHotWalletMetadata metadata:
+          map['walletId'] = metadata.walletId;
+          map['secureStorageKey'] = metadata.secureStorageKey;
+          map['masterFingerprint'] = metadata.masterFingerprint;
+          map['derivationPath'] = metadata.derivationPath;
+          map['accountIndex'] = metadata.accountIndex;
+          map['backupVerified'] = metadata.backupVerified;
+          map['createdAt'] = metadata.createdAt.toIso8601String();
           break;
 
         case RealmUtxoTag tag:
@@ -368,6 +381,7 @@ class RealmDebugService {
       'RealmWalletBase': realm.all<RealmWalletBase>().length,
       'RealmMultisigWallet': realm.all<RealmMultisigWallet>().length,
       'RealmExternalWallet': realm.all<RealmExternalWallet>().length,
+      'RealmHotWalletMetadata': realm.all<RealmHotWalletMetadata>().length,
       'RealmTransaction': realm.all<RealmTransaction>().length,
       'RealmUtxo': realm.all<RealmUtxo>().length,
       'RealmWalletAddress': realm.all<RealmWalletAddress>().length,

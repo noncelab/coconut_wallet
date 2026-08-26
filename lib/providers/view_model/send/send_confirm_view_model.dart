@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
@@ -8,7 +10,65 @@ import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+
+typedef _HotWalletSigningArguments =
+    ({
+      String mnemonic,
+      String passphrase,
+      String addressTypeName,
+      int accountIndex,
+      String expectedExtendedPublicKey,
+      String unsignedPsbt,
+    });
+
+typedef _HotWalletPassphraseValidationArguments =
+    ({String mnemonic, String passphrase, String addressTypeName, int accountIndex, String expectedExtendedPublicKey});
+
+bool _validateHotWalletPassphraseInBackground(_HotWalletPassphraseValidationArguments arguments) {
+  final mnemonicBytes = Uint8List.fromList(utf8.encode(arguments.mnemonic));
+  final passphraseBytes = Uint8List.fromList(utf8.encode(arguments.passphrase));
+  SingleSignatureVault? vault;
+  try {
+    vault = SingleSignatureVault.fromMnemonic(
+      mnemonicBytes,
+      passphrase: passphraseBytes,
+      addressType: AddressType.getAddressTypeFromName(arguments.addressTypeName),
+      accountIndex: arguments.accountIndex,
+    );
+    return vault.keyStore.extendedPublicKey.serialize() == arguments.expectedExtendedPublicKey;
+  } finally {
+    vault?.keyStore.wipeSeed();
+    mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
+    passphraseBytes.fillRange(0, passphraseBytes.length, 0);
+  }
+}
+
+String _signHotWalletInBackground(_HotWalletSigningArguments arguments) {
+  final mnemonicBytes = Uint8List.fromList(utf8.encode(arguments.mnemonic));
+  final passphraseBytes = Uint8List.fromList(utf8.encode(arguments.passphrase));
+  SingleSignatureVault? vault;
+  try {
+    final addressType = AddressType.getAddressTypeFromName(arguments.addressTypeName);
+    vault = SingleSignatureVault.fromMnemonic(
+      mnemonicBytes,
+      passphrase: passphraseBytes,
+      addressType: addressType,
+      accountIndex: arguments.accountIndex,
+    );
+    if (vault.keyStore.extendedPublicKey.serialize() != arguments.expectedExtendedPublicKey) {
+      throw StateError('The signer does not match this wallet');
+    }
+
+    final signedPsbt = vault.addSignatureToPsbt(arguments.unsignedPsbt);
+    Psbt.parse(signedPsbt).getSignedTransaction(addressType);
+    return signedPsbt;
+  } finally {
+    vault?.keyStore.wipeSeed();
+    mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
+    passphraseBytes.fillRange(0, passphraseBytes.length, 0);
+  }
+}
 
 class SendConfirmViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
@@ -39,10 +99,16 @@ class SendConfirmViewModel extends ChangeNotifier {
       List<int?>.filled(transaction?.inputs.length ?? 0, null);
   double? get totalSendAmount => _totalSendAmount; // BTC
   WalletImportSource get walletImportSource => _walletListItemBase.walletImportSource;
+  bool get isHotWallet => _walletListItemBase.hasLocalKey && _walletListItemBase.hotWalletMetadata != null;
+  bool get shouldEnterPassphraseWhenSigning =>
+      _walletListItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false;
+  String? get hotWalletSecretStorageKey => _walletListItemBase.hotWalletMetadata?.secureStorageKey;
 
   String get walletFingerprint {
     final wallet = _walletListItemBase.walletBase;
-    if (wallet is SingleSignatureWallet) return wallet.keyStore.masterFingerprint;
+    if (wallet is SingleSignatureWallet) {
+      return wallet.keyStore.masterFingerprint;
+    }
     return '';
   }
 
@@ -50,7 +116,9 @@ class SendConfirmViewModel extends ChangeNotifier {
 
   String? get walletExtendedPublicKey {
     final wallet = _walletListItemBase.walletBase;
-    if (wallet is SingleSignatureWallet) return wallet.keyStore.extendedPublicKey.serialize();
+    if (wallet is SingleSignatureWallet) {
+      return wallet.keyStore.extendedPublicKey.serialize();
+    }
     return null;
   }
 
@@ -104,5 +172,41 @@ class SendConfirmViewModel extends ChangeNotifier {
   void setTxWaitingForSign() {
     assert(_unsignedPsbt != null);
     _sendInfoProvider.setTxWaitingForSign(_unsignedPsbt!.serialize());
+  }
+
+  Future<void> signHotWallet({required String mnemonic, required String passphrase}) async {
+    final metadata = _walletListItemBase.hotWalletMetadata;
+    final watchOnlyWallet = _walletListItemBase.walletBase;
+    if (!isHotWallet || metadata == null || watchOnlyWallet is! SingleSignatureWallet || _unsignedPsbt == null) {
+      throw StateError('Local signer is not available');
+    }
+
+    final unsignedPsbt = _unsignedPsbt!.serialize();
+    _sendInfoProvider.setTxWaitingForSign(unsignedPsbt);
+    final signedPsbt = await compute(_signHotWalletInBackground, (
+      mnemonic: mnemonic,
+      passphrase: passphrase,
+      addressTypeName: watchOnlyWallet.addressType.name,
+      accountIndex: metadata.accountIndex,
+      expectedExtendedPublicKey: watchOnlyWallet.keyStore.extendedPublicKey.serialize(),
+      unsignedPsbt: unsignedPsbt,
+    ));
+    _sendInfoProvider.setSignedResult(signedPsbt);
+  }
+
+  Future<bool> validateHotWalletPassphrase({required String mnemonic, required String passphrase}) async {
+    final metadata = _walletListItemBase.hotWalletMetadata;
+    final wallet = _walletListItemBase.walletBase;
+    if (!isHotWallet || metadata == null || wallet is! SingleSignatureWallet) {
+      return false;
+    }
+
+    return compute(_validateHotWalletPassphraseInBackground, (
+      mnemonic: mnemonic,
+      passphrase: passphrase,
+      addressTypeName: wallet.addressType.name,
+      accountIndex: metadata.accountIndex,
+      expectedExtendedPublicKey: wallet.keyStore.extendedPublicKey.serialize(),
+    ));
   }
 }

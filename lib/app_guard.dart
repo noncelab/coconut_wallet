@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -11,7 +14,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/icon/splash_logo_icon.dart';
+import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_capture_event/screen_capture_event.dart';
@@ -31,6 +34,20 @@ class AppGuard extends StatefulWidget {
   /// 화면보호기를 비활성화합니다.
   static void disablePrivacyScreen() {
     _isPrivacyEnabled = false;
+  }
+
+  /// 생체인증처럼 앱이 일시적으로 inactive 상태가 되는 작업 동안 화면보호기를
+  /// 비활성화하고, 성공·취소·예외 여부와 관계없이 이전 상태로 복원합니다.
+  static Future<T> runWithoutPrivacyScreen<T>(Future<T> Function() action) async {
+    final wasPrivacyEnabled = _isPrivacyEnabled;
+    disablePrivacyScreen();
+    try {
+      return await action();
+    } finally {
+      if (wasPrivacyEnabled) {
+        enablePrivacyScreen();
+      }
+    }
   }
 
   final Widget child;
@@ -69,7 +86,7 @@ class _AppGuardState extends State<AppGuard> {
         text: t.toast.screen_capture,
         seconds: 4,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         iconSize: Sizes.size16,
       );
     });
@@ -185,7 +202,7 @@ class _AppGuardState extends State<AppGuard> {
       children: [
         widget.child,
         if (_isPaused && AppGuard._isPrivacyEnabled)
-          ColoredBox(color: context.coconutColors.background, child: const Center(child: SplashLogoIcon())),
+          ColoredBox(color: context.coconutColors.background, child: const Center(child: CoconutLogoIcon())),
       ],
     );
   }

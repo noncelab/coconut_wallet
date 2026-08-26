@@ -15,7 +15,7 @@ UtxoTag mapRealmUtxoTagToUtxoTag(RealmUtxoTag utxoTag) {
 
 RealmUtxo mapUtxoToRealmUtxo(int walletId, UtxoState utxo) {
   return RealmUtxo(
-    getUtxoId(utxo.transactionHash, utxo.index),
+    getRealmUtxoId(walletId, utxo.transactionHash, utxo.index),
     walletId,
     utxo.to,
     utxo.amount,

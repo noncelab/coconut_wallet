@@ -2,7 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_extension.dart';
 import 'package:flutter/material.dart';
 
-enum CoconutThemeVariant { dark, light }
+enum CoconutThemeVariant { dark, light, coconutPulp }
 
 class CoconutThemeController {
   static final ValueNotifier<CoconutThemeVariant> variantNotifier = ValueNotifier(CoconutThemeVariant.dark);
@@ -16,6 +16,7 @@ class CoconutThemeController {
       case CoconutThemeVariant.dark:
         return Brightness.dark;
       case CoconutThemeVariant.light:
+      case CoconutThemeVariant.coconutPulp:
         return Brightness.light;
     }
   }
@@ -31,6 +32,8 @@ CoconutThemeExtension resolveCoconutThemeExtension({CoconutThemeVariant? variant
       return CoconutThemeExtension.dark();
     case CoconutThemeVariant.light:
       return CoconutThemeExtension.light();
+    case CoconutThemeVariant.coconutPulp:
+      return CoconutThemeExtension.coconutPulp();
   }
 }
 

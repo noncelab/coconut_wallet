@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="onl.coconut.wallet">
 
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -27,7 +28,8 @@
         android:theme="@style/Theme.SplashEx"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
-        android:fullBackupContent="false">
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <!-- android:icon="@mipmap/ic_launcher_event"
         android:roundIcon="@mipmap/ic_launcher_event_round" 생일 주간 아이콘 -->
         <!-- android:icon="@mipmap/ic_launcher" 이벤트 아이콘 원복 시 ic_launcher로 적용 -->
@@ -71,6 +73,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Impeller's GLES backend has a known mipmap-generation crash on any
+             BackdropFilter(ImageFilter.blur) mounted during route navigation
+             (fixed upstream in Flutter 3.29.3; this project is pinned to 3.29.1).
+             Falls back to Skia on Android until the team upgrades the SDK. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility?hl=en and

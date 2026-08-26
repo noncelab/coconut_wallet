@@ -79,6 +79,7 @@ void main() {
       // Given
       final mockScriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
       final existingStatus = RealmScriptStatus(
+        '${testWalletItem.id}:${mockScriptStatus.scriptPubKey}',
         mockScriptStatus.scriptPubKey,
         "oldStatus",
         testWalletItem.id,
@@ -96,7 +97,9 @@ void main() {
       // Then
       expect(result.isSuccess, true);
 
-      final updatedStatus = realmManager.realm.find<RealmScriptStatus>(mockScriptStatus.scriptPubKey);
+      final updatedStatus = realmManager.realm.find<RealmScriptStatus>(
+        '${testWalletItem.id}:${mockScriptStatus.scriptPubKey}',
+      );
       expect(updatedStatus?.status, "newStatus");
       expect(updatedStatus?.scriptPubKey, mockScriptStatus.scriptPubKey);
     });
@@ -105,6 +108,7 @@ void main() {
       // Given
       final mockScriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
       final existingStatus = RealmScriptStatus(
+        '${testWalletItem.id}:${mockScriptStatus.scriptPubKey}',
         mockScriptStatus.scriptPubKey,
         mockScriptStatus.status!,
         testWalletItem.id,
@@ -122,7 +126,9 @@ void main() {
       // Then
       expect(result.isSuccess, true);
 
-      final unchangedStatus = realmManager.realm.find<RealmScriptStatus>(mockScriptStatus.scriptPubKey);
+      final unchangedStatus = realmManager.realm.find<RealmScriptStatus>(
+        '${testWalletItem.id}:${mockScriptStatus.scriptPubKey}',
+      );
       expect(unchangedStatus?.status, mockScriptStatus.status);
     });
 
@@ -130,6 +136,7 @@ void main() {
       // Given
       final mockScriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
       final existingStatus = RealmScriptStatus(
+        '${testWalletItem.id}:${mockScriptStatus.scriptPubKey}',
         mockScriptStatus.scriptPubKey,
         mockScriptStatus.status!,
         testWalletItem.id,
@@ -161,6 +168,7 @@ void main() {
       // Given
       final existingMockStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
       final existingStatus = RealmScriptStatus(
+        '${testWalletItem.id}:${existingMockStatus.scriptPubKey}',
         existingMockStatus.scriptPubKey,
         "oldStatus",
         testWalletItem.id,
@@ -181,11 +189,15 @@ void main() {
       // Then
       expect(result.isSuccess, true);
 
-      final updatedStatus = realmManager.realm.find<RealmScriptStatus>(existingMockStatus.scriptPubKey);
+      final updatedStatus = realmManager.realm.find<RealmScriptStatus>(
+        '${testWalletItem.id}:${existingMockStatus.scriptPubKey}',
+      );
       expect(updatedStatus?.status, "updatedStatus");
 
       final newMockStatus = mixedScriptStatuses[1];
-      final newStatus = realmManager.realm.find<RealmScriptStatus>(newMockStatus.scriptPubKey);
+      final newStatus = realmManager.realm.find<RealmScriptStatus>(
+        '${testWalletItem.id}:${newMockStatus.scriptPubKey}',
+      );
       expect(newStatus?.status, "newStatus");
 
       final allStatuses = realmManager.realm.query<RealmScriptStatus>(r'walletId == $0', [testWalletItem.id]).toList();
@@ -211,6 +223,7 @@ void main() {
       // Given
       final originalMockStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0, status: "originalStatus");
       final existingStatus = RealmScriptStatus(
+        '${testWalletItem.id}:${originalMockStatus.scriptPubKey}',
         originalMockStatus.scriptPubKey,
         "originalStatus",
         testWalletItem.id,
@@ -228,7 +241,9 @@ void main() {
       // Then
       expect(result.isSuccess, true);
 
-      final changedStatus = realmManager.realm.find<RealmScriptStatus>(originalMockStatus.scriptPubKey);
+      final changedStatus = realmManager.realm.find<RealmScriptStatus>(
+        '${testWalletItem.id}:${originalMockStatus.scriptPubKey}',
+      );
       expect(changedStatus?.status, "changedStatus");
       expect(changedStatus?.walletId, testWalletItem.id);
     });
@@ -241,9 +256,27 @@ void main() {
 
       realmManager.realm.write(() {
         realmManager.realm.addAll([
-          RealmScriptStatus(existingMock1.scriptPubKey, "status1", testWalletItem.id, DateTime.now()),
-          RealmScriptStatus(existingMock2.scriptPubKey, "status2", testWalletItem.id, DateTime.now()),
-          RealmScriptStatus(existingMock3.scriptPubKey, "status3", testWalletItem.id, DateTime.now()),
+          RealmScriptStatus(
+            '${testWalletItem.id}:${existingMock1.scriptPubKey}',
+            existingMock1.scriptPubKey,
+            "status1",
+            testWalletItem.id,
+            DateTime.now(),
+          ),
+          RealmScriptStatus(
+            '${testWalletItem.id}:${existingMock2.scriptPubKey}',
+            existingMock2.scriptPubKey,
+            "status2",
+            testWalletItem.id,
+            DateTime.now(),
+          ),
+          RealmScriptStatus(
+            '${testWalletItem.id}:${existingMock3.scriptPubKey}',
+            existingMock3.scriptPubKey,
+            "status3",
+            testWalletItem.id,
+            DateTime.now(),
+          ),
         ]);
       });
 
@@ -261,19 +294,46 @@ void main() {
       expect(result.isSuccess, true);
 
       // 변경되지 않은 상태들 확인
-      final unchangedStatus1 = realmManager.realm.find<RealmScriptStatus>(existingMock1.scriptPubKey);
+      final unchangedStatus1 = realmManager.realm.find<RealmScriptStatus>(
+        '${testWalletItem.id}:${existingMock1.scriptPubKey}',
+      );
       expect(unchangedStatus1?.status, "status1");
 
-      final unchangedStatus3 = realmManager.realm.find<RealmScriptStatus>(existingMock3.scriptPubKey);
+      final unchangedStatus3 = realmManager.realm.find<RealmScriptStatus>(
+        '${testWalletItem.id}:${existingMock3.scriptPubKey}',
+      );
       expect(unchangedStatus3?.status, "status3");
 
       // 변경된 상태 확인
-      final changedStatus2 = realmManager.realm.find<RealmScriptStatus>(existingMock2.scriptPubKey);
+      final changedStatus2 = realmManager.realm.find<RealmScriptStatus>(
+        '${testWalletItem.id}:${existingMock2.scriptPubKey}',
+      );
       expect(changedStatus2?.status, "updatedStatus2");
 
       // 전체 개수 확인
       final allStatuses = realmManager.realm.query<RealmScriptStatus>(r'walletId == $0', [testWalletItem.id]).toList();
       expect(allStatuses.length, 3);
+    });
+
+    test('동일한 스크립트라도 다른 지갑이면 신규 상태로 감지한다', () {
+      final scriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0, status: 'sameStatus');
+      realmManager.realm.write(() {
+        realmManager.realm.add(
+          RealmScriptStatus(
+            '${testWalletItem.id}:${scriptStatus.scriptPubKey}',
+            scriptStatus.scriptPubKey,
+            scriptStatus.status!,
+            testWalletItem.id,
+            DateTime.now(),
+          ),
+        );
+      });
+
+      final statusesForAnotherWallet = subscriptionRepository.getUpdatedScriptStatuses([
+        scriptStatus,
+      ], testWalletItem.id + 1);
+
+      expect(statusesForAnotherWallet, [scriptStatus]);
     });
   });
 
@@ -282,6 +342,7 @@ void main() {
       // Given
       final mockScriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
       final existingStatus = RealmScriptStatus(
+        '${testWalletItem.id}:${mockScriptStatus.scriptPubKey}',
         mockScriptStatus.scriptPubKey,
         mockScriptStatus.status!,
         testWalletItem.id,
@@ -309,12 +370,14 @@ void main() {
       realmManager.realm.write(() {
         realmManager.realm.addAll([
           RealmScriptStatus(
+            '${testWalletItem.id}:${mockScriptStatus1.scriptPubKey}',
             mockScriptStatus1.scriptPubKey,
             mockScriptStatus1.status!,
             testWalletItem.id,
             DateTime.now(),
           ),
           RealmScriptStatus(
+            '${testWalletItem.id}:${mockScriptStatus2.scriptPubKey}',
             mockScriptStatus2.scriptPubKey,
             mockScriptStatus2.status!,
             testWalletItem.id,
@@ -363,12 +426,14 @@ void main() {
       realmManager.realm.write(() {
         realmManager.realm.addAll([
           RealmScriptStatus(
+            '${testWalletItem.id}:${firstWalletStatus.scriptPubKey}',
             firstWalletStatus.scriptPubKey,
             firstWalletStatus.status!,
             testWalletItem.id,
             DateTime.now(),
           ),
           RealmScriptStatus(
+            '$secondWalletId:${secondWalletStatus.scriptPubKey}',
             secondWalletStatus.scriptPubKey,
             secondWalletStatus.status!,
             secondWalletId,
@@ -419,6 +484,7 @@ void main() {
         final mockStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, i);
         largeScriptStatuses.add(
           RealmScriptStatus(
+            '${testWalletItem.id}:${mockStatus.scriptPubKey}_$i',
             "${mockStatus.scriptPubKey}_$i", // 유니크한 scriptPubKey
             mockStatus.status!,
             testWalletItem.id,

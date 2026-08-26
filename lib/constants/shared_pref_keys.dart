@@ -33,6 +33,11 @@ class SharedPrefKeys {
   static const String kExcludedFromTotalBalanceWalletIds =
       "EXCLUDED_FROM_TOTAL_BALANCE_WALLET_IDS"; // 홈화면 총 잔액에서 제외할 지갑 목록
   static const String kHomeFeatures = "HOME_FEATURES"; // 홈 화면에 표시할 기능(최근 거래, 분석, ...)
+  static const String kHomeAddWalletOption = "HOME_ADD_WALLET_OPTION"; // 홈 화면 상단 지갑 추가 버튼
+  static const String kUnbackedHotWalletWarningDismissedAt = "UNBACKED_HOT_WALLET_WARNING_DISMISSED_AT";
+  static const String kAppLockWarningDismissedAt = "APP_LOCK_WARNING_DISMISSED_AT";
+  static const String kWalletFilterOrder = "WALLET_FILTER_ORDER"; // 홈 화면 지갑 필터 칩 순서
+  static const String kVisibleWalletFilters = "VISIBLE_WALLET_FILTERS"; // 홈 화면에 표시할 지갑 필터 칩
   static const String kAnalysisPeriod = "ANALYSIS_PERIOD"; // 분석 위젯에 사용되는 조회 기간
   static const String kAnalysisPeriodStart = "ANALYSIS_PERIOD_START"; // 분석 위젯에 사용되는 조회 기간 시작 날짜
   static const String kAnalysisPeriodEnd = "ANALYSIS_PERIOD_END"; // 분석 위젯에 사용되는 조회 기간 종료 날짜
@@ -89,7 +94,17 @@ class SharedPrefKeys {
   /// 지갑 목록 화면 - 법정화폐 관련
   static const String kWalletListFiatHidden = 'WALLET_LIST_FIAT_HIDDEN'; // 지갑 목록 화면의 법정화폐 숨김 여부
   static const String kWalletListVisibleFiats = 'WALLET_LIST_VISIBLE_FIATS'; // 지갑 목록 화면에서 보여줄 법정화폐 목록
+  static const String kWalletListBitcoinPriceHidden = 'WALLET_LIST_BITCOIN_PRICE_HIDDEN'; // 지갑 목록 화면의 1 BTC 가격 정보 숨김 여부
+  static const String kWalletListBalanceChartHidden =
+      'WALLET_LIST_BALANCE_CHART_HIDDEN'; // 지갑 목록 화면의 총 보유 수량 변화 그래프 숨김 여부
 
   /// 테마 variant
   static const String kThemeVariant = 'THEME_VARIANT';
+
+  /// 코코넛 오픈 스토어 소개 카드 숨김 만료일
+  static const String kOpenStoreIntroCardHiddenUntil = 'OPEN_STORE_INTRO_CARD_HIDDEN_UNTIL';
+
+  /// CCOS feature runtime
+  static const String kCcosActivatedFeatureIds = 'CCOS_ACTIVATED_FEATURE_IDS';
+  static const String kCcosEntitlementSnapshots = 'CCOS_ENTITLEMENT_SNAPSHOTS';
 }

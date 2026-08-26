@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
@@ -24,7 +25,6 @@ class _CoconutChecklistTileState extends State<CoconutChecklistTile> {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
 
     return GestureDetector(
       onTap: () {
@@ -47,11 +47,7 @@ class _CoconutChecklistTileState extends State<CoconutChecklistTile> {
             Expanded(
               child: Text(
                 widget.title,
-                style: typography.caption.copyWith(
-                  color: colors.primaryText,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: CoconutTypography.body2_14.copyWith(color: colors.primaryText, fontWeight: FontWeight.w500),
                 textAlign: TextAlign.start,
               ),
             ),

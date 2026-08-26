@@ -1,6 +1,9 @@
 package onl.coconut.wallet
 
 import android.content.ComponentName
+import android.app.KeyguardManager
+import android.app.admin.DevicePolicyManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.NonNull
@@ -16,6 +19,7 @@ class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL_EVENT_ICON = "onl.coconut.wallet/app-event-icon"
     private val CHANNEL_OPEN_APP_SETTINGS = "app-settings"
     private val CHANNEL_BITBOX02 = "bitbox02"
+    private val CHANNEL_DEVICE_DEK = "onl.coconut.wallet/device-dek"
     private var osChannel: MethodChannel? = null
     private var pendingBitcoinUri: String? = null
     private var bitbox02Handler: Bitbox02MethodHandler? = null
@@ -36,6 +40,16 @@ class MainActivity : FlutterFragmentActivity() {
                 result.success(version)
             } else if(call.method == "getSdkVersion"){
                 result.success(Build.VERSION.SDK_INT)
+            } else if(call.method == "isDevicePasscodeSet"){
+                val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+                result.success(keyguardManager.isDeviceSecure)
+            } else if(call.method == "openDeviceSecuritySettings"){
+                try {
+                    startActivity(Intent(DevicePolicyManager.ACTION_SET_NEW_PASSWORD))
+                } catch (_: Exception) {
+                    startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
+                }
+                result.success(null)
             } else if(call.method == "getInitialBitcoinUri" || call.method == "getPendingBitcoinUri"){
                 result.success(pendingBitcoinUri)
                 pendingBitcoinUri = null
@@ -88,6 +102,10 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
         bitbox02Handler = Bitbox02MethodHandler(this, flutterEngine)
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            CHANNEL_DEVICE_DEK,
+        ).setMethodCallHandler(DeviceDekKeystoreHandler())
         trezorHandler = TrezorMethodHandler(this, this, flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_OPEN_APP_SETTINGS).setMethodCallHandler { call, result ->
             if (call.method == "openAppSettings") {

@@ -133,6 +133,7 @@ flutter {
 
 dependencies {
     implementation "androidx.core:core-splashscreen:1.0.0"
+    implementation "androidx.biometric:biometric:1.1.0"
     implementation(name: 'bitboxbridge', ext: 'aar')
     implementation "net.java.dev.jna:jna:5.17.0@aar"
 }
