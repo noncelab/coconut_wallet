@@ -1126,7 +1126,7 @@ label_management_screen:
   subtitle: "Import or export recorded notes"
   description: "BIP-329 is an open standard designed to import and export wallet labels. By backing up your labels, you can import and restore them even after changing devices or reinstalling the app."
   import_title: "Import"
-  import_description: "Import notes from another wallet"
+  import_description: "Loads saved memo files"
   export_title: "Export"
   export_description: "Back up notes or share them with another wallet"
   tooltip:

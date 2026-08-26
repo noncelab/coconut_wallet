@@ -1117,7 +1117,7 @@ label_management_screen:
   subtitle: "Importa o exporta tus notas guardadas"
   description: "BIP-329 es un estándar abierto diseñado para intercambiar notas entre billeteras. Si exportas tus notas, puedes importarlas y restaurarlas tal como estaban incluso después de cambiar de dispositivo o reinstalar la aplicación."
   import_title: "Importar"
-  import_description: "Importa notas de otra billetera"
+  import_description: "Carga archivos de notas guardados"
   export_title: "Exportar"
   export_description: "Respalda tus notas o compártelas con otra billetera"
   tooltip:

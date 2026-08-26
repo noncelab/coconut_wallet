@@ -1132,7 +1132,7 @@ label_management_screen:
   subtitle: "기록한 메모들을 가져오거나 내보냅니다"
   description: "BIP-329는 지갑 간에 메모를 주고받을 수 있도록 만든 공개 표준이에요. 메모를 내보내 두면 기기를 바꾸거나 앱을 다시 설치한 뒤에도 다시 가져와 그대로 복원할 수 있어요."
   import_title: "가져오기"
-  import_description: "다른 지갑의 메모를 불러옵니다"
+  import_description: "저장해 둔 메모 파일을 불러옵니다"
   export_title: "내보내기"
   export_description: "메모를 백업하거나 다른 지갑으로 공유합니다"
   tooltip:

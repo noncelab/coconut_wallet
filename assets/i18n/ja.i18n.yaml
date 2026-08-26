@@ -1114,7 +1114,7 @@ label_management_screen:
   subtitle: "記録したメモをインポートまたはエクスポートします"
   description: "BIP-329はウォレット間でメモをやり取りできるように作成された公開標準です。メモを出力しておけば、デバイスの変更やアプリの再インストール後もインポートしてそのまま復元できます。"
   import_title: "インポート"
-  import_description: "他のウォレットからメモを読み込みます"
+  import_description: "保存されたメモファイルの読み込み"
   export_title: "エクスポート"
   export_description: "メモをバックアップするか、他のウォレットに shared します"
   tooltip:
