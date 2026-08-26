@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -9,8 +12,8 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/air-gapped/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
-import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/signed_psbt_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/coconut_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/signed_psbt_scan_data_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -52,7 +55,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           actionButtonList: [
             IconButton(
               icon: SvgPicture.asset(
-                'assets/svg/arrow-reload.svg',
+                CommonActionIconPath.arrowReload,
                 width: 20,
                 height: 20,
                 colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
@@ -306,7 +309,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       backgroundColor: context.coconutColors.surface,
       borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
+        CommonStateIconPath.circleInfo,
         width: 20,
         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),

@@ -1,4 +1,18 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutTextField,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
@@ -8,16 +22,17 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class ElectrumServerScreen extends StatefulWidget {
   const ElectrumServerScreen({super.key});
@@ -189,7 +204,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     selector: (_, viewModel) => viewModel.nodeConnectionStatus,
                     builder: (context, nodeConnectionStatus, _) {
                       return CoconutAppBar.build(
-                        title: t.electrum_server,
+                        title: t.settings_screen.electrum_server.title,
                         context: context,
                         isLeadingVisible: nodeConnectionStatus != NodeConnectionStatus.connecting,
                       );
@@ -318,7 +333,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           style:
               isSelected
                   ? CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)
-                  : CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                  : CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
         ),
       ),
     );
@@ -346,7 +361,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
               ShrinkAnimationButton(
                 key: i == 0 ? _defaultServerButtonKey : null,
                 defaultColor: context.coconutColors.background,
-                pressedColor: context.coconutColors.primaryText.withValues(alpha: 0.08),
+                pressedOverlayColor: context.coconutColors.primaryText,
+                pressedOverlayOpacity: 0.08,
                 borderRadius: 12,
                 onPressed: () {
                   _serverAddressController.text = serverList[i].host;
@@ -424,7 +440,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                               ),
                               if (serverConnectionStatus == NodeConnectionStatus.connecting) ...[
                                 CoconutLayout.spacing_100w,
-                                const CupertinoActivityIndicator(radius: 6),
+                                const InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 6),
                               ],
                               if (serverConnectionStatus == NodeConnectionStatus.connected ||
                                   serverConnectionStatus == NodeConnectionStatus.failed) ...[
@@ -436,8 +452,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                                     shape: BoxShape.circle,
                                     color:
                                         serverConnectionStatus == NodeConnectionStatus.connected
-                                            ? context.coconutColors.nodeConnected
-                                            : context.coconutColors.nodeFailed,
+                                            ? context.coconutColors.success
+                                            : context.coconutColors.danger,
                                   ),
                                 ),
                               ],
@@ -497,7 +513,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     margin: const EdgeInsets.only(bottom: 4),
                     decoration: BoxDecoration(
-                      border: Border.all(color: context.coconutColors.tertiaryText),
+                      border: Border.all(color: context.coconutColors.border),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                     ),
@@ -505,7 +521,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       children: [
                         Text(
                           _serverAddressController.text,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
                         ),
                       ],
                     ),
@@ -529,24 +545,13 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
                     textInputType: TextInputType.text,
                     backgroundColor: context.coconutColors.background,
-                    borderColor: context.coconutColors.inputBorder,
                     maxLines: 1,
-                    suffix:
-                        _serverAddressController.text.isNotEmpty
-                            ? IconButton(
-                              iconSize: 14,
-                              padding: EdgeInsets.zero,
-                              onPressed: () {
-                                setState(() {
-                                  _serverAddressController.text = '';
-                                });
-                              },
-                              icon: SvgPicture.asset(
-                                'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                              ),
-                            )
-                            : null,
+                    clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                    onClear: () {
+                      setState(() {
+                        _serverAddressController.text = '';
+                      });
+                    },
                     onChanged: (text) {
                       _onServerInputChanged(); // 입력 변경 감지
                       setState(() {
@@ -586,7 +591,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     margin: const EdgeInsets.only(bottom: 4),
                     decoration: BoxDecoration(
-                      border: Border.all(color: context.coconutColors.tertiaryText),
+                      border: Border.all(color: context.coconutColors.border),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                     ),
@@ -594,7 +599,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       children: [
                         Text(
                           _portController.text,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
                         ),
                       ],
                     ),
@@ -613,23 +618,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                     textInputType: TextInputType.number,
                     backgroundColor: context.coconutColors.background,
-                    borderColor: context.coconutColors.inputBorder,
-                    suffix:
-                        _portController.text.isNotEmpty
-                            ? IconButton(
-                              iconSize: 14,
-                              padding: EdgeInsets.zero,
-                              onPressed: () {
-                                setState(() {
-                                  _portController.text = '';
-                                });
-                              },
-                              icon: SvgPicture.asset(
-                                'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                              ),
-                            )
-                            : null,
+                    clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                    onClear: () {
+                      setState(() {
+                        _portController.text = '';
+                      });
+                    },
                     onChanged: (text) {
                       _onServerInputChanged(); // 입력 변경 감지
                       setState(() {
@@ -705,7 +699,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 34),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
       child: Row(
         children: [
           _buildAlertIcon(status),
@@ -726,19 +720,19 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       case NodeConnectionStatus.failed:
         {
           return SvgPicture.asset(
-            CustomIcons.triangleWarning,
+            CustomWalletIcons.triangleWarning,
             height: 20,
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           );
         }
       case NodeConnectionStatus.connecting:
         {
-          return const CupertinoActivityIndicator(radius: 10);
+          return const InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 10);
         }
       case NodeConnectionStatus.connected:
         {
           return SvgPicture.asset(
-            'assets/svg/circle-check.svg',
+            CommonFormIconPath.circleCheck,
             height: 20,
             colorFilter: ColorFilter.mode(CoconutColors.colorPalette[3], BlendMode.srcIn),
           );

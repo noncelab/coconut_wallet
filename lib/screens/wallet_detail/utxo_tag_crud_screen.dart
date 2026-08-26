@@ -1,14 +1,24 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_tag_crud_view_model.dart';
 import 'package:coconut_wallet/screens/common/tag_edit_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
+import 'package:coconut_wallet/widgets/features/utxo/card/utxo_tag_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class UtxoTagCrudScreen extends StatelessWidget {
   final int id;
@@ -34,7 +44,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                     _handleAddTagPressed(context, model);
                   },
                   icon: const Icon(Icons.add_rounded),
-                  color: context.coconutColors.iconDefault,
+                  color: context.coconutColors.iconPrimary,
                 ),
               ],
             ),
@@ -44,13 +54,14 @@ class UtxoTagCrudScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     if (model.utxoTagList.isEmpty) _buildEmptyView(context),
-                    _buildEditButtons(context, model),
                     Expanded(
-                      child: CustomTagVerticalSelector(
+                      child: UtxoTagCard(
                         key: ValueKey(model.utxoTagList.map((e) => e.name).join(':')),
                         tags: model.utxoTagList,
                         externalUpdatedTagName: model.updatedTagName,
                         onSelectedTag: model.toggleUtxoTag,
+                        onEditTag: (_) => _handleEditTagPressed(context, model),
+                        onDeleteTag: (_) => _handeDeleteTagPressed(context, model),
                       ),
                     ),
                   ],
@@ -81,40 +92,6 @@ class UtxoTagCrudScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEditButtons(BuildContext context, UtxoTagCrudViewModel model) {
-    return Visibility(
-      visible: model.selectedUtxoTag != null,
-      maintainSize: true,
-      maintainAnimation: true,
-      maintainState: true,
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              CustomUnderlinedButton(
-                text: t.edit,
-                onTap: () {
-                  _handleEditTagPressed(context, model);
-                },
-                padding: const EdgeInsets.all(0),
-              ),
-              CoconutLayout.spacing_300w,
-              CustomUnderlinedButton(
-                text: t.delete,
-                onTap: () {
-                  _handeDeleteTagPressed(context, model);
-                },
-                padding: const EdgeInsets.all(0),
-              ),
-            ],
-          ),
-          CoconutLayout.spacing_300h,
-        ],
-      ),
-    );
-  }
-
   void _handeDeleteTagPressed(BuildContext context, UtxoTagCrudViewModel model) {
     showDialog(
       context: context,
@@ -136,7 +113,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
               CoconutToast.showToast(
                 context: context,
                 isVisibleIcon: true,
-                iconPath: 'assets/svg/triangle-warning.svg',
+                iconPath: CommonStateIconPath.triangleWarning,
                 text: t.toast.tag_delete_failed,
                 level: CoconutToastLevel.warning,
               );
@@ -168,7 +145,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                 CoconutToast.showToast(
                   context: context,
                   isVisibleIcon: true,
-                  iconPath: 'assets/svg/triangle-warning.svg',
+                  iconPath: CommonStateIconPath.triangleWarning,
                   text: t.toast.tag_update_failed,
                   level: CoconutToastLevel.warning,
                 );
@@ -195,7 +172,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                   CoconutToast.showToast(
                     context: context,
                     isVisibleIcon: true,
-                    iconPath: 'assets/svg/triangle-warning.svg',
+                    iconPath: CommonStateIconPath.triangleWarning,
                     text: t.toast.tag_add_failed,
                     level: CoconutToastLevel.warning,
                   );
