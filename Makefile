@@ -1,6 +1,6 @@
 realm-clean:
-	rm -f default.realm.lock default.realm.note
-	rm -rf default.realm.management
+	rm -f ./*.realm.lock ./*.realm.note
+	rm -rf ./*.realm.management
 
 format:
 	fvm dart format . --line-length 120
@@ -83,11 +83,15 @@ fastlane-regtest:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
 
 # Production draft/App Store preparation (manual review submission remains required)
-fastlane-production-mainnet: realm-clean
+fastlane-production-mainnet:
+	$(MAKE) pre-deploy
+	$(MAKE) realm-clean
 	cd android/fastlane_production && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production
 	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true
 
-fastlane-production-regtest: realm-clean
+fastlane-production-regtest:
+	$(MAKE) pre-deploy
+	$(MAKE) realm-clean
 	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production
 	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true
 	
