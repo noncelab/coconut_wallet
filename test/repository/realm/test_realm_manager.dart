@@ -15,6 +15,9 @@ class TestRealmManager implements RealmManager {
   Realm get realm => _realm;
 
   @override
+  Set<int> get migratedWalletIds => const <int>{};
+
+  @override
   void reset() {
     realm.write(() {
       realm.deleteAll<RealmWalletBase>();

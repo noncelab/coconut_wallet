@@ -344,7 +344,10 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       return walletList;
     }
 
-    return order.map((id) => walletList.firstWhere((e) => e.id == id)).toList();
+    final validOrder = order.where((id) => walletList.any((e) => e.id == id)).toList();
+    final ordered = validOrder.map((id) => walletList.firstWhere((e) => e.id == id)).toList();
+    final remaining = walletList.where((e) => !validOrder.contains(e.id)).toList();
+    return [...ordered, ...remaining];
   }
 
   void _initRegisteredWalletsAddress() {

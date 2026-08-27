@@ -29,7 +29,7 @@ def getFlavor() {
     } else if (taskNames.any { it.toLowerCase().contains("mainnet")}) {
         return "mainnet"
     }
-    throw new GradleException("❌ build flavor를 추론할 수 없습니다. taskNames: ${taskNames}")
+    throw new RuntimeException("❌ build flavor를 추론할 수 없습니다. taskNames: ${taskNames}")
 }
 def flavor = getFlavor()
 def keystoreProperties = new Properties()
@@ -39,7 +39,7 @@ if (keystorePropertiesFile.exists()) {
         keystoreProperties.load(reader)
     }
 } else {
-    throw new GradleException("❌ keystore properties 파일이 존재하지 않습니다: ${keystorePropertiesFile}")
+    throw new RuntimeException("❌ keystore properties 파일이 존재하지 않습니다: ${keystorePropertiesFile}")
 }
 
 def signingStorePassword = System.getenv("ANDROID_SIGNING_STORE_PASSWORD")
@@ -48,10 +48,18 @@ def isReleaseBuild = gradle.startParameter.taskNames.any { it.toLowerCase().cont
 def isBundleBuild = gradle.startParameter.taskNames.any { it.toLowerCase().contains("bundle") }
 def useDebugSigningForReleaseRun = System.getenv("ANDROID_USE_DEBUG_SIGNING_FOR_RELEASE_RUN") == "true" && !isBundleBuild
 if (isReleaseBuild && !useDebugSigningForReleaseRun && (!signingStorePassword || !signingKeyPassword)) {
-    throw new GradleException("❌ Android 서명 비밀번호 환경변수가 설정되지 않았습니다.")
+    throw new RuntimeException("❌ Android 서명 비밀번호 환경변수가 설정되지 않았습니다.")
 }
 
-if (flavor == "mainnet" && file("src/mainnet/google-services.json").exists()) {
+def googleServicesFile = file("google-services.json")
+def requireGoogleServices = System.getenv("REQUIRE_GOOGLE_SERVICES")?.toBoolean() ?: false
+if (flavor == "mainnet" && requireGoogleServices) {
+    if (!googleServicesFile.exists()) {
+        throw new RuntimeException(
+            "[Firebase] mainnet 배포에 필요한 google-services.json이 없습니다: ${googleServicesFile.absolutePath}"
+        )
+    }
+
     apply plugin: 'com.google.gms.google-services'
 }
 

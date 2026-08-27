@@ -135,6 +135,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final hasUnacknowledgedBackupUpdate = context.select<WalletProvider, bool>(
+      (walletProvider) => walletProvider.walletIdsWithUnacknowledgedOlderToAfterBackupUpdate.contains(widget.id),
+    );
+
     return CoconutAppBar.build(
       // FIXME: CDN 백버튼 및 닫기 버튼 지정할 수 있어야 함.
       // 예: iconColor: context.coconutColors.iconDefault,
@@ -165,11 +169,26 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         ),
         IconButton(
           onPressed: () => _navigateToWalletInfo(context),
-          icon: SvgPicture.asset(
-            'assets/svg/wallet-outlined.svg',
-            width: 18,
-            height: 18,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              SvgPicture.asset(
+                'assets/svg/wallet-outlined.svg',
+                width: 18,
+                height: 18,
+                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              ),
+              if (hasUnacknowledgedBackupUpdate)
+                Positioned(
+                  top: -2,
+                  right: -6,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(color: CoconutColors.hotPink, shape: BoxShape.circle),
+                  ),
+                ),
+            ],
           ),
         ),
       ],

@@ -59,6 +59,16 @@ class WalletListViewModel extends ChangeNotifier {
 
   bool get hasEnglishWordOrder => AppLanguage.fromCode(_preferenceProvider.language).hasEnglishWordOrder;
 
+  Set<int> get walletIdsWithUnacknowledgedOlderToAfterBackupUpdate =>
+      sharedPrefs.getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate();
+
+  bool get hasUnacknowledgedOlderToAfterBackupUpdate => walletIdsWithUnacknowledgedOlderToAfterBackupUpdate.isNotEmpty;
+
+  Future<void> acknowledgeOlderToAfterBackupUpdate(int walletId) async {
+    await sharedPrefs.removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
+    notifyListeners();
+  }
+
   bool get isWalletListFiatHidden => _preferenceProvider.isWalletListFiatHidden;
 
   late List<FiatCode> _visibleFiats;
