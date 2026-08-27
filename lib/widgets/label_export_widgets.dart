@@ -106,6 +106,8 @@ class ExportLabelInstructionToolTip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final clampedTextScaler = TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2));
+
     return CoconutToolTip(
       backgroundColor: context.coconutColors.surface,
       borderColor: context.coconutColors.surface,
@@ -113,50 +115,52 @@ class ExportLabelInstructionToolTip extends StatelessWidget {
       tooltipType: CoconutTooltipType.fixed,
       richText: RichText(
         text: TextSpan(
-          style: CoconutTypography.body2_14,
           children:
               steps.asMap().entries.map((e) {
                 final stepIndex = e.key;
                 final stepText = e.value.toString();
 
                 return WidgetSpan(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              stepText,
-                              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                            ),
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: stepIndex < steps.length - 1 ? 12.0 : 0.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            stepText,
+                            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                            textScaler: clampedTextScaler,
                           ),
-                          if (showSkeleton) ...[
-                            const SizedBox(width: 8),
-                            Shimmer.fromColors(
-                              baseColor: context.coconutColors.surfaceSkeletonBase,
-                              highlightColor: context.coconutColors.surfaceSkeletonHighlight,
-                              child: Container(
-                                width: 60,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  color: context.coconutColors.surfaceSkeletonBase,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
+                        ),
+                        if (showSkeleton) ...[
+                          const SizedBox(width: 8),
+                          Shimmer.fromColors(
+                            baseColor: context.coconutColors.surfaceSkeletonBase,
+                            highlightColor: context.coconutColors.surfaceSkeletonHighlight,
+                            child: Container(
+                              width: 60,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: context.coconutColors.surfaceSkeletonBase,
+                                borderRadius: BorderRadius.circular(4),
                               ),
                             ),
-                          ] else if (stepResults != null && stepIndex < stepResults!.length) ...[
-                            const SizedBox(width: 8),
-                            Text(
+                          ),
+                        ] else if (stepResults != null && stepIndex < stepResults!.length) ...[
+                          const SizedBox(width: 8),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.35),
+                            child: Text(
                               _formatStepResult(stepResults![stepIndex]),
+                              textAlign: TextAlign.end,
                               style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                              textScaler: clampedTextScaler,
                             ),
-                          ],
+                          ),
                         ],
-                      ),
-                      if (stepIndex < steps.length - 1) CoconutLayout.spacing_300h,
-                    ],
+                      ],
+                    ),
                   ),
                 );
               }).toList(),

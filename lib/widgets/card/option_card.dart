@@ -55,6 +55,8 @@ class _OptionCardState extends State<OptionCard> {
 
     final double scale = (_isPressed && widget.isEnabled) ? 0.96 : 1.0;
 
+    final clampedTextScaler = TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2));
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown: widget.isEnabled ? _handleTapDown : null,
@@ -97,11 +99,16 @@ class _OptionCardState extends State<OptionCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(widget.title, style: CoconutTypography.body2_14.setColor(titleColor)),
+                    Text(
+                      widget.title,
+                      style: CoconutTypography.body2_14.setColor(titleColor),
+                      textScaler: clampedTextScaler,
+                    ),
                     if (widget.subtitle.isNotEmpty) ...[
                       CoconutLayout.spacing_50h,
                       Text.rich(
                         TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: widget.subtitle),
+                        textScaler: clampedTextScaler,
                       ),
                     ],
                   ],

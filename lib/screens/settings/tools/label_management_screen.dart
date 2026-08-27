@@ -90,31 +90,36 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
   }
 
   Widget _buildMenuView(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        children: [
-          _buildInfoTooltip(context),
-          const SizedBox(height: 21),
-          ButtonGroup(
-            buttons: [
-              SingleButton(
-                title: t.label_management_screen.import_title,
-                subtitle: t.label_management_screen.import_description,
-                onPressed: () => _navigateToImportFilePicker(context, walletId: widget.walletId),
-                enableShrinkAnim: true,
-                isVerticalSubtitle: true,
-              ),
-              SingleButton(
-                title: t.label_management_screen.export_title,
-                subtitle: t.label_management_screen.export_description,
-                onPressed: () => _navigateToExportWalletPicker(context, walletId: widget.walletId),
-                enableShrinkAnim: true,
-                isVerticalSubtitle: true,
-              ),
-            ],
-          ),
-        ],
+    final clampedTextScaler = TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2));
+
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: clampedTextScaler),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Column(
+          children: [
+            _buildInfoTooltip(context),
+            const SizedBox(height: 21),
+            ButtonGroup(
+              buttons: [
+                SingleButton(
+                  title: t.label_management_screen.import_title,
+                  subtitle: t.label_management_screen.import_description,
+                  onPressed: () => _navigateToImportFilePicker(context, walletId: widget.walletId),
+                  enableShrinkAnim: true,
+                  isVerticalSubtitle: true,
+                ),
+                SingleButton(
+                  title: t.label_management_screen.export_title,
+                  subtitle: t.label_management_screen.export_description,
+                  onPressed: () => _navigateToExportWalletPicker(context, walletId: widget.walletId),
+                  enableShrinkAnim: true,
+                  isVerticalSubtitle: true,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

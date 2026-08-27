@@ -38,7 +38,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   File? _exportedFile;
   List<LabelExportResult> _exportResults = [];
   int _currentPage = 0;
-  double _successCardHeight = 150;
+  double _successCardHeight = 160;
 
   late final LabelExportViewModel _exportViewModel;
   late Future<List<File>> _filesFuture;
@@ -371,8 +371,8 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       selectedTextColor: context.coconutColors.segmentedControlSelectedText,
       unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
       children: [
-        Text(t.label_export_wallet_picker_screen.create_file),
-        Text(t.label_export_wallet_picker_screen.view_list),
+        FittedBox(fit: BoxFit.scaleDown, child: Text(t.label_export_wallet_picker_screen.create_file)),
+        FittedBox(fit: BoxFit.scaleDown, child: Text(t.label_export_wallet_picker_screen.view_list)),
       ],
     );
   }
@@ -405,6 +405,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         t.label_export_wallet_picker_screen.loading_title,
         style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
         textAlign: TextAlign.center,
+        textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
       ),
       topSteps: [
         t.label_export_wallet_picker_screen.instruction_tooltip.step1,
@@ -425,6 +426,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         t.label_export_wallet_picker_screen.error_title,
         style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.danger),
         textAlign: TextAlign.center,
+        textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
       ),
     );
   }
@@ -492,6 +494,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
               t.label_export_wallet_picker_screen.success_title,
               style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
               textAlign: TextAlign.center,
+              textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
             ),
             steps: [
               t.label_export_wallet_picker_screen.instruction_tooltip.step1,
@@ -717,6 +720,7 @@ class _WalletListItemCardState extends State<_WalletListItemCard> {
                 child: Row(
                   children: [
                     Expanded(
+                      flex: 3,
                       child: Text(
                         widget.title,
                         style: CoconutTypography.body2_14.setColor(textColor),
@@ -726,9 +730,13 @@ class _WalletListItemCardState extends State<_WalletListItemCard> {
                     ),
                     if (widget.isDisabled) ...[
                       const SizedBox(width: 8),
-                      Text(
-                        t.label_export_wallet_picker_screen.no_labels_to_export,
-                        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          t.label_export_wallet_picker_screen.no_labels_to_export,
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                          textAlign: TextAlign.end,
+                        ),
                       ),
                     ],
                   ],

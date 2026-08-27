@@ -288,11 +288,19 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           Text(
             t.label_import_file_picker_screen.option_selection.title,
             style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+            textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
           ),
-          Text(_fileName ?? '', style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+          Text(
+            _fileName ?? '',
+            style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+            textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           CoconutLayout.spacing_100h,
           RichText(
             textAlign: TextAlign.center,
+            textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
             text: TextSpan(
               style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
               children: [
@@ -339,6 +347,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     return ImportLabelProgressCard(
       title: RichText(
         textAlign: TextAlign.center,
+        textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
         text: TextSpan(
           style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
           children: [
@@ -367,6 +376,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: RichText(
               textAlign: TextAlign.center,
+              textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
               text: TextSpan(
                 style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
                 children: [
@@ -395,26 +405,36 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
 
   Widget _buildDeleteFileCheckbox() {
     return GestureDetector(
-      onTap: () => setState(() => _deleteFileOnSuccess = !_deleteFileOnSuccess),
+      behavior: HitTestBehavior.opaque,
       onTapDown: (_) => setState(() => _isDeleteFileOptionPressed = true),
-      onTapUp: (_) => setState(() => _isDeleteFileOptionPressed = false),
       onTapCancel: () => setState(() => _isDeleteFileOptionPressed = false),
+      onTap: () {
+        setState(() {
+          _isDeleteFileOptionPressed = false;
+          _deleteFileOnSuccess = !_deleteFileOnSuccess;
+        });
+      },
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          CoconutCheckbox(
-            isSelected: _deleteFileOnSuccess,
-            onChanged: (_) => setState(() => _deleteFileOnSuccess = !_deleteFileOnSuccess),
-            width: 20,
-            unSelectedColor: context.coconutColors.iconSubDefault,
-            color:
-                _isDeleteFileOptionPressed ? context.coconutColors.iconSubDefault : context.coconutColors.iconDefault,
+          IgnorePointer(
+            child: CoconutCheckbox(
+              isSelected: _deleteFileOnSuccess,
+              onChanged: (_) {},
+              width: 20,
+              unSelectedColor: context.coconutColors.iconSubDefault,
+              color:
+                  _isDeleteFileOptionPressed ? context.coconutColors.iconSubDefault : context.coconutColors.iconDefault,
+            ),
           ),
           const SizedBox(width: 8),
-          Text(
-            t.label_import_file_picker_screen.delete_file,
-            style: CoconutTypography.body3_12.setColor(
-              _isDeleteFileOptionPressed ? context.coconutColors.tertiaryText : context.coconutColors.primaryText,
+          Expanded(
+            child: Text(
+              t.label_import_file_picker_screen.delete_file,
+              style: CoconutTypography.body3_12.setColor(
+                _isDeleteFileOptionPressed ? context.coconutColors.tertiaryText : context.coconutColors.primaryText,
+              ),
+              textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
             ),
           ),
         ],
@@ -437,6 +457,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           CoconutLayout.spacing_1000h,
           RichText(
             textAlign: TextAlign.center,
+            textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
             text: TextSpan(
               style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
               children: [
@@ -459,6 +480,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     return ImportLabelErrorCard(
       title: RichText(
         textAlign: TextAlign.center,
+        textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
         text: TextSpan(
           style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.danger),
           children: [
