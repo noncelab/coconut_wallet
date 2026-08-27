@@ -1,7 +1,6 @@
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 
 class SharedPrefKeys {
-  /// 아래 7개는 비밀번호 분실 시 초기화 필요
   static const String kWalletCount = 'WALLET_COUNT';
   static const String kFaucetHistories = "FAUCET_HISTORIES";
   static const String kIsSetPin = "IS_SET_PIN";
@@ -66,16 +65,6 @@ class SharedPrefKeys {
   /// kHasLaunchedBefore 절대 초기화 금지
   static const String kHasLaunchedBefore = 'hasLaunchedBefore';
 
-  static const List<String> keysToReset = [
-    SharedPrefKeys.kWalletCount,
-    SharedPrefKeys.kFaucetHistories,
-    SharedPrefKeys.kIsSetPin,
-    SharedPrefKeys.kPinLength,
-    SharedPrefKeys.kIsSetBiometrics,
-    SharedPrefKeys.kFakeBalanceTotal,
-    SharedPrefKeys.kFakeBalanceMap,
-  ];
-
   // Block explorer
   static const String kUseDefaultExplorer = 'USE_DEFAULT_EXPLORER';
   static const String kCustomExplorerUrl = 'CUSTOM_EXPLORER_URL';
@@ -96,4 +85,22 @@ class SharedPrefKeys {
   // coconut_lib older -> after 변환으로 백업 정보가 변경되었지만 아직 확인하지 않은 지갑 ID 목록
   static const String kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate =
       'WALLET_IDS_WITH_UNACKNOWLEDGED_OLDER_TO_AFTER_BACKUP_UPDATE';
+
+  /// 비밀번호 분실 시 초기화 대상
+  /// 새로운 SharedPreferences 키를 추가할 때 비밀번호 분실 시 초기화가 필요한 키인지 확인하고,
+  /// 초기화가 필요하면 반드시 아래 목록에도 함께 추가해야 합니다.
+  static const List<String> keysToReset = [
+    kWalletCount,
+    kFaucetHistories,
+    kIsSetPin,
+    kPinLength,
+    kIsSetBiometrics,
+    kFakeBalanceTotal,
+    kFakeBalanceMap,
+    kWalletOrder,
+    kFavoriteWalletIds,
+    kExcludedFromTotalBalanceWalletIds,
+    kWalletTargetSatsMap,
+    kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
+  ];
 }
