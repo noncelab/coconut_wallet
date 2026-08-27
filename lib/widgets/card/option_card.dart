@@ -47,7 +47,7 @@ class _OptionCardState extends State<OptionCard> {
     final borderColor =
         !widget.isEnabled
             ? context.coconutColors.iconDisabled
-            : (widget.isSelected || _isPressed)
+            : widget.isSelected
             ? context.coconutColors.primaryText
             : context.coconutColors.border;
     final titleColor = widget.isEnabled ? context.coconutColors.primaryText : context.coconutColors.mutedText;
@@ -83,7 +83,7 @@ class _OptionCardState extends State<OptionCard> {
               Padding(
                 padding: const EdgeInsets.only(top: 2.0),
                 child: CoconutCheckbox(
-                  isSelected: widget.isSelected || _isPressed,
+                  isSelected: widget.isSelected,
                   onChanged: (_) => widget.onTap(),
                   width: 20,
                   color: context.coconutColors.iconDefault,
