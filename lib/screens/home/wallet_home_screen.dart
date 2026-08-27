@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -26,6 +27,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
@@ -1723,6 +1725,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   void _goToScannerScreen(WalletImportSource walletImportSource) async {
+    context.read<AnalyticsService>().logWalletAddScreenEntered(walletImportSource);
     Navigator.pop(context);
     final ResultOfSyncFromVault? scanResult =
         (await Navigator.pushNamed(
@@ -1747,11 +1750,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   void _goToBitBox02Screen() async {
+    context.read<AnalyticsService>().logWalletAddScreenEntered(WalletImportSource.bitbox02);
     Navigator.pop(context);
     Navigator.pushNamed(context, '/bitbox02-connect', arguments: {'walletImportSource': WalletImportSource.bitbox02});
   }
 
   void _goToTrezorScreen() {
+    context.read<AnalyticsService>().logWalletAddScreenEntered(WalletImportSource.trezor);
     Navigator.pop(context);
     if (Platform.isAndroid) {
       Navigator.pushNamed(context, '/trezor-transport-select');
@@ -1761,6 +1766,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   void _onAddWalletPressed() {
+    context.read<AnalyticsService>().logWalletAddButtonClicked();
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
