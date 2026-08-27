@@ -33,6 +33,8 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
+$FirebaseAnalyticsWithoutAdIdSupport = true
+
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
