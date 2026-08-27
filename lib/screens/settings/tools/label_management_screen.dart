@@ -7,6 +7,7 @@ import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -178,7 +179,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
 
   void _navigateToImportFilePicker(BuildContext context, {int? walletId}) {
     Navigator.of(context).push(
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder:
             (context) => LabelImportFilePickerScreen(
               walletId: walletId,
@@ -191,7 +192,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
   void _navigateToExportWalletPicker(BuildContext context, {int? walletId}) {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (context) => LabelExportWalletPickerScreen(initialSelectedWalletId: walletId)));
+    ).push(CupertinoPageRoute(builder: (context) => LabelExportWalletPickerScreen(initialSelectedWalletId: walletId)));
   }
 }
 

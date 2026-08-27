@@ -21,6 +21,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -268,7 +269,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           title: t.label_management_screen.title,
                           subtitle: t.label_management_screen.subtitle,
                           isVerticalSubtitle: true,
-                          onPressed: () => _showLabelsManagementBottomSheet(context),
+                          onPressed: () => _showLabelsManagementScreen(context),
                         ),
                         _buildAnimatedButton(
                           title: t.log_viewer,
@@ -382,9 +383,9 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     }
   }
 
-  void _showLabelsManagementBottomSheet(BuildContext context) {
+  void _showLabelsManagementScreen(BuildContext context) {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (_) => const LabelManagementScreen(importMemosFromOtherWalletsFixed: true)));
+    ).push(CupertinoPageRoute(builder: (_) => const LabelManagementScreen(importMemosFromOtherWalletsFixed: true)));
   }
 }

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -30,6 +29,7 @@ import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dar
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -336,7 +336,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               SingleButton(
                 enableShrinkAnim: true,
                 title: t.label_management_screen.title,
-                onPressed: () => _showLabelsManagementBottomSheet(context, viewModel),
+                onPressed: () => _showLabelsManagementScreen(context, viewModel),
               ),
             ],
           ),
@@ -553,15 +553,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     );
   }
 
-  void _showLabelsManagementBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => LabelManagementScreen(walletId: viewModel.walletId),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(position: AnimationUtil.buildSlideInAnimation(animation), child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 250),
-      ),
-    );
+  void _showLabelsManagementScreen(BuildContext context, WalletInfoViewModel viewModel) {
+    Navigator.of(
+      context,
+    ).push(CupertinoPageRoute(builder: (context) => LabelManagementScreen(walletId: viewModel.walletId)));
   }
 }
