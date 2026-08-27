@@ -84,14 +84,18 @@ fastlane-regtest:
 
 # Production draft/App Store preparation (manual review submission remains required)
 fastlane-production-mainnet:
+ifneq ($(SKIP_PREP),true)
 	$(MAKE) pre-deploy
 	$(MAKE) realm-clean
+endif
 	cd android/fastlane_production && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production
 	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true
 
 fastlane-production-regtest:
+ifneq ($(SKIP_PREP),true)
 	$(MAKE) pre-deploy
 	$(MAKE) realm-clean
+endif
 	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production
 	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true
 	
