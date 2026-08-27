@@ -7,6 +7,7 @@ import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_se
 import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -43,6 +44,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   @override
   void initState() {
     super.initState();
+    _saveMigratedWalletIds();
     BitBox02ConnectivityService.startMonitoring();
     TrezorBleConnectivityService.startMonitoring();
   }
@@ -52,6 +54,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     BitBox02ConnectivityService.stopMonitoring();
     TrezorBleConnectivityService.stopMonitoring();
     super.dispose();
+  }
+
+  Future<void> _saveMigratedWalletIds() async {
+    // RealmManager는 State 필드 초기화 시 Realm을 동기적으로 open하며,
+    // Realm이 반환되는 시점에는 migration callback도 완료된 상태입니다.
+    final walletIds = _realmManager.migratedWalletIds;
+    if (walletIds.isEmpty) return;
+    await SharedPrefsRepository().addWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate(walletIds);
   }
 
   /// startSplash 완료 콜백

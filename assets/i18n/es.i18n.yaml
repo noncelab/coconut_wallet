@@ -225,6 +225,11 @@ pin_check_screen:
 wallet_home_screen:
   view_all_wallets: "Ver todas mis billeteras"
   edit_home_screen: "Editar pantalla de inicio"
+  backup_update_notice_action: "Más información"
+  backup_update_notice:
+    title: "Actualización de respaldo de la billetera de herencia"
+    description: "Parte de la información de respaldo de la billetera de herencia ha cambiado.\nActualiza Coconut Wallet a la última versión.\nAl actualizar la bóveda, los cambios se aplican automáticamente.\nDespués, vuelve a respaldar la información de tu billetera."
+    action: "Más información"
   edit:
     title: "Puedes ocultar o añadir funciones\nen la pantalla de inicio"
     hide_balance: "Ocultar saldo"
@@ -920,6 +925,15 @@ wallet_info_screen:
   duplicated_name: "Nombre ya en uso"
   view_descriptor: "Ver descriptor"
   view_wallet_backup_data: "Ver datos de respaldo de billetera" 
+  backup_update_dialog:
+    title: "Aviso de actualización de respaldo de la billetera de herencia"
+    step1_title: "1. Si guardaste en otro lugar la frase de respaldo de una billetera de herencia existente, actualízala con la nueva frase de respaldo."
+    step1_description: "Selecciona 'Ver datos de respaldo de billetera' > Comprueba y copia la frase de respaldo actualizada > Guárdala en un lugar seguro"
+    step2_title: "2. Actualiza Vault a la versión $version o posterior."
+    step2_description: "Puedes añadir billeteras y firmar transacciones sin actualizar Vault, pero no puedes importar una billetera de herencia preparada usando la nueva frase de respaldo."
+    why_title: "Q. ¿Por qué se ha cambiado?"
+    why_description: "Los datos de respaldo se crean según reglas acordadas (Miniscript). El momento en que un heredero puede usar los bitcoins debe representarse como 'after', pero se estaba representando incorrectamente como 'older'.\n\nEs un problema de representación de los datos de respaldo y no afecta a las direcciones, los activos ni las condiciones de herencia configuradas de la billetera actual. Puedes seguir usando la billetera tal como se configuró originalmente y no necesitas crear una nueva."
+    confirm: "Entendido"
   wallet_backup_data: "Datos de respaldo de billetera" 
   confirm_backup_data: "Confirmar datos de respaldo"
   no_info: "No hay datos"

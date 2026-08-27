@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -183,6 +184,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 SingleButton(
                                   enableShrinkAnim: true,
                                   title: t.wallet_info_screen.view_wallet_backup_data,
+                                  showNotificationDot: viewModel.hasUnacknowledgedOlderToAfterBackupUpdate,
                                   onPressed: () {
                                     _removeTooltip();
 
@@ -349,6 +351,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         await Future.delayed(const Duration(milliseconds: 300));
         if (!mounted) return;
         await _showMfpInputBottomSheet();
+      }
+
+      if (!mounted || widget.walletType != WalletType.taproot) return;
+      final hasUnacknowledgedBackupUpdate = context
+          .read<WalletProvider>()
+          .walletIdsWithUnacknowledgedOlderToAfterBackupUpdate
+          .contains(widget.id);
+      if (hasUnacknowledgedBackupUpdate) {
+        await _showTaprootBackupUpdateDialog();
       }
     });
   }
@@ -547,6 +558,86 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         showPulldownMenu: false,
         backgroundColor: context.coconutColors.background,
       ),
+    );
+  }
+
+  Future<void> _showTaprootBackupUpdateDialog() async {
+    final vaultVersion = NetworkType.currentNetworkType == NetworkType.mainnet ? '3.1.0' : '5.1.0';
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final colors = dialogContext.coconutColors;
+        final bodyStyle = CoconutTypography.body2_14.setColor(colors.primaryText).copyWith(height: 1.4);
+        final emphasisStyle = CoconutTypography.body2_14_Bold.setColor(colors.primaryText).copyWith(height: 1.4);
+
+        return PopScope(
+          canPop: false,
+          child: Dialog(
+            backgroundColor: colors.popupBackground,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Text(
+                        t.wallet_info_screen.backup_update_dialog.title,
+                        textAlign: TextAlign.center,
+                        style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '${t.wallet_info_screen.backup_update_dialog.step1_title}\n',
+                            style: emphasisStyle,
+                          ),
+                          TextSpan(
+                            text: "${t.wallet_info_screen.backup_update_dialog.step1_description}\n\n",
+                            style: bodyStyle,
+                          ),
+                          TextSpan(
+                            text: '${t.wallet_info_screen.backup_update_dialog.step2_title(version: vaultVersion)}\n',
+                            style: emphasisStyle,
+                          ),
+                          TextSpan(
+                            text: "${t.wallet_info_screen.backup_update_dialog.step2_description}\n\n",
+                            style: bodyStyle,
+                          ),
+                          TextSpan(
+                            text: '${t.wallet_info_screen.backup_update_dialog.why_title}\n',
+                            style: emphasisStyle,
+                          ),
+                          TextSpan(text: t.wallet_info_screen.backup_update_dialog.why_description, style: bodyStyle),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: CoconutButton(
+                        height: 52,
+                        backgroundColor: colors.surfaceButton,
+                        foregroundColor: colors.surfaceButtonText,
+                        text: t.wallet_info_screen.backup_update_dialog.confirm,
+                        onPressed: () => Navigator.pop(dialogContext),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

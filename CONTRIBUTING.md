@@ -8,8 +8,8 @@
 - Do not add new packages. Modifications that remove existing packages are welcome.</br>
   새로운 패키지를 추가하지 마세요. 기존 패키지를 제거할 수 있는 수정은 환영입니다.
 
-- Please set up Git hooks (`dart format .`):</br>
-  Git hooks를 설정해주세요:
+- Please set up Git hooks (run `dart format .` using FVM when available):</br>
+  Git hooks를 설정해주세요(FVM이 있으면 FVM의 Dart를 사용합니다):
 
   ```bash
   cd /path/your/coconut_wallet
@@ -27,7 +27,19 @@
 
   ```bash
   #!/bin/bash
-  dart format . --set-exit-if-changed --line-length=100
+  repo_root="$(git rev-parse --show-toplevel)"
+  fvm_dart_bin="$repo_root/.fvm/flutter_sdk/bin/dart"
+
+  if [[ -x "$fvm_dart_bin" ]]; then
+    dart_bin="$fvm_dart_bin"
+  elif command -v dart >/dev/null 2>&1; then
+    dart_bin="$(command -v dart)"
+  else
+    echo "Dart SDK를 찾을 수 없습니다. FVM을 설치하거나 Dart SDK를 PATH에 추가해 주세요."
+    exit 1
+  fi
+
+  "$dart_bin" format "$repo_root" --set-exit-if-changed --line-length=120
   if [[ $? -ne 0 ]]; then
     echo "Code formatting issues found. Please reformat and commit again."
     exit 1

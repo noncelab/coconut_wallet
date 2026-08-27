@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 
 class SignedPsbtScannerViewModel {
   late final SendInfoProvider _sendInfoProvider;
@@ -29,10 +30,11 @@ class SignedPsbtScannerViewModel {
 
   bool isSignedPsbtMatchingUnsignedPsbt(Psbt signedPsbt) {
     try {
-      var unsignedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+      Psbt unsignedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
 
+      final wallet = getWalletBase();
       final defaultCheckResult =
-          unsignedPsbt.sendingAmount == signedPsbt.sendingAmount &&
+          unsignedPsbt.sendingAmount(wallet) == signedPsbt.sendingAmount(wallet) &&
           unsignedPsbt.unsignedTransaction?.transactionHash == signedPsbt.unsignedTransaction?.transactionHash;
 
       if (isMultisig || defaultCheckResult) {
@@ -62,6 +64,7 @@ class SignedPsbtScannerViewModel {
 
       return true;
     } catch (e) {
+      Logger.error(e);
       return false;
     }
   }
