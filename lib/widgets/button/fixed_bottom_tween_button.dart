@@ -128,29 +128,32 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                     // 왼쪽 버튼
                     SizedBox(
                       width: leftButtonWidth,
-                      child: ShrinkAnimationButton(
-                        onPressed: () {
-                          widget.leftButtonClicked();
-                        },
-                        isActive: widget.isLeftButtonActive,
-                        defaultColor: widget.leftButtonBackgroundColor ?? colors.secondaryButtonBackground,
-                        pressedColor: getDarkerColor(
-                          widget.leftButtonBackgroundColor ?? colors.secondaryButtonBackground,
-                        ),
-                        disabledColor: colors.surfaceDisabled,
-                        borderRadius: 12,
-                        child: SizedBox(
-                          width: leftButtonWidth,
-                          height: buttonHeight,
-                          child: Center(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                widget.leftText,
-                                style: CoconutTypography.body2_14_Bold.setColor(
-                                  widget.isLeftButtonActive
-                                      ? (widget.leftButtonTextColor ?? colors.secondaryButtonText)
-                                      : colors.tertiaryText,
+                      child: MediaQuery(
+                        data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                        child: ShrinkAnimationButton(
+                          onPressed: () {
+                            widget.leftButtonClicked();
+                          },
+                          isActive: widget.isLeftButtonActive,
+                          defaultColor: widget.leftButtonBackgroundColor ?? colors.secondaryButtonBackground,
+                          pressedColor: getDarkerColor(
+                            widget.leftButtonBackgroundColor ?? colors.secondaryButtonBackground,
+                          ),
+                          disabledColor: colors.surfaceDisabled,
+                          borderRadius: 12,
+                          child: SizedBox(
+                            width: leftButtonWidth,
+                            height: buttonHeight,
+                            child: Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  widget.leftText,
+                                  style: CoconutTypography.body2_14_Bold.setColor(
+                                    widget.isLeftButtonActive
+                                        ? (widget.leftButtonTextColor ?? colors.secondaryButtonText)
+                                        : colors.tertiaryText,
+                                  ),
                                 ),
                               ),
                             ),
@@ -162,34 +165,37 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                     // 오른쪽 버튼
                     SizedBox(
                       width: rightButtonWidth,
-                      child: ShrinkAnimationButton(
-                        onPressed: () {
-                          widget.rightButtonClicked();
-                        },
-                        isActive: widget.isRightButtonActive,
-                        defaultColor: widget.rightButtonBackgroundColor ?? colors.actionButtonBackground,
-                        pressedColor:
-                            widget.rightButtonBackgroundColor != null
-                                ? getDarkerColor(widget.rightButtonBackgroundColor!)
-                                : colors.actionButtonPressed,
-                        disabledColor: colors.actionButtonDisabled,
-                        borderRadius: 12,
-                        child: SizedBox(
-                          width: rightButtonWidth,
-                          height: buttonHeight,
-                          child: Center(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                widget.rightText,
-                                textAlign: TextAlign.center,
-                                style: CoconutTypography.body2_14_Bold
-                                    .setColor(
-                                      widget.isRightButtonActive
-                                          ? (widget.rightButtonTextColor ?? colors.actionButtonText)
-                                          : colors.actionButtonDisabledText,
-                                    )
-                                    .copyWith(height: 1.0),
+                      child: MediaQuery(
+                        data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                        child: ShrinkAnimationButton(
+                          onPressed: () {
+                            widget.rightButtonClicked();
+                          },
+                          isActive: widget.isRightButtonActive,
+                          defaultColor: widget.rightButtonBackgroundColor ?? colors.actionButtonBackground,
+                          pressedColor:
+                              widget.rightButtonBackgroundColor != null
+                                  ? getDarkerColor(widget.rightButtonBackgroundColor!)
+                                  : colors.actionButtonPressed,
+                          disabledColor: colors.actionButtonDisabled,
+                          borderRadius: 12,
+                          child: SizedBox(
+                            width: rightButtonWidth,
+                            height: buttonHeight,
+                            child: Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  widget.rightText,
+                                  textAlign: TextAlign.center,
+                                  style: CoconutTypography.body2_14_Bold
+                                      .setColor(
+                                        widget.isRightButtonActive
+                                            ? (widget.rightButtonTextColor ?? colors.actionButtonText)
+                                            : colors.actionButtonDisabledText,
+                                      )
+                                      .copyWith(height: 1.0),
+                                ),
                               ),
                             ),
                           ),
