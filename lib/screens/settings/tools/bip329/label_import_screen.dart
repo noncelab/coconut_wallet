@@ -20,9 +20,9 @@ enum LabelImportStep { fileSelection, optionSelection, loading, success, error, 
 
 class LabelImportScreen extends StatefulWidget {
   final int? walletId;
-  final bool importMemosFromOtherWalletsFixed;
+  final bool showImportMemosFromOtherWalletsOption;
 
-  const LabelImportScreen({super.key, this.walletId, this.importMemosFromOtherWalletsFixed = false});
+  const LabelImportScreen({super.key, this.walletId, this.showImportMemosFromOtherWalletsOption = true});
 
   @override
   State<LabelImportScreen> createState() => _LabelImportScreenState();
@@ -47,7 +47,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
   void initState() {
     super.initState();
     _importViewModel = LabelImportViewModel(walletProvider: context.read<WalletProvider>());
-    _importMemosFromOtherWallets = widget.importMemosFromOtherWalletsFixed;
+    _importMemosFromOtherWallets = false;
     _filesFuture = _importViewModel.getImportableLabelFiles();
   }
 
@@ -283,62 +283,85 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
   }
 
   Widget _buildOptionSelectionView() {
-    return ImportOptionCard(
-      title: Column(
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
         children: [
-          Text(
-            t.label_import_screen.option_selection.title,
-            style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-            textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
-          ),
-          Text(
-            _fileName ?? '',
-            style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-            textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          CoconutLayout.spacing_100h,
-          RichText(
-            textAlign: TextAlign.center,
-            textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
-            text: TextSpan(
-              style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
-              children: [
-                TextSpan(text: t.label_import_screen.option_selection.description_1),
-                const TextSpan(text: '\n'),
-                TextSpan(
-                  text: t.label_import_screen.option_selection.description_2,
-                  style: CoconutTypography.body3_12_Bold,
+          const CircularLoadingSpinner(),
+          CoconutLayout.spacing_1000h,
+          Column(
+            children: [
+              Text(
+                t.label_import_screen.option_selection.title,
+                style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+                textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
+              ),
+              Text(
+                _fileName ?? '',
+                style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              CoconutLayout.spacing_100h,
+              RichText(
+                textAlign: TextAlign.center,
+                textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
+                text: TextSpan(
+                  style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                  children: [
+                    TextSpan(text: t.label_import_screen.option_selection.description_1),
+                    const TextSpan(text: '\n'),
+                    TextSpan(
+                      text: t.label_import_screen.option_selection.description_2,
+                      style: CoconutTypography.body3_12_Bold,
+                    ),
+                  ],
                 ),
+              ),
+            ],
+          ),
+          CoconutLayout.spacing_500h,
+          Container(
+            decoration: BoxDecoration(
+              color: context.coconutColors.surface,
+              borderRadius: const BorderRadius.all(Radius.circular(12)),
+            ),
+            child: Column(
+              children: [
+                OptionCard(
+                  title: t.label_import_screen.option_selection.add_memo_to_existing.title,
+                  subtitle: [TextSpan(text: t.label_import_screen.option_selection.add_memo_to_existing.subtitle)],
+                  isSelected: _overwriteMemo,
+                  onTap: () {
+                    setState(() {
+                      _overwriteMemo = !_overwriteMemo;
+                    });
+                  },
+                ),
+                if (widget.showImportMemosFromOtherWalletsOption) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                    child: Divider(color: context.coconutColors.border.withValues(alpha: 0.21), height: 1),
+                  ),
+                  OptionCard(
+                    title: t.label_import_screen.option_selection.import_memos_from_other_wallets.title,
+                    subtitle: [
+                      TextSpan(text: t.label_import_screen.option_selection.import_memos_from_other_wallets.subtitle),
+                    ],
+                    isSelected: _importMemosFromOtherWallets,
+                    onTap: () {
+                      setState(() {
+                        _importMemosFromOtherWallets = !_importMemosFromOtherWallets;
+                      });
+                    },
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
-      buttons: [
-        OptionCard(
-          title: t.label_import_screen.option_selection.add_memo_to_existing.title,
-          subtitle: [TextSpan(text: t.label_import_screen.option_selection.add_memo_to_existing.subtitle)],
-          isSelected: _overwriteMemo,
-          onTap: () {
-            setState(() {
-              _overwriteMemo = !_overwriteMemo;
-            });
-          },
-        ),
-        OptionCard(
-          title: t.label_import_screen.option_selection.import_memos_from_other_wallets.title,
-          subtitle: [TextSpan(text: t.label_import_screen.option_selection.import_memos_from_other_wallets.subtitle)],
-          isSelected: _importMemosFromOtherWallets,
-          isEnabled: !widget.importMemosFromOtherWalletsFixed,
-          onTap: () {
-            setState(() {
-              _importMemosFromOtherWallets = !_importMemosFromOtherWallets;
-            });
-          },
-        ),
-      ],
     );
   }
 

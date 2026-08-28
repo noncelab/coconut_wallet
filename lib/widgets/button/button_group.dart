@@ -26,7 +26,7 @@ class ButtonGroup extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.coconutColors.surface,
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
       ),
       child: Column(children: buttonListWithDividers),
     );

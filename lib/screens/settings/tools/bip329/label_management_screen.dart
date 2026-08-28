@@ -13,9 +13,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class LabelManagementScreen extends StatefulWidget {
   final int? walletId;
-  final bool importMemosFromOtherWalletsFixed;
+  final bool showImportMemosFromOtherWalletsOption;
 
-  const LabelManagementScreen({super.key, this.walletId, this.importMemosFromOtherWalletsFixed = false});
+  const LabelManagementScreen({super.key, this.walletId, this.showImportMemosFromOtherWalletsOption = true});
 
   @override
   State<LabelManagementScreen> createState() => _LabelManagementScreenState();
@@ -188,7 +188,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
         builder:
             (context) => LabelImportScreen(
               walletId: walletId,
-              importMemosFromOtherWalletsFixed: widget.importMemosFromOtherWalletsFixed,
+              showImportMemosFromOtherWalletsOption: widget.showImportMemosFromOtherWalletsOption,
             ),
       ),
     );

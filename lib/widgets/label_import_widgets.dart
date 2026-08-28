@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/label/label_result.dart';
-import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/card/label_result_card.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
@@ -171,29 +170,6 @@ class ImportLabelProgressCard extends StatelessWidget {
           title,
           CoconutLayout.spacing_500h,
           LabelResultCard(steps: steps, showSkeleton: showSkeleton),
-        ],
-      ),
-    );
-  }
-}
-
-class ImportOptionCard extends StatelessWidget {
-  final Widget title;
-  final List<Widget> buttons;
-
-  const ImportOptionCard({super.key, required this.title, required this.buttons});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          const CircularLoadingSpinner(),
-          CoconutLayout.spacing_1000h,
-          title,
-          CoconutLayout.spacing_500h,
-          ButtonGroup(buttons: buttons),
         ],
       ),
     );

@@ -384,8 +384,8 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
   }
 
   void _showLabelsManagementScreen(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(CupertinoPageRoute(builder: (_) => const LabelManagementScreen(importMemosFromOtherWalletsFixed: true)));
+    Navigator.of(context).push(
+      CupertinoPageRoute(builder: (_) => const LabelManagementScreen(showImportMemosFromOtherWalletsOption: false)),
+    );
   }
 }
