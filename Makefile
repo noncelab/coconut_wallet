@@ -83,21 +83,29 @@ fastlane-regtest:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
 
 # Production draft/App Store preparation (manual review submission remains required)
-fastlane-production-mainnet:
-ifneq ($(SKIP_PREP),true)
-	$(MAKE) pre-deploy
-	$(MAKE) realm-clean
+ifeq ($(SKIP_PREP),true)
+PRODUCTION_PREP_COMMAND := true
+else
+PRODUCTION_PREP_COMMAND := $(MAKE) pre-deploy && $(MAKE) realm-clean
 endif
-	cd android/fastlane_production && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production
-	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true
+
+fastlane-production-mainnet:
+	@FASTLANE_USER="$${FASTLANE_USER:-}"; \
+	if [ -z "$$FASTLANE_USER" ]; then printf "Apple ID Username: "; IFS= read -r FASTLANE_USER; fi; \
+	if [ -z "$$FASTLANE_USER" ]; then echo "Apple ID username cannot be empty." >&2; exit 1; fi; \
+	export FASTLANE_USER; \
+	$(PRODUCTION_PREP_COMMAND) && \
+	(cd android/fastlane_production && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production) && \
+	(cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true)
 
 fastlane-production-regtest:
-ifneq ($(SKIP_PREP),true)
-	$(MAKE) pre-deploy
-	$(MAKE) realm-clean
-endif
-	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production
-	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true
+	@FASTLANE_USER="$${FASTLANE_USER:-}"; \
+	if [ -z "$$FASTLANE_USER" ]; then printf "Apple ID Username: "; IFS= read -r FASTLANE_USER; fi; \
+	if [ -z "$$FASTLANE_USER" ]; then echo "Apple ID username cannot be empty." >&2; exit 1; fi; \
+	export FASTLANE_USER; \
+	$(PRODUCTION_PREP_COMMAND) && \
+	(cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production) && \
+	(cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true)
 	
 fastlane-mainnet-skipbridge:
 	cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_bridge:true
