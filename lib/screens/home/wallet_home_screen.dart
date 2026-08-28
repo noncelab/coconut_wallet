@@ -32,6 +32,7 @@ import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/animated_dots_text.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/card/notice_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/icon/transaction_status_gradient_mask.dart';
@@ -129,6 +130,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   bool _isFirstLoad = true;
   bool _isWalletListLoading = false;
+  final Set<int> _dismissedBackupUpdateWalletIds = <int>{};
+  Set<int>? _initialBackupUpdateWalletIds;
 
   int _recentTransactionCurrentPage = 0;
   late ScrollController _pageIndicatorController;
@@ -166,7 +169,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           bool,
           Map<int, AnimatedBalanceData>,
           Tuple2<int?, Map<int, dynamic>>,
-          NetworkStatus
+          Tuple2<NetworkStatus, String>
         >
       >(
         selector:
@@ -177,7 +180,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               vm.shouldShowLoadingIndicator,
               vm.walletBalanceMap,
               Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
-              vm.networkStatus,
+              Tuple2(vm.networkStatus, vm.unacknowledgedOlderToAfterBackupUpdateWalletIdsSignature),
             ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletHomeViewModel>(context, listen: false);
@@ -188,9 +191,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           final shouldShowLoadingIndicator = data.item4;
           final walletBalanceMap = data.item5;
           final fakeBalanceData = data.item6;
-          final networkStatus = data.item7;
+          final networkStatus = data.item7.item1;
           final homeFeatures = viewModel.homeFeatures;
           final hasEnabledHomeFeature = homeFeatures.any((feature) => feature.isEnabled);
+
+          if (_initialBackupUpdateWalletIds == null && !shouldShowLoadingIndicator) {
+            _initialBackupUpdateWalletIds = Set<int>.from(
+              viewModel.walletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
+            );
+          }
 
           if (viewModel.isWalletListChanged(_previousWalletList, walletItem, walletBalanceMap)) {
             _handleWalletListUpdate(walletItem);
@@ -234,6 +243,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           _buildAppBar(networkStatus),
                           // pull to refresh시 로딩 인디케이터를 보이기 위함
                           CupertinoSliverRefreshControl(onRefresh: viewModel.onRefresh),
+                          _buildBackupUpdateNotice(viewModel, walletItem),
                           _buildLoadingIndicator(context, viewModel),
                           _buildHeader(
                             balanceVisibilityData.item1,
@@ -475,6 +485,46 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     } finally {
       _isWalletListLoading = false;
     }
+  }
+
+  Widget _buildBackupUpdateNotice(WalletHomeViewModel viewModel, List<WalletItemBase> walletItems) {
+    final unacknowledgedWalletIds = viewModel.walletIdsWithUnacknowledgedOlderToAfterBackupUpdate;
+    final pendingWallet =
+        walletItems
+            .where(
+              (item) => unacknowledgedWalletIds.contains(item.id) && !_dismissedBackupUpdateWalletIds.contains(item.id),
+            )
+            .firstOrNull;
+    final wallet = pendingWallet;
+    if (wallet == null) return const SliverToBoxAdapter(child: SizedBox.shrink());
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: NoticeCard(
+          title: t.wallet_home_screen.backup_update_notice.title,
+          description: t.wallet_home_screen.backup_update_notice.description,
+          actionLabel: t.wallet_home_screen.backup_update_notice_action,
+          onDismiss: () {
+            setState(() {
+              _dismissedBackupUpdateWalletIds.addAll(_initialBackupUpdateWalletIds ?? {wallet.id});
+            });
+          },
+          onDetails: () {
+            Navigator.pushNamed(
+              context,
+              '/wallet-info',
+              arguments: {
+                'id': wallet.id,
+                'walletType': wallet.walletType,
+                'entryPoint': kEntryPointWalletHome,
+                'showMfpInput': false,
+              },
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildHeader(

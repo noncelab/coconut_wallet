@@ -9,11 +9,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPrefsRepository {
   late SharedPreferences _sharedPrefs;
+  bool _isInitialized = false;
   SharedPreferences get sharedPrefs => _sharedPrefs;
+  bool get isInitialized => _isInitialized;
 
   @Deprecated('Test code에서만 사용합니다')
   void setSharedPreferencesForTest(SharedPreferences sp) {
     _sharedPrefs = sp;
+    _isInitialized = true;
   }
 
   static final SharedPrefsRepository _instance = SharedPrefsRepository._internal();
@@ -25,6 +28,7 @@ class SharedPrefsRepository {
   Future<void> init() async {
     // init in main.dart
     _sharedPrefs = await SharedPreferences.getInstance();
+    _isInitialized = true;
   }
 
   /// Common--------------------------------------------------------------------
@@ -230,5 +234,37 @@ class SharedPrefsRepository {
   Future<void> clearUserServer() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(SharedPrefKeys.kUserServers);
+  }
+
+  /// coconut_lib의 older -> after 변환으로 백업 정보가 변경된 지갑 ID 관리
+  Set<int> getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate() {
+    final ids =
+        _sharedPrefs.getStringList(SharedPrefKeys.kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate) ??
+        const <String>[];
+    return ids.map(int.tryParse).whereType<int>().toSet();
+  }
+
+  Future<void> addWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate(Iterable<int> walletIds) async {
+    final ids = getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate()..addAll(walletIds);
+    await _sharedPrefs.setStringList(
+      SharedPrefKeys.kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
+      ids.map((id) => id.toString()).toList(),
+    );
+  }
+
+  Future<void> addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(int walletId) async {
+    await addWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate([walletId]);
+  }
+
+  Future<void> removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(int walletId) async {
+    final ids = getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate()..remove(walletId);
+    await _sharedPrefs.setStringList(
+      SharedPrefKeys.kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
+      ids.map((id) => id.toString()).toList(),
+    );
+  }
+
+  bool hasUnacknowledgedOlderToAfterBackupUpdate(int walletId) {
+    return getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate().contains(walletId);
   }
 }

@@ -1,3 +1,9 @@
+## mainnet 0.16.0, regtest 3.16.0 - 26/08/27
+### Enhanced
+1. 자체 보안 감사 결과를 반영했어요.
+### Fixed
+1. 지갑 초기화 시 삭제 누락되던 부가 정보
+
 ## mainnet 0.15.0, regtest 3.15.0 - 26/08/11
 ### Added
 1. Trezor 지원

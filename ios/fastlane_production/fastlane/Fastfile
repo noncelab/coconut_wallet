@@ -19,6 +19,11 @@ def prepare_ios_production(flavor:, opts:)
   skip_clean = UtilHelper.truthy?(opts[:skip_clean] || ENV["SKIP_CLEAN"])
   skip_pubget = UtilHelper.truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
 
+  apple_id_username = (opts[:username] || ENV["FASTLANE_USER"]).to_s.strip
+  apple_id_username = UI.input("Apple ID Username: ").to_s.strip if apple_id_username.empty?
+  UI.user_error!("Apple ID username cannot be empty.") if apple_id_username.empty?
+  ENV["FASTLANE_USER"] = apple_id_username
+
   marketing, old_build = PubspecHelper.version_tuple_for(platform: platform_, flavor: flavor)
   new_build = old_build + 1
   metadata_path = ProductionReleaseHelper.validate_metadata!(
@@ -29,6 +34,11 @@ def prepare_ios_production(flavor:, opts:)
   review_attachment = ProductionReleaseHelper.review_attachment!(root: ROOT_DIR, flavor: flavor)
 
   begin
+    cocoapods(
+      podfile: File.join(ROOT_DIR, "ios", "Podfile"),
+      use_bundle_exec: true
+    )
+
     prep_cmds = []
     prep_cmds << "fvm flutter clean" unless skip_prep || skip_clean
     prep_cmds << "fvm flutter pub get" unless skip_prep || skip_pubget
@@ -51,7 +61,7 @@ def prepare_ios_production(flavor:, opts:)
     upload_to_app_store(
       ipa: ipa_path,
       app_identifier: IOS_APP_IDENTIFIERS.fetch(flavor),
-      username: ENV["FASTLANE_USER"],
+      username: apple_id_username,
       team_id: ENV["APP_STORE_CONNECT_TEAM_ID"],
       app_version: marketing,
       metadata_path: metadata_path,

@@ -10,15 +10,24 @@ class RealmManager {
   static const String nonceField = 'nonce';
   static const String pinField = kSecureStoragePinKey;
 
-  final Realm _realm;
+  late final Realm _realm;
+  final Set<int> _migratedWalletIds = <int>{};
   Realm get realm => _realm;
+  Set<int> get migratedWalletIds => Set.unmodifiable(_migratedWalletIds);
 
-  RealmManager({Realm? realm})
-    : _realm =
-          realm ??
-          Realm(
-            Configuration.local(realmAllSchemas, schemaVersion: kRealmVersion, migrationCallback: defaultMigration),
-          );
+  RealmManager({Realm? realm}) {
+    _realm =
+        realm ??
+        Realm(
+          Configuration.local(
+            realmAllSchemas,
+            schemaVersion: kRealmVersion,
+            migrationCallback:
+                (migration, oldVersion) =>
+                    defaultMigration(migration, oldVersion, migratedWalletIds: _migratedWalletIds),
+          ),
+        );
+  }
 
   @visibleForTesting
   RealmManager.withRealm(this._realm);

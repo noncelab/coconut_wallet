@@ -186,6 +186,18 @@ class WalletHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Set<int> get walletIdsWithUnacknowledgedOlderToAfterBackupUpdate =>
+      _walletProvider.walletIdsWithUnacknowledgedOlderToAfterBackupUpdate;
+
+  bool get hasUnacknowledgedOlderToAfterBackupUpdate => _walletProvider.hasUnacknowledgedOlderToAfterBackupUpdate;
+
+  String get unacknowledgedOlderToAfterBackupUpdateWalletIdsSignature =>
+      (walletIdsWithUnacknowledgedOlderToAfterBackupUpdate.toList()..sort()).join(',');
+
+  Future<void> acknowledgeOlderToAfterBackupUpdate(int walletId) {
+    return _walletProvider.acknowledgeOlderToAfterBackupUpdate(walletId);
+  }
+
   bool get isEmptyFavoriteWallet => _isEmptyFavoriteWallet;
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isFiatBalanceHidden => _isFiatBalanceHidden;

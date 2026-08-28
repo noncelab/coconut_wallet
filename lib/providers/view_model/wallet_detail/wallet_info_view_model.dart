@@ -116,6 +116,13 @@ class WalletInfoViewModel extends ChangeNotifier {
   bool get canSpendBothPaths =>
       _walletItemBase is TaprootWalletItem && (_walletItemBase as TaprootWalletItem).canSpendBothPaths;
 
+  bool get hasUnacknowledgedOlderToAfterBackupUpdate =>
+      _walletProvider.walletIdsWithUnacknowledgedOlderToAfterBackupUpdate.contains(_walletId);
+
+  Future<void> acknowledgeOlderToAfterBackupUpdate() {
+    return _walletProvider.acknowledgeOlderToAfterBackupUpdate(_walletId);
+  }
+
   bool get hasSingleTaprootParent {
     if (_walletItemBase is! TaprootWalletItem) return false;
 
