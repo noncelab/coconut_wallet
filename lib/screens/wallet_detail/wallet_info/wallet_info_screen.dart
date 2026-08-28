@@ -159,14 +159,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: ButtonGroup(
                             buttons: [
-                              SingleButton(
-                                enableShrinkAnim: true,
-                                title: t.view_all_addresses,
-                                onPressed: () {
-                                  _removeTooltip();
-                                  Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
-                                },
-                              ),
                               if (widget.walletType == WalletType.singleSignature) ...[
                                 SingleButton(
                                   enableShrinkAnim: true,
@@ -239,6 +231,30 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             ),
                           ),
                         ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: SingleButton(
+                            enableShrinkAnim: true,
+                            title: t.wallet_info_screen.resync_label,
+                            rightElement: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: context.coconutColors.primaryText.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: SvgPicture.asset(
+                                'assets/svg/arrow-reload.svg',
+                                width: 16,
+                                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                              ),
+                            ),
+                            onPressed: () {
+                              _removeTooltip();
+                              Navigator.pushNamed(context, '/wallet-resync', arguments: {'id': widget.id});
+                            },
+                          ),
+                        ),
+                        CoconutLayout.spacing_200h,
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: SingleButton(
@@ -568,8 +584,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   Future<void> _showTaprootBackupUpdateDialog() async {
-    final vaultVersion = NetworkType.currentNetworkType == NetworkType.mainnet ? '3.1.0' : '5.1.0';
-
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -611,7 +625,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             style: bodyStyle,
                           ),
                           TextSpan(
-                            text: '${t.wallet_info_screen.backup_update_dialog.step2_title(version: vaultVersion)}\n',
+                            text: '${t.wallet_info_screen.backup_update_dialog.step2_title}\n',
                             style: emphasisStyle,
                           ),
                           TextSpan(

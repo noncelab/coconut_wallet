@@ -54,8 +54,15 @@ class ElectrumService {
       /// 1분 이내 요청이 없으면 소켓 연결 중단됨
       /// 소켓 연결 유지를 위해 ping 요청 필요
       if (isConnected) {
-        _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) {
-          ping();
+        _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) async {
+          try {
+            await ping();
+          } catch (e) {
+            // 소켓 자체는 에러/종료 이벤트 없이 응답만 안 올 수 있음
+            // ping 실패로 직접 감지해서 연결 끊김으로 확정
+            Logger.error('ElectrumService: $host:$port ping 실패, 연결 끊김으로 처리: $e');
+            _socketManager.markConnectionLost();
+          }
         });
       }
 

@@ -122,6 +122,9 @@ relative_time:
   hours_ago(cardinal):
     one: "Hace 1 hora"
     other: "Hace ${n} horas"
+  days_ago(cardinal):
+    one: "Hace 1 día"
+    other: "Hace ${n} días"
 
 apply_item: "Aplicar a $count elementos"
 fee_sats: " ($value sat/vB)"
@@ -511,6 +514,7 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elementos"
+  watched_addresses: "$count vigiladas"
   primary_wallet: "Cartera Principal"
   exclude_from_total_amount: "Excluido del Total"
   home_balance: "Saldo en la Pantalla Principal"
@@ -808,8 +812,9 @@ settings_screen:
     error_msg:
       invalid_domain_format: "No es un formato de dominio válido"
       port_out_of_range: "Por favor, ingrese un número de puerto válido (1–65535)"
-    alert: 
+    alert:
       connection_failed: "¡No se puede conectar!"
+      network_mismatch: "No se puede conectar: red incompatible"
       connecting: "Conectando..."
       connected: "Conectado"
     popup:
@@ -848,9 +853,12 @@ address_list_screen:
   receiving: "Recibiendo"
   change: "Cambio"
   show_only_unused_address: "Mostrar solo direcciones sin usar"
+  show_only_watched_address: "Mostrar solo direcciones vigiladas"
+  show_only_watched_address_count: "Mostrar solo direcciones vigiladas ($count)"
   set_amount: "establecer importe"
   share: "compartir"
   enter_receive_amount: "Ingrese la cantidad que debe recibir"
+  discovered_new_balance_address: "Se encontraron $count direcciones con nuevo saldo"
 utxo_overview_screen:
   by_amount: "Monto"
   by_tag: "Etiqueta"
@@ -922,6 +930,7 @@ wallet_info_screen:
   title: "Información de $name"
   transaction: "Transacción"
   utxo: "UTXO"
+  watched_addresses: "Direcciones vigiladas"
   target_quantity: "Cantidad objetivo"
   target_progress: "$percent% / $target"
   target_not_set_secondary: "Mostraremos tu tasa de logro cuando configures la cantidad objetivo"
@@ -952,6 +961,7 @@ wallet_info_screen:
   wallet_backup_data: "Datos de respaldo de billetera" 
   confirm_backup_data: "Confirmar datos de respaldo"
   no_info: "No hay datos"
+  resync_label: "Resincronizar billetera"
   tooltip:
     mfp_placeholder_description: "Esta es una billetera agregada con clave pública extendida\n y la huella digital maestra no se ingresó\n por lo que se muestra como 00000000." 
     wallet_backup_data: "Esta es la información de respaldo BSMS(BIP-129) para esta billetera. Puedes usar estos datos para reconstruir la billetera multifirma en caso de pérdida o reemplazo de dispositivo. Por favor, manténgalo seguro y ten cuidado al compartir externamente." 
@@ -977,6 +987,31 @@ wallet_info_screen:
     disconnect_button: "Desconectar"
     disconnect_confirm_title: "Desconectar"
     disconnect_confirm_description: "Se desconectará el dispositivo actual.\nNecesitará volver a conectar para la próxima firma."
+wallet_resync_screen:
+  title: "Resincronizar billetera"
+  exit_blocked_toast: "Espera hasta que termine la resincronización"
+  confirm:
+    title: "Borra los datos de la billetera guardados en la app\ny los vuelve a cargar desde cero"
+    description: "Las notas de transacción, etiquetas UTXO y bloqueos se conservan"
+    connection_alert:
+      connecting: "Comprobando la conexión al servidor"
+      connected: "Conectado al servidor"
+      failed: "No se puede conectar al servidor"
+      network_mismatch: "Red distinta, no se puede conectar"
+    warning:
+      title: "Esta es una función para solucionar problemas"
+      description: "Úsala solo si el saldo o el historial de transacciones se ve incorrecto, o si la sincronización no funciona"
+    last_resync_hint: "Última resincronización: $time"
+    cta: "Iniciar resincronización"
+  progress:
+    phase_wiping: "Eliminando los datos actuales"
+    phase_scanning: "Volviendo a cargar los datos"
+    scanning_hint: "Si hay muchos datos, puede tardar más en terminar\nEspera hasta que termine"
+    phase_restoring_metadata: "Restaurando notas de transacción, etiquetas UTXO y bloqueos"
+    success_title: "Datos recargados"
+    success_cta: "Ir a la billetera"
+    error_title: "No se pudieron recargar los datos"
+    error_cta: "Reintentar"
 wallet_signer_section:
   title: "Método de firma"
   segmented_control:
@@ -1272,6 +1307,7 @@ errors:
   realm_exception: "Se produjo un error durante la operación Realm."
   node_unknown: "Se produjo un error desconocido al conectar con el nodo."
   broadcast_error: "Fallo al enviar la transacción."
+  chain_mismatch_error: "No se puede conectar: red incompatible"
   network_connect: "No hay conexión a la red."
   network_disconnected: "Red desconectada"
   network_not_found: "¡Red no conectada!"
@@ -1335,8 +1371,8 @@ tooltip:
     select_wallet: "seleccionar $name"
     select_menu: "pulsar $menu"
     scan_qr_below: "y escanea el código QR a continuación."
-  address_receiving: "Esta es la dirección usada cuando recibes Bitcoin. En inglés, se llama Receiving o External."
-  address_change: "Esta es la dirección donde recibes cambio cuando envías Bitcoin. En inglés, se llama Change."
+  address_receiving: "Esta es la dirección usada cuando recibes Bitcoin."
+  address_change: "Esta es la dirección donde recibes cambio cuando envías Bitcoin."
   utxo: "UTXO significa Unspent Transaction Output, es decir, saldo no utilizado. Bitcoin no tiene el concepto de saldo. Recuerda que el saldo mostrado en tu billetera es la suma de UTXOs."
   faucet: "Prueba libremente con Bitcoin de prueba"
   multisig_wallet: "Esta es una billetera multifirma que requiere\n$count firmas de $total claves."  
@@ -1395,8 +1431,8 @@ alert:
     already_exist: "Billetera duplicada"  
     already_exist_description: "Billetera ya agregada. ($name)"  
   wallet_delete:
-    confirm_delete: "Eliminar billetera"  
-    confirm_delete_description: "¿Estás seguro de querer eliminar la billetera?"  
+    confirm_delete: "Eliminar billetera"
+    confirm_delete_description: "¿Estás seguro de querer eliminar la billetera?"
   update:
     title: "Notificación de actualización"
     description: "Para un servicio estable,\npor favor, actualiza a la última versión."

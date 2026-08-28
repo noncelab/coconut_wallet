@@ -9,6 +9,10 @@ enum IsolateControllerCommand {
   getRecommendedFees,
   getSocketConnectionStatus,
   getTransactionRecord,
+  syncDormantAddresses,
+  syncViewedAddresses,
+  resyncWallet,
+  shutdown,
 }
 
 enum IsolateStateMethod {
@@ -19,6 +23,10 @@ enum IsolateStateMethod {
   setNodeSyncStateToSyncing,
   setNodeSyncStateToCompleted,
   setNodeSyncStateToFailed,
+  setWalletResyncPhase,
+  setWalletResyncFetchProgress,
+  addWalletFetchDispatched,
+  addWalletFetchCompleted,
 }
 
 enum IsolateManagerCommand { initializationCompleted, initializationFailed, updateState }

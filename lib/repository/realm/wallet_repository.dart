@@ -259,6 +259,46 @@ class WalletRepository extends BaseRepository {
     });
   }
 
+  /// 지갑 재동기화를 위해 온체인 데이터를 초기화한다.
+  /// deleteWallet과 달리 지갑 row 자체와 RealmUtxoTag/RealmTransactionMemo는 남겨둔다.
+  Future<void> resetWalletForResync(int walletId) async {
+    final walletBase = realm.find<RealmWalletBase>(walletId);
+    if (walletBase == null) {
+      throw StateError('[resetWalletForResync] Wallet not found: $walletId');
+    }
+
+    await _transactionDraftRepository.deleteAllByWalletId(walletId);
+
+    final transactions = realm.query<RealmTransaction>('walletId == $walletId');
+    final walletBalance = realm.query<RealmWalletBalance>('walletId == $walletId');
+    final walletAddress = realm.query<RealmWalletAddress>('walletId == $walletId');
+    final utxos = realm.query<RealmUtxo>('walletId == $walletId');
+    final scriptStatuses = realm.query<RealmScriptStatus>('walletId == $walletId');
+
+    await realm.writeAsync(() {
+      if (transactions.isNotEmpty) {
+        realm.deleteMany(transactions);
+      }
+      if (walletBalance.isNotEmpty) {
+        realm.deleteMany(walletBalance);
+      }
+      if (walletAddress.isNotEmpty) {
+        realm.deleteMany(walletAddress);
+      }
+      if (utxos.isNotEmpty) {
+        realm.deleteMany(utxos);
+      }
+      if (scriptStatuses.isNotEmpty) {
+        realm.deleteMany(scriptStatuses);
+      }
+
+      walletBase.usedReceiveIndex = -1;
+      walletBase.usedChangeIndex = -1;
+      walletBase.generatedReceiveIndex = -1;
+      walletBase.generatedChangeIndex = -1;
+    });
+  }
+
   /// 다음 지갑 ID 가져오기
   int _getNextWalletId() {
     var id = _sharedPrefs.getInt(SharedPrefKeys.kNextIdField);

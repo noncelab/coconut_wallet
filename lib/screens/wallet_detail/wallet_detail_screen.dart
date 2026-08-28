@@ -439,6 +439,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
 
     if (_viewModel.networkStatus == NetworkStatus.connectionFailed) {
+      _viewModel.reconnectIfNeeded();
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
@@ -713,9 +714,11 @@ class TransactionList extends StatefulWidget {
 }
 
 class _TransactionListState extends State<TransactionList> {
-  late List<TransactionRecord> _displayedTxList = [];
+  final List<TransactionRecord> _displayedTxList = [];
   final GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
+  bool _isUpdatingTxList = false;
+  List<TransactionRecord>? _pendingTxList;
 
   @override
   void initState() {
@@ -729,7 +732,7 @@ class _TransactionListState extends State<TransactionList> {
       builder: (_, txList, __) {
         if (!listEquals(_displayedTxList, txList) || !_deepEquals(_displayedTxList, txList)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _handleTransactionListUpdate(txList);
+            _scheduleTransactionListUpdate(txList);
           });
         }
         return txList.isNotEmpty ? _buildSliverAnimatedList(_displayedTxList) : _buildEmptyState();
@@ -746,6 +749,22 @@ class _TransactionListState extends State<TransactionList> {
       }
     }
     return true;
+  }
+
+  void _scheduleTransactionListUpdate(List<TransactionRecord> txList) {
+    _pendingTxList = txList;
+    if (_isUpdatingTxList) return;
+    _runPendingTxListUpdates();
+  }
+
+  Future<void> _runPendingTxListUpdates() async {
+    _isUpdatingTxList = true;
+    while (_pendingTxList != null) {
+      final next = _pendingTxList!;
+      _pendingTxList = null;
+      await _handleTransactionListUpdate(next);
+    }
+    _isUpdatingTxList = false;
   }
 
   Future<void> _handleTransactionListUpdate(List<TransactionRecord> txList) async {
@@ -770,16 +789,16 @@ class _TransactionListState extends State<TransactionList> {
       }
     }
 
-    setState(() {
-      _displayedTxList = List.from(txList);
-    });
+    // insertItem/removeItem 호출 한 건마다 _displayedTxList도 그 한 건만 반영한다.
+    // 한 번에 통째로 교체하면 SliverAnimatedList가 추적하는 개수와 어긋나 assertion 발생
 
     // 마지막 인덱스부터 삭제 (index shift 문제 방지)
     for (var index in removedIndexes.reversed) {
       await Future.delayed(animationDuration);
+      final removedTx = _displayedTxList.removeAt(index);
       _txListKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildRemoveTransactionItem(_displayedTxList[index], animation),
+        (context, animation) => _buildRemoveTransactionItem(removedTx, animation),
         duration: _duration,
       );
     }
@@ -789,6 +808,7 @@ class _TransactionListState extends State<TransactionList> {
       if (isFirstLoad) {
         await Future.delayed(animationDuration);
       }
+      _displayedTxList.insert(index, txList[index]);
       _txListKey.currentState?.insertItem(index, duration: _duration);
     }
   }

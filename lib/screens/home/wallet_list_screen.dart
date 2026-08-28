@@ -630,6 +630,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           backgroundColor: context.coconutColors.background,
           isPrimaryWallet: isFirstItem,
           isExcludeFromTotalBalance: isExcludedFromTotalBalance,
+          watchedAddressCount: _viewModel.watchedAddressCount(walletItem.id),
           isEditMode: isEditMode,
           isFavorite: isFavorite,
           isStarVisible: isFavorite || _viewModel.tempFavoriteWalletIds.length < kMaxStarLenght,

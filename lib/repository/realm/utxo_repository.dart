@@ -416,6 +416,30 @@ class UtxoRepository extends BaseRepository {
       });
     });
   }
+  
+  /// 재동기화 시작 전 호출. 잠금된 UTXO id 집합을 메모리로만 반환한다(Realm에 저장하지 않음).
+  Set<String> snapshotLockedUtxoIds(int walletId) {
+    return getUtxosByStatus(walletId, UtxoStatus.locked).map((u) => u.utxoId).toSet();
+  }
+
+  /// 재동기화 완료 후 호출. 스냅샷 중 새로 동기화된 상태가 unspent인 것만 다시 locked로 되돌린다.
+  /// 이미 spent/incoming으로 바뀐 UTXO는 절대 강제로 잠그지 않는다.
+  Future<void> restoreLockedUtxos(int walletId, Set<String> lockedUtxoIdsSnapshot) async {
+    if (lockedUtxoIdsSnapshot.isEmpty) return;
+
+    final toRelock = realm.query<RealmUtxo>(
+      r'walletId == $0 AND id IN $1 AND status == $2 AND isDeleted == false',
+      [walletId, lockedUtxoIdsSnapshot.toList(), utxoStatusToString(UtxoStatus.unspent)],
+    );
+
+    if (toRelock.isEmpty) return;
+
+    await realm.writeAsync(() {
+      for (final utxo in toRelock) {
+        utxo.status = utxoStatusToString(UtxoStatus.locked);
+      }
+    });
+  }
 
   Future<void> updateUtxoStatus(int walletId, List<String> utxoList, UtxoStatus status) async {
     final statusStr = utxoStatusToString(status);

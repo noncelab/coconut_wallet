@@ -26,8 +26,10 @@ void main() {
     });
   }
 
-  /// 실제 지갑 생성 시 초기에 receive/change 각각 20개 주소를 가지고 시작함.
-  /// 이 환경을 그대로 재현했기 때문에 주소가 추가로 저장이 안되면 20개만 저장되어야 함.
+  /// 실제 지갑도 생성 시점에 receive/change 각각 20개 주소(index 0~19)를 미리 만들어두므로,
+  /// 아래 setUp에서도 그 초기 상태를 그대로 재현한다. 그래서 아래 테스트들의 기대값은 이
+  /// "이미 있는 20 + 20"을 기준으로 계산된다 — 필터 없이 전체를 조회하면 기본 40개이고,
+  /// 특정 타입(예: isChange == false)만 조회하면 그 타입의 기존 20개를 기준으로 계산된다.
   setUp(() async {
     realmManager = await setupTestRealmManager();
     realmWalletBase = RealmWalletBase(
@@ -71,9 +73,10 @@ void main() {
     realmManager.dispose();
   });
 
+  // addAddressesWithGapLimit 규칙: (generatedIndex - usedIndex)가 kMaxAddressLimitGap(200)
+  // 이상이면 새 주소를 아예 저장하지 않는다(이미 충분히 앞서 생성돼 있으므로). 아래 테스트의
+  // "indexDifference가 199일 때" 같은 표현은 바로 이 (generatedIndex - usedIndex) 값을 뜻한다.
   group('AddressRepository addAddressesWithGapLimit 테스트', () {
-    // 테스트용 주소 생성 헬퍼 함수
-
     test('빈 주소 리스트가 전달되면 저장하지 않고 종료한다', () async {
       // Given
       realmManager.realm.write(() {
@@ -448,6 +451,177 @@ void main() {
       // generatedChangeIndex가 업데이트되었는지 확인
       final updatedWalletBase = realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
       expect(updatedWalletBase!.generatedChangeIndex, equals(39));
+    });
+  });
+
+  group('AddressRepository dormant/active 주소 조회 테스트', () {
+    void setAddressState(
+      int index,
+      bool isChange, {
+      required bool isUsed,
+      required int confirmed,
+      required int unconfirmed,
+    }) {
+      final realmAddress =
+          realmManager.realm.query<RealmWalletAddress>(r'walletId == $0 AND index == $1 AND isChange == $2', [
+            testWalletId,
+            index,
+            isChange,
+          ]).first;
+      realmManager.realm.write(() {
+        realmAddress.isUsed = isUsed;
+        realmAddress.confirmed = confirmed;
+        realmAddress.unconfirmed = unconfirmed;
+        realmAddress.total = confirmed + unconfirmed;
+      });
+    }
+
+    test('isAddressDormant: 사용됐지만 잔액/미확정이 모두 0이면 dormant로 판단한다', () {
+      setAddressState(0, false, isUsed: true, confirmed: 0, unconfirmed: 0);
+      final address = testWalletItem.walletBase.getAddress(0, isChange: false);
+
+      expect(addressRepository.isAddressDormant(testWalletId, address), isTrue);
+    });
+
+    test('isAddressDormant: 잔액이 남아있으면 dormant가 아니다', () {
+      setAddressState(1, false, isUsed: true, confirmed: 1000, unconfirmed: 0);
+      final address = testWalletItem.walletBase.getAddress(1, isChange: false);
+
+      expect(addressRepository.isAddressDormant(testWalletId, address), isFalse);
+    });
+
+    test('isAddressDormant: 미확정 잔액만 있어도 dormant가 아니다', () {
+      setAddressState(2, false, isUsed: true, confirmed: 0, unconfirmed: 500);
+      final address = testWalletItem.walletBase.getAddress(2, isChange: false);
+
+      expect(addressRepository.isAddressDormant(testWalletId, address), isFalse);
+    });
+
+    test('isAddressDormant: 사용된 적 없는 주소는 dormant가 아니다', () {
+      final address = testWalletItem.walletBase.getAddress(3, isChange: false);
+
+      expect(addressRepository.isAddressDormant(testWalletId, address), isFalse);
+    });
+
+    test('getDormantUsedAddresses: dormant 주소만 반환한다', () {
+      setAddressState(4, false, isUsed: true, confirmed: 0, unconfirmed: 0);
+      setAddressState(5, false, isUsed: true, confirmed: 1000, unconfirmed: 0);
+      setAddressState(6, true, isUsed: true, confirmed: 0, unconfirmed: 0);
+
+      final dormantAddresses = addressRepository.getDormantUsedAddresses(testWalletId);
+      final dormantIndices = dormantAddresses.map((a) => (a.index, a.isChange)).toSet();
+
+      expect(dormantIndices, containsAll([(4, false), (6, true)]));
+      expect(dormantIndices.contains((5, false)), isFalse);
+    });
+
+    test('getActiveUsedAddresses: 잔액/미확정이 남아있는 사용된 주소만, 지정한 체인만 반환한다', () {
+      setAddressState(7, false, isUsed: true, confirmed: 1000, unconfirmed: 0);
+      setAddressState(8, false, isUsed: true, confirmed: 0, unconfirmed: 0);
+      setAddressState(9, true, isUsed: true, confirmed: 0, unconfirmed: 500);
+
+      final activeReceiveAddresses = addressRepository.getActiveUsedAddresses(testWalletId, false);
+      final activeReceiveIndices = activeReceiveAddresses.map((a) => a.index).toSet();
+
+      expect(activeReceiveIndices.contains(7), isTrue);
+      expect(activeReceiveIndices.contains(8), isFalse);
+      expect(activeReceiveIndices.contains(9), isFalse);
+
+      final activeChangeAddresses = addressRepository.getActiveUsedAddresses(testWalletId, true);
+      expect(activeChangeAddresses.map((a) => a.index), contains(9));
+    });
+
+    void addAddressAt(int index, bool isChange) {
+      final address = testWalletItem.walletBase.getAddress(index, isChange: isChange);
+      final derivationPath = '${testWalletItem.walletBase.derivationPath}${isChange ? '/1' : '/0'}/$index';
+      realmManager.realm.write(() {
+        realmManager.realm.add(
+          RealmWalletAddress(
+            getWalletAddressId(testWalletId, index, address),
+            testWalletId,
+            address,
+            index,
+            isChange,
+            derivationPath,
+            false,
+            0,
+            0,
+            0,
+          ),
+        );
+      });
+    }
+
+    test('getMaxUsedAddressIndex: 사용된 주소가 없으면 -1을 반환한다', () {
+      expect(addressRepository.getMaxUsedAddressIndex(testWalletId, false), -1);
+    });
+
+    test('getMaxUsedAddressIndex: isUsed로 표시된 주소 중 가장 큰 인덱스를 반환한다', () {
+      setAddressState(3, false, isUsed: true, confirmed: 0, unconfirmed: 0);
+      setAddressState(10, false, isUsed: true, confirmed: 500, unconfirmed: 0);
+
+      expect(addressRepository.getMaxUsedAddressIndex(testWalletId, false), 10);
+    });
+
+    test(
+      'getMaxUsedAddressIndex: gap limit 밖(주소 목록 화면 스크롤로만 발견된) 주소도 최댓값에 포함된다',
+      () {
+        // syncViewedAddresses(updateUsedIndex:false) 경로처럼 usedIndex는 갱신되지 않고
+        // 주소 자체의 isUsed만 true로 표시된 상황을 재현한다.
+        addAddressAt(50, false);
+        setAddressState(50, false, isUsed: true, confirmed: 1000, unconfirmed: 0);
+
+        expect(addressRepository.getMaxUsedAddressIndex(testWalletId, false), 50);
+        expect(addressRepository.getUsedIndexes(testWalletId).$1, -1, reason: 'usedIndex는 그대로여야 한다');
+      },
+    );
+  });
+
+  group('ensureAddressesExist - 재동기화(둘 다 -1에서 시작) 회귀 테스트', () {
+    // 재동기화로 generatedReceiveIndex/generatedChangeIndex가 둘 다 -1인 상태에서, receive만
+    // 먼저 생성한 뒤 change를 생성해도 change index 0이 스킵되지 않고 정상 생성돼야 한다.
+    // (예전 버그: receive만 담긴 배치를 처리할 때 maxChangeIndex 초기값이 0이라 change 주소가
+    // 하나도 없는데도 generatedChangeIndex가 0으로 잘못 갱신되어, 이후 change 생성 시
+    // index 0이 이미 생성된 걸로 착각해 index 1부터 생성해버림)
+    test('receive를 먼저 생성해도 generatedChangeIndex가 잘못 갱신되지 않는다', () async {
+      expect(realmWalletBase.generatedReceiveIndex, -1);
+      expect(realmWalletBase.generatedChangeIndex, -1);
+
+      await addressRepository.ensureAddressesExist(
+        walletItemBase: testWalletItem,
+        cursor: 0,
+        count: 20,
+        isChange: false,
+      );
+
+      final afterReceiveOnly = realmManager.realm.find<RealmWalletBase>(testWalletId)!;
+      expect(afterReceiveOnly.generatedChangeIndex, -1);
+    });
+
+    test('receive 생성 후 change를 생성하면 change index 0도 정상적으로 생성된다', () async {
+      await addressRepository.ensureAddressesExist(
+        walletItemBase: testWalletItem,
+        cursor: 0,
+        count: 20,
+        isChange: false,
+      );
+      await addressRepository.ensureAddressesExist(
+        walletItemBase: testWalletItem,
+        cursor: 0,
+        count: 20,
+        isChange: true,
+      );
+
+      final changeAddressZeroId = getWalletAddressId(
+        testWalletId,
+        0,
+        testWalletItem.walletBase.getAddress(0, isChange: true),
+      );
+      final changeAddressZero = realmManager.realm.find<RealmWalletAddress>(changeAddressZeroId);
+
+      expect(changeAddressZero, isNotNull);
+      expect(changeAddressZero!.index, 0);
+      expect(changeAddressZero.isChange, isTrue);
     });
   });
 }

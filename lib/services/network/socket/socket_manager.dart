@@ -115,8 +115,7 @@ class SocketManager {
       _socket!.listen(_onData, onError: _onError, onDone: _onDone, cancelOnError: true);
     } catch (e) {
       Logger.error('Socket connection failed: $e');
-      _connectionStatus = SocketConnectionStatus.terminated;
-      onConnectionLost?.call();
+      markConnectionLost();
       return false;
     }
     return true;
@@ -176,12 +175,17 @@ class SocketManager {
 
   void _onDone() {
     Logger.log('Socket connection closed');
-    _connectionStatus = SocketConnectionStatus.terminated;
-    onConnectionLost?.call();
+    markConnectionLost();
   }
 
   void _onError(error) {
     Logger.error('Socket connection error: $error');
+    markConnectionLost();
+  }
+
+  /// 소켓이 죽었다고 확정하고(FIN/RST 등 실제 에러 이벤트뿐 아니라, ping이 응답 없이 실패하는
+  /// blackhole 상태 등 외부에서 감지한 경우도 포함) 연결 상태를 갱신 + 리스너에 알린다.
+  void markConnectionLost() {
     _connectionStatus = SocketConnectionStatus.terminated;
     onConnectionLost?.call();
   }
