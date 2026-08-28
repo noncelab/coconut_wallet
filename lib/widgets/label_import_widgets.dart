@@ -3,18 +3,19 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/label/label_result.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
+import 'package:coconut_wallet/widgets/card/label_result_card.dart';
+import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:shimmer/shimmer.dart';
 
-class ImportLabelSuccessCard extends StatefulWidget {
+class LabelImportSuccessCard extends StatefulWidget {
   final Widget title;
   final List<LabelImportResult> importResults;
   final ValueChanged<int> onPageChanged;
   final int currentPage;
 
-  const ImportLabelSuccessCard({
+  const LabelImportSuccessCard({
     super.key,
     required this.title,
     required this.importResults,
@@ -23,25 +24,27 @@ class ImportLabelSuccessCard extends StatefulWidget {
   });
 
   @override
-  State<ImportLabelSuccessCard> createState() => _ImportLabelSuccessCardState();
+  State<LabelImportSuccessCard> createState() => _LabelImportSuccessCardState();
 }
 
-class _ImportLabelSuccessCardState extends State<ImportLabelSuccessCard> {
+class _LabelImportSuccessCardState extends State<LabelImportSuccessCard> {
   double _successCardHeight = 150;
 
+  String _formatCount(int count) => '$count${t.label_import_file_picker_screen.widget.count_unit(n: count)}';
+
   Widget _buildSuccessCard(BuildContext context, LabelImportResult importResult) {
-    return ImportLabelInstructionToolTip(
+    return LabelResultCard(
       steps: [
-        t.label_import_file_picker_screen.instruction_tooltip.step1,
-        t.label_import_file_picker_screen.instruction_tooltip.step2,
-        t.label_import_file_picker_screen.instruction_tooltip.step3,
-        t.label_import_file_picker_screen.instruction_tooltip.step4,
+        t.label_import_file_picker_screen.result.step1,
+        t.label_import_file_picker_screen.result.step2,
+        t.label_import_file_picker_screen.result.step3,
+        t.label_import_file_picker_screen.result.step4,
       ],
       stepResults: [
         importResult.wallet?.name ?? '',
-        importResult.txMemoCount,
-        importResult.utxoTagCount,
-        importResult.utxoLockCount,
+        _formatCount(importResult.txMemoCount),
+        _formatCount(importResult.utxoTagCount),
+        _formatCount(importResult.utxoLockCount),
       ],
       showSkeleton: false,
     );
@@ -163,21 +166,11 @@ class ImportLabelProgressCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          SizedBox(
-            width: 48,
-            height: 48,
-            child: Transform.scale(
-              scale: 0.8,
-              child:
-                  isProgressing
-                      ? CircularProgressIndicator(color: context.coconutColors.loadingIndicatorColor, strokeWidth: 3)
-                      : const SizedBox.shrink(),
-            ),
-          ),
+          SizedBox(width: 48, height: 48, child: isProgressing ? const CircularLoadingSpinner() : null),
           CoconutLayout.spacing_1000h,
           title,
           CoconutLayout.spacing_500h,
-          ImportLabelInstructionToolTip(steps: steps, showSkeleton: showSkeleton),
+          LabelResultCard(steps: steps, showSkeleton: showSkeleton),
         ],
       ),
     );
@@ -196,115 +189,12 @@ class ImportOptionCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          SizedBox(
-            width: 48,
-            height: 48,
-            child: Transform.scale(
-              scale: 0.8,
-              child: CircularProgressIndicator(color: context.coconutColors.loadingIndicatorColor, strokeWidth: 3),
-            ),
-          ),
+          const CircularLoadingSpinner(),
           CoconutLayout.spacing_1000h,
           title,
           CoconutLayout.spacing_500h,
           ButtonGroup(buttons: buttons),
         ],
-      ),
-    );
-  }
-}
-
-class ImportLabelInstructionToolTip extends StatelessWidget {
-  final List<Object> steps;
-  final String? notice;
-  final bool showSkeleton;
-  final List<Object>? stepResults;
-
-  const ImportLabelInstructionToolTip({
-    super.key,
-    required this.steps,
-    this.notice,
-    this.showSkeleton = false,
-    this.stepResults,
-  });
-
-  String _formatStepResult(Object result) {
-    if (result is int) {
-      return '$result${t.label_import_file_picker_screen.widget.count_unit(n: result)}';
-    }
-    return result.toString();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final clampedTextScaler = TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2));
-
-    return CoconutToolTip(
-      backgroundColor: context.coconutColors.surface,
-      borderColor: context.coconutColors.surface,
-      icon: const SizedBox.shrink(),
-      tooltipType: CoconutTooltipType.fixed,
-      richText: RichText(
-        text: TextSpan(
-          style: CoconutTypography.body2_14,
-          children: [
-            if (notice != null) ...[
-              TextSpan(
-                text: notice,
-                style: TextStyle(color: context.coconutColors.primaryText, fontWeight: FontWeight.bold),
-              ),
-              const TextSpan(text: '\n\n'),
-            ],
-            ...steps.asMap().entries.map((e) {
-              final stepIndex = e.key;
-              final stepText = e.value as String;
-
-              return WidgetSpan(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: stepIndex < steps.length - 1 ? 12.0 : 0.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          stepText,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                          textScaler: clampedTextScaler,
-                        ),
-                      ),
-                      if (showSkeleton) ...[
-                        const SizedBox(width: 8),
-                        Shimmer.fromColors(
-                          baseColor: context.coconutColors.surfaceSkeletonBase,
-                          highlightColor: context.coconutColors.surfaceSkeletonHighlight,
-                          child: Container(
-                            width: 60,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: context.coconutColors.surfaceSkeletonBase,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                      ] else if (stepResults != null && stepIndex < stepResults!.length) ...[
-                        const SizedBox(width: 8),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.35),
-                          child: Text(
-                            _formatStepResult(stepResults![stepIndex]),
-                            textAlign: TextAlign.end,
-                            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                            textScaler: clampedTextScaler,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
       ),
     );
   }

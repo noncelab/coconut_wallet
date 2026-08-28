@@ -9,6 +9,8 @@ import 'package:flutter/foundation.dart';
 
 typedef UtxoTagInfo = ({String tag, int? colorIndex});
 
+const int _maxTagsPerUtxo = 5;
+
 class LabelImportViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final LabelFileService _fileService;
@@ -47,8 +49,9 @@ class LabelImportViewModel extends ChangeNotifier {
 
     final result = LabelImportResult(wallet: currentWallet);
     final Map<String, String> txMemos = {};
-    final Map<String, List<UtxoTagInfo>> utxoTags = {};
+    final Map<String, Set<UtxoTagInfo>> utxoTags = {};
     final Set<String> utxoIdsToLock = {};
+    final utxoTagNamesByUtxoId = _getExistingUtxoTagNamesByUtxoId(walletId);
 
     for (final record in records) {
       _processRecord(
@@ -57,6 +60,7 @@ class LabelImportViewModel extends ChangeNotifier {
         overwriteMemo: overwriteMemo,
         txMemos: txMemos,
         utxoTags: utxoTags,
+        utxoTagNamesByUtxoId: utxoTagNamesByUtxoId,
         utxoIdsToLock: utxoIdsToLock,
         result: result,
       );
@@ -68,15 +72,7 @@ class LabelImportViewModel extends ChangeNotifier {
     }
 
     if (utxoTags.isNotEmpty) {
-      final List<Future<void>> tagFutures = [];
-      for (final entry in utxoTags.entries) {
-        for (final tagInfo in entry.value) {
-          tagFutures.add(
-            _walletProvider.addUtxoToTag(walletId, tagInfo.tag, entry.key, colorIndex: tagInfo.colorIndex),
-          );
-        }
-      }
-      await Future.wait(tagFutures);
+      await _walletProvider.addUtxosToTags(walletId, utxoTags);
     }
 
     if (utxoIdsToLock.isNotEmpty) {
@@ -92,7 +88,8 @@ class LabelImportViewModel extends ChangeNotifier {
     required Bip329Record record,
     required bool overwriteMemo,
     required Map<String, String> txMemos,
-    required Map<String, List<UtxoTagInfo>> utxoTags,
+    required Map<String, Set<UtxoTagInfo>> utxoTags,
+    required Map<String, Set<String>> utxoTagNamesByUtxoId,
     required Set<String> utxoIdsToLock,
     required LabelImportResult result,
   }) {
@@ -116,14 +113,32 @@ class LabelImportViewModel extends ChangeNotifier {
       }
 
       if (record.label != null && record.label!.isNotEmpty) {
-        utxoTags.putIfAbsent(utxoId, () => []).add((tag: record.label!, colorIndex: record.tagColor));
-        result.utxoTagCount++;
+        final tagNames = utxoTagNamesByUtxoId.putIfAbsent(utxoId, () => {});
+        if (!tagNames.contains(record.label) && tagNames.length >= _maxTagsPerUtxo) {
+          return;
+        }
+
+        final didAdd = utxoTags.putIfAbsent(utxoId, () => {}).add((tag: record.label!, colorIndex: record.tagColor));
+        if (didAdd) {
+          tagNames.add(record.label!);
+          result.utxoTagCount++;
+        }
       }
 
       if (record.spendable == false) {
         utxoIdsToLock.add(utxoId);
       }
     }
+  }
+
+  Map<String, Set<String>> _getExistingUtxoTagNamesByUtxoId(int walletId) {
+    final tagsByUtxoId = <String, Set<String>>{};
+    for (final tag in _walletProvider.getUtxoTags(walletId)) {
+      for (final utxoId in tag.utxoIdList) {
+        tagsByUtxoId.putIfAbsent(utxoId, () => {}).add(tag.name);
+      }
+    }
+    return tagsByUtxoId;
   }
 
   /// Imports labels for a specific wallet and returns non-empty results.

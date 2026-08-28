@@ -1158,8 +1158,8 @@ label_import_file_picker_screen:
   no_applied_memo: "메모 파일을 적용할 수 있는 지갑이 없어요"
   delete_file: "완료 버튼을 누르면 파일을 삭제합니다"
   error_title: "메모를 가져올 수 없어요"
-  instruction_tooltip:
-    step1: "적용 지갑"
+  result:
+    step1: "지갑 이름"
     step2: "거래 메모"
     step3: "UTXO 태그"
     step4: "잠금 UTXO"
@@ -1175,9 +1175,9 @@ label_import_file_picker_screen:
       subtitle: '선택한 지갑에 해당하지 않는 메모도 함께 가져와요'
   widget:
     count_unit(cardinal):
-      zero: "개"
-      one: "개"
-      other: "개"
+      zero: " 개"
+      one: " 개"
+      other: " 개"
 label_export_wallet_picker_screen:
   info_tooltip: 메모를 BIP-329 파일(.jsonl)로 저장하거나 다른 지갑과 공유할 수 있어요.
   all_wallets: "모든 지갑"
@@ -1189,7 +1189,7 @@ label_export_wallet_picker_screen:
   success_title: "파일을 공유할까요?"
   error_title: "파일을 만들 수 없어요"
   no_labels_to_export: "공유할 메모가 없어요."
-  instruction_tooltip:
+  result:
     step1: "파일 이름"
     step2: "생성 일시"
     step3: "적용 지갑"

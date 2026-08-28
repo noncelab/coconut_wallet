@@ -1152,8 +1152,8 @@ label_import_file_picker_screen:
   no_applied_memo: "There are no wallets available to apply the memo file."
   delete_file: "Deletes file upon clicking Done"
   error_title: "Couldn't load notes"
-  instruction_tooltip:
-    step1: "Apply to Wallet"
+  result:
+    step1: "Wallet Name"
     step2: "Transaction Memos"
     step3: "UTXO Tags"
     step4: "Locked UTXOs"
@@ -1183,7 +1183,7 @@ label_export_wallet_picker_screen:
   success_title: "Would you like to share the file?"
   error_title: "Unable to create file"
   no_labels_to_export: "No notes to share."
-  instruction_tooltip:
+  result:
     step1: "File Name"
     step2: "Created Date & Time"
     step3: "Applied Wallet"

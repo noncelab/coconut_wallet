@@ -30,6 +30,32 @@ class LoadingIndicator extends StatelessWidget {
   }
 }
 
+// 임시
+class CircularLoadingSpinner extends StatelessWidget {
+  final double size;
+  final double scale;
+  final double strokeWidth;
+  final Color? color;
+
+  const CircularLoadingSpinner({super.key, this.size = 48, this.scale = 0.8, this.strokeWidth = 6, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Transform.scale(
+        scale: scale,
+        child: CircularProgressIndicator(
+          color: color ?? context.coconutColors.loadingIndicatorColor,
+          strokeWidth: strokeWidth,
+          strokeCap: StrokeCap.round,
+        ),
+      ),
+    );
+  }
+}
+
 class LoadingOverlay extends StatelessWidget {
   final bool isLoading;
   final Widget child;

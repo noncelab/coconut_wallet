@@ -1143,8 +1143,8 @@ label_import_file_picker_screen:
   no_applied_memo: "No hay wallets disponibles para aplicar el archivo de memo."
   delete_file: "Elimina el archivo al pulsar Listo"
   error_title: "No se pudieron cargar las notas"
-  instruction_tooltip:
-    step1: "Aplicar a la billetera"
+  result:
+    step1: "Nombre de la billetera"
     step2: "Notas de transacción"
     step3: "Etiquetas UTXO"
     step4: "UTXOs bloqueados"
@@ -1174,7 +1174,7 @@ label_export_wallet_picker_screen:
   success_title: "¿Quieres compartir el archivo?"
   error_title: "No se pudo crear el archivo"
   no_labels_to_export: "No hay notas para compartir."
-  instruction_tooltip:
+  result:
     step1: "Nombre del archivo"
     step2: "Fecha y hora de creación"
     step3: "Billetera aplicada"

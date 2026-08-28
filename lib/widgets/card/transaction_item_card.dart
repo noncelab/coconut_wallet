@@ -132,7 +132,7 @@ class TransactionItemCard extends StatelessWidget {
         ),
         CoconutLayout.spacing_100w,
         Text(
-          TextUtils.ellipsisIfLonger(tx.memo!, maxLength: 13),
+          TextUtils.ellipsisIfLonger(tx.memo!, maxLength: 20),
           style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
         ),
       ],

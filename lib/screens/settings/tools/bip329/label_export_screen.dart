@@ -11,7 +11,9 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
+import 'package:coconut_wallet/widgets/card/label_result_card.dart';
 import 'package:coconut_wallet/widgets/label_export_widgets.dart';
+import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -21,16 +23,16 @@ import 'package:provider/provider.dart';
 
 enum LabelExportStep { selection, exporting, success, error }
 
-class LabelExportWalletPickerScreen extends StatefulWidget {
+class LabelExportScreen extends StatefulWidget {
   final int? initialSelectedWalletId;
 
-  const LabelExportWalletPickerScreen({super.key, this.initialSelectedWalletId});
+  const LabelExportScreen({super.key, this.initialSelectedWalletId});
 
   @override
-  State<LabelExportWalletPickerScreen> createState() => _LabelExportWalletPickerScreenState();
+  State<LabelExportScreen> createState() => _LabelExportScreenState();
 }
 
-class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerScreen> {
+class _LabelExportScreenState extends State<LabelExportScreen> {
   final Set<int> _selectedWalletIds = {};
   final Set<int> _selectedFileIndices = {};
   bool _isCreateFileSelected = true;
@@ -192,7 +194,7 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
             future: _filesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: CircularLoadingSpinner());
               }
               final noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
               if (noFiles) {
@@ -400,28 +402,25 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Widget _buildLoadingCard() {
-    return ExportLabelProgressCard(
+    return LabelExportProgressCard(
       title: Text(
         t.label_export_wallet_picker_screen.loading_title,
         style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
         textAlign: TextAlign.center,
         textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
       ),
-      topSteps: [
-        t.label_export_wallet_picker_screen.instruction_tooltip.step1,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step2,
-      ],
+      topSteps: [t.label_export_wallet_picker_screen.result.step1, t.label_export_wallet_picker_screen.result.step2],
       bottomSteps: [
-        t.label_export_wallet_picker_screen.instruction_tooltip.step3,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step4,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step5,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step6,
+        t.label_export_wallet_picker_screen.result.step3,
+        t.label_export_wallet_picker_screen.result.step4,
+        t.label_export_wallet_picker_screen.result.step5,
+        t.label_export_wallet_picker_screen.result.step6,
       ],
     );
   }
 
   Widget _buildErrorCard() {
-    return ExportLabelErrorCard(
+    return LabelExportErrorCard(
       title: Text(
         t.label_export_wallet_picker_screen.error_title,
         style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.danger),
@@ -439,8 +438,10 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       setState(() => _step = LabelExportStep.exporting);
     }
 
+    final selectedWalletIds = _selectedWalletIds.toList();
+
     try {
-      final result = await _exportViewModel.exportLabelsForWallets(_selectedWalletIds.toList());
+      final result = await _exportViewModel.exportLabelsForWallets(selectedWalletIds);
 
       if (result.xFile != null) {
         if (mounted) {
@@ -451,12 +452,13 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         }
         await Future.delayed(const Duration(milliseconds: 2500));
 
-        final exportResults = _exportViewModel.buildExportResults(_selectedWalletIds.toList(), result.xFile!);
+        final exportResults = _exportViewModel.buildExportResults(selectedWalletIds, result.xFile!);
+        final exportedFile = File(result.xFile!.path);
 
         if (mounted) {
           setState(() {
             _step = LabelExportStep.success;
-            _exportedFile = File(result.xFile!.path);
+            _exportedFile = exportedFile;
             _exportResults = exportResults;
             _currentPage = 0;
           });
@@ -489,17 +491,14 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: ExportLabelSuccessCard(
+          child: LabelExportSuccessCard(
             title: Text(
               t.label_export_wallet_picker_screen.success_title,
               style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
               textAlign: TextAlign.center,
               textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
             ),
-            steps: [
-              t.label_export_wallet_picker_screen.instruction_tooltip.step1,
-              t.label_export_wallet_picker_screen.instruction_tooltip.step2,
-            ],
+            steps: [t.label_export_wallet_picker_screen.result.step1, t.label_export_wallet_picker_screen.result.step2],
             stepResults: [
               _exportResults.first.xFile?.name ?? '',
               DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
@@ -537,12 +536,12 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
   }
 
   Widget _buildSuccessBottomCard(LabelExportResult result) {
-    return ExportLabelInstructionToolTip(
+    return LabelResultCard(
       steps: [
-        t.label_export_wallet_picker_screen.instruction_tooltip.step3,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step4,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step5,
-        t.label_export_wallet_picker_screen.instruction_tooltip.step6,
+        t.label_export_wallet_picker_screen.result.step3,
+        t.label_export_wallet_picker_screen.result.step4,
+        t.label_export_wallet_picker_screen.result.step5,
+        t.label_export_wallet_picker_screen.result.step6,
       ],
       stepResults: [
         result.wallet?.name ?? '',
@@ -590,6 +589,8 @@ class _LabelExportWalletPickerScreenState extends State<LabelExportWalletPickerS
         count == 1
             ? t.label_management_screen.file.delete_description(fileName: p.basename(filesToDelete.first.path))
             : t.label_management_screen.file.delete_multiple_description(count: count);
+
+    if (!mounted) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -677,10 +678,10 @@ class _WalletListItemCardState extends State<_WalletListItemCard> {
     final textColor = effectiveDisabled ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
 
     final Color borderColor;
-    if (effectiveDisabled) {
-      borderColor = context.coconutColors.iconDisabled;
-    } else if (widget.isSelected) {
+    if (widget.isSelected) {
       borderColor = context.coconutColors.primaryText;
+    } else if (effectiveDisabled) {
+      borderColor = context.coconutColors.iconDisabled;
     } else {
       borderColor = context.coconutColors.border;
     }

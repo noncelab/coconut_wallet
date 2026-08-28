@@ -1140,8 +1140,8 @@ label_import_file_picker_screen:
   no_applied_memo: "メモファイルを適用できるウォレットがありません。"
   delete_file: "完了ボタンを押すとファイルを削除します"
   error_title: "メモを取得できませんでした"
-  instruction_tooltip:
-    step1: "適用ウォレット"
+  result:
+    step1: "ウォレット名"
     step2: "取引メモ"
     step3: "UTXOタグ"
     step4: "ロックされたUTXO"
@@ -1171,7 +1171,7 @@ label_export_wallet_picker_screen:
   success_title: "ファイルを共有しますか？"
   error_title: "ファイルを作成できません"
   no_labels_to_export: "共有するメモがありません。"
-  instruction_tooltip:
+  result:
     step1: "ファイル名"
     step2: "作成日時"
     step3: "適用ウォレット"

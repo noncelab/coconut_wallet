@@ -718,6 +718,15 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> addUtxosToTags(int walletId, Map<String, Set<UtxoTagImportInfo>> utxoTags) async {
+    final result = await _utxoRepository.addUtxosToTags(walletId, utxoTags);
+    if (result.isSuccess) {
+      notifyListeners();
+    } else {
+      throw result.error;
+    }
+  }
+
   Future<void> lockUtxo(int walletId, String utxoId) async {
     final utxo = getUtxoState(walletId, utxoId);
     if (utxo != null && utxo.status != UtxoStatus.locked) {

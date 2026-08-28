@@ -28,6 +28,63 @@ void main() {
   group('UtxoRepository 기능 테스트', () {
     final testAddress = testWalletItem.walletBase.getAddress(0);
     final toAddress = testWalletItem.walletBase.getAddress(9999);
+    group('UTXO 태그 제한 테스트', () {
+      test('단건 태그 추가는 UTXO당 최대 5개까지만 허용한다', () async {
+        const utxoId = 'tx_hash_0';
+
+        for (var i = 0; i < 5; i++) {
+          final result = await utxoRepository.addUtxoToTag(testWalletId, 'tag-$i', utxoId, colorIndex: i);
+          expect(result.isSuccess, isTrue);
+        }
+
+        final overflowResult = await utxoRepository.addUtxoToTag(testWalletId, 'tag-overflow', utxoId, colorIndex: 6);
+
+        expect(overflowResult.isSuccess, isTrue);
+        final tags = utxoRepository.getUtxoTagsByTxHash(testWalletId, utxoId);
+        expect(tags.isSuccess, isTrue);
+        expect(tags.value.length, 5);
+        expect(tags.value.map((tag) => tag.name), isNot(contains('tag-overflow')));
+      });
+
+      test('batch 태그 추가도 UTXO당 최대 5개까지만 허용한다', () async {
+        const utxoId = 'tx_hash_1';
+
+        for (var i = 0; i < 4; i++) {
+          final result = await utxoRepository.addUtxoToTag(testWalletId, 'existing-tag-$i', utxoId, colorIndex: i);
+          expect(result.isSuccess, isTrue);
+        }
+
+        final result = await utxoRepository.addUtxosToTags(testWalletId, {
+          utxoId: {
+            (tag: 'imported-tag-1', colorIndex: 4),
+            (tag: 'imported-tag-2', colorIndex: 5),
+            (tag: 'imported-tag-3', colorIndex: 6),
+          },
+        });
+
+        expect(result.isSuccess, isTrue);
+        final tags = utxoRepository.getUtxoTagsByTxHash(testWalletId, utxoId);
+        expect(tags.isSuccess, isTrue);
+        expect(tags.value.length, 5);
+        expect(tags.value.map((tag) => tag.name), contains('imported-tag-1'));
+        expect(tags.value.map((tag) => tag.name), isNot(contains('imported-tag-2')));
+        expect(tags.value.map((tag) => tag.name), isNot(contains('imported-tag-3')));
+      });
+
+      test('가져온 태그 colorIndex는 앱 팔레트 범위로 정규화한다', () async {
+        const utxoId = 'tx_hash_2';
+
+        final result = await utxoRepository.addUtxosToTags(testWalletId, {
+          utxoId: {(tag: 'invalid-high-color', colorIndex: 11), (tag: 'invalid-low-color', colorIndex: -1)},
+        });
+
+        expect(result.isSuccess, isTrue);
+        final tags = utxoRepository.getUtxoTagsByTxHash(testWalletId, utxoId);
+        expect(tags.isSuccess, isTrue);
+        expect(tags.value.map((tag) => tag.colorIndex), everyElement(inInclusiveRange(0, 9)));
+      });
+    });
+
     group('updateUtxoStatusToOutgoingByTransaction 테스트', () {
       test('기본 UTXO 상태 업데이트가 정상적으로 이루어지는지 확인', () async {
         // Given

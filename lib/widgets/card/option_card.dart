@@ -69,7 +69,7 @@ class _OptionCardState extends State<OptionCard> {
         curve: Curves.easeInOut,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          padding: const EdgeInsets.all(16),
           decoration:
               widget.showBorder
                   ? BoxDecoration(
@@ -78,42 +78,40 @@ class _OptionCardState extends State<OptionCard> {
                     border: Border.all(color: borderColor, width: 1),
                   )
                   : null,
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2.0),
-                child: CoconutCheckbox(
-                  isSelected: widget.isSelected,
-                  onChanged: (_) => widget.onTap(),
-                  width: 20,
-                  color: context.coconutColors.iconDefault,
-                  unSelectedColor: context.coconutColors.iconSubDefault,
-                  inactiveColor: context.coconutColors.iconDisabled,
-                  isDisabled: !widget.isEnabled,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  CoconutCheckbox(
+                    isSelected: widget.isSelected,
+                    onChanged: (_) => widget.onTap(),
+                    width: 16,
+                    color: context.coconutColors.iconDefault,
+                    unSelectedColor: context.coconutColors.iconSubDefault,
+                    inactiveColor: context.coconutColors.iconDisabled,
+                    isDisabled: !widget.isEnabled,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
                       widget.title,
                       style: CoconutTypography.body2_14.setColor(titleColor),
                       textScaler: clampedTextScaler,
                     ),
-                    if (widget.subtitle.isNotEmpty) ...[
-                      CoconutLayout.spacing_50h,
-                      Text.rich(
-                        TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: widget.subtitle),
-                        textScaler: clampedTextScaler,
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                ],
               ),
+              if (widget.subtitle.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 24),
+                  child: Text.rich(
+                    TextSpan(style: CoconutTypography.body3_12.setColor(subtitleColor), children: widget.subtitle),
+                    textScaler: clampedTextScaler,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

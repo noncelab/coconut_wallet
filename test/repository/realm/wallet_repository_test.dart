@@ -52,6 +52,32 @@ void main() {
 
       expect(realmManager.realm.all<RealmWalletBase>().length, 0);
     });
+
+    test('deleteWallet: RealmUtxoTag도 함께 삭제', () async {
+      final walletBase = RealmWalletBase(
+        1,
+        0,
+        0,
+        'encrypted_descriptor',
+        'Test Wallet',
+        WalletType.singleSignature.name,
+      );
+
+      realmManager.realm.write(() {
+        realmManager.realm.add(walletBase);
+        realmManager.realm.add(
+          RealmUtxoTag('tag-id-1', 1, '삭제 대상 태그', 0, DateTime.utc(2026, 8, 28))..utxoIdList.add('utxo-id-1'),
+        );
+        realmManager.realm.add(
+          RealmUtxoTag('tag-id-2', 2, '다른 지갑 태그', 0, DateTime.utc(2026, 8, 28))..utxoIdList.add('utxo-id-2'),
+        );
+      });
+
+      await walletRepository.deleteWallet(1);
+
+      expect(realmManager.realm.query<RealmUtxoTag>('walletId == 1').length, 0);
+      expect(realmManager.realm.query<RealmUtxoTag>('walletId == 2').length, 1);
+    });
   });
 
   group('WalletRepository - 탭루트', () {

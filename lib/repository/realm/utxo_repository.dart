@@ -6,6 +6,7 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
 
@@ -13,6 +14,14 @@ import 'package:realm/realm.dart';
 enum SelectedUtxoExcludedStatus {
   used, // 일부 UTXO가 이미 사용됨
   locked, // 일부 UTXO가 잠금됨
+}
+
+typedef UtxoTagImportInfo = ({String tag, int? colorIndex});
+
+const int _maxTagsPerUtxo = 5;
+
+int _normalizeTagColorIndex(int colorIndex) {
+  return ColorUtil.normalizePaletteIndex(colorIndex);
 }
 
 class UtxoRepository extends BaseRepository {
@@ -186,14 +195,20 @@ class UtxoRepository extends BaseRepository {
   Future<Result<void>> addUtxoToTag(int walletId, String tagName, String utxoId, {int? colorIndex}) async {
     return handleAsyncRealm(() async {
       await realm.writeAsync(() {
-        var tag = realm.query<RealmUtxoTag>(r'walletId == $0 AND name == $1', [walletId, tagName]).firstOrNull;
+        final existingTags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]).toList();
+        final attachedTagCount = existingTags.where((tag) => tag.utxoIdList.contains(utxoId)).length;
+        var tag = existingTags.where((tag) => tag.name == tagName).firstOrNull;
+        final isAlreadyAttached = tag?.utxoIdList.contains(utxoId) ?? false;
+
+        if (!isAlreadyAttached && attachedTagCount >= _maxTagsPerUtxo) {
+          return;
+        }
 
         if (tag == null) {
           int newColorIndex;
           if (colorIndex != null) {
-            newColorIndex = colorIndex;
+            newColorIndex = _normalizeTagColorIndex(colorIndex);
           } else {
-            final existingTags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]);
             final usedColorIndexes = existingTags.map((t) => t.colorIndex).toSet();
 
             newColorIndex = 0;
@@ -206,12 +221,80 @@ class UtxoRepository extends BaseRepository {
           realm.add(tag);
         }
 
-        if (colorIndex != null && tag.colorIndex != colorIndex) {
-          tag.colorIndex = colorIndex;
+        if (colorIndex != null) {
+          final normalizedColorIndex = _normalizeTagColorIndex(colorIndex);
+          if (tag.colorIndex != normalizedColorIndex) {
+            tag.colorIndex = normalizedColorIndex;
+          }
         }
 
         if (!tag.utxoIdList.contains(utxoId)) {
           tag.utxoIdList.add(utxoId);
+        }
+      });
+    });
+  }
+
+  Future<Result<void>> addUtxosToTags(int walletId, Map<String, Set<UtxoTagImportInfo>> utxoTags) async {
+    if (utxoTags.isEmpty) return Result.success(null);
+
+    return handleAsyncRealm(() async {
+      await realm.writeAsync(() {
+        final existingTags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]).toList();
+        final tagsByName = {for (final tag in existingTags) tag.name: tag};
+        final usedColorIndexes = existingTags.map((tag) => tag.colorIndex).toSet();
+        final attachedTagNamesByUtxoId = <String, Set<String>>{};
+        for (final tag in existingTags) {
+          for (final utxoId in tag.utxoIdList) {
+            attachedTagNamesByUtxoId.putIfAbsent(utxoId, () => {}).add(tag.name);
+          }
+        }
+
+        int nextAvailableColorIndex() {
+          var colorIndex = 0;
+          while (usedColorIndexes.contains(colorIndex)) {
+            colorIndex++;
+          }
+          usedColorIndexes.add(colorIndex);
+          return colorIndex;
+        }
+
+        for (final entry in utxoTags.entries) {
+          final utxoId = entry.key;
+          final attachedTagNames = attachedTagNamesByUtxoId.putIfAbsent(utxoId, () => {});
+
+          for (final tagInfo in entry.value) {
+            var tag = tagsByName[tagInfo.tag];
+            final isAlreadyAttached = attachedTagNames.contains(tagInfo.tag);
+
+            if (!isAlreadyAttached && attachedTagNames.length >= _maxTagsPerUtxo) {
+              continue;
+            }
+
+            if (tag == null) {
+              final colorIndex =
+                  tagInfo.colorIndex == null ? nextAvailableColorIndex() : _normalizeTagColorIndex(tagInfo.colorIndex!);
+              if (tagInfo.colorIndex != null) {
+                usedColorIndexes.add(colorIndex);
+              }
+
+              tag = RealmUtxoTag(Uuid.v4().toString(), walletId, tagInfo.tag, colorIndex, DateTime.now());
+              realm.add(tag);
+              tagsByName[tagInfo.tag] = tag;
+            }
+
+            if (tagInfo.colorIndex != null) {
+              final normalizedColorIndex = _normalizeTagColorIndex(tagInfo.colorIndex!);
+              if (tag.colorIndex != normalizedColorIndex) {
+                tag.colorIndex = normalizedColorIndex;
+              }
+            }
+
+            if (!tag.utxoIdList.contains(utxoId)) {
+              tag.utxoIdList.add(utxoId);
+              attachedTagNames.add(tagInfo.tag);
+            }
+          }
         }
       });
     });

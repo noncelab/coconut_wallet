@@ -10,6 +10,7 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
 import 'package:coconut_wallet/widgets/card/option_card.dart';
 import 'package:coconut_wallet/widgets/label_import_widgets.dart';
+import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path/path.dart' as p;
@@ -17,17 +18,17 @@ import 'package:provider/provider.dart';
 
 enum LabelImportStep { fileSelection, optionSelection, loading, success, error, noLabelsToApply }
 
-class LabelImportFilePickerScreen extends StatefulWidget {
+class LabelImportScreen extends StatefulWidget {
   final int? walletId;
   final bool importMemosFromOtherWalletsFixed;
 
-  const LabelImportFilePickerScreen({super.key, this.walletId, this.importMemosFromOtherWalletsFixed = false});
+  const LabelImportScreen({super.key, this.walletId, this.importMemosFromOtherWalletsFixed = false});
 
   @override
-  State<LabelImportFilePickerScreen> createState() => _LabelImportFilePickerScreenState();
+  State<LabelImportScreen> createState() => _LabelImportScreenState();
 }
 
-class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScreen> {
+class _LabelImportScreenState extends State<LabelImportScreen> {
   late final LabelImportViewModel _importViewModel;
   late Future<List<File>> _filesFuture;
 
@@ -67,7 +68,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
           future: _filesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CircularLoadingSpinner());
             }
             return _buildMainLayout(context, snapshot);
           },
@@ -171,7 +172,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         ListView.separated(
           padding: const EdgeInsets.only(top: 20, bottom: 110),
           itemCount: files.length + 1,
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          separatorBuilder: (context, index) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             if (index == files.length) {
               return _buildAddFileButton(context);
@@ -261,7 +262,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
 
   Widget _buildInfoTooltip(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 20.0),
+      padding: const EdgeInsets.only(top: 8.0),
       child: CoconutToolTip(
         backgroundColor: context.coconutColors.surface,
         borderColor: context.coconutColors.surface,
@@ -358,10 +359,10 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         ),
       ),
       steps: [
-        t.label_import_file_picker_screen.instruction_tooltip.step1,
-        t.label_import_file_picker_screen.instruction_tooltip.step2,
-        t.label_import_file_picker_screen.instruction_tooltip.step3,
-        t.label_import_file_picker_screen.instruction_tooltip.step4,
+        t.label_import_file_picker_screen.result.step1,
+        t.label_import_file_picker_screen.result.step2,
+        t.label_import_file_picker_screen.result.step3,
+        t.label_import_file_picker_screen.result.step4,
       ],
       showSkeleton: true,
     );
@@ -371,7 +372,7 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
     return Column(
       children: [
         CoconutLayout.spacing_600h,
-        ImportLabelSuccessCard(
+        LabelImportSuccessCard(
           title: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: RichText(
@@ -417,17 +418,18 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
+          CoconutLayout.spacing_100w,
           IgnorePointer(
             child: CoconutCheckbox(
               isSelected: _deleteFileOnSuccess,
               onChanged: (_) {},
-              width: 20,
+              width: 16,
               unSelectedColor: context.coconutColors.iconSubDefault,
               color:
                   _isDeleteFileOptionPressed ? context.coconutColors.iconSubDefault : context.coconutColors.iconDefault,
             ),
           ),
-          const SizedBox(width: 8),
+          CoconutLayout.spacing_200w,
           Expanded(
             child: Text(
               t.label_import_file_picker_screen.delete_file,
@@ -559,7 +561,8 @@ class _LabelImportFilePickerScreenState extends State<LabelImportFilePickerScree
         CoconutToast.showToast(
           context: context,
           text: t.label_management_screen.file.invalid_file_type,
-          level: CoconutToastLevel.error,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/triangle-warning.svg',
         );
       }
     }

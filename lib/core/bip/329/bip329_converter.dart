@@ -4,7 +4,7 @@ class Bip329Converter {
   const Bip329Converter();
 
   static String normalizeOrigin(String origin) {
-    return origin.replaceAllMapped(RegExp(r'(/|\b)(\d+)h'), (match) => "${match.group(1)}${match.group(2)}'");
+    return origin.replaceAllMapped(RegExp(r'(/|\b)(\d+)[hH]'), (match) => "${match.group(1)}${match.group(2)}'");
   }
 
   /// Extracts origin string from descriptor (e.g. `wpkh([mfp/path]...)` -> `wpkh([mfp/path])`).

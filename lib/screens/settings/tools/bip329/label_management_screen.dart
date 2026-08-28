@@ -1,8 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/screens/settings/tools/label_export_wallet_picker_screen.dart';
-import 'package:coconut_wallet/screens/settings/tools/label_import_file_picker_screen.dart';
+import 'package:coconut_wallet/screens/settings/tools/bip329/label_export_screen.dart';
+import 'package:coconut_wallet/screens/settings/tools/bip329/label_import_screen.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
@@ -186,7 +186,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder:
-            (context) => LabelImportFilePickerScreen(
+            (context) => LabelImportScreen(
               walletId: walletId,
               importMemosFromOtherWalletsFixed: widget.importMemosFromOtherWalletsFixed,
             ),
@@ -197,7 +197,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
   void _navigateToExportWalletPicker(BuildContext context, {int? walletId}) {
     Navigator.of(
       context,
-    ).push(CupertinoPageRoute(builder: (context) => LabelExportWalletPickerScreen(initialSelectedWalletId: walletId)));
+    ).push(CupertinoPageRoute(builder: (context) => LabelExportScreen(initialSelectedWalletId: walletId)));
   }
 }
 
@@ -273,7 +273,10 @@ class _LabelManagementActionScreenState extends State<_LabelManagementActionScre
           const SizedBox(height: 80),
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(shape: BoxShape.circle, color: context.coconutColors.primary.withOpacity(0.1)),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: context.coconutColors.primary.withValues(alpha: 0.1),
+            ),
             child: SvgPicture.asset(
               widget.iconPath,
               width: 40,

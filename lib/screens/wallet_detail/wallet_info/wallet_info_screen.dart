@@ -12,7 +12,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_vi
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/settings/tools/label_management_screen.dart';
+import 'package:coconut_wallet/screens/settings/tools/bip329/label_management_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_signer_section.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_stats_section.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';

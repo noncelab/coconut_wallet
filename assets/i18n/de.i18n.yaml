@@ -1083,8 +1083,8 @@ label_import_file_picker_screen:
   no_applied_memo: "Es gibt keine Wallets, auf die die Memodatei angewendet werden kann."
   delete_file: "Löscht die Datei beim Tippen auf Fertig"
   error_title: "Notizen konnten nicht geladen werden"
-  instruction_tooltip:
-    step1: "Auf Wallet anwenden"
+  result:
+    step1: "Wallet-Name"
     step2: "Transaktionsnotizen"
     step3: "UTXO-Tags"
     step4: "Gesperrte UTXOs"
@@ -1114,7 +1114,7 @@ label_export_wallet_picker_screen:
   success_title: "Möchten Sie die Datei teilen?"
   error_title: "Datei konnte nicht erstellt werden"
   no_labels_to_export: "Keine Notizen zum Teilen vorhanden."
-  instruction_tooltip:
+  result:
     step1: "Dateiname"
     step2: "Erstellungsdatum und -zeit"
     step3: "Angetendete Wallet"
