@@ -201,10 +201,7 @@ void main() {
       });
 
       test('스냅샷 후 재발견된(unspent) UTXO만 다시 locked로 복원됨', () async {
-        final lockedUtxoIds = {
-          getUtxoId('reappeared_unspent_tx_hash', 0),
-          getUtxoId('not_reappeared_tx_hash', 0),
-        };
+        final lockedUtxoIds = {getUtxoId('reappeared_unspent_tx_hash', 0), getUtxoId('not_reappeared_tx_hash', 0)};
 
         realmManager.realm.write(() {
           // resync 이후 재동기화로 다시 unspent로 발견된 UTXO

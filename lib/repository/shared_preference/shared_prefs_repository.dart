@@ -294,7 +294,7 @@ class SharedPrefsRepository {
   bool hasUnacknowledgedOlderToAfterBackupUpdate(int walletId) {
     return getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate().contains(walletId);
   }
-  
+
   /// 최초 연결 시 확립되어 이후 고정되는 genesis hash 기준값
   String? getBaselineGenesisHash() {
     return getStringOrNull(SharedPrefKeys.kBaselineGenesisHash);

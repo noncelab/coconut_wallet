@@ -563,18 +563,15 @@ void main() {
       expect(addressRepository.getMaxUsedAddressIndex(testWalletId, false), 10);
     });
 
-    test(
-      'getMaxUsedAddressIndex: gap limit 밖(주소 목록 화면 스크롤로만 발견된) 주소도 최댓값에 포함된다',
-      () {
-        // syncViewedAddresses(updateUsedIndex:false) 경로처럼 usedIndex는 갱신되지 않고
-        // 주소 자체의 isUsed만 true로 표시된 상황을 재현한다.
-        addAddressAt(50, false);
-        setAddressState(50, false, isUsed: true, confirmed: 1000, unconfirmed: 0);
+    test('getMaxUsedAddressIndex: gap limit 밖(주소 목록 화면 스크롤로만 발견된) 주소도 최댓값에 포함된다', () {
+      // syncViewedAddresses(updateUsedIndex:false) 경로처럼 usedIndex는 갱신되지 않고
+      // 주소 자체의 isUsed만 true로 표시된 상황을 재현한다.
+      addAddressAt(50, false);
+      setAddressState(50, false, isUsed: true, confirmed: 1000, unconfirmed: 0);
 
-        expect(addressRepository.getMaxUsedAddressIndex(testWalletId, false), 50);
-        expect(addressRepository.getUsedIndexes(testWalletId).$1, -1, reason: 'usedIndex는 그대로여야 한다');
-      },
-    );
+      expect(addressRepository.getMaxUsedAddressIndex(testWalletId, false), 50);
+      expect(addressRepository.getUsedIndexes(testWalletId).$1, -1, reason: 'usedIndex는 그대로여야 한다');
+    });
   });
 
   group('ensureAddressesExist - 재동기화(둘 다 -1에서 시작) 회귀 테스트', () {

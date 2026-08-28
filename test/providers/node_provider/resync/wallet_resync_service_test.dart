@@ -53,9 +53,7 @@ void main() {
       await ScriptSyncServiceMock.addressRepository.ensureAddressesInit(walletItemBase: wallet);
 
       final electrumService = ScriptSyncServiceMock.electrumService;
-      when(
-        electrumService.subscribeScript(any, any, onUpdate: anyNamed('onUpdate')),
-      ).thenAnswer((_) async => null);
+      when(electrumService.subscribeScript(any, any, onUpdate: anyNamed('onUpdate'))).thenAnswer((_) async => null);
 
       final subscriptionService = SubscriptionService(
         electrumService,

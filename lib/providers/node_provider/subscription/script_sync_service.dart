@@ -369,11 +369,7 @@ class ScriptSyncService {
 
       // Balance 병렬 처리
       final balanceStartTime = DateTime.now();
-      await _balanceSyncService.fetchScriptBalanceBatch(
-        walletItem,
-        scriptStatuses,
-        onBatchProgress: reportProgress,
-      );
+      await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses, onBatchProgress: reportProgress);
       await Future.wait(scriptStatuses.map((s) => _unsubscribeIfDormant(walletItem, s.address)));
       final balanceEndTime = DateTime.now();
       final balanceDuration = balanceEndTime.difference(balanceStartTime);

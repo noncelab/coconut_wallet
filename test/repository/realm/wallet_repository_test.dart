@@ -193,7 +193,18 @@ void main() {
         );
         realmManager.realm.add(RealmWalletBalance(walletId, walletId, 10000, 10000, 0));
         realmManager.realm.add(
-          RealmWalletAddress(walletId * 1000 + 1, walletId, 'address_$walletId', 0, false, "m/0/0", true, 10000, 0, 10000),
+          RealmWalletAddress(
+            walletId * 1000 + 1,
+            walletId,
+            'address_$walletId',
+            0,
+            false,
+            "m/0/0",
+            true,
+            10000,
+            0,
+            10000,
+          ),
         );
         realmManager.realm.add(
           UtxoMock.createMockUtxo(
@@ -202,11 +213,18 @@ void main() {
             transactionHash: 'utxo_tx_hash_$walletId',
           ),
         );
-        realmManager.realm.add(RealmScriptStatus('script_pub_key_$walletId', 'status_$walletId', walletId, DateTime.now()));
         realmManager.realm.add(
-          RealmUtxoTag('tag_id_$walletId', walletId, 'tag_name_$walletId', 0, DateTime.now(), utxoIdList: [
-            getUtxoId('utxo_tx_hash_$walletId', 0),
-          ]),
+          RealmScriptStatus('script_pub_key_$walletId', 'status_$walletId', walletId, DateTime.now()),
+        );
+        realmManager.realm.add(
+          RealmUtxoTag(
+            'tag_id_$walletId',
+            walletId,
+            'tag_name_$walletId',
+            0,
+            DateTime.now(),
+            utxoIdList: [getUtxoId('utxo_tx_hash_$walletId', 0)],
+          ),
         );
         realmManager.realm.add(
           RealmTransactionMemo(
