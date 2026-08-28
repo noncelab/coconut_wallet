@@ -312,7 +312,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
 
     if (selectedTag == null) return const [];
 
-    final colorIndex = selectedTag.colorIndex;
+    final colorIndex = ColorUtil.normalizePaletteIndex(selectedTag.colorIndex);
     final foregroundColor = tagColorPalette[colorIndex];
 
     return [

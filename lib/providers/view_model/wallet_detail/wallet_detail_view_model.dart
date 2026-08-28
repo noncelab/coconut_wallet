@@ -281,6 +281,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       return;
     }
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
+    _txProvider.initTxList(_walletId);
     notifyListeners();
   }
 

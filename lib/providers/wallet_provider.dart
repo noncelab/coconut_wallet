@@ -16,6 +16,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/air-gapped/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
@@ -492,7 +493,7 @@ class WalletProvider extends ChangeNotifier {
     }
 
     await _walletRepository.deleteWallet(walletId);
-    _setWalletItemList(await _fetchWalletListFromDB());
+    _walletItemList.removeWhere((wallet) => wallet.id == walletId);
     _saveWalletCount(_walletItemList.length);
     await _preferenceProvider.removeWalletOrder(walletId);
     await _preferenceProvider.removeFavoriteWalletId(walletId);
@@ -512,6 +513,7 @@ class WalletProvider extends ChangeNotifier {
       );
     }
 
+    _setWalletItemList(List.from(_walletItemList));
     notifyListeners();
   }
 
@@ -636,6 +638,10 @@ class WalletProvider extends ChangeNotifier {
     return _utxoRepository.getUtxosByStatus(walletId, utxoStatus);
   }
 
+  List<RealmUtxoTag> getUtxoTags(int walletId) {
+    return _utxoRepository.getRealmUtxoTags(walletId);
+  }
+
   List<TransactionRecord> getTransactionRecordList(int walletId) {
     return _transactionRepository.getTransactionRecordList(walletId);
   }
@@ -687,6 +693,10 @@ class WalletProvider extends ChangeNotifier {
 
   TransactionRecord? getTransactionRecord(int walletId, String transactionHash) {
     return _transactionRepository.getTransactionRecord(walletId, transactionHash);
+  }
+
+  List<RealmTransactionMemo> getAllTransactionMemos(int walletId) {
+    return _transactionRepository.getAllTransactionMemos(walletId);
   }
 
   Future<void> toggleUtxoLockStatus(int walletId, String utxoId) async {
@@ -765,6 +775,59 @@ class WalletProvider extends ChangeNotifier {
 
   bool isUtxoSuspicious(UtxoState utxo, TransactionRecord? txRecord) {
     return SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, _addressRepository.containsAddressInAnyWallet);
+  }
+
+  Future<void> updateTransactionMemo(int walletId, String txHash, String memo) async {
+    final result = _transactionRepository.updateTransactionMemo(walletId, txHash, memo);
+    if (result.isSuccess) {
+      notifyListeners();
+    } else {
+      throw result.error;
+    }
+  }
+
+  Future<void> addUtxoToTag(int walletId, String tagName, String utxoId, {int? colorIndex}) async {
+    final result = await _utxoRepository.addUtxoToTag(walletId, tagName, utxoId, colorIndex: colorIndex);
+    if (result.isSuccess) {
+      notifyListeners();
+    } else {
+      throw result.error;
+    }
+  }
+
+  Future<void> addUtxosToTags(int walletId, Map<String, Set<UtxoTagImportInfo>> utxoTags) async {
+    final result = await _utxoRepository.addUtxosToTags(walletId, utxoTags);
+    if (result.isSuccess) {
+      notifyListeners();
+    } else {
+      throw result.error;
+    }
+  }
+
+  Future<void> lockUtxo(int walletId, String utxoId) async {
+    final utxo = getUtxoState(walletId, utxoId);
+    if (utxo != null && utxo.status != UtxoStatus.locked) {
+      final result = await _utxoRepository.toggleUtxoLockStatus(walletId, utxoId);
+      if (result.isFailure) {
+        throw result.error;
+      }
+    }
+  }
+
+  Future<void> updateTransactionMemos(int walletId, Map<String, String> txMemos) async {
+    final result = _transactionRepository.addAllTransactionMemos(walletId, txMemos);
+    if (result.isFailure) {
+      throw result.error;
+    }
+    notifyListeners();
+  }
+
+  Future<void> lockUtxos(int walletId, List<String> utxoIds) async {
+    final result = await _utxoRepository.lockAllUtxos(walletId, utxoIds);
+    if (result.isFailure) {
+      throw result.error;
+    }
+    notifyListeners();
   }
 
   @override

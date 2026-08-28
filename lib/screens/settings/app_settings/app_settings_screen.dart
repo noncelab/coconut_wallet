@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/settings_view_model.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/settings/tools/bip329/label_management_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
@@ -20,6 +21,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -35,272 +37,280 @@ class AppSettingsScreen extends StatefulWidget {
 class _AppSettingsScreen extends State<AppSettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<AuthProvider, PreferenceProvider, SettingsViewModel>(
-      create:
-          (_) => SettingsViewModel(
-            Provider.of<AuthProvider>(context, listen: false),
-            Provider.of<PreferenceProvider>(context, listen: false),
-          ),
-      update: (_, authProvider, preferenceProvider, settingsViewModel) {
-        return SettingsViewModel(authProvider, preferenceProvider);
-      },
-      child: Consumer<SettingsViewModel>(
-        builder: (context, viewModel, child) {
-          final colors = context.coconutColors;
-          return Scaffold(
-            backgroundColor: colors.background,
-            appBar: CoconutAppBar.build(title: t.app_settings, context: context, isBottom: true),
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 보안
-                  _category(t.security),
-                  ButtonGroup(
-                    buttons: [
-                      SingleButton(
-                        title: t.settings_screen.set_password,
-                        rightElement: _buildSwitch(
-                          isOn: viewModel.isSetPin,
-                          onChanged: (isOn) async {
-                            if (isOn) {
-                              _showPinSettingScreen(useBiometrics: true);
-                              return;
-                            }
-
-                            final authProvider = viewModel.authProvider;
-                            if (await authProvider.isBiometricsAuthValid()) {
-                              viewModel.deletePin();
-                              return;
-                            }
-
-                            if (await _isPinCheckValid()) {
-                              viewModel.deletePin();
-                            }
-                          },
-                        ),
-                      ),
-                      if (viewModel.canCheckBiometrics && viewModel.isSetPin)
+    return CustomLoadingOverlay(
+      child: ChangeNotifierProxyProvider2<AuthProvider, PreferenceProvider, SettingsViewModel>(
+        create:
+            (_) => SettingsViewModel(
+              Provider.of<AuthProvider>(context, listen: false),
+              Provider.of<PreferenceProvider>(context, listen: false),
+            ),
+        update: (_, authProvider, preferenceProvider, settingsViewModel) {
+          return SettingsViewModel(authProvider, preferenceProvider);
+        },
+        child: Consumer<SettingsViewModel>(
+          builder: (context, viewModel, child) {
+            final colors = context.coconutColors;
+            return Scaffold(
+              backgroundColor: colors.background,
+              appBar: CoconutAppBar.build(title: t.app_settings, context: context, isBottom: true),
+              body: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 보안
+                    _category(t.security),
+                    ButtonGroup(
+                      buttons: [
                         SingleButton(
-                          title: t.settings_screen.use_biometric,
+                          title: t.settings_screen.set_password,
                           rightElement: _buildSwitch(
-                            isOn: viewModel.isSetBiometrics,
+                            isOn: viewModel.isSetPin,
                             onChanged: (isOn) async {
                               if (isOn) {
-                                viewModel.authenticateWithBiometrics(isSave: true);
-                              } else {
-                                viewModel.saveIsSetBiometrics(false);
+                                _showPinSettingScreen(useBiometrics: true);
+                                return;
+                              }
+
+                              final authProvider = viewModel.authProvider;
+                              if (await authProvider.isBiometricsAuthValid()) {
+                                viewModel.deletePin();
+                                return;
+                              }
+
+                              if (await _isPinCheckValid()) {
+                                viewModel.deletePin();
                               }
                             },
                           ),
                         ),
-                      if (viewModel.isSetPin)
-                        SingleButton(
-                          title: t.settings_screen.change_password,
-                          onPressed: () async {
-                            final authProvider = viewModel.authProvider;
-                            if (await authProvider.isBiometricsAuthValid()) {
-                              _showPinSettingScreen(useBiometrics: false);
-                              return;
-                            }
-
-                            if (await _isPinCheckValid()) {
-                              _showPinSettingScreen(useBiometrics: false);
-                            }
-                          },
-                        ),
-                    ],
-                  ),
-
-                  CoconutLayout.spacing_400h,
-
-                  // 단위
-                  _category(t.unit),
-                  ButtonGroup(
-                    buttons: [
-                      Selector<PreferenceProvider, BitcoinUnit>(
-                        selector: (_, viewModel) => viewModel.currentUnit,
-                        builder: (context, currentUnit, child) {
-                          return _buildAnimatedButton(
-                            title: t.bitcoin,
-                            subtitle: currentUnit.symbol,
+                        if (viewModel.canCheckBiometrics && viewModel.isSetPin)
+                          SingleButton(
+                            title: t.settings_screen.use_biometric,
+                            rightElement: _buildSwitch(
+                              isOn: viewModel.isSetBiometrics,
+                              onChanged: (isOn) async {
+                                if (isOn) {
+                                  viewModel.authenticateWithBiometrics(isSave: true);
+                                } else {
+                                  viewModel.saveIsSetBiometrics(false);
+                                }
+                              },
+                            ),
+                          ),
+                        if (viewModel.isSetPin)
+                          SingleButton(
+                            title: t.settings_screen.change_password,
                             onPressed: () async {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
-                                context: context,
-                                heightRatio: 0.5,
-                                child: const UnitBottomSheet(),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      Selector<PreferenceProvider, String>(
-                        selector: (_, provider) => provider.selectedFiat.code,
-                        builder: (context, fiatCode, child) {
-                          String fiatDisplayName;
-                          switch (fiatCode) {
-                            case 'KRW':
-                              fiatDisplayName = FiatCode.KRW.code;
-                              break;
-                            case 'JPY':
-                              fiatDisplayName = FiatCode.JPY.code;
-                              break;
-                            case 'USD':
-                              fiatDisplayName = FiatCode.USD.code;
-                              break;
-                            case 'EUR':
-                              fiatDisplayName = FiatCode.EUR.code;
-                              break;
-                            default:
-                              fiatDisplayName = FiatCode.USD.code;
-                              break;
-                          }
-                          return _buildAnimatedButton(
-                            title: t.settings_screen.fiat,
-                            subtitle: fiatDisplayName,
-                            onPressed: () async {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
-                                context: context,
-                                heightRatio: 0.5,
-                                child: const FiatBottomSheet(),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  CoconutLayout.spacing_400h,
+                              final authProvider = viewModel.authProvider;
+                              if (await authProvider.isBiometricsAuthValid()) {
+                                _showPinSettingScreen(useBiometrics: false);
+                                return;
+                              }
 
-                  // 일반
-                  _category(t.general),
-                  ButtonGroup(
-                    buttons: [
-                      Selector<PreferenceProvider, String>(
-                        selector: (_, provider) => provider.language,
-                        builder: (context, language, child) {
-                          return _buildAnimatedButton(
-                            title: t.settings_screen.language,
-                            subtitle: _getCurrentLanguageDisplayName(language),
-                            onPressed: () async {
-                              CommonBottomSheets.showCustomHeightBottomSheet(
-                                context: context,
-                                heightRatio: 0.6,
-                                child: LanguageBottomSheet(),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      // ValueListenableBuilder<CoconutThemeVariant>(
-                      //   valueListenable: CoconutThemeController.variantNotifier,
-                      //   builder: (context, variant, _) {
-                      //     final currentLabel = switch (variant) {
-                      //       CoconutThemeVariant.light => t.theme_light,
-                      //       CoconutThemeVariant.dark => t.theme_dark,
-                      //     };
-                      //     return _buildAnimatedButton(
-                      //       title: t.theme,
-                      //       subtitle: currentLabel,
-                      //       onPressed: () {
-                      //         CommonBottomSheets.showCustomHeightBottomSheet(
-                      //           context: context,
-                      //           heightRatio: 0.4,
-                      //           child: const ThemeBottomSheet(),
-                      //         );
-                      //       },
-                      //     );
-                      //   },
-                      // ),
-                    ],
-                  ),
-                  CoconutLayout.spacing_400h,
-
-                  // 네트워크
-                  _category(t.network),
-                  // mainnet인 경우만 블록 익스플로러 표시
-                  NetworkType.currentNetworkType == NetworkType.mainnet
-                      ? ButtonGroup(
-                        buttons: [
-                          _buildAnimatedButton(
-                            title: t.electrum_server,
-                            onPressed: () async {
-                              Navigator.pushNamed(context, '/electrum-server');
+                              if (await _isPinCheckValid()) {
+                                _showPinSettingScreen(useBiometrics: false);
+                              }
                             },
                           ),
-                          _buildAnimatedButton(
-                            title: t.block_explorer,
-                            onPressed: () async {
-                              Navigator.pushNamed(context, '/block-explorer');
-                            },
-                          ),
-                        ],
-                      )
-                      : _buildAnimatedButton(
-                        title: t.electrum_server,
-                        onPressed: () async {
-                          Navigator.pushNamed(context, '/electrum-server');
-                        },
-                      ),
-
-                  CoconutLayout.spacing_400h,
-
-                  // 도구
-                  _category(t.tool),
-                  ButtonGroup(
-                    buttons: [
-                      SingleButton(
-                        title: t.settings_screen.utxo_manual_selection,
-                        subtitle: t.settings_screen.utxo_manual_selection_description,
-                        isVerticalSubtitle: true,
-                        rightElement: _buildSwitch(
-                          isOn: viewModel.isManualUtxoSelectionMode,
-                          onChanged: (isOn) async {
-                            viewModel.setManualUtxoSelectionMode(isOn);
-                            vibrateExtraLight();
-                          },
-                        ),
-                      ),
-                      _buildAnimatedButton(
-                        title: t.log_viewer,
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/log-viewer');
-                        },
-                      ),
-                    ],
-                  ),
-
-                  // 개발자 모드에서만 표시되는 디버그 섹션
-                  if (kDebugMode) ...[
-                    CoconutLayout.spacing_400h,
-                    _category('개발자 도구'),
-                    _buildAnimatedButton(
-                      title: 'Realm 디버그용 뷰어',
-                      onPressed: () {
-                        final realmManager = Provider.of<RealmManager>(context, listen: false);
-                        Navigator.of(
-                          context,
-                        ).push(MaterialPageRoute(builder: (context) => RealmDebugScreen(realmManager: realmManager)));
-                      },
+                      ],
                     ),
+
+                    CoconutLayout.spacing_400h,
+
+                    // 단위
+                    _category(t.unit),
+                    ButtonGroup(
+                      buttons: [
+                        Selector<PreferenceProvider, BitcoinUnit>(
+                          selector: (_, viewModel) => viewModel.currentUnit,
+                          builder: (context, currentUnit, child) {
+                            return _buildAnimatedButton(
+                              title: t.bitcoin,
+                              subtitle: currentUnit.symbol,
+                              onPressed: () async {
+                                CommonBottomSheets.showCustomHeightBottomSheet(
+                                  context: context,
+                                  heightRatio: 0.5,
+                                  child: const UnitBottomSheet(),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                        Selector<PreferenceProvider, String>(
+                          selector: (_, provider) => provider.selectedFiat.code,
+                          builder: (context, fiatCode, child) {
+                            String fiatDisplayName;
+                            switch (fiatCode) {
+                              case 'KRW':
+                                fiatDisplayName = FiatCode.KRW.code;
+                                break;
+                              case 'JPY':
+                                fiatDisplayName = FiatCode.JPY.code;
+                                break;
+                              case 'USD':
+                                fiatDisplayName = FiatCode.USD.code;
+                                break;
+                              case 'EUR':
+                                fiatDisplayName = FiatCode.EUR.code;
+                                break;
+                              default:
+                                fiatDisplayName = FiatCode.USD.code;
+                                break;
+                            }
+                            return _buildAnimatedButton(
+                              title: t.settings_screen.fiat,
+                              subtitle: fiatDisplayName,
+                              onPressed: () async {
+                                CommonBottomSheets.showCustomHeightBottomSheet(
+                                  context: context,
+                                  heightRatio: 0.5,
+                                  child: const FiatBottomSheet(),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    CoconutLayout.spacing_400h,
+
+                    // 일반
+                    _category(t.general),
+                    ButtonGroup(
+                      buttons: [
+                        Selector<PreferenceProvider, String>(
+                          selector: (_, provider) => provider.language,
+                          builder: (context, language, child) {
+                            return _buildAnimatedButton(
+                              title: t.settings_screen.language,
+                              subtitle: _getCurrentLanguageDisplayName(language),
+                              onPressed: () async {
+                                CommonBottomSheets.showCustomHeightBottomSheet(
+                                  context: context,
+                                  heightRatio: 0.6,
+                                  child: LanguageBottomSheet(),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                        // ValueListenableBuilder<CoconutThemeVariant>(
+                        //   valueListenable: CoconutThemeController.variantNotifier,
+                        //   builder: (context, variant, _) {
+                        //     final currentLabel = switch (variant) {
+                        //       CoconutThemeVariant.light => t.theme_light,
+                        //       CoconutThemeVariant.dark => t.theme_dark,
+                        //     };
+                        //     return _buildAnimatedButton(
+                        //       title: t.theme,
+                        //       subtitle: currentLabel,
+                        //       onPressed: () {
+                        //         CommonBottomSheets.showCustomHeightBottomSheet(
+                        //           context: context,
+                        //           heightRatio: 0.4,
+                        //           child: const ThemeBottomSheet(),
+                        //         );
+                        //       },
+                        //     );
+                        //   },
+                        // ),
+                      ],
+                    ),
+                    CoconutLayout.spacing_400h,
+
+                    // 네트워크
+                    _category(t.network),
+                    // mainnet인 경우만 블록 익스플로러 표시
+                    NetworkType.currentNetworkType == NetworkType.mainnet
+                        ? ButtonGroup(
+                          buttons: [
+                            _buildAnimatedButton(
+                              title: t.electrum_server,
+                              onPressed: () async {
+                                Navigator.pushNamed(context, '/electrum-server');
+                              },
+                            ),
+                            _buildAnimatedButton(
+                              title: t.block_explorer,
+                              onPressed: () async {
+                                Navigator.pushNamed(context, '/block-explorer');
+                              },
+                            ),
+                          ],
+                        )
+                        : _buildAnimatedButton(
+                          title: t.electrum_server,
+                          onPressed: () async {
+                            Navigator.pushNamed(context, '/electrum-server');
+                          },
+                        ),
+
+                    CoconutLayout.spacing_400h,
+
+                    // 도구
+                    _category(t.tool),
+                    ButtonGroup(
+                      buttons: [
+                        SingleButton(
+                          title: t.settings_screen.utxo_manual_selection,
+                          subtitle: t.settings_screen.utxo_manual_selection_description,
+                          isVerticalSubtitle: true,
+                          rightElement: _buildSwitch(
+                            isOn: viewModel.isManualUtxoSelectionMode,
+                            onChanged: (isOn) async {
+                              viewModel.setManualUtxoSelectionMode(isOn);
+                              vibrateExtraLight();
+                            },
+                          ),
+                        ),
+                        _buildAnimatedButton(
+                          title: t.label_management_screen.title,
+                          subtitle: t.label_management_screen.subtitle,
+                          isVerticalSubtitle: true,
+                          onPressed: () => _showLabelsManagementScreen(context),
+                        ),
+                        _buildAnimatedButton(
+                          title: t.log_viewer,
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/log-viewer');
+                          },
+                        ),
+                      ],
+                    ),
+
+                    // 개발자 모드에서만 표시되는 디버그 섹션
+                    if (kDebugMode) ...[
+                      CoconutLayout.spacing_400h,
+                      _category('개발자 도구'),
+                      _buildAnimatedButton(
+                        title: 'Realm 디버그용 뷰어',
+                        onPressed: () {
+                          final realmManager = Provider.of<RealmManager>(context, listen: false);
+                          Navigator.of(
+                            context,
+                          ).push(MaterialPageRoute(builder: (context) => RealmDebugScreen(realmManager: realmManager)));
+                        },
+                      ),
+                    ],
+
+                    CoconutLayout.spacing_400h,
+
+                    // 앱 정보 보기
+                    _category(t.app_info),
+                    _buildAnimatedButton(
+                      title: t.view_app_info,
+                      onPressed: () => Navigator.pushNamed(context, '/app-info'),
+                    ),
+
+                    const SizedBox(height: 100),
                   ],
-
-                  CoconutLayout.spacing_400h,
-
-                  // 앱 정보 보기
-                  _category(t.app_info),
-                  _buildAnimatedButton(
-                    title: t.view_app_info,
-                    onPressed: () => Navigator.pushNamed(context, '/app-info'),
-                  ),
-
-                  const SizedBox(height: 100),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -325,9 +335,15 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
     child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText)),
   );
 
-  Widget _buildAnimatedButton({required String title, required VoidCallback onPressed, String? subtitle}) {
+  Widget _buildAnimatedButton({
+    required String title,
+    required VoidCallback onPressed,
+    String? subtitle,
+    bool isVerticalSubtitle = false,
+  }) {
     return SingleButton(
       enableShrinkAnim: true,
+      isVerticalSubtitle: isVerticalSubtitle,
       animationEndValue: 0.97,
       title: title,
       subtitle: subtitle,
@@ -365,5 +381,11 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
       case AppLanguage.de:
         return t.settings_screen.locales.german;
     }
+  }
+
+  void _showLabelsManagementScreen(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(CupertinoPageRoute(builder: (_) => const LabelManagementScreen(importMemosFromOtherWalletsFixed: true)));
   }
 }

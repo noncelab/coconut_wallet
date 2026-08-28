@@ -23,6 +23,7 @@ receive: "받기"
 show: "보기"
 hide: "숨기기"
 paste: "붙여넣기"
+import: "가져오기"
 export: "내보내기"
 edit: "편집"
 max: "최대"
@@ -109,6 +110,8 @@ account: "계정"
 merge_utxos: "합치기"
 split_utxo: "나누기"
 apply: "정리하기"
+retry: "재시도"
+share: "공유하기"
 
 relative_time:
   just_now: "방금 전"
@@ -793,6 +796,11 @@ settings_screen:
   language: "언어"
   utxo_manual_selection: "UTXO 수동 선택"
   utxo_manual_selection_description: "송금에 사용할 UTXO를 직접 선택합니다"
+  import_labels: "메모 가져오기"
+  import_all_labels_description: "다른 기기에서 기록한 메모들을\n코코넛 월렛에 적용합니다.\n\n가져오기를 진행하시겠습니까?"
+  export_labels: "메모 내보내기"
+  export_all_labels_description: "코코넛 월렛에 기록한 메모들을\n다른 기기에서도 똑같이\n적용할 수 있습니다.\n\n내보내기를 진행하시겠습니까?"
+  export_labels_failed: "메모 내보내기 실패"
   utxo_tier_theme: "코인 색상"
   locales:
     korean: "한국어"
@@ -936,6 +944,13 @@ wallet_info_screen:
   target_set_21m: "지분 전쟁이다!!!"
   view_xpub: "확장 공개키 보기"
   duplicated_name: "이미 사용중인 이름이에요"
+  import_labels: "메모 가져오기"
+  import_labels_description: "다른 기기에서 기록한 메모들을\n이 지갑에도 적용할 수 있습니다.\n\n가져오기를 진행하시겠습니까?"
+  import_labels_success: "메모 가져오기 성공"
+  import_labels_fail: "메모 가져오기 실패"
+  export_labels: "메모 내보내기"
+  export_labels_fail: "메모 내보내기 실패"
+  export_labels_description: "지갑에 기록한 메모들을\n다른 기기에서도 똑같이\n적용할 수 있습니다.\n\n내보내기를 진행하시겠습니까?"
   view_descriptor: "디스크립터 보기"
   view_wallet_backup_data: "지갑 백업 데이터 보기"
   backup_update_dialog:
@@ -965,6 +980,8 @@ wallet_info_screen:
       select: "선택"
   error:
     delete: "지갑 삭제 실패"
+    no_memos: "지갑에 기록한 메모가 없어요"
+    invalid_file_type: "잘 못된 파일 형식입니다. jsonl 파일을 선택해주세요."
   connected_hardware_wallet:
     title: "기기 정보"
     connection_status: "연결 상태"
@@ -1123,6 +1140,77 @@ split_utxo_screen:
     create: "생성하기"
     preview: "예상 보기"
     description: "나누는 개수가 많아 트랜잭션 생성에 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인할까요?"
+
+label_management_screen:
+  title: "메모 관리하기"
+  subtitle: "기록한 메모들을 가져오거나 내보냅니다"
+  description: "BIP-329는 지갑 간에 메모를 주고받을 수 있도록 만든 공개 표준이에요. 메모를 내보내 두면 기기를 바꾸거나 앱을 다시 설치한 뒤에도 다시 가져와 그대로 복원할 수 있어요."
+  import_title: "가져오기"
+  import_description: "저장해 둔 메모 파일을 불러옵니다"
+  export_title: "내보내기"
+  export_description: "메모를 백업하거나 다른 지갑으로 공유합니다"
+  tooltip:
+    title: "코코넛의 메모"
+    description: "거래와 UTXO를 더 쉽게 구분할 수 있도록 나만의 정보를 기록할 수 있어요."
+    supported_title: "지원하는 메모"
+    supported_list: "• 거래 메모\n• UTXO 태그(이름/색상)\n• UTXO 사용 잠금"
+    import: "BIP-329 메모 파일(.jsonl)을 가져와 코코넛 월렛에 적용합니다."
+  file:
+    select: "다른 파일 선택"
+    select_button: "선택하기"
+    apply: "적용하기"
+    apply_description: "$fileName\n파일을 적용할까요?"
+    delete: "파일 삭제"
+    delete_description: "$fileName\n파일을 삭제하시겠어요?"
+    delete_multiple_description: "선택한 $count개의 파일을 삭제하시겠어요?"
+    delete_success: "파일 삭제 성공"
+    delete_failed: "파일 삭제 실패"
+    invalid_file_type: "잘못된 파일 형식이에요. JSONL 파일을 선택해주세요."
+label_import_screen:
+  loading_title: "메모를 적용하고 있어요"
+  success_title: "메모를 가져왔어요"
+  no_applied_memo: "메모 파일을 적용할 수 있는 지갑이 없어요"
+  delete_file: "완료 버튼을 누르면 파일을 삭제합니다"
+  error_title: "메모를 가져올 수 없어요"
+  result:
+    step1: "지갑 이름"
+    step2: "거래 메모"
+    step3: "UTXO 태그"
+    step4: "잠금 UTXO"
+  option_selection:
+    title: "메모를 적용할까요?"
+    description_1: '파일에 저장된 메모를 코코넛 월렛에 적용해요.'
+    description_2: '기존 메모가 있으면 가져온 메모를 추가해요.'
+    add_memo_to_existing: 
+      title: '기존 메모 덮어쓰기'
+      subtitle: '기존 메모는 지워지고 가져온 메모가 적용돼요'
+    import_memos_from_other_wallets:
+      title: '다른 지갑의 메모도 가져오기'
+      subtitle: '선택한 지갑에 해당하지 않는 메모도 함께 가져와요'
+  widget:
+    count_unit(cardinal):
+      zero: " 개"
+      one: " 개"
+      other: " 개"
+label_export_screen:
+  info_tooltip: 메모를 BIP-329 파일(.jsonl)로 저장하거나 다른 지갑과 공유할 수 있어요.
+  all_wallets: "모든 지갑"
+  create_file: "파일 만들기"
+  view_list: "목록 보기"
+  no_wallet: "지갑을 찾을 수 없어요."
+  no_file: "파일을 찾을 수 없어요.\n먼저 [파일 만들기]에서 파일을 생성해 주세요."
+  loading_title: "파일을 만들고 있어요"
+  success_title: "파일을 공유할까요?"
+  error_title: "파일을 만들 수 없어요"
+  no_labels_to_export: "메모가 없어요"
+  no_labels_to_share: "공유할 메모가 없어요."
+  result:
+    step1: "파일 이름"
+    step2: "생성 일시"
+    step3: "적용 지갑"
+    step4: "거래 메모"
+    step5: "UTXO 태그"
+    step6: "잠금 UTXO"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
