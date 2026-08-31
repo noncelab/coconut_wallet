@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app/router/bip329_route_args.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -13,7 +14,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_vi
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/settings/tools/bip329/label_management_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_signer_section.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_stats_section.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -30,7 +30,6 @@ import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dar
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -150,6 +149,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           walletId: widget.id,
                           transactionCount: viewModel.transactionCount,
                           utxoCount: viewModel.utxoCount,
+                          watchedAddressCount: viewModel.watchedAddressCount,
                           balanceSats: viewModel.walletBalance.total,
                           currentUnit: context.read<PreferenceProvider>().currentUnit,
                           targetSats: viewModel.targetSats,
@@ -687,8 +687,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   void _showLabelsManagementScreen(BuildContext context, WalletInfoViewModel viewModel) {
-    Navigator.of(
+    Navigator.pushNamed(
       context,
-    ).push(CupertinoPageRoute(builder: (context) => LabelManagementScreen(walletId: viewModel.walletId)));
+      '/label-management',
+      arguments: LabelManagementRouteArgs(walletId: viewModel.walletId),
+    );
   }
 }

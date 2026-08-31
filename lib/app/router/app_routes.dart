@@ -14,6 +14,7 @@ import 'package:coconut_wallet/screens/settings/app_settings/about/coconut_crew_
 import 'package:coconut_wallet/screens/settings/app_settings/network/block_explorer_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/electrum_server_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/tools/log_viewer_screen.dart';
+import 'package:coconut_wallet/app/router/bip329_routes.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
@@ -223,6 +224,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             transport: args['transport'] == 'usb' ? TrezorTransport.usb : TrezorTransport.ble,
           ),
         ),
+    ...buildBip329Routes(),
   };
 }
 

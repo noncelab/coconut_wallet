@@ -12,6 +12,7 @@ class WalletInfoStatsSection extends StatelessWidget {
   final int walletId;
   final int transactionCount;
   final int utxoCount;
+  final int watchedAddressCount;
   final int balanceSats;
   final BitcoinUnit currentUnit;
   final int? targetSats;
@@ -22,6 +23,7 @@ class WalletInfoStatsSection extends StatelessWidget {
     required this.walletId,
     required this.transactionCount,
     required this.utxoCount,
+    required this.watchedAddressCount,
     required this.balanceSats,
     required this.currentUnit,
     this.targetSats,
@@ -45,10 +47,24 @@ class WalletInfoStatsSection extends StatelessWidget {
                 child: _StatCard(
                   label: t.wallet_info_screen.utxo,
                   value: '$utxoCount',
-                  onPressed: () => Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId}),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
+                  },
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          _StatCard(
+            label: t.wallet_info_screen.watched_addresses,
+            value: '$watchedAddressCount',
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                '/address-list',
+                arguments: {'id': walletId, 'initialShowOnlyWatchedAddresses': true},
+              );
+            },
           ),
           const SizedBox(height: 12),
           _TargetQuantityCard(
@@ -56,6 +72,7 @@ class WalletInfoStatsSection extends StatelessWidget {
             currentUnit: currentUnit,
             targetSats: targetSats,
             maxSats: _maxBtcSats,
+            transparentBackground: true,
             onPressed: onEditTargetTap,
           ),
         ],
@@ -121,6 +138,7 @@ class _TargetQuantityCard extends StatelessWidget {
   final BitcoinUnit currentUnit;
   final int? targetSats;
   final int maxSats;
+  final bool transparentBackground;
   final VoidCallback onPressed;
 
   const _TargetQuantityCard({
@@ -128,6 +146,7 @@ class _TargetQuantityCard extends StatelessWidget {
     required this.currentUnit,
     this.targetSats,
     required this.maxSats,
+    this.transparentBackground = false,
     required this.onPressed,
   });
 
@@ -148,7 +167,10 @@ class _TargetQuantityCard extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-            decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(24)),
+            decoration: BoxDecoration(
+              color: transparentBackground ? Colors.transparent : context.coconutColors.surfaceCard,
+              borderRadius: BorderRadius.circular(24),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

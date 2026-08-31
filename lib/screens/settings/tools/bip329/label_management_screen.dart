@@ -1,13 +1,11 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app/router/bip329_route_args.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/screens/settings/tools/bip329/label_export_screen.dart';
-import 'package:coconut_wallet/screens/settings/tools/bip329/label_import_screen.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -183,21 +181,18 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
   }
 
   void _navigateToImportFilePicker(BuildContext context, {int? walletId}) {
-    Navigator.of(context).push(
-      CupertinoPageRoute(
-        builder:
-            (context) => LabelImportScreen(
-              walletId: walletId,
-              showImportMemosFromOtherWalletsOption: widget.showImportMemosFromOtherWalletsOption,
-            ),
+    Navigator.pushNamed(
+      context,
+      '/label-import',
+      arguments: LabelImportRouteArgs(
+        walletId: walletId,
+        showImportMemosFromOtherWalletsOption: widget.showImportMemosFromOtherWalletsOption,
       ),
     );
   }
 
   void _navigateToExportWalletPicker(BuildContext context, {int? walletId}) {
-    Navigator.of(
-      context,
-    ).push(CupertinoPageRoute(builder: (context) => LabelExportScreen(initialSelectedWalletId: walletId)));
+    Navigator.pushNamed(context, '/label-export', arguments: LabelExportRouteArgs(walletId: walletId));
   }
 }
 

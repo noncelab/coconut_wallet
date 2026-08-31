@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app/router/bip329_route_args.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 // import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -10,7 +11,6 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/settings_view_model.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/settings/tools/bip329/label_management_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
@@ -21,7 +21,6 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -384,8 +383,10 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
   }
 
   void _showLabelsManagementScreen(BuildContext context) {
-    Navigator.of(context).push(
-      CupertinoPageRoute(builder: (_) => const LabelManagementScreen(showImportMemosFromOtherWalletsOption: false)),
+    Navigator.pushNamed(
+      context,
+      '/label-management',
+      arguments: const LabelManagementRouteArgs(showImportMemosFromOtherWalletsOption: false),
     );
   }
 }
