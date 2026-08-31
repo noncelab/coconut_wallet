@@ -789,6 +789,25 @@ class _TransactionListState extends State<TransactionList> {
       }
     }
 
+    // 동일 트랜잭션의 내용만 바뀐 경우(예: 컨펌으로 blockHeight 변경) 감지 후 교체
+    final List<String> updatedHashes = [];
+    for (final tx in txList) {
+      final oldTx = oldTxMap[tx.transactionHash];
+      if (oldTx != null && oldTx.contentHashCode != tx.contentHashCode) {
+        updatedHashes.add(tx.transactionHash);
+      }
+    }
+    if (updatedHashes.isNotEmpty) {
+      setState(() {
+        for (final hash in updatedHashes) {
+          final index = _displayedTxList.indexWhere((tx) => tx.transactionHash == hash);
+          if (index != -1) {
+            _displayedTxList[index] = newTxMap[hash]!;
+          }
+        }
+      });
+    }
+
     // insertItem/removeItem 호출 한 건마다 _displayedTxList도 그 한 건만 반영한다.
     // 한 번에 통째로 교체하면 SliverAnimatedList가 추적하는 개수와 어긋나 assertion 발생
 
