@@ -998,6 +998,9 @@ wallet_resync_screen:
     warning:
       title: "トラブル解決用の機能です"
       description: "残高や取引履歴が正しく表示されない、または同期がうまくいかない場合にのみ使用してください"
+    syncing_notice:
+      title: "同期を実行中です"
+      description: "今すぐ再同期を始めても、実行中の同期が終わり次第自動的に進みます"
     last_resync_hint: "前回の再同期: $time"
     cta: "再同期を開始"
   progress:

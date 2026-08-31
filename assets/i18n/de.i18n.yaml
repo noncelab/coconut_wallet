@@ -941,6 +941,9 @@ wallet_resync_screen:
     warning:
       title: "Dies ist eine Funktion zur Fehlerbehebung"
       description: "Nutze sie nur, wenn Guthaben oder Transaktionsverlauf falsch angezeigt werden oder die Synchronisierung nicht funktioniert"
+    syncing_notice:
+      title: "Synchronisierung läuft gerade"
+      description: "Wenn du jetzt eine Neusynchronisierung startest, beginnt sie automatisch, sobald die laufende Synchronisierung fertig ist"
     last_resync_hint: "Letzte Synchronisierung: $time"
     cta: "Synchronisierung starten"
   progress:

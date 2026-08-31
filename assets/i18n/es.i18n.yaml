@@ -1001,6 +1001,9 @@ wallet_resync_screen:
     warning:
       title: "Esta es una función para solucionar problemas"
       description: "Úsala solo si el saldo o el historial de transacciones se ve incorrecto, o si la sincronización no funciona"
+    syncing_notice:
+      title: "La sincronización está en curso"
+      description: "Si inicias la resincronización ahora, empezará automáticamente en cuanto termine la sincronización actual"
     last_resync_hint: "Última resincronización: $time"
     cta: "Iniciar resincronización"
   progress:

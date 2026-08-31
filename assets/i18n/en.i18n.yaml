@@ -1010,6 +1010,9 @@ wallet_resync_screen:
     warning:
       title: "This is a troubleshooting feature"
       description: "Only use this if your balance or transaction history looks wrong, or sync isn't working"
+    syncing_notice:
+      title: "Sync is in progress"
+      description: "If you start a resync now, it'll begin automatically once the current sync finishes"
     last_resync_hint: "Last resync: $time"
     cta: "Start Resync"
   progress:

@@ -464,10 +464,10 @@ class NodeProvider extends ChangeNotifier {
   }
 
   /// 지갑 재동기화 진입 전, 현재 연결된 일렉트럼 서버 상태가 정상인지 확인
+  /// _hasConnectionError는 다음 블록 업데이트/재연결 성공 시점에야 풀리는 캐시값이라
+  /// 콜드 스타트 등에서 실제로는 연결됐는데도 한동안 true로 남아있을 수 있어 참고하지 않고
+  /// 일렉트럼 서버 설정 화면과 동일하게 항상 실시간으로 확인한다.
   Future<Result<bool>> verifyCurrentConnectionHealth() async {
-    if (_hasConnectionError) {
-      return Result.failure(ErrorCodes.nodeConnectionError);
-    }
     return _verifyChainCompatibility(_electrumServer);
   }
 

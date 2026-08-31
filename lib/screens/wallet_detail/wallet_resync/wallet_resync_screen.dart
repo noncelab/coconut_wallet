@@ -7,6 +7,7 @@ import 'package:coconut_wallet/enums/node_connection_status.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/resync_progress.dart';
+import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -44,7 +45,9 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
   NodeConnectionStatus _connectionStatus = NodeConnectionStatus.connecting;
   ResyncProgress? _progress;
   StreamSubscription<ResyncProgress>? _progressSubscription;
+  StreamSubscription<WalletFetchProgress>? _fetchProgressSubscription;
   bool _isRunning = false;
+  bool _isWalletSyncing = false;
   ConnectivityProvider? _connectivityProvider;
 
   final List<ResyncProgress> _phaseQueue = [];
@@ -71,6 +74,12 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
     // 받아버려서 확인 화면을 건너뛰고 바로 결과 화면으로 가버린다 — 그래서 사용자가 실제로
     // "시작" 버튼을 눌러 이번 재동기화를 시작한 뒤에만 구독을 시작한다(_beginResyncFlow).
     _connectivityProvider = context.read<ConnectivityProvider>()..addListener(_onConnectivityChanged);
+    _fetchProgressSubscription = context.read<NodeProvider>().getWalletFetchProgressStream(widget.id).listen((
+      progress,
+    ) {
+      if (!mounted) return;
+      setState(() => _isWalletSyncing = progress.isFetching);
+    });
   }
 
   void _onConnectivityChanged() {
@@ -132,6 +141,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
   void dispose() {
     _connectivityProvider?.removeListener(_onConnectivityChanged);
     _progressSubscription?.cancel();
+    _fetchProgressSubscription?.cancel();
     super.dispose();
   }
 
@@ -446,13 +456,28 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
           isConnected
               ? Column(
                 key: const ValueKey('warning-visible'),
-                children: [CoconutLayout.spacing_300h, _buildWarningBox()],
+                children: [
+                  CoconutLayout.spacing_300h,
+                  if (_isWalletSyncing) ...[
+                    _buildInfoBox(
+                      title: t.wallet_resync_screen.confirm.syncing_notice.title,
+                      description: t.wallet_resync_screen.confirm.syncing_notice.description,
+                      color: context.coconutColors.warning,
+                    ),
+                    CoconutLayout.spacing_300h,
+                  ],
+                  _buildInfoBox(
+                    title: t.wallet_resync_screen.confirm.warning.title,
+                    description: t.wallet_resync_screen.confirm.warning.description,
+                    color: context.coconutColors.warning,
+                  ),
+                ],
               )
               : const SizedBox.shrink(key: ValueKey('warning-hidden')),
     );
   }
 
-  Widget _buildWarningBox() {
+  Widget _buildInfoBox({required String title, required String description, required Color color}) {
     // connection_alert 아이콘과 같은 20px 슬롯 폭 + spacing_300w(12px) 만큼,
     // description을 들여써서 title과 텍스트 시작 x를 맞추기 위함
     const iconSlotWidth = 20.0;
@@ -471,26 +496,18 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
                     'assets/svg/circle-info.svg',
                     // circle-check.svg(24x24, 링이 83% 채움)와 실제 렌더링 링 지름을 맞춘 값(circle-info.svg는 16x16, 94% 채움)
                     height: 17.78,
-                    colorFilter: ColorFilter.mode(context.coconutColors.warning, BlendMode.srcIn),
+                    colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
                   ),
                 ),
               ),
               CoconutLayout.spacing_300w,
-              Expanded(
-                child: Text(
-                  t.wallet_resync_screen.confirm.warning.title,
-                  style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.warning),
-                ),
-              ),
+              Expanded(child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(color))),
             ],
           ),
           CoconutLayout.spacing_100h,
           Padding(
             padding: const EdgeInsets.only(left: iconSlotWidth + 12),
-            child: Text(
-              t.wallet_resync_screen.confirm.warning.description,
-              style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-            ),
+            child: Text(description, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
           ),
         ],
       ),
