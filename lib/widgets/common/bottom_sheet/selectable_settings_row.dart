@@ -51,7 +51,7 @@ class SelectableSettingsRow extends StatelessWidget {
 
 /// [SelectableSettingsRow]의 시각적 내용(제목/부제목/체크 아이콘)만 분리한 위젯
 ///
-/// 스와이프 삭제처럼 탭 제스처를 직접 관리해야 하는 특수한 행(예: 코코넛 과육 테마 행)에서
+/// 스와이프 삭제처럼 탭 제스처를 직접 관리해야 하는 특수한 행(예: 코코넛 테마 행)에서
 /// 제스처 래퍼 없이 동일한 레이아웃만 재사용하고 싶을 때 쓴다.
 class SelectableSettingsRowContent extends StatelessWidget {
   const SelectableSettingsRowContent({

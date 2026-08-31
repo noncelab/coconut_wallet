@@ -123,9 +123,9 @@ Flutter 위젯 트리 안에서 보이는 splash가 아니라, 앱 시작 직후
 예:
 
 ```text
-lib/ccos/features/coconut_pulp/
-  coconut_pulp_feature.dart
-  coconut_pulp_feature_copy.dart
+lib/ccos/features/coconut_theme/
+  coconut_theme_feature.dart
+  coconut_theme_feature_copy.dart
 ```
 
 즉:

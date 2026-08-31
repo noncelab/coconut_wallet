@@ -98,9 +98,9 @@ lib/widgets/features/...
 Example:
 
 ```text
-lib/ccos/features/coconut_pulp/
-  coconut_pulp_feature.dart
-  coconut_pulp_feature_copy.dart
+lib/ccos/features/coconut_theme/
+  coconut_theme_feature.dart
+  coconut_theme_feature_copy.dart
 ```
 
 Roles:
@@ -133,7 +133,7 @@ Example:
 
 ```dart
 class CcosFeatureRegistrySource {
-  static CcosFeatureListing get featuredListing => CoconutPulpFeature.listing;
+  static CcosFeatureListing get featuredListing => CoconutThemeFeature.listing;
 }
 ```
 
@@ -159,8 +159,8 @@ On the other hand, **you don't implement entitlement integration (the actual pur
 Example:
 
 ```dart
-class CoconutPulpFeatureCopySource {
-  static CoconutPulpFeatureCopy get current {
+class CoconutThemeFeatureCopySource {
+  static CoconutThemeFeatureCopy get current {
     switch (LocaleSettings.currentLocale) {
       case AppLocale.ko:
         return _ko;

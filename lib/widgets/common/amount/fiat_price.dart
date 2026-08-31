@@ -27,9 +27,9 @@ class _FiatPriceState extends State<FiatPrice> {
         }
 
         final defaultStyle = CoconutTypography.body2_14_Number.copyWith(color: context.coconutColors.secondaryText);
-        final appliedStyle =
-            widget.textStyle?.copyWith(color: widget.textColor ?? defaultStyle.color) ??
-            defaultStyle.copyWith(color: widget.textColor ?? defaultStyle.color);
+        final appliedStyle = (widget.textStyle ?? defaultStyle).copyWith(
+          color: widget.textColor ?? widget.textStyle?.color ?? defaultStyle.color,
+        );
 
         try {
           final priceText = priceProvider.getFiatPrice(widget.satoshiAmount);

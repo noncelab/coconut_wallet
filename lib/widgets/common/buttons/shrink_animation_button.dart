@@ -143,21 +143,15 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
           child: AnimatedContainer(
             margin: EdgeInsets.all(useGradientBorder ? widget.borderWidth : 0),
             duration: const Duration(milliseconds: 100),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(widget.borderRadius)),
-            child: ClipRRect(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color:
+                  widget.isActive && _isPressed
+                      ? Color.alphaBlend(overlayColor.withValues(alpha: overlayOpacity), baseColor)
+                      : baseColor,
               borderRadius: BorderRadius.circular(widget.borderRadius),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 100),
-                decoration: BoxDecoration(
-                  color:
-                      _isPressed
-                          ? Color.alphaBlend(overlayColor.withValues(alpha: overlayOpacity), baseColor)
-                          : baseColor,
-                  borderRadius: BorderRadius.circular(widget.borderRadius),
-                ),
-                child: child,
-              ),
             ),
+            child: child,
           ),
         ),
       ),

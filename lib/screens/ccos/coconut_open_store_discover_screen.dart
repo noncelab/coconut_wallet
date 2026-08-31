@@ -179,7 +179,7 @@ class _DiscoverPreviewImage extends StatelessWidget {
 }
 
 // A small non-interactive mock of the app's own theme settings screen (see
-// lib/screens/settings/theme_bottom_sheet.dart), showing the Coconut Pulp theme selected with
+// lib/screens/settings/theme_bottom_sheet.dart), showing the Coconut Theme selected with
 // its creator credit - illustrating what "discovering" a feature looks like once it's added.
 class _ThemeSettingsMock extends StatelessWidget {
   const _ThemeSettingsMock({required this.listing, required this.width, required this.highlightPulse});
@@ -196,14 +196,14 @@ class _ThemeSettingsMock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pulpColors = CoconutColors.coconutPulp();
+    final themeColors = CoconutColors.coconutTheme();
     final rowTextMaxWidth = (width - _horizontalPadding - _checkIconReserve).clamp(80.0, double.infinity);
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: pulpColors.surfaceBottomSheet,
+        color: themeColors.surfaceBottomSheet,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: pulpColors.surfaceBottomSheet, width: 1.2),
+        border: Border.all(color: themeColors.surfaceBottomSheet, width: 1.2),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 24, offset: const Offset(0, 12)),
         ],
@@ -219,15 +219,15 @@ class _ThemeSettingsMock extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _ThemeMockRow(title: t.theme_dark, textColor: pulpColors.primaryText, maxWidth: rowTextMaxWidth),
-                  Divider(height: 24, thickness: 1, color: pulpColors.primaryText.withAlpha(30)),
-                  _ThemeMockRow(title: t.theme_light, textColor: pulpColors.primaryText, maxWidth: rowTextMaxWidth),
-                  Divider(height: 24, thickness: 1, color: pulpColors.primaryText.withAlpha(30)),
+                  _ThemeMockRow(title: t.theme_dark, textColor: themeColors.primaryText, maxWidth: rowTextMaxWidth),
+                  Divider(height: 24, thickness: 1, color: themeColors.primaryText.withAlpha(30)),
+                  _ThemeMockRow(title: t.theme_light, textColor: themeColors.primaryText, maxWidth: rowTextMaxWidth),
+                  Divider(height: 24, thickness: 1, color: themeColors.primaryText.withAlpha(30)),
                   _ThemeMockRow(
-                    title: t.theme_coconut_pulp,
+                    title: t.theme_coconut,
                     isSelected: true,
                     subtitle: '${listing.author} · ${listing.authorBio}',
-                    textColor: pulpColors.primaryText,
+                    textColor: themeColors.primaryText,
                     maxWidth: rowTextMaxWidth,
                     highlightPulse: highlightPulse,
                   ),

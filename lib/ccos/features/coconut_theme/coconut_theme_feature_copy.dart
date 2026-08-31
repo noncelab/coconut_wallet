@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
 
-class CoconutPulpFeatureCopy {
-  const CoconutPulpFeatureCopy({
+class CoconutThemeFeatureCopy {
+  const CoconutThemeFeatureCopy({
     required this.title,
     required this.description,
     required this.author,
@@ -22,8 +22,8 @@ class CoconutPulpFeatureCopy {
   final List<String> tags;
 }
 
-class CoconutPulpFeatureCopySource {
-  static CoconutPulpFeatureCopy get current {
+class CoconutThemeFeatureCopySource {
+  static CoconutThemeFeatureCopy get current {
     switch (LocaleSettings.currentLocale) {
       case AppLocale.ko:
         return _ko;
@@ -38,8 +38,8 @@ class CoconutPulpFeatureCopySource {
     }
   }
 
-  static const CoconutPulpFeatureCopy _ko = CoconutPulpFeatureCopy(
-    title: '코코넛 과육 테마',
+  static const CoconutThemeFeatureCopy _ko = CoconutThemeFeatureCopy(
+    title: '코코넛 테마',
     description: '코코넛과 해변의 따뜻한 색감을 담은\n코코넛 월렛의 새로운 밝은 테마입니다',
     author: '코코넛 팀',
     authorBio: '비트코인만을 위한 더 나은 지갑 경험을 만듭니다',
@@ -49,9 +49,10 @@ class CoconutPulpFeatureCopySource {
     tags: ['밝은 테마'],
   );
 
-  static const CoconutPulpFeatureCopy _en = CoconutPulpFeatureCopy(
-    title: 'Coconut Pulp Theme',
-    description: 'A bright new Coconut Wallet theme inspired by the warm colors of coconut flesh and the beach.',
+  static const CoconutThemeFeatureCopy _en = CoconutThemeFeatureCopy(
+    title: 'Coconut Theme',
+    description:
+        'A bright new Coconut Wallet theme inspired by the warm colors of coconut flesh and the beach.',
     author: 'Coconut Team',
     authorBio: 'Building a better wallet experience',
     authorIntent:
@@ -63,8 +64,8 @@ class CoconutPulpFeatureCopySource {
     tags: ['Light theme'],
   );
 
-  static const CoconutPulpFeatureCopy _de = CoconutPulpFeatureCopy(
-    title: 'Coconut-Pulp-Theme',
+  static const CoconutThemeFeatureCopy _de = CoconutThemeFeatureCopy(
+    title: 'Coconut-Theme',
     description:
         'Ein helles neues Theme fuer Coconut Wallet mit warmen Farben, inspiriert von Kokosnussfleisch und Strand.',
     author: 'Coconut Team',
@@ -78,9 +79,10 @@ class CoconutPulpFeatureCopySource {
     tags: ['Helles Theme'],
   );
 
-  static const CoconutPulpFeatureCopy _es = CoconutPulpFeatureCopy(
-    title: 'Tema Coconut Pulp',
-    description: 'Un nuevo tema claro para Coconut Wallet inspirado en los tonos calidos del coco y la playa.',
+  static const CoconutThemeFeatureCopy _es = CoconutThemeFeatureCopy(
+    title: 'Tema Coconut',
+    description:
+        'Un nuevo tema claro para Coconut Wallet inspirado en los tonos calidos del coco y la playa.',
     author: 'Equipo Coconut',
     authorBio: 'Creamos una mejor experiencia de wallet',
     authorIntent:
@@ -92,8 +94,8 @@ class CoconutPulpFeatureCopySource {
     tags: ['Tema claro'],
   );
 
-  static const CoconutPulpFeatureCopy _ja = CoconutPulpFeatureCopy(
-    title: 'ココナッツ果肉テーマ',
+  static const CoconutThemeFeatureCopy _ja = CoconutThemeFeatureCopy(
+    title: 'ココナッツテーマ',
     description: 'ココナッツと浜辺のあたたかい色合いを込めた、Coconut Wallet の新しい明るいテーマです',
     author: 'Coconut Team',
     authorBio: 'Bitcoin 専用のより良いウォレット体験をつくっています',

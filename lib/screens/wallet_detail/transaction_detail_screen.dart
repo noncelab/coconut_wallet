@@ -614,6 +614,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
   }
 
   Widget _buildAmount(TransactionRecord tx) {
+    final bool isPositive = _getPrefix(tx) != '-';
+    final Color amountColor = isPositive ? context.coconutColors.receivingColor : context.coconutColors.sendingColor;
+
     return GestureDetector(
       onTap: _toggleUnit,
       child: Column(
@@ -630,7 +633,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           CoconutLayout.spacing_100h,
           FiatPrice(
             satoshiAmount: tx.amount.abs(),
-            textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
+            textStyle: CoconutTypography.body2_14_Number.setColor(amountColor.withValues(alpha: 0.7)),
           ),
         ],
       ),

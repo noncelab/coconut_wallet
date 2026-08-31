@@ -130,6 +130,20 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   int? _walletTransitionStartIndex;
   int? _walletTransitionTargetIndex;
+  double? _recentTxCardHeight;
+  final GlobalKey _recentTxCardMeasureKey = GlobalKey();
+
+  void _measureRecentTxCardHeightIfNeeded() {
+    final renderObject = _recentTxCardMeasureKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) return;
+
+    final measuredHeight = renderObject.size.height;
+    if (_recentTxCardHeight != measuredHeight) {
+      setState(() {
+        _recentTxCardHeight = measuredHeight;
+      });
+    }
+  }
 
   Future<void> _hideHomeFeature(HomeFeatureType type, {bool keepEditMode = false}) async {
     bool? result = await showDialog<bool>(
@@ -1819,16 +1833,37 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       final screenWidth = MediaQuery.sizeOf(context).width;
                       final carouselViewportFraction = 1 - (2 * _horizontalPadding / screenWidth);
 
-                      return ordered.length == 1
-                          ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
-                            child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, currentUnit),
-                          )
-                          : CarouselSlider(
+                      if (ordered.length == 1) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+                          child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, currentUnit),
+                        );
+                      }
+
+                      if (_recentTxCardHeight == null) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) => _measureRecentTxCardHeightIfNeeded());
+                      }
+
+                      return Stack(
+                        children: [
+                          if (_recentTxCardHeight == null)
+                            Offstage(
+                              offstage: true,
+                              child: Padding(
+                                key: _recentTxCardMeasureKey,
+                                padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+                                child: _buildRecentTransactionCard(
+                                  ordered.first.item1,
+                                  ordered.first.item2,
+                                  currentUnit,
+                                ),
+                              ),
+                            ),
+                          CarouselSlider(
                             carouselController: _carouselController,
                             options: CarouselOptions(
                               autoPlay: false,
-                              height: 90,
+                              height: _recentTxCardHeight ?? 90,
                               viewportFraction: carouselViewportFraction,
                               enlargeCenterPage: true,
                               enlargeFactor: 0.2,
@@ -1844,7 +1879,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 ordered.map((t) {
                                   return _buildRecentTransactionCard(t.item1, t.item2, currentUnit);
                                 }).toList(),
-                          );
+                          ),
+                        ],
+                      );
                     },
                   ),
                 ),
@@ -1858,7 +1895,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   }
 
                   return Container(
-                    margin: const EdgeInsets.only(top: 16, left: 50, right: 50),
+                    margin: const EdgeInsets.only(top: 12, left: 50, right: 50),
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       controller: _pageIndicatorController,
@@ -1894,6 +1931,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildRecentTransactionCard(int walletId, TransactionRecord transaction, BitcoinUnit currentUnit) {
     final walletName = _viewModel.getWalletById(walletId).name;
+    const padding = 20.0;
 
     Widget buildTxRow(TransactionRecord transaction) {
       final bool isReceived = transaction.transactionType == TransactionType.received;
@@ -1927,12 +1965,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     child: SvgPicture.asset(
                       iconSource,
                       fit: BoxFit.fill,
-                      width: 28,
-                      height: 28,
+                      width: 30, // wallet item card와 동일한 사이즈로 맞춰 정렬
+                      height: 30,
                       colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                     ),
                   ),
-                  CoconutLayout.spacing_300w,
+                  CoconutLayout.spacing_200w, // wallet item card와 동일한 사이즈로 맞춰 정렬
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1998,7 +2036,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     if (_viewModel.isEditWidgetMode) {
       return Container(
-        padding: const EdgeInsets.only(left: _horizontalPadding, right: _horizontalPadding, top: 20, bottom: 20),
+        padding: const EdgeInsets.all(padding),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: context.coconutColors.homeSurface),
@@ -2019,10 +2057,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           arguments: {'id': walletId, 'txHash': transaction.transactionHash},
         );
       },
-      child: Container(
-        padding: const EdgeInsets.only(left: _horizontalPadding, right: _horizontalPadding, top: 20, bottom: 20),
-        child: buildTxRow(transaction),
-      ),
+      child: Container(padding: const EdgeInsets.all(padding), child: buildTxRow(transaction)),
     );
   }
 
@@ -2186,7 +2221,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     builder: (context, currentUnit, child) {
                       return Container(
                         width: MediaQuery.sizeOf(context).width,
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: context.coconutColors.homeSurface,
@@ -2333,8 +2368,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               child: SvgPicture.asset(
                 getIconPath(),
                 fit: BoxFit.fill,
-                width: 24,
-                height: 24,
+                width: 30,
+                height: 30,
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
               ),
             ),

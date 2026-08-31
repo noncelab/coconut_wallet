@@ -739,7 +739,7 @@ class CoconutColors {
     );
   }
 
-  factory CoconutColors.coconutPulp() {
+  factory CoconutColors.coconutTheme() {
     const pulp = Color(0xFFFAF8F3);
     const cream = Color(0xFFF4E9D3);
     const shell = Color(0xFFFFFDF7);
@@ -749,8 +749,8 @@ class CoconutColors {
     const husk = Color(0xFFB87433);
     const huskSoft = Color(0xFFDFC09A);
     const toast = Color(0xFFC18C55);
-    const lagoonDeep = Color(0xFF4FA8C8);
     const lagoon = Color(0xFF72CFEA);
+    const lagoonDeep = Color(0xFF4FA8B8);
     const seefoam = Color(0xFF8FD9C5);
     const palmGreen = Color(0xFF7FB96A);
     const line = Color(0xFFE8D8BF);
@@ -882,9 +882,9 @@ class CoconutColors {
       taprootParticipantNeutralRoleBackground: dim,
       taprootParticipantNeutralRoleBorder: line,
       taprootParticipantNeutralRoleText: huskDeep,
-      txFlowLine: caramel,
+      txFlowLine: huskSoft,
       rbfAccent: palmGreen,
-      cpfpAccent: lagoon,
+      cpfpAccent: lagoonDeep,
       feeBumpingHistoryLine: sand,
       sendingColor: palmGreen,
       receivingColor: lagoonDeep,

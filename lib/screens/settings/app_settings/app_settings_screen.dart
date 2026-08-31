@@ -200,7 +200,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                           final currentLabel = switch (variant) {
                             CoconutThemeVariant.light => t.theme_light,
                             CoconutThemeVariant.dark => t.theme_dark,
-                            CoconutThemeVariant.coconutPulp => t.theme_coconut_pulp,
+                            CoconutThemeVariant.coconutTheme => t.theme_coconut,
                           };
                           return _buildAnimatedButton(
                             title: t.theme,
