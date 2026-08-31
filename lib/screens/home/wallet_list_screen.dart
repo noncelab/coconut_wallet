@@ -1166,7 +1166,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           onPressed: () {
             Navigator.pushNamed(
               context,
-              '/wallet-detail',
+              '/transaction-list',
               arguments: {'id': walletItem.id, 'entryPoint': kEntryPointWalletList},
             );
           },

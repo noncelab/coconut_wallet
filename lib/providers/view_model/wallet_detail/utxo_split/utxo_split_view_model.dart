@@ -659,7 +659,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
       if (_splitResult != null && _splitResult!.isSuccess) {
         clearSendInfo();
-        _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
+        _sendInfoProvider.setSendEntryPoint(SendEntryPoint.transactionList);
         _sendInfoProvider.setWalletId(_wallet.id);
         _sendInfoProvider.setTransaction(_splitResult!.transaction!);
         _sendInfoProvider.setIsMultisig(_wallet.walletType == WalletType.multiSignature);

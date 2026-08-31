@@ -585,7 +585,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
       return;
     }
     Navigator.of(context).pushNamedAndRemoveUntil(
-      '/wallet-detail',
+      '/transaction-list',
       (route) => route.isFirst,
       arguments: {'id': widget.walletId, 'entryPoint': kEntryPointWalletHome},
     );

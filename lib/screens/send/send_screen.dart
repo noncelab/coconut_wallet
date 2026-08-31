@@ -238,9 +238,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         showNoMfpDialog(context, () {
           Navigator.of(context).pop(); // 다이얼로그 닫기
           final walletId = widget.walletId!;
-          final isFromWalletDetail = widget.sendEntryPoint == SendEntryPoint.walletDetail;
+          final isFromTransactionList = widget.sendEntryPoint == SendEntryPoint.transactionList;
 
-          if (isFromWalletDetail) {
+          if (isFromTransactionList) {
             Navigator.of(context).pop(); // sendScreen 닫기 → wallet-detail로 복귀
             Navigator.pushNamed(
               context,
@@ -256,7 +256,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             Navigator.of(context).pop(); // sendScreen 닫기
             Navigator.pushNamed(
               context,
-              '/wallet-detail',
+              '/transaction-list',
               arguments: {'id': walletId, 'entryPoint': kEntryPointWalletHome},
             );
             Navigator.pushNamed(

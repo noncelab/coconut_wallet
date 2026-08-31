@@ -9,7 +9,7 @@ import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 
-class WalletDetailHeader extends StatefulWidget {
+class TransactionDetailHeader extends StatefulWidget {
   final AnimatedBalanceData animatedBalanceData;
   final BitcoinUnit currentUnit;
   final String fiatPrice;
@@ -17,7 +17,7 @@ class WalletDetailHeader extends StatefulWidget {
   final int receivingAmount;
   final void Function() onPressedUnitToggle;
 
-  const WalletDetailHeader({
+  const TransactionDetailHeader({
     super.key,
     required this.animatedBalanceData,
     required this.currentUnit,
@@ -28,10 +28,10 @@ class WalletDetailHeader extends StatefulWidget {
   });
 
   @override
-  State<WalletDetailHeader> createState() => _WalletDetailHeaderState();
+  State<TransactionDetailHeader> createState() => _TransactionDetailHeaderState();
 }
 
-class _WalletDetailHeaderState extends State<WalletDetailHeader> {
+class _TransactionDetailHeaderState extends State<TransactionDetailHeader> {
   @override
   Widget build(BuildContext context) {
     return Padding(

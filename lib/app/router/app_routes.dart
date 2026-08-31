@@ -74,9 +74,11 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         ),
     '/receive-address': (context) => _buildScreenWithArgs(context, (args) => ReceiveAddressScreen(id: args['id'])),
     '/address-list': (context) => _buildScreenWithArgs(context, (args) => AddressListScreen(id: args['id'])),
-    '/wallet-detail':
-        (context) =>
-            _buildScreenWithArgs(context, (args) => WalletDetailScreen(id: args['id'], entryPoint: args['entryPoint'])),
+    '/transaction-list':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => TransactionListScreen(id: args['id'], entryPoint: args['entryPoint']),
+        ),
     '/wallet-backup-data':
         (context) => _buildScreenWithArgs(
           context,

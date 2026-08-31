@@ -634,7 +634,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
     }
 
     clearSendInfo();
-    _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
+    _sendInfoProvider.setSendEntryPoint(SendEntryPoint.transactionList);
     _sendInfoProvider.setWalletId(_wallet.id);
     _sendInfoProvider.setTransaction(txBuildResult.transaction!);
     _sendInfoProvider.setIsMultisig(_wallet.walletType == WalletType.multiSignature);
