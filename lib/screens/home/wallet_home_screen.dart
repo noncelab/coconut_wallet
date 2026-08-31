@@ -1,8 +1,24 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutPulldownMenu,
+        CoconutPulldownMenuItem,
+        CoconutPulldownMenuGroup,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
+import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -16,7 +32,6 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/home/analysis_period_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -29,15 +44,17 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_scr
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/animated_balance.dart';
-import 'package:coconut_wallet/widgets/animated_dots_text.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/card/notice_card.dart';
-import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/icon/transaction_status_gradient_mask.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
-import 'package:coconut_wallet/widgets/long_pressed_menu_widget.dart';
+import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:coconut_wallet/widgets/common/text/animated_dots_text.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/features/ccos/card/coconut_open_store_intro_card.dart';
+import 'package:coconut_wallet/widgets/common/card/notice_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_list_add_guide_card.dart';
+import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
+import 'package:coconut_wallet/widgets/common/icon/transaction_status_gradient_mask.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/features/wallet/menu/long_pressed_menu_widget.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -48,8 +65,8 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
-import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/settings/tools/glossary_bottom_sheet.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
@@ -86,8 +103,31 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   final GlobalKey<SliverAnimatedListState> _walletListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
 
+  // 화면 콘텐츠의 좌우 여백을 한 곳에서 동일하게 관리
+  static const double _horizontalPadding = 16;
+  // 섹션 라벨(예: "지난 24시간 거래", "최근 N일 · 전체")이 _horizontalPadding보다 추가로 더 들여지는 간격
+  static const double _sectionLabelExtraPadding = 4;
+  // FiatPrice가 네트워크/설정 상태에 따라 비어도
+  // 아래 잔액 영역의 Y 위치가 흔들리지 않도록 유지하는 높이
+  static const double _fiatPriceSlotHeight = 17;
+
   double? itemCardWidth;
   double? itemCardHeight;
+
+  double? _recentTxCardHeight;
+  final GlobalKey _recentTxCardMeasureKey = GlobalKey();
+
+  void _measureRecentTxCardHeightIfNeeded() {
+    final renderObject = _recentTxCardMeasureKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) return;
+
+    final measuredHeight = renderObject.size.height;
+    if (_recentTxCardHeight != measuredHeight) {
+      setState(() {
+        _recentTxCardHeight = measuredHeight;
+      });
+    }
+  }
 
   Future<void> _hideHomeFeature(HomeFeatureType type, {bool keepEditMode = false}) async {
     bool? result = await showDialog<bool>(
@@ -95,14 +135,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       builder:
           (context) => CoconutPopup(
             languageCode: context.read<PreferenceProvider>().language,
-            backgroundColor: context.coconutColors.popupBackground,
             title: t.long_pressed_menu.hide_home_widget_title(widgetName: _getWidgetName(type)),
             description: t.long_pressed_menu.hide_home_widget_description,
-            rightButtonText: t.OK,
-            onTapRight: () => Navigator.pop(context, true),
-            onTapLeft: () => Navigator.pop(context, false),
             leftButtonText: t.cancel,
-            titlePadding: const EdgeInsets.only(top: 24, bottom: 12, left: 16, right: 16),
+            rightButtonText: t.OK,
+            onTapLeft: () => Navigator.pop(context, false),
+            onTapRight: () => Navigator.pop(context, true),
           ),
     );
 
@@ -184,6 +222,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletHomeViewModel>(context, listen: false);
+          final shouldShowOpenStoreIntroCard = context.select<PreferenceProvider, bool>(
+            (provider) => provider.shouldShowOpenStoreIntroCard,
+          );
+          final openStoreFeatureStatusLabel = context.select<PreferenceProvider, String?>(
+            (provider) => provider.getCcosFeatureStatusLabel(CcosFeatureRegistrySource.featuredListing.id),
+          );
 
           final walletItem = data.item1;
           final favoriteWallets = data.item2;
@@ -257,7 +301,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               child: Column(
                                 children: [
                                   if (walletItem.isEmpty) ...[
-                                    CoconutLayout.spacing_600h,
+                                    _buildOpenStoreIntroCard(
+                                      visible: shouldShowOpenStoreIntroCard,
+                                      leading: CoconutLayout.spacing_400h,
+                                    ),
+                                    CoconutLayout.spacing_400h,
                                     WalletAdditionGuideCard(onPressed: _onAddWalletPressed),
                                   ],
                                 ],
@@ -271,7 +319,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             // 지갑 리스트가 비어있지 않을 때
 
                             // 전체보기 위젯
-                            _buildViewAllWallets(walletItem.length),
+                            _buildViewAllWallets(
+                              walletItem.length,
+                              shouldShowOpenStoreIntroCard,
+                              openStoreFeatureStatusLabel,
+                            ),
 
                             if (favoriteWallets.isNotEmpty)
                               // 즐겨찾기된 지갑 목록
@@ -287,7 +339,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 child: Column(
                                   children: [
                                     CoconutLayout.spacing_600h,
-                                    Divider(thickness: 12, color: context.coconutColors.surfaceSectionBreak),
+                                    Divider(thickness: 12, color: context.coconutColors.divider),
                                     CoconutLayout.spacing_600h,
                                   ],
                                 ),
@@ -364,19 +416,20 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 languageCode: context.read<PreferenceProvider>().language,
                 title: t.alert.tutorial.title,
                 description: t.alert.tutorial.description,
+                leftButtonText: t.close,
+                rightButtonText: t.alert.tutorial.btn_view,
+                onTapLeft: () {
+                  Navigator.of(context).pop();
+                },
                 onTapRight: () async {
                   launchURL(TUTORIAL_URL, defaultMode: false);
                   Navigator.of(context).pop();
                 },
-                onTapLeft: () {
-                  Navigator.of(context).pop();
-                },
-                rightButtonText: t.alert.tutorial.btn_view,
                 rightButtonColor: context.coconutColors.success,
-                leftButtonText: t.close,
               );
             },
           ),
+      'open_store': () => openCoconutOpenStoreIntroScreen(context),
       'home_screen_settings': _navigateToWalletHomeEdit,
       'app_settings':
           () => CommonBottomSheets.showCustomHeightBottomSheet(
@@ -541,7 +594,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.only(left: 20, top: 5),
+              padding: const EdgeInsets.only(left: _horizontalPadding, top: 5),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -565,10 +618,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             ),
             CoconutLayout.spacing_500h,
             Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+              padding: const EdgeInsets.only(left: _horizontalPadding, right: _horizontalPadding, bottom: 20),
               child: _buildHeaderActions(isActive: false),
             ),
-            Divider(thickness: 12, color: context.coconutColors.surfaceSectionBreak),
+            Divider(thickness: 12, color: context.coconutColors.divider),
           ],
         ),
       );
@@ -577,7 +630,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.only(top: 5, bottom: 20, left: 20, right: 20),
+            padding: const EdgeInsets.only(top: 4, bottom: 20, left: _horizontalPadding, right: _horizontalPadding),
             color: context.coconutColors.homeBackground,
             child: Column(
               children: [
@@ -607,14 +660,22 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                       (entry) => !excludedIds.contains(entry.key),
                                     ),
                                   ).values.map((e) => e.current).fold(0, (current, element) => current + element);
-                          return Visibility(
-                            maintainSize: true,
-                            maintainAnimation: true,
-                            maintainState: true,
-                            visible: !isFiatBalanceHidden,
-                            child: FiatPrice(
-                              satoshiAmount: balance,
-                              textStyle: CoconutTypography.body3_12_Number.setColor(context.coconutColors.tertiaryText),
+                          return SizedBox(
+                            height: _fiatPriceSlotHeight,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Visibility(
+                                maintainSize: true,
+                                maintainAnimation: true,
+                                maintainState: true,
+                                visible: !isFiatBalanceHidden,
+                                child: FiatPrice(
+                                  satoshiAmount: balance,
+                                  textStyle: CoconutTypography.body3_12_Number.setColor(
+                                    context.coconutColors.tertiaryText,
+                                  ),
+                                ),
+                              ),
                             ),
                           );
                         },
@@ -649,7 +710,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                       child: Text(
                                         t.view_balance,
                                         style: CoconutTypography.heading3_21_NumberBold
-                                            .setColor(context.coconutColors.tertiaryText)
+                                            .setColor(context.coconutColors.mutedText)
                                             .merge(const TextStyle(height: 1.3)),
                                       ),
                                     )
@@ -714,8 +775,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         CoconutLayout.spacing_200w,
                         ShrinkAnimationButton(
                           borderRadius: CoconutStyles.radius_100,
-                          defaultColor: context.coconutColors.homeSurfaceCard,
-                          pressedColor: context.coconutColors.homeSurfaceCardPressed,
+                          defaultColor: context.coconutColors.homeSurface,
+                          pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+                          pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
                           onPressed: () {
                             // if (fakeBalanceTotalAmount != null) {
                             //   _viewModel.clearFakeBlanceTotalAmount();
@@ -741,7 +803,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               ],
             ),
           ),
-          Divider(thickness: 12, color: context.coconutColors.surfaceSectionBreak),
+          Divider(thickness: 12, color: context.coconutColors.divider),
         ],
       ),
     );
@@ -750,7 +812,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   Widget _buildBodySkeleton() {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
         child: Column(
           children: [
             CoconutLayout.spacing_500h,
@@ -801,8 +863,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           _onTapReceive(walletOrder);
                         },
                         borderRadius: CoconutStyles.radius_100,
-                        defaultColor: context.coconutColors.homeSurfaceCard,
-                        pressedColor: context.coconutColors.homeSurfaceCardPressed,
+                        defaultColor: context.coconutColors.homeSurface,
+                        pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+                        pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
                         child: Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -813,7 +876,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       : Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
-                          color: context.coconutColors.homeSurfaceCard,
+                          color: context.coconutColors.homeSurface,
                           borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
                         ),
                         child: Center(
@@ -833,8 +896,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           _onTapSend(walletOrder);
                         },
                         borderRadius: CoconutStyles.radius_100,
-                        defaultColor: context.coconutColors.homeSurfaceCard,
-                        pressedColor: context.coconutColors.homeSurfaceCardPressed,
+                        defaultColor: context.coconutColors.homeSurface,
+                        pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+                        pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
                         child: Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -845,7 +909,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       : Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
-                          color: context.coconutColors.homeSurfaceCard,
+                          color: context.coconutColors.homeSurface,
                           borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
                         ),
                         child: Center(
@@ -885,7 +949,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/circle-info.svg',
+        iconPath: CommonStateIconPath.circleInfo,
         text: t.can_use_after_add_wallet,
       );
       return;
@@ -950,16 +1014,18 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildViewAllWallets(int walletCount) {
+  Widget _buildViewAllWallets(int walletCount, bool showOpenStoreIntroCard, String? openStoreFeatureStatusLabel) {
     return SliverToBoxAdapter(
       child: Column(
         children: [
           CoconutLayout.spacing_500h,
+          _buildOpenStoreIntroCard(visible: showOpenStoreIntroCard, trailing: const SizedBox(height: 12)),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
             child: ShrinkAnimationButton(
-              defaultColor: context.coconutColors.homeSurfaceCard,
-              pressedColor: context.coconutColors.homeSurfaceCardPressed,
+              defaultColor: context.coconutColors.homeSurface,
+              pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+              pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
               onPressed: () {
                 Navigator.pushNamed(context, '/wallet-list');
               },
@@ -988,10 +1054,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         ),
                         CoconutLayout.spacing_200w,
                         SvgPicture.asset(
-                          'assets/svg/arrow-right.svg',
+                          CommonNavigationIconPath.arrowRight,
                           width: 6,
                           height: 10,
-                          colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
                         ),
                       ],
                     ),
@@ -1005,6 +1071,55 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
+  Widget _buildOpenStoreIntroCard({required bool visible, Widget? leading, Widget? trailing}) {
+    const duration = Duration(milliseconds: 500);
+    return AnimatedSize(
+      duration: duration,
+      curve: Curves.easeInOutCubic,
+      alignment: Alignment.topCenter,
+      child: ClipRect(
+        child: Align(
+          alignment: Alignment.topCenter,
+          heightFactor: visible ? 1 : 0,
+          child: IgnorePointer(
+            ignoring: !visible,
+            child: AnimatedOpacity(
+              duration: duration,
+              curve: Curves.easeOut,
+              opacity: visible ? 1 : 0,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+                child: Column(
+                  children: [
+                    if (leading != null) leading,
+                    CoconutOpenStoreIntroCard(
+                      intro: CcosOpenStoreContentSource.intro,
+                      onTap: () => openCoconutOpenStoreIntroScreen(context),
+                      onDismiss: () => _handleDismissOpenStoreIntroCard(context),
+                    ),
+                    if (trailing != null) trailing,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleDismissOpenStoreIntroCard(BuildContext context) async {
+    await context.read<PreferenceProvider>().hideOpenStoreIntroCardForOneMonth();
+    if (!context.mounted) return;
+    CoconutToast.showToast(
+      context: context,
+      text: t.ccos.intro_card.dismissed_toast,
+      isVisibleIcon: true,
+      iconPath: CommonStateIconPath.circleInfo,
+      seconds: 5,
+    );
+  }
+
   Widget _buildFavoriteWalletList(
     List<WalletItemBase> walletList,
     List<WalletItemBase> favoriteWalletList,
@@ -1014,12 +1129,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   ) {
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.only(top: 12, left: 20, right: 20),
+        margin: const EdgeInsets.only(top: 12, left: _horizontalPadding, right: _horizontalPadding),
         padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: context.coconutColors.homeSurfaceCard,
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.homeSurface),
         child: Column(
           children: List.generate(walletList.length, (index) {
             final wallet = walletList[index];
@@ -1032,7 +1144,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 walletBalanceMap[wallet.id] ?? AnimatedBalanceData(0, 0),
                 getFakeBalance(wallet.id),
                 index == walletList.length - 1,
-                context.coconutColors.homeSurfaceCard,
+                context.coconutColors.homeSurface,
               );
             } else {
               return Container();
@@ -1083,6 +1195,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           fakeBalance: fakeBalance,
           currentUnit: currentUnit,
           backgroundColor: backgroundColor,
+          pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+          pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
           onPressed: () {
             Navigator.pushNamed(
               context,
@@ -1091,10 +1205,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             );
           },
           rightWidget: SvgPicture.asset(
-            'assets/svg/arrow-right.svg',
+            CommonNavigationIconPath.arrowRight,
             width: 6,
             height: 10,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
           ),
         );
       },
@@ -1124,12 +1238,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           menuItems: [
             LongPressedMenuItem(
               title: t.long_pressed_menu.go_to_home_screen_settings,
-              iconPath: 'assets/svg/settings.svg',
+              iconPath: FeatureSettingsIconPath.settings,
               onSelected: _navigateToWalletHomeEdit,
             ),
             LongPressedMenuItem(
               title: t.long_pressed_menu.edit_home_widget,
-              iconPath: 'assets/svg/widget.svg',
+              iconPath: FeatureSettingsIconPath.widget,
               onSelected: () {
                 _viewModel.setEditWidgetMode(true);
               },
@@ -1138,7 +1252,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
+                padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding + _sectionLabelExtraPadding),
                 width: MediaQuery.sizeOf(context).width,
                 child: Text(
                   t.wallet_home_screen.last_24_hours_transactions,
@@ -1170,7 +1284,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
                       if (ordered.isEmpty || _viewModel.isBalanceHidden || _viewModel.fakeBalanceTotalAmount != null) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
                           child: _buildEmptyRecentTransactions(
                             (_viewModel.shouldShowLoadingIndicator && _viewModel.walletItemList.isNotEmpty) ||
                                 showRecentInitialLoading,
@@ -1178,17 +1292,41 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         );
                       }
 
-                      return ordered.length == 1
-                          ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, currentUnit),
-                          )
-                          : CarouselSlider(
+                      final screenWidth = MediaQuery.sizeOf(context).width;
+                      final carouselViewportFraction = 1 - (2 * _horizontalPadding / screenWidth);
+
+                      if (ordered.length == 1) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+                          child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, currentUnit),
+                        );
+                      }
+
+                      if (_recentTxCardHeight == null) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) => _measureRecentTxCardHeightIfNeeded());
+                      }
+
+                      return Stack(
+                        children: [
+                          if (_recentTxCardHeight == null)
+                            Offstage(
+                              offstage: true,
+                              child: Padding(
+                                key: _recentTxCardMeasureKey,
+                                padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+                                child: _buildRecentTransactionCard(
+                                  ordered.first.item1,
+                                  ordered.first.item2,
+                                  currentUnit,
+                                ),
+                              ),
+                            ),
+                          CarouselSlider(
                             carouselController: _carouselController,
                             options: CarouselOptions(
                               autoPlay: false,
-                              height: 90,
-                              viewportFraction: 0.9,
+                              height: _recentTxCardHeight ?? 90,
+                              viewportFraction: carouselViewportFraction,
                               enlargeCenterPage: true,
                               enlargeFactor: 0.2,
                               enableInfiniteScroll: false,
@@ -1203,7 +1341,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 ordered.map((t) {
                                   return _buildRecentTransactionCard(t.item1, t.item2, currentUnit);
                                 }).toList(),
-                          );
+                          ),
+                        ],
+                      );
                     },
                   ),
                 ),
@@ -1217,7 +1357,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   }
 
                   return Container(
-                    margin: const EdgeInsets.only(top: 16, left: 50, right: 50),
+                    margin: const EdgeInsets.only(top: 12, left: 50, right: 50),
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       controller: _pageIndicatorController,
@@ -1253,6 +1393,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildRecentTransactionCard(int walletId, TransactionRecord transaction, BitcoinUnit currentUnit) {
     final walletName = _viewModel.getWalletById(walletId).name;
+    const padding = 20.0;
 
     Widget buildTxRow(TransactionRecord transaction) {
       final bool isReceived = transaction.transactionType == TransactionType.received;
@@ -1266,7 +1407,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       final iconColor = switch (status) {
         TransactionStatus.sent || TransactionStatus.sending => context.coconutColors.sendingColor,
         TransactionStatus.received || TransactionStatus.receiving => context.coconutColors.receivingColor,
-        _ => context.coconutColors.iconDefault,
+        _ => context.coconutColors.iconPrimary,
       };
 
       return Row(
@@ -1286,12 +1427,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     child: SvgPicture.asset(
                       iconSource,
                       fit: BoxFit.fill,
-                      width: 28,
-                      height: 28,
+                      width: 30, // wallet item card와 동일한 사이즈로 맞춰 정렬
+                      height: 30,
                       colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                     ),
                   ),
-                  CoconutLayout.spacing_300w,
+                  CoconutLayout.spacing_200w, // wallet item card와 동일한 사이즈로 맞춰 정렬
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1357,11 +1498,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     if (_viewModel.isEditWidgetMode) {
       return Container(
-        padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 20),
+        padding: const EdgeInsets.all(padding),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: context.coconutColors.homeSurfaceCard),
-          color: context.coconutColors.homeSurfaceCard,
+          border: Border.all(color: context.coconutColors.homeSurface),
+          color: context.coconutColors.homeSurface,
         ),
         child: buildTxRow(transaction),
       );
@@ -1369,8 +1510,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     return ShrinkAnimationButton(
       borderRadius: CoconutStyles.radius_200,
-      defaultColor: context.coconutColors.homeSurfaceCard,
-      pressedColor: context.coconutColors.homeSurfaceCardPressed,
+      defaultColor: context.coconutColors.homeSurface,
+      pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
       onPressed: () {
         Navigator.pushNamed(
           context,
@@ -1378,16 +1519,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           arguments: {'id': walletId, 'txHash': transaction.transactionHash},
         );
       },
-      child: Container(
-        padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 20),
-        child: buildTxRow(transaction),
-      ),
+      child: Container(padding: const EdgeInsets.all(padding), child: buildTxRow(transaction)),
     );
   }
 
   Widget _buildRecentTransactionsSkeleton() {
     return Container(
-      margin: const EdgeInsets.only(top: 12, left: 20, right: 20),
+      margin: const EdgeInsets.only(top: 12, left: _horizontalPadding, right: _horizontalPadding),
       child: Shimmer.fromColors(
         baseColor: context.coconutColors.surfaceSkeletonBase,
         highlightColor: context.coconutColors.surfaceSkeletonHighlight,
@@ -1397,7 +1535,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-            color: context.coconutColors.homeSurfaceCard,
+            color: context.coconutColors.homeSurface,
           ),
           child: Text('', style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
         ),
@@ -1422,9 +1560,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     final textColor = context.coconutColors.secondaryText;
     return Container(
-      padding: const EdgeInsets.only(left: 20, right: 14, top: 28, bottom: 28),
+      padding: const EdgeInsets.only(left: _horizontalPadding, right: _horizontalPadding, top: 28, bottom: 28),
       decoration: BoxDecoration(
-        color: context.coconutColors.homeSurfaceCard,
+        color: context.coconutColors.homeSurface,
         borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
       child: Center(
@@ -1437,7 +1575,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SvgPicture.asset('assets/svg/search-not-found.svg', width: 16, height: 16),
+                    SvgPicture.asset(
+                      CommonStateIconPath.searchNotFound,
+                      width: 16,
+                      height: 16,
+                      colorFilter: ColorFilter.mode(textColor, BlendMode.srcIn),
+                    ),
                     CoconutLayout.spacing_200w,
                     Text(t.tx_not_found, style: CoconutTypography.body3_12.setColor(textColor)),
                   ],
@@ -1459,19 +1602,19 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           menuItems: [
             LongPressedMenuItem(
               title: t.long_pressed_menu.go_to_home_screen_settings,
-              iconPath: 'assets/svg/settings.svg',
+              iconPath: FeatureSettingsIconPath.settings,
               onSelected: _navigateToWalletHomeEdit,
             ),
             LongPressedMenuItem(
               title: t.long_pressed_menu.edit_home_widget,
-              iconPath: 'assets/svg/widget.svg',
+              iconPath: FeatureSettingsIconPath.widget,
               onSelected: () {
                 _viewModel.setEditWidgetMode(true);
               },
             ),
           ],
           child: Container(
-            margin: const EdgeInsets.only(top: 0, left: 20, right: 20),
+            margin: const EdgeInsets.only(top: 0, left: _horizontalPadding, right: _horizontalPadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1512,7 +1655,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      color: context.coconutColors.homeSurfaceCard,
+                      color: context.coconutColors.homeSurface,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1539,10 +1682,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     builder: (context, currentUnit, child) {
                       return Container(
                         width: MediaQuery.sizeOf(context).width,
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          color: context.coconutColors.homeSurfaceCard,
+                          color: context.coconutColors.homeSurface,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1621,10 +1764,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildAnalysisFilterButton() {
     final textColor = context.coconutColors.secondaryText;
-    final iconColor = context.coconutColors.iconSubDefault;
+    final iconColor = context.coconutColors.iconSecondary;
 
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(horizontal: _sectionLabelExtraPadding, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -1645,7 +1788,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           Padding(
             padding: const EdgeInsets.only(top: 2.0),
             child: SvgPicture.asset(
-              'assets/svg/caret-down.svg',
+              CommonNavigationIconPath.caretDown,
               colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
             ),
           ),
@@ -1658,13 +1801,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     String getIconPath() {
       switch (type) {
         case TransactionType.received:
-          return 'assets/svg/tx-received.svg';
+          return FeatureTransactionIconPath.txReceived;
         case TransactionType.sent:
-          return 'assets/svg/tx-sent.svg';
+          return FeatureTransactionIconPath.txSent;
         case TransactionType.self:
-          return 'assets/svg/tx-self.svg';
+          return FeatureTransactionIconPath.txSelf;
         default:
-          return 'assets/svg/tx-received.svg';
+          return FeatureTransactionIconPath.txReceived;
       }
     }
 
@@ -1673,7 +1816,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     final iconColor = switch (type) {
       TransactionType.sent => context.coconutColors.sendingColor,
       TransactionType.received => context.coconutColors.receivingColor,
-      _ => context.coconutColors.iconDefault,
+      _ => context.coconutColors.iconPrimary,
     };
 
     return Column(
@@ -1686,8 +1829,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               child: SvgPicture.asset(
                 getIconPath(),
                 fit: BoxFit.fill,
-                width: 24,
-                height: 24,
+                width: 30,
+                height: 30,
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
               ),
             ),
@@ -1724,7 +1867,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildAnalysisSkeleton() {
     return Container(
-      margin: const EdgeInsets.only(top: 36, left: 20, right: 20),
+      margin: const EdgeInsets.only(top: 36, left: _horizontalPadding, right: _horizontalPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1745,8 +1888,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   Text('최근 30일 • 보내기', style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText)),
                   CoconutLayout.spacing_100w,
                   SvgPicture.asset(
-                    'assets/svg/caret-down.svg',
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconSubDefault, BlendMode.srcIn),
+                    CommonNavigationIconPath.caretDown,
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
                   ),
                 ],
               ),
@@ -1811,29 +1954,150 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   void _onAddWalletPressed() {
+    final topSheetWalletOptions = [
+      WalletImportSource.coconutVault,
+      WalletImportSource.keystone,
+      WalletImportSource.seedSigner,
+      WalletImportSource.jade,
+      WalletImportSource.coldCard,
+      WalletImportSource.krux,
+      WalletImportSource.passport,
+      WalletImportSource.trezor,
+      WalletImportSource.bitbox02,
+    ];
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: "Dismiss",
-      barrierColor: context.coconutColors.homeBackground.withValues(alpha: 0.5),
+      barrierColor: context.coconutColors.surface.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder:
-          (context, animation, secondaryAnimation) => WalletAddDialog(
-            animation: animation,
-            onWalletSelected: (walletImportSource) {
-              switch (walletImportSource) {
-                case WalletImportSource.bitbox02:
-                  _goToBitBox02Screen();
-                  break;
-                case WalletImportSource.trezor:
-                  _goToTrezorScreen();
-                  break;
-                default:
-                  _goToScannerScreen(walletImportSource);
-              }
-            },
-          ),
-      transitionBuilder: (context, animation, secondaryAnimation, child) => child,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final offsetTween = Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero);
+        final slideDownAnimation = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+
+        return Stack(
+          children: [
+            // 슬라이드되는 다이얼로그
+            Positioned(
+              top: kToolbarHeight + MediaQuery.of(context).padding.top,
+              left: 0,
+              right: 0,
+              child: SlideTransition(
+                position: offsetTween.animate(slideDownAnimation),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: context.coconutColors.homeBackground,
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.coconutColors.shadowDefault,
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 24.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: topSheetWalletOptions.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 0,
+                            crossAxisSpacing: 0,
+                            childAspectRatio: 1.2,
+                          ),
+                          itemBuilder: (context, index) {
+                            if (index >= topSheetWalletOptions.length) {
+                              return const SizedBox.expand();
+                            }
+
+                            final scanType = topSheetWalletOptions[index];
+                            final onPressed =
+                                scanType == WalletImportSource.bitbox02
+                                    ? _goToBitBox02Screen
+                                    : scanType == WalletImportSource.trezor
+                                    ? _goToTrezorScreen
+                                    : () => _goToScannerScreen(scanType);
+
+                            return _buildWalletIconShrinkButton(onPressed, scanType);
+                          },
+                        ),
+                        CoconutLayout.spacing_200h,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToScannerScreen(WalletImportSource.extendedPublicKey),
+                                WalletImportSource.extendedPublicKey,
+                                isWide: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  Container(height: MediaQuery.of(context).padding.top, color: context.coconutColors.homeBackground),
+                  Container(
+                    width: MediaQuery.sizeOf(context).width,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    height: kToolbarHeight,
+                    color: context.coconutColors.homeBackground,
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            // TODO: light 모드에서 iconButtonHighlight가 회색임....
+                            highlightColor: context.coconutColors.iconButtonHighlight,
+                            splashRadius: 20,
+                            padding: EdgeInsets.zero,
+                            icon: SvgPicture.asset(
+                              CommonActionIconPath.closeBold,
+                              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                              width: 14,
+                              height: 14,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          t.wallet_add_scanner_screen.add_wallet,
+                          style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+                        ),
+                        const Spacer(),
+                        const SizedBox(width: 40),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return child;
+      },
     );
   }
 
@@ -1859,33 +2123,40 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     return CoconutAppBar.buildHomeAppbar(
       context: context,
-      leadingSvgAsset: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 400),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child:
-            shouldShow
-                ? Row(
-                  key: const ValueKey('error_message'),
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    SvgPicture.asset('assets/svg/cloud-disconnected.svg', width: 16),
-                    CoconutLayout.spacing_100w,
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width - 160,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          message,
-                          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.danger),
+      leadingSvgAsset: Transform.translate(
+        // HACK: 임시 오프셋
+        // CDS 내 buildHomeAppbar 좌우 padding 16, leading widget에 자체 horizontal padding 8
+        // CDS에서 leadingPadding 또는 appBarInnerMargin을 받도록 수정하는 것이 구조적 해결이지만
+        // OTransform.translate으로 앱 내에서 해결함.
+        offset: const Offset(-8, 2),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          transitionBuilder: (child, animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child:
+              shouldShow
+                  ? Row(
+                    key: const ValueKey('error_message'),
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SvgPicture.asset(FeatureConnectivityIconPath.cloudDisconnected, width: 16),
+                      CoconutLayout.spacing_150w,
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width - 160,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            message,
+                            style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.danger),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                )
-                : const SizedBox.shrink(key: ValueKey('empty')),
+                    ],
+                  )
+                  : const SizedBox.shrink(key: ValueKey('empty')),
+        ),
       ),
       appTitle: '',
       actionButtonList: [
@@ -1893,8 +2164,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         _buildAppBarIconButton(
           key: GlobalKey(),
           icon: SvgPicture.asset(
-            'assets/svg/wallet-eyes.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            FeatureWalletIconPath.walletEyes,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
           onPressed: () {
             _onAddWalletPressed();
@@ -1904,8 +2175,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         _buildAppBarIconButton(
           key: _dropdownButtonKey,
           icon: SvgPicture.asset(
-            'assets/svg/kebab.svg',
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+            CommonMenuIconPath.kebab,
+            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
           onPressed: () {
             _setDropdownMenuVisiblility(true);
@@ -1916,11 +2187,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildAppBarIconButton({required Widget icon, required VoidCallback onPressed, Key? key}) {
-    return SizedBox(
-      key: key,
-      height: 40,
-      width: 40,
-      child: IconButton(icon: icon, onPressed: onPressed, color: context.coconutColors.iconDefault),
+    return CoconutAppBarActionButton(
+      buttonKey: key,
+      icon: icon,
+      onPressed: onPressed,
+      color: context.coconutColors.iconPrimary,
     );
   }
 
@@ -1937,7 +2208,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   child: Padding(
                     key: ValueKey("loading"),
                     padding: EdgeInsets.only(bottom: 20.0),
-                    child: LoadingIndicator(),
+                    child: InlineLoadingIndicator(),
                   ),
                 )
                 : null,
@@ -1975,7 +2246,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             visible: isVisible,
             child: CoconutPulldownMenu(
               backgroundColor: context.coconutColors.pulldownMenuBackground,
-              shadowColor: context.coconutColors.shadowDefault.withValues(alpha: 0.06),
+              shadowColor: context.coconutColors.shadowDefault,
               dividerColor: context.coconutColors.pulldownMenuDividerColor,
               splashColor: context.coconutColors.pulldownMenuPressedColor,
               entries: [
@@ -1989,6 +2260,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     CoconutPulldownMenuItem(title: t.tutorial),
                   ],
                 ),
+                CoconutPulldownMenuItem(title: t.ccos.menu_item_title),
                 CoconutPulldownMenuItem(title: t.home_screen_settings),
                 CoconutPulldownMenuItem(title: t.app_settings),
                 // CoconutPulldownMenuItem(title: t.view_app_info),
@@ -2026,12 +2298,94 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   String _getActionKeyFromSelectedText(String selectedText) {
     if (selectedText == t.transaction_draft.title) return 'transaction_draft';
     if (selectedText == t.glossary) return 'glossary';
-    if (selectedText == t.utility.p2p_calculator.calculator) return 'p2p_calculator';
+    if (selectedText == t.utility.p2p_calculator.calculator) {
+      return 'p2p_calculator';
+    }
     if (selectedText == t.mnemonic_wordlist) return 'mnemonic_wordlist';
     if (selectedText == t.tutorial) return 'tutorial';
+    if (selectedText == t.ccos.menu_item_title) return 'open_store';
     if (selectedText == t.home_screen_settings) return 'home_screen_settings';
     if (selectedText == t.app_settings) return 'app_settings';
     return '';
+  }
+
+  Widget _buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType, {bool isWide = false}) {
+    return ShrinkAnimationButton(
+      // top sheet의 background 색상과 동일하게 homeBackground로 지정
+      defaultColor: context.coconutColors.homeBackground,
+      pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+      pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
+      onPressed: () => onPressed(),
+      borderRadius: isWide ? 12 : 24,
+      child:
+          isWide
+              ? Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: context.coconutColors.border.withAlpha(60)),
+                        borderRadius: const BorderRadius.all(Radius.circular(6.0)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: SvgPicture.asset(
+                          scanType.externalWalletIconPath,
+                          width: 20,
+                          height: 20,
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                        ),
+                      ),
+                    ),
+                    CoconutLayout.spacing_400w,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            scanType.displayName,
+                            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          CoconutLayout.spacing_50h,
+                          Text(
+                            t.wallet_add_scanner_screen.self_description,
+                            style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              : Padding(
+                padding: const EdgeInsets.all(8),
+                child: SizedBox.expand(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SvgPicture.asset(
+                        scanType.externalWalletIconPath,
+                        colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                      ),
+                      CoconutLayout.spacing_100h,
+                      Text(
+                        scanType.displayName,
+                        style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+    );
   }
 
   void _setDropdownMenuVisiblility(bool value) {

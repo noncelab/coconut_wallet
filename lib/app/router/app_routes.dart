@@ -14,7 +14,6 @@ import 'package:coconut_wallet/screens/settings/app_settings/about/coconut_crew_
 import 'package:coconut_wallet/screens/settings/app_settings/network/block_explorer_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/electrum_server_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/tools/log_viewer_screen.dart';
-import 'package:coconut_wallet/app/router/bip329_routes.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
@@ -24,6 +23,9 @@ import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_confirm_screen.dart';
 import 'package:coconut_wallet/screens/send/air-gapped/signed_psbt_scanner_screen.dart';
 import 'package:coconut_wallet/screens/send/air-gapped/unsigned_transaction_qr_screen.dart';
+import 'package:coconut_wallet/screens/settings/tools/bip329/label_export_screen.dart';
+import 'package:coconut_wallet/screens/settings/tools/bip329/label_import_screen.dart';
+import 'package:coconut_wallet/screens/settings/tools/bip329/label_management_screen.dart';
 import 'package:coconut_wallet/screens/settings/tools/bip39_word_list_screen.dart';
 import 'package:coconut_wallet/screens/settings/tools/p2p_calculator_screen.dart';
 import 'package:coconut_wallet/screens/settings/tools/transaction_draft_screen.dart';
@@ -43,7 +45,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_addre
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_resync/wallet_resync_screen.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:flutter/widgets.dart';
 
 Map<String, WidgetBuilder> buildAppRoutes() {
@@ -224,7 +226,27 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             transport: args['transport'] == 'usb' ? TrezorTransport.usb : TrezorTransport.ble,
           ),
         ),
-    ...buildBip329Routes(),
+    '/label-management':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => LabelManagementScreen(
+            walletId: args['walletId'],
+            showImportMemosFromOtherWalletsOption: args['showImportMemosFromOtherWalletsOption'] ?? true,
+          ),
+        ),
+    '/label-import':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => LabelImportScreen(
+            walletId: args['walletId'],
+            showImportMemosFromOtherWalletsOption: args['showImportMemosFromOtherWalletsOption'] ?? true,
+          ),
+        ),
+    '/label-export':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => LabelExportScreen(initialSelectedWalletId: args['walletId']),
+        ),
   };
 }
 

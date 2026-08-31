@@ -1,4 +1,5 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -6,7 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 
-import '../../oss_licenses.dart';
+import '../../generated/licenses/oss_licenses.dart';
 
 class LicenseBottomSheet extends StatefulWidget {
   const LicenseBottomSheet({super.key});

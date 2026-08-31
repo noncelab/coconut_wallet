@@ -1,7 +1,6 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
-import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -10,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class TransactionUtil {
   static TransactionStatus? getStatus(TransactionRecord tx) {
@@ -39,19 +39,19 @@ class TransactionUtil {
   static String getStatusIconAsset(TransactionStatus? status) {
     switch (status) {
       case TransactionStatus.received:
-        return 'assets/svg/tx-received.svg';
+        return FeatureTransactionIconPath.txReceived;
       case TransactionStatus.receiving:
-        return 'assets/svg/tx-receiving.svg';
+        return FeatureTransactionIconPath.txReceiving;
       case TransactionStatus.sent:
-        return 'assets/svg/tx-sent.svg';
+        return FeatureTransactionIconPath.txSent;
       case TransactionStatus.sending:
-        return 'assets/svg/tx-sending.svg';
+        return FeatureTransactionIconPath.txSending;
       case TransactionStatus.self:
-        return 'assets/svg/tx-self.svg';
+        return FeatureTransactionIconPath.txSelf;
       case TransactionStatus.selfsending:
-        return 'assets/svg/tx-self-sending.svg';
+        return FeatureTransactionIconPath.txSelfSending;
       default:
-        return 'assets/svg/tx-receiving.svg';
+        return FeatureTransactionIconPath.txReceiving;
     }
   }
 
@@ -190,9 +190,7 @@ class TransactionUtil {
           languageCode: context.read<PreferenceProvider>().language,
           title: t.transaction_fee_bumping_screen.dialog.confirmed_alert_title,
           description: t.transaction_fee_bumping_screen.dialog.confirmed_alert_description,
-          backgroundColor: context.coconutColors.popupBackground,
           rightButtonText: t.view_tx_details,
-          rightButtonColor: context.coconutColors.primaryText,
           onTapRight: () {
             Navigator.popUntil(context, (route) {
               return route.settings.name == '/transaction-detail';

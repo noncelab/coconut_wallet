@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+/// 이 파일의 색상값은 의도적으로 theme-independent하다.
+///
+/// UTXO value 크기를 나타내는 그룹(dust~whale) 배지는 앱 테마가 바뀌어도
+/// 그룹별 색이 항상 같아야 사용자가 UTXO 그룹을 색으로 학습하고 구분할 수 있다.
+/// 따라서, `context.coconutColors` 토큰으로 옮기지 않는다
+/// hardcoded color guardrail을 도입할 때 이 파일 전체를 exemption 목록에 포함해야 한다.
 enum UtxoTier { dust, tiny, small, medium, large, huge, whole, whale }
 
 @immutable

@@ -65,7 +65,7 @@ dependencies:
   uuid: ^4.4.0
   vibration: ^3.1.3
   lottie: ^3.1.2
-  retrofit: '>=4.0.0 <5.0.0'
+  retrofit: ">=4.0.0 <5.0.0"
   dio: ^5.5.0+1
   http: ^1.2.1
   in_app_review: ^2.0.11
@@ -85,6 +85,7 @@ dependencies:
     path: lib/packages/bc-ur-dart
   shimmer: ^3.0.0
   coconut_lib: 1.1.1
+  visibility_detector: ^0.4.0+2
   base32: ^2.1.3
   share_plus: ^11.1.0
   mobile_scanner: 7.0.1
@@ -107,7 +108,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^3.0.0
   json_serializable: ^6.7.1
-  build_runner: '>=2.3.0 <4.0.0'
+  build_runner: ">=2.3.0 <4.0.0"
   mockito: 5.4.6
   test: ^1.25.7
 
@@ -132,97 +133,32 @@ flutter:
   assets:
     - assets/files/glossary_details_ko.json
     - assets/files/glossary_details_ja.json
-    - assets/files/status_loading.json
     - assets/files/coconut_crew.json
-    - assets/images/splash_logo_mainnet.png
-    - assets/images/splash_logo_regtest.png
-    - assets/svg/coconut-mainnet.svg
-    - assets/svg/coconut-regtest.svg
-    - assets/svg/bell.svg
-    - assets/svg/bold-bell.svg
-    - assets/svg/add-circle.svg
-    - assets/svg/arrow-right.svg
-    - assets/svg/arrow-right-md.svg
-    - assets/svg/arrow-back.svg
-    - assets/svg/send.svg
-    - assets/svg/tag.svg
-    - assets/svg/settings.svg
-    - assets/svg/receive.svg
-    - assets/svg/back.svg
-    - assets/svg/tx-received.svg
-    - assets/svg/tx-receiving.svg
-    - assets/svg/tx-self.svg
-    - assets/svg/tx-self-sending.svg
-    - assets/svg/tx-sent.svg
-    - assets/svg/tx-sending.svg
-    - assets/svg/delete.svg
-    - assets/svg/open-scanner.svg
-    - assets/svg/arrow-down.svg
-    - assets/svg/trash.svg
-    - assets/svg/eye.svg
-    - assets/svg/eye-crossed.svg
-    - assets/svg/wallet-icons/bank.svg
-    - assets/svg/wallet-icons/bitcoin-circle.svg
-    - assets/svg/wallet-icons/bitcoin.svg
-    - assets/svg/wallet-icons/building.svg
-    - assets/svg/wallet-icons/car.svg
-    - assets/svg/wallet-icons/carrot.svg
-    - assets/svg/wallet-icons/child-head.svg
-    - assets/svg/wallet-icons/coconut-drink.svg
-    - assets/svg/wallet-icons/coconut.svg
-    - assets/svg/wallet-icons/couch.svg
-    - assets/svg/wallet-icons/croissant.svg
-    - assets/svg/wallet-icons/cursor-finger.svg
-    - assets/svg/wallet-icons/diamond.svg
-    - assets/svg/wallet-icons/envelope.svg
-    - assets/svg/wallet-icons/flower.svg
-    - assets/svg/wallet-icons/gift.svg
-    - assets/svg/wallet-icons/hamburger.svg
-    - assets/svg/wallet-icons/hand-holding-heart.svg
-    - assets/svg/wallet-icons/heart.svg
-    - assets/svg/wallet-icons/high-five.svg
-    - assets/svg/wallet-icons/home-heart.svg
-    - assets/svg/wallet-icons/inheritance-1.svg
-    - assets/svg/wallet-icons/inheritance-2.svg
-    - assets/svg/wallet-icons/legacy-bitcoin.svg
-    - assets/svg/wallet-icons/legacy-heart.svg
-    - assets/svg/wallet-icons/man-head.svg
-    - assets/svg/wallet-icons/music.svg
-    - assets/svg/wallet-icons/palm-tree.svg
-    - assets/svg/wallet-icons/paper-plane.svg
-    - assets/svg/wallet-icons/paw.svg
-    - assets/svg/wallet-icons/piggy-bank.svg
-    - assets/svg/wallet-icons/pizza-slice.svg
-    - assets/svg/wallet-icons/rocket-lunch.svg
-    - assets/svg/wallet-icons/shop.svg
-    - assets/svg/wallet-icons/smile-beam.svg
-    - assets/svg/wallet-icons/star.svg
-    - assets/svg/wallet-icons/woman-head.svg
-    - assets/svg/wallet-icons/turkey.svg
-    - assets/svg/wallet-icons/umbrella.svg
-    - assets/svg/wallet-icons/shrimp.svg
-    - assets/svg/wallet-icons/crab.svg
-    - assets/svg/wallet-icons/fish.svg
-    - assets/svg/wallet-icons/squid.svg
-    - assets/svg/wallet-icons/dolphin.svg
-    - assets/svg/wallet-icons/whale.svg
-    - assets/svg/scan-wallet-qr.svg
-    - assets/svg/scan-vault-qr.svg
-    - assets/svg/completion-check.svg
-    - assets/svg/face-id.svg
-    - assets/svg/fingerprint.svg
-    - assets/svg/status-complete.svg
-    - assets/svg/status-failure.svg
-    - assets/svg/status-idle.svg
-    - assets/svg/status-impossible.svg
-    - assets/svg/status-loading.svg
-    - assets/svg/faucet.svg
-    - assets/svg/wallet-info.svg
-    - assets/svg/close.svg
-    - assets/svg/close-bold.svg
-    - regtest.env
-    - mainnet.env
-    - assets/lottie/pin-locked-success.json
+    - assets/files/LICENSE
+    - assets/files/CONTRIBUTING.md
+    - assets/svg/brand/app/
+    - assets/svg/brand/motifs/
+    - assets/svg/common/actions/
+    - assets/svg/common/communication/
+    - assets/svg/common/dividers/
+    - assets/svg/common/form/
+    - assets/svg/common/menu/
+    - assets/svg/common/navigation/
+    - assets/svg/common/security/
+    - assets/svg/common/state/
+    - assets/svg/common/visibility/
+    - assets/svg/features/connectivity/
+    - assets/svg/features/settings/
+    - assets/svg/features/tags/
+    - assets/svg/features/taproot/
+    - assets/svg/features/transaction/
+    - assets/svg/features/transaction/fee-rate/
+    - assets/svg/features/utxo/
+    - assets/svg/features/wallet/
+    - assets/svg/wallet-catalog/custom-icons/
+    - assets/svg/wallet-catalog/hardware-wallets/
+    - assets/svg/wallet-catalog/import-formats/
+    - assets/lottie/check-mark.json
     - assets/lottie/loading-three-dots.json
     - assets/lottie/arrow-up.json
     - assets/lottie/arrow-down.json
@@ -239,98 +175,24 @@ flutter:
     - assets/lottie/online-offline-switch.json
     - assets/lottie/fireworks.json
     - assets/lottie/three-stars-growing.json
-    - assets/images/hand-with-laid-heart.png
     - assets/images/x-logo.jpg
-    - assets/images/discord-logo.png
     - assets/images/discord-full-logo.png
     - assets/images/mail-icon.png
     - assets/images/laurel-wreath.png
-    - assets/svg/github-logo-white.svg
-    - assets/svg/github-logo.svg
-    - assets/files/LICENSE
-    - assets/files/CONTRIBUTING.md
-    - assets/svg/download.svg
-    - assets/svg/arrow-circle-down.svg
-    - assets/svg/text-field-clear.svg
-    - assets/svg/question-mark.svg
-    - assets/svg/circle.svg
-    - assets/svg/circle-arrow-right.svg
-    - assets/svg/circle-pick.svg
-    - assets/svg/circle-check.svg
-    - assets/svg/circle-check-filled.svg
-    - assets/svg/circle-check-outline.svg
-    - assets/svg/circle-info.svg
-    - assets/svg/circle-help.svg
-    - assets/svg/circle-minus.svg
-    - assets/svg/circle-warning.svg
-    - assets/svg/caret-down.svg
-    - assets/svg/row-divider.svg
-    - assets/svg/check.svg
-    - assets/svg/coins.svg
-    - assets/svg/triangle-warning.svg
-    - assets/svg/users-group.svg
-    - assets/svg/user.svg
-    - assets/svg/arrow-reload.svg
-    - assets/svg/scan.svg
-    - assets/svg/wallet-eyes.svg
-    - assets/svg/kebab.svg
-    - assets/svg/coconut-vault-mainnet.svg
-    - assets/svg/coconut-vault-regtest.svg
-    # wallet type icons
-    - assets/svg/wallet-type/seed-signer.svg
-    - assets/svg/wallet-type/jade.svg
-    - assets/svg/wallet-type/keystone.svg
-    - assets/svg/wallet-type/cold-card.svg
-    - assets/svg/wallet-type/krux.svg
-    - assets/svg/wallet-type/passport.svg
-    - assets/svg/wallet-type/bitbox02.svg
-    - assets/svg/wallet-type/trezor.svg
-    - assets/svg/wallet-type/zpub.svg
-    - assets/svg/copy.svg
-    - assets/svg/lock.svg
-    - assets/svg/lock_simple.svg
-    - assets/svg/unlock_simple.svg
-    - assets/svg/unlock.svg
-    - assets/svg/pen.svg
-    - assets/svg/cloud-disconnected.svg
-    - assets/svg/star-small.svg
-    - assets/svg/star-outlined.svg
-    - assets/svg/star-filled.svg
-    - assets/svg/hamburger.svg
-    - assets/svg/plus.svg
-    - assets/svg/broom.svg
-    - assets/svg/receipt.svg
-    - assets/svg/piggy-bank.svg
-    - assets/svg/wallet.svg
-    - assets/svg/transaction.svg
-    - assets/svg/analysis.svg
-    - assets/svg/clip.svg
-    - assets/svg/edit-outlined.svg
-    - assets/svg/fee-rate/low.svg
-    - assets/svg/fee-rate/medium.svg
-    - assets/svg/fee-rate/high.svg
+    - assets/images/ccos/feature.png
+    - assets/images/ccos/creator.png
+    - assets/images/ccos/delivery.png
+    - assets/images/ccos/preview_transaction_card.png
+    - assets/images/ccos/preview_wallet_icon.png
+    - assets/images/ccos/preview_arrow_down.png
+    - assets/images/ccos/preview_arrow_up.png
+    - assets/images/ccos/preview_address_bar.png
+    - regtest.env
+    - mainnet.env
     - testnet.env
-    - assets/svg/puzzle-piece.svg
-    - assets/svg/arrow-top-down.svg
-    - assets/svg/hand-shake.svg
-    - assets/svg/export.svg
-    - assets/svg/widget.svg
-    - assets/svg/search-not-found.svg
-    - assets/svg/remove-minus.svg
-    - assets/svg/send-plane.svg
-    - assets/svg/receive-plane.svg
-    - assets/svg/bitcoin.svg
-    - assets/svg/wallet-outlined.svg
-    - assets/svg/pie.svg
-    - assets/svg/merge-utxos.svg
-    - assets/svg/split-utxo.svg
-    - assets/svg/dust.svg
-    - assets/svg/parent.svg
-    - assets/svg/child.svg
-    - assets/svg/import.svg
-    - assets/svg/file.svg
-    - assets/svg/square.svg
-    - assets/svg/square_check.svg
+
+  shaders:
+    - shaders/liquid_glass.frag
 
   fonts:
     - family: SpaceGrotesk

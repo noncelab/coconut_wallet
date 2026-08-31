@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/node_connection_status.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -14,10 +15,9 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -363,7 +363,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
         return _buildStatusColumn(
           key: const ValueKey('wiping'),
           icon: SvgPicture.asset(
-            'assets/svg/broom.svg',
+            FeatureSettingsIconPath.broom,
             width: 48,
             height: 48,
             colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
@@ -387,7 +387,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
         return _buildStatusColumn(
           key: const ValueKey('restoringMetadata'),
           icon: SvgPicture.asset(
-            'assets/svg/arrow-reload.svg',
+            CommonActionIconPath.arrowReload,
             width: 40,
             height: 40,
             colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
@@ -398,10 +398,10 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
         return _buildStatusColumn(
           key: const ValueKey('completed'),
           icon: SvgPicture.asset(
-            'assets/svg/circle-check.svg',
+            CommonFormIconPath.circleCheck,
             width: 48,
             height: 48,
-            colorFilter: ColorFilter.mode(context.coconutColors.textHighlight, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.accentForeground, BlendMode.srcIn),
           ),
           title: t.wallet_resync_screen.progress.success_title,
         );
@@ -409,7 +409,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
         return _buildStatusColumn(
           key: const ValueKey('failed'),
           icon: SvgPicture.asset(
-            'assets/svg/circle-warning.svg',
+            CommonStateIconPath.circleWarning,
             width: 48,
             height: 48,
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
@@ -483,7 +483,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
     const iconSlotWidth = 20.0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -493,7 +493,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
                 width: iconSlotWidth,
                 child: Center(
                   child: SvgPicture.asset(
-                    'assets/svg/circle-info.svg',
+                    CommonStateIconPath.circleInfo,
                     // circle-check.svg(24x24, 링이 83% 채움)와 실제 렌더링 링 지름을 맞춘 값(circle-info.svg는 16x16, 94% 채움)
                     height: 17.78,
                     colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
@@ -523,7 +523,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
               : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
         child: Row(
           children: [
             _buildConnectionAlertIcon(),
@@ -545,7 +545,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
       case NodeConnectionStatus.failed:
       case NodeConnectionStatus.networkMismatch:
         return SvgPicture.asset(
-          CustomIcons.triangleWarning,
+          CommonStateIconPath.triangleWarning,
           height: 20,
           colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
         );
@@ -553,7 +553,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
         return const CupertinoActivityIndicator(radius: 10);
       case NodeConnectionStatus.connected:
         return SvgPicture.asset(
-          'assets/svg/circle-check.svg',
+          CommonFormIconPath.circleCheck,
           height: 20,
           colorFilter: ColorFilter.mode(CoconutColors.colorPalette[3], BlendMode.srcIn),
         );
@@ -637,7 +637,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
                   borderRadius: BorderRadius.circular(trackHeight / 2),
                   child: Stack(
                     children: [
-                      Container(height: trackHeight, color: context.coconutColors.surfaceCard),
+                      Container(height: trackHeight, color: context.coconutColors.surface),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: FractionallySizedBox(

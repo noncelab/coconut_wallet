@@ -232,7 +232,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: context.coconutColors.surfaceCard,
+          color: context.coconutColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: context.coconutColors.border, width: 1),
         ),
@@ -392,7 +392,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
   }
 
   Widget _buildTagChip(UtxoTag tag) {
-    final colorIndex = ColorUtil.normalizePaletteIndex(tag.colorIndex);
+    final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(tag.colorIndex);
     final foregroundColor = tagColorPalette[colorIndex];
 
     return IntrinsicWidth(
@@ -449,8 +449,8 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                   colors: [
-                                    context.coconutColors.surfaceBottomSheet,
-                                    context.coconutColors.surfaceBottomSheet.withValues(alpha: 0),
+                                    context.coconutColors.bottomActionBarBackground,
+                                    context.coconutColors.bottomActionBarBackground.withValues(alpha: 0),
                                   ],
                                 ),
                               ),

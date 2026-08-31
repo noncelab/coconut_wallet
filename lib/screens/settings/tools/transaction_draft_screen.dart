@@ -1,4 +1,14 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
@@ -7,7 +17,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/transaction_draft/transaction_draft_view_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/card/transaction_draft_card.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_draft_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -149,7 +159,15 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
 
   Widget _buildTransactionDraftList(List<TransactionDraft> transactionDraftList, TransactionDraftViewModel viewModel) {
     if (transactionDraftList.isEmpty) {
-      return Column(children: [CoconutLayout.spacing_2500h, Text(t.transaction_draft.empty_message)]);
+      return Column(
+        children: [
+          CoconutLayout.spacing_2500h,
+          Text(
+            t.transaction_draft.empty_message,
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+          ),
+        ],
+      );
     }
 
     return GestureDetector(

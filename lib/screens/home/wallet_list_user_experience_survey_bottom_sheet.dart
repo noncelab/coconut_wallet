@@ -1,10 +1,10 @@
-import 'dart:io';
-
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 // Usage
 // wallet_list_screen.dart
@@ -27,14 +27,13 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
         appBar:
             isFirst
                 ? null
-                : AppBar(
+                : CoconutAppBar.build(
+                  context: context,
+                  title: '',
+                  customTitle: const SizedBox.shrink(),
+                  onBackPressed: null,
+                  isBottom: true,
                   backgroundColor: Colors.transparent,
-                  // TODO: toolbarHeight 정확하게 구해서 설정하는 방법 찾기
-                  toolbarHeight: Platform.isAndroid ? 100 : 120,
-                  leading: IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close, color: context.coconutColors.iconDefault, size: 22),
-                  ),
                 ),
         backgroundColor: context.coconutColors.background,
         body: SafeArea(
@@ -45,10 +44,9 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Image.asset(
-                    'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
-                    color: context.coconutColors.primaryText,
-                    colorBlendMode: BlendMode.srcIn,
+                  SvgPicture.asset(
+                    AppIconPath.coconut,
+                    colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                   ),
                   const SizedBox(height: 30),
                   if (isFirst)
@@ -71,11 +69,11 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: context.coconutColors.backgroundHighlight,
+                        color: context.coconutColors.brandAccentBackground,
                       ),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text3,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.backgroundHighlightText),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.brandAccentForeground),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -90,11 +88,11 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: context.coconutColors.actionButtonBackground.withValues(alpha: 0.5),
+                        color: context.coconutColors.buttonPrimaryBackground.withValues(alpha: 0.5),
                       ),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text4,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.actionButtonText),
+                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.buttonPrimaryForeground),
                         textAlign: TextAlign.center,
                       ),
                     ),

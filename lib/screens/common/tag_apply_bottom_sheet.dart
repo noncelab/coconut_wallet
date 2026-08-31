@@ -1,12 +1,24 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_tag_crud_view_model.dart';
 import 'package:coconut_wallet/screens/common/tag_edit_bottom_sheet.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
-
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -19,8 +31,14 @@ class TagApplyResult {
   final UtxoTagApplyEditMode mode;
   final Map<String, TagApplyState> tagStates;
   final List<String> updatedTags;
+  final bool hasChanges;
 
-  const TagApplyResult({required this.mode, required this.tagStates, this.updatedTags = const []});
+  const TagApplyResult({
+    required this.mode,
+    required this.tagStates,
+    this.updatedTags = const [],
+    this.hasChanges = true,
+  });
 }
 
 /// [TagApplyBottomSheet] : Utxo Detail 화면에서 '태그 편집' 클릭 시 노출
@@ -39,6 +57,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
 
   late List<UtxoTag> _utxoTags;
   late Map<String, TagApplyState> _tagStates;
+  late Map<String, TagApplyState> _initialTagStates;
   late List<String> _tagNamesToDelete;
 
   bool _isDeletionMode = false;
@@ -73,6 +92,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
         _tagStates[tag.name] = TagApplyState.original;
       }
     }
+    _initialTagStates = Map<String, TagApplyState>.from(_tagStates);
   }
 
   @override
@@ -83,10 +103,27 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
 
   void _handlePop() {
     if (_isTagListModified) {
-      Navigator.pop(context, TagApplyResult(mode: UtxoTagApplyEditMode.update, tagStates: _tagStates));
+      Navigator.pop(
+        context,
+        TagApplyResult(mode: UtxoTagApplyEditMode.update, tagStates: _tagStates, hasChanges: true),
+      );
     } else {
       Navigator.pop(context);
     }
+  }
+
+  bool _hasAppliedTagChanges() {
+    if (_tagStates.length != _initialTagStates.length) {
+      return true;
+    }
+
+    for (final entry in _initialTagStates.entries) {
+      if (_tagStates[entry.key] != entry.value) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   @override
@@ -106,20 +143,29 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
               child: CoconutBottomSheet(
                 useIntrinsicHeight: true,
                 backgroundColor: context.coconutColors.surfaceBottomSheet,
-                appBar: CoconutAppBar.buildWithNext(
+                appBar: CoconutAppBar.build(
                   isBottom: true,
                   context: context,
                   onBackPressed: _handlePop,
-                  onNextPressed: () {
-                    Navigator.pop(
-                      context,
-                      TagApplyResult(mode: UtxoTagApplyEditMode.changeAppliedTags, tagStates: _tagStates),
-                    );
-                  },
                   title: t.tag_bottom_sheet.title_apply_tag,
-                  isActive: !_isDeletionMode,
-                  nextButtonTitle: t.done,
                   backgroundColor: context.coconutColors.surfaceBottomSheet,
+                  actionButtonList: [
+                    CoconutUnderlinedButton(
+                      text: t.done,
+                      isActive: !_isDeletionMode,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      onTap: () {
+                        Navigator.pop(
+                          context,
+                          TagApplyResult(
+                            mode: UtxoTagApplyEditMode.changeAppliedTags,
+                            tagStates: _tagStates,
+                            hasChanges: _hasAppliedTagChanges(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 body: Consumer<UtxoTagCrudViewModel>(
                   builder: (context, viewModel, child) {
@@ -364,7 +410,7 @@ class TagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorIndex = ColorUtil.normalizePaletteIndex(tag.colorIndex);
+    final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(tag.colorIndex);
     final foregroundColor = tagColorPalette[colorIndex];
     final backgroundColor = foregroundColor.withValues(alpha: 0.18);
     final style = _getStyle(context, foregroundColor, colorIndex);
@@ -419,7 +465,7 @@ class TagChip extends StatelessWidget {
       return _ChipStyle(
         borderColor: foregroundColor,
         textColor: foregroundColor,
-        icon: Icon(Icons.close, key: const ValueKey('delete'), size: 16, color: context.coconutColors.iconDefault),
+        icon: Icon(Icons.close, key: const ValueKey('delete'), size: 16, color: context.coconutColors.iconPrimary),
       );
     }
 
@@ -429,7 +475,7 @@ class TagChip extends StatelessWidget {
           borderColor: Colors.white,
           textColor: Colors.white,
           icon: SvgPicture.asset(
-            'assets/svg/circle-minus.svg',
+            CommonFormIconPath.circleMinus,
             key: const ValueKey('original'),
             width: 16,
             height: 16,
@@ -438,7 +484,7 @@ class TagChip extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [CoconutColors.backgroundColorPaletteDark[colorIndex], foregroundColor],
+            colors: [CoconutColors.backgroundColorPaletteDark[tag.colorIndex], foregroundColor],
           ),
         );
       case TagApplyState.checked:
@@ -446,7 +492,7 @@ class TagChip extends StatelessWidget {
           borderColor: foregroundColor,
           textColor: foregroundColor,
           icon: SvgPicture.asset(
-            'assets/svg/circle-check.svg',
+            CommonFormIconPath.circleCheck,
             key: const ValueKey('check'),
             width: 16,
             height: 16,
@@ -459,7 +505,7 @@ class TagChip extends StatelessWidget {
           borderColor: opacColor,
           textColor: opacColor,
           icon: SvgPicture.asset(
-            'assets/svg/circle.svg',
+            CommonFormIconPath.circle,
             key: const ValueKey('unchecked'),
             width: 16,
             height: 16,

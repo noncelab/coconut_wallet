@@ -1,16 +1,18 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/label/label_result.dart';
 import 'package:coconut_wallet/providers/view_model/settings/label_import_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
-import 'package:coconut_wallet/widgets/card/option_card.dart';
-import 'package:coconut_wallet/widgets/label_import_widgets.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/bip329/file_list_item_card.dart';
+import 'package:coconut_wallet/widgets/features/bip329/option_card.dart';
+import 'package:coconut_wallet/widgets/features/bip329/label_import_widgets.dart';
+import 'package:coconut_wallet/widgets/features/bip329/label_shared_widgets.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path/path.dart' as p;
@@ -68,7 +70,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
           future: _filesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularLoadingSpinner());
+              return const Center(child: FullscreenLoadingIndicator(size: 48));
             }
             return _buildMainLayout(context, snapshot);
           },
@@ -243,7 +245,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 SvgPicture.asset(
-                  'assets/svg/plus.svg',
+                  CommonActionIconPath.plus,
                   width: 14,
                   colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                 ),
@@ -267,7 +269,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
         backgroundColor: context.coconutColors.surface,
         borderColor: context.coconutColors.surface,
         icon: SvgPicture.asset(
-          'assets/svg/circle-info.svg',
+          CommonStateIconPath.circleInfo,
           width: 20,
           colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
         ),
@@ -287,7 +289,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          const CircularLoadingSpinner(),
+          const FullscreenLoadingIndicator(size: 48),
           CoconutLayout.spacing_1000h,
           Column(
             children: [
@@ -366,7 +368,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
   }
 
   Widget _buildLoadingCard() {
-    return ImportLabelProgressCard(
+    return LabelProgressCard(
       title: RichText(
         textAlign: TextAlign.center,
         textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
@@ -379,13 +381,14 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
           ],
         ),
       ),
-      steps: [
-        t.label_import_screen.result.step1,
-        t.label_import_screen.result.step2,
-        t.label_import_screen.result.step3,
-        t.label_import_screen.result.step4,
+      stepGroups: [
+        [
+          t.label_import_screen.result.step1,
+          t.label_import_screen.result.step2,
+          t.label_import_screen.result.step3,
+          t.label_import_screen.result.step4,
+        ],
       ],
-      showSkeleton: true,
     );
   }
 
@@ -445,9 +448,9 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
               isSelected: _deleteFileOnSuccess,
               onChanged: (_) {},
               width: 16,
-              unSelectedColor: context.coconutColors.iconSubDefault,
+              unSelectedColor: context.coconutColors.iconSecondary,
               color:
-                  _isDeleteFileOptionPressed ? context.coconutColors.iconSubDefault : context.coconutColors.iconDefault,
+                  _isDeleteFileOptionPressed ? context.coconutColors.iconSecondary : context.coconutColors.iconPrimary,
             ),
           ),
           CoconutLayout.spacing_200w,
@@ -472,10 +475,10 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SvgPicture.asset(
-            'assets/svg/circle-check.svg',
+            CommonFormIconPath.circleCheck,
             colorFilter: ColorFilter.mode(context.coconutColors.iconDisabled, BlendMode.srcIn),
-            height: 48,
-            width: 48,
+            height: 57.6,
+            width: 57.6,
           ),
           CoconutLayout.spacing_1000h,
           RichText(
@@ -500,7 +503,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
   }
 
   Widget _buildErrorCard(BuildContext context) {
-    return ImportLabelErrorCard(
+    return LabelErrorCard(
       title: RichText(
         textAlign: TextAlign.center,
         textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
@@ -583,7 +586,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
           context: context,
           text: t.label_management_screen.file.invalid_file_type,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/triangle-warning.svg',
+          iconPath: CommonStateIconPath.triangleWarning,
         );
       }
     }

@@ -1,6 +1,16 @@
 import 'dart:async';
-
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -19,7 +29,8 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -27,16 +38,16 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
-import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
-import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
-import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
+import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_input_output_card.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/underline_button_item_card.dart';
+import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
+import 'package:coconut_wallet/widgets/common/info/highlighted_info_area.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:coconut_wallet/widgets/icon/pending_transaction_lottie_icon.dart';
+import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -98,7 +109,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         builder: (_, viewModel, child) {
           final txList = viewModel.transactionList;
           if (txList == null || txList.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero));
           }
           final tx = viewModel.transactionList![viewModel.selectedTransactionIndex];
           final txMemo = viewModel.fetchTransactionMemo();
@@ -427,7 +438,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         CoconutToast.showToast(
                           context: context,
                           isVisibleIcon: true,
-                          iconPath: 'assets/svg/triangle-warning.svg',
+                          iconPath: CommonStateIconPath.triangleWarning,
                           text: ErrorCodes.networkError.message,
                           level: CoconutToastLevel.warning,
                         );
@@ -602,6 +613,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
   }
 
   Widget _buildAmount(TransactionRecord tx) {
+    final bool isPositive = _getPrefix(tx) != '-';
+    final Color amountColor = isPositive ? context.coconutColors.receivingColor : context.coconutColors.sendingColor;
+
     return GestureDetector(
       onTap: _toggleUnit,
       child: Column(
@@ -618,7 +632,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           CoconutLayout.spacing_100h,
           FiatPrice(
             satoshiAmount: tx.amount.abs(),
-            textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
+            textStyle: CoconutTypography.body2_14_Number.setColor(amountColor.withValues(alpha: 0.7)),
           ),
         ],
       ),
@@ -662,7 +676,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                 spacing: 4,
                 runSpacing: 4,
                 children: List.generate(selectedTags.length, (index) {
-                  final colorIndex = ColorUtil.normalizePaletteIndex(selectedTags[index].colorIndex);
+                  final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(selectedTags[index].colorIndex);
                   final foregroundColor = tagColorPalette[colorIndex];
                   return IntrinsicWidth(
                     child: CoconutChip(
@@ -695,13 +709,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               originalText: txMemo ?? '',
               completeButtonText: t.done,
               collapsedHeight: 300,
-              inputBorderColor: context.coconutColors.inputBorder,
               onComplete: (memo) {
                 if (!viewModel.updateTransactionMemo(memo)) {
                   CoconutToast.showToast(
                     context: context,
                     isVisibleIcon: true,
-                    iconPath: 'assets/svg/triangle-warning.svg',
+                    iconPath: CommonStateIconPath.triangleWarning,
                     text: t.toast.memo_update_failed,
                     level: CoconutToastLevel.warning,
                   );

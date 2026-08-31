@@ -1,7 +1,18 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
@@ -19,9 +30,9 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
-import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/card/expandable_info_card.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/coconut_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/card/expandable_info_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -362,12 +373,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
               }
             },
             icon: SvgPicture.asset(
-              'assets/svg/arrow-reload.svg',
+              CommonActionIconPath.arrowReload,
               width: 20,
               height: 20,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
-            color: context.coconutColors.iconDefault,
+            color: context.coconutColors.iconPrimary,
           ),
         ],
       ),
@@ -484,19 +495,16 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     final result = await showModalBottomSheet(
       context: context,
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: WalletAddMfpInputBottomSheet(
-            onSkip: () {
-              Navigator.pop(context, null);
-            },
-            onComplete: (text) {
-              Navigator.pop(context, text);
-            },
-          ),
+        return WalletAddMfpInputBottomSheet(
+          onSkip: () {
+            Navigator.pop(context, null);
+          },
+          onComplete: (text) {
+            Navigator.pop(context, text);
+          },
         );
       },
-      backgroundColor: context.coconutColors.background,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
@@ -519,7 +527,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       backgroundColor: context.coconutColors.surface,
       borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
+        CommonStateIconPath.circleInfo,
         width: 20,
         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
@@ -668,13 +676,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           languageCode: context.read<PreferenceProvider>().language,
           title: t.alert.wallet_add.add_failed,
           description: errorMessage,
+          rightButtonText: t.OK,
           onTapRight: () {
             FileLogger.log(className, methodName, 'Error dialog confirmed');
             _isProcessing = false;
 
             Navigator.pop(context);
           },
-          rightButtonText: t.OK,
         );
       },
     );

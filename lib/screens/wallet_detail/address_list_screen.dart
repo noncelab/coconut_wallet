@@ -1,10 +1,11 @@
 import 'dart:async';
-
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/address.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -14,8 +15,9 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/address/address_list_address_item_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -137,7 +139,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
     CoconutToast.showToast(
       context: context,
       isVisibleIcon: true,
-      iconPath: 'assets/svg/circle-check.svg',
+      iconPath: CommonFormIconPath.circleCheck,
       text: t.address_list_screen.discovered_new_balance_address(count: addresses.length),
       seconds: 5,
     );
@@ -231,11 +233,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
       backgroundColor: _isScrollOverTitleHeight ? backgroundColor.withValues(alpha: 0.5) : backgroundColor,
       title: t.address_list_screen.wallet_name(name: viewModel.walletBaseItem.name),
       actionButtonList: [
-        IconButton(
+        CoconutAppBarActionButton(
           onPressed: () {
             Navigator.pushNamed(context, '/address-search', arguments: {'id': widget.id});
           },
-          icon: Icon(Icons.search_rounded, color: context.coconutColors.iconDefault),
+          icon: Icon(Icons.search_rounded, color: context.coconutColors.iconPrimary),
         ),
       ],
     );
@@ -520,7 +522,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 40, top: 20),
-                  child: Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault)),
+                  child: Center(child: CircularProgressIndicator(color: context.coconutColors.iconPrimary)),
                 ),
               ),
           ],

@@ -1,11 +1,11 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/app/router/bip329_route_args.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/button_group.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -72,8 +72,8 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
                 IconButton(
                   key: _tooltipIconKey,
                   icon: SvgPicture.asset(
-                    'assets/svg/question-mark.svg',
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+                    CommonStateIconPath.questionMark,
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                   ),
                   onPressed: _toggleTooltip,
                 ),
@@ -127,7 +127,7 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
       backgroundColor: context.coconutColors.surface,
       borderColor: context.coconutColors.surface,
       icon: SvgPicture.asset(
-        'assets/svg/circle-info.svg',
+        CommonStateIconPath.circleInfo,
         width: 20,
         colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
       ),
@@ -184,15 +184,15 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
     Navigator.pushNamed(
       context,
       '/label-import',
-      arguments: LabelImportRouteArgs(
-        walletId: walletId,
-        showImportMemosFromOtherWalletsOption: widget.showImportMemosFromOtherWalletsOption,
-      ),
+      arguments: {
+        'walletId': walletId,
+        'showImportMemosFromOtherWalletsOption': widget.showImportMemosFromOtherWalletsOption,
+      },
     );
   }
 
   void _navigateToExportWalletPicker(BuildContext context, {int? walletId}) {
-    Navigator.pushNamed(context, '/label-export', arguments: LabelExportRouteArgs(walletId: walletId));
+    Navigator.pushNamed(context, '/label-export', arguments: {'walletId': walletId});
   }
 }
 
@@ -244,7 +244,7 @@ class _LabelManagementActionScreenState extends State<_LabelManagementActionScre
             backgroundColor: context.coconutColors.surface,
             borderColor: context.coconutColors.surface,
             icon: SvgPicture.asset(
-              'assets/svg/circle-info.svg',
+              CommonStateIconPath.circleInfo,
               width: 20,
               colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
             ),
