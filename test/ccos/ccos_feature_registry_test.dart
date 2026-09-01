@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
-import 'package:coconut_wallet/ccos/features/coconut_pulp/coconut_pulp_feature.dart';
+import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,7 +19,7 @@ void main() {
     });
 
     test('findListingById는 일치하는 기능을 반환한다', () {
-      const id = CoconutPulpFeature.id;
+      const id = CoconutThemeFeature.id;
 
       final found = CcosFeatureRegistrySource.findListingById(id);
 
@@ -36,12 +36,12 @@ void main() {
 
   group('CoconutPulpFeature.listing', () {
     test('id가 lib/ccos/features/coconut_pulp/ 폴더명 규칙과 일치한다', () {
-      expect(CoconutPulpFeature.id, 'ccos-feature-theme-coconut-pulp');
-      expect(CoconutPulpFeature.listing.id, CoconutPulpFeature.id);
+      expect(CoconutThemeFeature.id, 'ccos-feature-theme-coconut-pulp');
+      expect(CoconutThemeFeature.listing.id, CoconutThemeFeature.id);
     });
 
     test('theme 카테고리로 등록되어 있고 연결된 테마 variant가 있다', () {
-      final listing = CoconutPulpFeature.listing;
+      final listing = CoconutThemeFeature.listing;
 
       expect(listing.category, CcosFeatureCategory.theme);
       expect(listing.isSelectableTheme, isTrue);
@@ -49,15 +49,15 @@ void main() {
     });
 
     test('무료 기능은 entitlement가 필요하지 않다', () {
-      expect(CoconutPulpFeature.listing.priceType, CcosListingPriceType.free);
-      expect(CoconutPulpFeature.listing.requiresEntitlement, isFalse);
+      expect(CoconutThemeFeature.listing.priceType, CcosListingPriceType.free);
+      expect(CoconutThemeFeature.listing.requiresEntitlement, isFalse);
     });
 
     for (final locale in [AppLocale.ko, AppLocale.en, AppLocale.ja, AppLocale.es, AppLocale.de]) {
       test('locale=$locale 문구가 전부 번역되어 있다', () {
         LocaleSettings.setLocaleSync(locale);
 
-        final listing = CoconutPulpFeature.listing;
+        final listing = CoconutThemeFeature.listing;
 
         expect(listing.title, isNotEmpty);
         expect(listing.description, isNotEmpty);
