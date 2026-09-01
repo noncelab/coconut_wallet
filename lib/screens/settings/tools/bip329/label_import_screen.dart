@@ -9,10 +9,12 @@ import 'package:coconut_wallet/providers/view_model/settings/label_import_view_m
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/bip329/file_list_item_card.dart';
-import 'package:coconut_wallet/widgets/features/bip329/option_card.dart';
-import 'package:coconut_wallet/widgets/features/bip329/label_import_widgets.dart';
+import 'package:coconut_wallet/widgets/features/bip329/checkbox_card.dart';
+import 'package:coconut_wallet/widgets/features/bip329/label_result_card.dart';
 import 'package:coconut_wallet/widgets/features/bip329/label_shared_widgets.dart';
+import 'package:coconut_wallet/widgets/common/animation/success_check_lottie.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path/path.dart' as p;
@@ -70,7 +72,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
           future: _filesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: FullscreenLoadingIndicator(size: 48));
+              return const Center(child: FullscreenLoadingIndicator(size: 40, strokeWidth: 3));
             }
             return _buildMainLayout(context, snapshot);
           },
@@ -108,13 +110,13 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
       case LabelImportStep.optionSelection:
         return _buildOptionSelectionView();
       case LabelImportStep.loading:
-        return Center(child: _buildLoadingCard());
+        return _buildLoadingCard();
       case LabelImportStep.success:
         return _buildSuccessView(context);
       case LabelImportStep.error:
-        return Center(child: _buildErrorCard(context));
+        return _buildErrorCard(context);
       case LabelImportStep.noLabelsToApply:
-        return Center(child: _buildNoLabelsToApplyView());
+        return _buildNoLabelsToApplyView();
     }
   }
 
@@ -191,16 +193,15 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
             );
           },
         ),
-        _buildListFade(backgroundColor, isTop: true),
-        _buildListFade(backgroundColor, isTop: false),
+        _buildTopListFade(backgroundColor),
       ],
     );
   }
 
-  Widget _buildListFade(Color backgroundColor, {required bool isTop}) {
+  /// 하단은 FixedBottomButton이 자체 surroundings 그라데이션으로 이미 처리하므로 상단만 필요하다.
+  Widget _buildTopListFade(Color backgroundColor) {
     return Positioned(
-      top: isTop ? 0 : null,
-      bottom: isTop ? null : 90,
+      top: 0,
       left: 0,
       right: 0,
       height: 20,
@@ -210,10 +211,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors:
-                  isTop
-                      ? [backgroundColor, backgroundColor.withValues(alpha: 0)]
-                      : [backgroundColor.withValues(alpha: 0), backgroundColor],
+              colors: [backgroundColor, backgroundColor.withValues(alpha: 0)],
             ),
           ),
         ),
@@ -289,8 +287,8 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          const FullscreenLoadingIndicator(size: 48),
-          CoconutLayout.spacing_1000h,
+          const FullscreenLoadingIndicator(size: 40, strokeWidth: 3),
+          CoconutLayout.spacing_200h,
           Column(
             children: [
               Text(
@@ -331,7 +329,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
             ),
             child: Column(
               children: [
-                OptionCard(
+                CheckboxCard(
                   title: t.label_import_screen.option_selection.add_memo_to_existing.title,
                   subtitle: [TextSpan(text: t.label_import_screen.option_selection.add_memo_to_existing.subtitle)],
                   isSelected: _overwriteMemo,
@@ -346,7 +344,7 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
                     child: Divider(color: context.coconutColors.border.withValues(alpha: 0.21), height: 1),
                   ),
-                  OptionCard(
+                  CheckboxCard(
                     title: t.label_import_screen.option_selection.import_memos_from_other_wallets.title,
                     subtitle: [
                       TextSpan(text: t.label_import_screen.option_selection.import_memos_from_other_wallets.subtitle),
@@ -368,63 +366,44 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
   }
 
   Widget _buildLoadingCard() {
-    return LabelProgressCard(
-      title: RichText(
-        textAlign: TextAlign.center,
-        textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
-        text: TextSpan(
-          style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-          children: [
-            TextSpan(text: t.label_import_screen.loading_title),
-            const TextSpan(text: '\n'),
-            TextSpan(text: _fileName, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
-          ],
-        ),
-      ),
-      stepGroups: [
-        [
+    return LabelStepLayout(
+      icon: const FullscreenLoadingIndicator(size: 40, strokeWidth: 3),
+      heading: t.label_import_screen.loading_title,
+      subtitle: _fileName,
+      titleColor: context.coconutColors.primaryText,
+      content: LabelResultCard(
+        steps: [
           t.label_import_screen.result.step1,
           t.label_import_screen.result.step2,
           t.label_import_screen.result.step3,
           t.label_import_screen.result.step4,
         ],
-      ],
+        showSkeleton: true,
+      ),
     );
   }
 
   Widget _buildSuccessView(BuildContext context) {
-    return Column(
-      children: [
-        CoconutLayout.spacing_600h,
-        LabelImportSuccessCard(
-          title: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: RichText(
-              textAlign: TextAlign.center,
-              textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
-              text: TextSpan(
-                style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-                children: [
-                  TextSpan(text: t.label_import_screen.success_title),
-                  const TextSpan(text: '\n'),
-                  TextSpan(
-                    text: _fileName,
-                    style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-                  ),
-                ],
-              ),
-            ),
+    return LabelStepLayout(
+      icon: SuccessCheckLottie(size: 40, color: context.coconutColors.primary),
+      heading: t.label_import_screen.success_title,
+      subtitle: _fileName,
+      titleColor: context.coconutColors.primaryText,
+      titlePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+      content: Column(
+        children: [
+          _LabelImportResultPager(
+            importResults: _importResults,
+            currentPage: _currentPage,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
           ),
-          importResults: _importResults,
-          currentPage: _currentPage,
-          onPageChanged: (index) {
-            setState(() {
-              _currentPage = index;
-            });
-          },
-        ),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: _buildDeleteFileCheckbox()),
-      ],
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: _buildDeleteFileCheckbox()),
+        ],
+      ),
     );
   }
 
@@ -469,53 +448,38 @@ class _LabelImportScreenState extends State<LabelImportScreen> {
   }
 
   Widget _buildNoLabelsToApplyView() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24.0, bottom: 90),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            CommonFormIconPath.circleCheck,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconDisabled, BlendMode.srcIn),
-            height: 57.6,
-            width: 57.6,
-          ),
-          CoconutLayout.spacing_1000h,
-          RichText(
-            textAlign: TextAlign.center,
-            textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
-            text: TextSpan(
-              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-              children: [
-                TextSpan(text: t.label_import_screen.no_applied_memo),
-                const TextSpan(text: '\n'),
-                TextSpan(
-                  text: _fileName,
-                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-        ],
+    return LabelStepLayout(
+      icon: fixedFootprintIcon(
+        footprint: 40,
+        renderSize: 48,
+        child: SvgPicture.asset(
+          CommonFormIconPath.circleCheck,
+          colorFilter: ColorFilter.mode(context.coconutColors.iconDisabled, BlendMode.srcIn),
+          height: 48,
+          width: 48,
+        ),
       ),
+      heading: t.label_import_screen.no_applied_memo,
+      subtitle: _fileName,
+      titleColor: context.coconutColors.primaryText,
     );
   }
 
   Widget _buildErrorCard(BuildContext context) {
-    return LabelErrorCard(
-      title: RichText(
-        textAlign: TextAlign.center,
-        textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
-        text: TextSpan(
-          style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.danger),
-          children: [
-            TextSpan(text: t.label_import_screen.error_title),
-            const TextSpan(text: '\n'),
-            TextSpan(text: _fileName, style: CoconutTypography.body1_16.setColor(context.coconutColors.danger)),
-          ],
+    return LabelStepLayout(
+      icon: fixedFootprintIcon(
+        footprint: 40,
+        renderSize: 48,
+        child: SvgPicture.asset(
+          CommonStateIconPath.circleWarning,
+          colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+          height: 48,
+          width: 48,
         ),
       ),
+      heading: t.label_import_screen.error_title,
+      subtitle: _fileName,
+      titleColor: context.coconutColors.danger,
     );
   }
 
@@ -640,5 +604,101 @@ class DashedBorderPainter extends CustomPainter {
         oldDelegate.dashWidth != dashWidth ||
         oldDelegate.gapWidth != gapWidth ||
         oldDelegate.borderRadius != borderRadius;
+  }
+}
+
+/// 지갑별 가져오기 결과를 페이지로 넘겨가며 보여준다(지갑이 하나면 페이지 인디케이터 없이 한 장).
+class _LabelImportResultPager extends StatefulWidget {
+  final List<LabelImportResult> importResults;
+  final ValueChanged<int> onPageChanged;
+  final int currentPage;
+
+  const _LabelImportResultPager({required this.importResults, required this.onPageChanged, required this.currentPage});
+
+  @override
+  State<_LabelImportResultPager> createState() => _LabelImportResultPagerState();
+}
+
+class _LabelImportResultPagerState extends State<_LabelImportResultPager> {
+  double _successCardHeight = 150;
+
+  String _formatCount(int count) => '$count${t.label_import_screen.widget.count_unit(n: count)}';
+
+  Widget _buildResultCard(LabelImportResult importResult) {
+    return LabelResultCard(
+      steps: [
+        t.label_import_screen.result.step1,
+        t.label_import_screen.result.step2,
+        t.label_import_screen.result.step3,
+        t.label_import_screen.result.step4,
+      ],
+      stepResults: [
+        importResult.wallet?.name ?? '',
+        _formatCount(importResult.txMemoCount),
+        _formatCount(importResult.utxoTagCount),
+        _formatCount(importResult.utxoLockCount),
+      ],
+      showSkeleton: false,
+    );
+  }
+
+  Widget _buildPageIndicator(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(widget.importResults.length, (index) {
+        return Container(
+          width: 8.0,
+          height: 8.0,
+          margin: const EdgeInsets.symmetric(horizontal: 4.0),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color:
+                widget.currentPage == index
+                    ? context.coconutColors.primaryText
+                    : context.coconutColors.secondaryText.withValues(alpha: 0.5),
+          ),
+        );
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Offstage(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SizeReportingWidget(
+              onSizeChanged: (size) {
+                if (!mounted || _successCardHeight == size.height) return;
+                setState(() => _successCardHeight = size.height);
+              },
+              child: _buildResultCard(widget.importResults[widget.currentPage]),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: _successCardHeight,
+          child: PageView.builder(
+            itemCount: widget.importResults.length,
+            onPageChanged: widget.onPageChanged,
+            itemBuilder:
+                (context, index) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _buildResultCard(widget.importResults[index]),
+                ),
+          ),
+        ),
+        if (widget.importResults.length > 1) ...[
+          const SizedBox(height: 14),
+          _buildPageIndicator(context),
+          const SizedBox(height: 12),
+        ] else ...[
+          const SizedBox(height: 12),
+        ],
+      ],
+    );
   }
 }

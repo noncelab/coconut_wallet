@@ -194,7 +194,7 @@ class WalletConnectProgressCard extends StatelessWidget {
             height: 40,
             child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 3),
           ),
-          CoconutLayout.spacing_400h,
+          CoconutLayout.spacing_200h,
           Text(
             title,
             style: CoconutTypography.body2_14.setColor(context.coconutColors.primary),

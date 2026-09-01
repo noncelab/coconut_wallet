@@ -1,46 +1,65 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
-import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
-import 'package:coconut_wallet/widgets/features/bip329/label_result_card.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 
-class LabelErrorCard extends StatelessWidget {
-  final Widget title;
+/// heading 한 줄, subtitle(예: 파일명) 있으면 그 아래 한 줄 더.
+class LabelStatusTitle extends StatelessWidget {
+  final String heading;
+  final String? subtitle;
+  final Color color;
 
-  const LabelErrorCard({super.key, required this.title});
+  const LabelStatusTitle({super.key, required this.heading, this.subtitle, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
+    final textScaler = TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2));
+    return RichText(
+      textAlign: TextAlign.center,
+      textScaler: textScaler,
+      text: TextSpan(
+        style: CoconutTypography.heading4_18_Bold.setColor(color),
         children: [
-          SvgPicture.asset(
-            CommonStateIconPath.circleWarning,
-            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
-            height: 57.6,
-            width: 57.6,
-          ),
-          CoconutLayout.spacing_1000h,
-          title,
+          TextSpan(text: heading),
+          if (subtitle != null) ...[
+            const TextSpan(text: '\n'),
+            TextSpan(text: subtitle, style: CoconutTypography.body1_16.setColor(color)),
+          ],
         ],
       ),
     );
   }
 }
 
-class LabelProgressCard extends StatelessWidget {
-  final Widget title;
-  final List<List<Object>> stepGroups;
-  final Widget titleGap;
+/// SVG 아이콘은 뷰박스 안 여백 때문에 [renderSize]로 그려야 다른 상태 아이콘과 시각적 지름이 맞는데,
+/// 그대로 두면 레이아웃이 차지하는 크기까지 커져서 뒤따르는 요소 위치가 밀린다.
+/// 실제 차지하는 크기는 [footprint]로 고정하고 그 안에서만 [renderSize]로 넘치게 그린다.
+Widget fixedFootprintIcon({required double footprint, required double renderSize, required Widget child}) {
+  return SizedBox(
+    width: footprint,
+    height: footprint,
+    child: OverflowBox(maxWidth: renderSize, maxHeight: renderSize, child: child),
+  );
+}
 
-  const LabelProgressCard({
+/// 라벨 import/export 흐름의 상태 화면(로딩/성공/에러/처리없음 등) 공통 틀.
+/// 아이콘(40x40 고정 자리)·제목·그 아래 콘텐츠를 항상 같은 위치에 배치해서,
+/// 상태가 바뀌어도 레이아웃이 밀리지 않게 한다. [icon]은 이미 40x40 자리를
+/// 차지하도록 되어 있어야 한다([fixedFootprintIcon] 참고, 스피너/체크 로티는 이미 그러함).
+class LabelStepLayout extends StatelessWidget {
+  final Widget icon;
+  final String heading;
+  final String? subtitle;
+  final Color titleColor;
+  final EdgeInsetsGeometry titlePadding;
+  final Widget? content;
+
+  const LabelStepLayout({
     super.key,
-    required this.title,
-    required this.stepGroups,
-    this.titleGap = CoconutLayout.spacing_500h,
+    required this.icon,
+    required this.heading,
+    this.subtitle,
+    required this.titleColor,
+    this.titlePadding = EdgeInsets.zero,
+    this.content,
   });
 
   @override
@@ -49,14 +68,13 @@ class LabelProgressCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          const FullscreenLoadingIndicator(size: 48, strokeWidth: 4.6),
-          CoconutLayout.spacing_1000h,
-          title,
-          titleGap,
-          for (var i = 0; i < stepGroups.length; i++) ...[
-            if (i > 0) CoconutLayout.spacing_300h,
-            LabelResultCard(steps: stepGroups[i], showSkeleton: true),
-          ],
+          SizedBox(width: 40, height: 40, child: icon),
+          CoconutLayout.spacing_200h,
+          Padding(
+            padding: titlePadding,
+            child: LabelStatusTitle(heading: heading, subtitle: subtitle, color: titleColor),
+          ),
+          if (content != null) ...[CoconutLayout.spacing_500h, content!],
         ],
       ),
     );

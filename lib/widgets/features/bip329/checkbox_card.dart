@@ -2,7 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
-class OptionCard extends StatefulWidget {
+class CheckboxCard extends StatefulWidget {
   final String title;
   final List<TextSpan> subtitle;
   final bool isSelected;
@@ -10,7 +10,7 @@ class OptionCard extends StatefulWidget {
   final bool showBorder;
   final bool isEnabled;
 
-  const OptionCard({
+  const CheckboxCard({
     super.key,
     required this.title,
     required this.subtitle,
@@ -21,10 +21,10 @@ class OptionCard extends StatefulWidget {
   });
 
   @override
-  State<OptionCard> createState() => _OptionCardState();
+  State<CheckboxCard> createState() => _CheckboxCardState();
 }
 
-class _OptionCardState extends State<OptionCard> {
+class _CheckboxCardState extends State<CheckboxCard> {
   bool _isPressed = false;
 
   void _handleTapDown(TapDownDetails details) {

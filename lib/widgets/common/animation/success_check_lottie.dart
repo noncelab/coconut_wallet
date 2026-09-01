@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 /// check-mark.json 체크 링이 실제로 채우는 캔버스 비율(실기기 실측치)
-const double _kVisualFillRatio = 0.685;
+const double _kVisualFillRatio = 0.74;
 
 class SuccessCheckLottie extends StatefulWidget {
   final double size;
@@ -37,7 +37,9 @@ class _SuccessCheckLottieState extends State<SuccessCheckLottie> with SingleTick
     return SizedBox(
       width: widget.size,
       height: widget.size,
-      child: Center(
+      child: OverflowBox(
+        maxWidth: assetSize,
+        maxHeight: assetSize,
         child: Lottie.asset(
           CommonLottiePath.checkMark,
           width: assetSize,

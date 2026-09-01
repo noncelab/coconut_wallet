@@ -12,8 +12,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/features/bip329/file_list_item_card.dart';
+import 'package:coconut_wallet/widgets/common/animation/success_check_lottie.dart';
 import 'package:coconut_wallet/widgets/features/bip329/label_result_card.dart';
-import 'package:coconut_wallet/widgets/features/bip329/label_export_widgets.dart';
 import 'package:coconut_wallet/widgets/features/bip329/label_shared_widgets.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
@@ -196,7 +196,7 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
             future: _filesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: FullscreenLoadingIndicator(size: 48));
+                return const Center(child: FullscreenLoadingIndicator(size: 40, strokeWidth: 3));
               }
               final noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
               if (noFiles) {
@@ -207,11 +207,11 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
           );
         }
       case LabelExportStep.exporting:
-        return Center(child: _buildLoadingCard());
+        return _buildLoadingCard();
       case LabelExportStep.success:
         return _buildSuccessView();
       case LabelExportStep.error:
-        return Center(child: _buildErrorCard());
+        return _buildErrorCard();
     }
   }
 
@@ -404,34 +404,45 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
   }
 
   Widget _buildLoadingCard() {
-    return LabelProgressCard(
-      title: Text(
-        t.label_export_screen.loading_title,
-        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-        textAlign: TextAlign.center,
-        textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
-      ),
-      titleGap: const SizedBox(height: 43),
-      stepGroups: [
-        [t.label_export_screen.result.step1, t.label_export_screen.result.step2],
-        [
-          t.label_export_screen.result.step3,
-          t.label_export_screen.result.step4,
-          t.label_export_screen.result.step5,
-          t.label_export_screen.result.step6,
+    return LabelStepLayout(
+      icon: const FullscreenLoadingIndicator(size: 40, strokeWidth: 3),
+      heading: t.label_export_screen.loading_title,
+      titleColor: context.coconutColors.primaryText,
+      content: Column(
+        children: [
+          LabelResultCard(
+            steps: [t.label_export_screen.result.step1, t.label_export_screen.result.step2],
+            showSkeleton: true,
+          ),
+          CoconutLayout.spacing_300h,
+          LabelResultCard(
+            steps: [
+              t.label_export_screen.result.step3,
+              t.label_export_screen.result.step4,
+              t.label_export_screen.result.step5,
+              t.label_export_screen.result.step6,
+            ],
+            showSkeleton: true,
+          ),
         ],
-      ],
+      ),
     );
   }
 
   Widget _buildErrorCard() {
-    return LabelErrorCard(
-      title: Text(
-        t.label_export_screen.error_title,
-        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.danger),
-        textAlign: TextAlign.center,
-        textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
+    return LabelStepLayout(
+      icon: fixedFootprintIcon(
+        footprint: 40,
+        renderSize: 48,
+        child: SvgPicture.asset(
+          CommonStateIconPath.circleWarning,
+          colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+          height: 48,
+          width: 48,
+        ),
       ),
+      heading: t.label_export_screen.error_title,
+      titleColor: context.coconutColors.danger,
     );
   }
 
@@ -491,52 +502,51 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
       );
     }
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: LabelExportSuccessCard(
-            title: Text(
-              t.label_export_screen.success_title,
-              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-              textAlign: TextAlign.center,
-              textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
-            ),
-            steps: [t.label_export_screen.result.step1, t.label_export_screen.result.step2],
-            stepResults: [
-              _exportResults.first.xFile?.name ?? '',
-              DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
-            ],
-          ),
-        ),
-        CoconutLayout.spacing_300h,
-        Offstage(
-          child: Padding(
+    return LabelStepLayout(
+      icon: SuccessCheckLottie(size: 40, color: context.coconutColors.success),
+      heading: t.label_export_screen.success_title,
+      titleColor: context.coconutColors.primaryText,
+      content: Column(
+        children: [
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: SizeReportingWidget(
-              onSizeChanged: (size) {
-                if (!mounted || _successCardHeight == size.height) return;
-                setState(() => _successCardHeight = size.height);
-              },
-              child: _buildSuccessBottomCard(_exportResults[_currentPage]),
+            child: LabelResultCard(
+              steps: [t.label_export_screen.result.step1, t.label_export_screen.result.step2],
+              showSkeleton: false,
+              stepResults: [
+                _exportResults.first.xFile?.name ?? '',
+                DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+              ],
             ),
           ),
-        ),
-        SizedBox(
-          height: _successCardHeight,
-          child: PageView.builder(
-            itemCount: _exportResults.length,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            itemBuilder:
-                (context, index) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildSuccessBottomCard(_exportResults[index]),
-                ),
+          CoconutLayout.spacing_300h,
+          Offstage(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: SizeReportingWidget(
+                onSizeChanged: (size) {
+                  if (!mounted || _successCardHeight == size.height) return;
+                  setState(() => _successCardHeight = size.height);
+                },
+                child: _buildSuccessBottomCard(_exportResults[_currentPage]),
+              ),
+            ),
           ),
-        ),
-        if (_exportResults.length > 1) ...[const SizedBox(height: 14), _buildPageIndicator()],
-      ],
+          SizedBox(
+            height: _successCardHeight,
+            child: PageView.builder(
+              itemCount: _exportResults.length,
+              onPageChanged: (index) => setState(() => _currentPage = index),
+              itemBuilder:
+                  (context, index) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildSuccessBottomCard(_exportResults[index]),
+                  ),
+            ),
+          ),
+          if (_exportResults.length > 1) ...[const SizedBox(height: 14), _buildPageIndicator()],
+        ],
+      ),
     );
   }
 

@@ -40,29 +40,36 @@ class LabelResultCard extends StatelessWidget {
                           style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                           textScaler: clampedTextScaler,
                         ),
-                        const Spacer(),
                         const SizedBox(width: 8),
-                        if (showSkeleton) ...[
-                          Shimmer.fromColors(
-                            baseColor: context.coconutColors.surfaceSkeletonBase,
-                            highlightColor: context.coconutColors.surfaceSkeletonHighlight,
-                            child: Container(
-                              width: MediaQuery.of(context).size.width * 0.35,
-                              height: 19.6, // font 14의 140%
-                              decoration: BoxDecoration(
-                                color: context.coconutColors.surfaceSkeletonBase,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                          ),
-                        ] else if (stepResults != null && stepIndex < stepResults!.length) ...[
-                          Text(
-                            _formatStepResult(stepResults![stepIndex]),
-                            textAlign: TextAlign.end,
-                            style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
-                            textScaler: clampedTextScaler,
-                          ),
-                        ],
+                        Expanded(
+                          child:
+                              showSkeleton
+                                  ? Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Shimmer.fromColors(
+                                      baseColor: context.coconutColors.surfaceSkeletonBase,
+                                      highlightColor: context.coconutColors.surfaceSkeletonHighlight,
+                                      child: Container(
+                                        width: MediaQuery.of(context).size.width * 0.35,
+                                        height: 19.6, // font 14의 140%
+                                        decoration: BoxDecoration(
+                                          color: context.coconutColors.surfaceSkeletonBase,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  : (stepResults != null && stepIndex < stepResults!.length)
+                                  ? Text(
+                                    _formatStepResult(stepResults![stepIndex]),
+                                    textAlign: TextAlign.end,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                                    textScaler: clampedTextScaler,
+                                  )
+                                  : const SizedBox.shrink(),
+                        ),
                       ],
                     ),
                   ),

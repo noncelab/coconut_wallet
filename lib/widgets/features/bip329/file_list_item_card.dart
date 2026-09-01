@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:coconut_wallet/widgets/features/bip329/option_card.dart';
+import 'package:coconut_wallet/widgets/features/bip329/checkbox_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
@@ -18,7 +18,7 @@ class FileListItemCard extends StatelessWidget {
     final fileName = p.basename(file.path);
     final modifiedDate = DateFormat('yy-MM-dd HH:mm').format(file.lastModifiedSync());
 
-    return OptionCard(
+    return CheckboxCard(
       title: fileName,
       subtitle: [
         TextSpan(text: _formatBytes(file.lengthSync())),

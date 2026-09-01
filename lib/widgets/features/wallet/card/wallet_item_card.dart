@@ -117,7 +117,6 @@ class WalletItemCard extends StatelessWidget {
       walletItem.name,
       if (isPrimaryWallet == true) t.wallet_list.primary_wallet,
       if (isExcludeFromTotalBalance == true) t.wallet_list.exclude_from_total_amount,
-      if (watchedAddressCount != null) t.wallet_list.watched_addresses(count: watchedAddressCount!),
     ];
 
     return Container(

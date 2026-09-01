@@ -515,7 +515,6 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elementos"
-  watched_addresses: "$count vigiladas"
   primary_wallet: "Cartera Principal"
   exclude_from_total_amount: "Excluido del Total"
   home_balance: "Saldo en la Pantalla Principal"

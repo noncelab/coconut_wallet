@@ -391,7 +391,6 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
-  watched_addresses: "監視中 $count"
   primary_wallet: "プライマリウォレット"
   exclude_from_total_amount: "ホーム合計から除外"
   home_balance: "ホーム残高"
