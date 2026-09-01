@@ -1,10 +1,15 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
-    hide CoconutAppBar, CoconutPopup, CoconutToast, CoconutToolTip, CoconutTooltipState, CoconutTooltipType;
+    hide
+        CoconutAppBar,
+        CoconutPopup,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutToolTip,
+        CoconutTooltipState,
+        CoconutTooltipType;
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
-import 'package:coconut_wallet/constants/security_warning_constants.dart';
-import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -14,9 +19,11 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/renewal_wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
@@ -26,6 +33,8 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
+import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -43,26 +52,26 @@ class RenewalWalletDetailScreen extends StatefulWidget {
 
 class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
   static const _nextWarningDelay = Duration(milliseconds: 400);
-  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-  final Set<_WalletDetailSecurityWarningType> _dismissedWarningsThisSession = {};
-  _WalletDetailSecurityWarningType? _nextWarningAfterDismissal;
   late final RenewalWalletDetailViewModel _viewModel;
-  late BitcoinUnit _currentUnit;
+  final ValueNotifier<bool> _bottomActionButtonsExpandedNotifier = ValueNotifier<bool>(true);
+  bool? _pendingBottomActionButtonsExpanded;
+  bool _isBottomActionButtonsUpdateScheduled = false;
 
   @override
   void initState() {
     super.initState();
-    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = RenewalWalletDetailViewModel(
       widget.id,
       context.read<WalletProvider>(),
       context.read<TransactionProvider>(),
       context.read<NodeProvider>(),
+      initialUnit: context.read<PreferenceProvider>().currentUnit,
     );
   }
 
   @override
   void dispose() {
+    _bottomActionButtonsExpandedNotifier.dispose();
     _viewModel.dispose();
     super.dispose();
   }
@@ -76,27 +85,48 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
         appBar: _buildAppBar(context),
         body: Stack(
           children: [
-            CupertinoScrollbar(
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  CupertinoSliverRefreshControl(onRefresh: _viewModel.refresh),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 150),
-                    sliver: SliverList.list(
-                      children: [
-                        _buildBalanceHeader(),
-                        CoconutLayout.spacing_500h,
-                        _buildSecurityWarning(),
-                        _buildTargetCard(),
-                        CoconutLayout.spacing_500h,
-                        _buildRecentTransactions(),
-                        CoconutLayout.spacing_500h,
-                        _buildUtxoSection(),
-                      ],
+            NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollStartNotification || notification is ScrollUpdateNotification) {
+                  _scheduleBottomActionButtonsExpanded(false);
+                } else if (notification is ScrollEndNotification) {
+                  _scheduleBottomActionButtonsExpanded(true);
+                }
+                return false;
+              },
+              child: CupertinoScrollbar(
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    Selector<RenewalWalletDetailViewModel, bool>(
+                      selector: (_, viewModel) => viewModel.isWalletSyncing,
+                      builder:
+                          (_, isWalletSyncing, _) =>
+                              isWalletSyncing
+                                  ? const SliverToBoxAdapter(child: SizedBox.shrink())
+                                  : CupertinoSliverRefreshControl(
+                                    onRefresh: _viewModel.refresh,
+                                    refreshTriggerPullDistance: 80,
+                                  ),
                     ),
-                  ),
-                ],
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 150),
+                      sliver: SliverList.list(
+                        children: [
+                          _buildBalanceHeader(),
+                          CoconutLayout.spacing_500h,
+                          _buildSecurityWarning(),
+                          _buildTargetCard(),
+                          CoconutLayout.spacing_500h,
+                          _buildRecentTransactions(),
+                          CoconutLayout.spacing_500h,
+                          _buildUtxoSection(),
+                          CoconutLayout.spacing_2500h,
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             _buildBottomActionBar(),
@@ -112,21 +142,30 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
       title: '',
       backgroundColor: context.coconutColors.background,
       actionButtonList: [
-        CoconutAppBarActionButton(
-          onPressed: _viewModel.refresh,
-          icon: SvgPicture.asset(
-            CommonActionIconPath.arrowReload,
-            width: 18,
-            height: 18,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+        if (NetworkType.currentNetworkType.isTestnet)
+          CoconutAppBarActionButton(
+            onPressed: _openFaucetRequest,
+            icon: SvgPicture.asset(
+              FeatureUtxoIconPath.faucet,
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+            ),
           ),
+        ListenableBuilder(
+          listenable: _viewModel,
+          builder:
+              (context, _) => CoconutAppBarActionButton(
+                onPressed: _viewModel.isRefreshing || _viewModel.isWalletSyncing ? null : _viewModel.refresh,
+                icon: WalletRefreshIcon(isRefreshing: _viewModel.isRefreshing, size: 24),
+              ),
         ),
         CoconutAppBarActionButton(
           onPressed: _openWalletInfo,
           icon: SvgPicture.asset(
-            FeatureWalletIconPath.walletOutlined,
-            width: 18,
-            height: 18,
+            FeatureSettingsIconPath.settings,
+            width: 24,
+            height: 24,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
         ),
@@ -139,21 +178,24 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
       builder: (context, viewModel, _) {
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => setState(() => _currentUnit = _currentUnit.next),
+          onTap: viewModel.toggleUnit,
           child: Column(
             children: [
               FiatPrice(satoshiAmount: viewModel.balance),
               CoconutLayout.spacing_100h,
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: BitcoinAmountUnit(
-                  currentUnit: _currentUnit,
-                  unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
-                  child: AnimatedBalance(
-                    prevValue: viewModel.balance,
-                    value: viewModel.balance,
-                    currentUnit: _currentUnit,
-                    textStyle: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
+              WalletBalanceSyncShimmer(
+                isRefreshing: viewModel.isRefreshing || viewModel.isWalletSyncing,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: BitcoinAmountUnit(
+                    currentUnit: viewModel.currentUnit,
+                    unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
+                    child: AnimatedBalance(
+                      prevValue: viewModel.balance,
+                      value: viewModel.balance,
+                      currentUnit: viewModel.currentUnit,
+                      textStyle: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
+                    ),
                   ),
                 ),
               ),
@@ -168,21 +210,10 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
     final isAppLockEnabled = context.watch<AuthProvider>().isAuthEnabled;
     return Consumer<RenewalWalletDetailViewModel>(
       builder: (context, viewModel, _) {
-        final wallet = viewModel.wallet;
-        if (!wallet.hasLocalKey || viewModel.balance <= 0) {
-          return const SizedBox.shrink();
-        }
-
-        final warningType =
-            !(wallet.hotWalletMetadata?.backupVerified ?? false) &&
-                    _canShowSecurityWarning(_WalletDetailSecurityWarningType.unbackedHotWallet)
-                ? _WalletDetailSecurityWarningType.unbackedHotWallet
-                : !isAppLockEnabled && _canShowSecurityWarning(_WalletDetailSecurityWarningType.appLock)
-                ? _WalletDetailSecurityWarningType.appLock
-                : null;
+        final warningType = viewModel.getSecurityWarningType(isAppLockEnabled: isAppLockEnabled);
         if (warningType == null) return const SizedBox.shrink();
 
-        final isMnemonicWarning = warningType == _WalletDetailSecurityWarningType.unbackedHotWallet;
+        final isMnemonicWarning = warningType == RenewalWalletDetailSecurityWarningType.unbackedHotWallet;
         final iconColor =
             isMnemonicWarning ? context.coconutColors.iconOnDanger : context.coconutColors.appLockWarningForeground;
 
@@ -191,7 +222,8 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
           child: HomeAlertCard.security(
             key: ValueKey(warningType),
             type: isMnemonicWarning ? HomeAlertCardType.mnemonicBackup : HomeAlertCardType.appLock,
-            showDelay: _nextWarningAfterDismissal == warningType ? _nextWarningDelay : const Duration(seconds: 1),
+            showDelay:
+                viewModel.shouldUseShortWarningDelay(warningType) ? _nextWarningDelay : const Duration(seconds: 1),
             title:
                 isMnemonicWarning
                     ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
@@ -202,12 +234,12 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
                     : t.wallet_home_screen.app_lock_warning.description,
             onTap: isMnemonicWarning ? _openMnemonicBackup : _openAppLockSettings,
             onClosed:
-                () => _dismissSecurityWarning(
+                () => viewModel.dismissSecurityWarning(
                   warningType,
                   showNextWarning:
                       isMnemonicWarning &&
                       !isAppLockEnabled &&
-                      _canShowSecurityWarning(_WalletDetailSecurityWarningType.appLock),
+                      viewModel.canShowSecurityWarning(RenewalWalletDetailSecurityWarningType.appLock),
                 ),
             icon: SvgPicture.asset(
               isMnemonicWarning ? CommonStateIconPath.triangleWarning : CommonStateIconPath.shieldWarning,
@@ -225,7 +257,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
     return Consumer<RenewalWalletDetailViewModel>(
       builder: (context, viewModel, _) {
         final target = viewModel.targetSats;
-        final progress = target == null || target == 0 ? 0.0 : (viewModel.balance / target).clamp(0.0, 1.0);
+        final progress = viewModel.targetProgress;
 
         return ShrinkAnimationButton(
           onPressed: _openWalletInfo,
@@ -248,7 +280,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
                     ),
                     if (target != null)
                       Text(
-                        '${_formatPercent(progress)}% / ${_currentUnit.displayBitcoinAmount(target, withUnit: true)}',
+                        '${viewModel.targetProgressPercent}% / ${viewModel.currentUnit.displayBitcoinAmount(target, withUnit: true)}',
                         style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
                       ),
                   ],
@@ -294,15 +326,21 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
             if (!viewModel.hasTransactions)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: context.coconutColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  t.wallet_detail_screen.never_used_wallet,
-                  textAlign: TextAlign.center,
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(
+                      CommonStateIconPath.leafFall,
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
+                    ),
+                    CoconutLayout.spacing_200w,
+                    Text(
+                      t.wallet_detail_screen.never_used_wallet,
+                      textAlign: TextAlign.center,
+                      style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                    ),
+                  ],
                 ),
               )
             else
@@ -311,7 +349,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
                   padding: EdgeInsets.only(bottom: entry.$1 == viewModel.recentTransactions.length - 1 ? 0 : 8),
                   child: TransactionItemCard(
                     tx: entry.$2,
-                    currentUnit: _currentUnit,
+                    currentUnit: viewModel.currentUnit,
                     id: widget.id,
                     onPressed: () => _openTransaction(entry.$2),
                   ),
@@ -335,7 +373,6 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
             ),
             CoconutLayout.spacing_200h,
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(color: context.coconutColors.surface, borderRadius: BorderRadius.circular(20)),
               child: Row(
                 children: [
@@ -365,45 +402,80 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
   }
 
   Widget _buildBottomActionBar() {
-    return Positioned.fill(
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: BottomActionBar(
-          child: Row(
-            children: [
-              Expanded(
-                child: BottomActionButton(
-                  iconPath: FeatureTransactionIconPath.receivePlane,
-                  label: t.receive,
-                  onTap: () => Navigator.pushNamed(context, '/receive-address', arguments: {'id': widget.id}),
-                  buttonLayout: BottomActionButtonLayout.horizontal,
-                  textStyle: CoconutTypography.body2_14_Bold,
-                ),
-              ),
-              Expanded(
-                child: BottomActionButton(
-                  iconPath: FeatureTransactionIconPath.sendPlane,
-                  label: t.send,
-                  onTap:
-                      () => Navigator.pushNamed(
-                        context,
-                        '/send',
-                        arguments: {'walletId': widget.id, 'sendEntryPoint': SendEntryPoint.renewalWalletDetail},
+    return ValueListenableBuilder<bool>(
+      valueListenable: _bottomActionButtonsExpandedNotifier,
+      builder: (context, isExpanded, _) {
+        return Positioned.fill(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: BottomActionBar(
+              child: AnimatedSlide(
+                offset: isExpanded ? Offset.zero : const Offset(0, 0.35),
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: AnimatedScale(
+                        scale: isExpanded ? 1 : 0.8,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        child: BottomActionButton(
+                          iconPath: FeatureTransactionIconPath.receivePlane,
+                          label: t.receive,
+                          onTap: () => Navigator.pushNamed(context, '/receive-address', arguments: {'id': widget.id}),
+                          buttonLayout: BottomActionButtonLayout.horizontal,
+                          textStyle: CoconutTypography.body2_14_Bold,
+                        ),
                       ),
-                  buttonLayout: BottomActionButtonLayout.horizontal,
-                  textStyle: CoconutTypography.body2_14_Bold,
+                    ),
+                    Expanded(
+                      child: AnimatedScale(
+                        scale: isExpanded ? 1 : 0.8,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        child: BottomActionButton(
+                          iconPath: FeatureTransactionIconPath.sendPlane,
+                          label: t.send,
+                          onTap:
+                              () => Navigator.pushNamed(
+                                context,
+                                '/send',
+                                arguments: {
+                                  'walletId': widget.id,
+                                  'sendEntryPoint': SendEntryPoint.renewalWalletDetail,
+                                },
+                              ),
+                          buttonLayout: BottomActionButtonLayout.horizontal,
+                          textStyle: CoconutTypography.body2_14_Bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  String _formatPercent(double progress) {
-    final percent = progress * 100;
-    return percent == percent.roundToDouble() ? percent.toStringAsFixed(0) : percent.toStringAsFixed(1);
+  void _scheduleBottomActionButtonsExpanded(bool isExpanded) {
+    _pendingBottomActionButtonsExpanded = isExpanded;
+    if (_isBottomActionButtonsUpdateScheduled) return;
+
+    _isBottomActionButtonsUpdateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isBottomActionButtonsUpdateScheduled = false;
+      if (!mounted) return;
+
+      final pendingValue = _pendingBottomActionButtonsExpanded;
+      _pendingBottomActionButtonsExpanded = null;
+      if (pendingValue != null && _bottomActionButtonsExpandedNotifier.value != pendingValue) {
+        _bottomActionButtonsExpandedNotifier.value = pendingValue;
+      }
+    });
   }
 
   void _openTransaction(TransactionRecord transaction) {
@@ -448,18 +520,42 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
     );
   }
 
-  bool _canShowSecurityWarning(_WalletDetailSecurityWarningType type) {
-    if (_dismissedWarningsThisSession.contains(type)) return false;
-    final dismissedAt = _sharedPrefs.getInt(type.dismissedAtKey);
-    return dismissedAt == 0 ||
-        DateTime.now().millisecondsSinceEpoch - dismissedAt >= kSecurityWarningDismissDuration.inMilliseconds;
-  }
-
-  Future<void> _dismissSecurityWarning(_WalletDetailSecurityWarningType type, {required bool showNextWarning}) async {
-    _dismissedWarningsThisSession.add(type);
-    await _sharedPrefs.setInt(type.dismissedAtKey, DateTime.now().millisecondsSinceEpoch);
-    if (!mounted) return;
-    setState(() => _nextWarningAfterDismissal = showNextWarning ? _WalletDetailSecurityWarningType.appLock : null);
+  Future<void> _openFaucetRequest() async {
+    await CommonBottomSheets.showCustomHeightBottomSheet(
+      context: context,
+      heightRatio: 0.5,
+      child: FaucetRequestBottomSheet(
+        walletData: {
+          'wallet_id': _viewModel.walletId,
+          'wallet_address': _viewModel.receiveAddress,
+          'wallet_name': _viewModel.wallet.name,
+          'wallet_index': _viewModel.receiveAddressIndex,
+        },
+        isRequesting: _viewModel.isRequestingFaucet,
+        onRequest: (address, requestAmount) {
+          if (_viewModel.isRequestingFaucet) return;
+          _viewModel.requestTestBitcoin(address, requestAmount, (success, message) {
+            if (!mounted) return;
+            if (success) {
+              Navigator.pop(context);
+              vibrateLight();
+              CoconutToast.showToast(context: context, text: message, isVisibleIcon: true);
+              return;
+            }
+            vibrateMedium();
+            CoconutToast.showToast(
+              context: context,
+              text: message,
+              isVisibleIcon: true,
+              iconPath: CommonStateIconPath.triangleWarning,
+              level: CoconutToastLevel.warning,
+            );
+          });
+        },
+        walletProvider: _viewModel.walletProvider,
+        walletItem: _viewModel.wallet,
+      ),
+    );
   }
 }
 
@@ -523,12 +619,11 @@ class _UtxoAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShrinkAnimationButton(
       onPressed: onTap,
-      defaultColor: Colors.transparent,
       pressedOverlayColor: context.coconutColors.surfacePressOverlay,
       pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
       borderRadius: 12,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.only(top: 20, bottom: 22),
         child: Column(
           children: [
             SvgPicture.asset(
@@ -546,13 +641,4 @@ class _UtxoAction extends StatelessWidget {
       ),
     );
   }
-}
-
-enum _WalletDetailSecurityWarningType { unbackedHotWallet, appLock }
-
-extension on _WalletDetailSecurityWarningType {
-  String get dismissedAtKey => switch (this) {
-    _WalletDetailSecurityWarningType.unbackedHotWallet => SharedPrefKeys.kUnbackedHotWalletWarningDismissedAt,
-    _WalletDetailSecurityWarningType.appLock => SharedPrefKeys.kAppLockWarningDismissedAt,
-  };
 }

@@ -169,6 +169,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   if (isSyncing) const SliverToBoxAdapter(child: InlineLoadingIndicator()),
                   CupertinoSliverRefreshControl(
                     onRefresh: () async => context.read<UtxoListViewModel>().refetchFromDB(),
+                    refreshTriggerPullDistance: 80,
                   ),
                   SliverToBoxAdapter(child: _buildHeader(context)),
                   UtxoList(

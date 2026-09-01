@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
+import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 
@@ -15,6 +16,7 @@ class TransactionDetailHeader extends StatefulWidget {
   final String fiatPrice;
   final int sendingAmount;
   final int receivingAmount;
+  final bool isRefreshing;
   final void Function() onPressedUnitToggle;
 
   const TransactionDetailHeader({
@@ -24,6 +26,7 @@ class TransactionDetailHeader extends StatefulWidget {
     required this.fiatPrice,
     required this.sendingAmount,
     required this.receivingAmount,
+    required this.isRefreshing,
     required this.onPressedUnitToggle,
   });
 
@@ -60,16 +63,19 @@ class _TransactionDetailHeaderState extends State<TransactionDetailHeader> {
   }
 
   Widget _buildBtcBalance(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: BitcoinAmountUnit(
-        currentUnit: widget.currentUnit,
-        unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
-        child: AnimatedBalance(
-          prevValue: widget.animatedBalanceData.previous,
-          value: widget.animatedBalanceData.current,
+    return WalletBalanceSyncShimmer(
+      isRefreshing: widget.isRefreshing,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: BitcoinAmountUnit(
           currentUnit: widget.currentUnit,
-          textStyle: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
+          unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
+          child: AnimatedBalance(
+            prevValue: widget.animatedBalanceData.previous,
+            value: widget.animatedBalanceData.current,
+            currentUnit: widget.currentUnit,
+            textStyle: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
+          ),
         ),
       ),
     );

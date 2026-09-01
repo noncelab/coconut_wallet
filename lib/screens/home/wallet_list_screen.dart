@@ -45,6 +45,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
 import 'package:tuple/tuple.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
@@ -56,7 +57,9 @@ class WalletListScreen extends StatefulWidget {
 }
 
 class _WalletListScreenState extends State<WalletListScreen> with TickerProviderStateMixin {
+  static const _minimumRefreshIndicatorDuration = Duration(milliseconds: 700);
   late ScrollController _scrollController;
+  bool _isRefreshing = false;
 
   double? itemCardWidth;
   double? itemCardHeight;
@@ -116,7 +119,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         selector:
             (_, vm) => Tuple7(
               vm.walletItemList,
-              vm.isNetworkOn ?? false,
+              vm.shouldShowLoadingIndicator,
               vm.walletBalanceMap,
               vm.favoriteWalletIds,
               vm.tempWalletOrder,
@@ -127,6 +130,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           final viewModel = Provider.of<WalletListViewModel>(context, listen: false);
 
           final walletListItem = data.item1;
+          final isInitialSyncing = data.item2;
           final filteredWalletList = _filterWalletList(walletListItem);
           final walletBalanceMap = data.item3;
           final isEditMode = data.item6;
@@ -207,10 +211,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                     semanticChildCount: filteredWalletList.length,
                                     slivers: <Widget>[
                                       // pull to refresh시 로딩 인디케이터를 보이기 위함
-                                      CupertinoSliverRefreshControl(onRefresh: viewModel.updateWalletBalances),
+                                      if (!isInitialSyncing)
+                                        CupertinoSliverRefreshControl(
+                                          onRefresh: _onRefresh,
+                                          refreshTriggerPullDistance: 80,
+                                        ),
                                       _buildLoadingIndicator(viewModel),
                                       // _buildPadding(isOffline),
-                                      _buildWalletListHeader(walletBalanceMap),
+                                      _buildWalletListHeader(walletBalanceMap, isInitialSyncing: isInitialSyncing),
                                       SliverToBoxAdapter(
                                         child: Padding(
                                           padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
@@ -242,6 +250,22 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         },
       ),
     );
+  }
+
+  Future<void> _onRefresh() async {
+    if (_isRefreshing) return;
+
+    setState(() => _isRefreshing = true);
+    final stopwatch = Stopwatch()..start();
+    try {
+      await _viewModel.updateWalletBalances();
+    } finally {
+      final remaining = _minimumRefreshIndicatorDuration - stopwatch.elapsed;
+      if (remaining > Duration.zero) {
+        await Future<void>.delayed(remaining);
+      }
+      if (mounted) setState(() => _isRefreshing = false);
+    }
   }
 
   @override
@@ -392,7 +416,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildWalletListHeader(Map<int, AnimatedBalanceData> walletBalanceMap) {
+  Widget _buildWalletListHeader(Map<int, AnimatedBalanceData> walletBalanceMap, {required bool isInitialSyncing}) {
     return SliverToBoxAdapter(
       child: MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
@@ -438,7 +462,12 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // 전체 총액
-                        _buildTotalAmountSection(currentUnit, prevTotalBalance, totalBalance),
+                        _buildTotalAmountSection(
+                          currentUnit,
+                          prevTotalBalance,
+                          totalBalance,
+                          isInitialSyncing: isInitialSyncing,
+                        ),
                         // 전체 총액 - Fiat Price
                         _buildFiatPricesSection(totalBalance, homeBalance, excludedBalance, currentUnit, excludedIds),
                       ],
@@ -453,7 +482,12 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildTotalAmountSection(BitcoinUnit currentUnit, int prevTotalBalance, int totalBalance) {
+  Widget _buildTotalAmountSection(
+    BitcoinUnit currentUnit,
+    int prevTotalBalance,
+    int totalBalance, {
+    required bool isInitialSyncing,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -469,18 +503,23 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                   ),
                   CoconutLayout.spacing_100h,
-                  BitcoinAmountUnit(
-                    currentUnit: currentUnit,
-                    unitStyle: CoconutTypography.heading3_21_NumberBold.setColor(context.coconutColors.primaryText),
-                    spacing: CoconutLayout.spacing_100w,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: AnimatedBalance(
-                        prevValue: prevTotalBalance,
-                        value: totalBalance,
-                        currentUnit: currentUnit,
-                        textStyle: CoconutTypography.heading3_21_NumberBold.setColor(context.coconutColors.primaryText),
+                  WalletBalanceSyncShimmer(
+                    isRefreshing: _isRefreshing || isInitialSyncing,
+                    child: BitcoinAmountUnit(
+                      currentUnit: currentUnit,
+                      unitStyle: CoconutTypography.heading3_21_NumberBold.setColor(context.coconutColors.primaryText),
+                      spacing: CoconutLayout.spacing_100w,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: AnimatedBalance(
+                          prevValue: prevTotalBalance,
+                          value: totalBalance,
+                          currentUnit: currentUnit,
+                          textStyle: CoconutTypography.heading3_21_NumberBold.setColor(
+                            context.coconutColors.primaryText,
+                          ),
+                        ),
                       ),
                     ),
                   ),

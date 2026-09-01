@@ -58,6 +58,7 @@ import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart
 import 'package:coconut_wallet/widgets/common/text/animated_dots_text.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/icon/transaction_status_gradient_mask.dart';
@@ -93,6 +94,7 @@ class WalletHomeScreen extends StatefulWidget {
 }
 
 class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProviderStateMixin {
+  static const _minimumRefreshIndicatorDuration = Duration(milliseconds: 700);
   static const _nextWarningDelay = Duration(milliseconds: 200);
 
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
@@ -184,6 +186,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   bool _isFirstLoad = true;
   bool _isWalletListLoading = false;
+  bool _isRefreshing = false;
 
   int _recentTransactionCurrentPage = 0;
   late ScrollController _pageIndicatorController;
@@ -310,8 +313,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         semanticChildCount: walletItem.length,
                         slivers: <Widget>[
                           _buildAppBar(networkStatus),
-                          // pull to refresh시 로딩 인디케이터를 보이기 위함
-                          CupertinoSliverRefreshControl(onRefresh: viewModel.onRefresh),
+                          if (!shouldShowLoadingIndicator)
+                            CupertinoSliverRefreshControl(onRefresh: _onRefresh, refreshTriggerPullDistance: 80),
                           _buildLoadingIndicator(context, viewModel),
                           _buildHeader(
                             balanceVisibilityData.item1,
@@ -324,60 +327,63 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           SliverToBoxAdapter(
                             child:
                                 securityWarningType != null
-                                    ? HomeAlertCard.security(
-                                      key: ValueKey(securityWarningType),
-                                      type:
-                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
-                                              ? HomeAlertCardType.mnemonicBackup
-                                              : HomeAlertCardType.appLock,
-                                      showDelay:
-                                          _nextWarningAfterDismissal == securityWarningType
-                                              ? _nextWarningDelay
-                                              : const Duration(seconds: 2),
-                                      title:
-                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
-                                              ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
-                                              : t.wallet_home_screen.app_lock_warning.title,
-                                      description:
-                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
-                                              ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
-                                              : t.wallet_home_screen.app_lock_warning.description,
-                                      onTap:
-                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
-                                              ? () => _openWalletInfo(
-                                                firstUnbackedHotWalletWithBalance!,
-                                                highlightMnemonicBackup: true,
-                                              )
-                                              : _openAppLockSettings,
-                                      onClosed:
-                                          () => _dismissSecurityWarning(
-                                            securityWarningType,
-                                            showNextWarning:
-                                                securityWarningType == _HomeSecurityWarningType.unbackedHotWallet &&
-                                                hasHotWalletWithBalance &&
-                                                !isAppLockEnabled &&
-                                                _canShowSecurityWarning(_HomeSecurityWarningType.appLock),
-                                          ),
-                                      icon:
-                                          securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
-                                              ? SvgPicture.asset(
-                                                CommonStateIconPath.triangleWarning,
-                                                width: 20,
-                                                height: 20,
-                                                colorFilter: ColorFilter.mode(
-                                                  context.coconutColors.iconOnDanger,
-                                                  BlendMode.srcIn,
+                                    ? Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      child: HomeAlertCard.security(
+                                        key: ValueKey(securityWarningType),
+                                        type:
+                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                                ? HomeAlertCardType.mnemonicBackup
+                                                : HomeAlertCardType.appLock,
+                                        showDelay:
+                                            _nextWarningAfterDismissal == securityWarningType
+                                                ? _nextWarningDelay
+                                                : const Duration(seconds: 2),
+                                        title:
+                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                                ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
+                                                : t.wallet_home_screen.app_lock_warning.title,
+                                        description:
+                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                                ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
+                                                : t.wallet_home_screen.app_lock_warning.description,
+                                        onTap:
+                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                                ? () => _openWalletInfo(
+                                                  firstUnbackedHotWalletWithBalance!,
+                                                  highlightMnemonicBackup: true,
+                                                )
+                                                : _openAppLockSettings,
+                                        onClosed:
+                                            () => _dismissSecurityWarning(
+                                              securityWarningType,
+                                              showNextWarning:
+                                                  securityWarningType == _HomeSecurityWarningType.unbackedHotWallet &&
+                                                  hasHotWalletWithBalance &&
+                                                  !isAppLockEnabled &&
+                                                  _canShowSecurityWarning(_HomeSecurityWarningType.appLock),
+                                            ),
+                                        icon:
+                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                                ? SvgPicture.asset(
+                                                  CommonStateIconPath.triangleWarning,
+                                                  width: 20,
+                                                  height: 20,
+                                                  colorFilter: ColorFilter.mode(
+                                                    context.coconutColors.iconOnDanger,
+                                                    BlendMode.srcIn,
+                                                  ),
+                                                )
+                                                : SvgPicture.asset(
+                                                  CommonStateIconPath.shieldWarning,
+                                                  width: 20,
+                                                  height: 20,
+                                                  colorFilter: ColorFilter.mode(
+                                                    context.coconutColors.appLockWarningForeground,
+                                                    BlendMode.srcIn,
+                                                  ),
                                                 ),
-                                              )
-                                              : SvgPicture.asset(
-                                                CommonStateIconPath.shieldWarning,
-                                                width: 20,
-                                                height: 20,
-                                                colorFilter: ColorFilter.mode(
-                                                  context.coconutColors.appLockWarningForeground,
-                                                  BlendMode.srcIn,
-                                                ),
-                                              ),
+                                      ),
                                     )
                                     : showOpenStoreIntroCard
                                     ? _buildOpenStoreIntroCard(
@@ -454,6 +460,22 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     await Navigator.pushNamed(context, '/wallet-home-edit');
     if (context.mounted) {
       _viewModel.refreshEnabledFeaturesData();
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    if (_isRefreshing) return;
+
+    setState(() => _isRefreshing = true);
+    final stopwatch = Stopwatch()..start();
+    try {
+      await _viewModel.onRefresh();
+    } finally {
+      final remaining = _minimumRefreshIndicatorDuration - stopwatch.elapsed;
+      if (remaining > Duration.zero) {
+        await Future<void>.delayed(remaining);
+      }
+      if (mounted) setState(() => _isRefreshing = false);
     }
   }
 
@@ -669,48 +691,40 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   maintainAnimation: true,
                   maintainState: true,
                   visible: (!isBalanceHidden) && _viewModel.walletItemList.isNotEmpty,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Selector<WalletHomeViewModel, Tuple2<List<int>, bool>>(
-                        selector:
-                            (_, viewModel) =>
-                                Tuple2(viewModel.excludedFromTotalBalanceWalletIds, viewModel.isFiatBalanceHidden),
-                        builder: (context, data, child) {
-                          final excludedIds = data.item1;
-                          final isFiatBalanceHidden = data.item2;
-                          final balance =
-                              _viewModel.fakeBalanceTotalAmount != null
-                                  ? _viewModel.fakeBalanceMap.entries
-                                      .where((entry) => !excludedIds.contains(entry.key))
-                                      .map((entry) => entry.value as int)
-                                      .fold<int>(0, (current, element) => current + element)
-                                  : Map.fromEntries(
-                                    _viewModel.walletBalanceMap.entries.where(
-                                      (entry) => !excludedIds.contains(entry.key),
-                                    ),
-                                  ).values.map((e) => e.current).fold(0, (current, element) => current + element);
-                          return SizedBox(
-                            height: _fiatPriceSlotHeight,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Visibility(
-                                maintainSize: true,
-                                maintainAnimation: true,
-                                maintainState: true,
-                                visible: !isFiatBalanceHidden,
-                                child: FiatPrice(
-                                  satoshiAmount: balance,
-                                  textStyle: CoconutTypography.body3_12_Number.setColor(
-                                    context.coconutColors.tertiaryText,
-                                  ),
-                                ),
-                              ),
+                  child: Selector<WalletHomeViewModel, Tuple2<List<int>, bool>>(
+                    selector:
+                        (_, viewModel) =>
+                            Tuple2(viewModel.excludedFromTotalBalanceWalletIds, viewModel.isFiatBalanceHidden),
+                    builder: (context, data, child) {
+                      final excludedIds = data.item1;
+                      final isFiatBalanceHidden = data.item2;
+                      final balance =
+                          _viewModel.fakeBalanceTotalAmount != null
+                              ? _viewModel.fakeBalanceMap.entries
+                                  .where((entry) => !excludedIds.contains(entry.key))
+                                  .map((entry) => entry.value as int)
+                                  .fold<int>(0, (current, element) => current + element)
+                              : Map.fromEntries(
+                                _viewModel.walletBalanceMap.entries.where((entry) => !excludedIds.contains(entry.key)),
+                              ).values.map((e) => e.current).fold(0, (current, element) => current + element);
+                      return SizedBox(
+                        width: double.infinity,
+                        height: _fiatPriceSlotHeight,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Visibility(
+                            maintainSize: true,
+                            maintainAnimation: true,
+                            maintainState: true,
+                            visible: !isFiatBalanceHidden,
+                            child: FiatPrice(
+                              satoshiAmount: balance,
+                              textStyle: CoconutTypography.body3_12_Number.setColor(context.coconutColors.tertiaryText),
                             ),
-                          );
-                        },
-                      ),
-                    ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 Selector<PreferenceProvider, BitcoinUnit>(
@@ -720,85 +734,93 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: FittedBox(
-                            alignment: Alignment.centerLeft,
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              children: [
-                                if (!isBalanceHidden && fakeBalanceTotalAmount == null && currentUnit.isBip177Unit) ...[
-                                  Text(
-                                    currentUnit.symbol,
-                                    style: CoconutTypography.heading3_21_NumberBold.setColor(
-                                      context.coconutColors.primaryText,
-                                    ),
-                                  ),
-                                  CoconutLayout.spacing_50w,
-                                ],
-                                isBalanceHidden
-                                    ? FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        t.view_balance,
-                                        style: CoconutTypography.heading3_21_NumberBold
-                                            .setColor(context.coconutColors.mutedText)
-                                            .merge(const TextStyle(height: 1.3)),
+                          child: WalletBalanceSyncShimmer(
+                            isRefreshing:
+                                (_isRefreshing || shouldShowLoadingIndicator) &&
+                                !isBalanceHidden &&
+                                fakeBalanceTotalAmount == null,
+                            child: FittedBox(
+                              alignment: Alignment.centerLeft,
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                children: [
+                                  if (!isBalanceHidden &&
+                                      fakeBalanceTotalAmount == null &&
+                                      currentUnit.isBip177Unit) ...[
+                                    Text(
+                                      currentUnit.symbol,
+                                      style: CoconutTypography.heading3_21_NumberBold.setColor(
+                                        context.coconutColors.primaryText,
                                       ),
-                                    )
-                                    : fakeBalanceTotalAmount != null
-                                    ? FittedBox(
-                                      child: Text(
-                                        currentUnit.displayBitcoinAmount(
-                                          _viewModel.getHomeFakeBalanceTotal().toInt(),
-                                          withUnit: true,
+                                    ),
+                                    CoconutLayout.spacing_50w,
+                                  ],
+                                  isBalanceHidden
+                                      ? FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          t.view_balance,
+                                          style: CoconutTypography.heading3_21_NumberBold
+                                              .setColor(context.coconutColors.mutedText)
+                                              .merge(const TextStyle(height: 1.3)),
                                         ),
-                                        style: CoconutTypography.heading3_21_NumberBold
-                                            .setColor(context.coconutColors.primaryText)
-                                            .merge(const TextStyle(height: 1.4)),
-                                        maxLines: 1,
+                                      )
+                                      : fakeBalanceTotalAmount != null
+                                      ? FittedBox(
+                                        child: Text(
+                                          currentUnit.displayBitcoinAmount(
+                                            _viewModel.getHomeFakeBalanceTotal().toInt(),
+                                            withUnit: true,
+                                          ),
+                                          style: CoconutTypography.heading3_21_NumberBold
+                                              .setColor(context.coconutColors.primaryText)
+                                              .merge(const TextStyle(height: 1.4)),
+                                          maxLines: 1,
+                                        ),
+                                      )
+                                      : FittedBox(
+                                        alignment: Alignment.centerLeft,
+                                        child: Selector<WalletHomeViewModel, List<int>>(
+                                          selector: (_, viewModel) => viewModel.excludedFromTotalBalanceWalletIds,
+                                          builder: (context, excludedIds, child) {
+                                            // 총 잔액에서 숨기기 설정된 지갑 ID는 합에서 제외
+                                            final filteredBalanceMap = Map.fromEntries(
+                                              _viewModel.walletBalanceMap.entries.where(
+                                                (entry) => !excludedIds.contains(entry.key),
+                                              ),
+                                            );
+
+                                            final prevValue = filteredBalanceMap.values
+                                                .map((e) => e.previous)
+                                                .fold(0, (prev, element) => prev + element);
+
+                                            final currentValue = filteredBalanceMap.values
+                                                .map((e) => e.current)
+                                                .fold(0, (current, element) => current + element);
+                                            return AnimatedBalance(
+                                              prevValue: prevValue,
+                                              value: currentValue,
+                                              currentUnit: currentUnit,
+                                              textStyle: CoconutTypography.heading3_21_NumberBold
+                                                  .setColor(context.coconutColors.primaryText)
+                                                  .merge(const TextStyle(height: 1.4)),
+                                            );
+                                          },
+                                        ),
                                       ),
-                                    )
-                                    : FittedBox(
-                                      alignment: Alignment.centerLeft,
-                                      child: Selector<WalletHomeViewModel, List<int>>(
-                                        selector: (_, viewModel) => viewModel.excludedFromTotalBalanceWalletIds,
-                                        builder: (context, excludedIds, child) {
-                                          // 총 잔액에서 숨기기 설정된 지갑 ID는 합에서 제외
-                                          final filteredBalanceMap = Map.fromEntries(
-                                            _viewModel.walletBalanceMap.entries.where(
-                                              (entry) => !excludedIds.contains(entry.key),
-                                            ),
-                                          );
-
-                                          final prevValue = filteredBalanceMap.values
-                                              .map((e) => e.previous)
-                                              .fold(0, (prev, element) => prev + element);
-
-                                          final currentValue = filteredBalanceMap.values
-                                              .map((e) => e.current)
-                                              .fold(0, (current, element) => current + element);
-                                          return AnimatedBalance(
-                                            prevValue: prevValue,
-                                            value: currentValue,
-                                            currentUnit: currentUnit,
-                                            textStyle: CoconutTypography.heading3_21_NumberBold
-                                                .setColor(context.coconutColors.primaryText)
-                                                .merge(const TextStyle(height: 1.4)),
-                                          );
-                                        },
+                                  if (!isBalanceHidden &&
+                                      fakeBalanceTotalAmount == null &&
+                                      !currentUnit.isBip177Unit) ...[
+                                    CoconutLayout.spacing_50w,
+                                    Text(
+                                      currentUnit.symbol,
+                                      style: CoconutTypography.heading3_21_NumberBold.setColor(
+                                        context.coconutColors.primaryText,
                                       ),
                                     ),
-                                if (!isBalanceHidden &&
-                                    fakeBalanceTotalAmount == null &&
-                                    !currentUnit.isBip177Unit) ...[
-                                  CoconutLayout.spacing_50w,
-                                  Text(
-                                    currentUnit.symbol,
-                                    style: CoconutTypography.heading3_21_NumberBold.setColor(
-                                      context.coconutColors.primaryText,
-                                    ),
-                                  ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
                         ),
