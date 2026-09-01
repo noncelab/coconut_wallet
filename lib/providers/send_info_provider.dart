@@ -2,7 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 
-enum SendEntryPoint { home, transactionList }
+enum SendEntryPoint { home, renewalWalletDetail, walletDetail }
 
 class SendInfoProvider {
   int? _walletId;

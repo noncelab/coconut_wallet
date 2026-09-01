@@ -84,7 +84,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
       Navigator.pushReplacementNamed(
         context,
-        '/transaction-list',
+        '/renewal-wallet-detail',
         arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
       );
       return;

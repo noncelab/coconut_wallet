@@ -25,7 +25,7 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 
-class TransactionListViewModel extends ChangeNotifier {
+class WalletDetailViewModel extends ChangeNotifier {
   static const int kMaxFaucetRequestCount = 3;
   final int _walletId;
   final WalletProvider _walletProvider;
@@ -89,7 +89,7 @@ class TransactionListViewModel extends ChangeNotifier {
   int get receivingAmount => _receivingAmount;
   int get sendingAmount => _sendingAmount;
 
-  TransactionListViewModel(
+  WalletDetailViewModel(
     this._walletId,
     this._walletProvider,
     this._txProvider,

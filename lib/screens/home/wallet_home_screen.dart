@@ -1581,7 +1581,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             onPressed: () {
               Navigator.pushNamed(
                 context,
-                '/transaction-list',
+                '/renewal-wallet-detail',
                 arguments: {'id': walletItem.id, 'entryPoint': kEntryPointWalletHome},
               );
             },

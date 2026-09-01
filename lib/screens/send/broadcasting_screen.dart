@@ -155,9 +155,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                   child: child,
                 ),
           ),
-          _viewModel.sendEntryPoint == SendEntryPoint.transactionList
-              ? ModalRoute.withName('/transaction-list')
-              : (route) => route.isFirst,
+          switch (_viewModel.sendEntryPoint) {
+            SendEntryPoint.renewalWalletDetail => ModalRoute.withName('/renewal-wallet-detail'),
+            SendEntryPoint.walletDetail => ModalRoute.withName('/wallet-detail'),
+            SendEntryPoint.home || null => (route) => route.isFirst,
+          },
         );
       }
     } catch (e) {

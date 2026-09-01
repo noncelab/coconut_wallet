@@ -631,7 +631,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
       '/send',
       arguments: {
         'walletId': widget.id,
-        'sendEntryPoint': SendEntryPoint.transactionList,
+        'sendEntryPoint': SendEntryPoint.walletDetail,
         'selectedUtxoList': selectedUtxos,
       },
     );
@@ -772,7 +772,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
       '/send',
       arguments: {
         'walletId': widget.id,
-        'sendEntryPoint': SendEntryPoint.transactionList,
+        'sendEntryPoint': SendEntryPoint.walletDetail,
         'selectedUtxoList': selectedUtxos,
       },
     );

@@ -1117,13 +1117,23 @@ utxo_detail_screen:
 utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"
   add_tag: "+ 버튼을 눌러 첫 태그를 만들어 보세요"
+wallet_detail_screen:
+  recent_transactions: "최근 트랜잭션"
+  view_all: "모두 보기"
+  never_used_wallet: "사용한 적 없는 지갑이에요"
+  utxo_count(count): "UTXO · ${count}개"
+  utxo_overview: "한눈에 보기"
+  utxo_overview_description: "개요 • 목록"
+  utxo_organize: "정리하기"
+  utxo_organize_description: "나누기 • 합치기"
+
 wallet_info_screen:
   title: "$name 정보"
   transaction: "트랜잭션"
   utxo: "UTXO"
   target_quantity: "목표 수량"
   target_progress: "$percent% / $target"
-  target_not_set_secondary: "목표 수량을 설정하면 달성률을 보여드려요"
+  target_not_set_secondary: "목표 수량을 설정해 보세요"
   target_set_title: "목표 설정"
   target_set_placeholder: "BTC 단위로 입력해 주세요"
   target_set_invalid: "0 BTC는 목표로 지정할 수 없어요"

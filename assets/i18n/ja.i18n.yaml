@@ -1102,13 +1102,23 @@ utxo_detail_screen:
 utxo_tag_screen:
   onboarding_title: "UTXOタグを管理できます"
   add_tag: "+ボタンを押して最初のタグを作成"
+wallet_detail_screen:
+  recent_transactions: "最近のトランザクション"
+  view_all: "すべて見る"
+  never_used_wallet: "まだ使用されていないウォレットです"
+  utxo_count(count): "UTXO・${count}個"
+  utxo_overview: "一覧を見る"
+  utxo_overview_description: "概要 • 一覧"
+  utxo_organize: "整理する"
+  utxo_organize_description: "分割 • 統合"
+
 wallet_info_screen:
   title: "$name情報"
   transaction: "トランザクション"
   utxo: "UTXO"
   target_quantity: "目標数量"
   target_progress: "$percent% / $target"
-  target_not_set_secondary: "目標数量を設定すると達成率を表示します"
+  target_not_set_secondary: "目標数量を設定してみましょう"
   target_set_title: "目標を設定"
   target_set_placeholder: "BTC単位で入力してください"
   target_set_invalid: "0 BTCは目標に設定できません"

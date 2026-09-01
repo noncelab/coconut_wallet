@@ -66,6 +66,7 @@ abstract final class CommonFormIconPath {
 abstract final class CommonMenuIconPath {
   static const String hamburger = 'assets/svg/common/menu/hamburger.svg';
   static const String kebab = 'assets/svg/common/menu/kebab.svg';
+  static const String grid = 'assets/svg/common/menu/grid.svg';
 }
 
 abstract final class CommonNavigationIconPath {

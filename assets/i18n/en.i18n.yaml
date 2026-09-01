@@ -1113,13 +1113,23 @@ utxo_detail_screen:
 utxo_tag_screen:
   onboarding_title: "You can manage UTXO tags"
   add_tag: "Press the + button to create your first tag"
+wallet_detail_screen:
+  recent_transactions: "Recent transactions"
+  view_all: "View all"
+  never_used_wallet: "This wallet hasn't been used yet"
+  utxo_count(count): "UTXO · $count"
+  utxo_overview: "Overview"
+  utxo_overview_description: "Overview • List"
+  utxo_organize: "Organize"
+  utxo_organize_description: "Split • Merge"
+
 wallet_info_screen:
   title: "$name Information"
   transaction: "Transaction"
   utxo: "UTXO"
   target_quantity: "Target Quantity"
   target_progress: "$percent% / $target"
-  target_not_set_secondary: "We'll show your achievement rate when you set a target quantity"
+  target_not_set_secondary: "Set a target amount"
   target_set_title: "Set Target"
   target_set_placeholder: "Please enter in BTC unit"
   target_set_invalid: "You can’t set 0 BTC as a target"

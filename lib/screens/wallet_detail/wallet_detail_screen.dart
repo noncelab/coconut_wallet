@@ -56,17 +56,17 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
-class TransactionListScreen extends StatefulWidget {
+class WalletDetailScreen extends StatefulWidget {
   final int id;
   final String entryPoint;
 
-  const TransactionListScreen({super.key, required this.id, required this.entryPoint});
+  const WalletDetailScreen({super.key, required this.id, required this.entryPoint});
 
   @override
-  State<TransactionListScreen> createState() => _TransactionListScreenState();
+  State<WalletDetailScreen> createState() => _WalletDetailScreenState();
 }
 
-class _TransactionListScreenState extends State<TransactionListScreen> {
+class _WalletDetailScreenState extends State<WalletDetailScreen> {
   static const _nextWarningDelay = Duration(milliseconds: 400);
 
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
@@ -74,7 +74,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   _WalletDetailSecurityWarningType? _nextWarningAfterDismissal;
   bool _isPullToRefreshing = false;
   late BitcoinUnit _currentUnit;
-  late TransactionListViewModel _viewModel;
+  late WalletDetailViewModel _viewModel;
 
   final ValueNotifier<bool> _bottomActionBarVisibleNotifier = ValueNotifier<bool>(true);
 
@@ -114,7 +114,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     slivers: [
                       CupertinoSliverRefreshControl(onRefresh: () async => _onRefresh()),
                       SliverToBoxAdapter(
-                        child: Selector<TransactionListViewModel, Tuple4<AnimatedBalanceData, String, int, int>>(
+                        child: Selector<WalletDetailViewModel, Tuple4<AnimatedBalanceData, String, int, int>>(
                           selector:
                               (_, viewModel) => Tuple4(
                                 AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
@@ -145,7 +145,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 ),
               ),
               _buildStickyHeader(),
-              Selector<TransactionListViewModel, bool>(
+              Selector<WalletDetailViewModel, bool>(
                 selector: (_, viewModel) => viewModel.faucetTooltipVisible,
                 builder: (_, isFaucetTooltipVisible, __) {
                   return _buildFaucetTooltip(isFaucetTooltipVisible);
@@ -217,7 +217,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   Widget _buildSecurityWarning(bool isAppLockEnabled) {
     return SliverToBoxAdapter(
-      child: Selector<TransactionListViewModel, Tuple3<int, bool, bool>>(
+      child: Selector<WalletDetailViewModel, Tuple3<int, bool, bool>>(
         selector: (_, viewModel) {
           final wallet = viewModel.walletListBaseItem;
           return Tuple3(viewModel.balance, wallet.hasLocalKey, wallet.hotWalletMetadata?.backupVerified ?? false);
@@ -332,7 +332,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     return ValueListenableBuilder<bool>(
       valueListenable: _stickyHeaderVisibleNotifier,
       builder: (context, isVisible, child) {
-        return Selector<TransactionListViewModel, Tuple2<AnimatedBalanceData, String>>(
+        return Selector<WalletDetailViewModel, Tuple2<AnimatedBalanceData, String>>(
           selector:
               (_, viewModel) =>
                   Tuple2(AnimatedBalanceData(viewModel.balance, viewModel.prevBalance), viewModel.fiatPriceString),
@@ -353,7 +353,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   Widget _buildTxListLabel() {
     return SliverToBoxAdapter(
-      child: Selector<TransactionListViewModel, Tuple2<int, bool>>(
+      child: Selector<WalletDetailViewModel, Tuple2<int, bool>>(
         selector: (_, viewModel) => Tuple2(viewModel.txList.length, viewModel.isWalletSyncing),
         builder: (_, data, __) {
           final txCount = data.item1;
@@ -446,7 +446,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   void initState() {
     super.initState();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
-    _viewModel = TransactionListViewModel(
+    _viewModel = WalletDetailViewModel(
       widget.id,
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
@@ -635,7 +635,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       Navigator.pushNamed(
         context,
         '/send',
-        arguments: {'walletId': _viewModel.walletId, 'sendEntryPoint': SendEntryPoint.transactionList},
+        arguments: {'walletId': _viewModel.walletId, 'sendEntryPoint': SendEntryPoint.walletDetail},
       );
       return;
     }
@@ -662,7 +662,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       '/send',
       arguments: {
         'walletId': _viewModel.walletId,
-        'sendEntryPoint': SendEntryPoint.transactionList,
+        'sendEntryPoint': SendEntryPoint.walletDetail,
         'selectedUtxoList': List<UtxoState>.from(result),
       },
     );
@@ -687,7 +687,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   }
 
   Widget _buildbottomActionBar() {
-    return Selector<TransactionListViewModel, Tuple2<int, int>>(
+    return Selector<WalletDetailViewModel, Tuple2<int, int>>(
       selector: (_, viewModel) => Tuple2(viewModel.utxoCount, viewModel.availableUtxoCount),
       builder: (_, data, __) {
         final int utxoCount = data.item1;
@@ -845,7 +845,7 @@ class _TransactionListState extends State<TransactionList> {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<TransactionListViewModel, List<TransactionRecord>>(
+    return Selector<WalletDetailViewModel, List<TransactionRecord>>(
       selector: (_, viewModel) => viewModel.txList,
       builder: (_, txList, __) {
         if (!listEquals(_displayedTxList, txList) || !_deepEquals(_displayedTxList, txList)) {

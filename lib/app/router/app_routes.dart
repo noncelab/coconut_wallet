@@ -42,6 +42,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/renewal_wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_mnemonic_backup_screen.dart';
@@ -74,10 +75,13 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         ),
     '/receive-address': (context) => _buildScreenWithArgs(context, (args) => ReceiveAddressScreen(id: args['id'])),
     '/address-list': (context) => _buildScreenWithArgs(context, (args) => AddressListScreen(id: args['id'])),
-    '/transaction-list':
+    '/wallet-detail':
+        (context) =>
+            _buildScreenWithArgs(context, (args) => WalletDetailScreen(id: args['id'], entryPoint: args['entryPoint'])),
+    '/renewal-wallet-detail':
         (context) => _buildScreenWithArgs(
           context,
-          (args) => TransactionListScreen(id: args['id'], entryPoint: args['entryPoint']),
+          (args) => RenewalWalletDetailScreen(id: args['id'], entryPoint: args['entryPoint']),
         ),
     '/wallet-backup-data':
         (context) => _buildScreenWithArgs(

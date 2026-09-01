@@ -413,7 +413,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                           '/send',
                           arguments: {
                             'walletId': widget.id,
-                            'sendEntryPoint': SendEntryPoint.transactionList,
+                            'sendEntryPoint': SendEntryPoint.walletDetail,
                             'selectedUtxoList': currentSelectedUtxos,
                           },
                         );
