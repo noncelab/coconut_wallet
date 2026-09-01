@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -6,6 +7,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/connected/trezor_usb_connect_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
@@ -146,6 +148,7 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       final result = await _viewModel.addToWalletList();
       if (!mounted) return;
       if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
+        context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
         Navigator.pushReplacementNamed(
           context,
           '/wallet-detail',
