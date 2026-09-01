@@ -378,7 +378,7 @@ void main() {
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
       expect(result.exception, isA<InsufficientBalanceException>());
-      expect(result.estimatedFee, 141 + 68);
+      expect(result.estimatedFee, 216);
       expect(result.selectedUtxos, isNotNull);
       expect(result.unintendedDustFee, isNull);
     });

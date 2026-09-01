@@ -14,6 +14,11 @@ void main() {
   late UtxoRepository utxoRepository;
   SinglesigWalletItem testWalletItem = WalletMock.createSingleSigWalletItem();
   const int testWalletId = 1;
+  const lockedTxHash = '0000000000000000000000000000000000000000000000000000000000000031';
+  const unspentTxHash = '0000000000000000000000000000000000000000000000000000000000000032';
+  const reappearedUnspentTxHash = '0000000000000000000000000000000000000000000000000000000000000033';
+  const notReappearedTxHash = '0000000000000000000000000000000000000000000000000000000000000034';
+  const nowOutgoingTxHash = '0000000000000000000000000000000000000000000000000000000000000035';
 
   setUp(() async {
     realmManager = await setupTestRealmManager();
@@ -182,7 +187,7 @@ void main() {
             UtxoMock.createMockUtxo(
               walletId: testWalletId,
               address: testAddress,
-              transactionHash: 'locked_tx_hash',
+              transactionHash: lockedTxHash,
               status: UtxoStatus.locked,
             ),
           );
@@ -190,18 +195,18 @@ void main() {
             UtxoMock.createUnspentRealmUtxo(
               walletId: testWalletId,
               address: testAddress,
-              transactionHash: 'unspent_tx_hash',
+              transactionHash: unspentTxHash,
             ),
           );
         });
 
         final snapshot = utxoRepository.snapshotLockedUtxoIds(testWalletId);
 
-        expect(snapshot, {getUtxoId('locked_tx_hash', 0)});
+        expect(snapshot, {getUtxoId(lockedTxHash, 0)});
       });
 
       test('스냅샷 후 재발견된(unspent) UTXO만 다시 locked로 복원됨', () async {
-        final lockedUtxoIds = {getUtxoId('reappeared_unspent_tx_hash', 0), getUtxoId('not_reappeared_tx_hash', 0)};
+        final lockedUtxoIds = {getUtxoId(reappearedUnspentTxHash, 0), getUtxoId(notReappearedTxHash, 0)};
 
         realmManager.realm.write(() {
           // resync 이후 재동기화로 다시 unspent로 발견된 UTXO
@@ -209,7 +214,7 @@ void main() {
             UtxoMock.createUnspentRealmUtxo(
               walletId: testWalletId,
               address: testAddress,
-              transactionHash: 'reappeared_unspent_tx_hash',
+              transactionHash: reappearedUnspentTxHash,
             ),
           );
           // not_reappeared_tx_hash는 재동기화로 아예 재발견되지 않았다고 가정(row 없음)
@@ -217,26 +222,26 @@ void main() {
 
         await utxoRepository.restoreLockedUtxos(testWalletId, lockedUtxoIds);
 
-        final restored = utxoRepository.getUtxoState(testWalletId, getUtxoId('reappeared_unspent_tx_hash', 0));
+        final restored = utxoRepository.getUtxoState(testWalletId, getUtxoId(reappearedUnspentTxHash, 0));
         expect(restored!.status, UtxoStatus.locked);
       });
 
       test('스냅샷에 있어도 outgoing/incoming으로 재동기화된 UTXO는 강제로 잠그지 않음', () async {
-        final lockedUtxoIds = {getUtxoId('now_outgoing_tx_hash', 0)};
+        final lockedUtxoIds = {getUtxoId(nowOutgoingTxHash, 0)};
 
         realmManager.realm.write(() {
           realmManager.realm.add(
             UtxoMock.createOutgoingRealmUtxo(
               walletId: testWalletId,
               address: testAddress,
-              transactionHash: 'now_outgoing_tx_hash',
+              transactionHash: nowOutgoingTxHash,
             ),
           );
         });
 
         await utxoRepository.restoreLockedUtxos(testWalletId, lockedUtxoIds);
 
-        final utxo = utxoRepository.getUtxoState(testWalletId, getUtxoId('now_outgoing_tx_hash', 0));
+        final utxo = utxoRepository.getUtxoState(testWalletId, getUtxoId(nowOutgoingTxHash, 0));
         expect(utxo!.status, UtxoStatus.outgoing);
       });
 
@@ -246,14 +251,14 @@ void main() {
             UtxoMock.createUnspentRealmUtxo(
               walletId: testWalletId,
               address: testAddress,
-              transactionHash: 'unspent_tx_hash',
+              transactionHash: unspentTxHash,
             ),
           );
         });
 
         await utxoRepository.restoreLockedUtxos(testWalletId, {});
 
-        final utxo = utxoRepository.getUtxoState(testWalletId, getUtxoId('unspent_tx_hash', 0));
+        final utxo = utxoRepository.getUtxoState(testWalletId, getUtxoId(unspentTxHash, 0));
         expect(utxo!.status, UtxoStatus.unspent);
       });
     });

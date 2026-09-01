@@ -19,7 +19,7 @@ class UtxoMock {
     required String address,
     int amount = 1000000,
     DateTime? timestamp,
-    String transactionHash = 'mock_tx_hash',
+    String transactionHash = '0000000000000000000000000000000000000000000000000000000000000001',
     int index = 0,
     int addressIndex = 0,
     int blockHeight = 0,
@@ -50,7 +50,7 @@ class UtxoMock {
     required String address,
     int amount = 1000000,
     DateTime? timestamp,
-    String transactionHash = 'unspent_tx_hash',
+    String transactionHash = '0000000000000000000000000000000000000000000000000000000000000002',
     int index = 0,
     int addressIndex = 0,
     int blockHeight = 100, // 컨펌된 블록 높이
@@ -74,7 +74,7 @@ class UtxoMock {
     required String address,
     int amount = 1000000,
     DateTime? timestamp,
-    String transactionHash = 'outgoing_tx_hash',
+    String transactionHash = '0000000000000000000000000000000000000000000000000000000000000003',
     int index = 0,
     int addressIndex = 0,
     int blockHeight = 0, // 미확인 상태
@@ -100,7 +100,7 @@ class UtxoMock {
     required String address,
     int amount = 1000000,
     DateTime? timestamp,
-    String transactionHash = 'incoming_tx_hash',
+    String transactionHash = '0000000000000000000000000000000000000000000000000000000000000004',
     int index = 0,
     int addressIndex = 0,
     int blockHeight = 0, // 미확인 상태
@@ -124,7 +124,7 @@ class UtxoMock {
     required String address,
     int amount = 1000000,
     DateTime? timestamp,
-    String transactionHash = 'rbfable_tx_hash',
+    String transactionHash = '0000000000000000000000000000000000000000000000000000000000000005',
     int index = 0,
     int addressIndex = 0,
     required String spentByTransactionHash,
@@ -147,7 +147,7 @@ class UtxoMock {
   static UtxoState createMockUtxoState({
     String id = 'mock_utxo_id',
     int walletId = 1,
-    String transactionHash = 'mock_tx_hash',
+    String transactionHash = '0000000000000000000000000000000000000000000000000000000000000001',
     int index = 0,
     String address = 'mock_address',
     int amount = 1000,
@@ -172,7 +172,7 @@ class UtxoMock {
   static UtxoState createUnspentUtxo({
     String id = 'unspent_utxo_id',
     int walletId = 1,
-    String transactionHash = 'unspent_tx_hash',
+    String transactionHash = '0000000000000000000000000000000000000000000000000000000000000002',
     int index = 0,
   }) {
     return createMockUtxoState(
@@ -188,9 +188,9 @@ class UtxoMock {
   static UtxoState createOutgoingUtxo({
     String id = 'outgoing_utxo_id',
     int walletId = 1,
-    String transactionHash = 'outgoing_tx_hash',
+    String transactionHash = '0000000000000000000000000000000000000000000000000000000000000003',
     int index = 0,
-    String? spentByTransactionHash = 'spent_by_tx_hash',
+    String? spentByTransactionHash = '0000000000000000000000000000000000000000000000000000000000000006',
   }) {
     return createMockUtxoState(
       id: id,
@@ -206,7 +206,7 @@ class UtxoMock {
   static UtxoState createIncomingUtxo({
     String id = 'incoming_utxo_id',
     int walletId = 1,
-    String transactionHash = 'incoming_tx_hash',
+    String transactionHash = '0000000000000000000000000000000000000000000000000000000000000004',
     int index = 0,
   }) {
     return createMockUtxoState(
