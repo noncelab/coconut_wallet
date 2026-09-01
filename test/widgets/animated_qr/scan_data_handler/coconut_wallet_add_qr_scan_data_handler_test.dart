@@ -45,7 +45,7 @@ void main() {
       expect(wallet.scriptPathSeedInfos!.first.miniscript, _inheritanceMiniscript);
     });
 
-    test('legacy older Taproot JSON은 after로 변환한 뒤 완료한다', () {
+    test('legacy older Taproot JSON은 변환 검증 후 원본으로 완료한다', () {
       final handler = CoconutWalletAddQrScanDataHandler();
       final data = jsonEncode({
         'name': 'Legacy Taproot Wallet',
@@ -63,8 +63,8 @@ void main() {
 
       expect(handler.joinData(data), true);
       final wallet = handler.result as WatchOnlyWallet;
-      expect(wallet.descriptor, _oneParentDescriptor);
-      expect(wallet.scriptPathSeedInfos!.first.miniscript, _inheritanceMiniscript);
+      expect(wallet.descriptor, _legacyDescriptor);
+      expect(wallet.scriptPathSeedInfos!.first.miniscript, _legacyInheritanceMiniscript);
     });
 
     test('지원하지 않는 Taproot JSON은 완료하지 않는다', () {

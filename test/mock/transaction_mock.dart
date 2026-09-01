@@ -7,7 +7,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 
 class TransactionMock {
-  static const String testTxHash = 'test_tx_hash';
+  static const String testTxHash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
   /// 테스트용 기본 트랜잭션 객체 생성 메서드
   static TransactionRecord createMockTransactionRecord({
