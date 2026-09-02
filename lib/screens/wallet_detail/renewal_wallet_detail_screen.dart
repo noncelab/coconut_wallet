@@ -36,6 +36,7 @@ import 'package:coconut_wallet/widgets/features/transaction/card/transaction_ite
 import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -146,9 +147,9 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
           CoconutAppBarActionButton(
             onPressed: _openFaucetRequest,
             icon: SvgPicture.asset(
+              width: 20,
+              height: 20,
               FeatureUtxoIconPath.faucet,
-              width: 24,
-              height: 24,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
@@ -157,15 +158,15 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
           builder:
               (context, _) => CoconutAppBarActionButton(
                 onPressed: _viewModel.isRefreshing || _viewModel.isWalletSyncing ? null : _viewModel.refresh,
-                icon: WalletRefreshIcon(isRefreshing: _viewModel.isRefreshing, size: 24),
+                icon: WalletRefreshIcon(isRefreshing: _viewModel.isRefreshing, size: 20),
               ),
         ),
         CoconutAppBarActionButton(
           onPressed: _openWalletInfo,
           icon: SvgPicture.asset(
             FeatureSettingsIconPath.settings,
-            width: 24,
-            height: 24,
+            width: 20,
+            height: 20,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
           ),
         ),
@@ -257,53 +258,119 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
     return Consumer<RenewalWalletDetailViewModel>(
       builder: (context, viewModel, _) {
         final target = viewModel.targetSats;
-        final progress = viewModel.targetProgress;
+        final isTargetExceeded = viewModel.isTargetExceeded;
+        if (target == null && !viewModel.shouldShowTargetSuggestion) {
+          return const SizedBox.shrink();
+        }
 
         return ShrinkAnimationButton(
-          onPressed: _openWalletInfo,
+          key: ValueKey(target == null),
+          onPressed: () => _openWalletInfo(showTargetSetting: target == null),
           defaultColor: context.coconutColors.surface,
           pressedOverlayColor: context.coconutColors.surfacePressOverlay,
-          pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
+          pressedOverlayOpacity: target == null ? context.coconutColors.surfacePressOverlayOpacity : 0,
+          animationEndValue: target == null ? 0.97 : 1,
+          isActive: target == null,
           borderRadius: 20,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        target == null ? 'Stay humble, stack sats!' : t.wallet_info_screen.target_quantity,
-                        style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            target == null
+                                ? 'Stay humble, stack sats!'
+                                : isTargetExceeded
+                                ? t.wallet_info_screen.target_exceeded_title
+                                : t.wallet_info_screen.target_progress_title,
+                            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                          ),
+                        ),
+                        if (target != null && !isTargetExceeded)
+                          Text(
+                            '${viewModel.targetProgressPercent}%',
+                            style: CoconutTypography.body1_16_NumberBold.setColor(context.coconutColors.iconPrimary),
+                          ),
+                      ],
                     ),
-                    if (target != null)
+                    if (target == null) ...[
+                      CoconutLayout.spacing_150h,
                       Text(
-                        '${viewModel.targetProgressPercent}% / ${viewModel.currentUnit.displayBitcoinAmount(target, withUnit: true)}',
+                        t.wallet_info_screen.target_not_set_secondary,
+                        style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.secondaryText),
+                      ),
+                    ] else ...[
+                      CoconutLayout.spacing_100h,
+                      Text(
+                        '${viewModel.currentUnit.displayBitcoinAmount(viewModel.balance, withUnit: true)} / ${t.wallet_info_screen.target} ${viewModel.currentUnit.displayBitcoinAmount(target, withUnit: true)}',
                         style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
                       ),
+                      if (isTargetExceeded) ...[
+                        CoconutLayout.spacing_100h,
+                        Builder(
+                          builder: (context) {
+                            final amount = viewModel.currentUnit.displayBitcoinAmount(
+                              viewModel.targetExcessSats,
+                              withUnit: true,
+                            );
+                            final message = t.wallet_info_screen.target_exceeded_secondary(amount: amount);
+                            final amountStart = message.indexOf(amount);
+                            final baseStyle = CoconutTypography.body3_12_Number.setColor(
+                              context.coconutColors.secondaryText,
+                            );
+
+                            return Text.rich(
+                              TextSpan(
+                                style: baseStyle,
+                                children: [
+                                  TextSpan(text: message.substring(0, amountStart)),
+                                  TextSpan(text: amount, style: baseStyle.setColor(context.coconutColors.primary)),
+                                  TextSpan(text: message.substring(amountStart + amount.length)),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                      CoconutLayout.spacing_300h,
+                      _TargetProgressChart(
+                        progress: viewModel.targetProgress,
+                        history: viewModel.targetProgressHistory,
+                        targetLabel:
+                            '${t.wallet_info_screen.target} ${viewModel.currentUnit.displayBitcoinAmount(target, withUnit: true)}',
+                      ),
+                    ],
                   ],
                 ),
-                if (target == null) ...[
-                  CoconutLayout.spacing_100h,
-                  Text(
-                    t.wallet_info_screen.target_not_set_secondary,
-                    style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
-                  ),
-                ],
-                CoconutLayout.spacing_300h,
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 5,
-                    backgroundColor: context.coconutColors.pageIndicatorInactive,
-                    valueColor: AlwaysStoppedAnimation(context.coconutColors.pageIndicatorActive),
+              ),
+              if (target == null)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Semantics(
+                    button: true,
+                    label: t.close,
+                    child: InkWell(
+                      onTap: viewModel.dismissTargetSuggestion,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: SvgPicture.asset(
+                          CommonActionIconPath.closeBold,
+                          width: 12,
+                          height: 12,
+                          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         );
       },
@@ -490,11 +557,16 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
     Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': widget.id, 'entryPoint': widget.entryPoint});
   }
 
-  Future<void> _openWalletInfo() async {
+  Future<void> _openWalletInfo({bool showTargetSetting = false}) async {
     await Navigator.pushNamed(
       context,
       '/wallet-info',
-      arguments: {'id': widget.id, 'walletType': _viewModel.wallet.walletType, 'entryPoint': widget.entryPoint},
+      arguments: {
+        'id': widget.id,
+        'walletType': _viewModel.wallet.walletType,
+        'entryPoint': widget.entryPoint,
+        'showTargetSetting': showTargetSetting,
+      },
     );
     if (mounted) _viewModel.reloadWalletMetadata();
   }
@@ -556,6 +628,204 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
         walletItem: _viewModel.wallet,
       ),
     );
+  }
+}
+
+class _TargetProgressChart extends StatelessWidget {
+  static const _painterTop = 14.0;
+
+  final double progress;
+  final List<double> history;
+  final String targetLabel;
+
+  const _TargetProgressChart({required this.progress, required this.history, required this.targetLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 108,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final goalLineY = _TargetProgressChartPainter.calculateGoalLineY(
+            height: constraints.maxHeight - _painterTop,
+            values: history,
+            progress: progress,
+          );
+          const targetLabelHeight = 16.0;
+          const targetLabelGap = 4.0;
+          final targetLabelTop = (_painterTop + goalLineY - targetLabelHeight - targetLabelGap).clamp(
+            0.0,
+            double.infinity,
+          );
+
+          return Stack(
+            children: [
+              Positioned.fill(
+                top: _painterTop,
+                child: CustomPaint(
+                  painter: _TargetProgressChartPainter(
+                    values: history,
+                    progress: progress,
+                    guideColor: context.coconutColors.dividerStrong,
+                    inactiveColor: context.coconutColors.dividerStrong,
+                    gradientStartColor: context.coconutColors.targetProgressGradientStart,
+                    gradientEndColor: context.coconutColors.targetProgressGradientEnd,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: targetLabelTop,
+                left: 0,
+                child: Text(
+                  targetLabel,
+                  style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _TargetProgressChartPainter extends CustomPainter {
+  static const defaultGoalLineY = 16.0;
+  static const _topInset = 2.0;
+  static const _bottomInset = 4.0;
+
+  final List<double> values;
+  final double progress;
+  final Color guideColor;
+  final Color inactiveColor;
+  final Color gradientStartColor;
+  final Color gradientEndColor;
+
+  const _TargetProgressChartPainter({
+    required this.values,
+    required this.progress,
+    required this.guideColor,
+    required this.inactiveColor,
+    required this.gradientStartColor,
+    required this.gradientEndColor,
+  });
+
+  static double calculateGoalLineY({required double height, required List<double> values, required double progress}) {
+    final bottomY = height - _bottomInset;
+    var maxValue = progress;
+    for (final value in values) {
+      if (value > maxValue) maxValue = value;
+    }
+    return maxValue <= 1 ? defaultGoalLineY : bottomY - (bottomY - _topInset) / (maxValue * 1.08);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const horizontalInset = 2.0;
+    final bottomY = size.height - _bottomInset;
+    final safeValues = values.length < 2 ? <double>[0, progress] : values;
+    final goalLineY = calculateGoalLineY(height: size.height, values: safeValues, progress: progress);
+    final unitHeight = bottomY - goalLineY;
+
+    final dashPaint =
+        Paint()
+          ..color = guideColor
+          ..strokeWidth = 1.5
+          ..strokeCap = StrokeCap.round;
+    for (double x = horizontalInset; x < size.width; x += 9) {
+      canvas.drawLine(Offset(x, goalLineY), Offset((x + 4).clamp(0, size.width), goalLineY), dashPaint);
+    }
+
+    final points = <Offset>[];
+    for (var index = 0; index < safeValues.length; index++) {
+      final x = horizontalInset + (size.width - horizontalInset * 2) * index / (safeValues.length - 1);
+      final value = safeValues[index].clamp(0.0, double.infinity);
+      final y = bottomY - value * unitHeight;
+      points.add(Offset(x, y.clamp(_topInset, bottomY)));
+    }
+
+    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
+    for (var index = 1; index < points.length; index++) {
+      final previous = points[index - 1];
+      final current = points[index];
+      final controlX = (previous.dx + current.dx) / 2;
+      linePath.cubicTo(controlX, previous.dy, controlX, current.dy, current.dx, current.dy);
+    }
+
+    final gradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [gradientStartColor, gradientEndColor],
+    );
+    final isNotStarted = progress <= 0;
+    final shaderRect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final fillPath =
+        Path.from(linePath)
+          ..lineTo(points.last.dx, size.height)
+          ..lineTo(points.first.dx, size.height)
+          ..close();
+    if (!isNotStarted) {
+      canvas.saveLayer(shaderRect, Paint());
+      canvas.drawPath(
+        fillPath,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: gradient.colors.map((color) => color.withValues(alpha: 0.46)).toList(),
+          ).createShader(shaderRect),
+      );
+      canvas.drawRect(
+        shaderRect,
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Color(0xE6FFFFFF), Colors.transparent],
+            stops: [0, 0.3, 1],
+          ).createShader(shaderRect)
+          ..blendMode = BlendMode.dstIn,
+      );
+      canvas.restore();
+    }
+    final linePaint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round;
+    if (isNotStarted) {
+      linePaint
+        ..color = inactiveColor
+        ..strokeWidth = 2;
+    } else {
+      linePaint.shader = gradient.createShader(shaderRect);
+    }
+    canvas.drawPath(linePath, linePaint);
+
+    final end = points.last;
+    if (isNotStarted) {
+      return;
+    }
+    canvas.drawCircle(
+      end,
+      10,
+      Paint()
+        ..color = gradient.colors.last.withValues(alpha: 0.75)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+    canvas.drawCircle(end, 3, Paint()..color = gradient.colors.last.withValues(alpha: 0.3));
+    canvas.drawCircle(end, 2, Paint()..color = Colors.white);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TargetProgressChartPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.guideColor != guideColor ||
+        oldDelegate.inactiveColor != inactiveColor ||
+        oldDelegate.gradientStartColor != gradientStartColor ||
+        oldDelegate.gradientEndColor != gradientEndColor ||
+        !listEquals(oldDelegate.values, values);
   }
 }
 

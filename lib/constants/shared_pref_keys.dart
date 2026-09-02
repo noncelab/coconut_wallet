@@ -60,6 +60,9 @@ class SharedPrefKeys {
   /// 지갑별 목표 수량 (sats) - Map<walletId, targetSats> JSON
   static const String kWalletTargetSatsMap = "WALLET_TARGET_SATS_MAP";
 
+  /// 목표 수량 미설정 안내 카드 숨김 만료일 (지갑별)
+  static String walletTargetSuggestionHiddenUntil(int walletId) => 'WALLET_TARGET_SUGGESTION_HIDDEN_UNTIL_$walletId';
+
   // Electrum
   /// [DefaultElectrumServer.serverName] 또는 'CUSTOM'
   static const String kElectrumServerName = 'ELECTRUM_SERVER_NAME';

@@ -139,6 +139,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             entryPoint: args['entryPoint'],
             showMfpInput: args['showMfpInput'] ?? false,
             highlightMnemonicBackup: args['highlightMnemonicBackup'] ?? false,
+            showTargetSetting: args['showTargetSetting'] ?? false,
           ),
         ),
     '/broadcasting-complete':

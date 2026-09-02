@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -98,43 +99,45 @@ class BottomActionButton extends StatefulWidget {
 }
 
 class _BottomActionButtonState extends State<BottomActionButton> {
-  bool _isPressed = false;
-
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: widget.onTap,
-        onHighlightChanged: (isPressed) {
-          if (!widget.enabled || _isPressed == isPressed) return;
-          setState(() => _isPressed = isPressed);
-        },
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
-        child: SizedBox(
+    return ShrinkAnimationButton(
+      onPressed: widget.onTap,
+      isActive: widget.enabled,
+      animationEndValue: 0.94,
+      borderRadius: 12,
+      defaultColor: Colors.transparent,
+      disabledColor: Colors.transparent,
+      pressedOverlayOpacity: 0,
+      childBuilder: (_, isPressed) {
+        final foregroundColor = _foregroundColor(isPressed);
+        return SizedBox(
           width: double.infinity,
           height: widget.height ?? _defaultHeight,
-          child: AnimatedScale(
-            scale: _isPressed && widget.enabled ? 0.94 : 1,
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.easeOutCubic,
-            child: Center(
-              child:
-                  widget.buttonLayout == BottomActionButtonLayout.horizontal
-                      ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [_buildIcon(), SizedBox(width: widget.spacing), _buildLabel()],
-                      )
-                      : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [_buildIcon(), SizedBox(height: widget.spacing), _buildLabel()],
-                      ),
-            ),
+          child: Center(
+            child:
+                widget.buttonLayout == BottomActionButtonLayout.horizontal
+                    ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildIcon(foregroundColor),
+                        SizedBox(width: widget.spacing),
+                        _buildLabel(foregroundColor),
+                      ],
+                    )
+                    : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildIcon(foregroundColor),
+                        SizedBox(height: widget.spacing),
+                        _buildLabel(foregroundColor),
+                      ],
+                    ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -143,24 +146,24 @@ class _BottomActionButtonState extends State<BottomActionButton> {
           ? BottomActionButton.horizontalHeight
           : BottomActionButton.verticalHeight;
 
-  Color get _foregroundColor {
+  Color _foregroundColor(bool isPressed) {
     if (!widget.enabled) return context.coconutColors.mutedText;
-    return _isPressed ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
+    return isPressed ? context.coconutColors.secondaryText : context.coconutColors.primaryText;
   }
 
-  Widget _buildIcon() {
+  Widget _buildIcon(Color foregroundColor) {
     return SvgPicture.asset(
       widget.iconPath,
       width: widget.iconSize,
       height: widget.iconSize,
-      colorFilter: ColorFilter.mode(_foregroundColor, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(foregroundColor, BlendMode.srcIn),
     );
   }
 
-  Widget _buildLabel() {
+  Widget _buildLabel(Color foregroundColor) {
     return Text(
       widget.label,
-      style: widget.textStyle.copyWith(color: _foregroundColor),
+      style: widget.textStyle.copyWith(color: foregroundColor),
       textAlign: TextAlign.center,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,

@@ -22,6 +22,7 @@ import 'package:flutter/foundation.dart';
 class RenewalWalletDetailViewModel extends ChangeNotifier {
   static const int recentTransactionLimit = 3;
   static const _minimumRefreshIndicatorDuration = Duration(milliseconds: 700);
+  static const _targetSuggestionDismissDuration = Duration(days: 30);
 
   final int _walletId;
   final WalletProvider _walletProvider;
@@ -65,6 +66,12 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
   int get balance => _walletProvider.getWalletBalance(_walletId).total;
   int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
   int? get targetSats => _sharedPrefs.getWalletTargetSats(_walletId);
+  bool get shouldShowTargetSuggestion {
+    if (targetSats != null) return false;
+    final hiddenUntil = _sharedPrefs.getInt(SharedPrefKeys.walletTargetSuggestionHiddenUntil(_walletId));
+    return hiddenUntil == 0 || DateTime.now().millisecondsSinceEpoch >= hiddenUntil;
+  }
+
   List<TransactionRecord> get transactions => List.unmodifiable(_transactionProvider.txList);
   List<TransactionRecord> get recentTransactions =>
       List.unmodifiable(_transactionProvider.txList.take(recentTransactionLimit));
@@ -77,12 +84,45 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
   String get receiveAddressIndex => _walletProvider.getReceiveAddress(_walletId).derivationPath.split('/').last;
   double get targetProgress {
     final target = targetSats;
-    return target == null || target == 0 ? 0 : (balance / target).clamp(0.0, 1.0);
+    if (target == null || target == 0) return 0;
+    final progress = balance / target;
+    return progress < 0 ? 0 : progress;
   }
+
+  bool get isTargetExceeded => targetSats != null && balance > targetSats!;
+  int get targetExcessSats => isTargetExceeded ? balance - targetSats! : 0;
 
   String get targetProgressPercent {
     final percent = targetProgress * 100;
     return percent == percent.roundToDouble() ? percent.toStringAsFixed(0) : percent.toStringAsFixed(1);
+  }
+
+  /// 현재 잔액에서 거래를 역산해 만든 목표 달성률의 시간순 지점입니다.
+  List<double> get targetProgressHistory {
+    final target = targetSats;
+    final currentProgress = targetProgress;
+    if (target == null || target <= 0 || _transactionProvider.txList.isEmpty) return [0, currentProgress];
+
+    final newestFirst = [..._transactionProvider.txList]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    var historicalBalance = balance;
+    final newestFirstBalances = <int>[historicalBalance];
+    for (final transaction in newestFirst) {
+      switch (transaction.transactionType) {
+        case TransactionType.received:
+          historicalBalance -= transaction.amount.abs();
+          break;
+        case TransactionType.sent:
+        case TransactionType.self:
+          historicalBalance += transaction.amount.abs();
+          break;
+        case TransactionType.unknown:
+          continue;
+      }
+      historicalBalance = historicalBalance.clamp(0, 1 << 62);
+      newestFirstBalances.add(historicalBalance);
+    }
+
+    return newestFirstBalances.reversed.map((value) => (value / target).clamp(0.0, double.infinity)).toList(growable: false);
   }
 
   void toggleUnit() {
@@ -179,6 +219,14 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
   }
 
   void reloadWalletMetadata() => notifyListeners();
+
+  Future<void> dismissTargetSuggestion() async {
+    await _sharedPrefs.setInt(
+      SharedPrefKeys.walletTargetSuggestionHiddenUntil(_walletId),
+      DateTime.now().add(_targetSuggestionDismissDuration).millisecondsSinceEpoch,
+    );
+    if (!_isDisposed) notifyListeners();
+  }
 
   void _handleWalletChanged() {
     if (_walletProvider.walletItemList.any((wallet) => wallet.id == _walletId)) {

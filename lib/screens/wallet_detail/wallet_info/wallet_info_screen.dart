@@ -56,6 +56,7 @@ class WalletInfoScreen extends StatefulWidget {
   final String entryPoint;
   final bool showMfpInput;
   final bool highlightMnemonicBackup;
+  final bool showTargetSetting;
   const WalletInfoScreen({
     super.key,
     required this.id,
@@ -63,6 +64,7 @@ class WalletInfoScreen extends StatefulWidget {
     required this.entryPoint,
     this.showMfpInput = false,
     this.highlightMnemonicBackup = false,
+    this.showTargetSetting = false,
   });
 
   @override
@@ -142,6 +144,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   double _tooltipTopPadding = 0;
   Timer? _tooltipTimer;
   int _tooltipRemainingTime = 0;
+  bool _hasScheduledTargetSetting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -156,6 +159,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           ),
       child: Consumer<WalletInfoViewModel>(
         builder: (innerContext, viewModel, child) {
+          _scheduleTargetSettingBottomSheet(innerContext, viewModel);
           return Stack(
             children: [
               GestureDetector(
@@ -414,6 +418,17 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         },
       ),
     );
+  }
+
+  void _scheduleTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
+    if (!widget.showTargetSetting || _hasScheduledTargetSetting) return;
+    _hasScheduledTargetSetting = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(seconds: 1));
+      if (!mounted || !context.mounted) return;
+      _showTargetSettingBottomSheet(context, viewModel);
+    });
   }
 
   String _getTooltipText(WalletInfoViewModel viewModel) {
