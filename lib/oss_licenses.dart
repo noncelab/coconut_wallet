@@ -61,6 +61,7 @@ const allDependencies = <Package>[
   _fake_async,
   _ffi,
   _file,
+  _file_picker,
   _fixnum,
   _flat_buffers,
   _flutter,
@@ -229,6 +230,7 @@ const dependencies = <Package>[
   _device_info_plus,
   _dio,
   _equatable,
+  _file_picker,
   _flutter,
   _flutter_dotenv,
   _flutter_secure_storage,
@@ -3800,6 +3802,50 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   isMarkdown: false,
   isSdk: false,
   dependencies: [PackageRef('meta'), PackageRef('path')],
+);
+
+/// file_picker 8.3.7
+const _file_picker = Package(
+  name: 'file_picker',
+  description:
+      'A package that allows you to use a native file explorer to pick single or multiple absolute file paths, with extension filtering support.',
+  homepage: 'https://github.com/miguelpruivo/plugins_flutter_file_picker',
+  repository: 'https://github.com/miguelpruivo/flutter_file_picker',
+  authors: [],
+  version: '8.3.7',
+  license: '''MIT License
+
+Copyright (c) 2018 Miguel Ruivo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.''',
+  isMarkdown: false,
+  isSdk: false,
+  dependencies: [
+    PackageRef('flutter'),
+    PackageRef('flutter_plugin_android_lifecycle'),
+    PackageRef('plugin_platform_interface'),
+    PackageRef('ffi'),
+    PackageRef('path'),
+    PackageRef('win32'),
+    PackageRef('cross_file'),
+    PackageRef('web'),
+  ],
 );
 
 /// fixnum 1.1.1
