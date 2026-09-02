@@ -33,6 +33,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/badge/wallet_type_badge.dart';
 import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
 import 'package:flutter/cupertino.dart';
@@ -141,6 +142,15 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
     return CoconutAppBar.build(
       context: context,
       title: '',
+      customTitle:
+          _viewModel.wallet.hasLocalKey
+              ? const WalletTypeBadge(
+                isHotWallet: true,
+                iconSize: 12,
+                padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                textStyle: CoconutTypography.body3_12,
+              )
+              : null,
       backgroundColor: context.coconutColors.background,
       actionButtonList: [
         if (NetworkType.currentNetworkType.isTestnet)

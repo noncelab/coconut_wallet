@@ -136,7 +136,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           builder:
               (_, _) => CoconutAppBarActionButton(
                 onPressed: _isPullToRefreshing || _viewModel.isWalletSyncing ? null : _onRefresh,
-                icon: WalletRefreshIcon(isRefreshing: _isPullToRefreshing, size: 24),
+                icon: WalletRefreshIcon(isRefreshing: _isPullToRefreshing, size: 20),
               ),
         ),
       ],
