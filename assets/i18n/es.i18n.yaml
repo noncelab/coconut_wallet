@@ -1162,6 +1162,8 @@ wallet_info_screen:
     disconnect_confirm_description: "Se desconectará el dispositivo actual.\nNecesitará volver a conectar para la próxima firma."
 wallet_signer_section:
   title: "Método de firma"
+  view_details: "Ver detalles"
+  collapse: "Contraer"
   segmented_control:
     parent_key: "Con clave padre"
     child_key: "Con clave hijo"

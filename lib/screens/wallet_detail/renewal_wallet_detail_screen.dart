@@ -872,11 +872,13 @@ class _SectionHeader extends StatelessWidget {
                     actionEnabled ? context.coconutColors.secondaryText : context.coconutColors.mutedText,
                   ),
                 ),
-                const SizedBox(width: 2),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 16,
-                  color: actionEnabled ? context.coconutColors.iconSecondary : context.coconutColors.iconDisabled,
+                const SizedBox(width: 8),
+                SvgPicture.asset(
+                  CommonNavigationIconPath.arrowRight,
+                  colorFilter: ColorFilter.mode(
+                    actionEnabled ? context.coconutColors.iconSecondary : context.coconutColors.iconDisabled,
+                    BlendMode.srcIn,
+                  ),
                 ),
               ],
             ),

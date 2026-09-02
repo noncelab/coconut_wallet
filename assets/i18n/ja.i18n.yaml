@@ -1159,6 +1159,8 @@ wallet_info_screen:
     disconnect_confirm_description: "現在接続中のデバイスを解除します。\n次回署名時に再接続が必要です。"
 wallet_signer_section:
   title: "署名方式"
+  view_details: "詳細を見る"
+  collapse: "閉じる"
   segmented_control:
     parent_key: "親キーで"
     child_key: "子キーで"

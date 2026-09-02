@@ -1101,6 +1101,8 @@ wallet_info_screen:
     disconnect_confirm_description: "Die aktuelle Geräteverbindung wird getrennt.\nBeim nächsten Signiervorgang ist eine erneute Verbindung erforderlich."
 wallet_signer_section:
   title: "Signiermethode"
+  view_details: "Details anzeigen"
+  collapse: "Einklappen"
   segmented_control:
     parent_key: "Mit übergeordnetem Schlüssel"
     child_key: "Mit untergeordnetem Schlüssel"

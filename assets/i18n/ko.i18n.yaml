@@ -1174,6 +1174,8 @@ wallet_info_screen:
     disconnect_confirm_description: "현재 연결된 기기를 해제합니다.\n다음 서명 시 다시 연결이 필요합니다."
 wallet_signer_section:
   title: "서명 방식"
+  view_details: "자세히 보기"
+  collapse: "접기"
   segmented_control:
     parent_key: "부모 키로"
     child_key: "자식 키로"

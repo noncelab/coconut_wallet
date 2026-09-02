@@ -1170,6 +1170,8 @@ wallet_info_screen:
     disconnect_confirm_description: "Disconnect the current device.\nYou will need to reconnect for the next signing."
 wallet_signer_section:
   title: "Signing Method"
+  view_details: "View details"
+  collapse: "Collapse"
   segmented_control:
     parent_key: "With Parent Key"
     child_key: "With Child Key"
