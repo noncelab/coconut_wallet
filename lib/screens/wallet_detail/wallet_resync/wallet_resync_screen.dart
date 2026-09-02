@@ -544,6 +544,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
     switch (_connectionStatus) {
       case NodeConnectionStatus.failed:
       case NodeConnectionStatus.networkMismatch:
+      case NodeConnectionStatus.untrustedCertificate:
         return SvgPicture.asset(
           CustomIcons.triangleWarning,
           height: 20,
@@ -565,6 +566,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
   String _connectionAlertText() {
     switch (_connectionStatus) {
       case NodeConnectionStatus.failed:
+      case NodeConnectionStatus.untrustedCertificate:
         return t.wallet_resync_screen.confirm.connection_alert.failed;
       case NodeConnectionStatus.networkMismatch:
         return t.wallet_resync_screen.confirm.connection_alert.network_mismatch;

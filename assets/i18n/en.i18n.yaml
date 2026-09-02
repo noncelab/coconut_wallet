@@ -826,9 +826,13 @@ settings_screen:
       network_mismatch: "Can't connect — different network"
       connecting: "Connecting..."
       connected: "Connected"
+      untrusted_certificate: "Untrusted certificate"
     popup:
       delete_server_info: "Delete Server Info"
       delete_server_info_description: "Are you sure you want to delete the saved server information?"
+      untrusted_certificate_title: "Certificate Not Trusted"
+      untrusted_certificate_description: "This server does not use a certificate signed by a trusted certificate authority (CA). Only continue if you personally operate this server and the fingerprint below is correct. Otherwise, do not connect.\n\nCertificate Fingerprint (SHA-256)\n$fingerprint"
+      trust_and_continue: "Trust & Continue"
   block_explorer:
     default_explorer: "Default Explorer"
     custom_explorer: "Custom Explorer"
@@ -1307,6 +1311,7 @@ errors:
   storage_write_error: "Failed to save data to storage."
   network_error: "Cannot connect to network. Please check your connection status."
   node_connection_error: "Failed to connect to Bitcoin node."
+  untrusted_certificate_error: "The server's certificate could not be trusted."
   fetch_wallet_error: "Failed to fetch wallet."
   wallet_sync_failed_error: "Failed to load wallet information from network"
   fetch_balance_error: "Failed to fetch balance."

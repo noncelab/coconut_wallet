@@ -27,6 +27,8 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/services/network/socket/socket_factory.dart';
+import 'package:coconut_wallet/utils/certificate_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
 
@@ -204,6 +206,7 @@ class NodeProvider extends ChangeNotifier {
   String get host => _electrumServer.host;
   int get port => _electrumServer.port;
   bool get ssl => _electrumServer.ssl;
+  String? get pinnedCertFingerprint => _electrumServer.pinnedCertFingerprint;
   bool get isServerChanging => _isServerChanging;
   bool get hasConnectionError => _hasConnectionError;
   int get currentBlockHeight => _currentBlockNotifier.value?.height ?? 0;
@@ -383,7 +386,7 @@ class NodeProvider extends ChangeNotifier {
     try {
       _createNewCompleter();
       _createStateManager();
-      await _isolateManager.initialize(host, port, ssl, _networkType);
+      await _isolateManager.initialize(host, port, ssl, _networkType, pinnedCertFingerprint);
       unawaited(_recordCurrentServerGenesisHash());
 
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
@@ -694,6 +697,9 @@ class NodeProvider extends ChangeNotifier {
     } catch (e) {
       Logger.error('NodeProvider: 서버 연결 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
       await electrumService.close();
+      if (electrumService.lastConnectionFailedDueToUntrustedCertificate) {
+        return Result.failure(ErrorCodes.untrustedCertificateError);
+      }
       return Result.failure(ErrorCodes.networkError);
     } finally {
       await electrumService.close();
@@ -704,10 +710,29 @@ class NodeProvider extends ChangeNotifier {
     final isOnionHost = server.host.trim().toLowerCase().endsWith('.onion');
     final connectionTimeout = isOnionHost ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
 
-    await service.connect(server.host, server.port, ssl: server.ssl).timeout(connectionTimeout);
+    await service
+        .connect(server.host, server.port, ssl: server.ssl, pinnedCertFingerprint: server.pinnedCertFingerprint)
+        .timeout(connectionTimeout);
 
     if (service.connectionStatus != SocketConnectionStatus.connected) {
       throw Exception('Socket connection failed');
+    }
+  }
+
+  /// 커스텀 서버가 제시하는 인증서의 SHA-256 지문을 확인만 하기 위한 임시 연결
+  /// 실제 프로토콜 통신은 하지 않으며, TOFU 확인 UI에서만 사용한다.
+  Future<Result<String>> probeCertificateFingerprint(ElectrumServer server) async {
+    try {
+      final cert = await DefaultSocketFactory().peekCertificate(server.host, server.port).timeout(kIsolateInitTimeout);
+
+      if (cert == null) {
+        return Result.failure(ErrorCodes.networkError);
+      }
+
+      return Result.success(CertificateUtil.sha256Fingerprint(cert));
+    } catch (e) {
+      Logger.error('NodeProvider: 인증서 확인 실패 - ${server.host}:${server.port}: $e');
+      return Result.failure(ErrorCodes.networkError);
     }
   }
 

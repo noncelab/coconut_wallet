@@ -817,9 +817,13 @@ settings_screen:
       network_mismatch: "No se puede conectar: red incompatible"
       connecting: "Conectando..."
       connected: "Conectado"
+      untrusted_certificate: "Certificado no confiable"
     popup:
       delete_server_info: "Eliminar información del servidor"
       delete_server_info_description: "¿Estás seguro de querer eliminar la información del servidor guardada?"
+      untrusted_certificate_title: "Certificado no confiable"
+      untrusted_certificate_description: "Este servidor no utiliza un certificado firmado por una autoridad de certificación (CA) de confianza. Continúa solo si tú mismo operas este servidor y la huella digital a continuación es correcta. De lo contrario, no te conectes.\n\nHuella digital del certificado (SHA-256)\n$fingerprint"
+      trust_and_continue: "Confiar y continuar"
   block_explorer:
     default_explorer: "Explorador predeterminado"
     custom_explorer: "Explorador personalizado"
@@ -1298,7 +1302,8 @@ errors:
   storage_write_error: "Fallo al guardar datos en el almacenamiento."
   network_error: "No se puede conectar a la red. Por favor, verifique su estado de conexión."
   node_connection_error: "Fallo al conectar a la red Bitcoin."
-  fetch_wallet_error: "Fallo al obtener la billetera." 
+  untrusted_certificate_error: "No se pudo confiar en el certificado del servidor."
+  fetch_wallet_error: "Fallo al obtener la billetera."
   wallet_sync_failed_error: "Fallo al cargar la información de la billetera desde la red" 
   fetch_balance_error: "Fallo al obtener el saldo."
   fetch_transaction_list_error: "Fallo al obtener el historial de transacciones."

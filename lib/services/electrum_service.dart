@@ -33,7 +33,7 @@ class ElectrumService {
   }
 
   /// 연결 시도 후 성공/실패를 bool로 반환
-  Future<bool> connect(String host, int port, {bool ssl = true}) async {
+  Future<bool> connect(String host, int port, {bool ssl = true, String? pinnedCertFingerprint}) async {
     // // 이전 타이머 정리
     // _pingTimer?.cancel();
 
@@ -45,7 +45,12 @@ class ElectrumService {
     };
 
     try {
-      final isConnected = await _socketManager.connect(host, port, ssl: ssl);
+      final isConnected = await _socketManager.connect(
+        host,
+        port,
+        ssl: ssl,
+        pinnedCertFingerprint: pinnedCertFingerprint,
+      );
 
       if (!isConnected || _socketManager.connectionStatus != SocketConnectionStatus.connected) {
         return false;
@@ -365,4 +370,7 @@ class ElectrumService {
 
   /// connectionStatus getter 추가
   SocketConnectionStatus get connectionStatus => _socketManager.connectionStatus;
+
+  /// 직전 connect() 시도가 신뢰할 수 없는 인증서(HandshakeException) 때문에 실패했는지 여부
+  bool get lastConnectionFailedDueToUntrustedCertificate => _socketManager.lastConnectionFailedDueToUntrustedCertificate;
 }

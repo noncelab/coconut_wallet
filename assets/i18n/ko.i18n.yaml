@@ -829,9 +829,13 @@ settings_screen:
       network_mismatch: "네트워크가 달라 연결할 수 없어요"
       connecting: "연결 중입니다"
       connected: "연결되었습니다"
+      untrusted_certificate: "신뢰할 수 없는 인증서예요"
     popup:
       delete_server_info: "서버 정보 삭제"
       delete_server_info_description: "저장된 서버 정보를 삭제하시겠어요?"
+      untrusted_certificate_title: "인증서를 신뢰할 수 없어요"
+      untrusted_certificate_description: "이 서버는 신뢰할 수 있는 인증기관(CA)의 인증서를 사용하지 않아요. 본인이 직접 운영하는 서버가 맞고 아래 지문이 정확하다면 신뢰하고 계속할 수 있어요. 그렇지 않다면 연결하지 마세요.\n\n인증서 지문 (SHA-256)\n$fingerprint"
+      trust_and_continue: "신뢰하고 계속"
   block_explorer:
     default_explorer: "기본 익스플로러"
     custom_explorer: "직접 입력"
@@ -1313,6 +1317,7 @@ errors:
   storage_write_error: "저장소에 데이터를 저장하는데 실패했습니다."
   network_error: "네트워크에 연결할 수 없어요. 연결 상태를 확인해 주세요."
   node_connection_error: "비트코인 노드와 연결하는데 실패했습니다."
+  untrusted_certificate_error: "서버 인증서를 신뢰할 수 없습니다."
   fetch_wallet_error: "지갑을 가져오는데 실패했습니다."
   wallet_sync_failed_error: "네트워크에서 지갑 정보 불러오기 실패"
   fetch_balance_error: "잔액 조회를 실패했습니다."

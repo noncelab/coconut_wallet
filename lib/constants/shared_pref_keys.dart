@@ -63,6 +63,7 @@ class SharedPrefKeys {
   static const String kCustomElectrumHost = 'CUSTOM_ELECTRUM_HOST';
   static const String kCustomElectrumPort = 'CUSTOM_ELECTRUM_PORT';
   static const String kCustomElectrumIsSsl = 'CUSTOM_ELECTRUM_IS_SSL';
+  static const String kCustomElectrumCertFingerprint = 'CUSTOM_ELECTRUM_CERT_FINGERPRINT';
   static const String kUserServers = 'USER_SERVERS';
   static const String kBaselineGenesisHash = 'BASELINE_GENESIS_HASH';
 

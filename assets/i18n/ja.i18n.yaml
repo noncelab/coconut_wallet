@@ -813,9 +813,13 @@ settings_screen:
       network_mismatch: "ネットワークが異なるため接続できません"
       connecting: "接続中..."
       connected: "接続済み"
+      untrusted_certificate: "信頼できない証明書です"
     popup:
       delete_server_info: "サーバー情報を削除"
       delete_server_info_description: "保存されたサーバー情報を削除してもよろしいですか？"
+      untrusted_certificate_title: "証明書を信頼できません"
+      untrusted_certificate_description: "このサーバーは信頼できる認証局（CA）によって署名された証明書を使用していません。ご自身でこのサーバーを運用しており、下記のフィンガープリントが正しい場合のみ続行してください。そうでない場合は接続しないでください。\n\n証明書フィンガープリント（SHA-256）\n$fingerprint"
+      trust_and_continue: "信頼して続行"
   block_explorer:
     default_explorer: "デフォルトエクスプローラー"
     custom_explorer: "カスタムエクスプローラー"
@@ -1295,6 +1299,7 @@ errors:
   storage_write_error: "ストレージへのデータ保存に失敗しました。"
   network_error: "ネットワークに接続できません。接続状態を確認してください。"
   node_connection_error: "ビットコインノードへの接続に失敗しました。"
+  untrusted_certificate_error: "サーバーの証明書を信頼できませんでした。"
   fetch_wallet_error: "ウォレットの取得に失敗しました。"
   wallet_sync_failed_error: "ネットワークからウォレット情報の読み込みに失敗"
   fetch_balance_error: "残高の取得に失敗しました。"

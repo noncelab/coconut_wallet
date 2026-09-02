@@ -30,11 +30,16 @@ class ElectrumServerViewModel extends ChangeNotifier {
   bool _isPortOutOfRangeError = false; // 1 ~ 65535 포트 범위
   bool _isDefaultServerMenuVisible = false; // 기본 서버 메뉴 visibility
 
+  // 인증서를 신뢰할 수 없는 경우, 사용자 확인이 필요한 커스텀 서버와 확인창에 보여줄 지문
+  ElectrumServer? _pendingUntrustedServer;
+  String? _pendingCertificateFingerprint;
+
   NodeConnectionStatus get nodeConnectionStatus => _nodeConnectionStatus;
   Map<ElectrumServer, NodeConnectionStatus> get connectionStatusMap => _connectionStatusMap;
   bool get isServerAddressFormatError => _isServerAddressFormatError;
   bool get isPortOutOfRangeError => _isPortOutOfRangeError;
   bool get isDefaultServerMenuVisible => _isDefaultServerMenuVisible;
+  String? get pendingCertificateFingerprint => _pendingCertificateFingerprint;
 
   ElectrumServerViewModel(this._nodeProvider, this._electrumServerProvider) {
     // 현재 설정된 서버 정보 가져오기
@@ -191,8 +196,16 @@ class ElectrumServerViewModel extends ChangeNotifier {
     setNodeConnectionStatus(NodeConnectionStatus.connecting);
 
     if (!isSameServer) {
+      // 이전에 이미 핀닝된 커스텀 서버라면 저장된 지문을 그대로 사용해 매번 다시 신뢰 확인창을 띄우지 않음
+      newServer = _withKnownFingerprint(newServer);
+
       final connectionResult = await _nodeProvider.checkServerConnection(newServer);
       if (connectionResult.isFailure) {
+        // 커스텀 서버에서 인증서를 신뢰할 수 없는 경우에만 지문 확인 절차 진행
+        if (connectionResult.error.code == ErrorCodes.untrustedCertificateError.code && !_isDefaultServer(newServer)) {
+          await _beginUntrustedCertificateFlow(newServer);
+          return false;
+        }
         setNodeConnectionStatus(NodeConnectionStatus.failed);
         return false;
       }
@@ -210,11 +223,27 @@ class ElectrumServerViewModel extends ChangeNotifier {
     }
 
     _setCurrentServer(newServer);
-    _electrumServerProvider.setCustomElectrumServer(newServer.host, newServer.port, newServer.ssl);
 
-    // 연결된 서버가 default 서버에도 없고, 사용자 서버에도 없으면 사용자 서버 추가
-    if (!_isDefaultServer(newServer) && !_isUserServer(newServer)) {
-      await _electrumServerProvider.addUserServer(newServer.host, newServer.port, newServer.ssl);
+    // 기본 서버는 host/port/ssl을 리터럴로 얼리지 않고 serverName 참조로 저장한다.
+    // 이후 해당 기본 서버의 host나 지문이 바뀌어도 항상 최신 값을 따라간다.
+    final matchedDefault = DefaultElectrumServer.findMatching(newServer.host, newServer.port, newServer.ssl);
+    if (matchedDefault != null) {
+      await _electrumServerProvider.setSelectedDefaultServer(matchedDefault.serverName);
+    } else {
+      await _electrumServerProvider.setCustomElectrumServer(
+        newServer.host,
+        newServer.port,
+        newServer.ssl,
+        pinnedCertFingerprint: newServer.pinnedCertFingerprint,
+      );
+
+      // 커스텀 서버는 사용자 서버 목록에도 (지문 포함) 최신 상태로 저장한다.
+      await _electrumServerProvider.addUserServer(
+        newServer.host,
+        newServer.port,
+        newServer.ssl,
+        pinnedCertFingerprint: newServer.pinnedCertFingerprint,
+      );
       await _loadUserServers();
     }
 
@@ -224,31 +253,67 @@ class ElectrumServerViewModel extends ChangeNotifier {
     return true;
   }
 
+  /// 인증서를 신뢰할 수 없는 커스텀 서버의 지문을 확인하고, TOFU 확인창(untrustedCertificate 상태)으로 전환한다.
+  Future<void> _beginUntrustedCertificateFlow(ElectrumServer server) async {
+    final probeResult = await _nodeProvider.probeCertificateFingerprint(server);
+    if (probeResult.isFailure) {
+      setNodeConnectionStatus(NodeConnectionStatus.failed);
+      return;
+    }
+
+    _pendingUntrustedServer = server;
+    _pendingCertificateFingerprint = probeResult.value;
+    setNodeConnectionStatus(NodeConnectionStatus.untrustedCertificate);
+  }
+
+  /// 사용자가 확인창에서 지문을 확인하고 신뢰를 승인했을 때 호출한다.
+  Future<bool> trustPendingCertificateAndConnect() async {
+    final server = _pendingUntrustedServer;
+    final fingerprint = _pendingCertificateFingerprint;
+    if (server == null || fingerprint == null) {
+      return false;
+    }
+
+    _pendingUntrustedServer = null;
+    _pendingCertificateFingerprint = null;
+
+    return changeServerAndUpdateState(server.copyWith(pinnedCertFingerprint: fingerprint));
+  }
+
+  /// 사용자가 확인창에서 신뢰를 거부했을 때 호출한다.
+  void cancelPendingCertificateTrust() {
+    _pendingUntrustedServer = null;
+    _pendingCertificateFingerprint = null;
+    setNodeConnectionStatus(NodeConnectionStatus.failed);
+  }
+
+  /// 동일한 host/port/ssl로 이미 신뢰 승인되어 저장된 사용자 서버가 있으면 그 지문을 붙여서 반환한다.
+  ElectrumServer _withKnownFingerprint(ElectrumServer server) {
+    if (server.pinnedCertFingerprint != null) return server;
+
+    final known = _findUserServer(server);
+    if (known == null || known.pinnedCertFingerprint == null) return server;
+
+    return server.copyWith(pinnedCertFingerprint: known.pinnedCertFingerprint);
+  }
+
   Future<void> removeUserServer(ElectrumServer server) async {
     await _electrumServerProvider.removeUserServer(server);
     await _loadUserServers();
   }
 
   bool _isDefaultServer(ElectrumServer server) {
-    final networkType = NetworkType.currentNetworkType;
-    final defaultServers =
-        networkType == NetworkType.regtest
-            ? DefaultElectrumServer.regtestServers
-            : networkType == NetworkType.testnet
-            ? DefaultElectrumServer.testnetServers
-            : DefaultElectrumServer.mainnetServers;
-
-    return defaultServers.any(
-      (defaultServer) =>
-          defaultServer.host == server.host && defaultServer.port == server.port && defaultServer.ssl == server.ssl,
-    );
+    return DefaultElectrumServer.findMatching(server.host, server.port, server.ssl) != null;
   }
 
-  /// 사용자 서버 목록에 포함되어 있는지 확인
-  bool _isUserServer(ElectrumServer server) {
-    return _userServers.any(
-      (userServer) => userServer.host == server.host && userServer.port == server.port && userServer.ssl == server.ssl,
-    );
+  /// 사용자 서버 목록에서 동일한 host/port/ssl을 가진 항목을 찾는다.
+  ElectrumServer? _findUserServer(ElectrumServer server) {
+    for (final userServer in _userServers) {
+      if (userServer.host == server.host && userServer.port == server.port && userServer.ssl == server.ssl) {
+        return userServer;
+      }
+    }
+    return null;
   }
 
   /// 서버 연결 테스트 수행

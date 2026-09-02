@@ -33,6 +33,7 @@ class ErrorCodes {
   static AppError nodeIsolateError = AppError('1301', t.errors.node_unknown);
   static AppError broadcastError = AppError('1302', t.errors.broadcast_error);
   static AppError chainMismatchError = AppError('1303', t.errors.chain_mismatch_error);
+  static AppError untrustedCertificateError = AppError('1304', t.errors.untrusted_certificate_error);
   static AppError broadcastErrorWithMessage(String message) => ErrorCodes.withMessage(broadcastError, message);
   static AppError invalidTransactionDraftId = AppError('1400', t.errors.transaction_draft.invalid_id);
   static AppError transactionDraftAlreadyExists = AppError(

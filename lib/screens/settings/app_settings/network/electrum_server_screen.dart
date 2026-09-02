@@ -43,6 +43,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   Size _defaultServerButtonSize = const Size(0, 0);
 
   late ElectrumServerViewModel _viewModel;
+  bool _isUntrustedCertificateDialogShowing = false;
 
   @override
   void initState() {
@@ -67,16 +68,66 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           _viewModel.setDefaultServerMenuVisible(true);
         }
       });
+
+      _viewModel.addListener(_onViewModelChanged);
     });
   }
 
   @override
   void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
     _serverAddressController.dispose();
     _portController.dispose();
     serverAddressFocusNode.dispose();
     portFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onViewModelChanged() {
+    if (_viewModel.nodeConnectionStatus == NodeConnectionStatus.untrustedCertificate &&
+        _viewModel.pendingCertificateFingerprint != null) {
+      _showUntrustedCertificateDialog();
+    }
+  }
+
+  void _showUntrustedCertificateDialog() {
+    if (_isUntrustedCertificateDialogShowing) return;
+    _isUntrustedCertificateDialogShowing = true;
+
+    final fingerprint = _viewModel.pendingCertificateFingerprint ?? '';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.settings_screen.electrum_server.popup.untrusted_certificate_title,
+          description: t.settings_screen.electrum_server.popup.untrusted_certificate_description(
+            fingerprint: fingerprint,
+          ),
+          onTapRight: () async {
+            final navigator = Navigator.of(dialogContext);
+            final success = await _viewModel.trustPendingCertificateAndConnect();
+            if (!mounted) return;
+            navigator.pop();
+            if (success) {
+              vibrateLight();
+            } else {
+              vibrateLightDouble();
+            }
+          },
+          onTapLeft: () {
+            _viewModel.cancelPendingCertificateTrust();
+            Navigator.of(dialogContext).pop();
+          },
+          leftButtonText: t.cancel,
+          rightButtonText: t.settings_screen.electrum_server.popup.trust_and_continue,
+        );
+      },
+    ).then((_) {
+      _isUntrustedCertificateDialogShowing = false;
+    });
   }
 
   void _unFocus() {
@@ -96,11 +147,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   }
 
   void _onSave() async {
-    final newServer = ElectrumServer.custom(
-      _serverAddressController.text,
-      int.parse(_portController.text),
-      _currentSslState,
-    );
+    final host = _serverAddressController.text;
+    final port = int.parse(_portController.text);
+
+    // 텍스트 필드 값이 기본 서버와 일치하면 그 서버의 pinnedCertFingerprint를 그대로 쓴다
+    final matchedDefault = DefaultElectrumServer.findMatching(host, port, _currentSslState);
+    final newServer = matchedDefault?.server ?? ElectrumServer.custom(host, port, _currentSslState);
 
     final success = await _viewModel.changeServerAndUpdateState(newServer);
 
@@ -726,6 +778,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     switch (status) {
       case NodeConnectionStatus.failed:
       case NodeConnectionStatus.networkMismatch:
+      case NodeConnectionStatus.untrustedCertificate:
         {
           return SvgPicture.asset(
             CustomIcons.triangleWarning,
@@ -761,6 +814,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       case NodeConnectionStatus.networkMismatch:
         {
           return t.settings_screen.electrum_server.alert.network_mismatch;
+        }
+      case NodeConnectionStatus.untrustedCertificate:
+        {
+          return t.settings_screen.electrum_server.alert.untrusted_certificate;
         }
       case NodeConnectionStatus.connecting:
         {
@@ -816,7 +873,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       isActive:
                           hasActualChanges &&
                           nodeConnectionStatus != NodeConnectionStatus.connecting &&
-                          nodeConnectionStatus != NodeConnectionStatus.networkMismatch,
+                          nodeConnectionStatus != NodeConnectionStatus.networkMismatch &&
+                          nodeConnectionStatus != NodeConnectionStatus.untrustedCertificate,
                       onPressed: () {
                         _unFocus();
                         _onSave();

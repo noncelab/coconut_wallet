@@ -757,9 +757,13 @@ settings_screen:
       network_mismatch: "Verbindung nicht möglich – falsches Netzwerk"
       connecting: "Verbinde..."
       connected: "Verbunden"
+      untrusted_certificate: "Nicht vertrauenswürdiges Zertifikat"
     popup:
       delete_server_info: "Serverinformationen löschen"
       delete_server_info_description: "Sind Sie sicher, dass Sie die gespeicherten Serverinformationen löschen möchten?"
+      untrusted_certificate_title: "Zertifikat nicht vertrauenswürdig"
+      untrusted_certificate_description: "Dieser Server verwendet kein Zertifikat, das von einer vertrauenswürdigen Zertifizierungsstelle (CA) signiert wurde. Fahren Sie nur fort, wenn Sie diesen Server selbst betreiben und der untenstehende Fingerabdruck korrekt ist. Andernfalls stellen Sie keine Verbindung her.\n\nZertifikat-Fingerabdruck (SHA-256)\n$fingerprint"
+      trust_and_continue: "Vertrauen & Fortfahren"
   block_explorer:
     default_explorer: "Standard-Explorer"
     custom_explorer: "Benutzerdefinierter Explorer"
@@ -1238,6 +1242,7 @@ errors:
   storage_write_error: "Fehler beim Speichern der Daten im Speicher."
   network_error: "Keine Verbindung zum Netzwerk möglich. Bitte überprüfen Sie Ihren Verbindungsstatus."
   node_connection_error: "Verbindung zum Bitcoin-Knoten fehlgeschlagen."
+  untrusted_certificate_error: "Dem Zertifikat des Servers konnte nicht vertraut werden."
   fetch_wallet_error: "Wallet konnte nicht abgerufen werden."
   wallet_sync_failed_error: "Wallet-Informationen konnten nicht aus dem Netzwerk geladen werden"
   fetch_balance_error: "Guthaben konnte nicht abgerufen werden."

@@ -73,10 +73,14 @@ class SocketManager {
     }
   }
 
-  Future<bool> connect(String host, int port, {bool ssl = true}) async {
+  bool _lastConnectionFailedDueToUntrustedCertificate = false;
+  bool get lastConnectionFailedDueToUntrustedCertificate => _lastConnectionFailedDueToUntrustedCertificate;
+
+  Future<bool> connect(String host, int port, {bool ssl = true, String? pinnedCertFingerprint}) async {
     _host = host;
     _port = port;
     _ssl = ssl;
+    _lastConnectionFailedDueToUntrustedCertificate = false;
 
     final isOnionHost = _isOnionAddress(host);
     _ssl = isOnionHost ? false : ssl;
@@ -107,7 +111,7 @@ class SocketManager {
         _socket = await socketFactory.createSocket(_host, _port, timeout: connectionTimeout);
       } else {
         Logger.log('Secure Socket connection: $_host:$_port (SSL: $_ssl, Tailscale: $isTailscale)');
-        _socket = await socketFactory.createSecureSocket(_host, _port);
+        _socket = await socketFactory.createSecureSocket(_host, _port, pinnedFingerprint: pinnedCertFingerprint);
       }
 
       _connectionStatus = SocketConnectionStatus.connected;
@@ -115,6 +119,7 @@ class SocketManager {
       _socket!.listen(_onData, onError: _onError, onDone: _onDone, cancelOnError: true);
     } catch (e) {
       Logger.error('Socket connection failed: $e');
+      _lastConnectionFailedDueToUntrustedCertificate = e is HandshakeException;
       markConnectionLost();
       return false;
     }
