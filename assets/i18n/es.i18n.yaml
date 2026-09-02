@@ -24,6 +24,7 @@ receive: "Recibir"
 show: "Mostrar"
 hide: "Ocultar"
 paste: "Pegar"
+import: "Importar"
 export: "Exportar"
 edit: "Editar"
 max: "Máximo"
@@ -110,6 +111,8 @@ account: "Cuenta"
 merge_utxos: "Fusionar"
 split_utxo: "Dividir"
 apply: "Aplicar"
+retry: "Reintentar"
+share: "Compartir"
 
 relative_time:
   just_now: "Justo ahora"
@@ -119,6 +122,9 @@ relative_time:
   hours_ago(cardinal):
     one: "Hace 1 hora"
     other: "Hace ${n} horas"
+  days_ago(cardinal):
+    one: "Hace 1 día"
+    other: "Hace ${n} días"
 
 apply_item: "Aplicar a $count elementos"
 fee_sats: " ($value sat/vB)"
@@ -508,6 +514,7 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elementos"
+  watched_addresses: "$count vigiladas"
   primary_wallet: "Cartera Principal"
   exclude_from_total_amount: "Excluido del Total"
   home_balance: "Saldo en la Pantalla Principal"
@@ -787,6 +794,11 @@ settings_screen:
   language: "Idioma"
   utxo_manual_selection: "Selección manual de UTXO"
   utxo_manual_selection_description: "Selecciona UTXOs manualmente para enviar"
+  import_labels: "Importar Notas"
+  import_all_labels_description: "Aplica las notas grabadas en otros dispositivos\na Coconut Wallet.\n\n¿Desea continuar con la importación?"
+  export_labels: "Exportar Notas"
+  export_all_labels_description: "Las notas grabadas en Coconut Wallet se pueden aplicar\nde la misma manera en otros dispositivos.\n\n¿Desea continuar con la exportación?"
+  export_labels_failed: "Error al exportar memos"
   utxo_tier_theme: "Color de moneda"
   electrum_server: 
     server_address: "Dirección del servidor"
@@ -800,8 +812,9 @@ settings_screen:
     error_msg:
       invalid_domain_format: "No es un formato de dominio válido"
       port_out_of_range: "Por favor, ingrese un número de puerto válido (1–65535)"
-    alert: 
+    alert:
       connection_failed: "¡No se puede conectar!"
+      network_mismatch: "No se puede conectar: red incompatible"
       connecting: "Conectando..."
       connected: "Conectado"
     popup:
@@ -840,9 +853,12 @@ address_list_screen:
   receiving: "Recibiendo"
   change: "Cambio"
   show_only_unused_address: "Mostrar solo direcciones sin usar"
+  show_only_watched_address: "Mostrar solo direcciones vigiladas"
+  show_only_watched_address_count: "Mostrar solo direcciones vigiladas ($count)"
   set_amount: "establecer importe"
   share: "compartir"
   enter_receive_amount: "Ingrese la cantidad que debe recibir"
+  discovered_new_balance_address: "Se encontraron $count direcciones con nuevo saldo"
 utxo_overview_screen:
   by_amount: "Monto"
   by_tag: "Etiqueta"
@@ -914,6 +930,7 @@ wallet_info_screen:
   title: "Información de $name"
   transaction: "Transacción"
   utxo: "UTXO"
+  watched_addresses: "Direcciones vigiladas"
   target_quantity: "Cantidad objetivo"
   target_progress: "$percent% / $target"
   target_not_set_secondary: "Mostraremos tu tasa de logro cuando configures la cantidad objetivo"
@@ -923,6 +940,13 @@ wallet_info_screen:
   target_set_21m: "¡Es la carrera por los sats!"
   view_xpub: "Ver clave pública extendida"
   duplicated_name: "Nombre ya en uso"
+  import_labels_description: "Importar etiquetas desde un archivo JSONL. Las etiquetas del archivo se aplicarán a las transacciones y UTXOs de la billetera actual. Las etiquetas existentes pueden ser sobrescritas."
+  import_labels_success: "Memos importados correctamente"
+  import_labels_fail: "Error al importar memos"
+  import_labels: "Importar Memos"
+  export_labels: "Exportar Memos"
+  export_labels_fail: "Error al exportar memos"
+  export_labels_description: "Exporta todos los memos registrados en la billetera actual a un archivo JSONL. Este archivo se puede usar para restaurar memos en otros dispositivos o software de billetera."
   view_descriptor: "Ver descriptor"
   view_wallet_backup_data: "Ver datos de respaldo de billetera" 
   backup_update_dialog:
@@ -937,6 +961,7 @@ wallet_info_screen:
   wallet_backup_data: "Datos de respaldo de billetera" 
   confirm_backup_data: "Confirmar datos de respaldo"
   no_info: "No hay datos"
+  resync_label: "Resincronizar billetera"
   tooltip:
     mfp_placeholder_description: "Esta es una billetera agregada con clave pública extendida\n y la huella digital maestra no se ingresó\n por lo que se muestra como 00000000." 
     wallet_backup_data: "Esta es la información de respaldo BSMS(BIP-129) para esta billetera. Puedes usar estos datos para reconstruir la billetera multifirma en caso de pérdida o reemplazo de dispositivo. Por favor, manténgalo seguro y ten cuidado al compartir externamente." 
@@ -952,6 +977,8 @@ wallet_info_screen:
       select: "Seleccionar"
   error:
     delete: "No se pudo eliminar la billetera"
+    no_memos: "No hay notas registradas en la billetera."
+    invalid_file_type: "Tipo de archivo no válido. Por favor, seleccione un archivo JSONL."
   connected_hardware_wallet:
     title: "Información del dispositivo"
     connection_status: "Estado de conexión"
@@ -960,6 +987,34 @@ wallet_info_screen:
     disconnect_button: "Desconectar"
     disconnect_confirm_title: "Desconectar"
     disconnect_confirm_description: "Se desconectará el dispositivo actual.\nNecesitará volver a conectar para la próxima firma."
+wallet_resync_screen:
+  title: "Resincronizar billetera"
+  exit_blocked_toast: "Espera hasta que termine la resincronización"
+  confirm:
+    title: "Borra los datos de la billetera guardados en la app\ny los vuelve a cargar desde cero"
+    description: "Las notas de transacción, etiquetas UTXO y bloqueos se conservan"
+    connection_alert:
+      connecting: "Comprobando la conexión al servidor"
+      connected: "Conectado al servidor"
+      failed: "No se puede conectar al servidor"
+      network_mismatch: "Red distinta, no se puede conectar"
+    warning:
+      title: "Esta es una función para solucionar problemas"
+      description: "Úsala solo si el saldo o el historial de transacciones se ve incorrecto, o si la sincronización no funciona"
+    syncing_notice:
+      title: "La sincronización está en curso"
+      description: "Si inicias la resincronización ahora, empezará automáticamente en cuanto termine la sincronización actual"
+    last_resync_hint: "Última resincronización: $time"
+    cta: "Iniciar resincronización"
+  progress:
+    phase_wiping: "Eliminando los datos actuales"
+    phase_scanning: "Volviendo a cargar los datos"
+    scanning_hint: "Si hay muchos datos, puede tardar más en terminar\nEspera hasta que termine"
+    phase_restoring_metadata: "Restaurando notas de transacción, etiquetas UTXO y bloqueos"
+    success_title: "Datos recargados"
+    success_cta: "Ir a la billetera"
+    error_title: "No se pudieron recargar los datos"
+    error_cta: "Reintentar"
 wallet_signer_section:
   title: "Método de firma"
   segmented_control:
@@ -1109,6 +1164,77 @@ split_utxo_screen:
     preview: "Vista previa"
     description: "Hay muchas divisiones, por lo que la creación de la transacción puede tardar un poco. ¿Quieres ver primero el resultado estimado?"
 
+label_management_screen:
+  title: "Gestionar notas"
+  subtitle: "Importa o exporta tus notas guardadas"
+  description: "BIP-329 es un estándar abierto diseñado para intercambiar notas entre billeteras. Si exportas tus notas, puedes importarlas y restaurarlas tal como estaban incluso después de cambiar de dispositivo o reinstalar la aplicación."
+  import_title: "Importar"
+  import_description: "Carga archivos de notas guardados"
+  export_title: "Exportar"
+  export_description: "Respalda tus notas o compártelas con otra billetera"
+  tooltip:
+    title: "Notas de Coconut"
+    description: "Puedes registrar tu propia información para identificar transacciones y UTXOs más fácilmente."
+    supported_title: "Notas compatibles"
+    supported_list: "• Notas de transacción\n• Etiquetas UTXO (Nombre/Color)\n• Bloqueo de uso de UTXO"
+    import: "Importa un archivo de notas BIP-329 (.jsonl) y lo aplica a Coconut Wallet."
+  file:
+    select: "Seleccionar"
+    select_button: "Seleccionar"
+    apply: "Aplicar"
+    apply_description: "¿Deseas aplicar el archivo\n$fileName?"
+    delete: "Eliminar archivo"
+    delete_description: "¿Estás seguro de que quieres eliminar\n$fileName?"
+    delete_multiple_description: "¿Estás seguro de que quieres eliminar los $count archivos seleccionados?"
+    delete_success: "Archivo eliminado correctamente"
+    delete_failed: "Error al eliminar el archivo"
+    invalid_file_type: "Formato de archivo no válido. Selecciona un archivo jsonl."
+label_import_screen:
+  loading_title: "Aplicando notas"
+  success_title: "Notas importadas"
+  no_applied_memo: "No hay wallets disponibles para aplicar el archivo de memo."
+  delete_file: "Elimina el archivo al pulsar Listo"
+  error_title: "No se pudieron cargar las notas"
+  result:
+    step1: "Nombre de la billetera"
+    step2: "Notas de transacción"
+    step3: "Etiquetas UTXO"
+    step4: "UTXOs bloqueados"
+  option_selection:
+    title: "¿Aplicar notas?"
+    description_1: "Aplica las notas guardadas en el archivo a Coconut Wallet."
+    description_2: "Si hay notas existentes, se agregarán las notas importadas."
+    add_memo_to_existing:
+      title: "Sobrescribir notas existentes"
+      subtitle: "Las notas existentes se eliminarán y se aplicarán las notas importadas"
+    import_memos_from_other_wallets:
+      title: "Importar también notas de otras billeteras"
+      subtitle: "Importa también las notas que no pertenecen a la billetera seleccionada"
+  widget:
+    count_unit(cardinal):
+      zero: " unidades"
+      one: " unidad"
+      other: " unidades"
+label_export_screen:
+  info_tooltip: "Puedes guardar las notas como un archivo BIP-329 (.jsonl) o compartirlas con otras billeteras."
+  all_wallets: "Todas las billeteras"
+  create_file: "Crear archivo"
+  view_list: "Ver lista"
+  no_wallet: "No se encontró la billetera"
+  no_file: "No se encontró el archivo.\nPrimero crea un archivo desde [Crear archivo]."
+  loading_title: "Creando archivo..."
+  success_title: "¿Quieres compartir el archivo?"
+  error_title: "No se pudo crear el archivo"
+  no_labels_to_export: "No hay notas"
+  no_labels_to_share: "No hay notas para compartir."
+  result:
+    step1: "Nombre del archivo"
+    step2: "Fecha y hora de creación"
+    step3: "Billetera aplicada"
+    step4: "Nota de transacción"
+    step5: "Etiqueta UTXO"
+    step6: "UTXO bloqueado"
+
 # lib/widgets/card
 wallet_list_add_guide_card:
   add_watch_only: "¡Intenta agregar una billetera de solo lectura (watch-only)!"
@@ -1184,6 +1310,7 @@ errors:
   realm_exception: "Se produjo un error durante la operación Realm."
   node_unknown: "Se produjo un error desconocido al conectar con el nodo."
   broadcast_error: "Fallo al enviar la transacción."
+  chain_mismatch_error: "No se puede conectar: red incompatible"
   network_connect: "No hay conexión a la red."
   network_disconnected: "Red desconectada"
   network_not_found: "¡Red no conectada!"
@@ -1247,8 +1374,8 @@ tooltip:
     select_wallet: "seleccionar $name"
     select_menu: "pulsar $menu"
     scan_qr_below: "y escanea el código QR a continuación."
-  address_receiving: "Esta es la dirección usada cuando recibes Bitcoin. En inglés, se llama Receiving o External."
-  address_change: "Esta es la dirección donde recibes cambio cuando envías Bitcoin. En inglés, se llama Change."
+  address_receiving: "Esta es la dirección usada cuando recibes Bitcoin."
+  address_change: "Esta es la dirección donde recibes cambio cuando envías Bitcoin."
   utxo: "UTXO significa Unspent Transaction Output, es decir, saldo no utilizado. Bitcoin no tiene el concepto de saldo. Recuerda que el saldo mostrado en tu billetera es la suma de UTXOs."
   faucet: "Prueba libremente con Bitcoin de prueba"
   multisig_wallet: "Esta es una billetera multifirma que requiere\n$count firmas de $total claves."  
@@ -1307,8 +1434,8 @@ alert:
     already_exist: "Billetera duplicada"  
     already_exist_description: "Billetera ya agregada. ($name)"  
   wallet_delete:
-    confirm_delete: "Eliminar billetera"  
-    confirm_delete_description: "¿Estás seguro de querer eliminar la billetera?"  
+    confirm_delete: "Eliminar billetera"
+    confirm_delete_description: "¿Estás seguro de querer eliminar la billetera?"
   update:
     title: "Notificación de actualización"
     description: "Para un servicio estable,\npor favor, actualiza a la última versión."

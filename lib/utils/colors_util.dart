@@ -101,6 +101,10 @@ class TaprootCardStyle {
 }
 
 class ColorUtil {
+  static int normalizePaletteIndex(int index) {
+    return index.clamp(0, colorPalette.length - 1);
+  }
+
   static ColorSet getColor(int index) {
     if (index < 0 || index >= colorPalette.length) {
       return const ColorSet(color: defaultIconColor, backgroundColor: defaultBackgroundColor);

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/enums/node_connection_status.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
-import 'package:coconut_wallet/screens/settings/app_settings/network/electrum_server_screen.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
@@ -177,18 +179,36 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
   /// 서버 변경 및 상태 업데이트
   Future<bool> changeServerAndUpdateState(ElectrumServer newServer) async {
+    final isSameServer = isSameWithCurrentServer(newServer.host, newServer.port.toString(), newServer.ssl);
+    final isAlreadyConnected =
+        isSameServer && !_nodeProvider.hasConnectionError && _nodeProvider.state.nodeSyncState != NodeSyncState.failed;
+
+    if (isAlreadyConnected) {
+      setNodeConnectionStatus(NodeConnectionStatus.connected);
+      return true;
+    }
+
     setNodeConnectionStatus(NodeConnectionStatus.connecting);
 
-    // 서버 연결 테스트
-    final connectionResult = await _nodeProvider.checkServerConnection(newServer);
-    if (connectionResult.isFailure) {
-      setNodeConnectionStatus(NodeConnectionStatus.failed);
-      return false;
+    if (!isSameServer) {
+      final connectionResult = await _nodeProvider.checkServerConnection(newServer);
+      if (connectionResult.isFailure) {
+        setNodeConnectionStatus(NodeConnectionStatus.failed);
+        return false;
+      }
     }
 
     final result = await _nodeProvider.changeServer(newServer);
 
-    // 서버 연결 상태 상관없이 서버 정보 업데이트
+    if (result.isFailure) {
+      if (result.error.code == ErrorCodes.chainMismatchError.code) {
+        setNodeConnectionStatus(NodeConnectionStatus.networkMismatch);
+      } else {
+        setNodeConnectionStatus(NodeConnectionStatus.failed);
+      }
+      return false;
+    }
+
     _setCurrentServer(newServer);
     _electrumServerProvider.setCustomElectrumServer(newServer.host, newServer.port, newServer.ssl);
 
@@ -199,11 +219,6 @@ class ElectrumServerViewModel extends ChangeNotifier {
     }
 
     debugPrint('서버 정보 업데이트: ${newServer.host} ${newServer.port} ${newServer.ssl}');
-
-    if (result.isFailure) {
-      setNodeConnectionStatus(NodeConnectionStatus.failed);
-      return false;
-    }
 
     setNodeConnectionStatus(NodeConnectionStatus.connected);
     return true;

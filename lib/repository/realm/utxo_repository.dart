@@ -6,7 +6,9 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:realm/realm.dart';
 
 /// 선택된 UTXO의 상태를 나타내는 enum
 enum SelectedUtxoExcludedStatus {
@@ -14,16 +16,32 @@ enum SelectedUtxoExcludedStatus {
   locked, // 일부 UTXO가 잠금됨
 }
 
+typedef UtxoTagImportInfo = ({String tag, int? colorIndex});
+
+const int _maxTagsPerUtxo = 5;
+
+int _normalizeTagColorIndex(int colorIndex) {
+  return ColorUtil.normalizePaletteIndex(colorIndex);
+}
+
 class UtxoRepository extends BaseRepository {
   UtxoRepository(super._realmManager);
+
+  /// walletId로 RealmUtxoTag 목록을 쿼리하는 내부 메서드
+  RealmResults<RealmUtxoTag> _queryUtxoTags(int walletId) {
+    return realm.query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
+  }
 
   /// walletId 로 태그 목록 조회
   Result<List<UtxoTag>> getUtxoTags(int walletId) {
     return handleRealm<List<UtxoTag>>(() {
-      final tags = realm.query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
-
-      return tags.map(mapRealmUtxoTagToUtxoTag).toList();
+      return _queryUtxoTags(walletId).map(mapRealmUtxoTagToUtxoTag).toList();
     });
+  }
+
+  /// walletId 로 Realm 태그 목록 조회
+  List<RealmUtxoTag> getRealmUtxoTags(int walletId) {
+    return _queryUtxoTags(walletId).toList();
   }
 
   /// 사용된 UTXO의 태그 업데이트
@@ -174,6 +192,114 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
+  Future<Result<void>> addUtxoToTag(int walletId, String tagName, String utxoId, {int? colorIndex}) async {
+    return handleAsyncRealm(() async {
+      await realm.writeAsync(() {
+        final existingTags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]).toList();
+        final attachedTagCount = existingTags.where((tag) => tag.utxoIdList.contains(utxoId)).length;
+        var tag = existingTags.where((tag) => tag.name == tagName).firstOrNull;
+        final isAlreadyAttached = tag?.utxoIdList.contains(utxoId) ?? false;
+
+        if (!isAlreadyAttached && attachedTagCount >= _maxTagsPerUtxo) {
+          return;
+        }
+
+        if (tag == null) {
+          int newColorIndex;
+          if (colorIndex != null) {
+            newColorIndex = _normalizeTagColorIndex(colorIndex);
+          } else {
+            final usedColorIndexes = existingTags.map((t) => t.colorIndex).toSet();
+
+            newColorIndex = 0;
+            while (usedColorIndexes.contains(newColorIndex)) {
+              newColorIndex++;
+            }
+          }
+
+          tag = RealmUtxoTag(Uuid.v4().toString(), walletId, tagName, newColorIndex, DateTime.now());
+          realm.add(tag);
+        }
+
+        if (colorIndex != null) {
+          final normalizedColorIndex = _normalizeTagColorIndex(colorIndex);
+          if (tag.colorIndex != normalizedColorIndex) {
+            tag.colorIndex = normalizedColorIndex;
+          }
+        }
+
+        if (!tag.utxoIdList.contains(utxoId)) {
+          tag.utxoIdList.add(utxoId);
+        }
+      });
+    });
+  }
+
+  Future<Result<void>> addUtxosToTags(int walletId, Map<String, Set<UtxoTagImportInfo>> utxoTags) async {
+    if (utxoTags.isEmpty) return Result.success(null);
+
+    return handleAsyncRealm(() async {
+      await realm.writeAsync(() {
+        final existingTags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]).toList();
+        final tagsByName = {for (final tag in existingTags) tag.name: tag};
+        final usedColorIndexes = existingTags.map((tag) => tag.colorIndex).toSet();
+        final attachedTagNamesByUtxoId = <String, Set<String>>{};
+        for (final tag in existingTags) {
+          for (final utxoId in tag.utxoIdList) {
+            attachedTagNamesByUtxoId.putIfAbsent(utxoId, () => {}).add(tag.name);
+          }
+        }
+
+        int nextAvailableColorIndex() {
+          var colorIndex = 0;
+          while (usedColorIndexes.contains(colorIndex)) {
+            colorIndex++;
+          }
+          usedColorIndexes.add(colorIndex);
+          return colorIndex;
+        }
+
+        for (final entry in utxoTags.entries) {
+          final utxoId = entry.key;
+          final attachedTagNames = attachedTagNamesByUtxoId.putIfAbsent(utxoId, () => {});
+
+          for (final tagInfo in entry.value) {
+            var tag = tagsByName[tagInfo.tag];
+            final isAlreadyAttached = attachedTagNames.contains(tagInfo.tag);
+
+            if (!isAlreadyAttached && attachedTagNames.length >= _maxTagsPerUtxo) {
+              continue;
+            }
+
+            if (tag == null) {
+              final colorIndex =
+                  tagInfo.colorIndex == null ? nextAvailableColorIndex() : _normalizeTagColorIndex(tagInfo.colorIndex!);
+              if (tagInfo.colorIndex != null) {
+                usedColorIndexes.add(colorIndex);
+              }
+
+              tag = RealmUtxoTag(Uuid.v4().toString(), walletId, tagInfo.tag, colorIndex, DateTime.now());
+              realm.add(tag);
+              tagsByName[tagInfo.tag] = tag;
+            }
+
+            if (tagInfo.colorIndex != null) {
+              final normalizedColorIndex = _normalizeTagColorIndex(tagInfo.colorIndex!);
+              if (tag.colorIndex != normalizedColorIndex) {
+                tag.colorIndex = normalizedColorIndex;
+              }
+            }
+
+            if (!tag.utxoIdList.contains(utxoId)) {
+              tag.utxoIdList.add(utxoId);
+              attachedTagNames.add(tagInfo.tag);
+            }
+          }
+        }
+      });
+    });
+  }
+
   /// 모든 UTXO 추가
   Future<Result<bool>> addAllUtxos(int walletId, List<UtxoState> utxos) async {
     realm.refresh();
@@ -268,6 +394,51 @@ class UtxoRepository extends BaseRepository {
           utxo.status = utxoStatusToString(UtxoStatus.locked);
         }
       });
+    });
+  }
+
+  Future<Result<void>> lockAllUtxos(int walletId, List<String> utxoIds) async {
+    if (utxoIds.isEmpty) return Result.success(null);
+    return handleAsyncRealm(() async {
+      final utxosToLock =
+          realm
+              .query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [walletId, utxoIds])
+              .where((u) => u.status != utxoStatusToString(UtxoStatus.locked))
+              .toList();
+
+      if (utxosToLock.isEmpty) return;
+
+      final lockedStr = utxoStatusToString(UtxoStatus.locked);
+      await realm.writeAsync(() {
+        for (final utxo in utxosToLock) {
+          utxo.status = lockedStr;
+        }
+      });
+    });
+  }
+
+  /// 재동기화 시작 전 호출. 잠금된 UTXO id 집합을 메모리로만 반환한다(Realm에 저장하지 않음).
+  Set<String> snapshotLockedUtxoIds(int walletId) {
+    return getUtxosByStatus(walletId, UtxoStatus.locked).map((u) => u.utxoId).toSet();
+  }
+
+  /// 재동기화 완료 후 호출. 스냅샷 중 새로 동기화된 상태가 unspent인 것만 다시 locked로 되돌린다.
+  /// 이미 spent/incoming으로 바뀐 UTXO는 절대 강제로 잠그지 않는다.
+  Future<void> restoreLockedUtxos(int walletId, Set<String> lockedUtxoIdsSnapshot) async {
+    if (lockedUtxoIdsSnapshot.isEmpty) return;
+
+    final toRelock = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND status == $2 AND isDeleted == false', [
+      walletId,
+      lockedUtxoIdsSnapshot.toList(),
+      utxoStatusToString(UtxoStatus.unspent),
+    ]);
+
+    if (toRelock.isEmpty) return;
+
+    await realm.writeAsync(() {
+      for (final utxo in toRelock) {
+        utxo.status = utxoStatusToString(UtxoStatus.locked);
+      }
     });
   }
 

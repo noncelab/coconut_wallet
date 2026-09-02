@@ -61,29 +61,41 @@ class UtxoSyncService {
       final realmLockedUtxos = _utxoRepository.getUtxosByStatus(walletItem.id, UtxoStatus.locked);
       final lockedUtxoMap = {for (final utxo in realmLockedUtxos) getUtxoId(utxo.transactionHash, utxo.index): utxo};
       return unspentResList
-          // 이미 사용된 UTXO는 필터링하여 제외
-          .map(
-            (e) => UtxoState(
-              transactionHash: e.txHash,
-              index: e.txPos,
-              amount: e.value,
-              derivationPath: scriptStatus.derivationPath,
-              blockHeight: e.height,
-              to: scriptStatus.address,
-              status: () {
-                if (e.height <= 0) return UtxoStatus.incoming;
+      // 이미 사용된 UTXO는 필터링하여 제외
+      .map((e) {
+        // 정상적으로는 이 UTXO를 만든 트랜잭션이 바로 앞의 트랜잭션 fetch 단계에서 이미
+        // RealmTransaction으로 저장돼 있어야 하지만, 대량 콜드 스캔(전체 재동기화 등) 상황에서
+        // 드물게 아직 반영되지 않은 채로 조회되는 경우가 있다. 이 하나 때문에 해당 주소의
+        // UTXO 전체를(리스트 전체가 catch로 빠지며) 잃지 않도록 timestamp만 임시값으로
+        // 대체하고 UTXO 자체(잔액에 직결되는 데이터)는 그대로 반환한다.
+        final realmTx = transactionMap[e.txHash];
+        if (realmTx == null) {
+          Logger.error(
+            'fetchUtxoStateList: RealmTransaction not found for ${e.txHash} '
+            '(${scriptStatus.derivationPath}-${scriptStatus.address}) - timestamp를 임시값으로 대체',
+          );
+        }
 
-                final lockedUtxo = lockedUtxoMap[getUtxoId(e.txHash, e.txPos)];
-                if (lockedUtxo == null || lockedUtxo.status == UtxoStatus.unspent) {
-                  return UtxoStatus.unspent;
-                } else {
-                  return UtxoStatus.locked;
-                }
-              }(),
-              timestamp: transactionMap[e.txHash]!.timestamp,
-            ),
-          )
-          .toList();
+        return UtxoState(
+          transactionHash: e.txHash,
+          index: e.txPos,
+          amount: e.value,
+          derivationPath: scriptStatus.derivationPath,
+          blockHeight: e.height,
+          to: scriptStatus.address,
+          status: () {
+            if (e.height <= 0) return UtxoStatus.incoming;
+
+            final lockedUtxo = lockedUtxoMap[getUtxoId(e.txHash, e.txPos)];
+            if (lockedUtxo == null || lockedUtxo.status == UtxoStatus.unspent) {
+              return UtxoStatus.unspent;
+            } else {
+              return UtxoStatus.locked;
+            }
+          }(),
+          timestamp: realmTx?.timestamp ?? DateTime.now(),
+        );
+      }).toList();
     } catch (e, stackTrace) {
       Logger.error('Failed to get UTXO list - [${scriptStatus.derivationPath}-${scriptStatus.address}}] $e');
       Logger.error('Stack trace: $stackTrace');

@@ -438,13 +438,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               spacing: 4,
               runSpacing: 4,
               children: List.generate(selectedTags.length, (index) {
+                final colorIndex = ColorUtil.normalizePaletteIndex(selectedTags[index].colorIndex);
                 Color foregroundColor =
-                    tagColorPalette[selectedTags[index]
-                        .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
+                    tagColorPalette[colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
                 return IntrinsicWidth(
                   child: CoconutChip(
                     minWidth: 40,
-                    color: CoconutColors.backgroundColorPaletteDark[selectedTags[index].colorIndex],
+                    color: CoconutColors.backgroundColorPaletteDark[colorIndex],
                     borderColor: foregroundColor,
                     label: '#${selectedTags[index].name}',
                     labelSize: 12,
