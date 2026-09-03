@@ -370,6 +370,32 @@ void main() {
         // Then
         expect(result, isNull);
       });
+
+      test('서버가 요청한 해시와 다른 트랜잭션을 반환하면 RBF로 간주하지 않고 null 반환', () async {
+        // Given: 악의적/오작동 서버가 originalTx.transactionHash를 요청받고도
+        // 전혀 다른 트랜잭션(firstRbfTx)의 raw hex를 반환하는 상황을 재현
+        final incomingUtxoList = [
+          UtxoMock.createIncomingUtxo(
+            transactionHash: originalTx.transactionHash,
+            id: getUtxoId(originalTx.transactionHash, 0),
+          ),
+        ];
+        final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
+          transactionHash: originalTx.transactionHash,
+        );
+        await transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
+        await utxoRepository.addAllUtxos(walletId, incomingUtxoList);
+
+        when(
+          electrumService.getTransaction(originalTx.transactionHash),
+        ).thenAnswer((_) async => firstRbfTx.serialize());
+
+        // When
+        final result = await rbfService.detectIncomingRbfTransaction(walletId, firstRbfTx);
+
+        // Then: 해시 불일치를 감지해 RBF 대체로 판단하지 않아야 함
+        expect(result, isNull);
+      });
     });
 
     group('saveRbfHistory', () {

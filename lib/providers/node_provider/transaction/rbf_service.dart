@@ -119,6 +119,12 @@ class RbfService {
         // 기존 트랜잭션 조회
         final oldTx = Transaction.parse(await _electrumService.getTransaction(utxo.transactionHash));
 
+        // 서버가 요청한 해시와 다른 트랜잭션을 반환했는지 확인
+        if (oldTx.transactionHash != utxo.transactionHash) {
+          Logger.error('[$walletId] 요청한 트랜잭션 해시와 응답이 일치하지 않음: 요청=${utxo.transactionHash}, 응답=${oldTx.transactionHash}');
+          continue;
+        }
+
         // 인풋이 겹치는지 확인
         final oldTxInputs = oldTx.inputs.map((input) => '${input.transactionHash}:${input.index}').toSet();
         final newTxInputs = tx.inputs.map((input) => '${input.transactionHash}:${input.index}').toSet();
