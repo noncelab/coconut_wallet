@@ -132,7 +132,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           _buildTransactionFlowCard(context, tx, viewModel),
                         ],
                         CoconutLayout.spacing_300h,
-
                         _buildTxInputOutputDetail(context, tx, viewModel),
                         CoconutLayout.spacing_800h,
                         _buildTxId(tx, viewModel),
