@@ -44,7 +44,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.d
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/renewal_wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/renewal_wallet_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_mnemonic_backup_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_passphrase_check_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_complete_screen.dart';
@@ -133,7 +133,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/wallet-info':
         (context) => _buildLoadingScreenWithArgs(
           context,
-          (args) => WalletInfoScreen(
+          (args) => RenewalWalletInfoScreen(
             id: args['id'],
             walletType: args['walletType'],
             entryPoint: args['entryPoint'],
