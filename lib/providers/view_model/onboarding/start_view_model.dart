@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_wallet/app.dart';
@@ -19,14 +20,16 @@ class StartViewModel extends ChangeNotifier {
   late final AuthProvider _authProvider;
 
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-  final AppVersion _appVersionRepository = AppVersion();
+  final AppVersion _appVersionRepository;
 
   late PackageInfo _packageInfo;
+  final Completer<void> _versionCheckCompleter = Completer<void>();
 
   bool _canUpdate = false;
   bool _isLoading = true;
 
-  StartViewModel(this._visibilityProvider, this._authProvider) {
+  StartViewModel(this._visibilityProvider, this._authProvider, {AppVersion? appVersionRepository})
+    : _appVersionRepository = appVersionRepository ?? AppVersion() {
     _initialize();
   }
 
@@ -100,7 +103,10 @@ class StartViewModel extends ChangeNotifier {
     await _checkLatestVersion();
     _isLoading = false;
     notifyListeners();
+    _versionCheckCompleter.complete();
   }
+
+  Future<void> ensureVersionChecked() => _versionCheckCompleter.future;
 
   Future<void> _initPackageInfo() async {
     _packageInfo = await PackageInfo.fromPlatform();

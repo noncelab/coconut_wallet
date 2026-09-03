@@ -76,7 +76,7 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
   }
 
   void _initialize() async {
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.wait([Future.delayed(const Duration(seconds: 3)), _viewModel.ensureVersionChecked()]);
     if (_viewModel.canUpdate) {
       bool finishDialogValue = await _showUpdateDialog();
       if (!finishDialogValue) {
