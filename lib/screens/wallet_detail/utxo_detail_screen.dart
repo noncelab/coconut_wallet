@@ -1,5 +1,9 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -383,8 +387,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       onTapUnderlineButton: () async {
         await Navigator.pushNamed(
           context,
-          '/transaction-detail',
-          arguments: {'id': widget.id, 'txHash': widget.utxo.transactionHash},
+          AppRouteNames.transactionDetail,
+          arguments: TransactionDetailRouteArgs(id: widget.id, txHash: widget.utxo.transactionHash),
         );
         if (!context.mounted) return;
         context.read<UtxoDetailViewModel>().refreshTransaction();
@@ -473,11 +477,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Future<void> showTagBottomSheet() async {
     final List<String> currentUtxoIds = [widget.utxo.utxoId];
 
-    final result = await showModalBottomSheet<TagApplyResult>(
+    final result = await CommonBottomSheets.showBottomSheet_100<TagApplyResult>(
       context: context,
+      screenName: AnalyticsScreenNames.utxoDetailTagApplySheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: currentUtxoIds),
+      child: TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: currentUtxoIds),
     );
 
     if (result == null) return;

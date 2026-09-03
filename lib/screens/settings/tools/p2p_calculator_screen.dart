@@ -1,4 +1,7 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'dart:math' as math;
@@ -186,7 +189,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     if (sepIndex == -1) return;
 
     final decimalPart = text.substring(sepIndex + decimalSeparator.length);
-    if (decimalPart.isNotEmpty && (int.tryParse(decimalPart) ?? -1) != 0) return;
+    if (decimalPart.isNotEmpty && (int.tryParse(decimalPart) ?? -1) != 0) {
+      return;
+    }
 
     final trimmed = text.substring(0, sepIndex);
     _isUpdatingController = true;
@@ -476,13 +481,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           final walletId = _viewModel.wallets[0].id;
           Navigator.pushNamed(
             context,
-            '/send',
-            arguments: {
-              'walletId': walletId,
-              'sendEntryPoint': SendEntryPoint.home,
-              'transactionDraftId': null,
-              'initialSatsFromP2P': satsAmount,
-            },
+            AppRouteNames.send,
+            arguments: SendRouteArgs(
+              id: walletId,
+              sendEntryPoint: SendEntryPoint.home,
+              transactionDraftId: null,
+              initialSatsFromP2P: satsAmount,
+            ),
           );
           break;
         }
@@ -491,6 +496,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         {
           CommonBottomSheets.showDraggableBottomSheet(
             context: context,
+            screenName: AnalyticsScreenNames.p2pCalculatorSelectWalletSheet,
             childBuilder:
                 (scrollController) => P2PSelectWalletBottomSheet(
                   showOnlyMfpWallets: false,
@@ -502,13 +508,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                     Navigator.pop(context);
                     Navigator.pushNamed(
                       context,
-                      '/send',
-                      arguments: {
-                        'walletId': walletId,
-                        'sendEntryPoint': SendEntryPoint.home,
-                        'transactionDraftId': null,
-                        'initialSatsFromP2P': satsAmount,
-                      },
+                      AppRouteNames.send,
+                      arguments: SendRouteArgs(
+                        id: walletId,
+                        sendEntryPoint: SendEntryPoint.home,
+                        transactionDraftId: null,
+                        initialSatsFromP2P: satsAmount,
+                      ),
                     );
                   },
                 ),

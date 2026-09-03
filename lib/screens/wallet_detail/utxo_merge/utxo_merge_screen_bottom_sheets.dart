@@ -23,6 +23,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     try {
       final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<UtxoMergeMethod>(
         context: context,
+        screenName: AnalyticsScreenNames.mergeUtxosSelectMethodSheet,
         backgroundColor: context.coconutColors.surfaceBottomSheet,
         title: t.merge_utxos_screen.merge_method_bottomsheet.title,
         items: const [UtxoMergeMethod.smallAmounts, UtxoMergeMethod.sameTag, UtxoMergeMethod.sameAddress],
@@ -111,6 +112,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     try {
       final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<_AmountRangeSelectionResult>(
         context: context,
+        screenName: AnalyticsScreenNames.mergeUtxosSelectAmountRangeSheet,
         backgroundColor: context.coconutColors.surfaceBottomSheet,
         title: t.merge_utxos_screen.amount_range_bottomsheet.title,
         initialChildSize: 0.75,
@@ -266,6 +268,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     try {
       final selectedItem = await CommonBottomSheets.showDraggableBottomSheet<TagSelectResult>(
         context: context,
+        screenName: AnalyticsScreenNames.mergeUtxosSelectTagSheet,
         title: t.merge_utxos_screen.select_tag_bottomsheet_title,
         minChildSize: 0.45,
         maxChildSize: 0.8,
@@ -382,6 +385,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     try {
       selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<_ReceivingAddressSelectionResult>(
         context: context,
+        screenName: AnalyticsScreenNames.mergeUtxosSelectReceiveAddressSheet,
         backgroundColor: context.coconutColors.surfaceBottomSheet,
         title: t.merge_utxos_screen.receive_address,
         adjustForKeyboardInset: true,

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -277,6 +278,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
       enableDrag: true,
       backgroundColor: context.coconutColors.surfaceBottomSheet,
       context: context,
+      screenName: AnalyticsScreenNames.walletHomeGlossaryTermDetailSheet,
       child:
           details != null
               ? LayoutBuilder(

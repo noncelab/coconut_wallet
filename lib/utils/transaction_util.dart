@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
@@ -193,7 +194,7 @@ class TransactionUtil {
           rightButtonText: t.view_tx_details,
           onTapRight: () {
             Navigator.popUntil(context, (route) {
-              return route.settings.name == '/transaction-detail';
+              return route.settings.name == AppRouteNames.transactionDetail;
             });
           },
         );

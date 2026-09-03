@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -8,6 +10,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup,
         CoconutUnderlinedButton;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -112,6 +115,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               viewModel.pinCheckNotifier.value = false;
               await CommonBottomSheets.showCustomHeightBottomSheet(
                 context: context,
+                screenName: AnalyticsScreenNames.walletListPinCheckSheet,
                 child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: () => viewModel.handleAuthCompletion())),
                 heightRatio: 0.9,
               );
@@ -435,6 +439,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                       title: '',
                       titlePadding: EdgeInsets.zero,
                       context: context,
+                      screenName: AnalyticsScreenNames.walletListSettingsSheet,
                       child: ListenableBuilder(
                         listenable: _viewModel,
                         builder:
@@ -658,14 +663,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               title: '',
               titlePadding: EdgeInsets.zero,
               context: context,
+              screenName: AnalyticsScreenNames.walletListItemOptionsSheet,
               child: WalletItemSettingBottomSheet(id: walletItem.id),
             );
           },
           onPressed: () {
             Navigator.pushNamed(
               context,
-              '/wallet-detail',
-              arguments: {'id': walletItem.id, 'entryPoint': kEntryPointWalletList},
+              AppRouteNames.walletDetail,
+              arguments: WalletDetailRouteArgs(id: walletItem.id, entryPoint: kEntryPointWalletList),
             );
           },
           rightWidget: SvgPicture.asset(

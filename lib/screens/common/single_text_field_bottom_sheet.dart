@@ -68,10 +68,16 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
   final Object? Function(String currentText)? resultBuilder;
 
   /// 커스텀 child를 그대로 감싸 시트 띄우기(필요 시).
-  static Future<T?> showBottomSheet<T>({required BuildContext context, required String title, required Widget child}) {
+  static Future<T?> showBottomSheet<T>({
+    required BuildContext context,
+    required String title,
+    required Widget child,
+    required String screenName,
+  }) {
     return CommonBottomSheets.showBottomSheet<T>(
       context: context,
       title: title,
+      screenName: screenName,
       showCloseButton: true,
       showDragHandle: true,
       keyboardBottomPadding: 0,
@@ -84,6 +90,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
   static Future<R?> showWithResult<R>({
     required BuildContext context,
     required String title,
+    required String screenName,
     String? originalText,
     String placeholder = '',
     String? completeButtonText,
@@ -104,6 +111,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     return CommonBottomSheets.showBottomSheet<R>(
       context: context,
       title: title,
+      screenName: screenName,
       showCloseButton: true,
       showDragHandle: true,
       keyboardBottomPadding: 0,
@@ -133,6 +141,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
   static Future<void> show({
     required BuildContext context,
     required String title,
+    required String screenName,
     String? originalText,
     required void Function(String) onComplete,
     String placeholder = '',
@@ -152,6 +161,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     return CommonBottomSheets.showBottomSheet<void>(
       context: context,
       title: title,
+      screenName: screenName,
       showCloseButton: true,
       showDragHandle: true,
       keyboardBottomPadding: 0,

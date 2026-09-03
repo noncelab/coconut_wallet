@@ -1,7 +1,10 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -127,6 +130,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                     context: context,
                     currentUnit: preferenceProvider.currentUnit,
                     initialAmountSats: _enteredReceiveAmountSats,
+                    screenName: AnalyticsScreenNames.receiveAddressSetAmountSheet,
                   );
                   if (!mounted || result == null || !result.didEdit) return;
                   setState(() {
@@ -226,7 +230,11 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   }
 
   void _onAddressListButtonPressed() {
-    Navigator.pushNamed(context, '/address-list', arguments: {'id': _selectedWalletItem!.id});
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.addressList,
+      arguments: AddressListRouteArgs(id: _selectedWalletItem!.id),
+    );
   }
 
   void _onAppBarTitlePressed() {
@@ -234,6 +242,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     AppGuard.enablePrivacyScreen();
     CommonBottomSheets.showDraggableBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.receiveAddressSelectWalletSheet,
       childBuilder:
           (scrollController) => SelectWalletBottomSheet(
             showOnlyMfpWallets: false,

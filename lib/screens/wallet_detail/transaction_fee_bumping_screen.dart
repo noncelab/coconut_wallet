@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -304,7 +306,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     bool success = viewModel.prepareToSend(_textEditingController.text.toDoubleSafe()!);
 
     if (success && context.mounted) {
-      Navigator.pushNamed(context, '/send-confirm');
+      Navigator.pushNamed(context, AppRouteNames.sendConfirm, arguments: const SendConfirmRouteArgs());
     }
   }
 
@@ -921,12 +923,12 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               onPressed: () {
                 Navigator.pushNamed(
                   context,
-                  "/utxo-selection",
-                  arguments: {
-                    "selectedUtxoList": viewModel.selectedUtxoList,
-                    "walletId": widget.walletId,
-                    "currentUnit": viewModel.currentUnit,
-                  },
+                  AppRouteNames.utxoSelection,
+                  arguments: UtxoSelectionRouteArgs(
+                    selectedUtxoList: viewModel.selectedUtxoList,
+                    id: widget.walletId,
+                    currentUnit: viewModel.currentUnit,
+                  ),
                 ).then((utxoList) {
                   if (utxoList != null) {
                     viewModel.updateSelectedUtxos(utxoList as List<UtxoState>);

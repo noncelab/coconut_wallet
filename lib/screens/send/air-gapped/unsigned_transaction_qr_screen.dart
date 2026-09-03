@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -116,7 +117,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                       ),
                       FixedBottomButton(
                         onButtonClicked: () {
-                          Navigator.pushNamed(context, '/signed-psbt-scanner');
+                          Navigator.pushNamed(context, AppRouteNames.signedPsbtScanner);
                         },
                         subWidget: CoconutUnderlinedButton(
                           text:

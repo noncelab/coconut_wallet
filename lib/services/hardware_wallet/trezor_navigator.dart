@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_ble_connect_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_transport_select_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/trezor_usb_connect_screen.dart';
@@ -26,6 +27,7 @@ class TrezorNavigator {
       if (lastConnected.transport == TrezorTransport.ble) {
         return CommonBottomSheets.showCustomHeightBottomSheet<T>(
           context: context,
+          screenName: AnalyticsScreenNames.trezorBleConnectResumeSheet,
           heightRatio: 0.9,
           child: TrezorBleConnectScreen(
             psbtBase64: psbtBase64,
@@ -37,6 +39,7 @@ class TrezorNavigator {
       }
       return CommonBottomSheets.showCustomHeightBottomSheet<T>(
         context: context,
+        screenName: AnalyticsScreenNames.trezorUsbConnectResumeSheet,
         heightRatio: 0.9,
         child: TrezorUsbConnectScreen(
           psbtBase64: psbtBase64,
@@ -49,6 +52,7 @@ class TrezorNavigator {
     if (Platform.isIOS) {
       return CommonBottomSheets.showCustomHeightBottomSheet<T>(
         context: context,
+        screenName: AnalyticsScreenNames.trezorBleConnectSheet,
         heightRatio: 0.9,
         child: TrezorBleConnectScreen(
           psbtBase64: psbtBase64,
@@ -59,6 +63,7 @@ class TrezorNavigator {
     }
     return CommonBottomSheets.showCustomHeightBottomSheet<T>(
       context: context,
+      screenName: AnalyticsScreenNames.trezorTransportSelectSheet,
       heightRatio: 0.9,
       child: TrezorTransportSelectScreen(
         psbtBase64: psbtBase64,

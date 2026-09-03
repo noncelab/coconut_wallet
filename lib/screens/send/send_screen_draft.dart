@@ -23,6 +23,7 @@ extension _SendScreenDraft on _SendScreenState {
   Future<void> _onLoadDraft() async {
     final selected = await CommonBottomSheets.showSelectableDraggableSheet<TransactionDraft>(
       context: context,
+      screenName: AnalyticsScreenNames.sendLoadDraftSheet,
       title: t.transaction_draft.title,
       items: _viewModel.drafts!,
       getItemId: (draft) => draft.id,
@@ -93,7 +94,11 @@ extension _SendScreenDraft on _SendScreenState {
           rightButtonText: t.transaction_draft.dialog.move,
           onTapRight: () {
             Navigator.pop(context); // Dialog close
-            Navigator.pushNamed(context, '/transaction-draft', arguments: {'isSignedTabActive': false});
+            Navigator.pushNamed(
+              context,
+              AppRouteNames.transactionDraft,
+              arguments: const TransactionDraftRouteArgs(isSignedTabActive: false),
+            );
           },
           onTapLeft: () {
             Navigator.pop(context);

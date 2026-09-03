@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -183,16 +185,16 @@ class _LabelManagementScreenState extends State<LabelManagementScreen> {
   void _navigateToImportFilePicker(BuildContext context, {int? walletId}) {
     Navigator.pushNamed(
       context,
-      '/label-import',
-      arguments: {
-        'walletId': walletId,
-        'showImportMemosFromOtherWalletsOption': widget.showImportMemosFromOtherWalletsOption,
-      },
+      AppRouteNames.labelImport,
+      arguments: LabelImportRouteArgs(
+        id: walletId,
+        showImportMemosFromOtherWalletsOption: widget.showImportMemosFromOtherWalletsOption,
+      ),
     );
   }
 
   void _navigateToExportWalletPicker(BuildContext context, {int? walletId}) {
-    Navigator.pushNamed(context, '/label-export', arguments: {'walletId': walletId});
+    Navigator.pushNamed(context, AppRouteNames.labelExport, arguments: LabelExportRouteArgs(id: walletId));
   }
 }
 

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'dart:ui' as ui;
 
@@ -262,6 +263,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
             context: context,
             currentUnit: currentUnit,
             initialAmountSats: _amountInSats,
+            screenName: AnalyticsScreenNames.qrDetailSetAmountSheet,
           );
           if (!mounted || result == null || !result.didEdit) return;
           setState(() {

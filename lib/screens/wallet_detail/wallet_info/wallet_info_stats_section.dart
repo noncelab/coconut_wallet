@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
@@ -53,7 +55,11 @@ class WalletInfoStatsSection extends StatelessWidget {
                   pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
                   borderRadius: 24,
                   onPressed: () {
-                    Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
+                    Navigator.pushNamed(
+                      context,
+                      AppRouteNames.utxoOverview,
+                      arguments: UtxoOverviewRouteArgs(id: walletId),
+                    );
                   },
                   child: _StatCard(label: t.wallet_info_screen.utxo, value: '$utxoCount', transparentBackground: true),
                 ),
@@ -69,8 +75,8 @@ class WalletInfoStatsSection extends StatelessWidget {
             onPressed: () {
               Navigator.pushNamed(
                 context,
-                '/address-list',
-                arguments: {'id': walletId, 'initialShowOnlyWatchedAddresses': true},
+                AppRouteNames.addressList,
+                arguments: AddressListRouteArgs(id: walletId, initialShowOnlyWatchedAddresses: true),
               );
             },
             child: _StatCard(

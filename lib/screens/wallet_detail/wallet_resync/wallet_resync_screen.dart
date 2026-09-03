@@ -1,7 +1,10 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/node_connection_status.dart';
@@ -212,6 +215,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
     if (!mounted) return;
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletResyncAuthSheet,
       heightRatio: 0.9,
       child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: onComplete)),
     );
@@ -253,9 +257,9 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
 
   void _onDonePressed() {
     Navigator.of(context).pushNamedAndRemoveUntil(
-      '/wallet-detail',
+      AppRouteNames.walletDetail,
       (route) => route.isFirst,
-      arguments: {'id': widget.id, 'entryPoint': kEntryPointWalletHome},
+      arguments: WalletDetailRouteArgs(id: widget.id, entryPoint: kEntryPointWalletHome),
     );
   }
 

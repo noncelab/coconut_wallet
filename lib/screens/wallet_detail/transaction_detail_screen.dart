@@ -1,4 +1,7 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -458,13 +461,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
                         await Navigator.pushNamed(
                           context,
-                          '/wallet-info',
-                          arguments: {
-                            'id': widget.id,
-                            'walletType': _viewModel.walletType,
-                            'entryPoint': kEntryPointWalletHome,
-                            'showMfpInput': true,
-                          },
+                          AppRouteNames.walletInfo,
+                          arguments: WalletInfoRouteArgs(
+                            id: widget.id,
+                            walletType: _viewModel.walletType,
+                            entryPoint: kEntryPointWalletHome,
+                            showMfpInput: true,
+                          ),
                         );
                         _viewModel.setNeedsMfp();
                         return;
@@ -472,13 +475,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
                       Navigator.pushNamed(
                         context,
-                        '/transaction-fee-bumping',
-                        arguments: {
-                          'transaction': tx,
-                          'feeBumpingType': _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
-                          'walletId': widget.id,
-                          'walletName': _viewModel.getWalletName(),
-                        },
+                        AppRouteNames.transactionFeeBumping,
+                        arguments: TransactionFeeBumpingRouteArgs(
+                          transaction: tx,
+                          feeBumpingType: _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
+                          id: widget.id,
+                          walletName: _viewModel.getWalletName(),
+                        ),
                       );
                     },
                     child: Padding(
@@ -706,6 +709,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             SingleTextFieldBottomSheet.show(
               context: context,
               title: t.tx_memo,
+              screenName: AnalyticsScreenNames.transactionDetailEditMemoSheet,
               originalText: txMemo ?? '',
               completeButtonText: t.done,
               collapsedHeight: 300,
@@ -899,7 +903,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       status: status,
     );
 
-    Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': walletId});
+    Navigator.pushNamed(context, AppRouteNames.utxoDetail, arguments: UtxoDetailRouteArgs(utxo: utxo, id: walletId));
   }
 
   String _getPrefix(TransactionRecord tx) {

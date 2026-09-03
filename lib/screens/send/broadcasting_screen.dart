@@ -1,4 +1,14 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -91,11 +101,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
         Navigator.pushNamedAndRemoveUntil(
           context,
-          '/broadcasting-complete', // 이동할 경로
+          AppRouteNames.broadcastingComplete, // 이동할 경로
           _viewModel.sendEntryPoint == SendEntryPoint.walletDetail
-              ? ModalRoute.withName("/wallet-detail") // '/wallet-detail' 경로를 남기고 그 외의 경로 제거
+              ? ModalRoute.withName(AppRouteNames.walletDetail) // AppRouteNames.walletDetail 경로를 남기고 그 외의 경로 제거
               : (route) => route.isFirst, // HomeScreen까지 제거
-          arguments: {'id': _viewModel.walletId!, 'txHash': _viewModel.signedTx!.transactionHash},
+          arguments: BroadcastingCompleteRouteArgs(
+            id: _viewModel.walletId!,
+            txHash: _viewModel.signedTx!.transactionHash,
+          ),
         );
       }
     } catch (e) {
@@ -215,9 +228,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             _viewModel.clearSendInfo();
             Navigator.pushNamedAndRemoveUntil(
               context,
-              '/transaction-draft',
+              AppRouteNames.transactionDraft,
               (route) => route.isFirst,
-              arguments: {'isSignedTabActive': true},
+              arguments: const TransactionDraftRouteArgs(isSignedTabActive: true),
             );
           },
           onTapLeft: () {

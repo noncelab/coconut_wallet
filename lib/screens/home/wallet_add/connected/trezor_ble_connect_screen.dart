@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'dart:io';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
@@ -213,8 +215,8 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       _hideFullScreenLoading();
       Navigator.pushReplacementNamed(
         context,
-        '/wallet-detail',
-        arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
+        AppRouteNames.walletDetail,
+        arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
       );
       return;
     }
@@ -546,14 +548,14 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
         Navigator.pop(context);
         Navigator.pushNamed(
           context,
-          '/trezor-sign',
-          arguments: {
-            'psbtBase64': widget.psbtBase64,
-            'walletName': widget.walletName ?? '',
-            'walletFingerprint': widget.walletFingerprint ?? '',
-            'isFromSendFlow': true,
-            'transport': 'ble',
-          },
+          AppRouteNames.trezorSign,
+          arguments: TrezorSignRouteArgs(
+            psbtBase64: widget.psbtBase64!,
+            walletName: widget.walletName ?? '',
+            walletFingerprint: widget.walletFingerprint ?? '',
+            isFromSendFlow: true,
+            transport: 'ble',
+          ),
         );
       };
     } else if (!isSignFlow && isPaired && hasXpub) {

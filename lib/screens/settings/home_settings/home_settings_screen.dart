@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -21,7 +22,7 @@ class HomeSettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => Navigator.pushNamed(context, '/wallet-home-edit'),
+          onTap: () => Navigator.pushNamed(context, AppRouteNames.walletHomeEdit),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),

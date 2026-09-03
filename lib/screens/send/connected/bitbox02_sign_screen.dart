@@ -1,4 +1,7 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutUnderlinedButton;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
@@ -77,7 +80,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       if (widget.isFromSendFlow) {
         final sendInfoProvider = context.read<SendInfoProvider>();
         sendInfoProvider.setSignedResult(_viewModel.signedPsbt);
-        Navigator.pushReplacementNamed(context, '/broadcasting');
+        Navigator.pushReplacementNamed(context, AppRouteNames.broadcasting, arguments: const BroadcastingRouteArgs());
       } else {
         Navigator.pop(context, {'signedPsbt': _viewModel.signedPsbt});
       }
@@ -372,6 +375,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
           Navigator.pop(context);
           CommonBottomSheets.showCustomHeightBottomSheet(
             context: context,
+            screenName: AnalyticsScreenNames.bitbox02SignReconnectDeviceSheet,
             child: BitBox02ConnectScreen(
               importSource: WalletImportSource.bitbox02,
               psbtBase64: widget.psbtBase64,

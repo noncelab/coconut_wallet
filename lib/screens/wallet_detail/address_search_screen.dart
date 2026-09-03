@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -278,6 +279,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
 
               CommonBottomSheets.showCustomHeightBottomSheet(
                 context: context,
+                screenName: AnalyticsScreenNames.addressSearchAddressQrSheet,
                 heightRatio: 0.9,
                 child: QrWithCopyTextScreen(
                   backgroundColor: context.coconutColors.surfaceBottomSheet,

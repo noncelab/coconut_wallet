@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -15,7 +17,9 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -491,22 +495,20 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   Future<String?> _showMfpInputBottomSheet() async {
-    final result = await showModalBottomSheet(
+    final result = await CommonBottomSheets.showBottomSheet_100(
       context: context,
-      builder: (context) {
-        return WalletAddMfpInputBottomSheet(
-          onSkip: () {
-            Navigator.pop(context, null);
-          },
-          onComplete: (text) {
-            Navigator.pop(context, text);
-          },
-        );
-      },
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      enableDrag: true,
+      screenName: AnalyticsScreenNames.walletAddAirgapMfpSheet,
+      isDismissible: true,
       useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      child: WalletAddMfpInputBottomSheet(
+        onSkip: () {
+          Navigator.pop(context, null);
+        },
+        onComplete: (text) {
+          Navigator.pop(context, text);
+        },
+      ),
     );
 
     return result;
@@ -583,8 +585,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           if (mounted) {
             Navigator.pushReplacementNamed(
               context,
-              '/wallet-detail',
-              arguments: {'id': addResult.walletId, 'entryPoint': kEntryPointWalletHome},
+              AppRouteNames.walletDetail,
+              arguments: WalletDetailRouteArgs(id: addResult.walletId!, entryPoint: kEntryPointWalletHome),
             );
           }
           break;

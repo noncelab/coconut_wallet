@@ -1,4 +1,7 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -208,14 +211,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _navigateToUtxoList(BuildContext context) {
-    Navigator.pushNamed(context, '/utxo-list', arguments: {'id': widget.id});
+    Navigator.pushNamed(context, AppRouteNames.utxoList, arguments: UtxoListRouteArgs(id: widget.id));
   }
 
   void _navigateToWalletInfo(BuildContext context) async {
     await Navigator.pushNamed(
       context,
-      '/wallet-info',
-      arguments: {'id': widget.id, 'walletType': _viewModel.walletType, 'entryPoint': widget.entryPoint},
+      AppRouteNames.walletInfo,
+      arguments: WalletInfoRouteArgs(id: widget.id, walletType: _viewModel.walletType, entryPoint: widget.entryPoint),
     );
 
     _viewModel.updateWalletName();
@@ -485,13 +488,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Navigator.of(context).pop();
         Navigator.pushNamed(
           context,
-          '/wallet-info',
-          arguments: {
-            'id': widget.id,
-            'walletType': _viewModel.walletType,
-            'entryPoint': widget.entryPoint,
-            'showMfpInput': true,
-          },
+          AppRouteNames.walletInfo,
+          arguments: WalletInfoRouteArgs(
+            id: widget.id,
+            walletType: _viewModel.walletType,
+            entryPoint: widget.entryPoint,
+            showMfpInput: true,
+          ),
         );
       });
       return true;
@@ -510,7 +513,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     if (_showNoMfpDialogIfNeeded()) return;
     if (!_checkStateAndShowToast()) return;
-    Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
+    Navigator.pushNamed(context, AppRouteNames.mergeUtxos, arguments: UtxoMergeRouteArgs(id: widget.id));
   }
 
   void _onTapSplit({required bool canSplit, required int availableUtxoCount}) {
@@ -524,11 +527,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     if (_showNoMfpDialogIfNeeded()) return;
     if (!_checkStateAndShowToast()) return;
-    Navigator.pushNamed(context, '/split-utxo', arguments: {'id': widget.id});
+    Navigator.pushNamed(context, AppRouteNames.splitUtxo, arguments: UtxoSplitRouteArgs(id: widget.id));
   }
 
   void _onTapReceive() {
-    Navigator.of(context).pushNamed("/receive-address", arguments: {"id": widget.id});
+    Navigator.of(context).pushNamed(AppRouteNames.receiveAddress, arguments: ReceiveAddressRouteArgs(id: widget.id));
   }
 
   Future<void> _onTapSend() async {
@@ -540,14 +543,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (!isManualUtxoSelection) {
       Navigator.pushNamed(
         context,
-        '/send',
-        arguments: {'walletId': _viewModel.walletId, 'sendEntryPoint': SendEntryPoint.walletDetail},
+        AppRouteNames.send,
+        arguments: SendRouteArgs(id: _viewModel.walletId, sendEntryPoint: SendEntryPoint.walletDetail),
       );
       return;
     }
 
     final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
       context: context,
+      screenName: AnalyticsScreenNames.walletDetailSelectUtxoSheet,
       minChildSize: 0.6,
       maxChildSize: 0.9,
       initialChildSize: 0.9,
@@ -565,12 +569,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     Navigator.pushNamed(
       context,
-      '/send',
-      arguments: {
-        'walletId': _viewModel.walletId,
-        'sendEntryPoint': SendEntryPoint.walletDetail,
-        'selectedUtxoList': List<UtxoState>.from(result),
-      },
+      AppRouteNames.send,
+      arguments: SendRouteArgs(
+        id: _viewModel.walletId,
+        sendEntryPoint: SendEntryPoint.walletDetail,
+        selectedUtxoList: List<UtxoState>.from(result),
+      ),
     );
   }
 
@@ -683,6 +687,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletDetailFaucetSheet,
       heightRatio: 0.5,
       child: FaucetRequestBottomSheet(
         walletData: {
@@ -876,8 +881,8 @@ class _TransactionListState extends State<TransactionList> {
               onPressed: () {
                 Navigator.pushNamed(
                   context,
-                  '/transaction-detail',
-                  arguments: {'id': widget.walldtId, 'txHash': tx.transactionHash},
+                  AppRouteNames.transactionDetail,
+                  arguments: TransactionDetailRouteArgs(id: widget.walldtId, txHash: tx.transactionHash),
                 );
               },
             ),
@@ -905,8 +910,8 @@ class _TransactionListState extends State<TransactionList> {
             onPressed: () {
               Navigator.pushNamed(
                 context,
-                '/transaction-detail',
-                arguments: {'id': widget.walldtId, 'txHash': tx.transactionHash},
+                AppRouteNames.transactionDetail,
+                arguments: TransactionDetailRouteArgs(id: widget.walldtId, txHash: tx.transactionHash),
               );
             },
           ),

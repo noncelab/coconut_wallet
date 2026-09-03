@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -151,8 +153,8 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
         context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
         Navigator.pushReplacementNamed(
           context,
-          '/wallet-detail',
-          arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
+          AppRouteNames.walletDetail,
+          arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
         );
         return;
       }
@@ -228,14 +230,14 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     Navigator.pop(context);
     Navigator.pushNamed(
       context,
-      '/trezor-sign',
-      arguments: {
-        'psbtBase64': widget.psbtBase64,
-        'walletName': widget.walletName ?? '',
-        'walletFingerprint': widget.walletFingerprint ?? '',
-        'isFromSendFlow': true,
-        'transport': TrezorTransport.usb.name,
-      },
+      AppRouteNames.trezorSign,
+      arguments: TrezorSignRouteArgs(
+        psbtBase64: widget.psbtBase64!,
+        walletName: widget.walletName ?? '',
+        walletFingerprint: widget.walletFingerprint ?? '',
+        isFromSendFlow: true,
+        transport: TrezorTransport.usb.name,
+      ),
     );
   }
 

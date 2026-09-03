@@ -1,5 +1,8 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutUnderlinedButton;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/app_guard.dart';
@@ -235,7 +238,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
       actionButtonList: [
         CoconutAppBarActionButton(
           onPressed: () {
-            Navigator.pushNamed(context, '/address-search', arguments: {'id': widget.id});
+            Navigator.pushNamed(context, AppRouteNames.addressSearch, arguments: AddressSearchRouteArgs(id: widget.id));
           },
           icon: Icon(Icons.search_rounded, color: context.coconutColors.iconPrimary),
         ),
@@ -485,6 +488,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           AppGuard.disablePrivacyScreen();
                           CommonBottomSheets.showCustomHeightBottomSheet(
                             context: context,
+                            screenName: AnalyticsScreenNames.addressListAddressQrSheet,
                             heightRatio: 0.9,
                             childBuilder:
                                 (scrollController) => QrWithCopyTextScreen(

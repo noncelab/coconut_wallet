@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
@@ -12,6 +13,7 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/tooltip_button.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -339,16 +341,17 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
       return;
     }
 
-    showModalBottomSheet(
+    CommonBottomSheets.showBottomSheet_100(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.walletInfoEditSheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => WalletInfoEditBottomSheet(
-            id: widget.id,
-            walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
-            isCustomAccount: isCustomAccount,
-          ),
+      child: WalletInfoEditBottomSheet(
+        id: widget.id,
+        walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
+        isCustomAccount: isCustomAccount,
+      ),
     ).then((result) {
       if (result != null) {
         var ellipsisName = result.length > 10 ? '${result.substring(0, 7)}...' : result;

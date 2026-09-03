@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -7,6 +9,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -201,21 +204,25 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
           _navigateToTrezorConnectIfNeeded(viewModel);
         }
       default:
-        Navigator.pushNamed(context, '/unsigned-transaction-qr', arguments: {'walletName': viewModel.walletName});
+        Navigator.pushNamed(
+          context,
+          AppRouteNames.unsignedTransactionQr,
+          arguments: UnsignedTransactionQrRouteArgs(walletName: viewModel.walletName),
+        );
     }
   }
 
   void _pushBitBox02SignScreen(SendConfirmViewModel viewModel) {
     Navigator.pushNamed(
       context,
-      '/bitbox02-sign',
-      arguments: {
-        'psbtBase64': viewModel.txWaitingForSign,
-        'walletName': viewModel.walletName,
-        'walletFingerprint': viewModel.walletFingerprint,
-        'isFromSendFlow': true,
-        'transport': BitBox02Transport.resolveForSign(),
-      },
+      AppRouteNames.bitbox02Sign,
+      arguments: BitBox02SignRouteArgs(
+        psbtBase64: viewModel.txWaitingForSign!,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        isFromSendFlow: true,
+        transport: BitBox02Transport.resolveForSign(),
+      ),
     );
   }
 
@@ -231,6 +238,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
     } else {
       CommonBottomSheets.showCustomHeightBottomSheet(
         context: context,
+        screenName: AnalyticsScreenNames.sendConfirmConnectBitbox02Sheet,
         child: BitBox02ConnectScreen(
           importSource: WalletImportSource.bitbox02,
           psbtBase64: viewModel.txWaitingForSign,
@@ -247,14 +255,14 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
     final lastConnected = TrezorDevice.lastConnected!;
     Navigator.pushNamed(
       context,
-      '/trezor-sign',
-      arguments: {
-        'psbtBase64': viewModel.txWaitingForSign,
-        'walletName': viewModel.walletName,
-        'walletFingerprint': viewModel.walletFingerprint,
-        'isFromSendFlow': true,
-        'transport': lastConnected.transport.name,
-      },
+      AppRouteNames.trezorSign,
+      arguments: TrezorSignRouteArgs(
+        psbtBase64: viewModel.txWaitingForSign!,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        isFromSendFlow: true,
+        transport: lastConnected.transport.name,
+      ),
     );
   }
 

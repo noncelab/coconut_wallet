@@ -1,7 +1,17 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:coconut_wallet/constants/icon_path.dart';
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -99,7 +109,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
     String? currentRoute = ModalRoute.of(context)?.settings.name;
 
-    if (currentRoute != null && currentRoute.startsWith('/signed-psbt-scanner')) {
+    if (currentRoute != null && currentRoute.startsWith(AppRouteNames.signedPsbtScanner)) {
       _isProcessing = false;
     }
   }
@@ -206,7 +216,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
       await _stopCamera();
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/broadcasting');
+        Navigator.pushReplacementNamed(context, AppRouteNames.broadcasting, arguments: const BroadcastingRouteArgs());
       }
     } catch (e) {
       await _showErrorDialog(t.alert.scan_failed_description(error: e));
@@ -232,7 +242,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       _viewModel.setSignedResult(encodedSignedPsbt!);
       await _stopCamera();
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/broadcasting');
+        Navigator.pushReplacementNamed(context, AppRouteNames.broadcasting, arguments: const BroadcastingRouteArgs());
       }
     } catch (e) {
       await _showErrorDialog(t.alert.scan_failed_description(error: e));
@@ -248,7 +258,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
       await _stopCamera();
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/broadcasting');
+        Navigator.pushReplacementNamed(context, AppRouteNames.broadcasting, arguments: const BroadcastingRouteArgs());
       }
     } catch (e) {
       await _showErrorDialog(t.alert.scan_failed_description(error: e));

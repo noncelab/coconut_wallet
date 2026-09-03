@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -192,12 +194,12 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
               // 임시 저장 트랜잭션 화면에서 카드를 눌렀을 때 -> 화면 이동
               await Navigator.pushNamed(
                 context,
-                '/send',
-                arguments: {
-                  'walletId': null,
-                  'sendEntryPoint': SendEntryPoint.home,
-                  'transactionDraft': widget.transactionDraft,
-                },
+                AppRouteNames.send,
+                arguments: SendRouteArgs(
+                  id: widget.transactionDraft.walletId,
+                  sendEntryPoint: SendEntryPoint.home,
+                  transactionDraftId: widget.transactionDraft.id,
+                ),
               );
             }
           }

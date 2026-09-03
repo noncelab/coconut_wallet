@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -82,6 +83,7 @@ class AppReviewService {
   }) {
     return CommonBottomSheets.showBottomSheet_100(
       context: context,
+      screenName: AnalyticsScreenNames.broadcastingCompleteReviewSurveySheet,
       child: UserExperienceSurveyBottomSheet(isFirst: isFirst),
       enableDrag: false,
       backgroundColor: context.coconutColors.background,

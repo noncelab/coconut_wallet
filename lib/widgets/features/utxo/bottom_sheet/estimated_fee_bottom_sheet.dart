@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutToast, CoconutToastLevel, CoconutTextField, CoconutTextFieldStyle;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -70,6 +71,7 @@ class EstimatedFeeBottomSheet extends StatefulWidget {
 
     return CommonBottomSheets.showDraggableBottomSheet<T>(
       context: context,
+      screenName: AnalyticsScreenNames.estimatedFeeSelectSheet,
       title: t.estimated_fee_bottom_sheet.title,
       backgroundColor: context.coconutColors.surfaceBottomSheet,
       initialChildSize: 0.75,

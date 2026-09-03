@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io' show Platform;
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -87,8 +89,8 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       context.read<AnalyticsService>().logWalletAddCompleted(widget.importSource);
       Navigator.pushReplacementNamed(
         context,
-        '/wallet-detail',
-        arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
+        AppRouteNames.walletDetail,
+        arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
       );
       return;
     }
@@ -318,14 +320,14 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
         Navigator.pop(context);
         Navigator.pushNamed(
           context,
-          '/bitbox02-sign',
-          arguments: {
-            'psbtBase64': widget.psbtBase64,
-            'walletName': widget.walletName ?? '',
-            'walletFingerprint': widget.walletFingerprint ?? '',
-            'isFromSendFlow': true,
-            'transport': BitBox02Transport.resolveForSign(),
-          },
+          AppRouteNames.bitbox02Sign,
+          arguments: BitBox02SignRouteArgs(
+            psbtBase64: widget.psbtBase64!,
+            walletName: widget.walletName ?? '',
+            walletFingerprint: widget.walletFingerprint ?? '',
+            isFromSendFlow: true,
+            transport: BitBox02Transport.resolveForSign(),
+          ),
         );
       };
     } else if (!isSignFlow && isPaired && hasXpub) {

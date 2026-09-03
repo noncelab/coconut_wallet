@@ -1,4 +1,7 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -426,8 +429,8 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       context.loaderOverlay.hide();
       Navigator.pushNamed(
         context,
-        '/send-confirm',
-        arguments: {"currentUnit": context.read<PreferenceProvider>().currentUnit},
+        AppRouteNames.sendConfirm,
+        arguments: SendConfirmRouteArgs(currentUnit: context.read<PreferenceProvider>().currentUnit),
       );
     } finally {
       if (mounted && context.loaderOverlay.visible) {
@@ -945,6 +948,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
         initialChildSize: 0.6,
         title: _getUtxosPreviewBottomSheetTitle(method),
         context: context,
+        screenName: AnalyticsScreenNames.mergeUtxosPreviewUtxosSheet,
         adjustForKeyboardInset: false,
         childBuilder:
             (scrollController) => _SelectedUtxosPreviewBottomSheetBody(

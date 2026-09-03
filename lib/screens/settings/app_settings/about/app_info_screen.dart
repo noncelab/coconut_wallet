@@ -1,6 +1,8 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
@@ -245,7 +247,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
         defaultColor: context.coconutColors.surface,
         pressedOverlayColor: context.coconutColors.surfacePressOverlay,
         onPressed: () {
-          Navigator.pushNamed(context, '/coconut-crew');
+          Navigator.pushNamed(context, AppRouteNames.coconutCrew);
         },
         borderRadius: CoconutStyles.radius_200,
         child: Container(
@@ -423,6 +425,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 onPressed: () {
                   CommonBottomSheets.showCustomHeightBottomSheet(
                     context: context,
+                    screenName: AnalyticsScreenNames.appInfoLicenseSheet,
                     heightRatio: 0.95,
                     child: const LicenseBottomSheet(),
                   );
