@@ -63,11 +63,9 @@ class SocketManager {
   }
 
   // .onion 주소인 경우 타임아웃을 길게 설정
-  Duration getConnectionTimeout(bool isOnionHost, bool isTailscale) {
+  Duration getConnectionTimeout(bool isOnionHost) {
     if (isOnionHost) {
       return kIsolateInitTimeoutForOnion;
-    } else if (isTailscale) {
-      return kIsolateInitTimeout;
     } else {
       return kIsolateInitTimeout;
     }
@@ -100,17 +98,15 @@ class SocketManager {
 
     _connectionStatus = SocketConnectionStatus.connecting;
 
-    final isTailscale = await _detectTailscaleNetwork();
-
-    final connectionTimeout = getConnectionTimeout(isOnionHost, isTailscale);
+    final connectionTimeout = getConnectionTimeout(isOnionHost);
 
     try {
-      // ssl false이거나 tailscale이 감지되는 경우, 일반 연결 사용
-      if (!_ssl || isTailscale || isOnionHost) {
+      // ssl false인 경우 일반 연결 사용
+      if (!_ssl || isOnionHost) {
         Logger.log('Socket connection: $_host:$_port');
         _socket = await socketFactory.createSocket(_host, _port, timeout: connectionTimeout);
       } else {
-        Logger.log('Secure Socket connection: $_host:$_port (SSL: $_ssl, Tailscale: $isTailscale)');
+        Logger.log('Secure Socket connection: $_host:$_port (SSL: $_ssl)');
         _socket = await socketFactory.createSecureSocket(_host, _port, pinnedFingerprint: pinnedCertFingerprint);
       }
 
@@ -128,45 +124,6 @@ class SocketManager {
 
   bool _isOnionAddress(String host) {
     return host.trim().toLowerCase().endsWith('.onion');
-  }
-
-  Future<bool> _detectTailscaleNetwork() async {
-    try {
-      final interfaces = await NetworkInterface.list();
-      final tailscaleIps = <String>[];
-
-      for (final interface in interfaces) {
-        for (final addr in interface.addresses) {
-          if (_isTailscaleIP(addr.address)) {
-            tailscaleIps.add(addr.address);
-            Logger.log('🌐 Tailscale IP Detected: ${addr.address} (${interface.name})');
-            return true;
-          }
-        }
-      }
-    } catch (e) {
-      Logger.log('❌ Tailscale IP Not Detected');
-      return false;
-    }
-    return false;
-  }
-
-  /// Tailscale IP 범위 확인
-  bool _isTailscaleIP(String ip) {
-    try {
-      final parts = ip.split('.');
-      if (parts.length != 4) return false;
-
-      final firstOctet = int.tryParse(parts[0]);
-      final secondOctet = int.tryParse(parts[1]);
-
-      if (firstOctet == null || secondOctet == null) return false;
-
-      // 100.64.0.0/10 범위: 100.64.x.x ~ 100.127.x.x
-      return firstOctet == 100 && secondOctet >= 64 && secondOctet <= 127;
-    } catch (e) {
-      return false;
-    }
   }
 
   Future<void> disconnect() async {
