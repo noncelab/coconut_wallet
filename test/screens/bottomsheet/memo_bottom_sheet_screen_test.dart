@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: buildCoconutThemeData(),
           home: SingleTextFieldBottomSheet(
             originalText: mockMemo,
             completeButtonText: '완료',
@@ -20,6 +22,8 @@ void main() {
           ),
         ),
       );
+
+      await tester.pumpAndSettle();
 
       final editableFinder = find.byType(EditableText);
       expect(editableFinder, findsOneWidget);

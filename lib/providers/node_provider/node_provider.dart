@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/analytics/analytics_event_names.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/analytics/wallet_sync_analytics.dart';
 import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -282,8 +283,10 @@ class NodeProvider extends ChangeNotifier {
       if (result.isFailure) {
         Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
         _stateManager?.setNodeSyncStateToFailed();
+        _analyticsService?.logWalletBulkSyncFailed();
       } else {
         _setConnectionError(false);
+        _analyticsService?.logWalletBulkSyncCompleted();
 
         await Future.delayed(const Duration(seconds: 1));
         await _startBlockUpdates();
@@ -316,8 +319,9 @@ class NodeProvider extends ChangeNotifier {
           if (result.isFailure) {
             Logger.error('NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}');
             _stateManager?.setNodeSyncStateToFailed();
+            _analyticsService?.logWalletAddSyncFailed();
           } else {
-            _analyticsService?.logEvent(eventName: AnalyticsEventNames.walletAddSyncCompleted);
+            _analyticsService?.logWalletAddSyncCompleted();
           }
         });
       }
@@ -607,10 +611,12 @@ class NodeProvider extends ChangeNotifier {
           Logger.log('NodeProvider: Reconnect completed successfully');
           _setConnectionError(false);
           _restartBlockUpdates();
+          _analyticsService?.logWalletBulkSyncCompleted();
         } else {
           Logger.error('NodeProvider: subscribeWallets failed: ${result.error}');
           _stateManager?.setNodeSyncStateToFailed();
           _setConnectionError(true);
+          _analyticsService?.logWalletBulkSyncFailed();
         }
       } else if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isEmpty) {
         Logger.log('NodeProvider: Wallet Loaded & Wallet Items is Empty, set state to completed');
