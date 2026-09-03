@@ -195,7 +195,9 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     setNodeConnectionStatus(NodeConnectionStatus.connecting);
 
-    if (!isSameServer) {
+    // 이 지점에 도달했다는 건 isAlreadyConnected가 false라는 뜻이다 — 서버가 그대로여도
+    // 현재 연결이 끊겼거나 실패한 상태이므로 반드시 재검증해야 한다.(저장 버튼 클릭으로 복구 가능)
+    {
       // 이전에 이미 핀닝된 커스텀 서버라면 저장된 지문을 그대로 사용해 매번 다시 신뢰 확인창을 띄우지 않음
       newServer = _withKnownFingerprint(newServer);
 

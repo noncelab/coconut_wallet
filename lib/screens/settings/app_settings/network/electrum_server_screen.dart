@@ -202,7 +202,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     );
   }
 
-  /// 저장 버튼 활성화 조건: 현재 입력된 서버 정보가 현재 연결된 서버와 다른지 확인
+  /// 저장 버튼 활성화 조건: 입력된 서버 정보가 현재 연결된 서버와 다르거나,
+  /// 같은 서버라도 지금 연결이 끊긴 상태라 재시도가 필요한 경우
   bool _hasActualChanges() {
     if (_serverAddressController.text.isEmpty ||
         _portController.text.isEmpty ||
@@ -211,7 +212,15 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       return false;
     }
 
-    return !_viewModel.isSameWithCurrentServer(_serverAddressController.text, _portController.text, _currentSslState);
+    final isSameServer = _viewModel.isSameWithCurrentServer(
+      _serverAddressController.text,
+      _portController.text,
+      _currentSslState,
+    );
+    if (!isSameServer) return true;
+
+    // 서버는 그대로인데 연결이 실패한 상태 — 재저장으로 재검증/TOFU를 트리거할 수 있어야 한다.
+    return _viewModel.nodeConnectionStatus == NodeConnectionStatus.failed;
   }
 
   @override
