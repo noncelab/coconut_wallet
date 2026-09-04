@@ -9,6 +9,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutTooltipType;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -23,6 +24,7 @@ import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
@@ -40,6 +42,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 class RenewalWalletDetailScreen extends StatefulWidget {
@@ -52,12 +55,16 @@ class RenewalWalletDetailScreen extends StatefulWidget {
   State<RenewalWalletDetailScreen> createState() => _RenewalWalletDetailScreenState();
 }
 
-class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
+class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> with TickerProviderStateMixin {
   static const _nextWarningDelay = Duration(milliseconds: 400);
   late final RenewalWalletDetailViewModel _viewModel;
   final ValueNotifier<bool> _bottomActionButtonsExpandedNotifier = ValueNotifier<bool>(true);
   bool? _pendingBottomActionButtonsExpanded;
   bool _isBottomActionButtonsUpdateScheduled = false;
+  late final bool _playTargetFireworksOnEntry;
+  late final AnimationController _fireworksController;
+  late final AnimationController _fireworksFadeController;
+  bool _hasStartedFireworks = false;
 
   @override
   void initState() {
@@ -69,13 +76,32 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
       context.read<NodeProvider>(),
       initialUnit: context.read<PreferenceProvider>().currentUnit,
     );
+    _playTargetFireworksOnEntry = _viewModel.isTargetExceeded;
+    _fireworksController = AnimationController(vsync: this);
+    _fireworksFadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
   }
 
   @override
   void dispose() {
     _bottomActionButtonsExpandedNotifier.dispose();
+    _fireworksController.dispose();
+    _fireworksFadeController.dispose();
     _viewModel.dispose();
     super.dispose();
+  }
+
+  Future<void> _playFireworksTwice(Duration duration) async {
+    if (_hasStartedFireworks) return;
+    _hasStartedFireworks = true;
+    _fireworksController.duration = duration;
+
+    try {
+      await _fireworksController.forward(from: 0).orCancel;
+      await _fireworksController.forward(from: 0).orCancel;
+      await _fireworksFadeController.forward(from: 0).orCancel;
+    } on TickerCanceled {
+      // 화면이 닫히며 컨트롤러가 dispose된 경우 재생을 종료한다.
+    }
   }
 
   @override
@@ -380,6 +406,28 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
                     ),
                   ),
                 ),
+              if (_playTargetFireworksOnEntry && isTargetExceeded)
+                Positioned(
+                  top: -12,
+                  right: 4,
+                  child: IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: _fireworksFadeController,
+                      builder: (context, child) {
+                        return Opacity(opacity: 1 - _fireworksFadeController.value, child: child);
+                      },
+                      child: Lottie.asset(
+                        CommonLottiePath.fireworks,
+                        controller: _fireworksController,
+                        width: 112,
+                        height: 96,
+                        fit: BoxFit.contain,
+                        repeat: false,
+                        onLoaded: (composition) => _playFireworksTwice(composition.duration),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -422,7 +470,9 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
               )
             else
               ...viewModel.recentTransactions.indexed.map(
-                (entry) => Padding(
+                (entry) => _AnimatedRecentTransactionCard(
+                  key: ValueKey(entry.$2.transactionHash),
+                  delay: Duration(milliseconds: entry.$1 * 100),
                   padding: EdgeInsets.only(bottom: entry.$1 == viewModel.recentTransactions.length - 1 ? 0 : 8),
                   child: TransactionItemCard(
                     tx: entry.$2,
@@ -441,6 +491,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
   Widget _buildUtxoSection() {
     return Consumer<RenewalWalletDetailViewModel>(
       builder: (context, viewModel, _) {
+        final hasUtxo = viewModel.utxoCount > 0;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -458,6 +509,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
                       iconPath: CommonMenuIconPath.grid,
                       label: t.wallet_detail_screen.utxo_overview,
                       description: t.wallet_detail_screen.utxo_overview_description,
+                      isEnabled: hasUtxo,
                       onTap: () => Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': widget.id}),
                     ),
                   ),
@@ -466,6 +518,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> {
                       iconPath: FeatureUtxoIconPath.splitUtxo,
                       label: t.wallet_detail_screen.utxo_organize,
                       description: t.wallet_detail_screen.utxo_organize_description,
+                      isEnabled: hasUtxo,
                       onTap: () => Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id}),
                     ),
                   ),
@@ -889,36 +942,104 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+class _AnimatedRecentTransactionCard extends StatefulWidget {
+  const _AnimatedRecentTransactionCard({super.key, required this.child, required this.padding, required this.delay});
+
+  final Widget child;
+  final EdgeInsets padding;
+  final Duration delay;
+
+  @override
+  State<_AnimatedRecentTransactionCard> createState() => _AnimatedRecentTransactionCardState();
+}
+
+class _AnimatedRecentTransactionCardState extends State<_AnimatedRecentTransactionCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+    _startAnimation();
+  }
+
+  Future<void> _startAnimation() async {
+    if (widget.delay > Duration.zero) await Future<void>.delayed(widget.delay);
+    if (mounted) _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: AnimationUtil.buildSlideInAnimation(_controller),
+      child: Padding(padding: widget.padding, child: widget.child),
+    );
+  }
+}
+
 class _UtxoAction extends StatelessWidget {
   final String iconPath;
   final String label;
   final String description;
   final VoidCallback onTap;
+  final bool isEnabled;
 
-  const _UtxoAction({required this.iconPath, required this.label, required this.description, required this.onTap});
+  const _UtxoAction({
+    required this.iconPath,
+    required this.label,
+    required this.description,
+    required this.onTap,
+    this.isEnabled = true,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ShrinkAnimationButton(
-      onPressed: onTap,
-      pressedOverlayColor: context.coconutColors.surfacePressOverlay,
-      pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
-      borderRadius: 12,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 20, bottom: 22),
-        child: Column(
-          children: [
-            SvgPicture.asset(
-              iconPath,
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-            ),
-            CoconutLayout.spacing_100h,
-            Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText)),
-            const SizedBox(height: 2),
-            Text(description, style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText)),
-          ],
+    final disabledColor = context.coconutColors.iconDisabled;
+    return Semantics(
+      button: true,
+      enabled: isEnabled,
+      child: ShrinkAnimationButton(
+        onPressed: onTap,
+        isActive: isEnabled,
+        pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+        pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
+        borderRadius: 12,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 20, bottom: 22),
+          child: Column(
+            children: [
+              SvgPicture.asset(
+                iconPath,
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  isEnabled ? context.coconutColors.iconPrimary : disabledColor,
+                  BlendMode.srcIn,
+                ),
+              ),
+              CoconutLayout.spacing_100h,
+              Text(
+                label,
+                style: CoconutTypography.body3_12.setColor(
+                  isEnabled ? context.coconutColors.primaryText : disabledColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: CoconutTypography.body3_12.setColor(
+                  isEnabled ? context.coconutColors.tertiaryText : disabledColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -122,7 +122,9 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
       newestFirstBalances.add(historicalBalance);
     }
 
-    return newestFirstBalances.reversed.map((value) => (value / target).clamp(0.0, double.infinity)).toList(growable: false);
+    return newestFirstBalances.reversed
+        .map((value) => (value / target).clamp(0.0, double.infinity))
+        .toList(growable: false);
   }
 
   void toggleUnit() {

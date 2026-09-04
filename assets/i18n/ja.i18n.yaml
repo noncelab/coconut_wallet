@@ -1035,6 +1035,8 @@ address_list_screen:
   enter_receive_amount: "受け取る金額を入力"
   
 utxo_overview_screen:
+  overview: "概要"
+  list: "一覧"
   by_amount: "金額別"
   by_tag: "タグ別"
   interval_info_title: "区間案内"
@@ -1042,6 +1044,9 @@ utxo_overview_screen:
   view_mode_grid: "グリッド"
   no_tag_applied: "適用されたタグがありません"
   no_tag_applied_desc: "UTXOにタグを適用すると、タグ別の内訳を確認できます"
+  no_available_utxos: "使用可能なUTXOがありません"
+  no_locked_utxos: "使用ロックされたUTXOがありません"
+  no_change_utxos: "おつりのUTXOがありません"
   total: "合計"
   untagged: "未分類"
   tagged: "タグ適用"
@@ -1119,7 +1124,7 @@ wallet_info_screen:
   target: "目標"
   target_quantity: "目標数量"
   target_progress_title: "目標に向かって積み上げています"
-  target_exceeded_title: "目標より多く貯めました"
+  target_exceeded_title: "おめでとうございます！目標を達成しました"
   target_exceeded_secondary(amount): "目標より$amount多く貯めました"
   target_progress: "$percent% / $target"
   target_not_set_secondary: "目標数量を設定してみましょう"

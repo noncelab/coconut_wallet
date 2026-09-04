@@ -36,7 +36,7 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/renewal_utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_split_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
@@ -160,7 +160,8 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         (context) =>
             _buildLoadingScreenWithArgs(context, (args) => SendConfirmScreen(currentUnit: args['currentUnit'])),
     '/utxo-list': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoListScreen(id: args['id'])),
-    '/utxo-overview': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoOverviewScreen(id: args['id'])),
+    '/utxo-overview':
+        (context) => _buildLoadingScreenWithArgs(context, (args) => RenewalUtxoOverviewScreen(id: args['id'])),
     '/utxo-detail':
         (context) =>
             _buildLoadingScreenWithArgs(context, (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id'])),
