@@ -15,6 +15,7 @@ import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dar
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -316,6 +317,20 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             },
           );
         }
+      } on TransactionIntentMismatchException {
+        vibrateMedium();
+        if (!mounted) return;
+        showInfoDialog(
+          context,
+          context.read<PreferenceProvider>().language,
+          '',
+          t.alert.signed_psbt.wrong_send_info,
+          barrierDismissible: false,
+          onTapButton: () {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          },
+        );
       } catch (e) {
         vibrateMedium();
         if (!mounted) return;

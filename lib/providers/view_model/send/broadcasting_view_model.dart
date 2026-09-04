@@ -18,6 +18,7 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:flutter/material.dart';
 
 class InvalidTransactionException implements Exception {
@@ -176,27 +177,26 @@ class BroadcastingViewModel extends ChangeNotifier {
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
 
-    Psbt signedPsbt;
+    final originalPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+    final expectedTransaction = originalPsbt.unsignedTransaction;
+    late final Psbt signedPsbt;
     if (isPsbt(_sendInfoProvider.signedResult!)) {
       signedPsbt = Psbt.parse(_sendInfoProvider.signedResult!);
-      _signedTx = signedPsbt.getSignedTransaction(walletAddressType!);
+      TransactionIntentValidator.ensureMatches(expectedTransaction, signedPsbt.unsignedTransaction);
+
+      final finalizedTransaction = signedPsbt.getSignedTransaction(walletAddressType!);
+      TransactionIntentValidator.ensureMatches(expectedTransaction, finalizedTransaction);
+      _signedTx = finalizedTransaction;
     } else {
       try {
-        signedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+        signedPsbt = originalPsbt;
 
         // raw transaction 데이터 처리 (hex 또는 base64)
-        String hexTransaction = decodeTransactionToHex(_sendInfoProvider.signedResult!);
+        final hexTransaction = decodeTransactionToHex(_sendInfoProvider.signedResult!);
         final signedTx = Transaction.parse(hexTransaction);
-        final unSingedTx = signedPsbt.unsignedTransaction;
+        TransactionIntentValidator.ensureMatches(expectedTransaction, signedTx);
 
-        // 콜드카드의 경우 SignedTransaction을 넘겨주기 때문에, UnsignedTransaction과 같은 데이터인지 검사 필요
-        bool isContentEqual = isTxContentEqual(signedTx, unSingedTx);
-
-        if (!isContentEqual) {
-          throw InvalidTransactionException();
-        }
-
-        _signedTx = Transaction.parse(hexTransaction);
+        _signedTx = signedTx;
       } catch (e) {
         Logger.log('--> BroadcastingViewModel.setTxInfo: raw transaction processing error: $e');
         rethrow;
@@ -323,34 +323,6 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   void clearSendInfo() {
     _sendInfoProvider.clear();
-  }
-
-  bool isTxContentEqual(Transaction signedTx, Transaction? unSignedTx) {
-    if (unSignedTx == null) return false;
-
-    debugPrint('unsignedPsbt:: $unSignedTx');
-
-    // inputs, outputs 길이가 같은지 비교
-    if (signedTx.inputs.length != unSignedTx.inputs.length) return false;
-    if (signedTx.outputs.length != unSignedTx.outputs.length) return false;
-
-    // outputs에서 각 output의 amount가 같은지 비교
-    for (int i = 0; i < signedTx.outputs.length; i++) {
-      if (signedTx.outputs[i].amount != unSignedTx.outputs[i].amount) {
-        return false;
-      }
-    }
-
-    // totalInputAmount 비교
-    if (signedTx.totalInputAmount != unSignedTx.totalInputAmount) return false;
-
-    // 트랜잭션 버전 비교
-    if (signedTx.version != unSignedTx.version) return false;
-
-    // lockTime 비교 - 추후 필요시 구현, 현재는 다르기 때문에 사용안함
-    // if (tx.lockTime != unSignedTx.lockTime) return false;
-
-    return true;
   }
 
   ///예외: 사용자가 배치 트랜잭션에 '남의 주소 또는 내 Receive 주소 1개'와 '본인 change 주소 1개'를 입력하고, 이 트랜잭션의 잔액이 없는 희박한 상황에서는 배치 트랜잭션임을 구분하지 못함

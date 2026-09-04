@@ -11,6 +11,7 @@ import 'package:coconut_wallet/services/hardware_wallet/bitbox02_exceptions.dart
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_types.dart';
+import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:flutter/foundation.dart';
 
 enum BitBox02SignStep { idle, signing, done, error }
@@ -170,9 +171,17 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
       final signed = await _device!.btcSignPSBT(psbtBytes: cleanPsbt, coin: coin);
       _signedPsbt = base64Encode(signed);
+      final unsignedPsbt = Psbt.parse(psbtBase64);
+      final returnedPsbt = Psbt.parse(_signedPsbt);
+      TransactionIntentValidator.ensureMatches(unsignedPsbt.unsignedTransaction, returnedPsbt.unsignedTransaction);
 
       _cancelTimeout();
       _setState(BitBox02SignStep.done);
+    } on TransactionIntentMismatchException catch (e) {
+      _cancelTimeout();
+      _signedPsbt = '';
+      _errorMessage = '${t.alert.signed_psbt.wrong_send_info}\n(${e.result.fieldPath})';
+      _setState(BitBox02SignStep.error);
     } on BitBox02ConnectException catch (e) {
       _cancelTimeout();
       _errorMessage = e.message;

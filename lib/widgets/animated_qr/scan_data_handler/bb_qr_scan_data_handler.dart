@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:coconut_wallet/utils/bb_qr/bb_qr_decoder.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
@@ -6,22 +8,23 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
   BbQrDecoder _bbqrDecoder;
   int? _sequenceLength;
   String? _dataType; // BBQR 데이터 타입 저장
+  String? _psbtBase64;
 
   BbQrScanDataHandler() : _bbqrDecoder = BbQrDecoder();
 
   @override
   dynamic get result {
-    return _bbqrDecoder.result;
+    return _psbtBase64 ?? _bbqrDecoder.result;
   }
 
   @override
   double get progress {
-    return _bbqrDecoder.progress;
+    return _psbtBase64 != null ? 1.0 : _bbqrDecoder.progress;
   }
 
   @override
   bool isCompleted() {
-    return _bbqrDecoder.isComplete;
+    return _psbtBase64 != null || _bbqrDecoder.isComplete;
   }
 
   @override
@@ -37,14 +40,15 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
     }
 
     final receivePartResult = _bbqrDecoder.receivePart(data);
-
     if (!receivePartResult && validateFormat(data)) {
       final sequenceValidationResult = validateSequenceLength(data);
       if (!sequenceValidationResult) throw SequenceLengthMismatchException();
     }
 
     if (_bbqrDecoder.isComplete && _bbqrDecoder.result == null) {
-      if (_dataType == 'T') {
+      if (_dataType == 'P') {
+        _psbtBase64 = _getPsbtBase64();
+      } else if (_dataType == 'T') {
         _bbqrDecoder.parseHexData();
       } else {
         _bbqrDecoder.parseJson();
@@ -52,6 +56,21 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
     }
 
     return receivePartResult;
+  }
+
+  String? _getPsbtBase64() {
+    final hexData = _bbqrDecoder.parseHexData();
+    if (hexData is! String || hexData.length.isOdd) return null;
+
+    try {
+      final bytes = List<int>.generate(
+        hexData.length ~/ 2,
+        (index) => int.parse(hexData.substring(index * 2, index * 2 + 2), radix: 16),
+      );
+      return base64Encode(bytes);
+    } catch (_) {
+      return null;
+    }
   }
 
   int? parseSequenceLength(String data) {
@@ -110,6 +129,7 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
   void reset() {
     _sequenceLength = null;
     _dataType = null;
+    _psbtBase64 = null;
     _bbqrDecoder = BbQrDecoder();
   }
 

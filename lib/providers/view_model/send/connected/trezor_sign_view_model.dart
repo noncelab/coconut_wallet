@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/transaction/prev_tx_fetcher.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
+import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:flutter/foundation.dart';
 
 enum TrezorSignStep { idle, signing, done, error }
@@ -140,9 +142,17 @@ class TrezorSignViewModel extends ChangeNotifier {
       _startTimeout(_signTimeout, 'Signing timed out');
 
       _signedPsbt = await _device!.signTransaction(psbtBase64: psbtBase64, network: network);
+      final unsignedPsbt = Psbt.parse(psbtBase64);
+      final returnedPsbt = Psbt.parse(_signedPsbt);
+      TransactionIntentValidator.ensureMatches(unsignedPsbt.unsignedTransaction, returnedPsbt.unsignedTransaction);
 
       _cancelTimeout();
       _setState(TrezorSignStep.done);
+    } on TransactionIntentMismatchException catch (e) {
+      _cancelTimeout();
+      _signedPsbt = '';
+      _errorMessage = '${t.alert.signed_psbt.wrong_send_info}\n(${e.result.fieldPath})';
+      _setState(TrezorSignStep.error);
     } on TrezorConnectException catch (e) {
       _cancelTimeout();
       _errorMessage = e.message;

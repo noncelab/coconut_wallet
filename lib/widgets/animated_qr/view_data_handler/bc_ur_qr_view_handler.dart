@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/providers/view_model/send/air-gapped/unsigned_transaction_qr_view_model.dart';
-import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:ur/ur.dart';
 import 'package:ur/ur_encoder.dart';
 import 'package:ur/cbor_lite.dart';
@@ -14,7 +13,6 @@ class BcUrQrViewHandler implements IQrViewDataHandler {
   late UREncoder _urEncoder;
 
   BcUrQrViewHandler(this._source, this.qrScanDensity, Map<String, dynamic> data) {
-    printLongString('--> source: $_source');
     assert(data['urType'] != null);
     assert(data['urType'] is String);
     _urType = (data['urType'] as String).toLowerCase();
@@ -52,8 +50,6 @@ class BcUrQrViewHandler implements IQrViewDataHandler {
     // 10:  57 * 57       |          271
     // ...
     // 40: 177 * 177      |          2953
-
-    printLongString('--> source: ${UREncoder.encode(ur)}');
 
     // QrInputTooLongException 방지를 위해 maxFragmentLen을 더 작게 설정
     // 실제 QR 라이브러리 제한(1248 bytes)을 고려하여 보수적으로 설정

@@ -42,6 +42,24 @@ void main() {
       expect(wallet.descriptor.toUpperCase(), contains(fingerprint));
     });
 
+    test('top-level xfp가 bip84.xfp와 다르면 top-level xfp를 사용 (Sparrow Core Testnet)', () {
+      final ur = buildUrBytes({
+        'chain': 'TBTC',
+        'xfp': '8ECB04A1',
+        'account': 0,
+        'bip84': {'deriv': "m/84'/1'/0'", 'xpub': vpub, 'xfp': '0A391F1B', 'name': 'p2wpkh'},
+      });
+
+      final wallet = walletAddService.createWalletFromUrBytes(
+        ur: ur,
+        name: '패스포트 코어 테스트넷',
+        walletImportSource: WalletImportSource.passport,
+      );
+
+      expect(wallet.descriptor.toUpperCase(), contains('8ECB04A1'));
+      expect(wallet.descriptor.toUpperCase(), isNot(contains('0A391F1B')));
+    });
+
     test('bip84 정보가 없으면 예외 발생', () {
       final ur = buildUrBytes({'chain': 'TBTC', 'xfp': fingerprint, 'account': 0});
 

@@ -1,8 +1,5 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -15,8 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:ur/ur.dart';
-import 'package:cbor/cbor.dart';
 
 class SignedPsbtScannerScreen extends StatefulWidget {
   const SignedPsbtScannerScreen({super.key});
@@ -26,22 +21,20 @@ class SignedPsbtScannerScreen extends StatefulWidget {
 }
 
 class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   bool _isProcessing = false;
-  MobileScannerController? controller;
+  MobileScannerController? _controller;
 
-  late SignedPsbtScannerViewModel _viewModel;
-  late SignedPsbtScanDataHandler _qrScanDataHandler;
-  bool _isHandlerInitialized = false;
-  final int _qrScannerKey = 0; // QR 스캐너 재생성을 위한 key
+  late final SignedPsbtScannerViewModel _viewModel;
+  final SignedPsbtScanDataHandler _qrScanDataHandler = SignedPsbtScanDataHandler();
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, _) {
-        _stopCamera();
-        controller = null;
+        if (didPop) {
+          _stopCamera();
+        }
       },
       child: Scaffold(
         backgroundColor: context.coconutColors.background,
@@ -59,7 +52,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
               ),
               color: context.coconutColors.primaryText,
               onPressed: () {
-                controller?.switchCamera();
+                _controller?.switchCamera();
               },
             ),
           ],
@@ -69,7 +62,6 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             children: [
               // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
               CoconutQrScanner(
-                key: ValueKey(_qrScannerKey),
                 setMobileScannerController: _setQRViewController,
                 onComplete: _onCompletedScanning,
                 onFailed: _onFailedScanning,
@@ -91,120 +83,34 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   @override
-  void didUpdateWidget(covariant SignedPsbtScannerScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    String? currentRoute = ModalRoute.of(context)?.settings.name;
-
-    if (currentRoute != null && currentRoute.startsWith('/signed-psbt-scanner')) {
-      _isProcessing = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
-  }
-
-  @override
   void initState() {
     super.initState();
     _viewModel = SignedPsbtScannerViewModel(
       Provider.of<SendInfoProvider>(context, listen: false),
       Provider.of<WalletProvider>(context, listen: false),
     );
-    _initializeQrScanDataHandler();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    if (!_isHandlerInitialized) {
-      _initializeQrScanDataHandler();
-    }
-  }
-
-  void _initializeQrScanDataHandler() {
-    // 통합 핸들러로 변경
-    _qrScanDataHandler = SignedPsbtScanDataHandler();
-    _isHandlerInitialized = true;
-
-    // ColdCard는 BBQR 핸들러로 시작 (Raw 데이터와 BBQR 모두 처리 가능)
-    // if (_viewModel.walletImportSource == WalletImportSource.coldCard) {
-    //   _qrScanDataHandler = BbQrScanDataHandler();
-    //   _isHandlerInitialized = true;
-    // } else {
-    //   // 다른 하드웨어 지갑은 BcUr 핸들러 사용
-    //   _qrScanDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoPsbt, UrType.psbt]);
-    //   _isHandlerInitialized = true;
-    // }
   }
 
   Future<void> _onCompletedScanning(dynamic signedPsbt) async {
-    assert(_qrScanDataHandler.isCompleted() && _qrScanDataHandler.scanDataType != null);
+    final scanDataType = _qrScanDataHandler.scanDataType;
+    if (!_qrScanDataHandler.isCompleted() || scanDataType == null) return;
 
-    switch (_qrScanDataHandler.scanDataType) {
+    switch (scanDataType) {
       case SignedPsbtScanDataType.ur:
         await _onCompletedScanningForBcUr(signedPsbt);
       case SignedPsbtScanDataType.bbqr:
         await _onCompletedScanningForBbQr(signedPsbt);
       case SignedPsbtScanDataType.raw:
-        _onCompleteScanningRawSignedTx(signedPsbt);
-      default:
-        throw ArgumentError('Invalid scan data type');
+        await _onCompleteScanningRawSignedTx(signedPsbt as String);
     }
   }
 
   Future<void> _onCompletedScanningForBcUr(dynamic signedPsbt) async {
-    assert(signedPsbt is UR);
     if (_isProcessing) return;
     _isProcessing = true;
 
-    Psbt psbt;
     try {
-      final ur = signedPsbt as UR;
-      final cborBytes = ur.cbor;
-      final decodedCbor = cbor.decode(cborBytes) as CborBytes;
-      final encodedSignedPsbt = base64Encode(decodedCbor.bytes);
-      //printLongString('Unsigned PSBT waiting for sign: ${_viewModel.unsignedPsbtString}');
-      //printLongString('Signed PSBT scanned result: $encodedSignedPsbt');
-
-      psbt = _viewModel.parseBase64EncodedToPsbt(encodedSignedPsbt);
-    } catch (e) {
-      await _showErrorDialog(t.alert.invalid_qr);
-      return;
-    }
-
-    try {
-      bool isMatchingSignedPsbt;
-      try {
-        isMatchingSignedPsbt = _viewModel.isSignedPsbtMatchingUnsignedPsbt(psbt);
-      } catch (e) {
-        await _showErrorDialog(e.toString());
-        return;
-      }
-
-      if (!isMatchingSignedPsbt) {
-        await _showErrorDialog(t.alert.signed_psbt.wrong_send_info);
-        return;
-      }
-
-      if (_viewModel.isMultisig) {
-        int missingCount = _viewModel.getMissingSignaturesCount(psbt);
-        if (missingCount > 0) {
-          await _showErrorDialog(t.alert.signed_psbt.need_more_sign(count: missingCount));
-          return;
-        }
-      }
-
-      _viewModel.setSignedResult(psbt.serialize());
-
-      await _stopCamera();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/broadcasting');
-      }
+      await _handleProcessingResult(_viewModel.processUrSigningResult(signedPsbt));
     } catch (e) {
       await _showErrorDialog(t.alert.scan_failed_description(error: e));
     }
@@ -214,23 +120,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     if (_isProcessing) return;
     _isProcessing = true;
 
-    String? encodedSignedPsbt;
-    if (signedPsbt is Map) {
-      final String jsonString = jsonEncode(signedPsbt);
-      debugPrint(jsonString);
-      encodedSignedPsbt = jsonString;
-    } else if (signedPsbt is String) {
-      encodedSignedPsbt = signedPsbt;
-    }
-
-    assert(encodedSignedPsbt != null);
-
     try {
-      _viewModel.setSignedResult(encodedSignedPsbt!);
-      await _stopCamera();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/broadcasting');
-      }
+      await _handleProcessingResult(_viewModel.processBbQrSigningResult(signedPsbt));
     } catch (e) {
       await _showErrorDialog(t.alert.scan_failed_description(error: e));
     }
@@ -241,30 +132,42 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     _isProcessing = true;
 
     try {
-      _viewModel.setSignedResult(rawSignedTx);
-
-      await _stopCamera();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/broadcasting');
-      }
+      await _handleProcessingResult(_viewModel.processRawSigningResult(rawSignedTx));
     } catch (e) {
       await _showErrorDialog(t.alert.scan_failed_description(error: e));
     }
   }
 
-  void _onFailedScanning(String message, String? scannedData) async {
-    if (_isProcessing) return;
-    _isProcessing = true;
-
-    if (!_isHandlerInitialized) {
-      _initializeQrScanDataHandler();
-      _isProcessing = false;
+  Future<void> _handleProcessingResult(SignedScanProcessingResult result) async {
+    if (!result.isSuccess) {
+      await _showErrorDialog(_getProcessingErrorMessage(result));
       return;
     }
 
+    await _stopCamera();
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/broadcasting');
+    }
+  }
+
+  String _getProcessingErrorMessage(SignedScanProcessingResult result) {
+    return switch (result.error) {
+      SignedScanProcessingError.invalidPayload => t.alert.invalid_qr,
+      SignedScanProcessingError.transactionIntentMismatch => t.alert.signed_psbt.wrong_send_info,
+      SignedScanProcessingError.insufficientSignatures => t.alert.signed_psbt.need_more_sign(
+        count: result.missingSignatureCount!,
+      ),
+      null => '',
+    };
+  }
+
+  void _onFailedScanning(String message, String? _) async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
     String errorMessage;
     if (message == CoconutQrScanner.qrFormatErrorMessage) {
-      errorMessage = '${t.alert.invalid_qr}${scannedData != null ? "\ndata: $scannedData" : null}';
+      errorMessage = t.alert.invalid_qr;
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
     }
@@ -273,7 +176,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   Future<void> _showErrorDialog(String errorMessage) async {
-    showDialog(
+    if (!mounted) return;
+
+    await showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
@@ -281,8 +186,10 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           title: t.alert.scan_failed,
           description: errorMessage,
           onTapRight: () {
+            if (!mounted) return;
+
             _isProcessing = false;
-            controller?.start();
+            _controller?.start();
             Navigator.pop(context);
           },
           rightButtonText: t.OK,
@@ -292,13 +199,13 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   Future<void> _stopCamera() async {
-    if (controller != null) {
-      await controller!.stop();
+    if (_controller != null) {
+      await _controller!.stop();
     }
   }
 
-  void _setQRViewController(MobileScannerController qrViewcontroller) {
-    controller = qrViewcontroller;
+  void _setQRViewController(MobileScannerController qrViewController) {
+    _controller = qrViewController;
   }
 
   Widget _buildToolTip() {

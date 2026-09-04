@@ -67,16 +67,10 @@ class WalletAddService {
 
     try {
       final cborBytes = ur.cbor;
-      for (int i = 0; i < cborBytes.length; i++) {
-        Logger.logLongString('cborBytes[$i]: ${cborBytes[i]}');
-      }
       final decodedCbor = cbor.decode(cborBytes); // TODO: cborBytes == decodedCbor (?)
       FileLogger.log(className, methodName, 'cbor.decode completed');
       Map<dynamic, dynamic> cborMap = decodedCbor as Map<dynamic, dynamic>;
       FileLogger.log(className, methodName, 'decodedCbor converted to cborMap');
-      Logger.log('------------- cborMap -------------');
-      Logger.logMapRecursive(cborMap);
-      Logger.log('------------- jsonCompatibleMap -------------');
       Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
       FileLogger.log(className, methodName, 'convertKeysToString completed $jsonCompatibleMap');
       final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
@@ -103,7 +97,8 @@ class WalletAddService {
         throw 'Unexpected UR bytes payload type: ${decodedCbor.runtimeType}';
       }
       FileLogger.log(className, methodName, 'cbor.decode completed');
-      final json = jsonDecode(utf8.decode(decodedCbor));
+      final decodedText = utf8.decode(decodedCbor);
+      final json = jsonDecode(decodedText);
       if (json is! Map<String, dynamic>) {
         throw 'Unexpected UR bytes json type: ${json.runtimeType}';
       }
@@ -128,20 +123,27 @@ class WalletAddService {
 
     // Coldcard/Sparrow 스타일 BBQR 포맷: {"bip84": {"xpub": ..., "xfp": ..., "desc": ...}}
     if (json['bip84'] != null) {
-      xpub = json['bip84']['xpub'];
-      fingerprint = json['bip84']['xfp'];
+      final bip84 = json['bip84'];
+      xpub = bip84['xpub'];
+      final bip84Fingerprint = bip84['xfp'];
+      final topLevelFingerprint = json['xfp'];
+      if (topLevelFingerprint is String && topLevelFingerprint.isNotEmpty) {
+        fingerprint = topLevelFingerprint;
+      } else {
+        fingerprint = bip84Fingerprint;
+      }
 
-      if (json['bip84']['desc'] != null) {
-        descriptor = json['bip84']['desc'];
+      if (bip84['desc'] != null) {
+        descriptor = bip84['desc'];
       }
     } else if (json['keystore'] is Map) {
       // Electrum 지갑 파일 포맷 (Passport 등): {"keystore": {"xpub": ..., "derivation": "m/84'/.../...", "ckcc_xfp": ...}}
       final keystore = json['keystore'] as Map;
       final derivation = keystore['derivation'];
+      final ckccXfp = keystore['ckcc_xfp'];
       // Native SegWit만 지원하므로 파생 경로가 bip84가 아니면 지원 대상이 아님
       if (derivation is String && derivation.contains("84'")) {
         xpub = keystore['xpub'];
-        final ckccXfp = keystore['ckcc_xfp'];
         if (ckccXfp is int) {
           fingerprint = _ckccXfpToFingerprint(ckccXfp);
         }
@@ -167,7 +169,8 @@ class WalletAddService {
     }
 
     // xpub으로 지갑 생성 (fallback)
-    return createExtendedPublicKeyWallet(xpub, name, fingerprint, walletImportSource: walletImportSource);
+    final wallet = createExtendedPublicKeyWallet(xpub, name, fingerprint, walletImportSource: walletImportSource);
+    return wallet;
   }
 
   /// keystore.ckcc_xfp = 마스터 핑거프린트 리틀엔디언

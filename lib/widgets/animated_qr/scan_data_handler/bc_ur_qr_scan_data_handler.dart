@@ -39,7 +39,9 @@ class BcUrQrScanDataHandler implements IFragmentedQrScanDataHandler {
   bool joinData(String data) {
     if (_sequenceLength == null) {
       final sequenceLength = parseSequenceLength(data);
-      if (sequenceLength == null) return false;
+      if (sequenceLength == null) {
+        return false;
+      }
       _sequenceLength = sequenceLength;
     }
 
