@@ -38,6 +38,7 @@ abstract final class CommonActionIconPath {
   static const String removeMinus = 'assets/svg/common/actions/remove-minus.svg';
   static const String scan = 'assets/svg/common/actions/scan.svg';
   static const String trash = 'assets/svg/common/actions/trash.svg';
+  static const String rotate = 'assets/svg/common/actions/rotate.svg';
 }
 
 abstract final class CommonCommunicationIconPath {
@@ -66,6 +67,7 @@ abstract final class CommonFormIconPath {
 abstract final class CommonMenuIconPath {
   static const String hamburger = 'assets/svg/common/menu/hamburger.svg';
   static const String kebab = 'assets/svg/common/menu/kebab.svg';
+  static const String grid = 'assets/svg/common/menu/grid.svg';
 }
 
 abstract final class CommonNavigationIconPath {
@@ -92,6 +94,7 @@ abstract final class CommonStateIconPath {
   static const String circleInfo = 'assets/svg/common/state/circle-info.svg';
   static const String circleWarning = 'assets/svg/common/state/circle-warning.svg';
   static const String completionCheck = 'assets/svg/common/state/completion-check.svg';
+  static const String leafFall = 'assets/svg/common/state/leaf-fall.svg';
   static const String questionMark = 'assets/svg/common/state/question-mark.svg';
   static const String searchNotFound = 'assets/svg/common/state/search-not-found.svg';
   static const String shieldWarning = 'assets/svg/common/state/shield-warning.svg';

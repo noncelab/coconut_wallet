@@ -1049,6 +1049,8 @@ address_list_screen:
   share: "공유하기"
   enter_receive_amount: "받을 금액을 입력해 주세요"
 utxo_overview_screen:
+  overview: "개요"
+  list: "목록"
   by_amount: "금액별"
   by_tag: "태그별"
   interval_info_title: "구간 안내"
@@ -1056,6 +1058,9 @@ utxo_overview_screen:
   view_mode_grid: "그리드"
   no_tag_applied: "적용된 태그가 없어요"
   no_tag_applied_desc: "UTXO에 태그를 적용하면 태그별 구성을 확인할 수 있어요"
+  no_available_utxos: "사용 가능한 UTXO가 없어요"
+  no_locked_utxos: "사용 잠금 처리한 UTXO가 없어요"
+  no_change_utxos: "잔돈 UTXO가 없어요"
   total: "총액"
   untagged: "미분류"
   tagged: "태그 적용"
@@ -1117,13 +1122,27 @@ utxo_detail_screen:
 utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"
   add_tag: "+ 버튼을 눌러 첫 태그를 만들어 보세요"
+wallet_detail_screen:
+  recent_transactions: "최근 트랜잭션"
+  view_all: "모두 보기"
+  never_used_wallet: "사용한 적 없는 지갑이에요"
+  utxo_count(count): "UTXO · ${count}개"
+  utxo_overview: "한눈에 보기"
+  utxo_overview_description: "개요 • 목록"
+  utxo_organize: "정리하기"
+  utxo_organize_description: "나누기 • 합치기"
+
 wallet_info_screen:
   title: "$name 정보"
   transaction: "트랜잭션"
   utxo: "UTXO"
+  target: "목표"
   target_quantity: "목표 수량"
+  target_progress_title: "목표를 향해 쌓고 있어요"
+  target_exceeded_title: "축하해요! 목표를 달성했어요"
+  target_exceeded_secondary(amount): "목표보다 $amount 더 모았어요"
   target_progress: "$percent% / $target"
-  target_not_set_secondary: "목표 수량을 설정하면 달성률을 보여드려요"
+  target_not_set_secondary: "목표 수량을 설정해 보세요"
   target_set_title: "목표 설정"
   target_set_placeholder: "BTC 단위로 입력해 주세요"
   target_set_invalid: "0 BTC는 목표로 지정할 수 없어요"
@@ -1135,6 +1154,15 @@ wallet_info_screen:
   wallet_backup_data: "지갑 백업 데이터"
   confirm_backup_data: "백업 데이터 확인"
   no_info: "정보 없음"
+  memo_management: "메모 관리"
+  resync_label: "지갑 재동기화"
+  tag_count(count): "${count}개"
+  backup_required: "백업 필요"
+  delete_wallet: "지갑 삭제하기"
+  mnemonic_backup: "니모닉 백업"
+  all_addresses: "전체 주소"
+  extended_public_key: "확장 공개키"
+  tag_management: "태그 관리"
   tooltip:
     mfp_placeholder_description: "확장공개키로 추가한 지갑이며\n마스터 핑거프린트를 입력하지 않아\n00000000으로 표기돼요."
     wallet_backup_data: "이 지갑의 BSMS(BIP-129) 백업 정보입니다. 기기 분실 또는 교체 시, 이 데이터를 사용해 다중 서명 지갑을 재구성할 수 있습니다. 안전하게 보관하시고, 외부 공유 시 주의해 주세요."
@@ -1160,6 +1188,8 @@ wallet_info_screen:
     disconnect_confirm_description: "현재 연결된 기기를 해제합니다.\n다음 서명 시 다시 연결이 필요합니다."
 wallet_signer_section:
   title: "서명 방식"
+  view_details: "자세히 보기"
+  collapse: "접기"
   segmented_control:
     parent_key: "부모 키로"
     child_key: "자식 키로"
@@ -1720,3 +1750,6 @@ ccos:
   feature_status:
     activated: "활성화됨"
     purchased: "구매 완료"
+utxo_organizer_screen:
+  merge: "합치기"
+  split: "나누기"

@@ -35,15 +35,15 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.d
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_split_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_organizer_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/renewal_utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/renewal_wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/renewal_wallet_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_mnemonic_backup_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_passphrase_check_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_complete_screen.dart';
@@ -77,6 +77,11 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/wallet-detail':
         (context) =>
             _buildScreenWithArgs(context, (args) => WalletDetailScreen(id: args['id'], entryPoint: args['entryPoint'])),
+    '/renewal-wallet-detail':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => RenewalWalletDetailScreen(id: args['id'], entryPoint: args['entryPoint']),
+        ),
     '/wallet-backup-data':
         (context) => _buildScreenWithArgs(
           context,
@@ -116,8 +121,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             initialBitcoinUri: args['initialBitcoinUri'],
           ),
         ),
-    '/merge-utxos': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoMergeScreen(id: args['id'])),
-    '/split-utxo': (context) => _buildScreenWithArgs(context, (args) => UtxoSplitScreen(id: args['id'])),
+    '/utxo-organizer': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoOrganizerScreen(id: args['id'])),
     '/utxo-tag': (context) => _buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
     '/wallet-add-scanner':
         (context) => _buildLoadingScreenWithArgs(
@@ -127,12 +131,13 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/wallet-info':
         (context) => _buildLoadingScreenWithArgs(
           context,
-          (args) => WalletInfoScreen(
+          (args) => RenewalWalletInfoScreen(
             id: args['id'],
             walletType: args['walletType'],
             entryPoint: args['entryPoint'],
             showMfpInput: args['showMfpInput'] ?? false,
             highlightMnemonicBackup: args['highlightMnemonicBackup'] ?? false,
+            showTargetSetting: args['showTargetSetting'] ?? false,
           ),
         ),
     '/broadcasting-complete':
@@ -153,7 +158,8 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         (context) =>
             _buildLoadingScreenWithArgs(context, (args) => SendConfirmScreen(currentUnit: args['currentUnit'])),
     '/utxo-list': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoListScreen(id: args['id'])),
-    '/utxo-overview': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoOverviewScreen(id: args['id'])),
+    '/utxo-overview':
+        (context) => _buildLoadingScreenWithArgs(context, (args) => RenewalUtxoOverviewScreen(id: args['id'])),
     '/utxo-detail':
         (context) =>
             _buildLoadingScreenWithArgs(context, (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id'])),

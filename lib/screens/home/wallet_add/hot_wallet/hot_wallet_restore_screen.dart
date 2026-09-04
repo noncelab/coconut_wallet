@@ -1326,7 +1326,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       setState(() => _isCheckingDuplicate = false);
       if (context.read<AuthProvider>().isAuthEnabled) {
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/wallet-detail',
+          '/renewal-wallet-detail',
           (route) => route.isFirst,
           arguments: {'id': restoredWallet.id, 'entryPoint': kEntryPointWalletHome},
         );
@@ -1334,7 +1334,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         await showHotWalletAppLockGuideBottomSheet(context);
         if (!mounted) return;
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/wallet-detail',
+          '/renewal-wallet-detail',
           (route) => route.isFirst,
           arguments: {'id': restoredWallet.id, 'entryPoint': kEntryPointWalletHome},
         );
