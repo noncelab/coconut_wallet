@@ -341,11 +341,6 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                         style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.secondaryText),
                       ),
                     ] else ...[
-                      CoconutLayout.spacing_100h,
-                      Text(
-                        '${viewModel.currentUnit.displayBitcoinAmount(viewModel.balance, withUnit: true)} / ${t.wallet_info_screen.target} ${viewModel.currentUnit.displayBitcoinAmount(target, withUnit: true)}',
-                        style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
-                      ),
                       if (isTargetExceeded) ...[
                         CoconutLayout.spacing_100h,
                         Builder(
@@ -807,13 +802,7 @@ class _TargetProgressChartPainter extends CustomPainter {
       points.add(Offset(x, y.clamp(_topInset, bottomY)));
     }
 
-    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
-    for (var index = 1; index < points.length; index++) {
-      final previous = points[index - 1];
-      final current = points[index];
-      final controlX = (previous.dx + current.dx) / 2;
-      linePath.cubicTo(controlX, previous.dy, controlX, current.dy, current.dx, current.dy);
-    }
+    final linePath = _buildSmoothPath(points, topY: _topInset, bottomY: bottomY);
 
     final gradient = LinearGradient(
       begin: Alignment.topLeft,
@@ -879,6 +868,34 @@ class _TargetProgressChartPainter extends CustomPainter {
     );
     canvas.drawCircle(end, 3, Paint()..color = gradient.colors.last.withValues(alpha: 0.3));
     canvas.drawCircle(end, 2, Paint()..color = Colors.white);
+  }
+
+  Path _buildSmoothPath(List<Offset> points, {required double topY, required double bottomY}) {
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    if (points.length == 2) {
+      final start = points.first;
+      final end = points.last;
+      final controlX = (start.dx + end.dx) / 2;
+      return path..cubicTo(controlX, start.dy, controlX, end.dy, end.dx, end.dy);
+    }
+
+    const tension = 0.18;
+    for (var index = 0; index < points.length - 1; index++) {
+      final previous = index == 0 ? points[index] : points[index - 1];
+      final start = points[index];
+      final end = points[index + 1];
+      final next = index + 2 < points.length ? points[index + 2] : end;
+      final firstControl = Offset(
+        start.dx + (end.dx - previous.dx) * tension,
+        (start.dy + (end.dy - previous.dy) * tension).clamp(topY, bottomY),
+      );
+      final secondControl = Offset(
+        end.dx - (next.dx - start.dx) * tension,
+        (end.dy - (next.dy - start.dy) * tension).clamp(topY, bottomY),
+      );
+      path.cubicTo(firstControl.dx, firstControl.dy, secondControl.dx, secondControl.dy, end.dx, end.dy);
+    }
+    return path;
   }
 
   @override
