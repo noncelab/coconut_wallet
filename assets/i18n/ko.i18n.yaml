@@ -1750,3 +1750,6 @@ ccos:
   feature_status:
     activated: "활성화됨"
     purchased: "구매 완료"
+utxo_organizer_screen:
+  merge: "합치기"
+  split: "나누기"

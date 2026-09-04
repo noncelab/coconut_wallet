@@ -825,7 +825,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
       '/send',
       arguments: {
         'walletId': widget.id,
-        'sendEntryPoint': SendEntryPoint.walletDetail,
+        'sendEntryPoint': SendEntryPoint.renewalWalletDetail,
         'selectedUtxoList': selectedUtxos,
       },
     );
@@ -952,7 +952,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
       '/send',
       arguments: {
         'walletId': widget.id,
-        'sendEntryPoint': SendEntryPoint.walletDetail,
+        'sendEntryPoint': SendEntryPoint.renewalWalletDetail,
         'selectedUtxoList': selectedUtxos,
       },
     );

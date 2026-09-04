@@ -1733,3 +1733,6 @@ ccos:
   feature_status:
     activated: "有効化済み"
     purchased: "購入済み"
+utxo_organizer_screen:
+  merge: "まとめる"
+  split: "分ける"

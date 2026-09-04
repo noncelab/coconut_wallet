@@ -514,7 +514,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                       label: t.wallet_detail_screen.utxo_organize,
                       description: t.wallet_detail_screen.utxo_organize_description,
                       isEnabled: hasUtxo,
-                      onTap: () => Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id}),
+                      onTap: () => Navigator.pushNamed(context, '/utxo-organizer', arguments: {'id': widget.id}),
                     ),
                   ),
                 ],

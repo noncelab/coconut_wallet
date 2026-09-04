@@ -1709,3 +1709,6 @@ ccos:
   feature_status:
     activated: "Aktiviert"
     purchased: "Gekauft"
+utxo_organizer_screen:
+  merge: "Bündeln"
+  split: "Teilen"
