@@ -182,7 +182,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
         decoration:
             hasGradient
                 ? BoxDecoration(
-                  color: context.coconutColors.surface,
+                  color: context.coconutColors.background,
                   borderRadius: BorderRadius.circular(23), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
                 )
                 : null,
