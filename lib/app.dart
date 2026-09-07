@@ -48,7 +48,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     _saveMigratedWalletIds();
     BitBox02ConnectivityService.startMonitoring();
     TrezorBleConnectivityService.startMonitoring();
-    _logScreenView(AnalyticsScreenNames.splash);
   }
 
   @override
@@ -65,7 +64,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
   String? _extractAnalyticsScreenName(RouteSettings settings) {
     if (settings.name == Navigator.defaultRouteName) {
-      return _appEntryFlow == AppEntryFlow.main ? AnalyticsScreenNames.walletHome : null;
+      return switch (_appEntryFlow) {
+        AppEntryFlow.splash => AnalyticsScreenNames.splash,
+        AppEntryFlow.pinCheck => AnalyticsScreenNames.pinCheck,
+        AppEntryFlow.main => AnalyticsScreenNames.walletHome,
+      };
     }
     return settings.name;
   }
