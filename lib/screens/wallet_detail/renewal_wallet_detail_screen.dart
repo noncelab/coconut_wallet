@@ -76,7 +76,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
       context.read<NodeProvider>(),
       initialUnit: context.read<PreferenceProvider>().currentUnit,
     );
-    _playTargetFireworksOnEntry = _viewModel.isTargetExceeded;
+    _playTargetFireworksOnEntry = _viewModel.isTargetReached;
     _fireworksController = AnimationController(vsync: this);
     _fireworksFadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
   }
@@ -294,6 +294,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
     return Consumer<RenewalWalletDetailViewModel>(
       builder: (context, viewModel, _) {
         final target = viewModel.targetSats;
+        final isTargetReached = viewModel.isTargetReached;
         final isTargetExceeded = viewModel.isTargetExceeded;
         if (target == null && !viewModel.shouldShowTargetSuggestion) {
           return const SizedBox.shrink();
@@ -321,13 +322,13 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                           child: Text(
                             target == null
                                 ? 'Stay humble, stack sats!'
-                                : isTargetExceeded
+                                : isTargetReached
                                 ? t.wallet_info_screen.target_exceeded_title
                                 : t.wallet_info_screen.target_progress_title,
                             style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                           ),
                         ),
-                        if (target != null && !isTargetExceeded)
+                        if (target != null && !isTargetReached)
                           Text(
                             '${viewModel.targetProgressPercent}%',
                             style: CoconutTypography.body1_16_NumberBold.setColor(context.coconutColors.iconPrimary),
@@ -401,7 +402,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                     ),
                   ),
                 ),
-              if (_playTargetFireworksOnEntry && isTargetExceeded)
+              if (_playTargetFireworksOnEntry && isTargetReached)
                 Positioned(
                   top: -12,
                   right: 4,

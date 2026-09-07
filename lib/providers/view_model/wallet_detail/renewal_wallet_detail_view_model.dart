@@ -89,6 +89,7 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
     return progress < 0 ? 0 : progress;
   }
 
+  bool get isTargetReached => targetSats != null && balance >= targetSats!;
   bool get isTargetExceeded => targetSats != null && balance > targetSats!;
   int get targetExcessSats => isTargetExceeded ? balance - targetSats! : 0;
 
