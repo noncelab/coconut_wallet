@@ -14,6 +14,7 @@ import 'package:coconut_wallet/screens/settings/app_settings/about/coconut_crew_
 import 'package:coconut_wallet/screens/settings/app_settings/network/block_explorer_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/electrum_server_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/tools/log_viewer_screen.dart';
+import 'package:coconut_wallet/app/router/bip329_routes.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
@@ -41,6 +42,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.d
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_resync/wallet_resync_screen.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:flutter/widgets.dart';
 
@@ -66,7 +68,14 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           ),
         ),
     '/receive-address': (context) => _buildScreenWithArgs(context, (args) => ReceiveAddressScreen(id: args['id'])),
-    '/address-list': (context) => _buildScreenWithArgs(context, (args) => AddressListScreen(id: args['id'])),
+    '/address-list':
+        (context) => _buildScreenWithArgs(
+          context,
+          (args) => AddressListScreen(
+            id: args['id'],
+            initialShowOnlyWatchedAddresses: args['initialShowOnlyWatchedAddresses'] ?? false,
+          ),
+        ),
     '/wallet-detail':
         (context) =>
             _buildScreenWithArgs(context, (args) => WalletDetailScreen(id: args['id'], entryPoint: args['entryPoint'])),
@@ -112,6 +121,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/merge-utxos': (context) => _buildLoadingScreenWithArgs(context, (args) => UtxoMergeScreen(id: args['id'])),
     '/split-utxo': (context) => _buildScreenWithArgs(context, (args) => UtxoSplitScreen(id: args['id'])),
     '/utxo-tag': (context) => _buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
+    '/wallet-resync': (context) => _buildScreenWithArgs(context, (args) => WalletResyncScreen(id: args['id'])),
     '/wallet-add-scanner':
         (context) => _buildLoadingScreenWithArgs(
           context,
@@ -214,6 +224,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             transport: args['transport'] == 'usb' ? TrezorTransport.usb : TrezorTransport.ble,
           ),
         ),
+    ...buildBip329Routes(),
   };
 }
 

@@ -59,8 +59,8 @@ class WalletMock {
         'tpubDDMbU29QrSafD2Ui4yGv31Xp3PPSMvudreoohYjR8xLTng7hbsjYwUTeRhiKULFqX16M5M8zZh9siw5i6RRyisc6LtWjr1FwBYTiZUGGYJN';
     const childTaprootXpub =
         'tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8';
-    const inheritanceMiniscript = 'and_v(v:pk([70C4E9DE/86\'/1\'/0\']$childTaprootXpub/<0;1>/*),older(500000000))';
-    const descriptor = 'tr([9B1441E4/86\'/1\'/0\']$parentTaprootXpub/<0;1>/*,{$inheritanceMiniscript})#w0hf4lu5';
+    const inheritanceMiniscript = 'and_v(v:pk([70C4E9DE/86\'/1\'/0\']$childTaprootXpub/<0;1>/*),after(500000000))';
+    const descriptor = 'tr([9B1441E4/86\'/1\'/0\']$parentTaprootXpub/<0;1>/*,{$inheritanceMiniscript})#652j50l8';
 
     return TaprootWalletItem(
       id: id,

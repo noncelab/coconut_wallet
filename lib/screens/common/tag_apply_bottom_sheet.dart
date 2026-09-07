@@ -364,9 +364,10 @@ class TagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foregroundColor = tagColorPalette[tag.colorIndex];
+    final colorIndex = ColorUtil.normalizePaletteIndex(tag.colorIndex);
+    final foregroundColor = tagColorPalette[colorIndex];
     final backgroundColor = foregroundColor.withValues(alpha: 0.18);
-    final style = _getStyle(context, foregroundColor);
+    final style = _getStyle(context, foregroundColor, colorIndex);
 
     Widget innerContent = Row(
       mainAxisSize: MainAxisSize.min,
@@ -413,7 +414,7 @@ class TagChip extends StatelessWidget {
     );
   }
 
-  _ChipStyle _getStyle(BuildContext context, Color foregroundColor) {
+  _ChipStyle _getStyle(BuildContext context, Color foregroundColor, int colorIndex) {
     if (isDeletionMode) {
       return _ChipStyle(
         borderColor: foregroundColor,
@@ -437,7 +438,7 @@ class TagChip extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [CoconutColors.backgroundColorPaletteDark[tag.colorIndex], foregroundColor],
+            colors: [CoconutColors.backgroundColorPaletteDark[colorIndex], foregroundColor],
           ),
         );
       case TagApplyState.checked:

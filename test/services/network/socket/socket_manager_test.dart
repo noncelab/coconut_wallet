@@ -100,20 +100,14 @@ void main() {
       });
 
       test('일반 연결 성공 시 연결 상태가 연결됨이어야 함', () async {
-        when(mockSocketFactory.createSocket(any, any)).thenAnswer((_) async => mockSocket);
+        when(
+          mockSocketFactory.createSocket(any, any, timeout: anyNamed('timeout')),
+        ).thenAnswer((_) async => mockSocket);
 
         await socketManager.connect('localhost', 8080, ssl: false);
 
         expect(socketManager.connectionStatus, equals(SocketConnectionStatus.connected));
-        verify(mockSocketFactory.createSocket('localhost', 8080)).called(1);
-      });
-
-      test('연결 실패 시 재연결 상태로 변경되어야 함', () async {
-        when(mockSocketFactory.createSecureSocket(any, any)).thenThrow(const SocketException('연결 실패'));
-
-        await socketManager.connect('localhost', 8080);
-
-        expect(socketManager.connectionStatus, equals(SocketConnectionStatus.reconnecting));
+        verify(mockSocketFactory.createSocket('localhost', 8080, timeout: anyNamed('timeout'))).called(1);
       });
 
       test('최대 연결 시도 횟수 초과 시 연결 상태가 종료됨이어야 함', () async {
@@ -333,26 +327,6 @@ void main() {
       expect(socketManager.connectionStatus, equals(SocketConnectionStatus.terminated));
     });
 
-    test('재연결 콜백 테스트', () async {
-      when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
-
-      bool callbackCalled = false;
-      socketManager.onReconnect = () {
-        callbackCalled = true;
-      };
-
-      // 처음 연결
-      await socketManager.connect('localhost', 8080, ssl: true);
-
-      // 오류 발생 시뮬레이션
-      streamController.addError(Exception('연결 오류'));
-
-      // 재연결 지연 시간 기다림
-      await Future.delayed(const Duration(seconds: 2));
-
-      expect(callbackCalled, isTrue);
-    });
-
     test('구독 콜백 제거 테스트', () async {
       when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
@@ -397,6 +371,22 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 100));
 
       expect(socketManager.connectionStatus, equals(SocketConnectionStatus.terminated));
+    });
+
+    test('markConnectionLost()를 외부에서 호출하면(예: ping 실패) 소켓 자체 에러 없이도 연결 상태가 종료됨으로 바뀌고 onConnectionLost가 호출된다', () async {
+      when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
+
+      await socketManager.connect('localhost', 8080, ssl: true);
+      expect(socketManager.connectionStatus, equals(SocketConnectionStatus.connected));
+
+      var connectionLostCalled = false;
+      socketManager.onConnectionLost = () => connectionLostCalled = true;
+
+      // 소켓 자체는 onError/onDone을 전혀 발화하지 않는 "blackhole" 상태를 흉내낸다.
+      socketManager.markConnectionLost();
+
+      expect(socketManager.connectionStatus, equals(SocketConnectionStatus.terminated));
+      expect(connectionLostCalled, true);
     });
   });
 }

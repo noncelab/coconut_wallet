@@ -365,6 +365,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
             address: addressList[index].address,
             derivationPath: addressList[index].derivationPath,
             isUsed: addressList[index].isUsed,
+            isWatched: viewModel.isAddressWatched(addressList[index]),
             balanceInSats: addressList[index].total,
             currentUnit: context.read<PreferenceProvider>().currentUnit,
           ),

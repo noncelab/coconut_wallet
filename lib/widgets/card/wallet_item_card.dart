@@ -32,6 +32,7 @@ class WalletItemCard extends StatelessWidget {
   final VoidCallback? onLongPressed;
   final Widget rightWidget;
   final VoidCallback onPressed;
+  final int? watchedAddressCount;
 
   const WalletItemCard({
     super.key,
@@ -53,6 +54,7 @@ class WalletItemCard extends StatelessWidget {
     this.onLongPressed,
     required this.rightWidget,
     required this.onPressed,
+    this.watchedAddressCount,
   });
 
   @override
@@ -111,6 +113,7 @@ class WalletItemCard extends StatelessWidget {
       walletItem.name,
       if (isPrimaryWallet == true) t.wallet_list.primary_wallet,
       if (isExcludeFromTotalBalance == true) t.wallet_list.exclude_from_total_amount,
+      if (watchedAddressCount != null) t.wallet_list.watched_addresses(count: watchedAddressCount!),
     ];
 
     return Container(

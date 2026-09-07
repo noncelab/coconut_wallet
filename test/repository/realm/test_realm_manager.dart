@@ -7,9 +7,23 @@ import 'package:realm/realm.dart';
 ///
 /// 인메모리 Realm 데이터베이스를 사용하여 테스트 환경을 제공합니다.
 class TestRealmManager implements RealmManager {
+  static int _instanceCounter = 0;
+
   final Realm _realm;
 
-  TestRealmManager() : _realm = Realm(Configuration.inMemory(realmAllSchemas));
+  // path 없이 Configuration.inMemory()를 쓰면 모든 인스턴스가 이름 없는 같은 in-memory DB를
+  // 공유한다. 이 공유 범위는 Dart isolate가 아니라 "실행 중인 프로세스 전체"라서, flutter
+  // test가 여러 테스트 파일을 각자 isolate로 나눠 동시에 돌려도 서로 격리되지 않는다.
+  // 그 결과 한 파일의 tearDown(realm.close())이 아직 같은 DB를 쓰고 있는 다른 파일의
+  // 테스트를 깨뜨린다(RealmException: invalidated or deleted object).
+  // → 인스턴스마다 고유한 path를 줘서 완전히 별도의 DB로 분리한다.
+  TestRealmManager()
+    : _realm = Realm(
+        Configuration.inMemory(
+          realmAllSchemas,
+          path: 'test_${DateTime.now().microsecondsSinceEpoch}_${_instanceCounter++}.realm',
+        ),
+      );
 
   @override
   Realm get realm => _realm;

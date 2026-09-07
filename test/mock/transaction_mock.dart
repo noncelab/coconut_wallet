@@ -1,10 +1,13 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 
 class TransactionMock {
-  static const String testTxHash = 'test_tx_hash';
+  static const String testTxHash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
   /// 테스트용 기본 트랜잭션 객체 생성 메서드
   static TransactionRecord createMockTransactionRecord({
@@ -85,7 +88,8 @@ class TransactionMock {
         TransactionInput.forPayment('0000000000000000000000000000000000000000000000000000000000000000', 4294967295),
       );
     } else {
-      inputs.add(TransactionInput.forPayment(inputTransactionHash ?? Hash.sha256('$toAddress$amount').toString(), 0));
+      final transactionHash = inputTransactionHash ?? sha256.convert(utf8.encode('$toAddress$amount')).toString();
+      inputs.add(TransactionInput.forPayment(transactionHash, 0));
     }
 
     outputs.add(TransactionOutput.forPayment(amount, toAddress));

@@ -4,8 +4,7 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/analytics/analytics_event_names.dart';
-import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -568,10 +567,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     switch (addResult.result) {
       case WalletSyncResult.newWalletAdded:
         {
-          context.read<AnalyticsService>().logEvent(
-            eventName: AnalyticsEventNames.walletAddCompleted,
-            parameters: {AnalyticsParameterNames.walletAddImportSource: widget.importSource.name},
-          );
+          context.read<AnalyticsService>().logWalletAddCompleted(widget.importSource);
 
           if (widget.onNewWalletAdded != null) {
             widget.onNewWalletAdded!(addResult);

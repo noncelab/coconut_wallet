@@ -125,11 +125,12 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                         spacing: 4,
                         runSpacing: 4,
                         children: List.generate(widget.utxoTags?.length ?? 0, (index) {
-                          Color foregroundColor = tagColorPalette[widget.utxoTags?[index].colorIndex ?? 0];
+                          final colorIndex = ColorUtil.normalizePaletteIndex(widget.utxoTags?[index].colorIndex ?? 0);
+                          Color foregroundColor = tagColorPalette[colorIndex];
                           return IntrinsicWidth(
                             child: CoconutChip(
                               minWidth: 40,
-                              color: CoconutColors.backgroundColorPaletteDark[widget.utxoTags?[index].colorIndex ?? 0],
+                              color: CoconutColors.backgroundColorPaletteDark[colorIndex],
                               borderColor: foregroundColor,
                               label: '#${widget.utxoTags?[index].name ?? ''}',
                               labelSize: 12,

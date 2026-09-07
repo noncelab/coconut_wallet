@@ -24,19 +24,26 @@ Generate store-ready release-note files from the Korean source without inferring
    python3 .agents/skills/generate-store-release-notes/scripts/validate_release_metadata.py --flavor <flavor> --print-plan
    ```
 
-11. Write UTF-8 files with one trailing newline to every planned iOS and Android path. Use identical text for the corresponding iOS and Android language; only locale directory names differ.
-12. Validate all generated files:
+11. Remove every existing `.txt` file for the selected flavor under both generated platform directories before writing new release notes:
+
+   ```bash
+   python3 .agents/skills/generate-store-release-notes/scripts/validate_release_metadata.py --flavor <flavor> --clean
+   ```
+
+   This command validates that the Korean source exists and is meaningful before deleting anything. Do not manually broaden the cleanup scope.
+12. Write UTF-8 files with one trailing newline to every planned iOS and Android path. Use identical text for the corresponding iOS and Android language; only locale directory names differ.
+13. Validate all generated files:
 
    ```bash
    python3 .agents/skills/generate-store-release-notes/scripts/validate_release_metadata.py --flavor <flavor>
    ```
 
-13. Report the flavor, Android version code, generated paths, and validation result. Remind the user to review translations before deployment.
+14. Report the flavor, Android version code, cleanup count, generated paths, and validation result. Remind the user to review translations before deployment.
 
 ## Boundaries
 
 - Modify only `fastlane/store_metadata/generated/<platform>/<flavor>/` for generated output.
 - Do not modify the Korean source unless the user explicitly asks for editing.
-- Do not delete older Android changelog files.
+- Cleanup may delete only `.txt` files within `fastlane/store_metadata/generated/<platform>/<flavor>/` for the selected flavor.
 - Do not modify `Makefile`, either platform's `Fastfile`, credentials, or review attachments.
 - Do not invoke Fastlane, build an app, upload metadata, or request store review.

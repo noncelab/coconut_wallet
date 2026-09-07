@@ -12,7 +12,7 @@ TransactionRecord _createRecord({
   List<TransactionAddress>? outputs,
 }) {
   return TransactionRecord.fromTransactions(
-    transactionHash: 'txhash_${DateTime.now().microsecondsSinceEpoch}',
+    transactionHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     timestamp: DateTime.now(),
     blockHeight: 100,
     transactionType: type,
@@ -26,7 +26,7 @@ TransactionRecord _createRecord({
 
 UtxoState _createUtxo({required int amount}) {
   return UtxoState(
-    transactionHash: 'txhash_utxo',
+    transactionHash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
     index: 0,
     amount: amount,
     derivationPath: "m/84'/0'/0'/0/0",

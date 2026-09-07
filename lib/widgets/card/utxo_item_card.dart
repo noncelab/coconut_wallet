@@ -162,11 +162,12 @@ class UtxoItemCard extends StatelessWidget {
                               return Container();
                             }
                           }
-                          Color foregroundColor = tagColorPalette[utxo.tags?[index - 1].colorIndex ?? 0];
+                          final colorIndex = ColorUtil.normalizePaletteIndex(utxo.tags?[index - 1].colorIndex ?? 0);
+                          Color foregroundColor = tagColorPalette[colorIndex];
                           return IntrinsicWidth(
                             child: CoconutChip(
                               minWidth: 40,
-                              color: CoconutColors.backgroundColorPaletteDark[utxo.tags?[index - 1].colorIndex ?? 0],
+                              color: CoconutColors.backgroundColorPaletteDark[colorIndex],
                               borderColor: foregroundColor,
                               label: '#${utxo.tags?[index - 1].name ?? ''}',
                               labelSize: 12,

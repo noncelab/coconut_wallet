@@ -169,6 +169,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
       context.read<ConnectivityProvider>(),
       context.read<PriceProvider>(),
       context.read<PreferenceProvider>(),
+      context.read<NodeProvider>(),
       context.read<NodeProvider>().getWalletStateStream(widget.id),
     );
 

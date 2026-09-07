@@ -652,7 +652,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
 
           if (tags.isNotEmpty) {
             final firstTag = tags.first;
-            final int colorIndex = firstTag.colorIndex;
+            final colorIndex = ColorUtil.normalizePaletteIndex(firstTag.colorIndex);
             final Color foregroundColor = tagColorPalette[colorIndex];
 
             inlineWidgets.add(

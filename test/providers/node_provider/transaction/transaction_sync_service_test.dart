@@ -100,7 +100,10 @@ void main() {
       final scriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
 
       // 모의 historyList 설정
-      final historyList = [GetTxHistoryRes(height: 100, txHash: 'tx1'), GetTxHistoryRes(height: 0, txHash: 'tx2')];
+      final historyList = [
+        GetTxHistoryRes(height: 100, txHash: '0000000000000000000000000000000000000000000000000000000000000001'),
+        GetTxHistoryRes(height: 0, txHash: '0000000000000000000000000000000000000000000000000000000000000002'),
+      ];
 
       // mock 동작 설정
       when(electrumService.getHistory(AddressType.p2wpkh, scriptStatus.address)).thenAnswer((_) async => historyList);
@@ -114,9 +117,9 @@ void main() {
 
       // 검증
       expect(result.length, 2);
-      expect(result[0].transactionHash, 'tx1');
+      expect(result[0].transactionHash, '0000000000000000000000000000000000000000000000000000000000000001');
       expect(result[0].height, 100);
-      expect(result[1].transactionHash, 'tx2');
+      expect(result[1].transactionHash, '0000000000000000000000000000000000000000000000000000000000000002');
       expect(result[1].height, 0);
     });
   });
@@ -298,7 +301,7 @@ void main() {
       final originalTx = TransactionMock.createMockTransaction(
         toAddress: testWalletItem.walletBase.getAddress(0),
         amount: 1000000,
-        inputTransactionHash: Hash.sha256('original_tx_hash_input').toString(),
+        inputTransactionHash: '1111111111111111111111111111111111111111111111111111111111111111',
       );
 
       // 대체될 트랜잭션

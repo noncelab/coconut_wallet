@@ -14,7 +14,9 @@ import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/view_model/settings/label_export_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
@@ -22,6 +24,7 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/widgets/card/taproot_participant_card.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:share_plus/share_plus.dart';
 
 class WalletInfoViewModel extends ChangeNotifier {
   final int _walletId;
@@ -30,7 +33,9 @@ class WalletInfoViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
+  late final LabelExportViewModel _labelExportViewModel = LabelExportViewModel(walletProvider: _walletProvider);
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
+  bool _disposed = false;
 
   late String _walletName;
   late String _extendedPublicKey;
@@ -47,11 +52,11 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   void _onWalletProviderChanged() {
-    if (!_walletProvider.walletItemList.any((w) => w.id == _walletId)) {
+    if (_disposed || !_walletProvider.walletItemList.any((w) => w.id == _walletId)) {
       return;
     }
     _loadWalletData();
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _loadWalletData() {
@@ -78,6 +83,8 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo newInfo) {
+    if (_disposed) return;
+
     final prev = _prevWalletUpdateInfo;
     _prevWalletUpdateInfo = newInfo;
 
@@ -87,11 +94,17 @@ class WalletInfoViewModel extends ChangeNotifier {
     final utxoCompleted = prev.utxo != WalletSyncState.completed && newInfo.utxo == WalletSyncState.completed;
 
     if (balanceCompleted || txCompleted || utxoCompleted) {
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
+  void _safeNotifyListeners() {
+    if (!_disposed) notifyListeners();
+  }
+
   bool get isSetPin => _authProvider.isSetPin;
+
+  int get walletId => _walletId;
 
   String get walletName => _walletName;
   WalletItemBase get walletItemBase => _walletItemBase;
@@ -105,6 +118,7 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   int get transactionCount => _walletProvider.getTransactionRecordList(_walletId).length;
   int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
+  int get watchedAddressCount => _walletProvider.getWatchedAddressCount(_walletId);
   Balance get walletBalance => _walletProvider.getWalletBalance(_walletId);
 
   bool get hasTaprootKeyPath =>
@@ -291,9 +305,22 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _syncWalletStateSubscription?.cancel();
     _walletProvider.removeListener(_onWalletProviderChanged);
 
     super.dispose();
+  }
+
+  List<RealmTransactionMemo> getAllTransactionMemos() {
+    return _walletProvider.getAllTransactionMemos(_walletId);
+  }
+
+  Future<XFile?> createLabelsJsonLFile() async {
+    return _labelExportViewModel.exportLabelsForWallet(_walletId);
+  }
+
+  Future<void> shareLabelsFile(XFile file) async {
+    await _labelExportViewModel.shareFile(file);
   }
 }

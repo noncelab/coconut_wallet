@@ -1,6 +1,7 @@
 import 'dart:isolate';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/resync_progress.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
@@ -153,6 +154,30 @@ class IsolateStateManager implements StateManagerInterface {
   @override
   void setNodeSyncStateToFailed() {
     _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToFailed, []));
+  }
+
+  /// 지갑 재동기화 단계 변경을 메인 스레드로 전송
+  void setWalletResyncPhase(int walletId, ResyncPhase phase, {String? errorMessage}) {
+    _sendStateUpdateToMain(
+      IsolateStateMessage(IsolateStateMethod.setWalletResyncPhase, [walletId, phase, errorMessage]),
+    );
+  }
+
+  /// 지갑 재동기화 fetch 진행률(scanning 단계, 총량 확정 이후)을 메인 스레드로 전송
+  void setWalletResyncFetchProgress(int walletId, int completed, int total) {
+    _sendStateUpdateToMain(
+      IsolateStateMessage(IsolateStateMethod.setWalletResyncFetchProgress, [walletId, completed, total]),
+    );
+  }
+
+  @override
+  void addWalletFetchDispatched(int walletId, int count) {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.addWalletFetchDispatched, [walletId, count]));
+  }
+
+  @override
+  void addWalletFetchCompleted(int walletId, int count) {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.addWalletFetchCompleted, [walletId, count]));
   }
 
   bool _isWalletAnySyncing(int walletId) {

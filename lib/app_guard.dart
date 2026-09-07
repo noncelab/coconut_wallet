@@ -9,12 +9,16 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/icon/splash_logo_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_capture_event/screen_capture_event.dart';
+
+/// 백그라운드 체류가 이보다 길었을 때만 resume 시 소켓 생존 여부 확인
+const Duration _kBackgroundSocketHealthCheckThreshold = Duration(seconds: 30);
 
 // 앱 root 화면(WalletListScreen)의 부모 위젯으로 설정하여 항상 활성화 된 위젯으로 유지
 class AppGuard extends StatefulWidget {
@@ -44,9 +48,11 @@ class _AppGuardState extends State<AppGuard> {
   late PriceProvider _priceProvider;
   late AuthProvider _authProvider;
   late NodeProvider _nodeProvider;
+  late WalletProvider _walletProvider;
   late ConnectivityProvider _connectivityProvider;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   bool _isPaused = false;
+  DateTime? _pausedAt;
   late final AppLifecycleListener _lifecycleListener;
 
   /// 안드로이드에서 앱 실행 시 홈화면 시작 후, inactive -> resume이 항상 한번 실행되면서 PrivacyScreen이 보이는 문제
@@ -58,6 +64,7 @@ class _AppGuardState extends State<AppGuard> {
 
     _priceProvider = Provider.of<PriceProvider>(context, listen: false);
     _nodeProvider = Provider.of<NodeProvider>(context, listen: false);
+    _walletProvider = Provider.of<WalletProvider>(context, listen: false);
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
 
@@ -97,11 +104,15 @@ class _AppGuardState extends State<AppGuard> {
           _priceProvider.initWebSocketService();
         }
         _handleNodeProviderReconnect();
+        for (final wallet in _walletProvider.walletItemList) {
+          unawaited(_nodeProvider.syncDormantAddresses(wallet));
+        }
         break;
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
         FileLogger.dispose();
       case AppLifecycleState.paused:
+        _pausedAt = DateTime.now();
         if (_isPaused) break;
         setState(() {
           _isPaused = true;
@@ -118,7 +129,7 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   /// NodeProvider 재연결
-  void _handleNodeProviderReconnect() {
+  Future<void> _handleNodeProviderReconnect() async {
     // 1. 초기화가 진행 중이면 reconnect 무시
     if (_nodeProvider.isInitializing) {
       Logger.log('AppGuard: NodeProvider is initializing, skipping reconnect');
@@ -139,16 +150,28 @@ class _AppGuardState extends State<AppGuard> {
       return;
     }
 
-    // 4. 이미 초기화되어 있고 연결이 정상인 경우 reconnect 무시
-    if (_nodeProvider.isInitialized && !_nodeProvider.hasConnectionError && nodeSyncState != NodeSyncState.failed) {
+    // 4. 연결 에러가 있거나 ping이 실패한 경우 재연결
+    if (_nodeProvider.hasConnectionError || nodeSyncState == NodeSyncState.failed) {
+      Logger.log('AppGuard: Connection issues detected, attempting reconnect');
+      _nodeProvider.reconnect();
+      return;
+    }
+
+    // 5. 위 플래그들은 정상이라고 해도, 백그라운드 체류가 길었으면 오래 들고 있던 소켓이 OS에 의해 끊길 수 있음.
+    // (hasConnectionError/failed로 안 잡히는 상태) 짧은 전환에서 매번 확인하면 낭비이므로,
+    // [_kBackgroundSocketHealthCheckThreshold] 이상 백그라운드에 있었을 때만 소켓 상태를 확인한다.
+    final pausedAt = _pausedAt;
+    if (pausedAt == null || DateTime.now().difference(pausedAt) < _kBackgroundSocketHealthCheckThreshold) {
       Logger.log('AppGuard: Connection is healthy, skipping reconnect');
       return;
     }
 
-    // 5. 연결 에러가 있거나 ping이 실패한 경우 재연결
-    if (_nodeProvider.hasConnectionError || nodeSyncState == NodeSyncState.failed) {
-      Logger.log('AppGuard: Connection issues detected, attempting reconnect');
+    final probe = await _nodeProvider.getLatestBlock();
+    if (probe.isFailure) {
+      Logger.log('AppGuard: Long background + held socket probe failed, forcing reconnect');
       _nodeProvider.reconnect();
+    } else {
+      Logger.log('AppGuard: Long background but held socket still alive, skipping reconnect');
     }
   }
 

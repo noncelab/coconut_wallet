@@ -24,7 +24,7 @@ class ServerFeaturesRes {
   String? hashFunction;
   @JsonKey(name: 'pruning')
   int? pruning;
-  @JsonKey(name: 'hosts')
+  @JsonKey(name: 'hosts', fromJson: _hostsFromJson)
   Map<String, HostsPort> hosts;
 
   ServerFeaturesRes({
@@ -38,6 +38,24 @@ class ServerFeaturesRes {
   });
 
   factory ServerFeaturesRes.fromJson(Map<String, dynamic> json) => _$ServerFeaturesResFromJson(json);
+}
+
+Map<String, HostsPort> _hostsFromJson(dynamic json) {
+  if (json is! Map) {
+    return {};
+  }
+  final result = <String, HostsPort>{};
+  for (final entry in json.entries) {
+    final value = entry.value;
+    if (value is Map<String, dynamic>) {
+      try {
+        result[entry.key.toString()] = HostsPort.fromJson(value);
+      } catch (_) {
+        continue;
+      }
+    }
+  }
+  return result;
 }
 
 @JsonSerializable()

@@ -392,12 +392,13 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
   }
 
   Widget _buildTagChip(UtxoTag tag) {
-    final foregroundColor = tagColorPalette[tag.colorIndex];
+    final colorIndex = ColorUtil.normalizePaletteIndex(tag.colorIndex);
+    final foregroundColor = tagColorPalette[colorIndex];
 
     return IntrinsicWidth(
       child: CoconutChip(
         minWidth: 40,
-        color: CoconutColors.backgroundColorPaletteDark[tag.colorIndex],
+        color: CoconutColors.backgroundColorPaletteDark[colorIndex],
         borderColor: foregroundColor,
         label: '#${tag.name}',
         labelSize: 14,

@@ -662,11 +662,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                 spacing: 4,
                 runSpacing: 4,
                 children: List.generate(selectedTags.length, (index) {
-                  final foregroundColor = tagColorPalette[selectedTags[index].colorIndex];
+                  final colorIndex = ColorUtil.normalizePaletteIndex(selectedTags[index].colorIndex);
+                  final foregroundColor = tagColorPalette[colorIndex];
                   return IntrinsicWidth(
                     child: CoconutChip(
                       minWidth: 40,
-                      color: CoconutColors.backgroundColorPaletteDark[selectedTags[index].colorIndex],
+                      color: CoconutColors.backgroundColorPaletteDark[colorIndex],
                       borderColor: foregroundColor,
                       label: '#${selectedTags[index].name}',
                       labelSize: 12,

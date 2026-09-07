@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print or validate coconut_wallet store release-note output paths."""
+"""Clean, print, or validate coconut_wallet store release-note output paths."""
 
 from __future__ import annotations
 
@@ -41,6 +41,18 @@ def output_paths(root: Path, flavor: str, version_code: int) -> list[Path]:
     return ios + android
 
 
+def clean_generated_text_files(root: Path, flavor: str) -> list[Path]:
+    generated = root / "fastlane" / "store_metadata" / "generated"
+    flavor_roots = (generated / "ios" / flavor, generated / "android" / flavor)
+    removed: list[Path] = []
+    for flavor_root in flavor_roots:
+        for path in sorted(flavor_root.rglob("*.txt")):
+            if path.is_file() or path.is_symlink():
+                path.unlink()
+                removed.append(path)
+    return removed
+
+
 def meaningful_source(text: str) -> str:
     return re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL).strip()
 
@@ -73,7 +85,9 @@ def validate_outputs(paths: list[Path]) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--flavor", choices=("mainnet", "regtest"), required=True)
-    parser.add_argument("--print-plan", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--print-plan", action="store_true")
+    mode.add_argument("--clean", action="store_true")
     args = parser.parse_args()
 
     root = repository_root()
@@ -93,6 +107,18 @@ def main() -> int:
         print(f"output={path.relative_to(root)}")
 
     if args.print_plan:
+        return 0
+
+    if args.clean:
+        errors = validate_source(source)
+        if errors:
+            for error in errors:
+                print(f"ERROR: {error}", file=sys.stderr)
+            return 1
+        removed = clean_generated_text_files(root, args.flavor)
+        for path in removed:
+            print(f"removed={path.relative_to(root)}")
+        print(f"cleaned={len(removed)}")
         return 0
 
     errors = validate_source(source) + validate_outputs(outputs)

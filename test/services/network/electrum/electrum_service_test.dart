@@ -98,7 +98,10 @@ void main() {
         'result': {'confirmed': 0, 'unconfirmed': 0},
       });
     });
-    final response = await electrumClient.getBalance(AddressType.p2wpkh, '0123456789abcdef');
+    final response = await electrumClient.getBalance(
+      AddressType.p2wpkh,
+      'bcrt1qp26663xm90par286v03syukvjnkdfzyy88zh5s',
+    );
 
     expect(response.confirmed, 0);
     expect(response.unconfirmed, 0);
@@ -123,7 +126,10 @@ void main() {
         ],
       });
     });
-    final response = await electrumClient.getHistory(AddressType.p2wpkh, '0123456789abcdef');
+    final response = await electrumClient.getHistory(
+      AddressType.p2wpkh,
+      'bcrt1qp26663xm90par286v03syukvjnkdfzyy88zh5s',
+    );
 
     expect(response, isList);
     expect(response[0].height, 1);
@@ -150,7 +156,10 @@ void main() {
         ],
       });
     });
-    final response = await electrumClient.getUnspentList(AddressType.p2wpkh, '0123456789abcdef');
+    final response = await electrumClient.getUnspentList(
+      AddressType.p2wpkh,
+      'bcrt1qp26663xm90par286v03syukvjnkdfzyy88zh5s',
+    );
 
     expect(response, isList);
     expect(response[0].height, 1);
@@ -369,7 +378,10 @@ void main() {
         ],
       });
     });
-    final response = await electrumClient.getMempool(AddressType.p2wpkh, '0123456789abcdef');
+    final response = await electrumClient.getMempool(
+      AddressType.p2wpkh,
+      'bcrt1qp26663xm90par286v03syukvjnkdfzyy88zh5s',
+    );
 
     expect(response, isList);
     expect(response[0].height, 0);
