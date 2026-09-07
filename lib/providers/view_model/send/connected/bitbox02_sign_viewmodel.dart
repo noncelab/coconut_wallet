@@ -9,14 +9,13 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_exceptions.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
-import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_types.dart';
 import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:flutter/foundation.dart';
 
 enum BitBox02SignStep { idle, signing, done, error }
 
-enum BitBox02SignSubStatus { waiting, connectingDevice, checkPairing, preparingData, confirmOnDevice }
+enum BitBox02SignSubStatus { waiting, connectingDevice, preparingData, confirmOnDevice }
 
 class BitBox02SignViewModel extends ChangeNotifier {
   static const Duration _connectTimeout = Duration(seconds: 30);
@@ -28,13 +27,13 @@ class BitBox02SignViewModel extends ChangeNotifier {
   BitBox02Device? _device;
   String _signedPsbt = '';
   bool _isSigning = false;
+  bool _isConnectionError = false;
   String? _fingerprint;
   Timer? _timeoutTimer;
 
   final String psbtBase64;
   final String walletName;
   final String walletFingerprint;
-  final String transport;
   final WalletProvider _walletProvider;
 
   String? _matchedWalletName;
@@ -45,7 +44,6 @@ class BitBox02SignViewModel extends ChangeNotifier {
     required this.psbtBase64,
     required this.walletName,
     this.walletFingerprint = '',
-    this.transport = 'usb',
     required WalletProvider walletProvider,
   }) : _walletProvider = walletProvider {
     _probeDeviceStatus();
@@ -56,17 +54,28 @@ class BitBox02SignViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String get signedPsbt => _signedPsbt;
   bool get isSigning => _isSigning;
+  bool get isConnectionError => _isConnectionError;
+  BitBox02Device? get device => _device;
   String? get fingerprint => _fingerprint;
   bool get isWalletMismatch => _isWalletMismatch;
   String? get mismatchedWalletName => _mismatchedWalletName;
   String? get matchedWalletName => _matchedWalletName;
 
+  /// Returns true if the last-connected BitBox02 device is still physically connected.
+  Future<bool> isDeviceConnected() async {
+    final device = BitBox02Device.lastConnected;
+    if (device == null) return false;
+    return BitBox02ConnectivityService.isDeviceConnected();
+  }
+
   void _probeDeviceStatus() {
     final last = BitBox02Device.lastConnected;
-    if (last == null) return;
+    if (last == null) {
+      _device = null;
+      return;
+    }
     _device = last;
-    final fp = last.cachedFingerprint;
-    if (fp != null) _fingerprint = fp;
+    _fingerprint = last.cachedFingerprint;
   }
 
   /// Check if the connected device's fingerprint matches the target wallet.
@@ -92,13 +101,14 @@ class BitBox02SignViewModel extends ChangeNotifier {
   }
 
   Future<void> signTransaction({BitBox02Device? existingDevice}) async {
-    if (_isSigning) return;
+    if (_isSigning || _step == BitBox02SignStep.signing) return;
 
     _isSigning = true;
     _errorMessage = null;
+    _isConnectionError = false;
     _cancelTimeout();
 
-    try {
+    await _runWithSigningErrorHandling(() async {
       _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.connectingDevice);
       _startTimeout(_connectTimeout, 'Connection timed out');
 
@@ -106,104 +116,118 @@ class BitBox02SignViewModel extends ChangeNotifier {
 
       if (existingDevice != null) {
         _device = existingDevice;
-      } else if (_device != null && await BitBox02ConnectivityService.isDeviceConnected()) {
-        // Device is already paired and physically connected — skip re-pairing.
-        _cancelTimeout();
-        _fingerprint = _device!.cachedFingerprint;
-        _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.preparingData);
       } else {
-        _device = null;
-        BitBox02Device.lastConnected = null;
-        final resolvedTransport = BitBox02Transport.resolve(preferred: transport);
-        _device = await BitBox02Device.connect(transport: resolvedTransport);
-
-        _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.checkPairing);
-
-        await _device!.init();
-        await _device!.channelHashVerify(ok: true);
-
-        final initialized = await _device!.deviceInitialized();
-        debugPrint('BB02_SIGN device initialized: $initialized');
-
-        if (!initialized) {
-          debugPrint('BB02_SIGN restoring mnemonic...');
-          await _device!.restoreFromMnemonic();
-          debugPrint('BB02_SIGN restore done');
-        }
-
-        try {
-          final fp = await _device!.rootFingerprint();
-          _fingerprint = fp;
-          _device!.cachedFingerprint = fp;
-          debugPrint('BB02_SIGN rootFingerprint ok: $fp');
-          if (walletFingerprint.isNotEmpty && fp.toLowerCase() != walletFingerprint.toLowerCase()) {
-            throw BitBox02SignException('FINGERPRINT_MISMATCH', t.bitbox02_sign_screen.device_mismatch);
-          }
-        } catch (e) {
-          if (e is BitBox02SignException) rethrow;
-          _fingerprint = null;
-          debugPrint('BB02_SIGN rootFingerprint FAILED: $e');
-        }
-
-        _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.preparingData);
+        _probeDeviceStatus();
       }
 
-      final nt = NetworkType.currentNetworkType;
-      final coin = nt.isTestnet ? BitBox02Coin.tbtc : BitBox02Coin.btc;
+      if (_device == null || !await BitBox02ConnectivityService.isDeviceConnected()) {
+        BitBox02Device.lastConnected = null;
+        _device = null;
+        _isConnectionError = true;
+        _cancelTimeout();
+        throw const BitBox02ConnectException('DEVICE_NOT_CONNECTED', 'BitBox02 is not connected');
+      }
 
-      // Fetch and inject NonWitnessUtxo (previous transactions) for each input.
-      // BitBox02 requires full previous transactions for non-Taproot inputs.
-      await PrevTxFetcher.fetchAndInject(
-        psbtBase64: psbtBase64,
-        onPrevTxHex: (i, rawTxHex) => _device!.setPrevTxHex(i, rawTxHex),
-      );
-
+      _fingerprint = _device!.cachedFingerprint;
       _cancelTimeout();
-      _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.confirmOnDevice);
-      _startTimeout(_signTimeout, 'Signing timed out');
+      _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.preparingData);
 
-      final psbtBytes = base64Decode(psbtBase64);
-      final cleanPsbt = _cleanPsbt(psbtBytes);
-      debugPrint(
-        'BB02_SIGN clean hex (first 120): ${cleanPsbt.sublist(0, cleanPsbt.length < 120 ? cleanPsbt.length : 120).map((b) => b.toRadixString(16).padLeft(2, '0')).join()}',
-      );
-      debugPrint('BB02_SIGN coin: ${coin.name} (${coin.value})');
+      await _completeSigning();
+    });
 
-      final signed = await _device!.btcSignPSBT(psbtBytes: cleanPsbt, coin: coin);
-      _signedPsbt = base64Encode(signed);
-      final unsignedPsbt = Psbt.parse(psbtBase64);
-      final returnedPsbt = Psbt.parse(_signedPsbt);
-      TransactionIntentValidator.ensureMatches(unsignedPsbt.unsignedTransaction, returnedPsbt.unsignedTransaction);
+    _isSigning = false;
+  }
 
-      _cancelTimeout();
-      _setState(BitBox02SignStep.done);
+  Future<void> _completeSigning() async {
+    final initialized = await _device!.deviceInitialized();
+    debugPrint('BB02_SIGN device initialized: $initialized');
+
+    if (!initialized) {
+      debugPrint('BB02_SIGN restoring mnemonic...');
+      await _device!.restoreFromMnemonic();
+      debugPrint('BB02_SIGN restore done');
+    }
+
+    try {
+      final fp = await _device!.rootFingerprint();
+      _fingerprint = fp;
+      _device!.cachedFingerprint = fp;
+      debugPrint('BB02_SIGN rootFingerprint ok: $fp');
+      if (walletFingerprint.isNotEmpty && fp.toLowerCase() != walletFingerprint.toLowerCase()) {
+        throw BitBox02SignException('FINGERPRINT_MISMATCH', t.bitbox02_sign_screen.device_mismatch);
+      }
+    } catch (e) {
+      if (e is BitBox02SignException) rethrow;
+      _fingerprint = null;
+      debugPrint('BB02_SIGN rootFingerprint FAILED: $e');
+    }
+
+    _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.preparingData);
+
+    final nt = NetworkType.currentNetworkType;
+    final coin = nt.isTestnet ? BitBox02Coin.tbtc : BitBox02Coin.btc;
+
+    // Fetch and inject NonWitnessUtxo (previous transactions) for each input.
+    // BitBox02 requires full previous transactions for non-Taproot inputs.
+    await PrevTxFetcher.fetchAndInject(
+      psbtBase64: psbtBase64,
+      onPrevTxHex: (i, rawTxHex) => _device!.setPrevTxHex(i, rawTxHex),
+    );
+
+    _cancelTimeout();
+    _setState(BitBox02SignStep.signing, subStatus: BitBox02SignSubStatus.confirmOnDevice);
+    _startTimeout(_signTimeout, 'Signing timed out');
+
+    final psbtBytes = base64Decode(psbtBase64);
+    final cleanPsbt = _cleanPsbt(psbtBytes);
+    debugPrint(
+      'BB02_SIGN clean hex (first 120): ${cleanPsbt.sublist(0, cleanPsbt.length < 120 ? cleanPsbt.length : 120).map((b) => b.toRadixString(16).padLeft(2, '0')).join()}',
+    );
+    debugPrint('BB02_SIGN coin: ${coin.name} (${coin.value})');
+
+    final signed = await _device!.btcSignPSBT(psbtBytes: cleanPsbt, coin: coin);
+    _signedPsbt = base64Encode(signed);
+    final unsignedPsbt = Psbt.parse(psbtBase64);
+    final returnedPsbt = Psbt.parse(_signedPsbt);
+    TransactionIntentValidator.ensureMatches(unsignedPsbt.unsignedTransaction, returnedPsbt.unsignedTransaction);
+
+    _cancelTimeout();
+    _setState(BitBox02SignStep.done);
+  }
+
+  Future<void> _runWithSigningErrorHandling(Future<void> Function() action) async {
+    try {
+      await action();
     } on TransactionIntentMismatchException catch (e) {
       _cancelTimeout();
+      _isConnectionError = false;
       _signedPsbt = '';
       _errorMessage = '${t.alert.signed_psbt.wrong_send_info}\n(${e.result.fieldPath})';
       _setState(BitBox02SignStep.error);
     } on BitBox02ConnectException catch (e) {
       _cancelTimeout();
+      _isConnectionError = true;
       _errorMessage = e.message;
       BitBox02Device.lastConnected = null; // 연결 실패 → 기기가 분리된 것으로 간주
       _setState(BitBox02SignStep.error);
     } on BitBox02SignException catch (e) {
       _cancelTimeout();
+      _isConnectionError = false;
       _errorMessage = e.message;
       _setState(BitBox02SignStep.error);
     } on BitBox02InitException catch (e) {
       _cancelTimeout();
+      _isConnectionError = true;
       _errorMessage = e.message;
       BitBox02Device.lastConnected = null; // 초기화 실패 → 재연결 필요
       _setState(BitBox02SignStep.error);
     } catch (e) {
       _cancelTimeout();
+      _isConnectionError = false;
       _errorMessage = e.toString();
       BitBox02Device.lastConnected = null;
       _setState(BitBox02SignStep.error);
     }
-
-    _isSigning = false;
   }
 
   void _setState(BitBox02SignStep step, {BitBox02SignSubStatus subStatus = BitBox02SignSubStatus.waiting}) {
@@ -218,6 +242,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
       if (!_isSigning) return;
       debugPrint('BB02_SIGN timeout: $message');
       _errorMessage = message;
+      _isConnectionError = message.toLowerCase().contains('connection');
       BitBox02Device.lastConnected = null; // 타임아웃 → 기기가 응답하지 않음
       _setState(BitBox02SignStep.error);
       _isSigning = false;
@@ -235,6 +260,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
     _subStatus = BitBox02SignSubStatus.waiting;
     _errorMessage = null;
     _isSigning = false;
+    _isConnectionError = false;
     _signedPsbt = '';
     _fingerprint = null;
     _matchedWalletName = null;
@@ -262,6 +288,7 @@ class BitBox02SignViewModel extends ChangeNotifier {
     _matchedWalletName = null;
     _fingerprint = null;
     _errorMessage = null;
+    _isConnectionError = false;
     _setState(BitBox02SignStep.idle);
   }
 

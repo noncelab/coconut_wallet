@@ -407,6 +407,12 @@ wallet_connect_screen:
       title: "Gerät wird verbunden"
       step1: "Bitte entsperren Sie das Gerät."
       step2: "Wenn der Pairing-Code auf dem Display erscheint, drücken Sie Bestätigen (✓)."
+    pairing:
+      title: "Confirm Pairing Code"
+      description: "Make sure the code below matches the one shown on your BitBox02."
+      cancel: "Cancel"
+      wait_for_device: "Please tap the check mark (✓) on your BitBox02."
+      rejected: "Pairing was rejected. The connection could not be established."
     paired:
       title: "BitBox02 erfolgreich verbunden."
       device_name: "Gerätename"
@@ -1480,6 +1486,11 @@ bitbox02_sign_screen:
   wrong_wallet_title: "Falsche Wallet verbunden"
   device_mismatch: "Das verbundene BitBox02 passt nicht zur Wallet, mit der Sie signieren möchten."
   device_mismatch_other_wallet: "Die verbundene Wallet gehört zu '${wallet_name}'. Bitte verbinden Sie die richtige Wallet."
+  status:
+    connecting_device: "Connecting to BitBox02 via USB..."
+    connecting_device_ble: "Searching for BitBox02 via Bluetooth..."
+    preparing_data: "Preparing transaction data..."
+    confirm_on_device: "Confirm amount, address, and fee on your device"
   btn:
     connect_other_bitbox02: "Anderes BitBox02 verbinden"
 trezor_sign_screen:

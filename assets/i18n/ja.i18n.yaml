@@ -432,6 +432,12 @@ wallet_connect_screen:
       title: "デバイスを接続中"
       step1: "デバイスのロックを解除してください。"
       step2: "デバイスにペアリングコードが表示されたら、チェックマーク（✓）を押してください。"
+    pairing:
+      title: "Confirm Pairing Code"
+      description: "Make sure the code below matches the one shown on your BitBox02."
+      cancel: "Cancel"
+      wait_for_device: "Please tap the check mark (✓) on your BitBox02."
+      rejected: "Pairing was rejected. The connection could not be established."
     paired:
       title: "BitBox02のペアリングが完了しました。"
       device_name: "デバイス名"
@@ -647,22 +653,14 @@ bitbox02_sign_screen:
     title: "デバイスの状態"
   idle:
     waiting: "署名待機中"
-    not_connected: "未接続"
-    tap_sign_to_connect: "署名ボタンで接続"
-    locked: "ロック中"
-    device_found_pin: "デバイス発見 — PIN が必要"
-    device_found: "デバイス発見: $fingerprint"
-    ready: "準備完了"
   status:
     connecting_device: "USBでBitBox02に接続中..."
     connecting_device_ble: "Bluetoothで BitBox02を検索中..."
-    check_pairing: "デバイスでペアリングコードを確認してください"
     preparing_data: "署名データを準備しています..."
     confirm_on_device: "デバイスで金額・アドレス・手数料を確認してください"
   done:
     title: "署名完了"
     description: "BitBox02がトランザクションに署名しました。"
-    ready_to_broadcast: "ブロードキャストの準備が完了しました。"
   error_title: "署名に失敗"
   wrong_wallet_title: "接続されたウォレットが正しくありません"
   device_mismatch: "接続されたBitBox02が署名しようとしているウォレットと一致しません。"

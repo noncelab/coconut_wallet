@@ -407,7 +407,13 @@ wallet_connect_screen:
     connecting:
       title: "Conectando el dispositivo"
       step1: "Desbloquea el dispositivo."
-      step2: "Cuando aparezca el código de emparejamiento en el dispositivo, pulsa la marca de verificación (✓) para confirmar." 
+      step2: "Cuando aparezca el código de emparejamiento en el dispositivo, pulsa la marca de verificación (✓) para confirmar."
+    pairing:
+      title: "Confirm Pairing Code"
+      description: "Make sure the code below matches the one shown on your BitBox02."
+      cancel: "Cancel"
+      wait_for_device: "Please tap the check mark (✓) on your BitBox02."
+      rejected: "Pairing was rejected. The connection could not be established."
     paired:
       title: "BitBox02 está emparejado y listo."
       device_name: "Nombre del dispositivo"
@@ -650,22 +656,14 @@ bitbox02_sign_screen:
     title: "Estado del dispositivo"
   idle:
     waiting: "Esperando para firmar"
-    not_connected: "Sin conexión"
-    tap_sign_to_connect: "Pulsa Firmar para conectar"
-    locked: "Bloqueado"
-    device_found_pin: "Dispositivo encontrado — PIN requerido"
-    device_found: "Dispositivo encontrado: $fingerprint"
-    ready: "Listo"
   status:
     connecting_device: "Conectando con BitBox02 por USB..."
     connecting_device_ble: "Buscando BitBox02 por Bluetooth..."
-    check_pairing: "Comprueba el código de emparejamiento en tu dispositivo"
     preparing_data: "Preparando datos de la transacción..."
     confirm_on_device: "Confirma el importe, la dirección y la comisión en el dispositivo"
   done:
     title: "Firmado"
     description: "La transacción ha sido firmada por BitBox02."
-    ready_to_broadcast: "Listo para transmitir."
   error_title: "Error al firmar"
   wrong_wallet_title: "Billetera incorrecta conectada"
   device_mismatch: "El BitBox02 conectado no coincide con la billetera con la que intenta firmar."

@@ -424,6 +424,77 @@ class FingerprintCompareCard extends StatelessWidget {
   }
 }
 
+/// Pairing code display card used by BitBox02.
+/// The pairing code is shown in a read-only format; the user must compare it
+/// with the code displayed on the BitBox02 device before confirming.
+class BitBox02PairingCodeCard extends StatelessWidget {
+  final String pairingCode;
+  final String title;
+  final String description;
+  final String? status;
+
+  const BitBox02PairingCodeCard({
+    super.key,
+    required this.pairingCode,
+    required this.title,
+    required this.description,
+    this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      decoration: BoxDecoration(
+        color: context.coconutColors.surface,
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            title,
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            decoration: BoxDecoration(
+              color: context.coconutColors.background,
+              borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+            ),
+            child: Text(
+              pairingCode,
+              textAlign: TextAlign.center,
+              style: CoconutTypography.heading3_21_Number.copyWith(
+                fontWeight: FontWeight.w700,
+                color: context.coconutColors.primaryText,
+              ),
+            ),
+          ),
+          if (status != null && status!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              status!,
+              textAlign: TextAlign.center,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.success), // TODO: ccos랑 머지 후 색상은 primary
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// Wallet info card showing device name, fingerprint, derivation path, and xpub.
 class HardwareWalletInfoCard extends StatelessWidget {
   final String deviceName;

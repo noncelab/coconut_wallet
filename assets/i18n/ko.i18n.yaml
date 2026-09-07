@@ -403,10 +403,16 @@ wallet_connect_screen:
       ble_step1: "블루투스를 켜고 BitBox02 Nova를 가까이 두세요."
       ble_step2: "기기 화면에 'Tap this side'가 표시되면 화면의 하단이 될 면을 선택해 주세요."
       ble_step3: "기기 화면에 지갑이 표시되면 아래 '$btn' 버튼을 눌러주세요."
-    connecting: 
+    connecting:
       title: "기기 연결 중"
       step1: "기기의 잠금을 해제해 주세요."
       step2: "기기 화면에 Pairing code가 표시되면 확인(✓)을 눌러주세요."
+    pairing:
+      title: "페어링 코드 확인"
+      description: "BitBox02 화면에 표시된 코드와\n아래 코드가 같은지 확인해 주세요."
+      cancel: "취소"
+      wait_for_device: "기기에서 확인(✓)을 눌러주세요."
+      rejected: "페어링이 거부되어 연결할 수 없어요."
     paired:
       title: "BitBox02 연결이 완료되었습니다."
       device_name: "기기 이름"
@@ -648,22 +654,14 @@ bitbox02_sign_screen:
     title: "기기 상태"
   idle:
     waiting: "서명 대기 중"
-    not_connected: "연결 안 됨"
-    tap_sign_to_connect: "서명 버튼을 눌러 연결하세요"
-    locked: "잠금 상태"
-    device_found_pin: "기기 발견 — PIN 입력 필요"
-    device_found: "기기 발견: $fingerprint"
-    ready: "준비 완료"
   status:
     connecting_device: "USB로 BitBox02를 연결 중..."
     connecting_device_ble: "블루투스로 BitBox02를 찾는 중..."
-    check_pairing: "기기 화면에서 Pairing code를 확인해 주세요"
     preparing_data: "서명 데이터를 준비하고 있어요"
     confirm_on_device: "기기 화면에서 금액, 주소, 수수료를 확인해 주세요"
   done:
     title: "서명 완료"
     description: "BitBox02가 트랜잭션에 서명했습니다."
-    ready_to_broadcast: "전송할 준비가 되었어요."
   error_title: "서명 실패"
   wrong_wallet_title: "잘못된 지갑이 연결됨"
   device_mismatch: "연결된 BitBox02가 서명하려는 지갑과 일치하지 않아요."

@@ -433,6 +433,12 @@ wallet_connect_screen:
       title: "Connecting Device"
       step1: "Unlock your device."
       step2: "When the pairing code appears on your device, tap the check mark (✓) to confirm."
+    pairing:
+      title: "Confirm Pairing Code"
+      description: "Make sure the code below matches the one shown on your BitBox02."
+      cancel: "Cancel"
+      wait_for_device: "Please tap the check mark (✓) on your BitBox02."
+      rejected: "Pairing was rejected. The connection could not be established."
     paired:
       title: "BitBox02 is paired and ready."
       device_name: "Device Name"
@@ -651,22 +657,14 @@ bitbox02_sign_screen:
     title: "Device Status"
   idle:
     waiting: "Waiting to sign"
-    not_connected: "Not connected"
-    tap_sign_to_connect: "Tap Sign to connect"
-    locked: "Locked"
-    device_found_pin: "Device found — PIN required"
-    device_found: "Device found: $fingerprint"
-    ready: "Ready"
   status:
     connecting_device: "Connecting to BitBox02 via USB..."
     connecting_device_ble: "Searching for BitBox02 via Bluetooth..."
-    check_pairing: "Check the Pairing code on your device"
     preparing_data: "Preparing transaction data..."
     confirm_on_device: "Confirm amount, address, and fee on your device"
   done:
     title: "Signed"
     description: "Transaction has been signed by BitBox02."
-    ready_to_broadcast: "Ready to broadcast."
   error_title: "Signing Failed"
   wrong_wallet_title: "Wrong wallet connected"
   device_mismatch: "The connected BitBox doesn't match the wallet you're trying to sign with."

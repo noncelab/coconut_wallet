@@ -48,7 +48,9 @@ class BitBox02Device {
     }
   }
 
-  Future<String> init() async {
+  /// Synchronous init (legacy). Pairing code is available only after this
+  /// returns, which is too late for host-side verification.
+  Future<({String name, String? pairingCode})> init() async {
     try {
       final status = await _channel.invokeMethod<String>('init', {'id': id});
       if (status == null) {
@@ -59,9 +61,52 @@ class BitBox02Device {
         _name = json['name'] as String? ?? '';
         debugPrint('BB02: init response name="$_name", raw=$status');
       } catch (_) {}
-      return status;
+      return (name: _name, pairingCode: null);
     } on PlatformException catch (e) {
       throw BitBox02InitException(e.code, e.message ?? 'Init failed');
+    }
+  }
+
+  /// Starts the Noise handshake/pairing in the background.
+  /// While it is running, call [channelHash] to read the pairing code and
+  /// [waitInit] to block until the handshake completes.
+  Future<void> startInit() async {
+    try {
+      await _channel.invokeMethod('startInit', {'id': id});
+    } on PlatformException catch (e) {
+      throw BitBox02InitException(e.code, e.message ?? 'startInit failed');
+    }
+  }
+
+  /// Blocks until [startInit] completes. Returns the device name JSON.
+  Future<({String name, bool initialized})> waitInit() async {
+    try {
+      final status = await _channel.invokeMethod<String>('waitInit', {'id': id});
+      if (status == null) {
+        throw const BitBox02InitException('NULL_RESPONSE', 'waitInit returned null');
+      }
+      String name = '';
+      try {
+        final json = jsonDecode(status) as Map<String, dynamic>;
+        name = json['name'] as String? ?? '';
+        _name = name;
+        debugPrint('BB02: waitInit response name="$_name", raw=$status');
+      } catch (_) {}
+      return (name: _name, initialized: true);
+    } on PlatformException catch (e) {
+      throw BitBox02InitException(e.code, e.message ?? 'waitInit failed');
+    }
+  }
+
+  /// Returns the current Noise channel hash (pairing code). Call repeatedly
+  /// while [startInit] is running and before [waitInit] completes.
+  Future<String?> channelHash() async {
+    try {
+      final code = await _channel.invokeMethod<String>('channelHash', {'id': id});
+      if (code == null || code.isEmpty) return null;
+      return code;
+    } on PlatformException catch (e) {
+      throw BitBox02InitException(e.code, e.message ?? 'channelHash failed');
     }
   }
 

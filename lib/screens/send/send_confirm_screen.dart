@@ -7,10 +7,9 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
-import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_navigator.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
@@ -18,7 +17,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+
 import 'package:coconut_wallet/widgets/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
@@ -204,7 +203,6 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         'walletName': viewModel.walletName,
         'walletFingerprint': viewModel.walletFingerprint,
         'isFromSendFlow': true,
-        'transport': BitBox02Transport.resolveForSign(),
       },
     );
   }
@@ -219,16 +217,12 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
     if (isConnected && hasSession && isMatchingWallet) {
       _pushBitBox02SignScreen(viewModel);
     } else {
-      CommonBottomSheets.showCustomHeightBottomSheet(
+      BitBox02Navigator.showConnectScreen(
         context: context,
-        child: BitBox02ConnectScreen(
-          importSource: WalletImportSource.bitbox02,
-          psbtBase64: viewModel.txWaitingForSign,
-          walletName: viewModel.walletName,
-          walletFingerprint: viewModel.walletFingerprint,
-          resumeFromExistingSession: isConnected && hasSession,
-        ),
-        heightRatio: 0.9,
+        psbtBase64: viewModel.txWaitingForSign,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        resumeFromExistingSession: isConnected && hasSession,
       );
     }
   }

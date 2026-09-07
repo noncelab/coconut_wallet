@@ -22,7 +22,9 @@ class Bitbox02MethodHandler(
     private var usbManager: Bitbox02UsbManager? = null
     private val connectedDevices = mutableSetOf<String>()
     private val tcpTransports = mutableMapOf<String, TcpTransport>()
-    private val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+    // Use a thread pool so long-running operations like waitInit() don't block
+    // time-sensitive calls such as channelHash() / channelHashVerify() / disconnect().
+    private val executor = java.util.concurrent.Executors.newCachedThreadPool()
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private var connectivityEventSink: EventChannel.EventSink? = null
@@ -69,6 +71,9 @@ class Bitbox02MethodHandler(
         when (call.method) {
             "connect" -> connect(call, result)
             "init" -> init(call, result)
+            "startInit" -> startInit(call, result)
+            "waitInit" -> waitInit(call, result)
+            "channelHash" -> channelHash(call, result)
             "rootFingerprint" -> rootFingerprint(call, result)
             "restoreFromMnemonic" -> restoreFromMnemonic(call, result)
             "setPassword" -> setPassword(call, result)
@@ -154,6 +159,51 @@ class Bitbox02MethodHandler(
             return
         }
         runOnExecutor(result) { Bridge.init(deviceId) }
+    }
+
+    private fun startInit(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        executor.execute {
+            try {
+                Bridge.startInit(deviceId)
+                mainHandler.post { result.success(null) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("START_INIT_FAILED", e.message, null) }
+            }
+        }
+    }
+
+    private fun waitInit(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        executor.execute {
+            try {
+                val status = Bridge.waitInit(deviceId)
+                mainHandler.post { result.success(status) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("WAIT_INIT_FAILED", e.message, null) }
+            }
+        }
+    }
+
+    private fun channelHash(call: MethodCall, result: MethodChannel.Result) {
+        val deviceId = call.argument<String>("id") ?: run {
+            result.error("INVALID_ARG", "id is required", null)
+            return
+        }
+        executor.execute {
+            try {
+                val code = Bridge.channelHash(deviceId)
+                mainHandler.post { result.success(code) }
+            } catch (e: Exception) {
+                mainHandler.post { result.error("CHANNEL_HASH_FAILED", e.message, null) }
+            }
+        }
     }
 
     private fun rootFingerprint(call: MethodCall, result: MethodChannel.Result) {

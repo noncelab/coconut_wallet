@@ -210,7 +210,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             walletName: args['walletName'],
             walletFingerprint: args['walletFingerprint'] ?? '',
             isFromSendFlow: args['isFromSendFlow'] ?? false,
-            transport: args['transport'] ?? 'usb',
           ),
         ),
     '/trezor-sign':
