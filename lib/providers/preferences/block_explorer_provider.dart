@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -9,8 +10,6 @@ import 'package:flutter/widgets.dart';
 
 class BlockExplorerProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-
-  static const String _mempoolUrlMain = 'https://mempool.space';
 
   BlockExplorerProvider();
 
@@ -23,13 +22,24 @@ class BlockExplorerProvider extends ChangeNotifier {
 
   String get customExplorerUrl => _sharedPrefs.getString(SharedPrefKeys.kCustomExplorerUrl);
 
+  bool get isCustomExplorerEnabled =>
+      NetworkType.currentNetworkType == NetworkType.mainnet && !useDefaultExplorer && customExplorerUrl.isNotEmpty;
+
+  String explorerAnalyticsUrlForPath(String path) {
+    final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+    if (isCustomExplorerEnabled) {
+      return '${AnalyticsParameterValues.customExplorer}/${normalizedPath.toUpperCase()}';
+    }
+    return '$blockExplorerUrl/$normalizedPath';
+  }
+
   String get blockExplorerUrl {
     if (NetworkType.currentNetworkType == NetworkType.regtest) {
-      return BLOCK_EXPLORER_URL_REGTEST;
+      return DEFAULT_EXPLORER_URL_REGTEST;
     }
 
     if (NetworkType.currentNetworkType == NetworkType.testnet) {
-      return BLOCK_EXPLORER_URL_TESTNET;
+      return DEFAULT_EXPLORER_URL_TESTNET;
     }
 
     if (useDefaultExplorer) {
@@ -44,7 +54,7 @@ class BlockExplorerProvider extends ChangeNotifier {
     final language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
     final effectiveLanguage = language.isNotEmpty ? language : getSystemLanguageCode();
 
-    return '$_mempoolUrlMain/${AppLanguage.fromCode(effectiveLanguage).code}';
+    return '$DEFAULT_EXPLORER_URL_MAINNET/${AppLanguage.fromCode(effectiveLanguage).code}';
   }
 
   Future<void> setUseDefaultExplorer(bool useDefault) async {

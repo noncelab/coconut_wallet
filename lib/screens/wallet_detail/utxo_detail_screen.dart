@@ -358,7 +358,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               context,
               "${_viewModel.mempoolHost}/address/${widget.utxo.to}",
               openInApp: true,
-              analyticsUrl: "${_viewModel.mempoolHost}/address",
+              analyticsUrl: _viewModel.explorerAnalyticsUrlForPath('address'),
             );
           },
           child: Column(
@@ -424,7 +424,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             context,
             "${_viewModel.mempoolHost}/block/${widget.utxo.blockHeight}",
             openInApp: true,
-            analyticsUrl: "${_viewModel.mempoolHost}/block",
+            analyticsUrl: _viewModel.explorerAnalyticsUrlForPath('block'),
           );
         }
       },

@@ -744,7 +744,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           context,
           '${viewModel.mempoolHost}/tx/${tx.transactionHash}',
           openInApp: true,
-          analyticsUrl: '${viewModel.mempoolHost}/tx',
+          analyticsUrl: viewModel.explorerAnalyticsUrlForPath('tx'),
         );
       },
       child: CopyTextContainer(
@@ -777,7 +777,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             context,
             '${_viewModel.mempoolHost}/block/${tx.blockHeight}',
             openInApp: true,
-            analyticsUrl: '${_viewModel.mempoolHost}/block',
+            analyticsUrl: _viewModel.explorerAnalyticsUrlForPath('block'),
           );
         }
       },
