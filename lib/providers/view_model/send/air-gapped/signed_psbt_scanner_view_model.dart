@@ -101,7 +101,7 @@ class SignedPsbtScannerViewModel {
       }
 
       final defaultCheckResult = _matchesDefaultPsbt(unsignedPsbt, signedPsbt);
-      if (isMultisig || defaultCheckResult) {
+      if (defaultCheckResult || !_getWalletBase().addressType.isSingleSignature) {
         return defaultCheckResult;
       }
 
