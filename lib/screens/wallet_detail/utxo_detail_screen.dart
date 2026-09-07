@@ -46,8 +46,8 @@ import 'package:shimmer/shimmer.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/uri_launcher.dart';
 
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
@@ -353,7 +353,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         UnderlineButtonItemCard(
           label: t.utxo_detail_screen.address,
           underlineButtonLabel: t.view_mempool,
-          onTapUnderlineButton: () => launchUrl(Uri.parse("${_viewModel.mempoolHost}/address/${widget.utxo.to}")),
+          onTapUnderlineButton: () {
+            launchURL(
+              context,
+              "${_viewModel.mempoolHost}/address/${widget.utxo.to}",
+              openInApp: true,
+              analyticsUrl: "${_viewModel.mempoolHost}/address",
+            );
+          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -412,9 +419,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       underlineButtonLabel: widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
       showDivider: false,
       onTapUnderlineButton: () {
-        widget.utxo.status == UtxoStatus.unspent
-            ? launchUrl(Uri.parse("${_viewModel.mempoolHost}/block/${widget.utxo.blockHeight}"))
-            : ();
+        if (widget.utxo.status == UtxoStatus.unspent) {
+          launchURL(
+            context,
+            "${_viewModel.mempoolHost}/block/${widget.utxo.blockHeight}",
+            openInApp: true,
+            analyticsUrl: "${_viewModel.mempoolHost}/block",
+          );
+        }
       },
       child: Text(
         widget.utxo.blockHeight != 0 ? widget.utxo.blockHeight.toString() : '-',

@@ -20,7 +20,7 @@ const CONTACT_EMAIL_ADDRESS = 'hello@noncelab.com';
 const DISCORD_COCONUT = 'https://discord.gg/YHxGQRxa7R';
 
 /// X
-const X_POW = 'https://x.com/POWbitcoiner';
+const X_COCONUT = 'https://x.com/CoconutWallet';
 
 /// Tutorial
 const TUTORIAL_URL = 'https://tutorial.coconut.onl';

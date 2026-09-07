@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -109,7 +110,7 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                 leftButtonText: t.alert.update.btn_do_later,
                 rightButtonText: t.alert.update.btn_update,
                 onTapRight: () async {
-                  await _viewModel.launchUpdate();
+                  await launchURL(context, _viewModel.storeUrl, openInApp: true);
                   if (!context.mounted) return;
                   Navigator.pop(context, true);
                 },

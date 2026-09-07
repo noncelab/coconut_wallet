@@ -101,7 +101,8 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                       'subject=${t.settings_screen.log_viewer_screen.email_subject}&body=${t.settings_screen.log_viewer_screen.email_body}\n\n$logText',
                 );
 
-                await launchURL(emailUri.toString());
+                if (!context.mounted) return;
+                await launchURL(context, emailUri.toString(), analyticsUrl: 'mailto:$CONTACT_EMAIL_ADDRESS');
               } catch (e) {
                 if (context.mounted) {
                   CoconutToast.showToast(
@@ -209,7 +210,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
     return Row(
       children: [
         _buildButton(t.settings_screen.log_viewer_screen.buttons.discord, () {
-          launchURL(DISCORD_COCONUT);
+          launchURL(context, DISCORD_COCONUT);
         }),
         CoconutLayout.spacing_100w,
         _buildButton(t.settings_screen.log_viewer_screen.buttons.copy, () {

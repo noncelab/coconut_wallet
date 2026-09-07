@@ -63,6 +63,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     FirebaseAnalytics.instance.logScreenView(screenName: screenName);
   }
 
+  String? _extractAnalyticsScreenName(RouteSettings settings) {
+    if (settings.name == Navigator.defaultRouteName) {
+      return _appEntryFlow == AppEntryFlow.main ? AnalyticsScreenNames.walletHome : null;
+    }
+    return settings.name;
+  }
+
   Future<void> _saveMigratedWalletIds() async {
     // RealmManager는 State 필드 초기화 시 Realm을 동기적으로 open하며,
     // Realm이 반환되는 시점에는 migration callback도 완료된 상태입니다.
@@ -110,7 +117,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               navigatorObservers: [
                 routeObserver,
                 if (CoconutWalletApp.kIsFirebaseAnalyticsUsed)
-                  FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+                  FirebaseAnalyticsObserver(
+                    analytics: FirebaseAnalytics.instance,
+                    nameExtractor: _extractAnalyticsScreenName,
+                  ),
               ],
               localizationsDelegates: const [
                 DefaultMaterialLocalizations.delegate,

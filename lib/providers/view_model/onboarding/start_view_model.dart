@@ -12,7 +12,6 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class StartViewModel extends ChangeNotifier {
   /// Common variables ---------------------------------------------------------
@@ -60,17 +59,11 @@ class StartViewModel extends ChangeNotifier {
     return AppEntryFlow.pinCheck;
   }
 
-  /// 업데이트 실행
-  Future<void> launchUpdate() async {
-    Uri storeUrl =
-        Platform.isAndroid
-            ? Uri.parse('https://play.google.com/store/apps/details?id=${_packageInfo.packageName}')
-            : Uri.parse('https://apps.apple.com/kr/app/$APPSTORE_ID_REGTEST');
-
-    if (await canLaunchUrl(storeUrl)) {
-      await launchUrl(storeUrl);
-    }
-  }
+  /// 플랫폼별 앱스토어 URL
+  String get storeUrl =>
+      Platform.isAndroid
+          ? 'https://play.google.com/store/apps/details?id=${_packageInfo.packageName}'
+          : 'https://apps.apple.com/kr/app/$APPSTORE_ID_REGTEST';
 
   Future<void> setNextUpdateDialogDate() async {
     final nextShowDate = DateTime.now().add(const Duration(days: 7));

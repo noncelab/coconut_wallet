@@ -53,7 +53,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:coconut_wallet/utils/uri_launcher.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final int id;
@@ -740,7 +740,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       label: t.tx_id,
       underlineButtonLabel: t.view_mempool,
       onTapUnderlineButton: () {
-        launchUrl(Uri.parse('${viewModel.mempoolHost}/tx/${tx.transactionHash}'));
+        launchURL(
+          context,
+          '${viewModel.mempoolHost}/tx/${tx.transactionHash}',
+          openInApp: true,
+          analyticsUrl: '${viewModel.mempoolHost}/tx',
+        );
       },
       child: CopyTextContainer(
         text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
@@ -767,7 +772,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       label: t.block_num,
       underlineButtonLabel: tx.blockHeight != 0 ? t.view_mempool : '',
       onTapUnderlineButton: () {
-        tx.blockHeight != 0 ? launchUrl(Uri.parse('${_viewModel.mempoolHost}/block/${tx.blockHeight}')) : ();
+        if (tx.blockHeight != 0) {
+          launchURL(
+            context,
+            '${_viewModel.mempoolHost}/block/${tx.blockHeight}',
+            openInApp: true,
+            analyticsUrl: '${_viewModel.mempoolHost}/block',
+          );
+        }
       },
 
       child: Text(
