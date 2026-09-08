@@ -28,6 +28,7 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final TransactionProvider _transactionProvider;
   final SharedPrefsRepository _sharedPrefs;
+  late WalletItemBase _wallet;
   final Faucet _faucetService = Faucet();
   late final StreamSubscription<WalletUpdateInfo> _walletUpdateSubscription;
   late final StreamSubscription<NodeSyncState> _nodeSyncStateSubscription;
@@ -50,6 +51,7 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
     SharedPrefsRepository? sharedPrefs,
   }) : _currentUnit = initialUnit,
        _sharedPrefs = sharedPrefs ?? SharedPrefsRepository() {
+    _wallet = _walletProvider.getWalletById(_walletId);
     _walletUpdateInfo = nodeProvider.state.registeredWallets[_walletId];
     _nodeSyncState = nodeProvider.state.nodeSyncState;
     _isWalletSyncing = _calculateIsWalletSyncing();
@@ -62,7 +64,7 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
 
   int get walletId => _walletId;
   WalletProvider get walletProvider => _walletProvider;
-  WalletItemBase get wallet => _walletProvider.getWalletById(_walletId);
+  WalletItemBase get wallet => _wallet;
   int get balance => _walletProvider.getWalletBalance(_walletId).total;
   int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
   int? get targetSats => _sharedPrefs.getWalletTargetSats(_walletId);
@@ -102,7 +104,9 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
   List<double> get targetProgressHistory {
     final target = targetSats;
     final currentProgress = targetProgress;
-    if (target == null || target <= 0 || _transactionProvider.txList.isEmpty) return [0, currentProgress];
+    if (target == null || target <= 0 || _transactionProvider.txList.isEmpty) {
+      return [0, currentProgress];
+    }
 
     final newestFirst = [..._transactionProvider.txList]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     var historicalBalance = balance;
@@ -232,9 +236,11 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
   }
 
   void _handleWalletChanged() {
-    if (_walletProvider.walletItemList.any((wallet) => wallet.id == _walletId)) {
-      notifyListeners();
-    }
+    final index = _walletProvider.walletItemList.indexWhere((wallet) => wallet.id == _walletId);
+    if (index == -1) return;
+
+    _wallet = _walletProvider.walletItemList[index];
+    notifyListeners();
   }
 
   void _handleTransactionChanged() => notifyListeners();
