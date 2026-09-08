@@ -866,6 +866,16 @@ impl CallbackTransport {
                         || error_str.contains("Write failed")
                         || error_str.contains("Device disconnected"));
 
+                    // Drop any partially-established state (e.g. `is_paired`
+                    // set early during pairing before a wrong code / rejected
+                    // credential aborted it) on every failure — retryable or
+                    // not — so it can never linger for reuse via
+                    // `entry().or_insert_with()` on the next attempt.
+                    {
+                        let mut states = self.ble_states.write().await;
+                        states.remove(path);
+                    }
+
                     if !is_retryable {
                         self.callback
                             .log_debug("HANDSHAKE", &format!("Non-retryable error: {}", error_str));
@@ -1228,138 +1238,185 @@ impl CallbackTransport {
         let ack = encode_ack(&channel, ack_bit);
         self.write_raw(path, &ack)?;
 
-        // Check if pairing is required
+        // Validate the handshake completion response frame.
+        // Reject any unexpected control byte so a malicious or manipulated
+        // response cannot skip pairing and mark authentication complete.
         let ctrl = comp_resp[0] & 0xe7;
-        if ctrl == thp_control::HANDSHAKE_COMP_RES {
-            let payload_len = u16::from_be_bytes([comp_resp[3], comp_resp[4]]) as usize;
-            let crc_len = 4;
-
-            if comp_resp.len() >= 5 + payload_len && payload_len > crc_len {
-                let encrypted_payload = &comp_resp[5..5 + payload_len - crc_len];
-
-                let completion = {
-                    let states = self.ble_states.read().await;
-                    let state = states.get(path).ok_or(TransportError::DeviceNotFound)?;
-                    parse_handshake_completion_response(state.protocol.state(), encrypted_payload)?
-                };
-
-                self.callback.log_debug(
-                    "THP",
-                    &format!(
-                        "trezor_state={} (0=needs pairing, 1=paired, 2=autoconnect)",
-                        completion.trezor_state
-                    ),
-                );
-                self.callback.log_debug(
-                    "THP",
-                    &format!("pairing_methods={:?}", completion.pairing_methods),
-                );
-                log::info!(
-                    "[Callback] Device trezor_state={} (0=needs pairing, 1=paired, 2=autoconnect)",
-                    completion.trezor_state
-                );
-                log::info!(
-                    "[Callback] Available pairing methods: {:?}",
-                    completion.pairing_methods
-                );
-
-                if completion.trezor_state == 0 {
-                    if credential_was_sent {
-                        // We sent a credential but the device didn't recognize it.
-                        // Do NOT attempt pairing in this session — the device may reject it.
-                        // Return a specific error so the outer retry loop can skip straight
-                        // to fresh pairing with a clean handshake.
-                        self.callback.log_debug("THP", "CREDENTIAL REJECTED: sent credential but device returned state=0. Aborting to retry fresh.");
-                        log::warn!(
-                            "[Callback] Credential rejected by device (state=0 despite sending credential). Will retry fresh."
-                        );
-                        return Err(ThpError::HandshakeFailed(
-                            "CredentialRejected: device returned state=0 despite credential"
-                                .to_string(),
-                        )
-                        .into());
-                    }
-                    self.callback.log_debug("THP", "Device requires PAIRING (state=0, no credential sent) - starting pairing flow");
-                    log::info!("[Callback] Device requires pairing - starting pairing flow");
-                    self.perform_pairing(path, &channel).await?;
-                } else {
-                    // Device accepted stored credentials (state=1: paired, state=2: autoconnect)
-                    // Must send ThpEndRequest to finalize connection before session creation
-                    // This matches trezor-suite which ALWAYS sends ThpEndRequest regardless of state
-                    self.callback.log_debug(
-                        "THP",
-                        &format!(
-                            "Stored credentials ACCEPTED (state={}), finalizing...",
-                            completion.trezor_state
-                        ),
-                    );
-                    log::info!(
-                        "[Callback] Device recognized stored credentials (state={}), finalizing connection...",
-                        completion.trezor_state
-                    );
-
-                    // Mark as paired to enable encrypted messaging
-                    {
-                        let mut states = self.ble_states.write().await;
-                        if let Some(state) = states.get_mut(path) {
-                            state.protocol.state_mut().set_is_paired(true);
-                        }
-                    }
-
-                    use crate::constants::thp_message_type;
-
-                    let (end_resp_type, _) = self
-                        .send_encrypted_message(
-                            path,
-                            &channel,
-                            thp_message_type::THP_END_REQUEST,
-                            &[],
-                        )
-                        .await?;
-
-                    // state=1 may trigger a ButtonRequest for connection confirmation on the device
-                    if end_resp_type == crate::constants::message_type::BUTTON_REQUEST {
-                        log::info!("[Callback] Device requesting connection confirmation...");
-                        let (ack_resp_type, _) = self
-                            .send_encrypted_message(
-                                path,
-                                &channel,
-                                crate::constants::message_type::BUTTON_ACK,
-                                &[],
-                            )
-                            .await?;
-                        if ack_resp_type != thp_message_type::THP_END_RESPONSE {
-                            return Err(ThpError::HandshakeFailed(format!(
-                                "Expected ThpEndResponse after ButtonACK, got: {}",
-                                ack_resp_type
-                            ))
-                            .into());
-                        }
-                    } else if end_resp_type != thp_message_type::THP_END_RESPONSE {
-                        return Err(ThpError::HandshakeFailed(format!(
-                            "Expected ThpEndResponse, got: {}",
-                            end_resp_type
-                        ))
-                        .into());
-                    }
-
-                    self.callback.log_debug(
-                        "THP",
-                        "Connection finalized with stored credentials (no re-pairing needed)",
-                    );
-                    log::info!(
-                        "[Callback] Connection finalized with stored credentials (no re-pairing needed)"
-                    );
-                }
-            }
+        if ctrl != thp_control::HANDSHAKE_COMP_RES {
+            return Err(ThpError::HandshakeFailed(format!(
+                "Expected handshake completion response (0x{:02x}), got: 0x{:02x}",
+                thp_control::HANDSHAKE_COMP_RES,
+                comp_resp.get(0).unwrap_or(&0)
+            ))
+            .into());
         }
 
-        // Mark as paired
-        {
-            let mut states = self.ble_states.write().await;
-            if let Some(state) = states.get_mut(path) {
-                state.protocol.state_mut().set_is_paired(true);
+        if comp_resp.len() < 5 {
+            return Err(ThpError::HandshakeFailed(format!(
+                "Handshake completion response too short: {} bytes",
+                comp_resp.len()
+            ))
+            .into());
+        }
+
+        let payload_len = u16::from_be_bytes([comp_resp[3], comp_resp[4]]) as usize;
+        let crc_len = 4;
+
+        if comp_resp.len() < 5 + payload_len || payload_len <= crc_len {
+            return Err(ThpError::HandshakeFailed(format!(
+                "Handshake completion response length mismatch: response_len={}, payload_len={}",
+                comp_resp.len(),
+                payload_len
+            ))
+            .into());
+        }
+
+        let encrypted_payload = &comp_resp[5..5 + payload_len - crc_len];
+
+        let completion = {
+            let states = self.ble_states.read().await;
+            let state = states.get(path).ok_or(TransportError::DeviceNotFound)?;
+            parse_handshake_completion_response(state.protocol.state(), encrypted_payload)?
+        };
+
+        // Only the documented trezor_state values are valid. A rogue device
+        // could otherwise send an undefined state and bypass pairing/confirmation.
+        if completion.trezor_state > 2 {
+            return Err(ThpError::HandshakeFailed(format!(
+                "Invalid trezor_state in completion response: {}",
+                completion.trezor_state
+            ))
+            .into());
+        }
+
+        self.callback.log_debug(
+            "THP",
+            &format!(
+                "trezor_state={} (0=needs pairing, 1=paired, 2=autoconnect)",
+                completion.trezor_state
+            ),
+        );
+        self.callback.log_debug(
+            "THP",
+            &format!("pairing_methods={:?}", completion.pairing_methods),
+        );
+        log::info!(
+            "[Callback] Device trezor_state={} (0=needs pairing, 1=paired, 2=autoconnect)",
+            completion.trezor_state
+        );
+        log::info!(
+            "[Callback] Available pairing methods: {:?}",
+            completion.pairing_methods
+        );
+
+        if completion.trezor_state == 0 {
+            if credential_was_sent {
+                // We sent a credential but the device didn't recognize it.
+                // Do NOT attempt pairing in this session — the device may reject it.
+                // Return a specific error so the outer retry loop can skip straight
+                // to fresh pairing with a clean handshake.
+                self.callback.log_debug("THP", "CREDENTIAL REJECTED: sent credential but device returned state=0. Aborting to retry fresh.");
+                log::warn!(
+                    "[Callback] Credential rejected by device (state=0 despite sending credential). Will retry fresh."
+                );
+                return Err(ThpError::HandshakeFailed(
+                    "CredentialRejected: device returned state=0 despite credential"
+                        .to_string(),
+                )
+                .into());
             }
+            self.callback.log_debug("THP", "Device requires PAIRING (state=0, no credential sent) - starting pairing flow");
+            log::info!("[Callback] Device requires pairing - starting pairing flow");
+            self.perform_pairing(path, &channel).await?;
+        } else {
+            // Device accepted stored credentials (state=1: paired, state=2: autoconnect)
+            // Must send ThpEndRequest to finalize connection before session creation
+            // This matches trezor-suite which ALWAYS sends ThpEndRequest regardless of state
+            self.callback.log_debug(
+                "THP",
+                &format!(
+                    "Stored credentials ACCEPTED (state={}), finalizing...",
+                    completion.trezor_state
+                ),
+            );
+            log::info!(
+                "[Callback] Device recognized stored credentials (state={}), finalizing connection...",
+                completion.trezor_state
+            );
+
+            // Mark as paired to enable encrypted messaging
+            {
+                let mut states = self.ble_states.write().await;
+                if let Some(state) = states.get_mut(path) {
+                    state.protocol.state_mut().set_is_paired(true);
+                }
+            }
+
+            use crate::constants::thp_message_type;
+
+            let (end_resp_type, _) = self
+                .send_encrypted_message(
+                    path,
+                    &channel,
+                    thp_message_type::THP_END_REQUEST,
+                    &[],
+                )
+                .await?;
+
+            // state=1 may trigger a ButtonRequest for connection confirmation on the device
+            if end_resp_type == crate::constants::message_type::BUTTON_REQUEST {
+                log::info!("[Callback] Device requesting connection confirmation...");
+                let (ack_resp_type, _) = self
+                    .send_encrypted_message(
+                        path,
+                        &channel,
+                        crate::constants::message_type::BUTTON_ACK,
+                        &[],
+                    )
+                    .await?;
+                if ack_resp_type != thp_message_type::THP_END_RESPONSE {
+                    return Err(ThpError::HandshakeFailed(format!(
+                        "Expected ThpEndResponse after ButtonACK, got: {}",
+                        ack_resp_type
+                    ))
+                    .into());
+                }
+            } else if end_resp_type != thp_message_type::THP_END_RESPONSE {
+                return Err(ThpError::HandshakeFailed(format!(
+                    "Expected ThpEndResponse, got: {}",
+                    end_resp_type
+                ))
+                .into());
+            }
+
+            self.callback.log_debug(
+                "THP",
+                "Connection finalized with stored credentials (no re-pairing needed)",
+            );
+            log::info!(
+                "[Callback] Connection finalized with stored credentials (no re-pairing needed)"
+            );
+        }
+
+        // Do not allow the handshake to be marked complete unless the
+        // authentication proof and any required user confirmation finished.
+        // Also re-check the channel: the awaits above (pairing / ThpEndRequest
+        // / ButtonAck) can yield the task, so a concurrent handshake attempt
+        // on the same `path` could reset/replace this state in between. If
+        // that happened, `is_paired` may be true again but for a *different*
+        // channel/session — this must not be treated as our completion.
+        let is_paired = {
+            let states = self.ble_states.read().await;
+            states
+                .get(path)
+                .map(|s| s.protocol.state().is_paired() && s.protocol.state().channel() == &channel)
+                .unwrap_or(false)
+        };
+        if !is_paired {
+            return Err(ThpError::HandshakeFailed(
+                "Handshake finished but device is not paired for this channel".to_string(),
+            )
+            .into());
         }
 
         // THP session creation is deferred to create_session() so the caller

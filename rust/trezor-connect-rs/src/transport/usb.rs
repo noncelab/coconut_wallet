@@ -476,6 +476,20 @@ impl UsbTransport {
             match self.perform_thp_handshake_inner(path).await {
                 Ok(()) => return Ok(()),
                 Err(e) => {
+                    // Always reset protocol state on ANY handshake/pairing
+                    // failure — not just TransportBusy — so a partially
+                    // completed attempt (e.g. `is_paired` set early during
+                    // pairing, then a wrong code or a rejected credential)
+                    // never lingers in `thp_states` for the next attempt on
+                    // this path to reuse via `entry().or_insert_with()`.
+                    {
+                        let mut states = self.thp_states.write().await;
+                        if let Some(state) = states.get_mut(path) {
+                            state.protocol.state_mut().reset();
+                            state.handshake_complete = false;
+                        }
+                    }
+
                     if e.to_string().contains("TransportBusy") && attempt < MAX_RETRIES {
                         log::warn!(
                             "[USB-THP] TransportBusy (attempt {}/{}), retrying in {}ms...",
@@ -483,15 +497,6 @@ impl UsbTransport {
                             MAX_RETRIES,
                             delay_ms
                         );
-                        // Reset protocol state before retry (keeps pairing
-                        // credentials, clears channel/nonces/sync bits).
-                        {
-                            let mut states = self.thp_states.write().await;
-                            if let Some(state) = states.get_mut(path) {
-                                state.protocol.state_mut().reset();
-                                state.handshake_complete = false;
-                            }
-                        }
                         tokio::time::sleep(Duration::from_millis(delay_ms)).await;
                         delay_ms *= 2;
                         continue;
@@ -739,85 +744,132 @@ impl UsbTransport {
         let ack = encode_ack(&channel, ack_bit);
         self.write_raw_thp(path, &ack).await?;
 
+        // Validate the handshake completion response frame.
+        // Reject any unexpected control byte so a malicious or manipulated
+        // response cannot skip pairing and mark authentication complete.
         let ctrl = comp_resp[0] & 0xe7;
-        if ctrl == thp_control::HANDSHAKE_COMP_RES {
-            let payload_len = u16::from_be_bytes([comp_resp[3], comp_resp[4]]) as usize;
-            let crc_len = 4;
+        if ctrl != thp_control::HANDSHAKE_COMP_RES {
+            return Err(ThpError::HandshakeFailed(format!(
+                "Expected handshake completion response (0x{:02x}), got: 0x{:02x}",
+                thp_control::HANDSHAKE_COMP_RES,
+                comp_resp.get(0).unwrap_or(&0)
+            ))
+            .into());
+        }
 
-            if comp_resp.len() >= 5 + payload_len && payload_len > crc_len {
-                let encrypted_payload = &comp_resp[5..5 + payload_len - crc_len];
+        if comp_resp.len() < 5 {
+            return Err(ThpError::HandshakeFailed(format!(
+                "Handshake completion response too short: {} bytes",
+                comp_resp.len()
+            ))
+            .into());
+        }
 
-                let completion = {
-                    let states = self.thp_states.read().await;
-                    let state = states.get(path).ok_or(TransportError::DeviceNotFound)?;
-                    parse_handshake_completion_response(state.protocol.state(), encrypted_payload)?
-                };
+        let payload_len = u16::from_be_bytes([comp_resp[3], comp_resp[4]]) as usize;
+        let crc_len = 4;
 
-                log::info!(
-                    "[USB-THP] trezor_state={} (0=needs pairing, 1=paired, 2=autoconnect)",
-                    completion.trezor_state
-                );
+        if comp_resp.len() < 5 + payload_len || payload_len <= crc_len {
+            return Err(ThpError::HandshakeFailed(format!(
+                "Handshake completion response length mismatch: response_len={}, payload_len={}",
+                comp_resp.len(),
+                payload_len
+            ))
+            .into());
+        }
 
-                if completion.trezor_state == 0 {
-                    // Device requires pairing
-                    log::info!("[USB-THP] Device requires pairing");
-                    self.perform_thp_pairing(path, &channel).await?;
-                } else {
-                    // Device accepted (state=1 or 2) — send ThpEndRequest
-                    log::info!("[USB-THP] Device accepted, finalizing connection...");
+        let encrypted_payload = &comp_resp[5..5 + payload_len - crc_len];
 
-                    // Mark as paired to enable encrypted messaging
-                    {
-                        let mut states = self.thp_states.write().await;
-                        if let Some(state) = states.get_mut(path) {
-                            state.protocol.state_mut().set_is_paired(true);
-                        }
-                    }
+        let completion = {
+            let states = self.thp_states.read().await;
+            let state = states.get(path).ok_or(TransportError::DeviceNotFound)?;
+            parse_handshake_completion_response(state.protocol.state(), encrypted_payload)?
+        };
 
-                    let (end_resp_type, _) = self
-                        .send_thp_encrypted(
-                            path,
-                            &channel,
-                            crate::constants::thp_message_type::THP_END_REQUEST,
-                            &[],
-                        )
-                        .await?;
+        // Only the documented trezor_state values are valid. A rogue device
+        // could otherwise send an undefined state and bypass pairing/confirmation.
+        if completion.trezor_state > 2 {
+            return Err(ThpError::HandshakeFailed(format!(
+                "Invalid trezor_state in completion response: {}",
+                completion.trezor_state
+            ))
+            .into());
+        }
 
-                    if end_resp_type == crate::constants::message_type::BUTTON_REQUEST {
-                        log::info!("[USB-THP] Device requesting connection confirmation...");
-                        let (ack_resp_type, _) = self
-                            .send_thp_encrypted(
-                                path,
-                                &channel,
-                                crate::constants::message_type::BUTTON_ACK,
-                                &[],
-                            )
-                            .await?;
-                        if ack_resp_type != crate::constants::thp_message_type::THP_END_RESPONSE {
-                            return Err(ThpError::HandshakeFailed(format!(
-                                "Expected ThpEndResponse after ButtonAck, got: {}",
-                                ack_resp_type
-                            ))
-                            .into());
-                        }
-                    } else if end_resp_type != crate::constants::thp_message_type::THP_END_RESPONSE
-                    {
-                        return Err(ThpError::HandshakeFailed(format!(
-                            "Expected ThpEndResponse, got: {}",
-                            end_resp_type
-                        ))
-                        .into());
-                    }
+        log::info!(
+            "[USB-THP] trezor_state={} (0=needs pairing, 1=paired, 2=autoconnect)",
+            completion.trezor_state
+        );
+
+        if completion.trezor_state == 0 {
+            // Device requires pairing
+            log::info!("[USB-THP] Device requires pairing");
+            self.perform_thp_pairing(path, &channel).await?;
+        } else {
+            // Device accepted (state=1 or 2) — send ThpEndRequest
+            log::info!("[USB-THP] Device accepted, finalizing connection...");
+
+            // Mark as paired to enable encrypted messaging
+            {
+                let mut states = self.thp_states.write().await;
+                if let Some(state) = states.get_mut(path) {
+                    state.protocol.state_mut().set_is_paired(true);
                 }
+            }
+
+            let (end_resp_type, _) = self
+                .send_thp_encrypted(
+                    path,
+                    &channel,
+                    crate::constants::thp_message_type::THP_END_REQUEST,
+                    &[],
+                )
+                .await?;
+
+            if end_resp_type == crate::constants::message_type::BUTTON_REQUEST {
+                log::info!("[USB-THP] Device requesting connection confirmation...");
+                let (ack_resp_type, _) = self
+                    .send_thp_encrypted(
+                        path,
+                        &channel,
+                        crate::constants::message_type::BUTTON_ACK,
+                        &[],
+                    )
+                    .await?;
+                if ack_resp_type != crate::constants::thp_message_type::THP_END_RESPONSE {
+                    return Err(ThpError::HandshakeFailed(format!(
+                        "Expected ThpEndResponse after ButtonAck, got: {}",
+                        ack_resp_type
+                    ))
+                    .into());
+                }
+            } else if end_resp_type != crate::constants::thp_message_type::THP_END_RESPONSE {
+                return Err(ThpError::HandshakeFailed(format!(
+                    "Expected ThpEndResponse, got: {}",
+                    end_resp_type
+                ))
+                .into());
             }
         }
 
-        // Mark as paired
-        {
-            let mut states = self.thp_states.write().await;
-            if let Some(state) = states.get_mut(path) {
-                state.protocol.state_mut().set_is_paired(true);
-            }
+        // Do not allow session creation or handshake completion unless the
+        // authentication proof and any required user confirmation finished.
+        // Also re-check the channel: the awaits above (pairing / ThpEndRequest
+        // / ButtonAck) can yield the task, so a concurrent handshake attempt
+        // on the same `path` could reset/replace this state in between. If
+        // that happened, `is_paired` may be true again but for a *different*
+        // channel/session — this must not be treated as our completion.
+        let is_paired = {
+            let states = self.thp_states.read().await;
+            states
+                .get(path)
+                .map(|s| s.protocol.state().is_paired() && s.protocol.state().channel() == &channel)
+                .unwrap_or(false)
+        };
+        if !is_paired {
+            return Err(ThpError::HandshakeFailed(
+                "Handshake finished but device is not paired for this channel".to_string(),
+            )
+            .into());
         }
 
         // Create THP session
