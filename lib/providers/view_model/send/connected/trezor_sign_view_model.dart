@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/transaction/prev_tx_fetcher.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_exceptions.dart';
 import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
@@ -25,6 +26,8 @@ class TrezorSignViewModel extends ChangeNotifier {
   String? _fingerprint;
   Timer? _timeoutTimer;
   bool _isConnectionError = false;
+  bool _connectionLost = false;
+  StreamSubscription<bool>? _connectionSubscription;
 
   final String psbtBase64;
   final String walletName;
@@ -44,6 +47,7 @@ class TrezorSignViewModel extends ChangeNotifier {
     this.transport = TrezorTransport.ble,
   }) : _walletProvider = walletProvider {
     _probeDeviceStatus();
+    _connectionSubscription = TrezorConnectivityService.onConnectionChanged.listen(_onConnectionChanged);
   }
 
   TrezorSignStep get step => _step;
@@ -56,6 +60,7 @@ class TrezorSignViewModel extends ChangeNotifier {
   bool get isWalletMismatch => _isWalletMismatch;
   String? get mismatchedWalletName => _mismatchedWalletName;
   bool get isConnectionError => _isConnectionError;
+  bool get connectionLost => _connectionLost;
 
   void _probeDeviceStatus() {
     final last = TrezorDevice.lastConnected;
@@ -114,6 +119,7 @@ class TrezorSignViewModel extends ChangeNotifier {
     _isSigning = true;
     _errorMessage = null;
     _isConnectionError = false;
+    _connectionLost = false;
     _cancelTimeout();
 
     try {
@@ -125,6 +131,18 @@ class TrezorSignViewModel extends ChangeNotifier {
       if (_device != null) {
         _cancelTimeout();
         _fingerprint = _device!.cachedFingerprint;
+      } else {
+        _cancelTimeout();
+        _isConnectionError = true;
+        TrezorDevice.lastConnected = null;
+        throw const TrezorConnectException('DEVICE_NOT_CONNECTED', 'Trezor is not connected');
+      }
+
+      if (!await TrezorConnectivityService.isDeviceConnected(transport)) {
+        _cancelTimeout();
+        _isConnectionError = true;
+        TrezorDevice.lastConnected = null;
+        throw const TrezorConnectException('DEVICE_NOT_CONNECTED', 'Trezor is not connected');
       }
 
       final network = nt.toString();
@@ -161,7 +179,13 @@ class TrezorSignViewModel extends ChangeNotifier {
       _setState(TrezorSignStep.error);
     } on TrezorSignException catch (e) {
       _cancelTimeout();
-      _errorMessage = e.message;
+      if (!_connectionLost) {
+        _errorMessage = e.message;
+        if (_isBleErrorMessage(e.message)) {
+          _isConnectionError = true;
+          TrezorDevice.lastConnected = null;
+        }
+      }
       _setState(TrezorSignStep.error);
     } on TrezorPairingException catch (e) {
       _cancelTimeout();
@@ -171,7 +195,9 @@ class TrezorSignViewModel extends ChangeNotifier {
       _setState(TrezorSignStep.error);
     } catch (e) {
       _cancelTimeout();
-      _errorMessage = e.toString();
+      if (!_connectionLost) {
+        _errorMessage = e.toString();
+      }
       TrezorDevice.lastConnected = null;
       _setState(TrezorSignStep.error);
     }
@@ -215,6 +241,7 @@ class TrezorSignViewModel extends ChangeNotifier {
     _isWalletMismatch = false;
     _mismatchedWalletName = null;
     _isConnectionError = false;
+    _connectionLost = false;
     _probeDeviceStatus();
     notifyListeners();
   }
@@ -248,9 +275,44 @@ class TrezorSignViewModel extends ChangeNotifier {
     );
   }
 
+  Future<bool> isDeviceConnected() async {
+    if (_device == null) return false;
+    return TrezorConnectivityService.isDeviceConnected(transport);
+  }
+
+  void _onConnectionChanged(bool connected) {
+    if (connected) return;
+    // Mark that the disconnect was already handled here with a clear message,
+    // so the catch blocks in signTransaction() (triggered by the in-flight call
+    // failing right after this event) don't overwrite it with a raw native error.
+    _connectionLost = true;
+    TrezorDevice.lastConnected = null;
+    _isConnectionError = true;
+    _cancelTimeout();
+    final message = transport == TrezorTransport.ble ? 'Bluetooth connection lost' : 'USB connection lost';
+    if (_isSigning) {
+      _isSigning = false;
+      _errorMessage = message;
+      _setState(TrezorSignStep.error);
+    } else if (_step == TrezorSignStep.idle) {
+      _errorMessage = message;
+      _setState(TrezorSignStep.error);
+    }
+  }
+
+  bool _isBleErrorMessage(String message) {
+    final lower = message.toLowerCase();
+    return lower.contains('ble write failed') ||
+        lower.contains('ble read timeout') ||
+        lower.contains('bluetooth') ||
+        lower.contains('device disconnected');
+  }
+
   @override
   void dispose() {
     _cancelTimeout();
+    _connectionSubscription?.cancel();
+    _connectionSubscription = null;
     _device = null;
     super.dispose();
   }

@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:flutter/services.dart';
 
-/// Wraps Trezor Safe 7 BLE connectivity: live disconnect stream.
+/// Wraps Trezor connectivity (BLE and USB): live disconnect stream.
 ///
-/// iOS:     listens for BLE peripheral disconnect via CoreBluetooth.
-/// Android: listens for GATT connection state changes.
-class TrezorBleConnectivityService {
+/// iOS:     listens for BLE peripheral disconnect via CoreBluetooth (USB unsupported).
+/// Android: listens for GATT connection state changes (BLE) or USB detach events.
+class TrezorConnectivityService {
   static const MethodChannel _channel = MethodChannel('trezor');
   static const EventChannel _eventChannel = EventChannel('trezor/connectivity');
 
@@ -16,7 +16,7 @@ class TrezorBleConnectivityService {
   /// Returns true if the physical device is currently reachable right now.
   ///
   /// iOS:     BLE peripheral is in the connected state.
-  /// Android: GATT connection is active.
+  /// Android: GATT connection is active (BLE) or USB connection is open.
   static Future<bool> isDeviceConnected([TrezorTransport transport = TrezorTransport.ble]) async {
     try {
       final result = await _channel.invokeMethod<bool>('isConnected', {'transport': transport.name});

@@ -10,7 +10,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_navigator.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -244,7 +244,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
 
   Future<void> _navigateToTrezorConnectIfNeeded(SendConfirmViewModel viewModel) async {
     final lastConnected = TrezorDevice.lastConnected;
-    final isConnected = await TrezorBleConnectivityService.isDeviceConnected(
+    final isConnected = await TrezorConnectivityService.isDeviceConnected(
       lastConnected?.transport ?? TrezorTransport.ble,
     );
     final hasSession = lastConnected != null;

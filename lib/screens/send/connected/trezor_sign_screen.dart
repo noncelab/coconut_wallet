@@ -402,7 +402,21 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
                 vm.signTransaction();
               }
             }
-            : () => vm.signTransaction();
+            : () async {
+              if (!await vm.isDeviceConnected()) {
+                if (!mounted) return;
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                await TrezorNavigator.showConnectScreen(
+                  context: navigator.context,
+                  psbtBase64: widget.psbtBase64,
+                  walletName: widget.walletName,
+                  walletFingerprint: widget.walletFingerprint,
+                );
+                return;
+              }
+              vm.signTransaction();
+            };
 
     return FixedBottomButton(
       onButtonClicked: onPressed,
