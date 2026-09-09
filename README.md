@@ -107,10 +107,6 @@ This project uses [gomobile](https://pkg.go.dev/golang.org/x/mobile/cmd/gomobile
 Quick steps:
 
 ```bash
-# 0. Clone the required fork as a sibling directory (do NOT use upstream BitBoxSwiss)
-git clone https://github.com/4xvgal/bitbox02-api-go.git ../bitbox02-api-go
-cd ../bitbox02-api-go && git checkout fix/nil-guard-psbt && cd ../coconut_wallet
-
 # 1. Install Go (if not already installed)
 brew install go
 
@@ -121,7 +117,7 @@ echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.zshrc && source ~/.zshrc
 # 3. Initialize gomobile (re-run if you upgrade Go, Xcode, or Android NDK)
 gomobile init
 
-# 4. Sync Go dependencies
+# 4. Sync Go dependencies (fetches the pinned bitbox02-api-go fork automatically, no manual clone needed)
 cd go && go mod tidy && cd ..
 
 # 5. Build native bindings (16KB page-aligned for Android 15+)
