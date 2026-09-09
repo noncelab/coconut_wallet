@@ -178,11 +178,7 @@ class QueryInputSection extends StatelessWidget {
         viewModel.isLoading
             ? const Row(
               children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 8),
-                ),
+                SizedBox(width: 16, height: 16, child: InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 8)),
                 SizedBox(width: 8),
                 Text('조회 중...'),
               ],

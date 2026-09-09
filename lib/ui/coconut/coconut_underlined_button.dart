@@ -56,17 +56,8 @@ class _CoconutUnderlinedButtonState extends State<CoconutUnderlinedButton> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                widget.text,
-                textAlign: TextAlign.center,
-                softWrap: true,
-                style: widget.textStyle.setColor(color),
-              ),
-              Container(
-                width: _getTextWidth(context) + 4,
-                height: widget.lineWidth,
-                color: color,
-              ),
+              Text(widget.text, textAlign: TextAlign.center, softWrap: true, style: widget.textStyle.setColor(color)),
+              Container(width: _getTextWidth(context) + 4, height: widget.lineWidth, color: color),
             ],
           ),
         ),

@@ -324,7 +324,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   );
 
                   if (!mounted) return;
-                  launchURL(context, params.toString(), analyticsUrl: 'mailto:$CONTACT_EMAIL_ADDRESS');
+                  launchURL(context, params.toString(), analyticsValue: 'mailto:$CONTACT_EMAIL_ADDRESS');
                 },
               ),
             ],

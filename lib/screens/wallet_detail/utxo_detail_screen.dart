@@ -356,9 +356,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           onTapUnderlineButton: () {
             launchURL(
               context,
-              "${_viewModel.mempoolHost}/address/${widget.utxo.to}",
+              _viewModel.explorerUrlFor(BlockExplorerPathType.address, widget.utxo.to),
               openInApp: true,
-              analyticsUrl: _viewModel.explorerAnalyticsUrlForPath('address'),
+              analyticsValue: _viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.address),
             );
           },
           child: Column(
@@ -422,9 +422,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         if (widget.utxo.status == UtxoStatus.unspent) {
           launchURL(
             context,
-            "${_viewModel.mempoolHost}/block/${widget.utxo.blockHeight}",
+            _viewModel.explorerUrlFor(BlockExplorerPathType.block, widget.utxo.blockHeight.toString()),
             openInApp: true,
-            analyticsUrl: _viewModel.explorerAnalyticsUrlForPath('block'),
+            analyticsValue: _viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.block),
           );
         }
       },

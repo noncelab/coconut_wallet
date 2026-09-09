@@ -3,5 +3,5 @@ class AnalyticsParameterNames {
   static const String walletAddImportSource = 'wallet_add_import_source'; // parameter: enum WalletImportSource
 
   // 외부 링크
-  static const String externalLinkUrl = 'external_link_url';
+  static const String externalLinkDestination = 'external_link_destination';
 }

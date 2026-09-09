@@ -142,10 +142,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       height: effectiveBodyHeight,
                       child: Stack(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: _buildBody(context),
-                          ),
+                          Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: _buildBody(context)),
                           if (widget.onSkip != null)
                             FixedBottomTweenButton(
                               isVisibleAboveKeyboard: false,
@@ -196,9 +193,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
 
   Widget _buildBody(BuildContext context) {
     const double bottomSpacer =
-        FixedBottomButton.fixedBottomButtonDefaultHeight +
-        FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
-        44;
+        FixedBottomButton.fixedBottomButtonDefaultHeight + FixedBottomButton.fixedBottomButtonDefaultBottomPadding + 44;
 
     return SizedBox(
       height: double.infinity,

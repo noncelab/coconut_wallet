@@ -102,7 +102,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                 );
 
                 if (!context.mounted) return;
-                await launchURL(context, emailUri.toString(), analyticsUrl: 'mailto:$CONTACT_EMAIL_ADDRESS');
+                await launchURL(context, emailUri.toString(), analyticsValue: 'mailto:$CONTACT_EMAIL_ADDRESS');
               } catch (e) {
                 if (context.mounted) {
                   CoconutToast.showToast(

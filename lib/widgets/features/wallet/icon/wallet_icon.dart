@@ -26,16 +26,10 @@ class WalletIcon extends StatelessWidget {
     if (walletImportSource == null) {
       return Container(
         padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: context.coconutColors.iconBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(color: context.coconutColors.iconBackground, borderRadius: BorderRadius.circular(12)),
         child: SvgPicture.asset(
           FeatureSettingsIconPath.puzzlePiece,
-          colorFilter: ColorFilter.mode(
-            context.coconutColors.iconSecondary,
-            BlendMode.srcIn,
-          ),
+          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
           width: 18.0,
         ),
       );
@@ -54,19 +48,13 @@ class WalletIcon extends StatelessWidget {
           isExternalWallet
               ? SvgPicture.asset(
                 walletImportSource!.externalWalletIconPath,
-                colorFilter: ColorFilter.mode(
-                  context.coconutColors.iconPrimary,
-                  BlendMode.srcIn,
-                ),
+                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
                 width: 18.0,
                 height: 18.0,
               )
               : SvgPicture.asset(
                 CustomWalletIcons.getPathByIndex(iconIndex),
-                colorFilter: ColorFilter.mode(
-                  WalletVisualStyleUtil.getColor(colorIndex).color,
-                  BlendMode.srcIn,
-                ),
+                colorFilter: ColorFilter.mode(WalletVisualStyleUtil.getColor(colorIndex).color, BlendMode.srcIn),
                 width: 18.0,
               ),
     );

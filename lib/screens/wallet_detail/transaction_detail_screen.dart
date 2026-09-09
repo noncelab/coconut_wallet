@@ -742,9 +742,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       onTapUnderlineButton: () {
         launchURL(
           context,
-          '${viewModel.mempoolHost}/tx/${tx.transactionHash}',
+          viewModel.explorerUrlFor(BlockExplorerPathType.tx, tx.transactionHash),
           openInApp: true,
-          analyticsUrl: viewModel.explorerAnalyticsUrlForPath('tx'),
+          analyticsValue: viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.tx),
         );
       },
       child: CopyTextContainer(
@@ -775,9 +775,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         if (tx.blockHeight != 0) {
           launchURL(
             context,
-            '${_viewModel.mempoolHost}/block/${tx.blockHeight}',
+            _viewModel.explorerUrlFor(BlockExplorerPathType.block, tx.blockHeight.toString()),
             openInApp: true,
-            analyticsUrl: _viewModel.explorerAnalyticsUrlForPath('block'),
+            analyticsValue: _viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.block),
           );
         }
       },

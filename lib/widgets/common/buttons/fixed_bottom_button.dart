@@ -124,7 +124,8 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                             ? colors.buttonPrimaryPressOverlay
                             : getDarkerColor(resolvedBackgroundColor)),
                     pressedOverlayOpacity:
-                        widget.pressedBackgroundColor == null && resolvedBackgroundColor == colors.buttonPrimaryBackground
+                        widget.pressedBackgroundColor == null &&
+                                resolvedBackgroundColor == colors.buttonPrimaryBackground
                             ? colors.buttonPrimaryPressOverlayOpacity
                             : null,
                     disabledColor: colors.buttonPrimaryDisabledBackground,

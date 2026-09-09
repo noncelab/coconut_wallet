@@ -8,6 +8,8 @@ import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/url_normalize_util.dart';
 import 'package:flutter/widgets.dart';
 
+enum BlockExplorerPathType { tx, block, address }
+
 class BlockExplorerProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
@@ -25,12 +27,14 @@ class BlockExplorerProvider extends ChangeNotifier {
   bool get isCustomExplorerEnabled =>
       NetworkType.currentNetworkType == NetworkType.mainnet && !useDefaultExplorer && customExplorerUrl.isNotEmpty;
 
-  String explorerAnalyticsUrlForPath(String path) {
-    final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+  String explorerUrlFor(BlockExplorerPathType pathType, String value) => '$blockExplorerUrl/${pathType.name}/$value';
+
+  String sanitizedExplorerAnalyticsDestination(BlockExplorerPathType pathType) {
+    final path = pathType.name;
     if (isCustomExplorerEnabled) {
-      return '${AnalyticsParameterValues.customExplorer}/${normalizedPath.toUpperCase()}';
+      return '${AnalyticsParameterValues.customExplorer}/${path.toUpperCase()}';
     }
-    return '$blockExplorerUrl/$normalizedPath';
+    return '$blockExplorerUrl/$path';
   }
 
   String get blockExplorerUrl {
