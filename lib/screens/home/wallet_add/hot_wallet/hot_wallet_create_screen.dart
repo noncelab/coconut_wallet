@@ -138,57 +138,63 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Scaffold(
-          backgroundColor: context.coconutColors.background,
-          appBar: CoconutAppBar.build(
-            title: t.wallet_home_screen.hot_wallet_create.title,
-            context: context,
-            onBackPressed: () => Navigator.pop(context),
+    return PopScope(
+      canPop: !_viewModel.isCreating,
+      child: Stack(
+        children: [
+          Scaffold(
             backgroundColor: context.coconutColors.background,
-          ),
-          body: GestureDetector(
-            onTap: () => FocusScope.of(context).unfocus(),
-            child: Stack(
-              children: [
-                CustomScrollView(
-                  controller: _scrollController,
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
-                      sliver: SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildNameField(),
-                            CoconutLayout.spacing_600h,
-                            _buildAdvancedSettings(),
-                            CoconutLayout.spacing_600h,
-                          ],
+            appBar: CoconutAppBar.build(
+              title: t.wallet_home_screen.hot_wallet_create.title,
+              context: context,
+              onBackPressed: () {
+                if (_viewModel.isCreating) return;
+                Navigator.pop(context);
+              },
+              backgroundColor: context.coconutColors.background,
+            ),
+            body: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: Stack(
+                children: [
+                  CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
+                        sliver: SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildNameField(),
+                              CoconutLayout.spacing_600h,
+                              _buildAdvancedSettings(),
+                              CoconutLayout.spacing_600h,
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                FixedBottomButton(
-                  text: t.wallet_home_screen.hot_wallet_create.create_wallet,
-                  isActive:
-                      !_viewModel.isCreating &&
-                      (!_usePassphrase ||
-                          (_passphraseController.text.isNotEmpty &&
-                              _passphraseConfirmController.text.isNotEmpty &&
-                              _passphraseController.text == _passphraseConfirmController.text)),
-                  surroundingsColor: context.coconutColors.background,
-                  onButtonClicked: _onCreateWalletPressed,
-                  subWidget: _buildMnemonicBackupGuide(),
-                ),
-              ],
+                    ],
+                  ),
+                  FixedBottomButton(
+                    text: t.wallet_home_screen.hot_wallet_create.create_wallet,
+                    isActive:
+                        !_viewModel.isCreating &&
+                        (!_usePassphrase ||
+                            (_passphraseController.text.isNotEmpty &&
+                                _passphraseConfirmController.text.isNotEmpty &&
+                                _passphraseController.text == _passphraseConfirmController.text)),
+                    surroundingsColor: context.coconutColors.background,
+                    onButtonClicked: _onCreateWalletPressed,
+                    subWidget: _buildMnemonicBackupGuide(),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        if (_viewModel.isCreating) const CoconutLoadingOverlay(applyFullScreen: true),
-      ],
+          if (_viewModel.isCreating) const CoconutLoadingOverlay(applyFullScreen: true),
+        ],
+      ),
     );
   }
 
