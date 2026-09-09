@@ -210,7 +210,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
       _hideFullScreenLoading();
       Navigator.pushReplacementNamed(
         context,
-        '/wallet-detail',
+        '/renewal-wallet-detail',
         arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
       );
       return;

@@ -249,7 +249,6 @@ class WalletInfoViewModel extends ChangeNotifier {
 
     await _walletProvider.deleteWallet(_walletId);
     _nodeProvider.reconnect();
-    _walletProvider.notifyListeners();
   }
 
   MultisigSigner getSigner(int index) {

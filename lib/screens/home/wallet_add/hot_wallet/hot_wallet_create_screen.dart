@@ -1,19 +1,15 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutTextField;
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_create_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
@@ -27,26 +23,10 @@ import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-
-({Uint8List mnemonic, String descriptor}) _generateHotWalletMaterial(
-  ({int mnemonicWordCount, Uint8List passphrase}) input,
-) {
-  final mnemonicWordCount = input.mnemonicWordCount;
-  final passphrase = input.passphrase;
-  final seed = Seed.random(mnemonicLength: mnemonicWordCount, passphrase: passphrase);
-  try {
-    final vault = SingleSignatureVault.fromSeed(seed);
-    return (mnemonic: Uint8List.fromList(seed.mnemonic), descriptor: vault.descriptor);
-  } finally {
-    seed.wipe();
-    passphrase.fillRange(0, passphrase.length, 0);
-  }
-}
 
 class HotWalletCreateScreen extends StatefulWidget {
   const HotWalletCreateScreen({super.key});
@@ -56,6 +36,7 @@ class HotWalletCreateScreen extends StatefulWidget {
 }
 
 class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
+  late final HotWalletCreateViewModel _viewModel;
   late final TextEditingController _nameController;
   late final String _suggestedWalletName;
   final TextEditingController _passphraseController = TextEditingController();
@@ -77,11 +58,11 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   bool _isPassphraseOptionPressed = false;
   bool _hasNameFieldEverFocused = false;
   bool _isAdvancedSettingsExpanded = false;
-  bool _isCreating = false;
 
   @override
   void initState() {
     super.initState();
+    _viewModel = HotWalletCreateViewModel(context.read<WalletProvider>())..addListener(_handleViewModelChanged);
     _suggestedWalletName = _generateDefaultWalletName();
     _nameController = TextEditingController();
     _nameFocusNode.addListener(_handleNameFocusChanged);
@@ -91,6 +72,9 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
 
   @override
   void dispose() {
+    _viewModel
+      ..removeListener(_handleViewModelChanged)
+      ..dispose();
     _nameFocusNode.removeListener(_handleNameFocusChanged);
     _passphraseFocusNode.removeListener(_handlePassphraseFocusChanged);
     _passphraseConfirmFocusNode.removeListener(_handlePassphraseConfirmFocusChanged);
@@ -104,6 +88,10 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
     _passphraseConfirmFocusNode.dispose();
     _screenFocusNode.dispose();
     super.dispose();
+  }
+
+  void _handleViewModelChanged() {
+    if (mounted) setState(() {});
   }
 
   void _handleNameFocusChanged() {
@@ -186,7 +174,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                 FixedBottomButton(
                   text: t.wallet_home_screen.hot_wallet_create.create_wallet,
                   isActive:
-                      !_isCreating &&
+                      !_viewModel.isCreating &&
                       (!_usePassphrase ||
                           (_passphraseController.text.isNotEmpty &&
                               _passphraseConfirmController.text.isNotEmpty &&
@@ -199,7 +187,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
             ),
           ),
         ),
-        if (_isCreating) const CoconutLoadingOverlay(applyFullScreen: true),
+        if (_viewModel.isCreating) const CoconutLoadingOverlay(applyFullScreen: true),
       ],
     );
   }
@@ -827,99 +815,40 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   }
 
   Future<void> _onCreateWalletPressed() async {
-    if (_isCreating) return;
+    if (_viewModel.isCreating) return;
     FocusScope.of(context).unfocus();
-    final walletProvider = context.read<WalletProvider>();
     final walletName = _nameController.text.trim().isEmpty ? _suggestedWalletName : _nameController.text.trim();
-
-    if (walletProvider.walletItemList.any((wallet) => wallet.name == walletName)) {
-      await showInfoDialog(
-        context,
-        context.read<PreferenceProvider>().language,
-        t.wallet_home_screen.hot_wallet_create.duplicate_name_title,
-        t.wallet_home_screen.hot_wallet_create.duplicate_name_description,
-      );
-      return;
-    }
-
-    setState(() => _isCreating = true);
     await WidgetsBinding.instance.endOfFrame;
 
-    final passphrase = Uint8List.fromList(utf8.encode(_usePassphrase ? _passphraseController.text : ''));
-    Uint8List? mnemonic;
-    final secretRepository = HotWalletSecretRepository();
-    final storageKey = secretRepository.newSecretStorageKey();
-    var sensitiveBytesCleared = false;
-
-    void clearSensitiveBytes() {
-      if (sensitiveBytesCleared) return;
-      mnemonic?.fillRange(0, mnemonic.length, 0);
-      passphrase.fillRange(0, passphrase.length, 0);
-      sensitiveBytesCleared = true;
-    }
-
     try {
-      final mnemonicWordCount = _mnemonicWordCount;
-      final material = await compute(_generateHotWalletMaterial, (
-        mnemonicWordCount: mnemonicWordCount,
-        passphrase: Uint8List.fromList(passphrase),
-      ));
-      final generatedMnemonic = material.mnemonic;
-      mnemonic = generatedMnemonic;
-      final wallet = WatchOnlyWallet(
-        walletName,
-        _selectedColorIndex,
-        _selectedIconIndex,
-        material.descriptor,
-        null,
-        null,
-        WalletImportSource.coconutVault.name,
-      );
-
-      final passphraseToStore = _enterPassphraseWhenSigning ? Uint8List(0) : Uint8List.fromList(passphrase);
-      try {
-        await AppGuard.runWithoutPrivacyScreen(
-          () => secretRepository.create(
-            storageKey: storageKey,
-            mnemonic: generatedMnemonic,
-            passphrase: passphraseToStore,
-          ),
-        );
-      } finally {
-        passphraseToStore.fillRange(0, passphraseToStore.length, 0);
-      }
-      final addedWallet = await walletProvider.addHotWallet(
-        wallet,
-        secureStorageKey: storageKey,
-        backupVerified: false,
+      final result = await _viewModel.createWallet(
+        walletName: walletName,
+        colorIndex: _selectedColorIndex,
+        iconIndex: _selectedIconIndex,
+        mnemonicWordCount: _mnemonicWordCount,
+        passphrase: _usePassphrase ? _passphraseController.text : '',
         enterPassphraseWhenSigning: _enterPassphraseWhenSigning,
-        createdAt: DateTime.now(),
       );
 
-      if (!mounted) return;
-      final mnemonicForBackup = Uint8List.fromList(generatedMnemonic);
-      final passphraseForBackup = Uint8List.fromList(passphrase);
+      if (!mounted) {
+        result.clearSensitiveBytes();
+        return;
+      }
       _passphraseController.clear();
       _passphraseConfirmController.clear();
-      clearSensitiveBytes();
       await Navigator.pushReplacementNamed(
         context,
         '/hot-wallet-mnemonic-backup-guide',
         arguments: {
-          'walletName': walletName,
-          'walletId': addedWallet.id,
-          'mnemonic': mnemonicForBackup,
-          'passphrase': passphraseForBackup,
-          'enterPassphraseWhenSigning': _enterPassphraseWhenSigning,
+          'walletName': result.walletName,
+          'walletId': result.walletId,
+          'mnemonic': result.mnemonic,
+          'passphrase': result.passphrase,
+          'enterPassphraseWhenSigning': result.enterPassphraseWhenSigning,
         },
       );
     } catch (error, stackTrace) {
       Logger.error('Hot wallet creation failed: $error\n$stackTrace');
-      try {
-        await secretRepository.delete(storageKey);
-      } catch (_) {
-        // 저장이 시작되기 전 실패했거나 이미 정리된 경우
-      }
       if (mounted) {
         final isNameConflict = error is WalletNameConflictException;
         await showInfoDialog(
@@ -931,9 +860,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
               : t.wallet_home_screen.hot_wallet_create.creation_failed,
         );
       }
-    } finally {
-      clearSensitiveBytes();
-      if (mounted) setState(() => _isCreating = false);
     }
   }
 

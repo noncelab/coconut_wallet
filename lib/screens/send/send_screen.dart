@@ -236,14 +236,19 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showNoMfpDialog(context, () {
-          Navigator.of(context).pop(); // 다이얼로그 닫기
+          final navigator = Navigator.of(context);
+          navigator.pop(); // 다이얼로그 닫기
           final walletId = widget.walletId!;
-          final isFromWalletDetail = widget.sendEntryPoint == SendEntryPoint.walletDetail;
+          final isFromWalletScreen =
+              widget.sendEntryPoint == SendEntryPoint.walletDetail ||
+              widget.sendEntryPoint == SendEntryPoint.renewalWalletDetail;
 
-          if (isFromWalletDetail) {
-            Navigator.of(context).pop(); // sendScreen 닫기 → wallet-detail로 복귀
-            Navigator.pushNamed(
-              context,
+          if (isFromWalletScreen) {
+            navigator.pop(); // SendScreen 닫기
+            if (widget.sendEntryPoint == SendEntryPoint.walletDetail) {
+              navigator.pop(); // WalletDetailScreen 닫기 → RenewalWalletDetailScreen으로 복귀
+            }
+            navigator.pushNamed(
               '/wallet-info',
               arguments: {
                 'id': walletId,
@@ -253,14 +258,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               },
             );
           } else {
-            Navigator.of(context).pop(); // sendScreen 닫기
-            Navigator.pushNamed(
-              context,
-              '/wallet-detail',
+            navigator.pop(); // SendScreen 닫기
+            navigator.pushNamed(
+              '/renewal-wallet-detail',
               arguments: {'id': walletId, 'entryPoint': kEntryPointWalletHome},
             );
-            Navigator.pushNamed(
-              context,
+            navigator.pushNamed(
               '/wallet-info',
               arguments: {
                 'id': walletId,

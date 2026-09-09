@@ -1035,6 +1035,8 @@ address_list_screen:
   enter_receive_amount: "受け取る金額を入力"
   
 utxo_overview_screen:
+  overview: "概要"
+  list: "一覧"
   by_amount: "金額別"
   by_tag: "タグ別"
   interval_info_title: "区間案内"
@@ -1042,6 +1044,9 @@ utxo_overview_screen:
   view_mode_grid: "グリッド"
   no_tag_applied: "適用されたタグがありません"
   no_tag_applied_desc: "UTXOにタグを適用すると、タグ別の内訳を確認できます"
+  no_available_utxos: "使用可能なUTXOがありません"
+  no_locked_utxos: "使用ロックされたUTXOがありません"
+  no_change_utxos: "おつりのUTXOがありません"
   total: "合計"
   untagged: "未分類"
   tagged: "タグ適用"
@@ -1102,13 +1107,27 @@ utxo_detail_screen:
 utxo_tag_screen:
   onboarding_title: "UTXOタグを管理できます"
   add_tag: "+ボタンを押して最初のタグを作成"
+wallet_detail_screen:
+  recent_transactions: "最近のトランザクション"
+  view_all: "すべて見る"
+  never_used_wallet: "まだ使用されていないウォレットです"
+  utxo_count(count): "UTXO・${count}個"
+  utxo_overview: "一覧を見る"
+  utxo_overview_description: "概要 • 一覧"
+  utxo_organize: "整理する"
+  utxo_organize_description: "分割 • 統合"
+
 wallet_info_screen:
   title: "$name情報"
   transaction: "トランザクション"
   utxo: "UTXO"
+  target: "目標"
   target_quantity: "目標数量"
+  target_progress_title: "目標に向かって積み上げています"
+  target_exceeded_title: "おめでとうございます！目標を達成しました"
+  target_exceeded_secondary(amount): "目標より$amount多く貯めました"
   target_progress: "$percent% / $target"
-  target_not_set_secondary: "目標数量を設定すると達成率を表示します"
+  target_not_set_secondary: "目標数量を設定してみましょう"
   target_set_title: "目標を設定"
   target_set_placeholder: "BTC単位で入力してください"
   target_set_invalid: "0 BTCは目標に設定できません"
@@ -1120,6 +1139,15 @@ wallet_info_screen:
   wallet_backup_data: "ウォレットバックアップデータ"
   confirm_backup_data: "バックアップデータを確認"
   no_info: "データなし"
+  memo_management: "メモ管理"
+  resync_label: "ウォレットを再同期"
+  tag_count(count): "${count}個"
+  backup_required: "バックアップが必要"
+  delete_wallet: "ウォレットを削除"
+  mnemonic_backup: "ニーモニックバックアップ"
+  all_addresses: "すべてのアドレス"
+  extended_public_key: "拡張公開鍵"
+  tag_management: "タグ管理"
   tooltip:
     mfp_placeholder_description: "これは拡張公開鍵で追加されたウォレットで\nマスターフィンガープリントが入力されていないため\n00000000として表示されています。"
     wallet_backup_data: "これはこのウォレットのBSMS(BIP-129)バックアップ情報です。デバイスの紛失や交換の場合に、このデータを使用してマルチシグウォレットを再構築できます。外部で共有する際は注意して保管してください。"
@@ -1145,6 +1173,8 @@ wallet_info_screen:
     disconnect_confirm_description: "現在接続中のデバイスを解除します。\n次回署名時に再接続が必要です。"
 wallet_signer_section:
   title: "署名方式"
+  view_details: "詳細を見る"
+  collapse: "閉じる"
   segmented_control:
     parent_key: "親キーで"
     child_key: "子キーで"
@@ -1703,3 +1733,6 @@ ccos:
   feature_status:
     activated: "有効化済み"
     purchased: "購入済み"
+utxo_organizer_screen:
+  merge: "まとめる"
+  split: "分ける"

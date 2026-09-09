@@ -20,6 +20,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
@@ -28,8 +29,6 @@ import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dar
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_signer_section.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
-import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_info_item_card.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
@@ -50,14 +49,14 @@ import 'package:provider/provider.dart';
 const String kEntryPointWalletList = '/wallet-list';
 const String kEntryPointWalletHome = '/wallet-home';
 
-class WalletInfoScreen extends StatefulWidget {
+class RenewalWalletInfoScreen extends StatefulWidget {
   final int id;
   final WalletType walletType;
   final String entryPoint;
   final bool showMfpInput;
   final bool highlightMnemonicBackup;
   final bool showTargetSetting;
-  const WalletInfoScreen({
+  const RenewalWalletInfoScreen({
     super.key,
     required this.id,
     required this.walletType,
@@ -68,7 +67,7 @@ class WalletInfoScreen extends StatefulWidget {
   });
 
   @override
-  State<WalletInfoScreen> createState() => _WalletInfoScreenState();
+  State<RenewalWalletInfoScreen> createState() => _RenewalWalletInfoScreenState();
 }
 
 class _MnemonicBackupButton extends StatefulWidget {
@@ -110,32 +109,51 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
       builder: (context, child) {
         final progress = Curves.easeInOut.transform(_highlightController.value);
         final colors = context.coconutColors;
-        final pressedColor = Color.alphaBlend(
-          colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity),
-          colors.surface,
-        );
-        return SingleButton(
-          enableShrinkAnim: true,
-          backgroundColor: Color.lerp(colors.surface, pressedColor, progress),
-          title: t.wallet_home_screen.hot_wallet_setup.backup_title,
-          rightElement:
-              widget.showWarning
-                  ? SvgPicture.asset(
-                    CommonStateIconPath.triangleWarning,
-                    width: 20,
-                    height: 20,
-                    colorFilter: ColorFilter.mode(context.coconutColors.appLockWarningBackground, BlendMode.srcIn),
-                  )
-                  : null,
-          showRightArrowWithRightElement: widget.showWarning,
+        final highlightedColor = colors.primaryText.withValues(alpha: 0.08);
+        return ShrinkAnimationButton(
           onPressed: widget.onPressed,
+          defaultColor: Color.lerp(Colors.transparent, highlightedColor, progress),
+          pressedOverlayColor: colors.primaryText,
+          pressedOverlayOpacity: 0.08,
+          borderRadius: 12,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  t.wallet_info_screen.mnemonic_backup,
+                  style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                ),
+                Row(
+                  children: [
+                    if (widget.showWarning) ...[
+                      SvgPicture.asset(
+                        CommonStateIconPath.triangleWarning,
+                        width: 16,
+                        height: 16,
+                        colorFilter: ColorFilter.mode(colors.appLockWarningBackground, BlendMode.srcIn),
+                      ),
+                      CoconutLayout.spacing_50w,
+                      Text(
+                        t.wallet_info_screen.backup_required,
+                        style: CoconutTypography.body2_14.setColor(colors.appLockWarningBackground),
+                      ),
+                      CoconutLayout.spacing_100w,
+                    ],
+                    Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
+                  ],
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
   }
 }
 
-class _WalletInfoScreenState extends State<WalletInfoScreen> {
+class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
   final GlobalKey _walletTooltipKey = GlobalKey();
   final GlobalKey<_MnemonicBackupButtonState> _mnemonicBackupButtonKey = GlobalKey<_MnemonicBackupButtonState>();
   static const int kTooltipDuration = 5;
@@ -229,32 +247,47 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               },
                             ),
                           ),
-                        _WalletInfoStatsSection(
-                          walletId: widget.id,
-                          transactionCount: viewModel.transactionCount,
-                          utxoCount: viewModel.utxoCount,
-                          balanceSats: viewModel.walletBalance.total,
-                          currentUnit: context.read<PreferenceProvider>().currentUnit,
-                          targetSats: viewModel.targetSats,
-                          onEditTargetTap: () => _showTargetSettingBottomSheet(context, viewModel),
-                        ),
+                        // _WalletInfoStatsSection(
+                        //   walletId: widget.id,
+                        //   transactionCount: viewModel.transactionCount,
+                        //   utxoCount: viewModel.utxoCount,
+                        //   balanceSats: viewModel.walletBalance.total,
+                        //   currentUnit: context.read<PreferenceProvider>().currentUnit,
+                        //   targetSats: viewModel.targetSats,
+                        //   onEditTargetTap: () => _showTargetSettingBottomSheet(context, viewModel),
+                        // ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: ButtonGroup(
-                            buttons: [
-                              SingleButton(
-                                enableShrinkAnim: true,
-                                title: t.view_all_addresses,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Column(
+                            children: [
+                              if (viewModel.walletItemBase.hasLocalKey)
+                                _MnemonicBackupButton(
+                                  key: _mnemonicBackupButtonKey,
+                                  showWarning:
+                                      viewModel.walletBalance.total > 0 &&
+                                      !(viewModel.walletItemBase.hotWalletMetadata?.backupVerified ?? false),
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    _showMnemonicBackup(viewModel);
+                                  },
+                                ),
+                              _walletInfoMenu(
+                                title: t.wallet_info_screen.all_addresses,
+                                subWidget: null, // TODO: 모니터링 개수 표시하기
                                 onPressed: () {
                                   _removeTooltip();
                                   Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
                                 },
                               ),
                               if (widget.walletType == WalletType.singleSignature) ...[
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.wallet_info_screen.view_xpub,
-                                  onPressed: () async {
+                                _walletInfoMenu(
+                                  title: t.wallet_info_screen.extended_public_key,
+                                  subWidget: Text(
+                                    _ellipsisAfter(viewModel.extendedPublicKey, 15),
+                                    style: _menuSubTextStyle,
+                                  ),
+                                  showArrowRight: false,
+                                  onPressed: () {
                                     _removeTooltip();
                                     _handleAuthFlow(
                                       onComplete: () {
@@ -265,8 +298,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 ),
                               ],
                               if (widget.walletType == WalletType.taproot) ...[
-                                SingleButton(
-                                  enableShrinkAnim: true,
+                                _walletInfoMenu(
                                   title: t.wallet_info_screen.view_wallet_backup_data,
                                   onPressed: () {
                                     _removeTooltip();
@@ -280,8 +312,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 ),
                               ],
                               if (widget.walletType == WalletType.multiSignature) ...[
-                                SingleButton(
-                                  enableShrinkAnim: true,
+                                _walletInfoMenu(
                                   title: t.wallet_info_screen.view_wallet_backup_data,
                                   onPressed: () {
                                     _removeTooltip();
@@ -294,28 +325,50 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   },
                                 ),
                               ],
-                              SingleButton(
-                                enableShrinkAnim: true,
-                                title: t.tag_manage_label,
+                            ],
+                          ),
+                        ),
+                        _sectionDivider(),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Column(
+                            children: [
+                              _walletInfoMenu(
+                                title: t.wallet_info_screen.target_quantity,
+                                subWidget:
+                                    viewModel.targetSats == null
+                                        ? null
+                                        : Text(
+                                          context.read<PreferenceProvider>().currentUnit.displayBitcoinAmount(
+                                            viewModel.targetSats,
+                                            withUnit: true,
+                                          ),
+                                          style: _menuSubTextStyle,
+                                        ),
+                                showArrowRight: false,
+                                onPressed: () => _showTargetSettingBottomSheet(context, viewModel),
+                              ),
+                              _walletInfoMenu(
+                                title: t.wallet_info_screen.tag_management,
+                                subWidget: Text(
+                                  t.wallet_info_screen.tag_count(
+                                    count: context.watch<UtxoTagProvider>().getUtxoTagList(widget.id).length,
+                                  ),
+                                  style: _menuSubTextStyle,
+                                ),
                                 onPressed: () {
                                   _removeTooltip();
                                   Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
                                 },
                               ),
-                              if (viewModel.walletItemBase.hasLocalKey)
-                                _MnemonicBackupButton(
-                                  key: _mnemonicBackupButtonKey,
-                                  showWarning:
-                                      viewModel.walletBalance.total > 0 &&
-                                      !(viewModel.walletItemBase.hotWalletMetadata?.backupVerified ?? false),
-                                  onPressed: () {
-                                    _removeTooltip();
-                                    _showMnemonicBackup(viewModel);
-                                  },
-                                ),
+                              _walletInfoMenu(
+                                title: t.wallet_info_screen.memo_management,
+                                onPressed: () {
+                                  // TODO: 메모 관리 화면 연결하기
+                                },
+                              ),
                               if (viewModel.walletItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false)
-                                SingleButton(
-                                  enableShrinkAnim: true,
+                                _walletInfoMenu(
                                   title: t.wallet_home_screen.hot_wallet_setup.passphrase_check_title,
                                   onPressed: () {
                                     _removeTooltip();
@@ -325,62 +378,51 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             ],
                           ),
                         ),
-                        Center(
-                          child: Container(
-                            width: 65,
-                            height: 1,
-                            margin: const EdgeInsets.symmetric(vertical: 20),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(1),
-                              color: context.coconutColors.divider,
-                            ),
-                          ),
-                        ),
+                        _sectionDivider(),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: SingleButton(
-                            enableShrinkAnim: true,
-                            title: t.delete_label,
-                            rightElement: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: context.coconutColors.primaryText.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(10),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Column(
+                            children: [
+                              _walletInfoMenu(
+                                title: t.wallet_info_screen.resync_label,
+                                onPressed: () {
+                                  // TODO: 지갑 재동기화 화면 연결하기
+                                },
                               ),
-                              child: SvgPicture.asset(
-                                CommonActionIconPath.trash,
-                                width: 16,
-                                colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
-                              ),
-                            ),
-                            onPressed: () {
-                              _removeTooltip();
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return CoconutPopup(
-                                    languageCode: context.read<PreferenceProvider>().language,
-                                    title: t.alert.wallet_delete.confirm_delete,
-                                    description: t.alert.wallet_delete.confirm_delete_description,
-                                    onTapRight: () {
-                                      final dialogContext = context;
-                                      _handleAuthFlow(
-                                        onComplete: () async {
-                                          Navigator.of(dialogContext).pop();
-                                          await _deleteWalletAndGoToEntryPoint(viewModel);
+                              _walletInfoMenu(
+                                title: t.wallet_info_screen.delete_wallet,
+                                titleStyle: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.danger),
+                                showArrowRight: false,
+                                onPressed: () {
+                                  _removeTooltip();
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return CoconutPopup(
+                                        languageCode: context.read<PreferenceProvider>().language,
+                                        title: t.alert.wallet_delete.confirm_delete,
+                                        description: t.alert.wallet_delete.confirm_delete_description,
+                                        onTapRight: () {
+                                          final dialogContext = context;
+                                          _handleAuthFlow(
+                                            onComplete: () async {
+                                              Navigator.of(dialogContext).pop();
+                                              await _deleteWalletAndGoToEntryPoint(viewModel);
+                                            },
+                                          );
                                         },
+                                        onTapLeft: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        rightButtonText: t.delete,
+                                        rightButtonColor: context.coconutColors.danger,
+                                        leftButtonText: t.cancel,
                                       );
                                     },
-                                    onTapLeft: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    rightButtonText: t.delete,
-                                    rightButtonColor: context.coconutColors.danger,
-                                    leftButtonText: t.cancel,
                                   );
                                 },
-                              );
-                            },
+                              ),
+                            ],
                           ),
                         ),
                         CoconutLayout.spacing_2500h,
@@ -723,6 +765,52 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       );
     }
   }
+
+  Widget _walletInfoMenu({
+    required VoidCallback onPressed,
+    required String title,
+    Widget? subWidget,
+    Widget? rightWidget,
+    TextStyle? titleStyle,
+    bool showArrowRight = true,
+  }) {
+    final resolvedTitleStyle =
+        titleStyle ?? CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText);
+
+    return ShrinkAnimationButton(
+      onPressed: onPressed,
+      defaultColor: Colors.transparent,
+      pressedOverlayColor: context.coconutColors.primaryText,
+      pressedOverlayOpacity: 0.08,
+      borderRadius: 12,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title, style: resolvedTitleStyle),
+            Row(
+              children: [
+                if (subWidget != null) ...[subWidget, CoconutLayout.spacing_100w],
+                if (rightWidget != null) rightWidget,
+                if (showArrowRight)
+                  Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  TextStyle get _menuSubTextStyle => CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText);
+
+  String _ellipsisAfter(String value, int maxLength) {
+    if (value.length <= maxLength) return value;
+    return '${value.substring(0, maxLength)}...';
+  }
+
+  Widget _sectionDivider() => Container(height: 16, color: context.coconutColors.divider);
 }
 
 /// 트랜잭션 수, UTXO 수, 목표 수량 통계 카드

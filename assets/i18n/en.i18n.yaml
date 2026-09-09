@@ -1046,6 +1046,8 @@ address_list_screen:
   share: "Share"
   enter_receive_amount: "Enter the amount to receive"
 utxo_overview_screen:
+  overview: "Overview"
+  list: "List"
   by_amount: "Amount"
   by_tag: "Tag"
   interval_info_title: "Interval Guide"
@@ -1053,6 +1055,9 @@ utxo_overview_screen:
   view_mode_grid: "Grid"
   no_tag_applied: "No tags applied"
   no_tag_applied_desc: "Apply tags to UTXOs to see the breakdown by tag"
+  no_available_utxos: "There are no available UTXOs"
+  no_locked_utxos: "There are no locked UTXOs"
+  no_change_utxos: "There are no change UTXOs"
   total: "Total"
   untagged: "Untagged"
   tagged: "Tagged"
@@ -1113,13 +1118,27 @@ utxo_detail_screen:
 utxo_tag_screen:
   onboarding_title: "You can manage UTXO tags"
   add_tag: "Press the + button to create your first tag"
+wallet_detail_screen:
+  recent_transactions: "Recent transactions"
+  view_all: "View all"
+  never_used_wallet: "This wallet hasn't been used yet"
+  utxo_count(count): "UTXO · $count"
+  utxo_overview: "Overview"
+  utxo_overview_description: "Overview • List"
+  utxo_organize: "Organize"
+  utxo_organize_description: "Split • Merge"
+
 wallet_info_screen:
   title: "$name Information"
   transaction: "Transaction"
   utxo: "UTXO"
+  target: "Target"
   target_quantity: "Target Quantity"
+  target_progress_title: "Building toward your goal"
+  target_exceeded_title: "Congratulations! You've reached your target"
+  target_exceeded_secondary(amount): "You've saved $amount more than your target"
   target_progress: "$percent% / $target"
-  target_not_set_secondary: "We'll show your achievement rate when you set a target quantity"
+  target_not_set_secondary: "Set a target amount"
   target_set_title: "Set Target"
   target_set_placeholder: "Please enter in BTC unit"
   target_set_invalid: "You can’t set 0 BTC as a target"
@@ -1131,6 +1150,15 @@ wallet_info_screen:
   wallet_backup_data: "Wallet Backup Data"
   confirm_backup_data: "Confirm Backup Data"
   no_info: "No data"
+  memo_management: "Manage Memos"
+  resync_label: "Resync Wallet"
+  tag_count(count): "$count"
+  backup_required: "Backup required"
+  delete_wallet: "Delete Wallet"
+  mnemonic_backup: "Mnemonic Backup"
+  all_addresses: "All Addresses"
+  extended_public_key: "Extended Public Key"
+  tag_management: "Tag Management"
   tooltip:
     mfp_placeholder_description: "This is a wallet added with extended public key\nand the master fingerprint was not entered\nso it is displayed as 00000000."
     wallet_backup_data: "This is the BSMS(BIP-129) backup information for this wallet. You can use this data to reconstruct the multisig wallet in case of device loss or replacement. Please keep it safe and be careful when sharing externally."
@@ -1156,6 +1184,8 @@ wallet_info_screen:
     disconnect_confirm_description: "Disconnect the current device.\nYou will need to reconnect for the next signing."
 wallet_signer_section:
   title: "Signing Method"
+  view_details: "View details"
+  collapse: "Collapse"
   segmented_control:
     parent_key: "With Parent Key"
     child_key: "With Child Key"
@@ -1714,3 +1744,6 @@ ccos:
   feature_status:
     activated: "Activated"
     purchased: "Purchased"
+utxo_organizer_screen:
+  merge: "Merge"
+  split: "Split"

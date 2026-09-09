@@ -39,6 +39,7 @@ class UtxoTagChart extends StatelessWidget {
   final BitcoinUnit currentUnit;
   final int dustThreshold;
   final VoidCallback? onBalanceTap;
+  final bool showBalanceHeader;
 
   const UtxoTagChart({
     super.key,
@@ -47,6 +48,7 @@ class UtxoTagChart extends StatelessWidget {
     required this.currentUnit,
     required this.dustThreshold,
     this.onBalanceTap,
+    this.showBalanceHeader = true,
   });
 
   static ({List<_TagSegment> segments, int coinCount, int uniqueTaggedCount, int actualTotalSats})
@@ -160,14 +162,16 @@ class UtxoTagChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UtxoTotalBalanceHeader(
-              coinCount: coinCount,
-              totalSats: totalSats,
-              currentUnit: currentUnit,
-              dustThreshold: dustThreshold,
-              onBalanceTap: onBalanceTap,
-            ),
-            const SizedBox(height: 12),
+            if (showBalanceHeader) ...[
+              UtxoTotalBalanceHeader(
+                coinCount: coinCount,
+                totalSats: totalSats,
+                currentUnit: currentUnit,
+                dustThreshold: dustThreshold,
+                onBalanceTap: onBalanceTap,
+              ),
+              const SizedBox(height: 12),
+            ],
             Center(
               child: _DonutChart(
                 segments: segments,

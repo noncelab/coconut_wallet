@@ -29,6 +29,7 @@ class UtxoSummaryChart extends StatelessWidget {
   final VoidCallback? onBalanceTap;
   final VoidCallback? onThemeSettingTap;
   final bool hasReusedAddresses;
+  final bool showBalanceHeader;
 
   const UtxoSummaryChart({
     super.key,
@@ -44,6 +45,7 @@ class UtxoSummaryChart extends StatelessWidget {
     this.onBalanceTap,
     this.onThemeSettingTap,
     this.hasReusedAddresses = false,
+    this.showBalanceHeader = true,
   });
 
   static const double estimatedHeight = 350;
@@ -62,18 +64,20 @@ class UtxoSummaryChart extends StatelessWidget {
         borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UtxoTotalBalanceHeader(
-              coinCount: coinCount,
-              totalSats: totalSats,
-              currentUnit: currentUnit,
-              dustThreshold: dustThreshold,
-              onBalanceTap: onBalanceTap,
-            ),
-            const SizedBox(height: 12),
+            if (showBalanceHeader) ...[
+              UtxoTotalBalanceHeader(
+                coinCount: coinCount,
+                totalSats: totalSats,
+                currentUnit: currentUnit,
+                dustThreshold: dustThreshold,
+                onBalanceTap: onBalanceTap,
+              ),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 Expanded(

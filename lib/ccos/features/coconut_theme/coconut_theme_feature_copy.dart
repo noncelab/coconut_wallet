@@ -51,8 +51,7 @@ class CoconutThemeFeatureCopySource {
 
   static const CoconutThemeFeatureCopy _en = CoconutThemeFeatureCopy(
     title: 'Coconut Theme',
-    description:
-        'A bright new Coconut Wallet theme inspired by the warm colors of coconut flesh and the beach.',
+    description: 'A bright new Coconut Wallet theme inspired by the warm colors of coconut flesh and the beach.',
     author: 'Coconut Team',
     authorBio: 'Building a better wallet experience',
     authorIntent:
@@ -81,8 +80,7 @@ class CoconutThemeFeatureCopySource {
 
   static const CoconutThemeFeatureCopy _es = CoconutThemeFeatureCopy(
     title: 'Tema Coconut',
-    description:
-        'Un nuevo tema claro para Coconut Wallet inspirado en los tonos calidos del coco y la playa.',
+    description: 'Un nuevo tema claro para Coconut Wallet inspirado en los tonos calidos del coco y la playa.',
     author: 'Equipo Coconut',
     authorBio: 'Creamos una mejor experiencia de wallet',
     authorIntent:

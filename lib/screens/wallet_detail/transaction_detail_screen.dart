@@ -123,7 +123,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               slivers: [
                 CupertinoSliverRefreshControl(
                   onRefresh: () async => viewModel.onRefresh(),
-                  refreshTriggerPullDistance: 100,
+                  refreshTriggerPullDistance: 80,
                 ),
                 SliverToBoxAdapter(
                   child: Container(

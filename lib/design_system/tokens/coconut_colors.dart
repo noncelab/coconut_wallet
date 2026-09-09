@@ -121,6 +121,11 @@ class CoconutColors {
 
   /// 구분선
   final Color divider;
+  final Color dividerStrong;
+
+  /// 목표 진행 그래프의 시작/끝 그라디언트 색상
+  final Color targetProgressGradientStart;
+  final Color targetProgressGradientEnd;
 
   /// 2. 공통 위젯별 정의
   ///
@@ -346,6 +351,9 @@ class CoconutColors {
     required this.appLockWarningForeground,
     required this.unbackedWarningForeground,
     required this.divider,
+    required this.dividerStrong,
+    required this.targetProgressGradientStart,
+    required this.targetProgressGradientEnd,
     required this.brandAccentBackground,
     required this.brandAccentForeground,
     required this.surfaceButton,
@@ -487,6 +495,9 @@ class CoconutColors {
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: ds.CoconutColors.gray800,
+      dividerStrong: ds.CoconutColors.gray700,
+      targetProgressGradientStart: const Color(0xFF8CD5FF),
+      targetProgressGradientEnd: const Color(0xFF7775FF),
 
       brandAccentBackground: ds.CoconutColors.primary,
       brandAccentForeground: ds.CoconutColors.black,
@@ -631,6 +642,9 @@ class CoconutColors {
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: ds.CoconutColors.gray200,
+      dividerStrong: ds.CoconutColors.gray300,
+      targetProgressGradientStart: const Color(0xFF329DDA),
+      targetProgressGradientEnd: ds.CoconutColors.purple,
 
       brandAccentBackground: ds.CoconutColors.purple,
       brandAccentForeground: ds.CoconutColors.black,
@@ -793,6 +807,9 @@ class CoconutColors {
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: lagoon.withAlpha(30),
+      dividerStrong: lagoon.withAlpha(60),
+      targetProgressGradientStart: lagoonDeep,
+      targetProgressGradientEnd: palmGreen,
 
       brandAccentBackground: lagoon,
       brandAccentForeground: huskDeep,

@@ -80,6 +80,13 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    if (widget.type != HomeAlertCardType.openStore) {
+      return AnimatedBuilder(
+        animation: _animation,
+        builder: (context, _) => _buildAnimatedSecurityCard(context, _animation.value),
+      );
+    }
+
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -97,7 +104,23 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
           ),
         );
       },
-      child: widget.type == HomeAlertCardType.openStore ? _buildOpenStoreCard() : _buildSecurityCard(context),
+      child: _buildOpenStoreCard(),
+    );
+  }
+
+  Widget _buildAnimatedSecurityCard(BuildContext context, double value) {
+    return Opacity(
+      opacity: value,
+      child: Transform.translate(
+        offset: Offset(0, 4 * (1 - value)),
+        child: Transform.scale(
+          scale: 0.96 + (0.04 * value),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [SizedBox(height: 16 * value), _buildSecurityCard(context, heightFactor: value)],
+          ),
+        ),
+      ),
     );
   }
 
@@ -110,7 +133,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
     );
   }
 
-  Widget _buildSecurityCard(BuildContext context) {
+  Widget _buildSecurityCard(BuildContext context, {required double heightFactor}) {
     final isMnemonicBackup = widget.type == HomeAlertCardType.mnemonicBackup;
     final textColor =
         isMnemonicBackup
@@ -124,8 +147,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
       onTap: widget.onTap,
       child: Container(
         width: double.infinity,
-        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: isMnemonicBackup ? null : context.coconutColors.appLockWarningBackground,
           gradient:
@@ -138,39 +160,46 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
                   : null,
           borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(padding: const EdgeInsets.only(top: 2), child: widget.icon!),
-            CoconutLayout.spacing_200w,
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.title!, style: CoconutTypography.body1_16_Bold.setColor(textColor)),
-                  const SizedBox(height: 10),
-                  Text(widget.description!, style: CoconutTypography.body3_12_Bold.setColor(textColor)),
-                ],
-              ),
-            ),
-            Semantics(
-              button: true,
-              label: t.close,
-              child: InkWell(
-                onTap: _close,
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: SvgPicture.asset(
-                    CommonActionIconPath.closeBold,
-                    width: 12,
-                    height: 12,
-                    colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+        child: Align(
+          alignment: Alignment.topCenter,
+          heightFactor: heightFactor,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(padding: const EdgeInsets.only(top: 2), child: widget.icon!),
+                CoconutLayout.spacing_200w,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.title!, style: CoconutTypography.body1_16_Bold.setColor(textColor)),
+                      const SizedBox(height: 10),
+                      Text(widget.description!, style: CoconutTypography.body3_12_Bold.setColor(textColor)),
+                    ],
                   ),
                 ),
-              ),
+                Semantics(
+                  button: true,
+                  label: t.close,
+                  child: InkWell(
+                    onTap: _close,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: SvgPicture.asset(
+                        CommonActionIconPath.closeBold,
+                        width: 12,
+                        height: 12,
+                        colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

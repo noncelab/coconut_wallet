@@ -152,8 +152,7 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
         final builtInThemes = <_ThemeOption>[
           _ThemeOption(variant: CoconutThemeVariant.dark, title: t.theme_dark),
           _ThemeOption(variant: CoconutThemeVariant.light, title: t.theme_light),
-          if (isCcosThemeSelectable)
-            _ThemeOption(variant: CoconutThemeVariant.coconutTheme, title: t.theme_coconut),
+          if (isCcosThemeSelectable) _ThemeOption(variant: CoconutThemeVariant.coconutTheme, title: t.theme_coconut),
         ];
         return Scaffold(
           backgroundColor: colors.background,

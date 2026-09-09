@@ -44,6 +44,7 @@ class WalletListViewModel extends ChangeNotifier {
   bool _isFirstLoaded = false;
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
+  bool _isDisposed = false;
 
   // late final StreamSubscription _preferenceSubscription;
   late List<int> _walletOrder = [];
@@ -129,6 +130,7 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   Future<void> loadHistoricalBitcoinPrices() async {
+    if (_isDisposed) return;
     final fiatCode = selectedFiat;
     _historicalBitcoinPriceFiat = fiatCode;
     _historicalBitcoinPrices = null;
@@ -143,14 +145,14 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       final prices = await _historicalBitcoinPriceService.fetch(fiatCode);
-      if (_historicalBitcoinPriceFiat != fiatCode) return;
+      if (_isDisposed || _historicalBitcoinPriceFiat != fiatCode) return;
       _historicalBitcoinPrices = prices;
     } catch (e) {
-      if (_historicalBitcoinPriceFiat != fiatCode) return;
+      if (_isDisposed || _historicalBitcoinPriceFiat != fiatCode) return;
       Logger.error('과거 BTC 종가 조회 실패 ($fiatCode): $e');
       _historicalBitcoinPrices = null;
     } finally {
-      if (_historicalBitcoinPriceFiat == fiatCode) {
+      if (!_isDisposed && _historicalBitcoinPriceFiat == fiatCode) {
         _isHistoricalBitcoinPricesLoading = false;
         notifyListeners();
       }
@@ -239,6 +241,7 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   Future<void> updateWalletBalances() async {
+    if (_isDisposed) return;
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
     _updateWalletBalanceHistory();
@@ -548,9 +551,13 @@ class WalletListViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _syncNodeStateSubscription?.cancel();
+    _walletProvider.walletLoadStateNotifier.removeListener(updateWalletBalances);
     _preferenceProvider.removeListener(_onPreferenceChanged);
     _priceProvider.removeListener(_updateBitcoinPrice);
+    loadingNotifier.dispose();
+    pinCheckNotifier.dispose();
     super.dispose();
   }
 }

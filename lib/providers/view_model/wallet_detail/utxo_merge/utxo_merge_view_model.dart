@@ -255,14 +255,42 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   ];
 
   void initialize() {
-    final allUtxos = _utxoRepository.getUtxoStateList(walletId);
-    _utxoList = allUtxos.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
+    _utxoList = _loadAvailableUtxos();
     _currentStep = utxoList.length >= 2 && utxoList.length < 11 ? UtxoMergeStep.entry : UtxoMergeStep.selectMergeMethod;
 
-    for (var utxo in _utxoList) {
+    notifyListeners();
+  }
+
+  List<UtxoState> _loadAvailableUtxos() {
+    final utxos =
+        _utxoRepository.getUtxoStateList(walletId).where((utxo) => utxo.status == UtxoStatus.unspent).toList();
+
+    for (var utxo in utxos) {
       utxo.tags = _utxoTagProvider.getUtxoTagsByUtxoId(walletId, utxo.utxoId);
     }
+    return utxos;
+  }
 
+  void revalidateAvailableUtxos() {
+    final latestUtxos = _loadAvailableUtxos();
+    final latestIds = latestUtxos.map((utxo) => utxo.utxoId).toSet();
+    final previousIds = _utxoList.map((utxo) => utxo.utxoId).toSet();
+    final selectionBefore = selectedUtxosForCurrentMethod.map((utxo) => utxo.utxoId).toSet();
+
+    _utxoList = latestUtxos;
+    _editedSelectedUtxoIds = _editedSelectedUtxoIds?.intersection(latestIds);
+
+    final selectionAfter = selectedUtxosForCurrentMethod.map((utxo) => utxo.utxoId).toSet();
+    if (previousIds.length == latestIds.length &&
+        previousIds.containsAll(latestIds) &&
+        selectionBefore.length == selectionAfter.length &&
+        selectionBefore.containsAll(selectionAfter)) {
+      return;
+    }
+
+    resetPreparedMergeTransaction(
+      summaryState: selectedUtxoCount >= 2 ? MergeState.idle : MergeState.notEnoughSelectedUtxo,
+    );
     notifyListeners();
   }
 
@@ -634,7 +662,7 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
     }
 
     clearSendInfo();
-    _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
+    _sendInfoProvider.setSendEntryPoint(SendEntryPoint.renewalWalletDetail);
     _sendInfoProvider.setWalletId(_wallet.id);
     _sendInfoProvider.setTransaction(txBuildResult.transaction!);
     _sendInfoProvider.setIsMultisig(_wallet.walletType == WalletType.multiSignature);

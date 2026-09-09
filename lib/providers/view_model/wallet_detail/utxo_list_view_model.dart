@@ -62,6 +62,7 @@ class UtxoListViewModel extends ChangeNotifier {
   int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
   int get prevBalance => _prevBalance;
   int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
+  String get fiatPriceString => _priceProvider.getFiatPrice(balance);
   bool? get isNetworkOn => _connectProvider.isInternetOn;
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
@@ -148,7 +149,7 @@ class UtxoListViewModel extends ChangeNotifier {
   void setActiveUtxoTagName(String value) {
     _activeUtxoTagName = value;
     for (var utxo in _confirmedUtxoList) {
-      _utxoTagMap[utxo.utxoId] = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
+      _utxoTagMap[utxo.utxoId] = _getCachedTagsForUtxo(utxo.utxoId);
     }
     _updateFilteredUtxoList();
     notifyListeners();
@@ -225,9 +226,7 @@ class UtxoListViewModel extends ChangeNotifier {
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
     for (var utxo in _utxoList) {
-      final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
-
-      utxo.tags = tags;
+      utxo.tags = _getCachedTagsForUtxo(utxo.utxoId);
     }
     UtxoState.sortUtxo(_utxoList, _activeUtxoOrder);
     _isUtxoListLoadComplete = true;
@@ -236,13 +235,11 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void refetchFromDB() {
     _getUtxoAndTagList();
-    notifyListeners();
   }
 
   void _initUtxoTagMap() {
     for (var (element) in _confirmedUtxoList) {
-      final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, element.utxoId);
-      _utxoTagMap[element.utxoId] = tags;
+      _utxoTagMap[element.utxoId] = _getCachedTagsForUtxo(element.utxoId);
     }
   }
 
@@ -283,12 +280,14 @@ class UtxoListViewModel extends ChangeNotifier {
     _activeUtxoOrder = _preferenceProvider.utxoSortOrder;
 
     for (var utxo in _utxoList) {
-      final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
-
-      utxo.tags = tags;
+      utxo.tags = _getCachedTagsForUtxo(utxo.utxoId);
     }
     _isUtxoListLoadComplete = true;
     UtxoState.sortUtxo(_utxoList, _activeUtxoOrder);
+  }
+
+  List<UtxoTag> _getCachedTagsForUtxo(String utxoId) {
+    return _utxoTagList.where((tag) => tag.utxoIdList?.contains(utxoId) ?? false).toList(growable: false);
   }
 
   List<String> getTimeString(int utxoIndex) {

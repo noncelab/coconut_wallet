@@ -169,6 +169,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   if (isSyncing) const SliverToBoxAdapter(child: InlineLoadingIndicator()),
                   CupertinoSliverRefreshControl(
                     onRefresh: () async => context.read<UtxoListViewModel>().refetchFromDB(),
+                    refreshTriggerPullDistance: 80,
                   ),
                   SliverToBoxAdapter(child: _buildHeader(context)),
                   UtxoList(
@@ -674,6 +675,8 @@ class UtxoList extends StatefulWidget {
     required this.onFirstBuildCompleted,
     required this.isSelectionMode,
     this.onSettingLockChanged,
+    this.emptyStateText,
+    this.emptyStateTextStyle,
   });
 
   final int walletId;
@@ -682,6 +685,8 @@ class UtxoList extends StatefulWidget {
   final VoidCallback onFirstBuildCompleted;
   final bool isSelectionMode;
   final ValueChanged<bool>? onSettingLockChanged;
+  final String? emptyStateText;
+  final TextStyle? emptyStateTextStyle;
 
   @override
   State<UtxoList> createState() => _UtxoListState();
@@ -716,7 +721,9 @@ class _UtxoListState extends State<UtxoList> {
         final utxoList = data.item1;
         final activeTag = data.item2;
 
-        if (utxoList.isEmpty) return _buildEmptyState();
+        if (utxoList.isEmpty || !utxoList.any((utxo) => _belongsToTag(utxo, activeTag))) {
+          return _buildEmptyState();
+        }
 
         if (_isListChanged(_displayedUtxoList, utxoList)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -769,7 +776,10 @@ class _UtxoListState extends State<UtxoList> {
         padding: const EdgeInsets.only(top: 80),
         child: Align(
           alignment: Alignment.topCenter,
-          child: Text(t.utxo_not_found, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+          child: Text(
+            widget.emptyStateText ?? t.utxo_not_found,
+            style: widget.emptyStateTextStyle ?? CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+          ),
         ),
       ),
     );
