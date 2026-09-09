@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -16,6 +17,9 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // ─────────────────────────────────────────────
@@ -40,6 +44,10 @@ const _multisigDescriptor =
 
 class FakeWalletRepository extends Fake implements WalletRepository {
   List<WalletItemBase> walletItems = [];
+  List<HotWalletMetadata> hotWalletMetadata = [];
+  final List<int> deletedWalletIds = [];
+  final List<(int, HotWalletLifecycleState)> lifecycleUpdates = [];
+  Object? deleteError;
 
   int addTaprootWalletCallCount = 0;
   late TaprootWalletItem addTaprootWalletResult;
@@ -58,6 +66,22 @@ class FakeWalletRepository extends Fake implements WalletRepository {
 
   @override
   Future<List<WalletItemBase>> getWalletItemList() async => walletItems;
+
+  @override
+  List<HotWalletMetadata> getHotWalletMetadataList() => List.unmodifiable(hotWalletMetadata);
+
+  @override
+  HotWalletMetadata? getHotWalletMetadata(int walletId) =>
+      hotWalletMetadata.where((metadata) => metadata.walletId == walletId).firstOrNull;
+
+  @override
+  bool containsWalletName(String name, {int? excludeWalletId}) =>
+      walletItems.any((wallet) => wallet.id != excludeWalletId && wallet.name == name);
+
+  @override
+  bool containsHotWalletDescriptor(String descriptor) => hotWalletMetadata.any(
+    (metadata) => walletItems.any((wallet) => wallet.id == metadata.walletId && wallet.descriptor == descriptor),
+  );
 
   @override
   Future<TaprootWalletItem> addTaprootWallet(WatchOnlyWallet watchOnlyWallet) async {
@@ -79,9 +103,53 @@ class FakeWalletRepository extends Fake implements WalletRepository {
     required bool backupVerified,
     required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
+    HotWalletLifecycleState lifecycleState = HotWalletLifecycleState.creating,
   }) async {
     addHotWalletCallCount++;
+    hotWalletMetadata.add(
+      HotWalletMetadata(
+        walletId: addHotWalletResult.id,
+        secureStorageKey: secureStorageKey,
+        masterFingerprint: 'D45AA182',
+        derivationPath: "m/84'/1'/0'",
+        accountIndex: 0,
+        backupVerified: backupVerified,
+        enterPassphraseWhenSigning: enterPassphraseWhenSigning,
+        createdAt: createdAt,
+        lifecycleState: lifecycleState,
+      ),
+    );
     return addHotWalletResult;
+  }
+
+  @override
+  Future<void> updateHotWalletLifecycleState(int walletId, HotWalletLifecycleState state) async {
+    lifecycleUpdates.add((walletId, state));
+    final index = hotWalletMetadata.indexWhere((metadata) => metadata.walletId == walletId);
+    final current = hotWalletMetadata[index];
+    hotWalletMetadata[index] = HotWalletMetadata(
+      walletId: current.walletId,
+      secureStorageKey: current.secureStorageKey,
+      masterFingerprint: current.masterFingerprint,
+      derivationPath: current.derivationPath,
+      accountIndex: current.accountIndex,
+      backupVerified: current.backupVerified,
+      enterPassphraseWhenSigning: current.enterPassphraseWhenSigning,
+      createdAt: current.createdAt,
+      lifecycleState: state,
+    );
+    walletItems.removeWhere((wallet) => wallet.id == walletId);
+    if (state == HotWalletLifecycleState.active && addHotWalletResult.id == walletId) {
+      walletItems.add(addHotWalletResult);
+    }
+  }
+
+  @override
+  Future<void> deleteWallet(int walletId) async {
+    deletedWalletIds.add(walletId);
+    if (deleteError != null) throw deleteError!;
+    walletItems.removeWhere((wallet) => wallet.id == walletId);
+    hotWalletMetadata.removeWhere((metadata) => metadata.walletId == walletId);
   }
 
   @override
@@ -97,8 +165,14 @@ class FakeWalletRepository extends Fake implements WalletRepository {
 }
 
 class FakeAddressRepository extends Fake implements AddressRepository {
+  FakeAddressRepository({this.error});
+
+  final Object? error;
+
   @override
-  Future<void> ensureAddressesInit({required WalletItemBase walletItemBase}) async {}
+  Future<void> ensureAddressesInit({required WalletItemBase walletItemBase}) async {
+    if (error != null) throw error!;
+  }
 }
 
 class FakeTransactionRepository extends Fake implements TransactionRepository {}
@@ -106,6 +180,7 @@ class FakeTransactionRepository extends Fake implements TransactionRepository {}
 class FakeUtxoRepository extends Fake implements UtxoRepository {}
 
 class FakePreferenceProvider extends Fake implements PreferenceProvider {
+  final List<int> removedWalletIds = [];
   @override
   Future<void> setWalletPreferences(List<WalletItemBase> walletItemList) async {}
 
@@ -125,10 +200,82 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   Future<void> setFavoriteWalletIds(List<int> ids) async {}
 
   @override
+  Future<void> removeWalletOrder(int walletId) async {
+    removedWalletIds.add(walletId);
+  }
+
+  @override
+  Future<void> removeFavoriteWalletId(int walletId) async {
+    removedWalletIds.add(walletId);
+  }
+
+  @override
+  Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
+    removedWalletIds.add(walletId);
+  }
+
+  @override
+  Future<void> removeManualUtxoSelectionWalletId(int walletId) async {
+    removedWalletIds.add(walletId);
+  }
+
+  @override
+  Future<void> changeIsBalanceHidden(bool isOn) async {}
+
+  @override
+  Future<void> clearFakeBalanceTotalAmount() async {}
+
+  @override
+  Future<void> toggleFakeBalanceActivation(bool isActive) async {}
+
+  @override
   void addListener(VoidCallback listener) {}
 
   @override
   void removeListener(VoidCallback listener) {}
+}
+
+class FakeHotWalletSecretRepository extends Fake implements HotWalletSecretRepository {
+  final Set<String> storedKeys;
+  final List<String> deletedKeys = [];
+  Completer<void>? getKeysGate;
+  int getKeysCallCount = 0;
+  int containsCallCount = 0;
+
+  FakeHotWalletSecretRepository([Set<String>? storedKeys]) : storedKeys = storedKeys ?? {};
+
+  @override
+  Future<bool> contains(String storageKey) async {
+    containsCallCount++;
+    return storedKeys.contains(storageKey);
+  }
+
+  @override
+  Future<List<String>> getSecretStorageKeys() async {
+    getKeysCallCount++;
+    await getKeysGate?.future;
+    return storedKeys.toList();
+  }
+
+  @override
+  Future<void> delete(String storageKey) async {
+    deletedKeys.add(storageKey);
+    storedKeys.remove(storageKey);
+  }
+}
+
+class FakeSharedPrefsRepository extends Fake implements SharedPrefsRepository {
+  final List<int> removedWalletIds = [];
+
+  @override
+  Future<void> removeWalletTargetSats(int walletId) async {
+    removedWalletIds.add(walletId);
+  }
+
+  @override
+  Future<void> removeFaucetHistory(int id) async {
+    removedWalletIds.add(id);
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -161,6 +308,24 @@ SinglesigWalletItem _createSinglesigWalletListItem({
               createdAt: DateTime.utc(2026, 7, 20),
             )
             : null,
+  );
+}
+
+HotWalletMetadata _createHotWalletMetadata({
+  int walletId = 1,
+  String storageKey = 'local_wallet_seed_1',
+  HotWalletLifecycleState lifecycleState = HotWalletLifecycleState.active,
+}) {
+  return HotWalletMetadata(
+    walletId: walletId,
+    secureStorageKey: storageKey,
+    masterFingerprint: 'D45AA182',
+    derivationPath: "m/84'/1'/0'",
+    accountIndex: 0,
+    backupVerified: true,
+    enterPassphraseWhenSigning: false,
+    createdAt: DateTime.utc(2026, 7, 20),
+    lifecycleState: lifecycleState,
   );
 }
 
@@ -264,17 +429,30 @@ TaprootWalletItem _createTaprootWalletListItem({
 }
 
 /// WalletProvider를 생성하고 생성자 내부의 비동기 초기화가 완료될 때까지 대기
-Future<WalletProvider> _buildProvider(FakeWalletRepository walletRepository) async {
+Future<WalletProvider> _buildProvider(
+  FakeWalletRepository walletRepository, {
+  FakeAddressRepository? addressRepository,
+  FakePreferenceProvider? preferenceProvider,
+  FakeHotWalletSecretRepository? secretRepository,
+  FakeSharedPrefsRepository? sharedPrefsRepository,
+}) async {
   final provider = WalletProvider(
-    FakeAddressRepository(),
+    addressRepository ?? FakeAddressRepository(),
     FakeTransactionRepository(),
     FakeUtxoRepository(),
     walletRepository,
     (_) async {},
-    FakePreferenceProvider(),
+    preferenceProvider ?? FakePreferenceProvider(),
+    hotWalletSecretRepository: secretRepository ?? FakeHotWalletSecretRepository(),
+    sharedPrefsRepository: sharedPrefsRepository ?? FakeSharedPrefsRepository(),
   );
   // 생성자 내 _loadWalletListFromDB().then(...) 완료 대기
-  await Future.delayed(Duration.zero);
+  while (provider.walletLoadState != WalletLoadState.loadCompleted) {
+    await Future<void>.delayed(Duration.zero);
+  }
+  for (var i = 0; i < 20; i++) {
+    await Future<void>.delayed(Duration.zero);
+  }
   return provider;
 }
 
@@ -465,6 +643,28 @@ void main() {
   });
 
   group('WalletProvider - 핫월렛', () {
+    test('SecureStorage reconciliation을 기다리지 않고 Realm의 active 지갑을 먼저 로드함', () async {
+      final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo =
+          FakeWalletRepository()
+            ..walletItems = [hotWallet]
+            ..hotWalletMetadata = [_createHotWalletMetadata()];
+      final secretRepository = FakeHotWalletSecretRepository({'local_wallet_seed_1'})..getKeysGate = Completer<void>();
+
+      final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
+
+      expect(provider.walletLoadState, WalletLoadState.loadCompleted);
+      expect(provider.walletItemList, [hotWallet]);
+      expect(secretRepository.getKeysCallCount, 1);
+      expect(secretRepository.containsCallCount, 0);
+
+      secretRepository.getKeysGate!.complete();
+      for (var i = 0; i < 5; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      provider.dispose();
+    });
+
     test('같은 descriptor의 Watch-only 지갑이 있어도 핫월렛을 별도로 추가함', () async {
       final existingWatchOnly = _createSinglesigWalletListItem();
       final walletRepo = FakeWalletRepository()..walletItems = [existingWatchOnly];
@@ -485,6 +685,7 @@ void main() {
 
       expect(result.hasLocalKey, isTrue);
       expect(walletRepo.addHotWalletCallCount, 1);
+      expect(walletRepo.lifecycleUpdates, [(2, HotWalletLifecycleState.active)]);
       expect(provider.walletItemList, hasLength(2));
 
       provider.dispose();
@@ -509,6 +710,131 @@ void main() {
       expect(walletRepo.addHotWalletCallCount, 0);
 
       provider.dispose();
+    });
+
+    test('주소 초기화가 실패하면 creating metadata와 secret을 모두 정리함', () async {
+      final walletRepo = FakeWalletRepository();
+      walletRepo.addHotWalletResult = _createSinglesigWalletListItem(isHotWallet: true);
+      final secretRepository = FakeHotWalletSecretRepository({'local_wallet_seed_new'});
+      final provider = await _buildProvider(
+        walletRepo,
+        addressRepository: FakeAddressRepository(error: StateError('address init failed')),
+        secretRepository: secretRepository,
+      );
+
+      await expectLater(
+        provider.addHotWallet(
+          _createSinglesigWatchOnlyWallet(),
+          secureStorageKey: 'local_wallet_seed_new',
+          backupVerified: true,
+          enterPassphraseWhenSigning: false,
+          createdAt: DateTime.utc(2026, 7, 21),
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(walletRepo.hotWalletMetadata, isEmpty);
+      expect(walletRepo.deletedWalletIds, [1]);
+      expect(secretRepository.storedKeys, isEmpty);
+      expect(provider.walletItemList, isEmpty);
+
+      provider.dispose();
+    });
+
+    test('앱 시작 시 creating 지갑과 연결된 secret·설정을 정리함', () async {
+      final walletRepo =
+          FakeWalletRepository()
+            ..hotWalletMetadata = [_createHotWalletMetadata(lifecycleState: HotWalletLifecycleState.creating)];
+      final secretRepository = FakeHotWalletSecretRepository({'local_wallet_seed_1'});
+      final preferenceProvider = FakePreferenceProvider();
+      final sharedPrefsRepository = FakeSharedPrefsRepository();
+
+      final provider = await _buildProvider(
+        walletRepo,
+        preferenceProvider: preferenceProvider,
+        secretRepository: secretRepository,
+        sharedPrefsRepository: sharedPrefsRepository,
+      );
+
+      expect(provider.walletItemList, isEmpty);
+      expect(walletRepo.hotWalletMetadata, isEmpty);
+      expect(secretRepository.storedKeys, isEmpty);
+      expect(preferenceProvider.removedWalletIds, contains(1));
+      expect(sharedPrefsRepository.removedWalletIds, contains(1));
+
+      provider.dispose();
+    });
+
+    test('active metadata에 연결된 secret이 없으면 recoveryRequired로 변경하고 목록에서 제외함', () async {
+      final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo =
+          FakeWalletRepository()
+            ..walletItems = [hotWallet]
+            ..hotWalletMetadata = [_createHotWalletMetadata()];
+
+      final provider = await _buildProvider(walletRepo);
+
+      expect(provider.walletItemList, isEmpty);
+      expect(walletRepo.hotWalletMetadata.single.lifecycleState, HotWalletLifecycleState.recoveryRequired);
+
+      provider.dispose();
+    });
+
+    test('recoveryRequired 지갑의 secret이 복구되면 active로 복귀시키고 목록에 포함함', () async {
+      final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo =
+          FakeWalletRepository()
+            ..addHotWalletResult = hotWallet
+            ..hotWalletMetadata = [_createHotWalletMetadata(lifecycleState: HotWalletLifecycleState.recoveryRequired)];
+
+      final provider = await _buildProvider(
+        walletRepo,
+        secretRepository: FakeHotWalletSecretRepository({'local_wallet_seed_1'}),
+      );
+
+      expect(walletRepo.hotWalletMetadata.single.lifecycleState, HotWalletLifecycleState.active);
+      expect(provider.walletItemList, [hotWallet]);
+
+      provider.dispose();
+    });
+
+    test('앱 시작 시 Realm에서 참조하지 않는 orphan secret을 정리함', () async {
+      final secretRepository = FakeHotWalletSecretRepository({'hot_wallet_secret_orphan'});
+
+      final provider = await _buildProvider(FakeWalletRepository(), secretRepository: secretRepository);
+
+      expect(secretRepository.storedKeys, isEmpty);
+      expect(secretRepository.deletedKeys, ['hot_wallet_secret_orphan']);
+
+      provider.dispose();
+    });
+
+    test('삭제 중 Realm 삭제가 실패하면 deleting 상태로 숨기고 다음 시작에서 정리함', () async {
+      final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo =
+          FakeWalletRepository()
+            ..addHotWalletResult = hotWallet
+            ..walletItems = [hotWallet]
+            ..hotWalletMetadata = [_createHotWalletMetadata()];
+      final secretRepository = FakeHotWalletSecretRepository({'local_wallet_seed_1'});
+      final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
+      walletRepo.deleteError = StateError('realm delete failed');
+
+      await expectLater(provider.deleteWallet(1), throwsA(isA<StateError>()));
+
+      expect(walletRepo.hotWalletMetadata.single.lifecycleState, HotWalletLifecycleState.deleting);
+      expect(provider.walletItemList, isEmpty);
+      expect(secretRepository.storedKeys, {'local_wallet_seed_1'});
+      provider.dispose();
+
+      walletRepo.deleteError = null;
+      final restartedProvider = await _buildProvider(walletRepo, secretRepository: secretRepository);
+
+      expect(walletRepo.hotWalletMetadata, isEmpty);
+      expect(secretRepository.storedKeys, isEmpty);
+      expect(restartedProvider.walletItemList, isEmpty);
+
+      restartedProvider.dispose();
     });
   });
 

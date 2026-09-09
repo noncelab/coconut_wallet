@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -28,7 +29,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    // ignore: deprecated_member_use
+    // ignore: deprecated_member_use_from_same_package
     SharedPrefsRepository().setSharedPreferencesForTest(await SharedPreferences.getInstance());
     realmManager = await setupTestRealmManager();
     walletRepository = WalletRepository(realmManager, TransactionDraftRepository(realmManager));
@@ -96,6 +97,7 @@ void main() {
         backupVerified: true,
         enterPassphraseWhenSigning: true,
         createdAt: DateTime.utc(2026, 7, 20),
+        lifecycleState: HotWalletLifecycleState.active,
       );
 
       final wallet = (await walletRepository.getWalletItemList()).single;
@@ -130,12 +132,69 @@ void main() {
         backupVerified: true,
         enterPassphraseWhenSigning: false,
         createdAt: DateTime.utc(2026, 7, 20),
+        lifecycleState: HotWalletLifecycleState.active,
       );
 
       final wallets = await walletRepository.getWalletItemList();
       expect(wallets, hasLength(2));
       expect(wallets.where((wallet) => wallet.hasLocalKey), hasLength(1));
       expect(wallets.where((wallet) => !wallet.hasLocalKey), hasLength(1));
+    });
+
+    test('active가 아닌 핫월렛은 지갑 목록에 포함하지 않음', () async {
+      final creating = await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Creating Wallet'),
+        secureStorageKey: 'hot_wallet_secret_creating',
+        backupVerified: false,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+      );
+      final deleting = await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Deleting Wallet'),
+        secureStorageKey: 'hot_wallet_secret_deleting',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+        lifecycleState: HotWalletLifecycleState.deleting,
+      );
+      final recoveryRequired = await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Recovery Wallet'),
+        secureStorageKey: 'hot_wallet_secret_recovery',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+        lifecycleState: HotWalletLifecycleState.recoveryRequired,
+      );
+      final active = await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Active Wallet'),
+        secureStorageKey: 'hot_wallet_secret_active',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+        lifecycleState: HotWalletLifecycleState.active,
+      );
+
+      final wallets = await walletRepository.getWalletItemList();
+
+      expect(wallets.map((wallet) => wallet.id), [active.id]);
+      expect(wallets.map((wallet) => wallet.id), isNot(contains(creating.id)));
+      expect(wallets.map((wallet) => wallet.id), isNot(contains(deleting.id)));
+      expect(wallets.map((wallet) => wallet.id), isNot(contains(recoveryRequired.id)));
+    });
+
+    test('lifecycle 상태를 active로 변경하면 지갑 목록에 포함됨', () async {
+      final wallet = await walletRepository.addHotWallet(
+        createSinglesigWallet(),
+        secureStorageKey: 'hot_wallet_secret_pending',
+        backupVerified: false,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+      );
+      expect(await walletRepository.getWalletItemList(), isEmpty);
+
+      await walletRepository.updateHotWalletLifecycleState(wallet.id, HotWalletLifecycleState.active);
+
+      expect((await walletRepository.getWalletItemList()).single.id, wallet.id);
     });
   });
 
@@ -231,6 +290,7 @@ void main() {
             true,
             false,
             DateTime.utc(2026, 7, 20),
+            HotWalletLifecycleState.active.name,
           ),
         );
       });

@@ -90,6 +90,7 @@ class _RealmHotWalletMetadata {
   late bool backupVerified;
   late bool enterPassphraseWhenSigning;
   late DateTime createdAt;
+  late String lifecycleStateName;
 }
 
 @RealmModel()

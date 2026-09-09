@@ -17,6 +17,7 @@ void main() {
   late Map<String, Uint8List> osKeys;
   late List<String> deletedAliases;
   var hardwareAvailable = true;
+  var hardwareDeleteFails = false;
 
   Uint8List copyBytes(Object? value) => Uint8List.fromList((value! as Uint8List).toList());
 
@@ -39,6 +40,7 @@ void main() {
     osKeys = <String, Uint8List>{};
     deletedAliases = <String>[];
     hardwareAvailable = true;
+    hardwareDeleteFails = false;
     repository = HotWalletSecretRepository(
       cryptoService: HotWalletCryptoService(random: Random(42)),
       random: Random(43),
@@ -60,6 +62,9 @@ void main() {
         case 'unwrap':
           return copyBytes(osKeys[alias]);
         case 'delete':
+          if (hardwareDeleteFails) {
+            throw PlatformException(code: 'DELETE_FAILED');
+          }
           deletedAliases.add(alias);
           osKeys.remove(alias);
           return null;
@@ -109,6 +114,24 @@ void main() {
 
     expect(await storage.read(key: storageKey), isNull);
     expect(deletedAliases, contains(alias));
+  });
+
+  test('OS alias 삭제가 실패하면 secret을 남겨 다음 정리 시 재시도할 수 있게 한다', () async {
+    const storageKey = 'retry-delete-hardware-wallet';
+    await createSecret(storageKey);
+    final alias = (await readSecret(storageKey)).deviceWrappedDek.alias!;
+    hardwareDeleteFails = true;
+
+    await expectLater(repository.delete(storageKey), throwsA(isA<PlatformException>()));
+
+    expect(await storage.read(key: storageKey), isNotNull);
+    expect(osKeys, contains(alias));
+
+    hardwareDeleteFails = false;
+    await repository.delete(storageKey);
+
+    expect(await storage.read(key: storageKey), isNull);
+    expect(osKeys, isNot(contains(alias)));
   });
 
   test('fallback 지갑 삭제 시 Device KEK도 함께 삭제한다', () async {

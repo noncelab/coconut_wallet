@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/realm_constants.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
@@ -56,6 +57,10 @@ import 'package:realm/realm.dart';
 /// 4. 스크립트 상태는 노드에서 다시 동기화할 수 있으므로 기존 데이터 삭제
 /// 5. RealmUtxo 기본키를 walletId + outpoint 조합으로 변경
 /// 6. UTXO는 노드에서 다시 동기화할 수 있으므로 기존 데이터 삭제
+///
+/// [addHotWalletLifecycleState] (10 -> 11)
+/// 1. RealmHotWalletMetadata에 lifecycleStateName 필드 추가
+/// 2. 기존 핫월렛은 정상 사용 중인 지갑이므로 active 상태로 마이그레이션
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
@@ -72,9 +77,16 @@ void defaultMigration(Migration migration, int oldVersion) {
       migrateExtendedPublicKeyToDescriptor(migration.newRealm);
     }
     if (oldVersion < 9) scopeWalletSyncDataByWallet(migration);
+    if (oldVersion < 11) addHotWalletLifecycleState(migration.newRealm);
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
+  }
+}
+
+void addHotWalletLifecycleState(Realm realm) {
+  for (final metadata in realm.all<RealmHotWalletMetadata>()) {
+    metadata.lifecycleStateName = HotWalletLifecycleState.active.name;
   }
 }
 
@@ -186,7 +198,14 @@ void addRealmTransactionMemo(Migration migration) {
   final oldTxs = migration.oldRealm.all("RealmTransaction");
   final memos = List<RealmTransactionMemo>.empty(growable: true);
   for (var oldTx in oldTxs) {
-    final memo = oldTx.dynamic.get("memo");
+    Object? memo;
+    try {
+      memo = oldTx.dynamic.get("memo");
+    } on RealmException {
+      // v0/v1처럼 memo 필드가 생기기 전 스키마에서 바로 최신 버전으로
+      // 올라오는 경우에는 옮길 memo 자체가 없다.
+      continue;
+    }
     if (memo != null) {
       final transactionHash = oldTx.dynamic.get("transactionHash") as String;
       final walletId = oldTx.dynamic.get("walletId") as int;

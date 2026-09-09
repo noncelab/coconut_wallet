@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/constants/realm_constants.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -114,6 +115,29 @@ void main() {
         realmSetup(initialVersion: 2);
         migrationFrom2toLatest(realm, 2, testPath!);
       });
+    });
+
+    test('기존 hot wallet metadata를 active lifecycle로 초기화함', () {
+      realmSetup(initialVersion: kRealmVersion);
+      realm.write(() {
+        realm.add(
+          RealmHotWalletMetadata(
+            1,
+            'hot_wallet_secret_1',
+            'D45AA182',
+            "m/84'/1'/0'",
+            0,
+            true,
+            false,
+            DateTime.utc(2026, 7, 20),
+            '',
+          ),
+        );
+      });
+
+      realm.write(() => addHotWalletLifecycleState(realm));
+
+      expect(realm.all<RealmHotWalletMetadata>().single.lifecycleStateName, HotWalletLifecycleState.active.name);
     });
   });
 }

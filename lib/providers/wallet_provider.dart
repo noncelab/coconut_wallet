@@ -6,6 +6,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
@@ -20,6 +21,7 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -44,6 +46,8 @@ class WalletProvider extends ChangeNotifier {
   final TransactionRepository _transactionRepository;
   final UtxoRepository _utxoRepository;
   final WalletRepository _walletRepository;
+  final HotWalletSecretRepository _hotWalletSecretRepository;
+  final SharedPrefsRepository _sharedPrefsRepository;
 
   late final PreferenceProvider _preferenceProvider;
 
@@ -64,8 +68,12 @@ class WalletProvider extends ChangeNotifier {
     this._utxoRepository,
     this._walletRepository,
     Future<void> Function(int) saveWalletCount,
-    this._preferenceProvider,
-  ) : _saveWalletCount = saveWalletCount {
+    this._preferenceProvider, {
+    HotWalletSecretRepository? hotWalletSecretRepository,
+    SharedPrefsRepository? sharedPrefsRepository,
+  }) : _saveWalletCount = saveWalletCount,
+       _hotWalletSecretRepository = hotWalletSecretRepository ?? HotWalletSecretRepository(),
+       _sharedPrefsRepository = sharedPrefsRepository ?? SharedPrefsRepository() {
     // ValueNotifier들 초기화
     walletLoadStateNotifier = ValueNotifier(_walletLoadState);
     walletItemListNotifier = ValueNotifier(_walletItemList);
@@ -89,6 +97,7 @@ class WalletProvider extends ChangeNotifier {
       _walletLoadState = WalletLoadState.loadCompleted;
 
       walletLoadStateNotifier.value = _walletLoadState;
+      unawaited(_reconcileHotWalletLifecycleInBackground());
     } catch (e) {
       Logger.log('--> _loadWalletListFromDB error: $e');
       // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
@@ -132,6 +141,110 @@ class WalletProvider extends ChangeNotifier {
 
   Future<List<WalletItemBase>> _fetchWalletListFromDB() async {
     return await _walletRepository.getWalletItemList();
+  }
+
+  Future<void> _reconcileHotWalletLifecycleInBackground() async {
+    try {
+      final walletListChanged = await _reconcileHotWalletLifecycle();
+      if (!walletListChanged) return;
+
+      _setWalletItemList(await _fetchWalletListFromDB());
+      await _saveWalletCount(_walletItemList.length);
+      await _preferenceProvider.setWalletPreferences(_walletItemList);
+      notifyListeners();
+    } catch (error) {
+      Logger.error('Failed to refresh wallets after hot wallet reconciliation: $error');
+    }
+  }
+
+  Future<bool> _reconcileHotWalletLifecycle() async {
+    final metadataList = _walletRepository.getHotWalletMetadataList();
+    var walletListChanged = false;
+    Set<String>? storedKeys;
+
+    try {
+      storedKeys = (await _hotWalletSecretRepository.getSecretStorageKeys()).toSet();
+    } catch (error) {
+      Logger.error('Failed to read hot wallet secret keys: $error');
+    }
+
+    for (final metadata in metadataList) {
+      switch (metadata.lifecycleState) {
+        case HotWalletLifecycleState.creating:
+        case HotWalletLifecycleState.deleting:
+          try {
+            await _walletRepository.deleteWallet(metadata.walletId);
+          } catch (error) {
+            Logger.error('Failed to clean incomplete hot wallet ${metadata.walletId}: $error');
+            continue;
+          }
+          await _deleteHotWalletSecretIgnoringFailure(metadata.secureStorageKey);
+          storedKeys?.remove(metadata.secureStorageKey);
+          await _removeWalletPreferencesIgnoringFailure(metadata.walletId);
+          walletListChanged = true;
+          break;
+        case HotWalletLifecycleState.active:
+          if (storedKeys != null && !storedKeys.contains(metadata.secureStorageKey)) {
+            try {
+              await _walletRepository.updateHotWalletLifecycleState(
+                metadata.walletId,
+                HotWalletLifecycleState.recoveryRequired,
+              );
+              walletListChanged = true;
+            } catch (error) {
+              Logger.error('Failed to mark hot wallet for recovery ${metadata.walletId}: $error');
+            }
+          }
+          break;
+        case HotWalletLifecycleState.recoveryRequired:
+          if (storedKeys?.contains(metadata.secureStorageKey) == true) {
+            try {
+              await _walletRepository.updateHotWalletLifecycleState(metadata.walletId, HotWalletLifecycleState.active);
+              walletListChanged = true;
+            } catch (error) {
+              Logger.error('Failed to reactivate hot wallet ${metadata.walletId}: $error');
+            }
+          }
+          break;
+      }
+    }
+
+    if (storedKeys != null) {
+      final referencedKeys =
+          _walletRepository.getHotWalletMetadataList().map((metadata) => metadata.secureStorageKey).toSet();
+      for (final storageKey in storedKeys.where((key) => !referencedKeys.contains(key))) {
+        await _deleteHotWalletSecretIgnoringFailure(storageKey);
+      }
+    }
+
+    return walletListChanged;
+  }
+
+  Future<void> _deleteHotWalletSecretIgnoringFailure(String storageKey) async {
+    try {
+      await _hotWalletSecretRepository.delete(storageKey);
+    } catch (error) {
+      Logger.error('Failed to delete hot wallet secret: $error');
+    }
+  }
+
+  Future<void> _removeWalletPreferencesIgnoringFailure(int walletId) async {
+    final operations = <Future<void> Function()>[
+      () => _preferenceProvider.removeWalletOrder(walletId),
+      () => _preferenceProvider.removeFavoriteWalletId(walletId),
+      () => _preferenceProvider.removeExcludedFromTotalBalanceWalletId(walletId),
+      // ignore: deprecated_member_use_from_same_package
+      () => _preferenceProvider.removeManualUtxoSelectionWalletId(walletId),
+      () => _sharedPrefsRepository.removeWalletTargetSats(walletId),
+      () => _sharedPrefsRepository.removeFaucetHistory(walletId),
+    ];
+    for (final operation in operations) {
+      try {
+        await operation();
+      } catch (error) {
+        Logger.error('Failed to clean preferences for wallet $walletId: $error');
+      }
+    }
   }
 
   int _findSameWalletIndex(String descriptorString, WalletType walletType, {bool isHotWallet = false}) {
@@ -340,7 +453,8 @@ class WalletProvider extends ChangeNotifier {
     if (wallet.walletType != WalletType.singleSignature) {
       throw ArgumentError.value(wallet.walletType, 'wallet.walletType', 'Hot wallet must be single-signature');
     }
-    if (_findSameWalletIndex(wallet.descriptor, wallet.walletType, isHotWallet: true) != -1) {
+    if (_findSameWalletIndex(wallet.descriptor, wallet.walletType, isHotWallet: true) != -1 ||
+        _walletRepository.containsHotWalletDescriptor(wallet.descriptor)) {
       throw StateError('The hot wallet has already been added');
     }
 
@@ -353,20 +467,54 @@ class WalletProvider extends ChangeNotifier {
     if (resolvedName == null) {
       throw const WalletNameConflictException();
     }
+    if (_walletRepository.containsWalletName(resolvedName, excludeWalletId: replacingWatchOnlyWalletId)) {
+      throw const WalletNameConflictException();
+    }
 
-    final hotWallet = await _walletRepository.addHotWallet(
-      _copyWithNewName(wallet, resolvedName),
-      secureStorageKey: secureStorageKey,
-      backupVerified: backupVerified,
-      enterPassphraseWhenSigning: enterPassphraseWhenSigning,
-      createdAt: createdAt,
-    );
-    await _addressRepository.ensureAddressesInit(walletItemBase: hotWallet);
-    final updatedList = List<WalletItemBase>.from(_walletItemList)..add(hotWallet);
-    _setWalletItemList(updatedList);
-    _saveWalletCount(updatedList.length);
-    await _handleNewWalletAdded(hotWallet.id);
-    return hotWallet;
+    SinglesigWalletItem? creatingWallet;
+    try {
+      creatingWallet = await _walletRepository.addHotWallet(
+        _copyWithNewName(wallet, resolvedName),
+        secureStorageKey: secureStorageKey,
+        backupVerified: backupVerified,
+        enterPassphraseWhenSigning: enterPassphraseWhenSigning,
+        createdAt: createdAt,
+        lifecycleState: HotWalletLifecycleState.creating,
+      );
+      await _addressRepository.ensureAddressesInit(walletItemBase: creatingWallet);
+      await _walletRepository.updateHotWalletLifecycleState(creatingWallet.id, HotWalletLifecycleState.active);
+
+      final activeWallets = await _fetchWalletListFromDB();
+      _setWalletItemList(activeWallets);
+      final activeWallet = activeWallets.whereType<SinglesigWalletItem>().firstWhere(
+        (item) => item.id == creatingWallet!.id,
+      );
+
+      try {
+        await _saveWalletCount(activeWallets.length);
+        await _handleNewWalletAdded(activeWallet.id);
+      } catch (error) {
+        Logger.error('Hot wallet was activated, but post-activation preferences failed: $error');
+      }
+      notifyListeners();
+      return activeWallet;
+    } catch (_) {
+      if (creatingWallet != null) {
+        try {
+          await _walletRepository.deleteWallet(creatingWallet.id);
+        } catch (rollbackError) {
+          Logger.error('Failed to roll back hot wallet ${creatingWallet.id}: $rollbackError');
+        }
+        await _deleteHotWalletSecretIgnoringFailure(secureStorageKey);
+        await _removeWalletPreferencesIgnoringFailure(creatingWallet.id);
+        try {
+          _setWalletItemList(await _fetchWalletListFromDB());
+        } catch (reloadError) {
+          Logger.error('Failed to reload wallets after hot wallet rollback: $reloadError');
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<void> updateHotWalletBackupVerified(int walletId, {required bool backupVerified}) async {
@@ -517,32 +665,25 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
-    final secretStorageKey =
-        _walletItemList
-            .whereType<SinglesigWalletItem>()
-            .firstWhereOrNull((wallet) => wallet.id == walletId)
-            ?.hotWalletMetadata
-            ?.secureStorageKey;
+    final hotWalletMetadata = _walletRepository.getHotWalletMetadata(walletId);
+    final secretStorageKey = hotWalletMetadata?.secureStorageKey;
     final walletToDelete = _walletItemList.firstWhereOrNull((w) => w.id == walletId);
     if (walletToDelete?.walletImportSource == WalletImportSource.trezor) {
       await TrezorDevice.lastConnected?.disconnect();
     }
 
-    await _walletRepository.deleteWallet(walletId);
-    if (secretStorageKey != null) {
-      try {
-        await HotWalletSecretRepository().delete(secretStorageKey);
-      } catch (error) {
-        Logger.log('Failed to delete hot wallet secret: $error');
-      }
+    if (hotWalletMetadata != null) {
+      await _walletRepository.updateHotWalletLifecycleState(walletId, HotWalletLifecycleState.deleting);
+      _setWalletItemList(await _fetchWalletListFromDB());
+      await _saveWalletCount(_walletItemList.length);
+      notifyListeners();
     }
+
+    await _walletRepository.deleteWallet(walletId);
+    if (secretStorageKey != null) await _deleteHotWalletSecretIgnoringFailure(secretStorageKey);
     _setWalletItemList(await _fetchWalletListFromDB());
-    _saveWalletCount(_walletItemList.length);
-    await _preferenceProvider.removeWalletOrder(walletId);
-    await _preferenceProvider.removeFavoriteWalletId(walletId);
-    await _preferenceProvider.removeExcludedFromTotalBalanceWalletId(walletId);
-    // ignore: deprecated_member_use_from_same_package
-    await _preferenceProvider.removeManualUtxoSelectionWalletId(walletId);
+    await _saveWalletCount(_walletItemList.length);
+    await _removeWalletPreferencesIgnoringFailure(walletId);
     if (_walletItemList.isEmpty) {
       await _preferenceProvider.changeIsBalanceHidden(false); // 잔액 숨기기 비활성화, fakeBalance 초기화
       await _preferenceProvider.clearFakeBalanceTotalAmount();

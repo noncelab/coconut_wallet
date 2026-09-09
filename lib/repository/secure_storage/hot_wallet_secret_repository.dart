@@ -84,18 +84,24 @@ class HotWalletSecretRepository {
       // 생성 도중 실패해 secret 레코드가 아직 없는 경우도 정리한다.
     }
 
-    await _secureStorage.delete(key: storageKey);
-    await _secureStorage.delete(key: _fallbackStorageKey(storageKey));
-
     final wrapped = secret?.deviceWrappedDek;
     if (wrapped != null && wrapped.protection != DeviceKeyProtection.secureStorage && wrapped.alias != null) {
-      await _deleteHardwareKeyIgnoringFailure(wrapped.alias!);
+      // secret 레코드를 마지막까지 남겨 두어 중간 실패/강제 종료 후에도
+      // OS key alias를 다시 찾아 삭제를 재시도할 수 있게 한다.
+      await _deviceKeystore.delete(wrapped.alias!);
     }
+
+    await _secureStorage.delete(key: _fallbackStorageKey(storageKey));
+    await _secureStorage.delete(key: storageKey);
   }
 
   Future<List<String>> getSecretStorageKeys() async {
     final keys = await _secureStorage.getAllKeys();
     return keys.where((key) => key.startsWith(_secretPrefix) && !key.endsWith(_fallbackKeySuffix)).toList();
+  }
+
+  Future<bool> contains(String storageKey) async {
+    return await _secureStorage.read(key: storageKey) != null;
   }
 
   Future<DeviceWrappedDek> _wrapDekWithBestAvailableProtection(

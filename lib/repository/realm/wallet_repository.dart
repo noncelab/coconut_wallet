@@ -46,6 +46,10 @@ class WalletRepository extends BaseRepository {
     };
 
     for (var i = 0; i < walletBases.length; i++) {
+      final hotWalletMetadata = hotWalletMetadataMap[walletBases[i].id];
+      if (hotWalletMetadata != null && hotWalletMetadata.lifecycleState != HotWalletLifecycleState.active) {
+        continue;
+      }
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
         // 외부 지갑인 경우 WalletImportSource 데이터 추가
         if (externalWalletIndex < externalWallets.length &&
@@ -61,12 +65,7 @@ class WalletRepository extends BaseRepository {
           );
         } else {
           walletList.add(
-            mapRealmToSingleSigWalletItem(
-              walletBases[i],
-              walletBases[i].descriptor,
-              null,
-              hotWalletMetadataMap[walletBases[i].id],
-            ),
+            mapRealmToSingleSigWalletItem(walletBases[i], walletBases[i].descriptor, null, hotWalletMetadata),
           );
         }
       } else if (walletBases[i].walletType == WalletType.taproot.name) {
@@ -124,6 +123,7 @@ class WalletRepository extends BaseRepository {
     required bool backupVerified,
     required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
+    HotWalletLifecycleState lifecycleState = HotWalletLifecycleState.creating,
   }) async {
     if (wallet.walletType != WalletType.singleSignature) {
       throw ArgumentError.value(wallet.walletType, 'wallet.walletType', 'Hot wallet must be single-signature');
@@ -156,6 +156,7 @@ class WalletRepository extends BaseRepository {
       backupVerified: backupVerified,
       enterPassphraseWhenSigning: enterPassphraseWhenSigning,
       createdAt: createdAt,
+      lifecycleState: lifecycleState,
     );
     final realmMetadata = RealmHotWalletMetadata(
       id,
@@ -166,6 +167,7 @@ class WalletRepository extends BaseRepository {
       metadata.backupVerified,
       metadata.enterPassphraseWhenSigning,
       metadata.createdAt,
+      metadata.lifecycleState.name,
     );
 
     realm.write(() {
@@ -175,6 +177,38 @@ class WalletRepository extends BaseRepository {
 
     _recordNextWalletId(id + 1);
     return mapRealmToSingleSigWalletItem(realmWalletBase, wallet.descriptor, WalletImportSource.coconutVault, metadata);
+  }
+
+  List<HotWalletMetadata> getHotWalletMetadataList() {
+    return realm.all<RealmHotWalletMetadata>().map(mapRealmToHotWalletMetadata).toList(growable: false);
+  }
+
+  HotWalletMetadata? getHotWalletMetadata(int walletId) {
+    final metadata = realm.find<RealmHotWalletMetadata>(walletId);
+    return metadata == null ? null : mapRealmToHotWalletMetadata(metadata);
+  }
+
+  Future<void> updateHotWalletLifecycleState(int walletId, HotWalletLifecycleState state) async {
+    final metadata = realm.find<RealmHotWalletMetadata>(walletId);
+    if (metadata == null) {
+      throw StateError('Hot wallet metadata not found: $walletId');
+    }
+    await realm.writeAsync(() {
+      metadata.lifecycleStateName = state.name;
+    });
+  }
+
+  bool containsWalletName(String name, {int? excludeWalletId}) {
+    return realm.all<RealmWalletBase>().any((wallet) => wallet.id != excludeWalletId && wallet.name == name);
+  }
+
+  bool containsHotWalletDescriptor(String descriptor) {
+    final address = SingleSignatureWallet.fromDescriptor(descriptor).getAddress(0);
+    final hotWalletIds = realm.all<RealmHotWalletMetadata>().map((metadata) => metadata.walletId).toSet();
+    return realm
+        .all<RealmWalletBase>()
+        .where((wallet) => hotWalletIds.contains(wallet.id))
+        .any((wallet) => SingleSignatureWallet.fromDescriptor(wallet.descriptor).getAddress(0) == address);
   }
 
   int _getAccountIndex(String derivationPath) {
