@@ -57,6 +57,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   MobileScannerController? controller;
   bool _isProcessing = false;
+  bool _isCompletedScanLocked = false;
   bool _skipNextFinalizeVibration = false;
   bool _clipboardContentAvailable = false;
   late WalletAddScannerViewModel _viewModel;
@@ -444,9 +445,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     final text = clipboardData?.text?.trim();
 
     if (text == null || text.isEmpty) {
-      _showErrorDialog(t.alert.wallet_add.add_failed, t.alert.invalid_qr);
-      _isProcessing = false;
-      await controller?.start();
+      await _showErrorDialog(t.alert.wallet_add.add_failed, t.alert.invalid_qr);
       return;
     }
     String? descriptor;
@@ -462,12 +461,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
     if (descriptor == null && extendedPublicKey == null) {
       if (mounted) {
-        _showErrorDialog(
+        await _showErrorDialog(
           t.alert.wallet_add.add_failed,
           "${t.wallet_add_scanner_screen.paste.format_error_text} ($text)",
         );
-        _isProcessing = false;
-        await controller?.start();
       }
       return;
     }
@@ -487,7 +484,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       }
       await _handleAddWalletResult(addResult);
     } catch (e, stackTrace) {
-      _handleAddWalletError(e, stackTrace);
+      await _handleAddWalletError(e, stackTrace);
     } finally {
       _finalizeAddWallet();
     }
@@ -547,13 +544,21 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     const methodName = '_onCompletedScanning';
     FileLogger.log(className, methodName, 'additionInfo type: ${additionInfo.runtimeType}');
 
-    if (_isProcessing) return;
+    if (_isProcessing || _isCompletedScanLocked) return;
     _isProcessing = true;
+    _isCompletedScanLocked = true;
 
     try {
+      // 완료된 QR이 화면 전환 중 다시 감지되어 동일 지갑 추가 로직이
+      // 중복 실행되지 않도록 첫 완료 이벤트에서 카메라를 즉시 멈춘다.
+      try {
+        await controller?.stop();
+      } catch (error) {
+        FileLogger.error(className, methodName, 'Failed to stop scanner after completion: $error');
+      }
+
       String? mfp;
       if (_viewModel.isExtendedPublicKeyScanned) {
-        await controller?.stop();
         mfp = await _showMfpInputBottomSheet();
       }
 
@@ -564,7 +569,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       );
       await _handleAddWalletResult(addResult);
     } catch (e, stackTrace) {
-      _handleAddWalletError(e, stackTrace);
+      await _handleAddWalletError(e, stackTrace);
     } finally {
       _finalizeAddWallet();
     }
@@ -608,7 +613,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           if (mounted) {
             final walletProvider = Provider.of<WalletProvider>(context, listen: false);
             final (title, description) = resolveWalletSyncResultDialog(addResult, walletProvider);
-            _showErrorDialog(title, description);
+            _skipNextFinalizeVibration = true;
+            await _showErrorDialog(title, description);
           }
           break;
         }
@@ -647,6 +653,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     );
     if (shouldAdd != true) {
       _skipNextFinalizeVibration = true;
+      _resumeScanning();
       return;
     }
     if (!mounted) return;
@@ -664,10 +671,11 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     }
   }
 
-  void _handleAddWalletError(Object e, StackTrace stackTrace) {
+  Future<void> _handleAddWalletError(Object e, StackTrace stackTrace) async {
     FileLogger.error(className, '_handleAddWalletError', 'failed: $e', stackTrace);
     vibrateLightDouble();
     if (mounted) {
+      _skipNextFinalizeVibration = true;
       String errorMessage = "${t.wallet_add_scanner_screen.paste.format_error_text}\n${e.toString()}";
       if (e is UnsupportedWalletTypeException) {
         errorMessage = t.wallet_add_scanner_screen.paste.unsupported_wallet_error_text;
@@ -677,7 +685,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
                 ? t.wallet_add_scanner_screen.paste.mainnet_wallet_error_text
                 : t.wallet_add_scanner_screen.paste.testnet_wallet_error_text;
       }
-      _showErrorDialog(t.alert.wallet_add.add_failed, errorMessage);
+      await _showErrorDialog(t.alert.wallet_add.add_failed, errorMessage);
     }
   }
 
@@ -695,9 +703,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   /// 에러 팝업이 아직 떠 있는 동안 카메라가 새 QR을 스캔해버리는 레이스 컨디션을 막기 위해,
-  /// 팝업이 실제로 닫힌 뒤(onTapRight)에만 카메라 재개 및 QR 핸들러 리셋 수행
+  /// 팝업이 실제로 닫힌 뒤에만 카메라 재개 및 QR 핸들러 리셋 수행
   void _resumeScanning() {
     if (mounted) {
+      _isCompletedScanLocked = false;
       controller?.start();
       _viewModel.qrDataHandler.reset();
     }
@@ -727,33 +736,35 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
     await showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
+          languageCode: dialogContext.read<PreferenceProvider>().language,
           title: t.alert.wallet_add.add_failed,
           description: errorMessage,
           rightButtonText: t.OK,
           onTapRight: () {
             FileLogger.log(className, methodName, 'Error dialog confirmed');
-            _isProcessing = false;
-
-            Navigator.pop(context);
+            Navigator.pop(dialogContext);
           },
         );
       },
     );
+
+    if (!mounted) return;
+    _isProcessing = false;
+    _viewModel.qrDataHandler.reset();
   }
 
-  void _showErrorDialog(String title, String description) {
+  Future<void> _showErrorDialog(String title, String description) async {
     const methodName = '_showErrorDialog';
     FileLogger.log(className, methodName, 'Error title: $title');
     FileLogger.log(className, methodName, 'Error description: $description');
 
-    showDialog(
+    await showDialog<void>(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
+          languageCode: dialogContext.read<PreferenceProvider>().language,
           title: title,
           backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
           description:
@@ -764,14 +775,15 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           insetPadding: const EdgeInsets.symmetric(horizontal: 50),
           rightButtonText: t.confirm,
           rightButtonColor: context.coconutColors.primaryText,
-          onTapRight: () {
-            _isProcessing = false;
-            _resumeScanning();
-            Navigator.pop(context);
-          },
+          onTapRight: () => Navigator.pop(dialogContext),
         );
       },
     );
+
+    if (!mounted) return;
+    _isProcessing = false;
+    await WidgetsBinding.instance.endOfFrame;
+    _resumeScanning();
   }
 
   String _getAppBarTitle() => switch (widget.importSource) {

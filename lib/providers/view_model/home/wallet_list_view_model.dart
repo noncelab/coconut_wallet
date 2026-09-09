@@ -401,6 +401,13 @@ class WalletListViewModel extends ChangeNotifier {
           final walletMap = {for (var wallet in walletItemList) wallet.id: wallet};
           _walletProvider.walletItemListNotifier.value =
               tempWalletOrder.map((id) => walletMap[id]).whereType<WalletItemBase>().toList();
+
+          // 최종 지갑 목록 갱신까지 끝낸 후 백그라운드에서 노드 구독을 재구성한다.
+          // 삭제 완료 UI가 전체 지갑 재구독을 기다리지 않게 하면서, 재연결 중
+          // notifier가 다시 변경되어 isolate 명령이 충돌하는 것도 방지한다.
+          if (deletedWalletIds.isNotEmpty) {
+            unawaited(_nodeProvider.reconnect());
+          }
         }
         setEditMode(false);
         notifyListeners();
@@ -446,8 +453,6 @@ class WalletListViewModel extends ChangeNotifier {
       await sharedPrefs.removeWalletTargetSats(walletId);
       await _walletProvider.deleteWallet(walletId);
     }
-    _nodeProvider.reconnect();
-    _walletProvider.notifyListeners();
   }
 
   bool get hasWalletOrderChanged => !const ListEquality().equals(tempWalletOrder, _preferenceProvider.walletOrder);

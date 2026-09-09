@@ -372,7 +372,7 @@ class WalletProvider extends ChangeNotifier {
     final newWallet = await _addNewWallet(watchOnlyWallet);
 
     Logger.log('--> syncFromCoconutVault:::::: ${_walletItemList.map((e) => e.id).toList()}');
-    _handleNewWalletAdded(newWallet.id);
+    await _handleNewWalletAdded(newWallet.id);
 
     return ResultOfSyncFromVault(result: WalletSyncResult.newWalletAdded, walletId: newWallet.id);
   }
@@ -416,7 +416,7 @@ class WalletProvider extends ChangeNotifier {
 
     watchOnlyWallet = _copyWithNewName(watchOnlyWallet, resolvedName);
     final newWallet = await _addNewWallet(watchOnlyWallet);
-    _handleNewWalletAdded(newWallet.id);
+    await _handleNewWalletAdded(newWallet.id);
 
     return ResultOfSyncFromVault(result: WalletSyncResult.newWalletAdded, walletId: newWallet.id);
   }
@@ -632,7 +632,7 @@ class WalletProvider extends ChangeNotifier {
     updatedList.add(newItem); // 새로 추가된 지갑을 후순으로 변경 -> 대표 지갑 변경되는걸 막기 위함
     _setWalletItemList(updatedList);
 
-    _saveWalletCount(updatedList.length);
+    await _saveWalletCount(updatedList.length);
     return newItem;
   }
 
@@ -917,11 +917,12 @@ class WalletProvider extends ChangeNotifier {
       );
     }
 
-    // 지갑 순서 목록에 추가
-    addToWalletOrder(walletId);
-
-    // 5개 이하라면 즐겨찾기 목록에 추가
-    addToFavoriteWalletsUntilFive(walletId);
+    await Future.wait([
+      // 지갑 순서 목록에 추가
+      addToWalletOrder(walletId),
+      // 5개 이하라면 즐겨찾기 목록에 추가
+      addToFavoriteWalletsUntilFive(walletId),
+    ]);
   }
 
   Future<void> updateWalletDescriptor(int walletId, String newMfp) async {

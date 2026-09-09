@@ -181,6 +181,10 @@ class FakeUtxoRepository extends Fake implements UtxoRepository {}
 
 class FakePreferenceProvider extends Fake implements PreferenceProvider {
   final List<int> removedWalletIds = [];
+  Completer<void>? walletOrderSaveGate;
+  Completer<void>? favoriteWalletSaveGate;
+  int setWalletOrderCallCount = 0;
+  int setFavoriteWalletIdsCallCount = 0;
   @override
   Future<void> setWalletPreferences(List<WalletItemBase> walletItemList) async {}
 
@@ -191,13 +195,19 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   List<int> get walletOrder => [];
 
   @override
-  Future<void> setWalletOrder(List<int> walletOrder) async {}
+  Future<void> setWalletOrder(List<int> walletOrder) async {
+    setWalletOrderCallCount++;
+    await walletOrderSaveGate?.future;
+  }
 
   @override
   List<int> get favoriteWalletIds => [];
 
   @override
-  Future<void> setFavoriteWalletIds(List<int> ids) async {}
+  Future<void> setFavoriteWalletIds(List<int> ids) async {
+    setFavoriteWalletIdsCallCount++;
+    await favoriteWalletSaveGate?.future;
+  }
 
   @override
   Future<void> removeWalletOrder(int walletId) async {
@@ -687,6 +697,40 @@ void main() {
       expect(walletRepo.addHotWalletCallCount, 1);
       expect(walletRepo.lifecycleUpdates, [(2, HotWalletLifecycleState.active)]);
       expect(provider.walletItemList, hasLength(2));
+
+      provider.dispose();
+    });
+
+    test('핫월렛 생성 완료 전에 지갑 순서와 즐겨찾기 저장을 모두 기다림', () async {
+      final walletRepo = FakeWalletRepository()..addHotWalletResult = _createSinglesigWalletListItem(isHotWallet: true);
+      final preferenceProvider =
+          FakePreferenceProvider()
+            ..walletOrderSaveGate = Completer<void>()
+            ..favoriteWalletSaveGate = Completer<void>();
+      final provider = await _buildProvider(walletRepo, preferenceProvider: preferenceProvider);
+      var creationCompleted = false;
+
+      final creationFuture = provider
+          .addHotWallet(
+            _createSinglesigWatchOnlyWallet(),
+            secureStorageKey: 'local_wallet_seed_new',
+            backupVerified: true,
+            enterPassphraseWhenSigning: false,
+            createdAt: DateTime.utc(2026, 7, 21),
+          )
+          .then((wallet) {
+            creationCompleted = true;
+            return wallet;
+          });
+      while (preferenceProvider.setWalletOrderCallCount == 0 || preferenceProvider.setFavoriteWalletIdsCallCount == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      expect(creationCompleted, isFalse);
+      preferenceProvider.walletOrderSaveGate!.complete();
+      preferenceProvider.favoriteWalletSaveGate!.complete();
+      await creationFuture;
+      expect(creationCompleted, isTrue);
 
       provider.dispose();
     });
