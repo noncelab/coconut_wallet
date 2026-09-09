@@ -1,4 +1,4 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';

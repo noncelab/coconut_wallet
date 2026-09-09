@@ -1,8 +1,19 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
-
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/app/router/bip329_route_args.dart';
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -17,25 +28,25 @@ import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bott
 import 'package:coconut_wallet/screens/wallet_detail/wallet_signer_section.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_stats_section.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/button_group.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/dialog.dart';
+import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/card/wallet_info_item_card.dart';
+import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-const String kEntryPointWalletList = '/wallet-list';
+const String kEntryPointWalletList = AppRouteNames.walletList;
 const String kEntryPointWalletHome = '/wallet-home';
 
 class WalletInfoScreen extends StatefulWidget {
@@ -93,6 +104,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           child: WalletInfoItemCard(
                             id: widget.id,
                             walletItem: viewModel.walletItemBase,
+                            taprootKeyPathSelected: viewModel.taprootSpendTypeIndex == 0,
                             onTooltipClicked: () {
                               if (_tooltipRemainingTime > 0) {
                                 _removeTooltip();
@@ -183,8 +195,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
                                     Navigator.pushNamed(
                                       context,
-                                      '/taproot-wallet-backup-data',
-                                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
+                                      AppRouteNames.taprootWalletBackupData,
+                                      arguments: TaprootWalletBackupDataRouteArgs(
+                                        id: widget.id,
+                                        walletName: viewModel.walletName,
+                                      ),
                                     );
                                   },
                                 ),
@@ -198,8 +213,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
                                     Navigator.pushNamed(
                                       context,
-                                      '/wallet-backup-data',
-                                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
+                                      AppRouteNames.walletBackupData,
+                                      arguments: WalletBackupDataRouteArgs(
+                                        id: widget.id,
+                                        walletName: viewModel.walletName,
+                                      ),
                                     );
                                   },
                                 ),
@@ -209,7 +227,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 title: t.tag_manage_label,
                                 onPressed: () {
                                   _removeTooltip();
-                                  Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRouteNames.utxoTag,
+                                    arguments: UtxoTagCrudRouteArgs(id: widget.id),
+                                  );
                                 },
                               ),
                               SingleButton(
@@ -243,14 +265,18 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: SvgPicture.asset(
-                                'assets/svg/arrow-reload.svg',
+                                CommonActionIconPath.arrowReload,
                                 width: 16,
                                 colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
                               ),
                             ),
                             onPressed: () {
                               _removeTooltip();
-                              Navigator.pushNamed(context, '/wallet-resync', arguments: {'id': widget.id});
+                              Navigator.pushNamed(
+                                context,
+                                AppRouteNames.walletResync,
+                                arguments: WalletResyncRouteArgs(id: widget.id),
+                              );
                             },
                           ),
                         ),
@@ -267,7 +293,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: SvgPicture.asset(
-                                'assets/svg/trash.svg',
+                                CommonActionIconPath.trash,
                                 width: 16,
                                 colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
                               ),
@@ -387,22 +413,16 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   Future<String?> _showMfpInputBottomSheet() async {
-    final result = await showModalBottomSheet<String>(
+    final result = await CommonBottomSheets.showBottomSheet_100<String>(
       context: context,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: WalletAddMfpInputBottomSheet(
-            onComplete: (text) {
-              Navigator.pop(context, text);
-            },
-          ),
-        );
-      },
-      backgroundColor: context.coconutColors.background,
-      isScrollControlled: true,
-      enableDrag: true,
-      useSafeArea: true,
+      screenName: AnalyticsScreenNames.walletInfoMfpSheet,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      child: WalletAddMfpInputBottomSheet(
+        onComplete: (text) {
+          Navigator.pop(context, text);
+        },
+      ),
     );
 
     if (result != null && result.isNotEmpty && mounted) {
@@ -447,6 +467,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     SingleTextFieldBottomSheet.show(
       context: context,
       title: t.wallet_info_screen.target_set_title,
+      screenName: AnalyticsScreenNames.walletInfoEditTargetAmountSheet,
       originalText: btcString,
       completeButtonText: t.done,
       placeholder: t.wallet_info_screen.target_set_placeholder,
@@ -460,12 +481,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         return currentText.isNotEmpty && currentText != original.trim();
       },
       focusOnlyWhenOriginalNotEmpty: true,
-      fieldBackgroundColor: context.coconutColors.inputSurface,
-      errorColor: context.coconutColors.danger,
-      placeholderColor: context.coconutColors.inputPlaceholder,
-      inputBorderColor: context.coconutColors.inputBorder,
-      activeColor: context.coconutColors.primaryText,
-      cursorColor: context.coconutColors.primaryText,
       suffix: Text(
         BitcoinUnit.btc.symbol,
         style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
@@ -477,7 +492,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             CoconutToast.showToast(
               context: parentContext,
               isVisibleIcon: true,
-              iconPath: 'assets/svg/triangle-warning.svg',
+              iconPath: CommonStateIconPath.triangleWarning,
               text: t.wallet_info_screen.target_set_invalid,
               level: CoconutToastLevel.warning,
             );
@@ -490,7 +505,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
             context: parentContext,
             text: t.wallet_info_screen.target_set_21m,
             isVisibleIcon: true,
-            iconPath: 'assets/svg/pie.svg',
+            iconPath: FeatureWalletIconPath.pie,
             iconSize: 16,
             iconRightPadding: 8,
           );
@@ -505,7 +520,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         CoconutToast.showToast(
           context: parentContext,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/triangle-warning.svg',
+          iconPath: CommonStateIconPath.triangleWarning,
           text: t.wallet_info_screen.target_set_invalid,
           level: CoconutToastLevel.warning,
         );
@@ -564,6 +579,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     if (!mounted) return;
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletInfoAuthSheet,
       heightRatio: 0.9,
       child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: onComplete)),
     );
@@ -572,6 +588,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   void _showExtendedBottomSheet(String extendedPublicKey) {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletInfoXpubSheet,
       heightRatio: 0.9,
       backgroundColor: context.coconutColors.background,
       child: QrWithCopyTextScreen(
@@ -689,8 +706,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   void _showLabelsManagementScreen(BuildContext context, WalletInfoViewModel viewModel) {
     Navigator.pushNamed(
       context,
-      '/label-management',
-      arguments: LabelManagementRouteArgs(walletId: viewModel.walletId),
+      AppRouteNames.labelManagement,
+      arguments: LabelManagementRouteArgs(id: viewModel.walletId),
     );
   }
 }

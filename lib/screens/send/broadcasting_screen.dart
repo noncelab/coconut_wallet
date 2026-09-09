@@ -1,4 +1,16 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -18,16 +30,17 @@ import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
-import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
-import 'package:coconut_wallet/widgets/dialog.dart';
-import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
-import 'package:coconut_wallet/widgets/send_amount_header.dart';
-import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_tween_button.dart';
+import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
+import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
+import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class BroadcastingScreen extends StatefulWidget {
   final int? signedTransactionDraftId;
@@ -89,11 +102,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
         Navigator.pushNamedAndRemoveUntil(
           context,
-          '/broadcasting-complete', // 이동할 경로
+          AppRouteNames.broadcastingComplete, // 이동할 경로
           _viewModel.sendEntryPoint == SendEntryPoint.walletDetail
-              ? ModalRoute.withName("/wallet-detail") // '/wallet-detail' 경로를 남기고 그 외의 경로 제거
+              ? ModalRoute.withName(AppRouteNames.walletDetail) // AppRouteNames.walletDetail 경로를 남기고 그 외의 경로 제거
               : (route) => route.isFirst, // HomeScreen까지 제거
-          arguments: {'id': _viewModel.walletId!, 'txHash': _viewModel.signedTx!.transactionHash},
+          arguments: BroadcastingCompleteRouteArgs(
+            id: _viewModel.walletId!,
+            txHash: _viewModel.signedTx!.transactionHash,
+          ),
         );
       }
     } catch (e) {
@@ -213,9 +229,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             _viewModel.clearSendInfo();
             Navigator.pushNamedAndRemoveUntil(
               context,
-              '/transaction-draft',
+              AppRouteNames.transactionDraft,
               (route) => route.isFirst,
-              arguments: {'isSignedTabActive': true},
+              arguments: const TransactionDraftRouteArgs(isSignedTabActive: true),
             );
           },
           onTapLeft: () {
@@ -248,7 +264,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: ErrorCodes.networkError.message,
         level: CoconutToastLevel.warning,
       );

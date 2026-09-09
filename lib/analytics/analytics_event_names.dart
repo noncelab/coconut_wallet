@@ -14,4 +14,7 @@ class AnalyticsEventNames {
   static const String walletResyncStarted = 'wallet_resync_started';
   static const String walletResyncCompleted = 'wallet_resync_completed';
   static const String walletResyncFailed = 'wallet_resync_failed';
+
+  // 외부 링크를 여는 이벤트
+  static const String externalLinkOpened = 'external_link_opened';
 }

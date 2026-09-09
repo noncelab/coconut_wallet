@@ -1,12 +1,13 @@
 import 'dart:io';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutTextField;
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
+import 'package:coconut_wallet/widgets/features/utxo/tag/custom_tag_chip_color_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -103,15 +104,20 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: CustomLimitTextField(
+                  child: CoconutTextField(
                     controller: _controller,
                     focusNode: _focusNode,
+                    maxLength: 30,
                     prefix: Padding(
                       padding: const EdgeInsets.only(left: 16),
                       child: Text("#", style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText)),
                     ),
-
                     onChanged: _onTextChanged,
+                    textInputType: TextInputType.text,
+                    placeholderText: '',
+                    isLengthVisible: true,
+                    padding: const EdgeInsets.fromLTRB(0, 14, 16, 14),
+                    clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
                     onClear: () {
                       setState(() {
                         _controller.clear();

@@ -20,16 +20,17 @@ const CONTACT_EMAIL_ADDRESS = 'hello@noncelab.com';
 const DISCORD_COCONUT = 'https://discord.gg/YHxGQRxa7R';
 
 /// X
-const X_POW = 'https://x.com/POWbitcoiner';
+const X_COCONUT = 'https://x.com/CoconutWallet';
 
 /// Tutorial
 const TUTORIAL_URL = 'https://tutorial.coconut.onl';
 
 /// Block explorer
-const BLOCK_EXPLORER_URL_REGTEST = 'https://regtest-mempool.coconut.onl';
-const BLOCK_EXPLORER_URL_TESTNET = 'https://mempool.space/testnet4';
+const DEFAULT_EXPLORER_URL_MAINNET = 'https://mempool.space';
+const DEFAULT_EXPLORER_URL_REGTEST = 'https://regtest-mempool.coconut.onl';
+const DEFAULT_EXPLORER_URL_TESTNET = 'https://mempool.space/testnet';
 
 /// Fee Service
 const FEE_SERVICE_URL_MAINNET = 'https://mempool.space/api/v1/fees/precise';
-const FEE_SERVICE_URL_TESTNET = 'https://mempool.space/testnet4/api/v1/fees/precise';
 const FEE_SERVICE_URL_REGTEST = 'https://regtest-mempool.coconut.onl/api/v1/fees/recommended';
+const FEE_SERVICE_URL_TESTNET = 'https://mempool.space/testnet/api/v1/fees/precise';

@@ -1,4 +1,11 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutUnderlinedButton;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -8,8 +15,11 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/connected/bitbox02_sign_viewmodel.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_navigator.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/wallet/trezor/trezor_connect_shared_widgets.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -68,7 +78,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       if (widget.isFromSendFlow) {
         final sendInfoProvider = context.read<SendInfoProvider>();
         sendInfoProvider.setSignedResult(_viewModel.signedPsbt);
-        Navigator.pushReplacementNamed(context, '/broadcasting');
+        Navigator.pushReplacementNamed(context, AppRouteNames.broadcasting, arguments: const BroadcastingRouteArgs());
       } else {
         Navigator.pop(context, {'signedPsbt': _viewModel.signedPsbt});
       }
@@ -250,14 +260,18 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     } else if (isBusy) {
       final color = context.coconutColors.warning;
       stateColor = color;
-      stateIcon = SizedBox(width: 12, height: 12, child: CircularProgressIndicator(color: color, strokeWidth: 2.5));
+      stateIcon = SizedBox(
+        width: 12,
+        height: 12,
+        child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: color, radius: 6),
+      );
       stateLabel = t.bitbox02_sign_screen.state_label.signing;
       detailText = _subStatusText(vm, vm.subStatus);
     } else if (isDone) {
       final color = context.coconutColors.success;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        'assets/svg/circle-check-outline.svg',
+        CommonFormIconPath.circleCheckOutline,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         width: 16,
         height: 16,
@@ -268,7 +282,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       final color = context.coconutColors.danger;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        'assets/svg/triangle-warning.svg',
+        CommonStateIconPath.triangleWarning,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         width: 16,
         height: 16,
@@ -355,6 +369,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       navigator.pop();
       await BitBox02Navigator.showConnectScreen(
         context: navigator.context,
+        screenName: AnalyticsScreenNames.bitbox02SignReconnectDeviceSheet,
         psbtBase64: widget.psbtBase64,
         walletName: widget.walletName,
         walletFingerprint: widget.walletFingerprint,

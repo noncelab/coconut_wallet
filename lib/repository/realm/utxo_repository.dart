@@ -6,8 +6,8 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:realm/realm.dart';
 
 /// 선택된 UTXO의 상태를 나타내는 enum
@@ -21,7 +21,7 @@ typedef UtxoTagImportInfo = ({String tag, int? colorIndex});
 const int _maxTagsPerUtxo = 5;
 
 int _normalizeTagColorIndex(int colorIndex) {
-  return ColorUtil.normalizePaletteIndex(colorIndex);
+  return WalletVisualStyleUtil.normalizePaletteIndex(colorIndex);
 }
 
 class UtxoRepository extends BaseRepository {

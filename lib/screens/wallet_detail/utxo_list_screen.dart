@@ -1,6 +1,23 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
@@ -19,13 +36,13 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
-import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
-import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
-import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
-import 'package:coconut_wallet/widgets/dropdown/utxo_filter_dropdown.dart';
-import 'package:coconut_wallet/widgets/header/utxo_tag_list_widget.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
+import 'package:coconut_wallet/widgets/features/utxo/card/utxo_list_item_card.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_header.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_sticky_header.dart';
+import 'package:coconut_wallet/widgets/features/utxo/dropdown/utxo_filter_dropdown.dart';
+import 'package:coconut_wallet/widgets/features/utxo/header/utxo_tag_list_widget.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -46,7 +63,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   // ──────────────────────────────
   final ScrollController _scrollController = ScrollController();
 
-  final GlobalKey _appBarKey = GlobalKey();
   final GlobalKey _headerKey = GlobalKey();
   final GlobalKey _stickyHeaderKey = GlobalKey();
   final GlobalKey _headerDropdownKey = GlobalKey();
@@ -63,7 +79,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   final ValueNotifier<bool> _dropdownVisible = ValueNotifier(false);
 
   double _topPadding = 0;
-  Size _appBarSize = Size.zero;
 
   Offset _headerDropdownPos = Offset.zero;
   Offset _stickyDropdownPos = Offset.zero;
@@ -156,7 +171,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 semanticChildCount: isEmpty ? 1 : utxos.length,
                 slivers: [
-                  if (isSyncing) const SliverToBoxAdapter(child: LoadingIndicator()),
+                  if (isSyncing) const SliverToBoxAdapter(child: InlineLoadingIndicator()),
                   CupertinoSliverRefreshControl(
                     onRefresh: () async => context.read<UtxoListViewModel>().refetchFromDB(),
                   ),
@@ -186,7 +201,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
-      entireWidgetKey: _appBarKey,
       title: t.utxo_list,
       context: context,
       backgroundColor: context.coconutColors.background,
@@ -300,7 +314,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   key: ValueKey('sticky_$tagKey'),
                   stickyHeaderGlobalKey: _stickyHeaderKey,
                   dropdownGlobalKey: _stickyHeaderDropdownKey,
-                  height: _appBarSize.height,
+                  height: MediaQuery.paddingOf(context).top + kToolbarHeight,
                   isVisible: isVisible,
                   isLoadComplete: _firstLoaded.value,
                   enableDropdown: enableDropdown,
@@ -376,7 +390,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
             children: [
               Expanded(
                 child: _buildSelectionActionButton(
-                  iconPath: 'assets/svg/send.svg',
+                  iconPath: FeatureTransactionIconPath.send,
                   text: t.send,
                   enabled: !hasLockedUtxo,
                   onTap:
@@ -401,26 +415,26 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
                         Navigator.pushNamed(
                           context,
-                          '/send',
-                          arguments: {
-                            'walletId': widget.id,
-                            'sendEntryPoint': SendEntryPoint.walletDetail,
-                            'selectedUtxoList': currentSelectedUtxos,
-                          },
+                          AppRouteNames.send,
+                          arguments: SendRouteArgs(
+                            id: widget.id,
+                            sendEntryPoint: SendEntryPoint.walletDetail,
+                            selectedUtxoList: currentSelectedUtxos,
+                          ),
                         );
                       }),
                 ),
               ),
               Expanded(
                 child: _buildSelectionActionButton(
-                  iconPath: 'assets/svg/tag.svg',
+                  iconPath: FeatureTagIconPath.tag,
                   text: t.utxo_list_screen.tag_apply,
                   onTap: () => _handleActionUtxoSelected(showTagBottomSheet),
                 ),
               ),
               Expanded(
                 child: _buildSelectionActionButton(
-                  iconPath: 'assets/svg/lock_simple.svg',
+                  iconPath: CommonSecurityIconPath.lock,
                   text: t.utxo_list_screen.utxo_locked_button,
                   onTap:
                       () => _handleActionUtxoSelected(() {
@@ -430,7 +444,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               ),
               Expanded(
                 child: _buildSelectionActionButton(
-                  iconPath: 'assets/svg/unlock_simple.svg',
+                  iconPath: CommonSecurityIconPath.unlock,
                   text: t.utxo_list_screen.utxo_unlocked_button,
                   onTap:
                       () => _handleActionUtxoSelected(() {
@@ -474,11 +488,13 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Future<void> showTagBottomSheet() async {
     final selectedUtxoIds = _utxoListKey.currentState?._selectedUtxoIds.toList() ?? [];
 
-    final result = await showModalBottomSheet<TagApplyResult>(
+    final result = await CommonBottomSheets.showBottomSheet_100<TagApplyResult>(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.utxoListTagApplySheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
+      child: TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
     );
 
     if (result == null) return;
@@ -486,6 +502,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
     final mode = result.mode;
     final tagStates = result.tagStates;
+    final hasChanges = result.hasChanges;
 
     if (mode == UtxoTagApplyEditMode.add ||
         mode == UtxoTagApplyEditMode.update ||
@@ -496,6 +513,25 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     }
 
     if (mode == UtxoTagApplyEditMode.changeAppliedTags) {
+      if (!hasChanges) {
+        viewModel.deselectTaggedUtxo();
+
+        setState(() {
+          _utxoListKey.currentState?._selectedUtxoIds.clear();
+          _isSelectionMode = false;
+        });
+
+        if (mounted) {
+          CoconutToast.showToast(
+            context: context,
+            isVisibleIcon: true,
+            iconPath: CommonStateIconPath.circleInfo,
+            text: t.utxo_list_screen.utxo_tag_no_changes,
+          );
+        }
+        return;
+      }
+
       final tagProvider = context.read<UtxoTagProvider>();
 
       await tagProvider.applyTagsToUtxos(
@@ -517,7 +553,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
+          iconPath: CommonStateIconPath.circleInfo,
           text: t.utxo_list_screen.utxo_tag_updated,
         );
       }
@@ -582,12 +618,10 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   void _calculateTopPadding() {
-    final appBarBox = _appBarKey.currentContext?.findRenderObject() as RenderBox?;
     final headerBox = _headerKey.currentContext?.findRenderObject() as RenderBox?;
     final stickyBox = _stickyHeaderKey.currentContext?.findRenderObject() as RenderBox?;
 
     setState(() {
-      _appBarSize = appBarBox?.size ?? Size.zero;
       _topPadding = (headerBox?.size.height ?? 0) - (stickyBox?.size.height ?? 0);
     });
   }
@@ -793,7 +827,7 @@ class _UtxoListState extends State<UtxoList> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/triangle-warning.svg',
+          iconPath: CommonStateIconPath.triangleWarning,
           text: toastText,
           level: CoconutToastLevel.warning,
         );
@@ -801,7 +835,7 @@ class _UtxoListState extends State<UtxoList> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
+          iconPath: CommonStateIconPath.circleInfo,
           text: toastText,
         );
       }
@@ -841,7 +875,7 @@ class _UtxoListState extends State<UtxoList> {
       position: offsetAnimation,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: UtxoItemCard(
+        child: UtxoListItemCard(
           key: Key(utxo.utxoId),
           currentUnit: widget.currentUnit,
           utxo: utxo,
@@ -887,7 +921,11 @@ class _UtxoListState extends State<UtxoList> {
 
   void _openDetailPage(UtxoState utxo, UtxoListViewModel viewModel) async {
     widget.onRemoveDropdown();
-    await Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.walletId});
+    await Navigator.pushNamed(
+      context,
+      AppRouteNames.utxoDetail,
+      arguments: UtxoDetailRouteArgs(utxo: utxo, id: widget.walletId),
+    );
     viewModel.refetchFromDB();
   }
 
@@ -905,13 +943,17 @@ class _UtxoListState extends State<UtxoList> {
         position: AnimationUtil.buildSlideOutAnimation(animation),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: UtxoItemCard(
+          child: UtxoListItemCard(
             key: Key(utxo.utxoId),
             currentUnit: widget.currentUnit,
             utxo: utxo,
             onPressed: () async {
               widget.onRemoveDropdown();
-              await Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.walletId});
+              await Navigator.pushNamed(
+                context,
+                AppRouteNames.utxoDetail,
+                arguments: UtxoDetailRouteArgs(utxo: utxo, id: widget.walletId),
+              );
             },
           ),
         ),

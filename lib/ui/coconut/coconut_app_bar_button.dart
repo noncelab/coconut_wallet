@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
@@ -18,7 +19,6 @@ class CoconutAppBarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
 
     return GestureDetector(
       onTap: isActive ? onPressed : null,
@@ -32,7 +32,7 @@ class CoconutAppBarButton extends StatelessWidget {
         child: Center(
           child: Text(
             text,
-            style: typography.caption.copyWith(
+            style: CoconutTypography.body3_12.copyWith(
               color: isActive ? colors.background : colors.secondaryText,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             ),

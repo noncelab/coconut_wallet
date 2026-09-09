@@ -1,4 +1,17 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -14,12 +27,11 @@ import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_serv
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
-import 'package:coconut_wallet/widgets/dialog.dart';
-
-import 'package:coconut_wallet/widgets/send_amount_header.dart';
-import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.dart';
+import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
+import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -190,20 +202,24 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
           _navigateToTrezorConnectIfNeeded(viewModel);
         }
       default:
-        Navigator.pushNamed(context, '/unsigned-transaction-qr', arguments: {'walletName': viewModel.walletName});
+        Navigator.pushNamed(
+          context,
+          AppRouteNames.unsignedTransactionQr,
+          arguments: UnsignedTransactionQrRouteArgs(walletName: viewModel.walletName),
+        );
     }
   }
 
   void _pushBitBox02SignScreen(SendConfirmViewModel viewModel) {
     Navigator.pushNamed(
       context,
-      '/bitbox02-sign',
-      arguments: {
-        'psbtBase64': viewModel.txWaitingForSign,
-        'walletName': viewModel.walletName,
-        'walletFingerprint': viewModel.walletFingerprint,
-        'isFromSendFlow': true,
-      },
+      AppRouteNames.bitbox02Sign,
+      arguments: BitBox02SignRouteArgs(
+        psbtBase64: viewModel.txWaitingForSign!,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        isFromSendFlow: true,
+      ),
     );
   }
 
@@ -219,6 +235,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
     } else {
       BitBox02Navigator.showConnectScreen(
         context: context,
+        screenName: AnalyticsScreenNames.sendConfirmConnectBitbox02Sheet,
         psbtBase64: viewModel.txWaitingForSign,
         walletName: viewModel.walletName,
         walletFingerprint: viewModel.walletFingerprint,
@@ -231,14 +248,14 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
     final lastConnected = TrezorDevice.lastConnected!;
     Navigator.pushNamed(
       context,
-      '/trezor-sign',
-      arguments: {
-        'psbtBase64': viewModel.txWaitingForSign,
-        'walletName': viewModel.walletName,
-        'walletFingerprint': viewModel.walletFingerprint,
-        'isFromSendFlow': true,
-        'transport': lastConnected.transport.name,
-      },
+      AppRouteNames.trezorSign,
+      arguments: TrezorSignRouteArgs(
+        psbtBase64: viewModel.txWaitingForSign!,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        isFromSendFlow: true,
+        transport: lastConnected.transport.name,
+      ),
     );
   }
 

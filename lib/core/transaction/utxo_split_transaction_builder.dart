@@ -660,7 +660,7 @@ class UtxoSplitTransactionBuilder {
             recipients: recipients,
             feeRate: feeRate,
             changeDerivationPath: changeDerivationPath,
-            walletListItemBase: walletListItemBase,
+            walletItemBase: walletListItemBase,
             scriptPathPolicy: _scriptPathPolicy,
           ),
         );
@@ -720,7 +720,7 @@ class UtxoSplitTransactionBuilder {
             recipients: request.recipients,
             feeRate: request.feeRate,
             changeDerivationPath: request.changeDerivationPath,
-            walletListItemBase: request.walletListItemBase,
+            walletItemBase: request.walletItemBase,
             isFeeSubtractedFromAmount: true,
             isUtxoFixed: true,
             scriptPathPolicy: request.scriptPathPolicy,
@@ -778,7 +778,7 @@ class _SplitBuildIsolateRequest {
   final Map<String, int> recipients;
   final double feeRate;
   final String changeDerivationPath;
-  final WalletItemBase walletListItemBase;
+  final WalletItemBase walletItemBase;
   final Policy? scriptPathPolicy;
 
   const _SplitBuildIsolateRequest({
@@ -787,7 +787,7 @@ class _SplitBuildIsolateRequest {
     required this.recipients,
     required this.feeRate,
     required this.changeDerivationPath,
-    required this.walletListItemBase,
+    required this.walletItemBase,
     required this.scriptPathPolicy,
   });
 }

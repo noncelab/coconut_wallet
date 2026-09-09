@@ -31,21 +31,20 @@ class CpfpBuilderCreator {
   /// 부모 tx의 hash (고정값 사용)
   static const String pendingTxHash = 'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4';
 
-  final WalletItemBase _walletListItemBase;
+  final WalletItemBase _walletItemBase;
   late final List<String> receiveAddressList = [];
   late final List<String> changeAddressList = [];
   late final String derivationPathPrefix;
 
-  CpfpBuilderCreator(this._walletListItemBase) {
+  CpfpBuilderCreator(this._walletItemBase) {
     NetworkType.setNetworkType(NetworkType.regtest);
 
     for (int i = 0; i < 10; i++) {
-      receiveAddressList.add(_walletListItemBase.walletBase.getAddress(i));
-      changeAddressList.add(_walletListItemBase.walletBase.getAddress(i, isChange: true));
+      receiveAddressList.add(_walletItemBase.walletBase.getAddress(i));
+      changeAddressList.add(_walletItemBase.walletBase.getAddress(i, isChange: true));
     }
 
-    derivationPathPrefix =
-        _walletListItemBase.walletType == WalletType.singleSignature ? "m/84'/1'/0'" : "m/48'/1'/0'/2'";
+    derivationPathPrefix = _walletItemBase.walletType == WalletType.singleSignature ? "m/84'/1'/0'" : "m/48'/1'/0'/2'";
   }
 
   bool isMyAddress(String address, {bool isChange = false}) {
@@ -128,7 +127,7 @@ class CpfpBuilderCreator {
       pendingTx,
       CpfpBuilder(
         preparer: preparer,
-        walletListItemBase: _walletListItemBase,
+        walletItemBase: _walletItemBase,
         nextReceiveAddress: nextReceiveAddress,
         minimumFeeRate: minimumNetworkFeeRate,
         additionalSpendable: additionalUtxos,

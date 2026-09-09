@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -27,6 +29,9 @@ import 'package:tuple/tuple.dart';
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final WalletPreferencesRepository _walletPreferencesRepository;
+  late final CcosFeatureActivationStore _ccosFeatureActivationStore;
+  late final CcosFeatureEntitlementStore _ccosFeatureEntitlementStore;
+  static const CcosFeatureAvailabilityResolver _ccosAvailabilityResolver = CcosFeatureAvailabilityResolver();
 
   // FeatureSettingsProvider는 선택적으로 주입받을 수 있음 (Facade 패턴)
   // 주입되지 않으면 내부에서 직접 관리 (하위 호환성)
@@ -119,12 +124,31 @@ class PreferenceProvider extends ChangeNotifier {
   late CoconutThemeVariant _themeVariant;
   CoconutThemeVariant get themeVariant => _themeVariant;
 
+  late DateTime? _openStoreIntroCardHiddenUntil;
+  Set<String> _ccosActivatedFeatureIds = <String>{};
+  Map<String, CcosFeatureEntitlement> _ccosEntitlements = <String, CcosFeatureEntitlement>{};
+  bool _isCcosRuntimeReady = false;
+  bool get shouldShowOpenStoreIntroCard {
+    // CCOS 기능을 활성화한 사용자는 카드를 더이상 띄우지 않는다.
+    if (getCcosFeatureAvailability(CcosFeatureRegistrySource.featuredListing.id).isActivated) {
+      return false;
+    }
+    // 활성화하지 않은 사용자는 30일 재노출 로직 적용
+    final hiddenUntil = _openStoreIntroCardHiddenUntil;
+    return hiddenUntil == null || DateTime.now().isAfter(hiddenUntil);
+  }
+
+  bool get isCcosRuntimeReady => _isCcosRuntimeReady;
+
   PreferenceProvider(
     this._walletPreferencesRepository,
     this._electrumServerProvider,
     this._blockExplorerProvider, {
     FeatureSettingsProvider? featureSettingsProvider,
   }) : _featureSettingsProvider = featureSettingsProvider {
+    _ccosFeatureActivationStore = SharedPrefsCcosFeatureActivationStore(_sharedPrefs);
+    _ccosFeatureEntitlementStore = SharedPrefsCcosFeatureEntitlementStore(_sharedPrefs);
+
     // 통화 설정 초기화
     _initializeFiat();
     _initializeLanguageFromSystem();
@@ -157,6 +181,9 @@ class PreferenceProvider extends ChangeNotifier {
     _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
     _walletListVisibleFiats = _loadWalletListVisibleFiats();
     _themeVariant = _loadThemeVariant();
+    _openStoreIntroCardHiddenUntil = _loadOpenStoreIntroCardHiddenUntil();
+
+    Future<void>.microtask(loadCcosRuntimeState);
   }
 
   /// 통화 설정 초기화
@@ -586,6 +613,94 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setString(SharedPrefKeys.kThemeVariant, variant.name);
     updateSystemBarColor(variant);
     notifyListeners();
+  }
+
+  DateTime? _loadOpenStoreIntroCardHiddenUntil() {
+    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kOpenStoreIntroCardHiddenUntil);
+    if (stored == null || stored.isEmpty) {
+      return null;
+    }
+    return DateTime.tryParse(stored);
+  }
+
+  static const Duration _openStoreIntroCardHiddenDuration = kDebugMode ? Duration(minutes: 1) : Duration(days: 30);
+
+  Future<void> hideOpenStoreIntroCardForOneMonth() async {
+    _openStoreIntroCardHiddenUntil = DateTime.now().add(_openStoreIntroCardHiddenDuration);
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kOpenStoreIntroCardHiddenUntil,
+      _openStoreIntroCardHiddenUntil!.toIso8601String(),
+    );
+    notifyListeners();
+  }
+
+  Future<void> loadCcosRuntimeState() async {
+    _ccosActivatedFeatureIds = await _ccosFeatureActivationStore.loadActivatedFeatureIds();
+    _ccosEntitlements = await _ccosFeatureEntitlementStore.loadEntitlements();
+    _isCcosRuntimeReady = true;
+    notifyListeners();
+  }
+
+  CcosFeatureAvailability getCcosFeatureAvailability(String featureId) {
+    final listing = CcosFeatureRegistrySource.findListingById(featureId);
+    if (listing == null) {
+      return const CcosFeatureAvailability(
+        featureId: '',
+        isVisible: false,
+        isActivated: false,
+        isEntitled: false,
+        isAvailable: false,
+      );
+    }
+
+    return _ccosAvailabilityResolver.resolve(
+      listing: listing,
+      activatedFeatureIds: _ccosActivatedFeatureIds,
+      entitlements: _ccosEntitlements,
+    );
+  }
+
+  String? getCcosFeatureStatusLabel(String featureId) {
+    final availability = getCcosFeatureAvailability(featureId);
+    if (availability.isActivated) return t.ccos.feature_status.activated;
+    if (availability.isEntitled) return t.ccos.feature_status.purchased;
+    return null;
+  }
+
+  Future<void> activateCcosFeature(String featureId) async {
+    await _ccosFeatureActivationStore.setActivated(featureId, true);
+    _ccosActivatedFeatureIds = await _ccosFeatureActivationStore.loadActivatedFeatureIds();
+    notifyListeners();
+  }
+
+  Future<void> deactivateCcosFeature(String featureId) async {
+    await _ccosFeatureActivationStore.setActivated(featureId, false);
+    _ccosActivatedFeatureIds = await _ccosFeatureActivationStore.loadActivatedFeatureIds();
+    notifyListeners();
+  }
+
+  Future<void> markCcosFeaturePurchased(
+    String featureId, {
+    CcosFeatureEntitlementSource source = CcosFeatureEntitlementSource.localSnapshot,
+  }) async {
+    _ccosEntitlements = Map<String, CcosFeatureEntitlement>.from(_ccosEntitlements)
+      ..[featureId] = CcosFeatureEntitlement(
+        featureId: featureId,
+        isEntitled: true,
+        source: source,
+        updatedAt: DateTime.now(),
+      );
+
+    await _ccosFeatureEntitlementStore.saveEntitlements(_ccosEntitlements.values);
+    notifyListeners();
+  }
+
+  Future<void> purchaseAndActivateCcosFeature(
+    String featureId, {
+    CcosFeatureEntitlementSource source = CcosFeatureEntitlementSource.localSnapshot,
+  }) async {
+    await markCcosFeaturePurchased(featureId, source: source);
+    await activateCcosFeature(featureId);
   }
 
   List<FiatCode> _loadWalletListVisibleFiats() {

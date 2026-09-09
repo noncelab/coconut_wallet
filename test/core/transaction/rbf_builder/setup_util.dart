@@ -153,7 +153,7 @@ class RbfBuilderCreator {
       pendingTx,
       RbfBuilder(
         preparer: preparer,
-        walletListItemBase: _walletListItemBase,
+        walletItemBase: _walletListItemBase,
         nextChangeAddress: WalletAddress(changeAddressList[1], "$derivationPathPrefix/1/1", 1, true, false, 0, 0, 0),
         additionalSpendable: additionalUtxos,
       ),

@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 
 /// Navigation helpers for BitBox02 connect/pairing flow.
@@ -12,6 +12,7 @@ class BitBox02Navigator {
   /// [BitBox02Device.lastConnected] and skips the pairing flow.
   static Future<T?> showConnectScreen<T>({
     required BuildContext context,
+    required String screenName,
     String? psbtBase64,
     String? walletName,
     String? walletFingerprint,
@@ -20,6 +21,7 @@ class BitBox02Navigator {
     return CommonBottomSheets.showCustomHeightBottomSheet<T>(
       context: context,
       heightRatio: 0.9,
+      screenName: screenName,
       child: BitBox02ConnectScreen(
         importSource: WalletImportSource.bitbox02,
         psbtBase64: psbtBase64,

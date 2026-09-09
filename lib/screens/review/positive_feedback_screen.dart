@@ -1,4 +1,5 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
@@ -20,7 +21,6 @@ class PositiveFeedbackScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final typography = context.coconutTypography;
 
     return PopScope(
       canPop: false,
@@ -34,7 +34,7 @@ class PositiveFeedbackScreen extends StatelessWidget {
         backgroundColor: colors.background,
         body: SafeArea(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.coconutSpacing.md),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -42,18 +42,13 @@ class PositiveFeedbackScreen extends StatelessWidget {
                 children: [
                   Text(
                     t.positive_feedback_screen.text1,
-                    style: typography.title.copyWith(
-                      color: colors.primaryText,
-                      fontFamily: 'SpaceGrotesk',
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: CoconutTypography.heading2_28_NumberBold.copyWith(color: colors.primaryText),
                   ),
                   const SizedBox(height: 20),
                   FittedBox(
                     child: Text(
                       t.positive_feedback_screen.text2,
-                      style: typography.body.copyWith(color: colors.primaryText),
+                      style: CoconutTypography.body1_16.setColor(colors.primaryText),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -65,15 +60,11 @@ class PositiveFeedbackScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: colors.backgroundHighlight,
+                        color: colors.brandAccentBackground,
                       ),
                       child: Text(
                         t.positive_feedback_screen.text3,
-                        style: typography.caption.copyWith(
-                          color: colors.backgroundHighlightText,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: CoconutTypography.body2_14_Bold.setColor(colors.brandAccentForeground),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -86,15 +77,11 @@ class PositiveFeedbackScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: colors.actionButtonBackground,
+                        color: colors.buttonPrimaryBackground,
                       ),
                       child: Text(
                         t.positive_feedback_screen.text4,
-                        style: typography.caption.copyWith(
-                          color: colors.actionButtonText,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: CoconutTypography.body2_14_Bold.setColor(colors.buttonPrimaryForeground),
                         textAlign: TextAlign.center,
                       ),
                     ),

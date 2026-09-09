@@ -1,0 +1,42 @@
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutToastLevel, CoconutPopup;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+
+class ErrorTooltip extends StatelessWidget {
+  final bool isShown;
+  final String errorMessage;
+
+  const ErrorTooltip({super.key, required this.isShown, required this.errorMessage});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: isShown ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.center,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: CoconutToolTip(
+          richText: RichText(
+            text: TextSpan(
+              text: errorMessage,
+              style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+            ),
+          ),
+          showIcon: true,
+          tooltipType: CoconutTooltipType.fixed,
+          tooltipState: CoconutTooltipState.error,
+          icon: SvgPicture.asset(
+            CommonStateIconPath.triangleWarning,
+            colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+          ),
+        ),
+      ),
+    );
+  }
+}

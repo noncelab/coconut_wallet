@@ -1,5 +1,8 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -7,10 +10,10 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/connected/trezor_sign_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/widgets/trezor_connect_shared_widgets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/wallet/trezor/trezor_connect_shared_widgets.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -86,7 +89,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
       if (widget.isFromSendFlow) {
         final sendInfoProvider = context.read<SendInfoProvider>();
         sendInfoProvider.setSignedResult(_viewModel.signedPsbt);
-        Navigator.pushReplacementNamed(context, '/broadcasting');
+        Navigator.pushReplacementNamed(context, AppRouteNames.broadcasting, arguments: const BroadcastingRouteArgs());
       } else {
         Navigator.pop(context, {'signedPsbt': _viewModel.signedPsbt});
       }
@@ -277,7 +280,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
       final color = context.coconutColors.success;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        'assets/svg/circle-check-outline.svg',
+        CommonFormIconPath.circleCheckOutline,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         width: 16,
         height: 16,
@@ -288,7 +291,7 @@ class _TrezorSignScreenState extends State<TrezorSignScreen> with SingleTickerPr
       final color = context.coconutColors.danger;
       stateColor = color;
       stateIcon = SvgPicture.asset(
-        'assets/svg/triangle-warning.svg',
+        CommonStateIconPath.triangleWarning,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         width: 16,
         height: 16,

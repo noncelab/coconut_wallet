@@ -1,15 +1,26 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutTextField;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/ripple_effect.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class BroadcastingCompleteScreen extends StatefulWidget {
   final int id;
@@ -23,7 +34,7 @@ class BroadcastingCompleteScreen extends StatefulWidget {
 
 class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
-  final TextEditingController _memoController = TextEditingController();
+  final TextEditingController _memoController = LiteralTextEditingController();
   final FocusNode _memoFocusNode = FocusNode();
   final GlobalKey _memoTagsKey = GlobalKey();
   double _memoTagsHeight = 0;
@@ -59,7 +70,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                           ? MediaQuery.of(context).size.height * 0.1
                           : MediaQuery.of(context).size.height * 0.3,
                 ),
-                SvgPicture.asset('assets/svg/completion-check.svg'),
+                SvgPicture.asset(CommonStateIconPath.completionCheck),
                 CoconutLayout.spacing_400h,
                 Text(
                   t.broadcasting_complete_screen.complete,
@@ -127,7 +138,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
-        iconPath: 'assets/svg/triangle-warning.svg',
+        iconPath: CommonStateIconPath.triangleWarning,
         text: t.toast.memo_update_failed,
         level: CoconutToastLevel.warning,
       );
@@ -187,7 +198,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                'assets/svg/pen.svg',
+                CommonActionIconPath.editOutlined,
                 colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
@@ -226,7 +237,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                'assets/svg/pen.svg',
+                CommonActionIconPath.editOutlined,
                 colorFilter: ColorFilter.mode(context.coconutColors.inputPlaceholder, BlendMode.srcIn),
                 width: Sizes.size12,
               ),
@@ -240,14 +251,16 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                     focusNode: _memoFocusNode,
                     maxLines: 1,
                     textAlignVertical: TextAlignVertical.center,
-                    style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                    style: CoconutTextField.withDefaultFontFeatures(
+                      CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                    ),
                     cursorColor: context.coconutColors.primaryText,
                     decoration: InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                       hintText: t.broadcasting_complete_screen.memo_placeholder,
-                      hintStyle: CoconutTypography.body1_16.setColor(context.coconutColors.inputPlaceholder),
+                      hintStyle: CoconutTypography.body2_14.setColor(context.coconutColors.inputPlaceholder),
                     ),
                   ),
                 ),
@@ -268,10 +281,10 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
           _memoController.text = text;
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sizes.size8, vertical: Sizes.size4),
+          padding: const EdgeInsets.all(Sizes.size8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Sizes.size14),
-            border: Border.all(width: 1, color: context.coconutColors.tertiaryText),
+            border: Border.all(width: 1, color: context.coconutColors.border),
           ),
           child: Text(text, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText)),
         ),
