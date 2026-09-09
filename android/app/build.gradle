@@ -131,6 +131,17 @@ flutter {
     source '../..'
 }
 
+configurations {
+    // firebase-analytics(via play-services-measurement-api)의 transitive dependency로 딸려오는
+    // play-services-ads-identifier를 클래스패스에서 완전히 제외한다.
+    // tools:node="remove"만으로는 이 permission이 매니페스트 병합 시 재주입되어
+    // Play Console에서 AD_ID permission이 남아있는 것으로 감지되는 문제가 있다.
+    // (참고: https://github.com/firebase/flutterfire/issues/12922)
+    all {
+        exclude group: 'com.google.android.gms', module: 'play-services-ads-identifier'
+    }
+}
+
 dependencies {
     implementation "androidx.core:core-splashscreen:1.0.0"
     implementation(name: 'bitboxbridge', ext: 'aar')
