@@ -16,24 +16,26 @@ class HotWalletUnlockService {
 
   final HotWalletSecretRepository _secretRepository;
 
+  Future<bool> authenticatePreferBiometrics(BuildContext context) async {
+    final authProvider = context.read<AuthProvider>();
+    if (!authProvider.isAuthEnabled) return true;
+    final biometricsSucceeded = await authProvider.isBiometricsAuthValid();
+    if (biometricsSucceeded) return true;
+    if (!context.mounted) return false;
+    final pinVerified = await CommonBottomSheets.showCustomHeightBottomSheet<bool>(
+      context: context,
+      heightRatio: 0.9,
+      child: const PinCheckScreen(allowBiometrics: false),
+    );
+    return pinVerified == true;
+  }
+
   Future<HotWalletPlaintext?> unlockPreferBiometrics({
     required BuildContext context,
     required String storageKey,
     VoidCallback? onDecrypting,
   }) async {
-    final authProvider = context.read<AuthProvider>();
-    if (authProvider.isAuthEnabled) {
-      final biometricsSucceeded = await authProvider.isBiometricsAuthValid();
-      if (!biometricsSucceeded) {
-        if (!context.mounted) return null;
-        final pinVerified = await CommonBottomSheets.showCustomHeightBottomSheet<bool>(
-          context: context,
-          heightRatio: 0.9,
-          child: const PinCheckScreen(allowBiometrics: false),
-        );
-        if (pinVerified != true) return null;
-      }
-    }
+    if (!await authenticatePreferBiometrics(context)) return null;
 
     onDecrypting?.call();
     if (onDecrypting != null) {

@@ -436,8 +436,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
 
   Future<void> _signHotWallet(SendConfirmViewModel viewModel) async {
     if (_isLocalSigning) return;
-    final storageKey = viewModel.hotWalletSecretStorageKey;
-    if (storageKey == null) {
+    if (!viewModel.isHotWallet) {
       await _showLocalSignFailure();
       return;
     }
@@ -452,9 +451,9 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     if (!mounted) return;
     var shouldRestore = true;
     try {
-      _HotWalletSigningCredentials? credentials;
+      String? passphrase;
       if (requiresPassphrase) {
-        credentials = await CommonBottomSheets.showBottomSheet<_HotWalletSigningCredentials>(
+        passphrase = await CommonBottomSheets.showBottomSheet<String>(
           context: context,
           title: t.send_confirm_screen.passphrase_input_title,
           showCloseButton: true,
@@ -462,34 +461,25 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
           showDragHandle: true,
           titlePadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
           child: _HotWalletPassphraseInputSheet(
-            storageKey: storageKey,
             requiresAuthentication: requiresAuthentication,
             validatePassphrase:
-                (mnemonic, passphrase) =>
-                    viewModel.validateHotWalletPassphrase(mnemonic: mnemonic, passphrase: passphrase),
+                (passphrase) =>
+                    AppGuard.runWithoutPrivacyScreen(() => viewModel.validateHotWalletPassphrase(passphrase)),
             onAuthenticationStarted: () => _enterAuthenticationStage(requiresAuthentication: true),
             onPassphraseInputResumed: _resumePassphraseInput,
           ),
         );
-        if (!mounted || credentials == null) return;
+        if (!mounted || passphrase == null) return;
         if (!requiresAuthentication) {
           await _enterAuthenticationStage(requiresAuthentication: false);
           if (!mounted) return;
         }
       } else {
-        final plaintext = await AppGuard.runWithoutPrivacyScreen(
-          () => HotWalletUnlockService().unlockPreferBiometrics(
-            context: context,
-            storageKey: storageKey,
-            onDecrypting: () {
-              if (mounted) context.loaderOverlay.show();
-            },
-          ),
+        final authenticated = await AppGuard.runWithoutPrivacyScreen(
+          () => HotWalletUnlockService().authenticatePreferBiometrics(context),
         );
         if (!mounted) return;
-        context.loaderOverlay.hide();
-
-        if (plaintext == null) {
+        if (!authenticated) {
           await showInfoDialog(
             context,
             context.read<PreferenceProvider>().language,
@@ -498,7 +488,6 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
           );
           return;
         }
-        credentials = _HotWalletSigningCredentials(mnemonic: plaintext.mnemonic, passphrase: plaintext.passphrase);
       }
 
       setState(() => _signingStage = _HotWalletSigningStage.signing);
@@ -507,7 +496,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
       if (!mounted) return;
       final signingAnimationStartedAt = DateTime.now();
       _signatureController.repeat();
-      await viewModel.signHotWallet(mnemonic: credentials.mnemonic, passphrase: credentials.passphrase);
+      await AppGuard.runWithoutPrivacyScreen(() => viewModel.signHotWallet(passphrase: passphrase));
       if (!mounted) return;
       final signingAnimationElapsed = DateTime.now().difference(signingAnimationStartedAt);
       const minimumSigningAnimationDuration = Duration(milliseconds: 1500);
@@ -730,25 +719,16 @@ class _SigningContentTransition extends StatelessWidget {
   );
 }
 
-class _HotWalletSigningCredentials {
-  const _HotWalletSigningCredentials({required this.mnemonic, required this.passphrase});
-
-  final String mnemonic;
-  final String passphrase;
-}
-
 class _HotWalletPassphraseInputSheet extends StatefulWidget {
   const _HotWalletPassphraseInputSheet({
-    required this.storageKey,
     required this.requiresAuthentication,
     required this.validatePassphrase,
     required this.onAuthenticationStarted,
     required this.onPassphraseInputResumed,
   });
 
-  final String storageKey;
   final bool requiresAuthentication;
-  final Future<bool> Function(String mnemonic, String passphrase) validatePassphrase;
+  final Future<bool> Function(String passphrase) validatePassphrase;
   final Future<void> Function() onAuthenticationStarted;
   final VoidCallback onPassphraseInputResumed;
 
@@ -785,22 +765,11 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
     if (widget.requiresAuthentication) {
       await widget.onAuthenticationStarted();
       if (!mounted) return;
-    }
-
-    try {
-      final plaintext = await AppGuard.runWithoutPrivacyScreen(
-        () => HotWalletUnlockService().unlockPreferBiometrics(
-          context: context,
-          storageKey: widget.storageKey,
-          onDecrypting: () {
-            if (mounted) context.loaderOverlay.show();
-          },
-        ),
+      final authenticated = await AppGuard.runWithoutPrivacyScreen(
+        () => HotWalletUnlockService().authenticatePreferBiometrics(context),
       );
       if (!mounted) return;
-
-      if (plaintext == null) {
-        context.loaderOverlay.hide();
+      if (!authenticated) {
         setState(() => _isSubmitting = false);
         await showInfoDialog(
           context,
@@ -811,9 +780,12 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
         widget.onPassphraseInputResumed();
         return;
       }
+    }
 
+    try {
       final enteredPassphrase = _controller.text;
-      final isMatchingWallet = await widget.validatePassphrase(plaintext.mnemonic, enteredPassphrase);
+      context.loaderOverlay.show();
+      final isMatchingWallet = await widget.validatePassphrase(enteredPassphrase);
       if (!mounted) return;
       context.loaderOverlay.hide();
       if (!isMatchingWallet) {
@@ -826,7 +798,7 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
         return;
       }
 
-      Navigator.pop(context, _HotWalletSigningCredentials(mnemonic: plaintext.mnemonic, passphrase: enteredPassphrase));
+      Navigator.pop(context, enteredPassphrase);
     } catch (_) {
       if (!mounted) return;
       context.loaderOverlay.hide();

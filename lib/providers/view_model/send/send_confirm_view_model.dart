@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
@@ -9,76 +7,21 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/services/security/hot_wallet_signing_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/foundation.dart';
-
-typedef _HotWalletSigningArguments =
-    ({
-      String mnemonic,
-      String passphrase,
-      String addressTypeName,
-      int accountIndex,
-      String expectedExtendedPublicKey,
-      String unsignedPsbt,
-    });
-
-typedef _HotWalletPassphraseValidationArguments =
-    ({String mnemonic, String passphrase, String addressTypeName, int accountIndex, String expectedExtendedPublicKey});
-
-bool _validateHotWalletPassphraseInBackground(_HotWalletPassphraseValidationArguments arguments) {
-  final mnemonicBytes = Uint8List.fromList(utf8.encode(arguments.mnemonic));
-  final passphraseBytes = Uint8List.fromList(utf8.encode(arguments.passphrase));
-  SingleSignatureVault? vault;
-  try {
-    vault = SingleSignatureVault.fromMnemonic(
-      mnemonicBytes,
-      passphrase: passphraseBytes,
-      addressType: AddressType.getAddressTypeFromName(arguments.addressTypeName),
-      accountIndex: arguments.accountIndex,
-    );
-    return vault.keyStore.extendedPublicKey.serialize() == arguments.expectedExtendedPublicKey;
-  } finally {
-    vault?.keyStore.wipeSeed();
-    mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
-    passphraseBytes.fillRange(0, passphraseBytes.length, 0);
-  }
-}
-
-String _signHotWalletInBackground(_HotWalletSigningArguments arguments) {
-  final mnemonicBytes = Uint8List.fromList(utf8.encode(arguments.mnemonic));
-  final passphraseBytes = Uint8List.fromList(utf8.encode(arguments.passphrase));
-  SingleSignatureVault? vault;
-  try {
-    final addressType = AddressType.getAddressTypeFromName(arguments.addressTypeName);
-    vault = SingleSignatureVault.fromMnemonic(
-      mnemonicBytes,
-      passphrase: passphraseBytes,
-      addressType: addressType,
-      accountIndex: arguments.accountIndex,
-    );
-    if (vault.keyStore.extendedPublicKey.serialize() != arguments.expectedExtendedPublicKey) {
-      throw StateError('The signer does not match this wallet');
-    }
-
-    final signedPsbt = vault.addSignatureToPsbt(arguments.unsignedPsbt);
-    Psbt.parse(signedPsbt).getSignedTransaction(addressType);
-    return signedPsbt;
-  } finally {
-    vault?.keyStore.wipeSeed();
-    mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
-    passphraseBytes.fillRange(0, passphraseBytes.length, 0);
-  }
-}
 
 class SendConfirmViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
+  final HotWalletSigningService _hotWalletSigningService;
   late WalletItemBase _walletListItemBase;
   Psbt? _unsignedPsbt;
   int? _totalUsedAmount;
   late final double _totalSendAmount;
 
-  SendConfirmViewModel(this._sendInfoProvider, this._walletProvider) {
+  SendConfirmViewModel(this._sendInfoProvider, this._walletProvider, {HotWalletSigningService? hotWalletSigningService})
+    : _hotWalletSigningService = hotWalletSigningService ?? HotWalletSigningService() {
     _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _setTotalSendAmount();
   }
@@ -102,8 +45,6 @@ class SendConfirmViewModel extends ChangeNotifier {
   bool get isHotWallet => _walletListItemBase.hasLocalKey && _walletListItemBase.hotWalletMetadata != null;
   bool get shouldEnterPassphraseWhenSigning =>
       _walletListItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false;
-  String? get hotWalletSecretStorageKey => _walletListItemBase.hotWalletMetadata?.secureStorageKey;
-
   String get walletFingerprint {
     final wallet = _walletListItemBase.walletBase;
     if (wallet is SingleSignatureWallet) {
@@ -174,7 +115,7 @@ class SendConfirmViewModel extends ChangeNotifier {
     _sendInfoProvider.setTxWaitingForSign(_unsignedPsbt!.serialize());
   }
 
-  Future<void> signHotWallet({required String mnemonic, required String passphrase}) async {
+  Future<void> signHotWallet({String? passphrase}) async {
     final metadata = _walletListItemBase.hotWalletMetadata;
     final watchOnlyWallet = _walletListItemBase.walletBase;
     if (!isHotWallet || metadata == null || watchOnlyWallet is! SingleSignatureWallet || _unsignedPsbt == null) {
@@ -183,8 +124,8 @@ class SendConfirmViewModel extends ChangeNotifier {
 
     final unsignedPsbt = _unsignedPsbt!.serialize();
     _sendInfoProvider.setTxWaitingForSign(unsignedPsbt);
-    final signedPsbt = await compute(_signHotWalletInBackground, (
-      mnemonic: mnemonic,
+    final signedPsbt = await _hotWalletSigningService.sign((
+      storageKey: metadata.secureStorageKey,
       passphrase: passphrase,
       addressTypeName: watchOnlyWallet.addressType.name,
       accountIndex: metadata.accountIndex,
@@ -194,19 +135,19 @@ class SendConfirmViewModel extends ChangeNotifier {
     _sendInfoProvider.setSignedResult(signedPsbt);
   }
 
-  Future<bool> validateHotWalletPassphrase({required String mnemonic, required String passphrase}) async {
+  Future<bool> validateHotWalletPassphrase(String passphrase) async {
     final metadata = _walletListItemBase.hotWalletMetadata;
     final wallet = _walletListItemBase.walletBase;
     if (!isHotWallet || metadata == null || wallet is! SingleSignatureWallet) {
       return false;
     }
 
-    return compute(_validateHotWalletPassphraseInBackground, (
-      mnemonic: mnemonic,
+    return _hotWalletSigningService.validatePassphrase(
+      storageKey: metadata.secureStorageKey,
       passphrase: passphrase,
       addressTypeName: wallet.addressType.name,
       accountIndex: metadata.accountIndex,
       expectedExtendedPublicKey: wallet.keyStore.extendedPublicKey.serialize(),
-    ));
+    );
   }
 }
