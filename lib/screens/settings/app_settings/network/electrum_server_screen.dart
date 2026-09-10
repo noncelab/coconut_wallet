@@ -106,16 +106,16 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           description: t.settings_screen.electrum_server.popup.untrusted_certificate_description(
             fingerprint: fingerprint,
           ),
-          onTapRight: () async {
-            final navigator = Navigator.of(dialogContext);
-            final success = await _viewModel.trustPendingCertificateAndConnect();
-            if (!mounted) return;
-            navigator.pop();
-            if (success) {
-              vibrateLight();
-            } else {
-              vibrateLightDouble();
-            }
+          onTapRight: () {
+            Navigator.of(dialogContext).pop();
+            _viewModel.trustPendingCertificateAndConnect().then((success) {
+              if (!mounted) return;
+              if (success) {
+                vibrateLight();
+              } else {
+                vibrateLightDouble();
+              }
+            });
           },
           onTapLeft: () {
             _viewModel.cancelPendingCertificateTrust();
