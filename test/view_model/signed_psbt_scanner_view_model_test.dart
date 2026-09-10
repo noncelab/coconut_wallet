@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
-import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
-import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/air-gapped/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _TestWallet extends WalletBase {
