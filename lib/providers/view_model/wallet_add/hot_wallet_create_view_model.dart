@@ -31,6 +31,7 @@ class HotWalletCreateResult {
   const HotWalletCreateResult({
     required this.walletId,
     required this.walletName,
+    required this.descriptor,
     required this.mnemonic,
     required this.passphrase,
     required this.enterPassphraseWhenSigning,
@@ -38,6 +39,7 @@ class HotWalletCreateResult {
 
   final int walletId;
   final String walletName;
+  final String descriptor;
   final Uint8List mnemonic;
   final Uint8List passphrase;
   final bool enterPassphraseWhenSigning;
@@ -121,6 +123,7 @@ class HotWalletCreateViewModel extends ChangeNotifier {
       return HotWalletCreateResult(
         walletId: addedWallet.id,
         walletName: walletName,
+        descriptor: material.descriptor,
         mnemonic: Uint8List.fromList(mnemonic),
         passphrase: Uint8List.fromList(passphraseBytes),
         enterPassphraseWhenSigning: enterPassphraseWhenSigning,

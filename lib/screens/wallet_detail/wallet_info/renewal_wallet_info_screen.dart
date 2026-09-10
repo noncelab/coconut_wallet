@@ -731,6 +731,7 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
       arguments: {
         'walletName': viewModel.walletItemBase.name,
         'walletId': widget.id,
+        'descriptor': viewModel.walletItemBase.descriptor,
         'secureStorageKey': metadata.secureStorageKey,
         'enterPassphraseWhenSigning': metadata.enterPassphraseWhenSigning,
         'showWalletCreatedIntro': false,

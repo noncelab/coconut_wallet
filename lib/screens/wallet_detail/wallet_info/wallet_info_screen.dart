@@ -689,6 +689,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       arguments: {
         'walletName': viewModel.walletItemBase.name,
         'walletId': widget.id,
+        'descriptor': viewModel.walletItemBase.descriptor,
         'secureStorageKey': metadata.secureStorageKey,
         'enterPassphraseWhenSigning': metadata.enterPassphraseWhenSigning,
         'showWalletCreatedIntro': false,

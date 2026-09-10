@@ -114,6 +114,7 @@ void main() {
         final descriptor = SingleSignatureVault.fromSeed(seed).descriptor;
         seed.wipe();
         expect(walletProvider.addedWallet!.descriptor, descriptor);
+        expect(result.descriptor, descriptor);
 
         result.clearSensitiveBytes();
         viewModel.dispose();
@@ -138,7 +139,9 @@ void main() {
       expect(utf8.decode(result.passphrase), 'sign-time-passphrase');
       final resultPassphrase = Uint8List.fromList(result.passphrase);
       final seed = Seed.fromMnemonic(secretRepository.mnemonic!, passphrase: resultPassphrase);
-      expect(walletProvider.addedWallet!.descriptor, SingleSignatureVault.fromSeed(seed).descriptor);
+      final descriptor = SingleSignatureVault.fromSeed(seed).descriptor;
+      expect(walletProvider.addedWallet!.descriptor, descriptor);
+      expect(result.descriptor, descriptor);
       seed.wipe();
       resultPassphrase.fillRange(0, resultPassphrase.length, 0);
       result.clearSensitiveBytes();

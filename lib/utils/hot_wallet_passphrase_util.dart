@@ -1,7 +1,17 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:flutter/foundation.dart';
+
+typedef _PassphraseMatchArguments = ({String mnemonic, String passphrase, String descriptor});
+
+bool _doesPassphraseMatchDescriptorInBackground(_PassphraseMatchArguments arguments) {
+  return doesPassphraseMatchDescriptor(
+    mnemonic: arguments.mnemonic,
+    passphrase: arguments.passphrase,
+    descriptor: arguments.descriptor,
+  );
+}
 
 bool doesPassphraseMatchDescriptor({required String mnemonic, required String passphrase, required String descriptor}) {
   final mnemonicBytes = Uint8List.fromList(utf8.encode(mnemonic));
@@ -14,4 +24,16 @@ bool doesPassphraseMatchDescriptor({required String mnemonic, required String pa
     mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
     passphraseBytes.fillRange(0, passphraseBytes.length, 0);
   }
+}
+
+Future<bool> doesPassphraseMatchDescriptorAsync({
+  required String mnemonic,
+  required String passphrase,
+  required String descriptor,
+}) {
+  return compute(_doesPassphraseMatchDescriptorInBackground, (
+    mnemonic: mnemonic,
+    passphrase: passphrase,
+    descriptor: descriptor,
+  ));
 }

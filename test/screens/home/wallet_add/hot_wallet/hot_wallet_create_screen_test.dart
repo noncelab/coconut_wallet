@@ -73,6 +73,7 @@ class _ControlledCreateViewModel extends HotWalletCreateViewModel {
 HotWalletCreateResult _result({bool enterPassphraseWhenSigning = false}) => HotWalletCreateResult(
   walletId: 77,
   walletName: '테스트 핫월렛',
+  descriptor: 'wpkh([12345678/84h/1h/0h]tpub-test/<0;1>/*)',
   mnemonic: Uint8List.fromList('abandon about'.codeUnits),
   passphrase: Uint8List.fromList('secret'.codeUnits),
   enterPassphraseWhenSigning: enterPassphraseWhenSigning,
@@ -220,6 +221,7 @@ void main() {
     final arguments = routeArguments! as Map<String, dynamic>;
     expect(arguments['walletId'], 77);
     expect(arguments['walletName'], '테스트 핫월렛');
+    expect(arguments['descriptor'], result.descriptor);
     expect(arguments['mnemonic'], result.mnemonic);
     expect(arguments['passphrase'], result.passphrase);
     expect(arguments['enterPassphraseWhenSigning'], isFalse);

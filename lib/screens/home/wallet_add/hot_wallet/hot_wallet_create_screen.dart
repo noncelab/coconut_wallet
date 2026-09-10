@@ -860,6 +860,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
         arguments: {
           'walletName': result.walletName,
           'walletId': result.walletId,
+          'descriptor': result.descriptor,
           'mnemonic': result.mnemonic,
           'passphrase': result.passphrase,
           'enterPassphraseWhenSigning': result.enterPassphraseWhenSigning,

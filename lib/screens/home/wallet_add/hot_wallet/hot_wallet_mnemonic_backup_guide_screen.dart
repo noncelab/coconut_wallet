@@ -24,6 +24,7 @@ class HotWalletMnemonicBackupGuideScreen extends StatefulWidget {
     super.key,
     required this.walletName,
     required this.walletId,
+    required this.descriptor,
     this.mnemonic,
     this.passphrase,
     this.secureStorageKey,
@@ -35,6 +36,7 @@ class HotWalletMnemonicBackupGuideScreen extends StatefulWidget {
 
   final String walletName;
   final int walletId;
+  final String descriptor;
   final Uint8List? mnemonic;
   final Uint8List? passphrase;
   final String? secureStorageKey;
@@ -498,6 +500,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
         arguments: {
           'mnemonic': mnemonic,
           'passphrase': passphrase,
+          'descriptor': widget.descriptor,
           'enterPassphraseWhenSigning': widget.enterPassphraseWhenSigning,
           'walletId': widget.walletId,
           'continueToAppLockGuide': widget.continueToAppLockGuide,

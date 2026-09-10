@@ -236,6 +236,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           (args) => HotWalletMnemonicBackupGuideScreen(
             walletName: args['walletName'],
             walletId: args['walletId'],
+            descriptor: args['descriptor'],
             mnemonic: args['mnemonic'],
             passphrase: args['passphrase'],
             secureStorageKey: args['secureStorageKey'] as String?,

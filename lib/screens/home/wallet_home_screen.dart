@@ -1666,6 +1666,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       arguments: {
         'walletName': walletItem.name,
         'walletId': walletItem.id,
+        'descriptor': walletItem.descriptor,
         'secureStorageKey': metadata.secureStorageKey,
         'enterPassphraseWhenSigning': metadata.enterPassphraseWhenSigning,
         'showWalletCreatedIntro': false,

@@ -9,7 +9,7 @@ void main() {
   const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
   const passphrase = 'coconut-passphrase';
 
-  test('입력한 패스프레이즈로 기존 descriptor를 재현하면 일치한다', () {
+  test('입력한 패스프레이즈로 기존 descriptor를 재현하면 일치한다', () async {
     final mnemonicBytes = Uint8List.fromList(utf8.encode(mnemonic));
     final passphraseBytes = Uint8List.fromList(utf8.encode(passphrase));
     final seed = Seed.fromMnemonic(mnemonicBytes, passphrase: passphraseBytes);
@@ -22,6 +22,10 @@ void main() {
     expect(
       doesPassphraseMatchDescriptor(mnemonic: mnemonic, passphrase: 'wrong-passphrase', descriptor: descriptor),
       isFalse,
+    );
+    expect(
+      await doesPassphraseMatchDescriptorAsync(mnemonic: mnemonic, passphrase: passphrase, descriptor: descriptor),
+      isTrue,
     );
   });
 }

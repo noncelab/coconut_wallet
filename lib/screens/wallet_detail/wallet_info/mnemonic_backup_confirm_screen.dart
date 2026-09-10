@@ -6,6 +6,7 @@ import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/hot_wallet_passphrase_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -48,6 +49,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
   double _progress = 0;
   bool _isIncorrect = false;
   bool _isProcessing = false;
+  bool _isVerifyingPassphrase = false;
 
   @override
   void initState() {
@@ -192,6 +194,8 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
                 showSurroundings: false,
                 onButtonClicked: _submitAnswer,
               ),
+              if (_isVerifyingPassphrase)
+                const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true, indicatorSize: 36)),
             ],
           ),
         ),
@@ -202,13 +206,30 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
   Future<void> _submitAnswer() async {
     if (_isProcessing || _controller.text.trim().isEmpty) return;
     final isPassphraseQuestion = widget.confirmPassphrase && _questionIndex == _questionIndices.length;
-    final isCorrect =
-        isPassphraseQuestion
-            ? _isPassphraseCorrect(_controller.text)
-            : _controller.text.trim().toLowerCase() == _words[_questionIndices[_questionIndex]].toLowerCase();
+    final requiresDescriptorVerification =
+        isPassphraseQuestion && widget.passphrase.isEmpty && widget.descriptor.isNotEmpty;
+    setState(() {
+      _isIncorrect = false;
+      _isProcessing = true;
+      _isVerifyingPassphrase = requiresDescriptorVerification;
+    });
+
+    late final bool isCorrect;
+    try {
+      isCorrect =
+          isPassphraseQuestion
+              ? await _isPassphraseCorrect(_controller.text)
+              : _controller.text.trim().toLowerCase() == _words[_questionIndices[_questionIndex]].toLowerCase();
+    } finally {
+      if (mounted && _isVerifyingPassphrase) {
+        setState(() => _isVerifyingPassphrase = false);
+      }
+    }
+    if (!mounted) return;
     if (!isCorrect) {
       setState(() {
         _isIncorrect = true;
+        _isProcessing = false;
       });
       _showKeyboard();
       return;
@@ -217,8 +238,6 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
     final completedCount = _questionIndex + 1;
     final questionCount = _questionIndices.length + (widget.confirmPassphrase ? 1 : 0);
     setState(() {
-      _isIncorrect = false;
-      _isProcessing = true;
       _progress = completedCount / questionCount;
     });
 
@@ -248,10 +267,14 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
     _showKeyboard();
   }
 
-  bool _isPassphraseCorrect(String input) {
+  Future<bool> _isPassphraseCorrect(String input) async {
     if (widget.passphrase.isNotEmpty) return input == widget.passphrase;
     if (widget.descriptor.isEmpty) return false;
 
-    return doesPassphraseMatchDescriptor(mnemonic: widget.mnemonic, passphrase: input, descriptor: widget.descriptor);
+    return doesPassphraseMatchDescriptorAsync(
+      mnemonic: widget.mnemonic,
+      passphrase: input,
+      descriptor: widget.descriptor,
+    );
   }
 }
