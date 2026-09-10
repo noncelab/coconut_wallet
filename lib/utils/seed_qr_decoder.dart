@@ -9,35 +9,53 @@ class SeedQrDecoder {
 
   static Uint8List? decode({String? code, List<int>? rawBytes}) {
     List<String>? words;
-    try {
-      if (code == null && rawBytes != null) {
-        words = _decodeCompactQR(rawBytes);
-      } else if (code != null && rawBytes != null) {
-        words = _decodeStandardQR(code);
-      }
-    } catch (e) {
-      if (e is FormatException && e.message.contains('Invalid radix-10 number') && rawBytes != null) {
-        words = _decodeCompactQR(rawBytes);
-      } else {
-        return null;
-      }
+    final normalizedCode = code?.trim();
+
+    // Standard SeedQR:
+    // 12단어 = 4자리 index × 12 = 48자
+    // 24단어 = 4자리 index × 24 = 96자
+    if (normalizedCode != null && _isStandardSeedQrText(normalizedCode)) {
+      words = _tryDecodeStandardQr(normalizedCode);
+    } else if (rawBytes != null) {
+      // 문자열 형식이 아니면 Compact SeedQR로 처리한다.
+      words = _decodeCompactQR(rawBytes);
     }
 
     if (words == null || (words.length != 12 && words.length != 24)) {
       return null;
     }
+
     return Uint8List.fromList(utf8.encode(words.join(' ')));
   }
 
-  static List<String> _decodeStandardQR(String data) {
-    final words = <String>[];
-    final indexes = <int>[];
-    for (var i = 0; i < data.length; i += 4) {
-      final idx = int.parse(data.substring(i, i + 4));
-      indexes.add(idx);
-      words.add(wordList[idx]);
+  static bool _isStandardSeedQrText(String data) {
+    if (data.length != 48 && data.length != 96) {
+      return false;
     }
-    return words;
+
+    return RegExp(r'^\d+$').hasMatch(data);
+  }
+
+  static List<String>? _tryDecodeStandardQr(String data) {
+    try {
+      final words = <String>[];
+
+      for (var offset = 0; offset < data.length; offset += 4) {
+        final index = int.parse(data.substring(offset, offset + 4));
+
+        if (index < 0 || index >= wordList.length) {
+          return null;
+        }
+
+        words.add(wordList[index]);
+      }
+
+      return words;
+    } on FormatException {
+      return null;
+    } on RangeError {
+      return null;
+    }
   }
 
   static List<String>? _decodeCompactQR(List<int> bytes) {
