@@ -755,7 +755,7 @@ void main() {
         backupVerified: true,
         enterPassphraseWhenSigning: false,
         createdAt: DateTime.utc(2026, 9, 9),
-        replacingWatchOnlyWalletId: existingWatchOnly.id,
+        watchOnlyWalletIdToPromote: existingWatchOnly.id,
       );
 
       expect(result.id, existingWatchOnly.id);

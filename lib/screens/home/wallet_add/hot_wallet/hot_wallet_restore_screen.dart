@@ -1300,7 +1300,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         walletProvider: walletProvider,
         walletName: walletName,
         derivedDescriptor: descriptor,
-        replacingWatchOnlyWalletId: removeWatchOnly ? duplicateWatchOnly?.id : null,
+        watchOnlyWalletIdToPromote: removeWatchOnly ? duplicateWatchOnly?.id : null,
       );
       if (!mounted) return;
       setState(() => _isCheckingDuplicate = false);

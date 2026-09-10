@@ -65,7 +65,7 @@ class _FakeWalletProvider extends Fake implements WalletProvider {
     required bool backupVerified,
     required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
-    int? replacingWatchOnlyWalletId,
+    int? watchOnlyWalletIdToPromote,
   }) async {
     addCallCount++;
     addedWallet = wallet;

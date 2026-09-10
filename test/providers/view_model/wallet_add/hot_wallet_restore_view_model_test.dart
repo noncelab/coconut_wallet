@@ -30,7 +30,7 @@ class _GatedWalletProvider extends Fake implements WalletProvider {
     required bool backupVerified,
     required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
-    int? replacingWatchOnlyWalletId,
+    int? watchOnlyWalletIdToPromote,
   }) async {
     addStarted = true;
     await gate.future;
