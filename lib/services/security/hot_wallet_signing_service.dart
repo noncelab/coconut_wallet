@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -7,7 +5,7 @@ import 'package:flutter/foundation.dart';
 typedef HotWalletSigningRequest =
     ({
       String storageKey,
-      String? passphrase,
+      Uint8List? passphrase,
       String addressTypeName,
       int accountIndex,
       String expectedExtendedPublicKey,
@@ -16,8 +14,8 @@ typedef HotWalletSigningRequest =
 
 typedef _HotWalletSigningArguments =
     ({
-      String mnemonic,
-      String passphrase,
+      Uint8List mnemonic,
+      Uint8List passphrase,
       String addressTypeName,
       int accountIndex,
       String expectedExtendedPublicKey,
@@ -25,7 +23,13 @@ typedef _HotWalletSigningArguments =
     });
 
 typedef _HotWalletPassphraseValidationArguments =
-    ({String mnemonic, String passphrase, String addressTypeName, int accountIndex, String expectedExtendedPublicKey});
+    ({
+      Uint8List mnemonic,
+      Uint8List passphrase,
+      String addressTypeName,
+      int accountIndex,
+      String expectedExtendedPublicKey,
+    });
 
 class HotWalletSigningService {
   HotWalletSigningService({HotWalletSecretRepository? secretRepository})
@@ -35,62 +39,66 @@ class HotWalletSigningService {
 
   Future<String> sign(HotWalletSigningRequest request) async {
     final plaintext = await _secretRepository.unlockAfterAuthentication(request.storageKey);
-    return compute(_signHotWalletInBackground, (
-      mnemonic: plaintext.mnemonic,
-      passphrase: request.passphrase ?? plaintext.passphrase,
-      addressTypeName: request.addressTypeName,
-      accountIndex: request.accountIndex,
-      expectedExtendedPublicKey: request.expectedExtendedPublicKey,
-      unsignedPsbt: request.unsignedPsbt,
-    ));
+    try {
+      return await compute(_signHotWalletInBackground, (
+        mnemonic: Uint8List.fromList(plaintext.mnemonic),
+        passphrase: Uint8List.fromList(request.passphrase ?? plaintext.passphrase),
+        addressTypeName: request.addressTypeName,
+        accountIndex: request.accountIndex,
+        expectedExtendedPublicKey: request.expectedExtendedPublicKey,
+        unsignedPsbt: request.unsignedPsbt,
+      ));
+    } finally {
+      plaintext.wipe();
+    }
   }
 
   Future<bool> validatePassphrase({
     required String storageKey,
-    required String passphrase,
+    required Uint8List passphrase,
     required String addressTypeName,
     required int accountIndex,
     required String expectedExtendedPublicKey,
   }) async {
     final plaintext = await _secretRepository.unlockAfterAuthentication(storageKey);
-    return compute(_validateHotWalletPassphraseInBackground, (
-      mnemonic: plaintext.mnemonic,
-      passphrase: passphrase,
-      addressTypeName: addressTypeName,
-      accountIndex: accountIndex,
-      expectedExtendedPublicKey: expectedExtendedPublicKey,
-    ));
+    try {
+      return await compute(_validateHotWalletPassphraseInBackground, (
+        mnemonic: Uint8List.fromList(plaintext.mnemonic),
+        passphrase: Uint8List.fromList(passphrase),
+        addressTypeName: addressTypeName,
+        accountIndex: accountIndex,
+        expectedExtendedPublicKey: expectedExtendedPublicKey,
+      ));
+    } finally {
+      plaintext.wipe();
+    }
   }
 }
 
 bool _validateHotWalletPassphraseInBackground(_HotWalletPassphraseValidationArguments arguments) {
-  final mnemonicBytes = Uint8List.fromList(utf8.encode(arguments.mnemonic));
-  final passphraseBytes = Uint8List.fromList(utf8.encode(arguments.passphrase));
   SingleSignatureVault? vault;
   try {
     vault = SingleSignatureVault.fromMnemonic(
-      mnemonicBytes,
-      passphrase: passphraseBytes,
+      arguments.mnemonic,
+      passphrase: arguments.passphrase,
       addressType: AddressType.getAddressTypeFromName(arguments.addressTypeName),
       accountIndex: arguments.accountIndex,
     );
     return vault.keyStore.extendedPublicKey.serialize() == arguments.expectedExtendedPublicKey;
   } finally {
     vault?.keyStore.wipeSeed();
-    mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
-    passphraseBytes.fillRange(0, passphraseBytes.length, 0);
+    arguments.mnemonic.fillRange(0, arguments.mnemonic.length, 0);
+    arguments.passphrase.fillRange(0, arguments.passphrase.length, 0);
   }
 }
 
 String _signHotWalletInBackground(_HotWalletSigningArguments arguments) {
-  final mnemonicBytes = Uint8List.fromList(utf8.encode(arguments.mnemonic));
-  final passphraseBytes = Uint8List.fromList(utf8.encode(arguments.passphrase));
   SingleSignatureVault? vault;
   try {
     final addressType = AddressType.getAddressTypeFromName(arguments.addressTypeName);
     vault = SingleSignatureVault.fromMnemonic(
-      mnemonicBytes,
-      passphrase: passphraseBytes,
+      arguments.mnemonic,
+      passphrase: arguments.passphrase,
       addressType: addressType,
       accountIndex: arguments.accountIndex,
     );
@@ -102,7 +110,7 @@ String _signHotWalletInBackground(_HotWalletSigningArguments arguments) {
     return signedPsbt;
   } finally {
     vault?.keyStore.wipeSeed();
-    mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
-    passphraseBytes.fillRange(0, passphraseBytes.length, 0);
+    arguments.mnemonic.fillRange(0, arguments.mnemonic.length, 0);
+    arguments.passphrase.fillRange(0, arguments.passphrase.length, 0);
   }
 }

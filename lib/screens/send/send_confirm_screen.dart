@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -451,10 +453,10 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     }
     if (!mounted) return;
     var shouldRestore = true;
+    Uint8List? passphrase;
     try {
-      String? passphrase;
       if (requiresPassphrase) {
-        passphrase = await CommonBottomSheets.showBottomSheet<String>(
+        passphrase = await CommonBottomSheets.showBottomSheet<Uint8List>(
           context: context,
           title: t.send_confirm_screen.passphrase_input_title,
           showCloseButton: true,
@@ -537,6 +539,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
       context.loaderOverlay.hide();
       await _showLocalSignFailure();
     } finally {
+      passphrase?.fillRange(0, passphrase.length, 0);
       if (mounted && shouldRestore) {
         context.loaderOverlay.hide();
         _restoreConfirmationContent();
@@ -729,7 +732,7 @@ class _HotWalletPassphraseInputSheet extends StatefulWidget {
   });
 
   final bool requiresAuthentication;
-  final Future<bool> Function(String passphrase) validatePassphrase;
+  final Future<bool> Function(Uint8List passphrase) validatePassphrase;
   final Future<void> Function() onAuthenticationStarted;
   final VoidCallback onPassphraseInputResumed;
 
@@ -783,8 +786,9 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
       }
     }
 
+    final enteredPassphrase = Uint8List.fromList(utf8.encode(_controller.text));
+    var transferred = false;
     try {
-      final enteredPassphrase = _controller.text;
       context.loaderOverlay.show();
       final isMatchingWallet = await widget.validatePassphrase(enteredPassphrase);
       if (!mounted) return;
@@ -799,6 +803,7 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
         return;
       }
 
+      transferred = true;
       Navigator.pop(context, enteredPassphrase);
     } catch (_) {
       if (!mounted) return;
@@ -811,6 +816,8 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
         t.send_confirm_screen.signing_failed_title,
         t.send_confirm_screen.signing_failed_description,
       );
+    } finally {
+      if (!transferred) enteredPassphrase.fillRange(0, enteredPassphrase.length, 0);
     }
   }
 

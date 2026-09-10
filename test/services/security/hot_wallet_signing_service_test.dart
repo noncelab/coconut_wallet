@@ -34,12 +34,14 @@ void main() {
       addressType: AddressType.p2wpkh,
       accountIndex: 0,
     );
-    final repository = _FakeSecretRepository(const HotWalletPlaintext(mnemonic: mnemonic, passphrase: ''));
+    final repository = _FakeSecretRepository(
+      HotWalletPlaintext(mnemonic: Uint8List.fromList(utf8.encode(mnemonic)), passphrase: Uint8List(0)),
+    );
     final service = HotWalletSigningService(secretRepository: repository);
 
     final valid = await service.validatePassphrase(
       storageKey: 'hot_wallet_secret_test',
-      passphrase: passphrase,
+      passphrase: Uint8List.fromList(utf8.encode(passphrase)),
       addressTypeName: AddressType.p2wpkh.name,
       accountIndex: 0,
       expectedExtendedPublicKey: vault.keyStore.extendedPublicKey.serialize(),
@@ -47,6 +49,8 @@ void main() {
 
     expect(valid, isTrue);
     expect(repository.requestedStorageKey, 'hot_wallet_secret_test');
+    expect(repository.plaintext.mnemonic.every((byte) => byte == 0), isTrue);
+    expect(repository.plaintext.passphrase.every((byte) => byte == 0), isTrue);
     vault.keyStore.wipeSeed();
     mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
     passphraseBytes.fillRange(0, passphraseBytes.length, 0);

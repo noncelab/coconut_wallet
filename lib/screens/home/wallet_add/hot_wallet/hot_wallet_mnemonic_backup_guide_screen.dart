@@ -484,8 +484,12 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
           authenticator: FlutterHotWalletAuthenticator(context),
         ).unlock(widget.secureStorageKey!);
         if (!mounted || plaintext == null) return;
-        mnemonic = plaintext.mnemonic;
-        passphrase = plaintext.passphrase;
+        try {
+          mnemonic = utf8.decode(plaintext.mnemonic);
+          passphrase = utf8.decode(plaintext.passphrase);
+        } finally {
+          plaintext.wipe();
+        }
       } else {
         final mnemonicBytes = widget.mnemonic;
         final passphraseBytes = widget.passphrase;

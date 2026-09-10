@@ -115,7 +115,7 @@ class SendConfirmViewModel extends ChangeNotifier {
     _sendInfoProvider.setTxWaitingForSign(_unsignedPsbt!.serialize());
   }
 
-  Future<void> signHotWallet({String? passphrase}) async {
+  Future<void> signHotWallet({Uint8List? passphrase}) async {
     final metadata = _walletListItemBase.hotWalletMetadata;
     final watchOnlyWallet = _walletListItemBase.walletBase;
     if (!isHotWallet || metadata == null || watchOnlyWallet is! SingleSignatureWallet || _unsignedPsbt == null) {
@@ -135,7 +135,7 @@ class SendConfirmViewModel extends ChangeNotifier {
     _sendInfoProvider.setSignedResult(signedPsbt);
   }
 
-  Future<bool> validateHotWalletPassphrase(String passphrase) async {
+  Future<bool> validateHotWalletPassphrase(Uint8List passphrase) async {
     final metadata = _walletListItemBase.hotWalletMetadata;
     final wallet = _walletListItemBase.walletBase;
     if (!isHotWallet || metadata == null || wallet is! SingleSignatureWallet) {

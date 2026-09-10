@@ -34,8 +34,8 @@ void main() {
     final plaintext = await service.decryptPayload(secret, result.dek);
 
     expect(result.dek, hasLength(32));
-    expect(plaintext.mnemonic, utf8.decode(mnemonic));
-    expect(plaintext.passphrase, 'secret');
+    expect(utf8.decode(plaintext.mnemonic), utf8.decode(mnemonic));
+    expect(utf8.decode(plaintext.passphrase), 'secret');
     expect(result.encryptedPayload.nonce, isNotEmpty);
     result.dek.fillRange(0, result.dek.length, 0);
   });
@@ -83,7 +83,7 @@ void main() {
 
     expect(decoded.deviceWrappedDek.protection, DeviceKeyProtection.androidStrongBox);
     expect(decoded.deviceWrappedDek.alias, 'strongbox-key');
-    expect(plaintext.mnemonic, utf8.decode(mnemonic));
+    expect(utf8.decode(plaintext.mnemonic), utf8.decode(mnemonic));
     result.dek.fillRange(0, result.dek.length, 0);
   });
 

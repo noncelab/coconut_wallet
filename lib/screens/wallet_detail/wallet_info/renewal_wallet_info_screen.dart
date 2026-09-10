@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 
@@ -751,11 +752,15 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
         authenticator: FlutterHotWalletAuthenticator(context),
       ).unlock(metadata.secureStorageKey);
       if (!mounted || plaintext == null) return;
-      await Navigator.pushNamed(
-        context,
-        '/hot-wallet-passphrase-check',
-        arguments: {'mnemonic': plaintext.mnemonic, 'descriptor': viewModel.walletItemBase.descriptor},
-      );
+      try {
+        await Navigator.pushNamed(
+          context,
+          '/hot-wallet-passphrase-check',
+          arguments: {'mnemonic': utf8.decode(plaintext.mnemonic), 'descriptor': viewModel.walletItemBase.descriptor},
+        );
+      } finally {
+        plaintext.wipe();
+      }
     } catch (error) {
       if (!mounted) return;
       await showInfoDialog(

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_authenticator.dart';
@@ -19,7 +22,10 @@ class _FakeSecretRepository extends Fake implements HotWalletSecretRepository {
   @override
   Future<HotWalletPlaintext> unlockAfterAuthentication(String storageKey) async {
     unlockCallCount++;
-    return const HotWalletPlaintext(mnemonic: 'mnemonic', passphrase: 'passphrase');
+    return HotWalletPlaintext(
+      mnemonic: Uint8List.fromList(utf8.encode('mnemonic')),
+      passphrase: Uint8List.fromList(utf8.encode('passphrase')),
+    );
   }
 }
 

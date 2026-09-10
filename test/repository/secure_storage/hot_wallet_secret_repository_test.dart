@@ -120,7 +120,7 @@ void main() {
     expect(secret.encryptedPayload.cipherText, isNotEmpty);
 
     final plaintext = await repository.unlockAfterAuthentication(storageKey);
-    expect(plaintext.passphrase, 'passphrase');
+    expect(utf8.decode(plaintext.passphrase), 'passphrase');
   });
 
   test('하드웨어 보안 키가 없으면 SecureStorage Device KEK로 폴백한다', () async {
@@ -134,7 +134,7 @@ void main() {
     expect(await storage.read(key: '${storageKey}_fallback_kek'), isNotNull);
 
     final plaintext = await repository.unlockAfterAuthentication(storageKey);
-    expect(plaintext.mnemonic, startsWith('abandon'));
+    expect(utf8.decode(plaintext.mnemonic), startsWith('abandon'));
   });
 
   test('wrap 실패 시 OS에 생성된 alias를 삭제하고 예외를 전파한다', () async {
@@ -212,7 +212,8 @@ void main() {
 
     final secret = await readSecret(storageKey);
     expect(secret.deviceWrappedDek.protection, DeviceKeyProtection.secureStorage);
-    expect((await repository.unlockAfterAuthentication(storageKey)).passphrase, 'passphrase');
+    final plaintext = await repository.unlockAfterAuthentication(storageKey);
+    expect(utf8.decode(plaintext.passphrase), 'passphrase');
   });
 
   test('하드웨어 wrap 성공 후 최종 secret 쓰기가 실패하면 alias를 삭제한다', () async {

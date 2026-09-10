@@ -311,8 +311,6 @@ class BroadcastingViewModel extends ChangeNotifier {
     _fee = psbt.fee;
     _totalAmount = psbt.sendingAmount + psbt.fee;
 
-    _setSignedTransaction(psbt);
-
     if (excludedUtxoStatus == null) {
       _isInitDone = true;
     }
@@ -371,8 +369,6 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     return false;
   }
-
-  void _setSignedTransaction(Psbt psbt) {}
 
   // pending상태였던 Tx가 confirmed 되었는지 조회
   bool hasTransactionConfirmed() {

@@ -37,7 +37,10 @@ class HotWalletCryptoService {
     final bytes = await decrypt(secret.encryptedPayload, dek);
     try {
       final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-      return HotWalletPlaintext(mnemonic: json['mnemonic'] as String, passphrase: json['passphrase'] as String);
+      return HotWalletPlaintext(
+        mnemonic: Uint8List.fromList(utf8.encode(json['mnemonic'] as String)),
+        passphrase: Uint8List.fromList(utf8.encode(json['passphrase'] as String)),
+      );
     } finally {
       bytes.fillRange(0, bytes.length, 0);
     }
