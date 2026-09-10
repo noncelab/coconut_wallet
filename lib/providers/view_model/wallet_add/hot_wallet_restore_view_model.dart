@@ -37,8 +37,11 @@ String _deriveMasterFingerprint(({Uint8List mnemonic, Uint8List passphrase}) inp
 }
 
 class HotWalletRestoreViewModel extends ChangeNotifier {
-  HotWalletRestoreViewModel() : _words = List.filled(12, '');
+  HotWalletRestoreViewModel({HotWalletSecretRepository? secretRepository})
+    : _secretRepository = secretRepository ?? HotWalletSecretRepository(),
+      _words = List.filled(12, '');
 
+  final HotWalletSecretRepository _secretRepository;
   int _wordCount = 12;
   List<String> _words;
   int? _activeWordIndex;
@@ -48,6 +51,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
   bool _isRestoring = false;
   Uint8List? _scannedMnemonic;
   int? _scannedMnemonicWordCount;
+  bool _disposed = false;
 
   int get wordCount => _wordCount;
   List<String> get words => List.unmodifiable(_words);
@@ -104,19 +108,19 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     _wordCount = value;
     _words = List.generate(value, (index) => index < previous.length ? previous[index] : '');
     _activeWordIndex = null;
-    notifyListeners();
+    _notifySafely();
   }
 
   void setActiveWordIndex(int? index) {
     if (_activeWordIndex == index) return;
     _activeWordIndex = index;
-    notifyListeners();
+    _notifySafely();
   }
 
   void updateWord(int index, String value) {
     _words[index] = value.trim().toLowerCase();
     _activeWordIndex = index;
-    notifyListeners();
+    _notifySafely();
   }
 
   int applyWords(int startIndex, Iterable<String> values) {
@@ -127,14 +131,14 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
       if (normalized.isNotEmpty) _words[index++] = normalized;
     }
     _activeWordIndex = index < _wordCount ? index : null;
-    notifyListeners();
+    _notifySafely();
     return index;
   }
 
   void clearWords() {
     _words = List.filled(_wordCount, '');
     _activeWordIndex = 0;
-    notifyListeners();
+    _notifySafely();
   }
 
   void setScannedMnemonic(Uint8List mnemonic, int wordCount) {
@@ -142,14 +146,14 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     _scannedMnemonic = Uint8List.fromList(mnemonic);
     _scannedMnemonicWordCount = wordCount;
     _activeWordIndex = null;
-    notifyListeners();
+    _notifySafely();
   }
 
   void clearScannedMnemonic({bool notify = true}) {
     _scannedMnemonic?.fillRange(0, _scannedMnemonic!.length, 0);
     _scannedMnemonic = null;
     _scannedMnemonicWordCount = null;
-    if (notify) notifyListeners();
+    if (notify) _notifySafely();
   }
 
   Uint8List _copyMnemonic() {
@@ -165,17 +169,17 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
       _passphrase = '';
       _enterPassphraseWhenSigning = false;
     }
-    notifyListeners();
+    _notifySafely();
   }
 
   void setPassphrase(String value) {
     _passphrase = value;
-    notifyListeners();
+    _notifySafely();
   }
 
   void setEnterPassphraseWhenSigning(bool value) {
     _enterPassphraseWhenSigning = value;
-    notifyListeners();
+    _notifySafely();
   }
 
   Future<String> deriveDescriptor() async {
@@ -224,12 +228,11 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
       throw StateError('Invalid restore input');
     }
     _isRestoring = true;
-    notifyListeners();
+    _notifySafely();
 
     final mnemonic = _copyMnemonic();
     final passphrase = Uint8List.fromList(utf8.encode(_usePassphrase ? _passphrase : ''));
-    final repository = HotWalletSecretRepository();
-    final storageKey = repository.newSecretStorageKey();
+    final storageKey = _secretRepository.newSecretStorageKey();
     try {
       final String descriptor;
       if (derivedDescriptor != null) {
@@ -252,7 +255,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
       final passphraseToStore = _enterPassphraseWhenSigning ? Uint8List(0) : Uint8List.fromList(passphrase);
       try {
         await AppGuard.runWithoutPrivacyScreen(
-          () => repository.create(storageKey: storageKey, mnemonic: mnemonic, passphrase: passphraseToStore),
+          () => _secretRepository.create(storageKey: storageKey, mnemonic: mnemonic, passphrase: passphraseToStore),
         );
       } finally {
         passphraseToStore.fillRange(0, passphraseToStore.length, 0);
@@ -266,18 +269,23 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
         replacingWatchOnlyWalletId: replacingWatchOnlyWalletId,
       );
     } catch (_) {
-      await repository.delete(storageKey).catchError((_) {});
+      await _secretRepository.delete(storageKey).catchError((_) {});
       rethrow;
     } finally {
       mnemonic.fillRange(0, mnemonic.length, 0);
       passphrase.fillRange(0, passphrase.length, 0);
       _isRestoring = false;
-      notifyListeners();
+      _notifySafely();
     }
+  }
+
+  void _notifySafely() {
+    if (!_disposed) notifyListeners();
   }
 
   @override
   void dispose() {
+    _disposed = true;
     clearScannedMnemonic(notify: false);
     super.dispose();
   }

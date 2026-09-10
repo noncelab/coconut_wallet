@@ -65,6 +65,7 @@ class HotWalletCreateViewModel extends ChangeNotifier {
   final HotWalletMaterialGenerator _materialGenerator;
   final DateTime Function() _now;
   bool _isCreating = false;
+  bool _disposed = false;
 
   bool get isCreating => _isCreating;
 
@@ -84,7 +85,7 @@ class HotWalletCreateViewModel extends ChangeNotifier {
     }
 
     _isCreating = true;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
 
     final passphraseBytes = Uint8List.fromList(utf8.encode(passphrase));
     Uint8List? mnemonic;
@@ -139,7 +140,13 @@ class HotWalletCreateViewModel extends ChangeNotifier {
       mnemonic?.fillRange(0, mnemonic.length, 0);
       passphraseBytes.fillRange(0, passphraseBytes.length, 0);
       _isCreating = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

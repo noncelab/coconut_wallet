@@ -236,6 +236,31 @@ void main() {
       viewModel.dispose();
     });
 
+    test('생성 작업 중 dispose되어도 완료 시 notifyListeners를 호출하지 않는다', () async {
+      final secretRepository = _FakeSecretRepository()..createGate = Completer<void>();
+      final walletProvider = _FakeWalletProvider();
+      final viewModel = HotWalletCreateViewModel(walletProvider, secretRepository: secretRepository);
+      final creation = viewModel.createWallet(
+        walletName: 'Hot Wallet',
+        colorIndex: 0,
+        iconIndex: 0,
+        mnemonicWordCount: 12,
+        passphrase: '',
+        enterPassphraseWhenSigning: false,
+      );
+      while (secretRepository.createCallCount == 0) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      viewModel.dispose();
+      secretRepository.createGate!.complete();
+      final result = await creation;
+
+      expect(result.walletId, 7);
+      expect(viewModel.isCreating, isFalse);
+      result.clearSensitiveBytes();
+    });
+
     test('키 재료 생성 실패 시 secret과 Realm에 아무것도 생성하지 않는다', () async {
       final secretRepository = _FakeSecretRepository();
       final walletProvider = _FakeWalletProvider();
