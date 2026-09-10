@@ -64,6 +64,25 @@ class ElectrumServerViewModel extends ChangeNotifier {
     _performServerConnectionTest(currentServer);
   }
 
+  /// 1) 화면을 떠나 사용자의 선택이 끝난 시점에 변경된 엔드포인트를 실제 연결에 반영
+  /// 2) 엔드포인트가 그대로여도, 이 화면에서는 연결이 정상인데 실제 노드 상태가 실패로 남아 있으면 재연결
+  @override
+  void dispose() {
+    if (_isEndpointChangedSinceEntry) {
+      unawaited(_nodeProvider.applyServerChange());
+    } else if (_nodeConnectionStatus == NodeConnectionStatus.connected) {
+      unawaited(_nodeProvider.reconnectIfNeeded());
+    }
+    super.dispose();
+  }
+
+  bool get _isEndpointChangedSinceEntry {
+    return _currentServer.host != _initialServer.host ||
+        _currentServer.port != _initialServer.port ||
+        _currentServer.ssl != _initialServer.ssl ||
+        _currentServer.pinnedCertFingerprint != _initialServer.pinnedCertFingerprint;
+  }
+
   /// 모든 기본 일렉트럼 서버 상태 체크
   void _checkAllElectrumServerConnections() {
     final networkType = NetworkType.currentNetworkType;
