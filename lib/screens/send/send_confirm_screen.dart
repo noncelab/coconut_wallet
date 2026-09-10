@@ -24,6 +24,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
+import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
@@ -31,7 +32,6 @@ import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart'
 import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
-import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
@@ -476,7 +476,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
         }
       } else {
         final authenticated = await AppGuard.runWithoutPrivacyScreen(
-          () => HotWalletUnlockService().authenticatePreferBiometrics(context),
+          () => FlutterHotWalletAuthenticator(context).authenticate(),
         );
         if (!mounted) return;
         if (!authenticated) {
@@ -766,7 +766,7 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
       await widget.onAuthenticationStarted();
       if (!mounted) return;
       final authenticated = await AppGuard.runWithoutPrivacyScreen(
-        () => HotWalletUnlockService().authenticatePreferBiometrics(context),
+        () => FlutterHotWalletAuthenticator(context).authenticate(),
       );
       if (!mounted) return;
       if (!authenticated) {

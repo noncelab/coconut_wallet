@@ -10,6 +10,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
+import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
@@ -479,10 +480,9 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
       String mnemonic;
       String passphrase;
       if (widget.secureStorageKey != null) {
-        final plaintext = await HotWalletUnlockService().unlockPreferBiometrics(
-          context: context,
-          storageKey: widget.secureStorageKey!,
-        );
+        final plaintext = await HotWalletUnlockService(
+          authenticator: FlutterHotWalletAuthenticator(context),
+        ).unlock(widget.secureStorageKey!);
         if (!mounted || plaintext == null) return;
         mnemonic = plaintext.mnemonic;
         passphrase = plaintext.passphrase;

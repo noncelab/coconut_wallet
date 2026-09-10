@@ -24,6 +24,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
+import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_mfp_input_bottom_sheet.dart';
@@ -746,10 +747,9 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
     if (metadata == null || !metadata.enterPassphraseWhenSigning) return;
 
     try {
-      final plaintext = await HotWalletUnlockService().unlockPreferBiometrics(
-        context: context,
-        storageKey: metadata.secureStorageKey,
-      );
+      final plaintext = await HotWalletUnlockService(
+        authenticator: FlutterHotWalletAuthenticator(context),
+      ).unlock(metadata.secureStorageKey);
       if (!mounted || plaintext == null) return;
       await Navigator.pushNamed(
         context,
