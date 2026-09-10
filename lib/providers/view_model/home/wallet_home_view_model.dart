@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/home_security_warning_policy.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -39,6 +40,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   late final NodeProvider _nodeProvider;
 
   final Stream<NodeSyncState> _syncNodeStateStream;
+  final HomeSecurityWarningPolicy _securityWarningPolicy;
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
 
@@ -142,8 +144,14 @@ class WalletHomeViewModel extends ChangeNotifier {
     return _preferenceProvider.isHomeFeatureEnabled(type);
   }
 
-  WalletHomeViewModel(this._walletProvider, this._preferenceProvider, this._connectivityProvider, this._nodeProvider)
-    : _syncNodeStateStream = _nodeProvider.syncStateStream {
+  WalletHomeViewModel(
+    this._walletProvider,
+    this._preferenceProvider,
+    this._connectivityProvider,
+    this._nodeProvider, {
+    HomeSecurityWarningPolicy? securityWarningPolicy,
+  }) : _syncNodeStateStream = _nodeProvider.syncStateStream,
+       _securityWarningPolicy = securityWarningPolicy ?? HomeSecurityWarningPolicy() {
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
     _nodeProvider.currentBlockNotifier.addListener(_onCurrentBlockChanged);
@@ -164,6 +172,38 @@ class WalletHomeViewModel extends ChangeNotifier {
     _analysisPeriod = _preferenceProvider.analysisPeriod;
     _selectedAnalysisTransactionType = _preferenceProvider.selectedAnalysisTransactionType;
     _isManualUtxoSelectionMode = _preferenceProvider.isManualUtxoSelectionMode;
+  }
+
+  HomeSecurityWarningState securityWarningState({
+    required bool isAppLockEnabled,
+    required bool shouldShowOpenStoreIntro,
+  }) {
+    final unbackedWallet =
+        _walletProvider.walletItemList.where((wallet) {
+          final balance = _walletBalance[wallet.id]?.current ?? 0;
+          return wallet.hasLocalKey && !(wallet.hotWalletMetadata?.backupVerified ?? false) && balance > 0;
+        }).firstOrNull;
+    final hasHotWalletWithBalance = _walletProvider.walletItemList.any(
+      (wallet) => wallet.hasLocalKey && (_walletBalance[wallet.id]?.current ?? 0) > 0,
+    );
+    return _securityWarningPolicy.resolve(
+      unbackedHotWalletId: unbackedWallet?.id,
+      hasHotWalletWithBalance: hasHotWalletWithBalance,
+      isAppLockEnabled: isAppLockEnabled,
+      shouldShowOpenStoreIntro: shouldShowOpenStoreIntro,
+    );
+  }
+
+  Future<void> dismissSecurityWarning(HomeSecurityWarningType type, {required bool isAppLockEnabled}) async {
+    final hasHotWalletWithBalance = _walletProvider.walletItemList.any(
+      (wallet) => wallet.hasLocalKey && (_walletBalance[wallet.id]?.current ?? 0) > 0,
+    );
+    await _securityWarningPolicy.dismiss(
+      type,
+      hasHotWalletWithBalance: hasHotWalletWithBalance,
+      isAppLockEnabled: isAppLockEnabled,
+    );
+    notifyListeners();
   }
 
   void _onNodeProviderChanged() {

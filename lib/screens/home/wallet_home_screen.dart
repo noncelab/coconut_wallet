@@ -22,8 +22,6 @@ import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
-import 'package:coconut_wallet/constants/shared_pref_keys.dart';
-import 'package:coconut_wallet/constants/security_warning_constants.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -44,7 +42,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
-import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/providers/view_model/home/home_security_warning_policy.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
@@ -97,10 +95,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   static const _minimumRefreshIndicatorDuration = Duration(milliseconds: 700);
   static const _nextWarningDelay = Duration(milliseconds: 200);
 
-  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-  final Set<_HomeSecurityWarningType> _dismissedWarningsThisSession = {};
-  _HomeSecurityWarningType? _nextWarningAfterDismissal;
-  bool _showOpenStoreAfterSecurityWarning = false;
   final GlobalKey _dropdownButtonKey = GlobalKey();
   Size _dropdownButtonSize = const Size(0, 0);
   Offset _dropdownButtonPosition = Offset.zero;
@@ -252,25 +246,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           final networkStatus = data.item7;
           final homeFeatures = viewModel.homeFeatures;
           final hasEnabledHomeFeature = homeFeatures.any((feature) => feature.isEnabled);
-          final firstUnbackedHotWalletWithBalance = walletItem.firstWhereOrNull(
-            (wallet) =>
-                wallet.hasLocalKey &&
-                !(wallet.hotWalletMetadata?.backupVerified ?? false) &&
-                (walletBalanceMap[wallet.id]?.current ?? 0) > 0,
+          final securityWarningState = viewModel.securityWarningState(
+            isAppLockEnabled: isAppLockEnabled,
+            shouldShowOpenStoreIntro: shouldShowOpenStoreIntroCard,
           );
-          final hasHotWalletWithBalance = walletItem.any(
-            (wallet) => wallet.hasLocalKey && (walletBalanceMap[wallet.id]?.current ?? 0) > 0,
-          );
-          final securityWarningType =
-              firstUnbackedHotWalletWithBalance != null &&
-                      _canShowSecurityWarning(_HomeSecurityWarningType.unbackedHotWallet)
-                  ? _HomeSecurityWarningType.unbackedHotWallet
-                  : hasHotWalletWithBalance &&
-                      !isAppLockEnabled &&
-                      _canShowSecurityWarning(_HomeSecurityWarningType.appLock)
-                  ? _HomeSecurityWarningType.appLock
-                  : null;
-          final showOpenStoreIntroCard = securityWarningType == null && shouldShowOpenStoreIntroCard;
+          final securityWarningType = securityWarningState.visibleWarning;
+          final firstUnbackedHotWalletWithBalance =
+              securityWarningState.targetWalletId == null
+                  ? null
+                  : walletItem.firstWhereOrNull((wallet) => wallet.id == securityWarningState.targetWalletId);
+          final showOpenStoreIntroCard = securityWarningState.showOpenStoreIntro;
           final showHomeAlertSlot = securityWarningType != null || showOpenStoreIntroCard;
 
           if (viewModel.isWalletListChanged(_previousWalletList, walletItem, walletBalanceMap)) {
@@ -332,23 +317,23 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                       child: HomeAlertCard.security(
                                         key: ValueKey(securityWarningType),
                                         type:
-                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                            securityWarningType == HomeSecurityWarningType.unbackedHotWallet
                                                 ? HomeAlertCardType.mnemonicBackup
                                                 : HomeAlertCardType.appLock,
                                         showDelay:
-                                            _nextWarningAfterDismissal == securityWarningType
+                                            securityWarningState.showWarningAfterPrevious
                                                 ? _nextWarningDelay
                                                 : const Duration(seconds: 2),
                                         title:
-                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                            securityWarningType == HomeSecurityWarningType.unbackedHotWallet
                                                 ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
                                                 : t.wallet_home_screen.app_lock_warning.title,
                                         description:
-                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                            securityWarningType == HomeSecurityWarningType.unbackedHotWallet
                                                 ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
                                                 : t.wallet_home_screen.app_lock_warning.description,
                                         onTap:
-                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                            securityWarningType == HomeSecurityWarningType.unbackedHotWallet
                                                 ? () => _openWalletInfo(
                                                   firstUnbackedHotWalletWithBalance!,
                                                   highlightMnemonicBackup: true,
@@ -356,15 +341,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                                 : _openAppLockSettings,
                                         onClosed:
                                             () => _dismissSecurityWarning(
+                                              viewModel,
                                               securityWarningType,
-                                              showNextWarning:
-                                                  securityWarningType == _HomeSecurityWarningType.unbackedHotWallet &&
-                                                  hasHotWalletWithBalance &&
-                                                  !isAppLockEnabled &&
-                                                  _canShowSecurityWarning(_HomeSecurityWarningType.appLock),
+                                              isAppLockEnabled: isAppLockEnabled,
                                             ),
                                         icon:
-                                            securityWarningType == _HomeSecurityWarningType.unbackedHotWallet
+                                            securityWarningType == HomeSecurityWarningType.unbackedHotWallet
                                                 ? SvgPicture.asset(
                                                   CommonStateIconPath.triangleWarning,
                                                   width: 20,
@@ -388,7 +370,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                     : showOpenStoreIntroCard
                                     ? _buildOpenStoreIntroCard(
                                       showDelay:
-                                          _showOpenStoreAfterSecurityWarning
+                                          securityWarningState.showOpenStoreAfterWarning
                                               ? _nextWarningDelay
                                               : const Duration(seconds: 3),
                                     )
@@ -1703,22 +1685,14 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  bool _canShowSecurityWarning(_HomeSecurityWarningType type) {
-    if (_dismissedWarningsThisSession.contains(type)) return false;
-
-    final dismissedAt = _sharedPrefs.getInt(type.dismissedAtKey);
-    if (dismissedAt == 0) return true;
-    return DateTime.now().millisecondsSinceEpoch - dismissedAt >= kSecurityWarningDismissDuration.inMilliseconds;
-  }
-
-  Future<void> _dismissSecurityWarning(_HomeSecurityWarningType type, {required bool showNextWarning}) async {
-    _dismissedWarningsThisSession.add(type);
-    await _sharedPrefs.setInt(type.dismissedAtKey, DateTime.now().millisecondsSinceEpoch);
+  Future<void> _dismissSecurityWarning(
+    WalletHomeViewModel viewModel,
+    HomeSecurityWarningType type, {
+    required bool isAppLockEnabled,
+  }) async {
+    await viewModel.dismissSecurityWarning(type, isAppLockEnabled: isAppLockEnabled);
     if (!mounted) return;
-    setState(() {
-      _nextWarningAfterDismissal = showNextWarning ? _HomeSecurityWarningType.appLock : null;
-      _showOpenStoreAfterSecurityWarning = !showNextWarning;
-    });
+    setState(() {});
   }
 
   void _openAppLockSettings() {
@@ -2750,13 +2724,4 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       curve: Curves.easeInOut,
     );
   }
-}
-
-enum _HomeSecurityWarningType { unbackedHotWallet, appLock }
-
-extension on _HomeSecurityWarningType {
-  String get dismissedAtKey => switch (this) {
-    _HomeSecurityWarningType.unbackedHotWallet => SharedPrefKeys.kUnbackedHotWalletWarningDismissedAt,
-    _HomeSecurityWarningType.appLock => SharedPrefKeys.kAppLockWarningDismissedAt,
-  };
 }
