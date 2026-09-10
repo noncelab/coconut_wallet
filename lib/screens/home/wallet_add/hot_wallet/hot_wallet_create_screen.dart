@@ -29,7 +29,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class HotWalletCreateScreen extends StatefulWidget {
-  const HotWalletCreateScreen({super.key});
+  const HotWalletCreateScreen({super.key, this.viewModel});
+
+  final HotWalletCreateViewModel? viewModel;
 
   @override
   State<HotWalletCreateScreen> createState() => _HotWalletCreateScreenState();
@@ -37,6 +39,7 @@ class HotWalletCreateScreen extends StatefulWidget {
 
 class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   late final HotWalletCreateViewModel _viewModel;
+  late final bool _shouldDisposeViewModel;
   late final TextEditingController _nameController;
   late final String _suggestedWalletName;
   final TextEditingController _passphraseController = TextEditingController();
@@ -62,7 +65,9 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = HotWalletCreateViewModel(context.read<WalletProvider>())..addListener(_handleViewModelChanged);
+    _shouldDisposeViewModel = widget.viewModel == null;
+    _viewModel = widget.viewModel ?? HotWalletCreateViewModel(context.read<WalletProvider>());
+    _viewModel.addListener(_handleViewModelChanged);
     _suggestedWalletName = _generateDefaultWalletName();
     _nameController = TextEditingController();
     _nameFocusNode.addListener(_handleNameFocusChanged);
@@ -72,9 +77,8 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
 
   @override
   void dispose() {
-    _viewModel
-      ..removeListener(_handleViewModelChanged)
-      ..dispose();
+    _viewModel.removeListener(_handleViewModelChanged);
+    if (_shouldDisposeViewModel) _viewModel.dispose();
     _nameFocusNode.removeListener(_handleNameFocusChanged);
     _passphraseFocusNode.removeListener(_handlePassphraseFocusChanged);
     _passphraseConfirmFocusNode.removeListener(_handlePassphraseConfirmFocusChanged);
@@ -177,6 +181,8 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                     ],
                   ),
                   FixedBottomButton(
+                    key: const ValueKey('hot-wallet-create-button'),
+                    buttonKey: const ValueKey('hot-wallet-create-button-target'),
                     text: t.wallet_home_screen.hot_wallet_create.create_wallet,
                     isActive:
                         !_viewModel.isCreating &&
@@ -382,6 +388,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           GestureDetector(
+            key: const ValueKey('hot-wallet-advanced-settings'),
             behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => _isAdvancedSettingsExpanded = !_isAdvancedSettingsExpanded),
             child: Row(
@@ -434,6 +441,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                               for (final wordCount in [12, 24]) ...[
                                 Expanded(
                                   child: Semantics(
+                                    key: ValueKey('hot-wallet-word-count-$wordCount'),
                                     button: true,
                                     selected: _mnemonicWordCount == wordCount,
                                     child: ShrinkAnimationButton(
@@ -479,6 +487,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                           ),
                           CoconutLayout.spacing_500h,
                           SingleButton(
+                            key: const ValueKey('hot-wallet-use-passphrase'),
                             title: t.wallet_home_screen.hot_wallet_create.use_passphrase,
                             subtitle: t.wallet_home_screen.hot_wallet_create.passphrase_description,
                             isVerticalSubtitle: true,
@@ -509,6 +518,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                   KeyedSubtree(
                                     key: _passphraseFieldKey,
                                     child: CoconutTextField(
+                                      key: const ValueKey('hot-wallet-passphrase'),
                                       controller: _passphraseController,
                                       focusNode: _passphraseFocusNode,
                                       maxLength: 100,
@@ -551,6 +561,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                   KeyedSubtree(
                                     key: _passphraseConfirmFieldKey,
                                     child: CoconutTextField(
+                                      key: const ValueKey('hot-wallet-passphrase-confirm'),
                                       controller: _passphraseConfirmController,
                                       focusNode: _passphraseConfirmFocusNode,
                                       maxLength: 100,
@@ -601,6 +612,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                   Padding(
                                     padding: const EdgeInsets.only(top: 16),
                                     child: Listener(
+                                      key: const ValueKey('hot-wallet-enter-passphrase-when-signing'),
                                       onPointerDown: (_) => setState(() => _isPassphraseOptionPressed = true),
                                       onPointerUp: (_) => setState(() => _isPassphraseOptionPressed = false),
                                       onPointerCancel: (_) => setState(() => _isPassphraseOptionPressed = false),

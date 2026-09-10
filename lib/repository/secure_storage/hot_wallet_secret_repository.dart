@@ -30,6 +30,11 @@ class HotWalletSecretRepository {
   String newSecretStorageKey() => '$_secretPrefix${_randomId()}';
 
   Future<void> create({required String storageKey, required Uint8List mnemonic, required Uint8List passphrase}) async {
+    _validateSecretStorageKey(storageKey);
+    if (await _secureStorage.read(key: storageKey) != null ||
+        await _secureStorage.read(key: _fallbackStorageKey(storageKey)) != null) {
+      throw StateError('Hot wallet secret storage key already exists');
+    }
     final result = await _cryptoService.encryptPayload(mnemonic: mnemonic, passphrase: passphrase);
     String? hardwareAlias;
     String? fallbackKey;
@@ -196,6 +201,12 @@ class HotWalletSecretRepository {
   }
 
   String _fallbackStorageKey(String storageKey) => '$storageKey$_fallbackKeySuffix';
+
+  void _validateSecretStorageKey(String storageKey) {
+    if (!storageKey.startsWith(_secretPrefix) || storageKey.endsWith(_fallbackKeySuffix)) {
+      throw ArgumentError.value(storageKey, 'storageKey', 'Invalid hot wallet secret storage key');
+    }
+  }
 
   String _randomId() =>
       List<int>.generate(

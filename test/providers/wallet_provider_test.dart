@@ -202,6 +202,8 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   final List<int> removedWalletIds = [];
   Completer<void>? walletOrderSaveGate;
   Completer<void>? favoriteWalletSaveGate;
+  Object? walletOrderSaveError;
+  Object? favoriteWalletSaveError;
   int setWalletOrderCallCount = 0;
   int setFavoriteWalletIdsCallCount = 0;
   @override
@@ -217,6 +219,7 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   Future<void> setWalletOrder(List<int> walletOrder) async {
     setWalletOrderCallCount++;
     await walletOrderSaveGate?.future;
+    if (walletOrderSaveError != null) throw walletOrderSaveError!;
   }
 
   @override
@@ -226,6 +229,7 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   Future<void> setFavoriteWalletIds(List<int> ids) async {
     setFavoriteWalletIdsCallCount++;
     await favoriteWalletSaveGate?.future;
+    if (favoriteWalletSaveError != null) throw favoriteWalletSaveError!;
   }
 
   @override
@@ -790,6 +794,35 @@ void main() {
       preferenceProvider.favoriteWalletSaveGate!.complete();
       await creationFuture;
       expect(creationCompleted, isTrue);
+
+      provider.dispose();
+    });
+
+    test('활성화 후 환경설정 저장이 실패해도 사용 가능한 지갑과 secret을 유지함', () async {
+      final activeWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo = FakeWalletRepository()..addHotWalletResult = activeWallet;
+      final preferenceProvider = FakePreferenceProvider()..walletOrderSaveError = StateError('preference failed');
+      final secretRepository = FakeHotWalletSecretRepository();
+      final provider = await _buildProvider(
+        walletRepo,
+        preferenceProvider: preferenceProvider,
+        secretRepository: secretRepository,
+      );
+      secretRepository.storedKeys.add('hot_wallet_secret_preferences');
+
+      final result = await provider.addHotWallet(
+        _createSinglesigWatchOnlyWallet(),
+        secureStorageKey: 'hot_wallet_secret_preferences',
+        backupVerified: false,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 10),
+      );
+
+      expect(result.id, activeWallet.id);
+      expect(provider.walletItemList, [activeWallet]);
+      expect(walletRepo.lifecycleUpdates, [(activeWallet.id, HotWalletLifecycleState.active)]);
+      expect(secretRepository.storedKeys, {'hot_wallet_secret_preferences'});
+      expect(secretRepository.deletedKeys, isEmpty);
 
       provider.dispose();
     });

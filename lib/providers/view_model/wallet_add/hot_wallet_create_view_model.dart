@@ -9,9 +9,10 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:flutter/foundation.dart';
 
-({Uint8List mnemonic, String descriptor}) _generateHotWalletMaterial(
-  ({int mnemonicWordCount, Uint8List passphrase}) input,
-) {
+typedef HotWalletMaterial = ({Uint8List mnemonic, String descriptor});
+typedef HotWalletMaterialGenerator = Future<HotWalletMaterial> Function(int mnemonicWordCount, Uint8List passphrase);
+
+HotWalletMaterial _generateHotWalletMaterial(({int mnemonicWordCount, Uint8List passphrase}) input) {
   final passphrase = input.passphrase;
   final seed = Seed.random(mnemonicLength: input.mnemonicWordCount, passphrase: passphrase);
   try {
@@ -22,6 +23,9 @@ import 'package:flutter/foundation.dart';
     passphrase.fillRange(0, passphrase.length, 0);
   }
 }
+
+Future<HotWalletMaterial> _generateHotWalletMaterialInIsolate(int mnemonicWordCount, Uint8List passphrase) =>
+    compute(_generateHotWalletMaterial, (mnemonicWordCount: mnemonicWordCount, passphrase: passphrase));
 
 class HotWalletCreateResult {
   const HotWalletCreateResult({
@@ -45,9 +49,19 @@ class HotWalletCreateResult {
 }
 
 class HotWalletCreateViewModel extends ChangeNotifier {
-  HotWalletCreateViewModel(this._walletProvider);
+  HotWalletCreateViewModel(
+    this._walletProvider, {
+    HotWalletSecretRepository? secretRepository,
+    HotWalletMaterialGenerator? materialGenerator,
+    DateTime Function()? now,
+  }) : _secretRepository = secretRepository ?? HotWalletSecretRepository(), // 테스트코드에서 사용하기 위해 저장소,생성기 주입
+       _materialGenerator = materialGenerator ?? _generateHotWalletMaterialInIsolate,
+       _now = now ?? DateTime.now;
 
   final WalletProvider _walletProvider;
+  final HotWalletSecretRepository _secretRepository;
+  final HotWalletMaterialGenerator _materialGenerator;
+  final DateTime Function() _now;
   bool _isCreating = false;
 
   bool get isCreating => _isCreating;
@@ -72,14 +86,10 @@ class HotWalletCreateViewModel extends ChangeNotifier {
 
     final passphraseBytes = Uint8List.fromList(utf8.encode(passphrase));
     Uint8List? mnemonic;
-    final secretRepository = HotWalletSecretRepository();
-    final storageKey = secretRepository.newSecretStorageKey();
+    final storageKey = _secretRepository.newSecretStorageKey();
 
     try {
-      final material = await compute(_generateHotWalletMaterial, (
-        mnemonicWordCount: mnemonicWordCount,
-        passphrase: Uint8List.fromList(passphraseBytes),
-      ));
+      final material = await _materialGenerator(mnemonicWordCount, Uint8List.fromList(passphraseBytes));
       mnemonic = material.mnemonic;
 
       final wallet = WatchOnlyWallet(
@@ -94,7 +104,7 @@ class HotWalletCreateViewModel extends ChangeNotifier {
       final passphraseToStore = enterPassphraseWhenSigning ? Uint8List(0) : Uint8List.fromList(passphraseBytes);
       try {
         await AppGuard.runWithoutPrivacyScreen(
-          () => secretRepository.create(storageKey: storageKey, mnemonic: mnemonic!, passphrase: passphraseToStore),
+          () => _secretRepository.create(storageKey: storageKey, mnemonic: mnemonic!, passphrase: passphraseToStore),
         );
       } finally {
         passphraseToStore.fillRange(0, passphraseToStore.length, 0);
@@ -105,7 +115,7 @@ class HotWalletCreateViewModel extends ChangeNotifier {
         secureStorageKey: storageKey,
         backupVerified: false,
         enterPassphraseWhenSigning: enterPassphraseWhenSigning,
-        createdAt: DateTime.now(),
+        createdAt: _now(),
       );
 
       return HotWalletCreateResult(
@@ -117,7 +127,7 @@ class HotWalletCreateViewModel extends ChangeNotifier {
       );
     } catch (_) {
       try {
-        await secretRepository.delete(storageKey);
+        await _secretRepository.delete(storageKey);
       } catch (_) {
         // 저장이 시작되기 전 실패했거나 이미 정리된 경우
       }
