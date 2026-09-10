@@ -274,6 +274,8 @@ class FakeHotWalletSecretRepository extends Fake implements HotWalletSecretRepos
   Completer<void>? getKeysGate;
   int getKeysCallCount = 0;
   int containsCallCount = 0;
+  int cleanupAliasesCallCount = 0;
+  Set<String>? lastAliasCleanupReferencedKeys;
 
   FakeHotWalletSecretRepository([Set<String>? storedKeys]) : storedKeys = storedKeys ?? {};
 
@@ -294,6 +296,12 @@ class FakeHotWalletSecretRepository extends Fake implements HotWalletSecretRepos
   Future<void> delete(String storageKey) async {
     deletedKeys.add(storageKey);
     storedKeys.remove(storageKey);
+  }
+
+  @override
+  Future<void> cleanupOrphanHardwareAliases(Set<String> referencedStorageKeys) async {
+    cleanupAliasesCallCount++;
+    lastAliasCleanupReferencedKeys = Set<String>.of(referencedStorageKeys);
   }
 }
 
@@ -942,6 +950,24 @@ void main() {
       expect(secretRepository.storedKeys, isEmpty);
       expect(secretRepository.deletedKeys, ['hot_wallet_secret_orphan']);
 
+      provider.dispose();
+    });
+
+    test('앱 시작 시 현재 Realm metadata가 참조하는 key를 기준으로 orphan alias 정리를 요청함', () async {
+      final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo =
+          FakeWalletRepository()
+            ..walletItems = [hotWallet]
+            ..hotWalletMetadata = [_createHotWalletMetadata()];
+      final secretRepository = FakeHotWalletSecretRepository({'local_wallet_seed_1'});
+
+      final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
+      for (var i = 0; i < 5 && secretRepository.cleanupAliasesCallCount == 0; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      expect(secretRepository.cleanupAliasesCallCount, 1);
+      expect(secretRepository.lastAliasCleanupReferencedKeys, {'local_wallet_seed_1'});
       provider.dispose();
     });
 

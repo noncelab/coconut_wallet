@@ -37,4 +37,14 @@ void main() {
 
     expect(dek, List<int>.filled(32, 7));
   });
+
+  test('네이티브 저장소의 핫월렛 alias 목록을 반환한다', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+      expect(call.method, 'getAliases');
+      expect(call.arguments, isNull);
+      return <String>['hot_wallet_device_key_1', 'hot_wallet_device_key_2'];
+    });
+
+    expect(await DeviceDekKeystore().getAliases(), ['hot_wallet_device_key_1', 'hot_wallet_device_key_2']);
+  });
 }

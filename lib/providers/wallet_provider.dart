@@ -160,10 +160,10 @@ class WalletProvider extends ChangeNotifier {
   Future<bool> _reconcileHotWalletLifecycle() async {
     final metadataList = _walletRepository.getHotWalletMetadataList();
     var walletListChanged = false;
-    Set<String>? storedKeys;
+    Set<String>? indexedKeys;
 
     try {
-      storedKeys = (await _hotWalletSecretRepository.getSecretStorageKeys()).toSet();
+      indexedKeys = (await _hotWalletSecretRepository.getSecretStorageKeys()).toSet();
     } catch (error) {
       Logger.error('Failed to read hot wallet secret keys: $error');
     }
@@ -179,12 +179,13 @@ class WalletProvider extends ChangeNotifier {
             continue;
           }
           await _deleteHotWalletSecretIgnoringFailure(metadata.secureStorageKey);
-          storedKeys?.remove(metadata.secureStorageKey);
+          indexedKeys?.remove(metadata.secureStorageKey);
           await _removeWalletPreferencesIgnoringFailure(metadata.walletId);
           walletListChanged = true;
           break;
         case HotWalletLifecycleState.active:
-          if (storedKeys != null && !storedKeys.contains(metadata.secureStorageKey)) {
+          final hasSecret = await _containsHotWalletSecret(metadata.secureStorageKey);
+          if (hasSecret == false) {
             try {
               await _walletRepository.updateHotWalletLifecycleState(
                 metadata.walletId,
@@ -197,7 +198,8 @@ class WalletProvider extends ChangeNotifier {
           }
           break;
         case HotWalletLifecycleState.recoveryRequired:
-          if (storedKeys?.contains(metadata.secureStorageKey) == true) {
+          final hasSecret = await _containsHotWalletSecret(metadata.secureStorageKey);
+          if (hasSecret == true) {
             try {
               await _walletRepository.updateHotWalletLifecycleState(metadata.walletId, HotWalletLifecycleState.active);
               walletListChanged = true;
@@ -209,15 +211,33 @@ class WalletProvider extends ChangeNotifier {
       }
     }
 
-    if (storedKeys != null) {
-      final referencedKeys =
-          _walletRepository.getHotWalletMetadataList().map((metadata) => metadata.secureStorageKey).toSet();
-      for (final storageKey in storedKeys.where((key) => !referencedKeys.contains(key))) {
+    final referencedKeys =
+        _walletRepository.getHotWalletMetadataList().map((metadata) => metadata.secureStorageKey).toSet();
+    if (indexedKeys != null) {
+      for (final storageKey in indexedKeys.where((key) => !referencedKeys.contains(key))) {
         await _deleteHotWalletSecretIgnoringFailure(storageKey);
       }
     }
+    await _cleanupOrphanHardwareAliasesIgnoringFailure(referencedKeys);
 
     return walletListChanged;
+  }
+
+  Future<bool?> _containsHotWalletSecret(String storageKey) async {
+    try {
+      return await _hotWalletSecretRepository.contains(storageKey);
+    } catch (error) {
+      Logger.error('Failed to check hot wallet secret: $error');
+      return null;
+    }
+  }
+
+  Future<void> _cleanupOrphanHardwareAliasesIgnoringFailure(Set<String> referencedStorageKeys) async {
+    try {
+      await _hotWalletSecretRepository.cleanupOrphanHardwareAliases(referencedStorageKeys);
+    } catch (error) {
+      Logger.error('Failed to clean orphan hot wallet hardware aliases: $error');
+    }
   }
 
   Future<void> _deleteHotWalletSecretIgnoringFailure(String storageKey) async {
@@ -706,7 +726,9 @@ class WalletProvider extends ChangeNotifier {
     }
 
     await _walletRepository.deleteWallet(walletId);
-    if (secretStorageKey != null) await _deleteHotWalletSecretIgnoringFailure(secretStorageKey);
+    if (secretStorageKey != null) {
+      await _deleteHotWalletSecretIgnoringFailure(secretStorageKey);
+    }
     _setWalletItemList(await _fetchWalletListFromDB());
     await _saveWalletCount(_walletItemList.length);
     await _removeWalletPreferencesIgnoringFailure(walletId);

@@ -21,6 +21,7 @@ class DeviceDekKeystoreHandler : MethodChannel.MethodCallHandler {
     companion object {
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
         private const val TRANSFORMATION = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
+        private const val HOT_WALLET_ALIAS_PREFIX = "hot_wallet_device_key_"
     }
 
     private val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
@@ -33,6 +34,10 @@ class DeviceDekKeystoreHandler : MethodChannel.MethodCallHandler {
     )
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
+        if (call.method == "getAliases") {
+            executor.execute { getAliases(result) }
+            return
+        }
         val alias = call.argument<String>("alias")
         if (alias.isNullOrBlank()) {
             result.error("INVALID_ARGUMENT", "alias is required", null)
@@ -48,6 +53,22 @@ class DeviceDekKeystoreHandler : MethodChannel.MethodCallHandler {
             }
             "delete" -> executor.execute { delete(alias, result) }
             else -> result.notImplemented()
+        }
+    }
+
+    private fun getAliases(result: MethodChannel.Result) {
+        try {
+            val aliases = mutableListOf<String>()
+            val keyStoreAliases = keyStore.aliases()
+            while (keyStoreAliases.hasMoreElements()) {
+                val alias = keyStoreAliases.nextElement()
+                if (alias.startsWith(HOT_WALLET_ALIAS_PREFIX)) {
+                    aliases.add(alias)
+                }
+            }
+            result.success(aliases)
+        } catch (error: Exception) {
+            result.error("KEYSTORE_FAILED", error.message, null)
         }
     }
 

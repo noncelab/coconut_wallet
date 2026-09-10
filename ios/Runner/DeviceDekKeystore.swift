@@ -63,6 +63,44 @@ final class DeviceDekKeystore {
         ] as CFDictionary)
     }
 
+    func getAliases() throws -> [String] {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+            kSecMatchLimit as String: kSecMatchLimitAll,
+            kSecReturnAttributes as String: true,
+        ]
+        var items: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &items)
+        if status == errSecItemNotFound {
+            return []
+        }
+        guard status == errSecSuccess else {
+            throw NSError(
+                domain: "DeviceDekKeystore",
+                code: Int(status),
+                userInfo: [NSLocalizedDescriptionKey: "Unable to enumerate Secure Enclave key aliases"]
+            )
+        }
+
+        let attributes: [[String: Any]]
+        if let itemList = items as? [[String: Any]] {
+            attributes = itemList
+        } else if let item = items as? [String: Any] {
+            attributes = [item]
+        } else {
+            attributes = []
+        }
+        return attributes.compactMap { item in
+            guard let tagData = item[kSecAttrApplicationTag as String] as? Data,
+                  let fullTag = String(data: tagData, encoding: .utf8),
+                  fullTag.hasPrefix(tagPrefix) else {
+                return nil
+            }
+            return String(fullTag.dropFirst(tagPrefix.count))
+        }
+    }
+
     private func loadOrCreatePrivateKey(alias: String) throws -> SecKey {
         if let key = loadPrivateKey(alias: alias) {
             return key

@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 class _MemorySecureStorage extends Fake implements SecureStorageRepository {
   final Map<String, String> values = {};
   final Set<String> failingWriteKeys = {};
+  int getAllKeysCallCount = 0;
 
   @override
   Future<void> write({required String key, required String value}) async {
@@ -28,7 +29,10 @@ class _MemorySecureStorage extends Fake implements SecureStorageRepository {
   }
 
   @override
-  Future<List<String>> getAllKeys() async => values.keys.toList();
+  Future<List<String>> getAllKeys() async {
+    getAllKeysCallCount++;
+    return values.keys.toList();
+  }
 }
 
 void main() {
@@ -72,6 +76,7 @@ void main() {
     );
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'getAliases') return osKeys.keys.toList();
       final arguments = call.arguments! as Map<Object?, Object?>;
       final alias = arguments['alias']! as String;
       switch (call.method) {
@@ -232,7 +237,8 @@ void main() {
 
     expect(osKeys, isEmpty);
     expect(deletedAliases, hasLength(1));
-    expect(memoryStorage.values, isEmpty);
+    expect(memoryStorage.values.keys, ['hot_wallet_secret_index_v1']);
+    expect(jsonDecode(memoryStorage.values['hot_wallet_secret_index_v1']!), isEmpty);
   });
 
   test('fallback KEK 저장 후 최종 secret 쓰기가 실패하면 fallback KEK를 삭제한다', () async {
@@ -256,7 +262,8 @@ void main() {
       throwsStateError,
     );
 
-    expect(memoryStorage.values, isEmpty);
+    expect(memoryStorage.values.keys, ['hot_wallet_secret_index_v1']);
+    expect(jsonDecode(memoryStorage.values['hot_wallet_secret_index_v1']!), isEmpty);
     expect(osKeys, isEmpty);
   });
 
@@ -287,6 +294,49 @@ void main() {
     expect(await storage.read(key: storageKey), isNull);
     expect(await storage.read(key: '${storageKey}_fallback_kek'), isNull);
     expect(osKeys, isEmpty);
+  });
+
+  test('기존 secret key를 최초 한 번만 스캔해 인덱스로 전환한다', () async {
+    final memoryStorage = _MemorySecureStorage();
+    memoryStorage.values.addAll({
+      'hot_wallet_secret_legacy': '{}',
+      'hot_wallet_secret_legacy_fallback_kek': 'fallback',
+      'unrelated_key': 'value',
+    });
+    final indexedRepository = HotWalletSecretRepository(
+      secureStorage: memoryStorage,
+      cryptoService: HotWalletCryptoService(random: Random(42)),
+      random: Random(43),
+    );
+
+    expect(await indexedRepository.getSecretStorageKeys(), ['hot_wallet_secret_legacy']);
+    expect(await indexedRepository.getSecretStorageKeys(), ['hot_wallet_secret_legacy']);
+    expect(memoryStorage.getAllKeysCallCount, 1);
+    expect(jsonDecode(memoryStorage.values['hot_wallet_secret_index_v1']!), ['hot_wallet_secret_legacy']);
+  });
+
+  test('secret 생성과 삭제가 storage key 인덱스에 반영된다', () async {
+    const storageKey = 'hot_wallet_secret_indexed_wallet';
+
+    await createSecret(storageKey);
+    expect(await repository.getSecretStorageKeys(), contains(storageKey));
+
+    await repository.delete(storageKey);
+    expect(await repository.getSecretStorageKeys(), isNot(contains(storageKey)));
+  });
+
+  test('Realm이 참조하지 않는 hardware alias를 정리하고 사용 중 alias는 보존한다', () async {
+    const storageKey = 'hot_wallet_secret_referenced_wallet';
+    await createSecret(storageKey);
+    final referencedAlias = (await readSecret(storageKey)).deviceWrappedDek.alias!;
+    const orphanAlias = 'hot_wallet_device_key_orphan';
+    osKeys[orphanAlias] = Uint8List(32);
+
+    await repository.cleanupOrphanHardwareAliases({storageKey});
+
+    expect(osKeys, contains(referencedAlias));
+    expect(osKeys, isNot(contains(orphanAlias)));
+    expect(deletedAliases, contains(orphanAlias));
   });
 
   test('손상된 JSON과 지원하지 않는 version을 거부한다', () async {

@@ -99,14 +99,24 @@ import LocalAuthentication
       binaryMessenger: controller.binaryMessenger
     )
     deviceDekChannel.setMethodCallHandler { [weak self] call, result in
-      guard let self,
-            let arguments = call.arguments as? [String: Any],
-            let alias = arguments["alias"] as? String else {
-        result(FlutterError(code: "INVALID_ARGUMENT", message: "alias is required", details: nil))
+      guard let self else {
+        result(FlutterError(code: "KEYSTORE_UNAVAILABLE", message: "Device keystore is unavailable", details: nil))
         return
       }
       self.deviceDekQueue.async {
         do {
+          if call.method == "getAliases" {
+            let aliases = try self.deviceDekKeystore.getAliases()
+            DispatchQueue.main.async { result(aliases) }
+            return
+          }
+          guard let arguments = call.arguments as? [String: Any],
+                let alias = arguments["alias"] as? String else {
+            DispatchQueue.main.async {
+              result(FlutterError(code: "INVALID_ARGUMENT", message: "alias is required", details: nil))
+            }
+            return
+          }
           switch call.method {
           case "wrap":
             guard let data = (arguments["plaintext"] as? FlutterStandardTypedData)?.data else {
