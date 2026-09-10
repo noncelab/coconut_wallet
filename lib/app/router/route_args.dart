@@ -190,6 +190,7 @@ class BitBox02SignRouteArgs {
   final String walletName;
   final String? walletFingerprint;
   final bool? isFromSendFlow;
+
   const BitBox02SignRouteArgs({
     required this.psbtBase64,
     required this.walletName,
