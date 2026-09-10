@@ -137,6 +137,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   bool _isWordCountDropdownVisible = false;
   bool _canPop = false;
   bool _isCheckingDuplicate = false;
+  bool _isSubmitting = false;
   _RestoreInputMode _inputMode = _RestoreInputMode.mnemonic;
   final GlobalKey _seedQrKey = GlobalKey(debugLabel: 'SeedQR');
   QRViewController? _seedQrScannerController;
@@ -329,7 +330,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   Widget build(BuildContext context) {
     final viewModel = context.watch<HotWalletRestoreViewModel>();
     return PopScope(
-      canPop: _canPop,
+      canPop: _canPop && !_isSubmitting,
       child: Stack(
         children: [
           Listener(
@@ -351,7 +352,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
                         _inputMode == _RestoreInputMode.mnemonic
                             ? t.wallet_home_screen.hot_wallet_restore.scan_seed_qr
                             : t.wallet_home_screen.hot_wallet_restore.enter_mnemonic,
-                    onPressed: _toggleInputMode,
+                    onPressed: _isSubmitting ? null : _toggleInputMode,
                     icon: SvgPicture.asset(
                       _inputMode == _RestoreInputMode.mnemonic ? CommonActionIconPath.scan : CommonActionIconPath.paste,
                       width: 22,
@@ -389,7 +390,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
                         FixedBottomButton(
                           buttonKey: _bottomButtonKey,
                           text: t.wallet_home_screen.hot_wallet_restore.restore_wallet,
-                          isActive: viewModel.canRestore,
+                          isActive: viewModel.canRestore && !_isSubmitting,
                           subWidget: _inputMode == _RestoreInputMode.mnemonic ? _buildMnemonicError(viewModel) : null,
                           surroundingsColor: context.coconutColors.background,
                           onButtonClicked: _restore,
@@ -407,6 +408,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Future<void> _handleAppBarBackPressed() async {
+    if (_isSubmitting) return;
     final viewModel = context.read<HotWalletRestoreViewModel>();
     final hasMnemonic = viewModel.hasScannedMnemonic || viewModel.words.any((word) => word.isNotEmpty);
     if (!hasMnemonic) {
@@ -466,6 +468,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Future<void> _toggleInputMode() async {
+    if (_isSubmitting) return;
     FocusManager.instance.primaryFocus?.unfocus();
     final viewModel = context.read<HotWalletRestoreViewModel>();
     if (_inputMode == _RestoreInputMode.mnemonic) {
@@ -1247,6 +1250,21 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Future<void> _restore() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await _performRestore();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+          _isCheckingDuplicate = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _performRestore() async {
     FocusManager.instance.primaryFocus?.unfocus();
     FocusScope.of(context).requestFocus(_screenFocusNode);
     await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
