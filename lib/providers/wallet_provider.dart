@@ -458,6 +458,32 @@ class WalletProvider extends ChangeNotifier {
       throw StateError('The hot wallet has already been added');
     }
 
+    if (replacingWatchOnlyWalletId != null) {
+      final replacingIndex = _walletItemList.indexWhere((item) => item.id == replacingWatchOnlyWalletId);
+      if (replacingIndex == -1 ||
+          _walletItemList[replacingIndex] is! SinglesigWalletItem ||
+          _walletItemList[replacingIndex].hasLocalKey) {
+        throw StateError('The watch-only wallet to promote is invalid');
+      }
+
+      final promotedWallet = await _walletRepository.promoteWatchOnlyWalletToHotWallet(
+        replacingWatchOnlyWalletId,
+        expectedDescriptor: wallet.descriptor,
+        secureStorageKey: secureStorageKey,
+        backupVerified: backupVerified,
+        enterPassphraseWhenSigning: enterPassphraseWhenSigning,
+        createdAt: createdAt,
+      );
+
+      // ID가 유지되므로 지갑 순서·즐겨찾기·잔액 제외 등의 기존 설정을
+      // 삭제하거나 재생성할 필요 없이 목록의 항목만 핫월렛으로 교체한다.
+      final updatedWallets = List<WalletItemBase>.of(_walletItemList);
+      updatedWallets[replacingIndex] = promotedWallet;
+      _setWalletItemList(updatedWallets);
+      notifyListeners();
+      return promotedWallet;
+    }
+
     final resolvedName = _resolveWalletNameConflict(
       desiredName: wallet.name,
       descriptor: wallet.descriptor,

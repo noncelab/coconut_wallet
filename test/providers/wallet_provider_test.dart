@@ -58,6 +58,8 @@ class FakeWalletRepository extends Fake implements WalletRepository {
 
   int addHotWalletCallCount = 0;
   late SinglesigWalletItem addHotWalletResult;
+  int promoteWatchOnlyWalletCallCount = 0;
+  late SinglesigWalletItem promoteWatchOnlyWalletResult;
 
   int addMultisigWalletCallCount = 0;
   late MultisigWalletItem addMultisigWalletResult;
@@ -123,6 +125,21 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   }
 
   @override
+  Future<SinglesigWalletItem> promoteWatchOnlyWalletToHotWallet(
+    int walletId, {
+    required String expectedDescriptor,
+    required String secureStorageKey,
+    required bool backupVerified,
+    required bool enterPassphraseWhenSigning,
+    required DateTime createdAt,
+  }) async {
+    promoteWatchOnlyWalletCallCount++;
+    walletItems[walletItems.indexWhere((wallet) => wallet.id == walletId)] = promoteWatchOnlyWalletResult;
+    hotWalletMetadata.add(promoteWatchOnlyWalletResult.hotWalletMetadata!);
+    return promoteWatchOnlyWalletResult;
+  }
+
+  @override
   Future<void> updateHotWalletLifecycleState(int walletId, HotWalletLifecycleState state) async {
     lifecycleUpdates.add((walletId, state));
     final index = hotWalletMetadata.indexWhere((metadata) => metadata.walletId == walletId);
@@ -168,9 +185,11 @@ class FakeAddressRepository extends Fake implements AddressRepository {
   FakeAddressRepository({this.error});
 
   final Object? error;
+  int ensureAddressesInitCallCount = 0;
 
   @override
   Future<void> ensureAddressesInit({required WalletItemBase walletItemBase}) async {
+    ensureAddressesInitCallCount++;
     if (error != null) throw error!;
   }
 }
@@ -697,6 +716,46 @@ void main() {
       expect(walletRepo.addHotWalletCallCount, 1);
       expect(walletRepo.lifecycleUpdates, [(2, HotWalletLifecycleState.active)]);
       expect(provider.walletItemList, hasLength(2));
+
+      provider.dispose();
+    });
+
+    test('기존 Watch-only 삭제를 선택하면 같은 ID의 핫월렛으로 승격함', () async {
+      final existingWatchOnly = _createSinglesigWalletListItem(id: 7, name: 'Existing Watch-only');
+      final promotedWallet = _createSinglesigWalletListItem(id: 7, name: 'Existing Watch-only', isHotWallet: true);
+      final walletRepo =
+          FakeWalletRepository()
+            ..walletItems = [existingWatchOnly]
+            ..promoteWatchOnlyWalletResult = promotedWallet;
+      final addressRepository = FakeAddressRepository();
+      final preferenceProvider = FakePreferenceProvider();
+      final sharedPrefsRepository = FakeSharedPrefsRepository();
+      final provider = await _buildProvider(
+        walletRepo,
+        addressRepository: addressRepository,
+        preferenceProvider: preferenceProvider,
+        sharedPrefsRepository: sharedPrefsRepository,
+      );
+
+      final result = await provider.addHotWallet(
+        _createSinglesigWatchOnlyWallet(name: 'New Restore Name'),
+        secureStorageKey: 'local_wallet_seed_promoted',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 9),
+        replacingWatchOnlyWalletId: existingWatchOnly.id,
+      );
+
+      expect(result.id, existingWatchOnly.id);
+      expect(result.name, existingWatchOnly.name);
+      expect(result.hasLocalKey, isTrue);
+      expect(provider.walletItemList, [promotedWallet]);
+      expect(walletRepo.promoteWatchOnlyWalletCallCount, 1);
+      expect(walletRepo.addHotWalletCallCount, 0);
+      expect(walletRepo.deletedWalletIds, isEmpty);
+      expect(addressRepository.ensureAddressesInitCallCount, 0);
+      expect(preferenceProvider.removedWalletIds, isEmpty);
+      expect(sharedPrefsRepository.removedWalletIds, isEmpty);
 
       provider.dispose();
     });

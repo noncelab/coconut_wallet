@@ -18,6 +18,7 @@ void main() {
   late List<String> deletedAliases;
   var hardwareAvailable = true;
   var hardwareDeleteFails = false;
+  String? wrapFailureCode;
 
   Uint8List copyBytes(Object? value) => Uint8List.fromList((value! as Uint8List).toList());
 
@@ -41,6 +42,7 @@ void main() {
     deletedAliases = <String>[];
     hardwareAvailable = true;
     hardwareDeleteFails = false;
+    wrapFailureCode = null;
     repository = HotWalletSecretRepository(
       cryptoService: HotWalletCryptoService(random: Random(42)),
       random: Random(43),
@@ -55,6 +57,9 @@ void main() {
             throw PlatformException(code: 'HARDWARE_UNAVAILABLE');
           }
           osKeys[alias] = copyBytes(arguments['plaintext']);
+          if (wrapFailureCode != null) {
+            throw PlatformException(code: wrapFailureCode!);
+          }
           return <String, dynamic>{
             'ciphertext': Uint8List.fromList(utf8.encode(alias)),
             'protection': 'androidStrongBox',
@@ -104,6 +109,30 @@ void main() {
     expect(plaintext.mnemonic, startsWith('abandon'));
   });
 
+  test('wrap 실패 시 OS에 생성된 alias를 삭제하고 예외를 전파한다', () async {
+    const storageKey = 'failed-wrap-wallet';
+    wrapFailureCode = 'KEYSTORE_FAILED';
+
+    await expectLater(createSecret(storageKey), throwsA(isA<PlatformException>()));
+
+    expect(deletedAliases, hasLength(1));
+    expect(osKeys, isEmpty);
+    expect(await storage.read(key: storageKey), isNull);
+    expect(await storage.read(key: '${storageKey}_fallback_kek'), isNull);
+  });
+
+  test('하드웨어 미지원 실패에도 alias 삭제를 시도한 뒤 SecureStorage로 폴백한다', () async {
+    hardwareAvailable = false;
+    const storageKey = 'fallback-after-cleanup-wallet';
+
+    await createSecret(storageKey);
+
+    expect(deletedAliases, hasLength(1));
+    expect(osKeys, isEmpty);
+    final secret = await readSecret(storageKey);
+    expect(secret.deviceWrappedDek.protection, DeviceKeyProtection.secureStorage);
+  });
+
   test('하드웨어 지갑 삭제 시 secret과 OS alias를 함께 삭제한다', () async {
     const storageKey = 'delete-hardware-wallet';
     await createSecret(storageKey);
@@ -138,6 +167,7 @@ void main() {
     hardwareAvailable = false;
     const storageKey = 'delete-fallback-wallet';
     await createSecret(storageKey);
+    deletedAliases.clear();
 
     await repository.delete(storageKey);
 

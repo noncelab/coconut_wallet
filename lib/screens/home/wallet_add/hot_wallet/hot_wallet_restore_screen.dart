@@ -1296,9 +1296,10 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       if (!mounted) return;
     }
 
-    final hasNameConflict = walletProvider.walletItemList.any(
-      (wallet) => wallet.name == walletName && (!removeWatchOnly || wallet.id != duplicateWatchOnly?.id),
-    );
+    // 기존 Watch-only를 승격할 때는 기존 지갑의 이름·아이콘·색상을 그대로 유지한다.
+    // 따라서 복원 화면의 입력 이름은 신규 지갑을 만들 때에만 충돌을 검사한다.
+    final hasNameConflict =
+        !removeWatchOnly && walletProvider.walletItemList.any((wallet) => wallet.name == walletName);
     if (hasNameConflict) {
       setState(() => _isCheckingDuplicate = false);
       await showInfoDialog(
@@ -1319,9 +1320,6 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         derivedDescriptor: descriptor,
         replacingWatchOnlyWalletId: removeWatchOnly ? duplicateWatchOnly?.id : null,
       );
-      if (removeWatchOnly && duplicateWatchOnly != null) {
-        await walletProvider.deleteWallet(duplicateWatchOnly.id);
-      }
       if (!mounted) return;
       setState(() => _isCheckingDuplicate = false);
       if (context.read<AuthProvider>().isAuthEnabled) {

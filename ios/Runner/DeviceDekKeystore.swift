@@ -6,25 +6,32 @@ final class DeviceDekKeystore {
     private let algorithm = SecKeyAlgorithm.eciesEncryptionCofactorX963SHA256AESGCM
 
     func wrap(alias: String, plaintext: Data) throws -> Data {
-        let privateKey = try loadOrCreatePrivateKey(alias: alias)
-        guard let publicKey = SecKeyCopyPublicKey(privateKey),
-              SecKeyIsAlgorithmSupported(publicKey, .encrypt, algorithm) else {
-            throw NSError(
-                domain: "DeviceDekKeystore",
-                code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "Secure Enclave algorithm unavailable"]
-            )
+        do {
+            let privateKey = try loadOrCreatePrivateKey(alias: alias)
+            guard let publicKey = SecKeyCopyPublicKey(privateKey),
+                  SecKeyIsAlgorithmSupported(publicKey, .encrypt, algorithm) else {
+                throw NSError(
+                    domain: "DeviceDekKeystore",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "Secure Enclave algorithm unavailable"]
+                )
+            }
+            var error: Unmanaged<CFError>?
+            guard let encrypted = SecKeyCreateEncryptedData(
+                publicKey,
+                algorithm,
+                plaintext as CFData,
+                &error
+            ) else {
+                throw error!.takeRetainedValue() as Error
+            }
+            return encrypted as Data
+        } catch {
+            // A permanent Secure Enclave key may exist even though wrapping
+            // failed. Deletion is safe when no key was created.
+            delete(alias: alias)
+            throw error
         }
-        var error: Unmanaged<CFError>?
-        guard let encrypted = SecKeyCreateEncryptedData(
-            publicKey,
-            algorithm,
-            plaintext as CFData,
-            &error
-        ) else {
-            throw error!.takeRetainedValue() as Error
-        }
-        return encrypted as Data
     }
 
     func unwrap(alias: String, ciphertext: Data) throws -> Data {

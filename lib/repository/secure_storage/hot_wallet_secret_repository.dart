@@ -121,8 +121,15 @@ class HotWalletSecretRepository {
       );
     } on MissingPluginException {
       // 시뮬레이터 또는 지원하지 않는 플랫폼은 SecureStorage로 폴백한다.
+      await _deleteHardwareKeyIgnoringFailure(hardwareAlias);
     } on PlatformException catch (error) {
+      // 네이티브 wrap 도중 OS 키만 생성된 뒤 실패했을 수 있다.
+      // 키 생성 여부와 관계없이 삭제를 시도해 고아 alias가 남지 않게 한다.
+      await _deleteHardwareKeyIgnoringFailure(hardwareAlias);
       if (error.code != 'HARDWARE_UNAVAILABLE') rethrow;
+    } catch (_) {
+      await _deleteHardwareKeyIgnoringFailure(hardwareAlias);
+      rethrow;
     }
 
     final fallbackKeyStorageKey = _fallbackStorageKey(storageKey);

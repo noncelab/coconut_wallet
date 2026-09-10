@@ -81,9 +81,20 @@ class DeviceDekKeystoreHandler : MethodChannel.MethodCallHandler {
                 ),
             )
         } catch (error: HardwareUnavailableException) {
+            deleteEntryIgnoringFailure(alias)
             result.error("HARDWARE_UNAVAILABLE", error.message, null)
         } catch (error: Exception) {
+            deleteEntryIgnoringFailure(alias)
             result.error("KEYSTORE_FAILED", error.message, null)
+        }
+    }
+
+    private fun deleteEntryIgnoringFailure(alias: String) {
+        try {
+            keyStore.deleteEntry(alias)
+        } catch (_: Exception) {
+            // Preserve the original wrap error. Dart also retries this
+            // idempotent deletion after receiving the platform error.
         }
     }
 
