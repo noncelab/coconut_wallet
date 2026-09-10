@@ -24,6 +24,9 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_restore_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/mnemonic_input_section.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/passphrase_options_section.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/seed_qr_input_section.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -540,119 +543,111 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
               : screenSize.width > 600
               ? 500.0
               : screenSize.width * 0.85;
-      return Stack(
-        children: [
-          if (_hasCameraPermission)
-            QRView(
-              key: _seedQrKey,
-              onQRViewCreated: _onSeedQrViewCreated,
-              overlay: QrScannerOverlayShape(
-                overlayColor: CoconutColors.black.withValues(alpha: 0.45),
-                borderColor: CoconutColors.white,
-                borderRadius: 10,
-                borderLength: scanSize * 0.5,
-                borderWidth: 10,
-                cutOutSize: scanSize,
-              ),
-            )
-          else
-            const Center(child: CoconutCircularIndicator()),
-          Positioned(
-            top: 20,
-            left: 16,
-            right: 16,
-            child: CoconutToolTip(
-              backgroundColor: context.coconutColors.surface,
-              borderColor: context.coconutColors.surface,
-              tooltipType: CoconutTooltipType.fixed,
-              icon: SvgPicture.asset(
-                CommonStateIconPath.circleInfo,
-                width: 20,
-                height: 20,
-                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-              ),
-              richText: RichText(
-                text: TextSpan(
-                  text: t.wallet_home_screen.hot_wallet_restore.seed_qr_guide,
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.3),
+      return SeedQrInputSection.scanner(
+        scanner: Stack(
+          children: [
+            if (_hasCameraPermission)
+              QRView(
+                key: _seedQrKey,
+                onQRViewCreated: _onSeedQrViewCreated,
+                overlay: QrScannerOverlayShape(
+                  overlayColor: CoconutColors.black.withValues(alpha: 0.45),
+                  borderColor: CoconutColors.white,
+                  borderRadius: 10,
+                  borderLength: scanSize * 0.5,
+                  borderWidth: 10,
+                  cutOutSize: scanSize,
+                ),
+              )
+            else
+              const Center(child: CoconutCircularIndicator()),
+            Positioned(
+              top: 20,
+              left: 16,
+              right: 16,
+              child: CoconutToolTip(
+                backgroundColor: context.coconutColors.surface,
+                borderColor: context.coconutColors.surface,
+                tooltipType: CoconutTooltipType.fixed,
+                icon: SvgPicture.asset(
+                  CommonStateIconPath.circleInfo,
+                  width: 20,
+                  height: 20,
+                  colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                ),
+                richText: RichText(
+                  text: TextSpan(
+                    text: t.wallet_home_screen.hot_wallet_restore.seed_qr_guide,
+                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.3),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
 
-    return SingleChildScrollView(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 150),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: context.coconutColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: context.coconutColors.border),
+    return SeedQrInputSection.scanned(
+      scrollController: _scrollController,
+      scannedResult: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: context.coconutColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: context.coconutColors.border),
+        ),
+        child: Column(
+          children: [
+            SvgPicture.asset(
+              CommonFormIconPath.circleCheck,
+              colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
-            child: Column(
-              children: [
-                SvgPicture.asset(
-                  CommonFormIconPath.circleCheck,
-                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                ),
-                CoconutLayout.spacing_300h,
-                Text(
-                  t.wallet_home_screen.hot_wallet_restore.seed_qr_scanned,
-                  style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-                ),
-                CoconutLayout.spacing_100h,
-                Text(
-                  t.wallet_home_screen.hot_wallet_restore.seed_qr_word_count(
-                    count: viewModel.scannedMnemonicWordCount!,
-                  ),
-                  style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                ),
-                if (_isMasterFingerprintLoading) ...[
-                  CoconutLayout.spacing_50h,
-                  const SizedBox(width: 48, height: 32, child: Center(child: CoconutCircularIndicator())),
-                ] else if (_scannedMasterFingerprint != null) ...[
-                  CoconutLayout.spacing_50h,
-                  Text(
-                    'MFP $_scannedMasterFingerprint',
-                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
-                  ),
-                  CoconutLayout.spacing_300h,
-                ],
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapDown: (_) => setState(() => _isRescanButtonPressed = true),
-                  onTapUp: (_) => setState(() => _isRescanButtonPressed = false),
-                  onTapCancel: () => setState(() => _isRescanButtonPressed = false),
-                  onTap: _rescanSeedQr,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 100),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 100),
-                      style: CoconutTypography.body2_14_Bold.setColor(
-                        _isRescanButtonPressed ? context.coconutColors.mutedText : context.coconutColors.primaryText,
-                      ),
-                      child: Text(t.wallet_home_screen.hot_wallet_restore.rescan_seed_qr),
-                    ),
-                  ),
-                ),
-              ],
+            CoconutLayout.spacing_300h,
+            Text(
+              t.wallet_home_screen.hot_wallet_restore.seed_qr_scanned,
+              style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
             ),
-          ),
-          CoconutLayout.spacing_700h,
-          _buildPassphraseSection(viewModel),
-          CoconutLayout.spacing_700h,
-          _buildWalletNameField(),
-        ],
+            CoconutLayout.spacing_100h,
+            Text(
+              t.wallet_home_screen.hot_wallet_restore.seed_qr_word_count(count: viewModel.scannedMnemonicWordCount!),
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+            ),
+            if (_isMasterFingerprintLoading) ...[
+              CoconutLayout.spacing_50h,
+              const SizedBox(width: 48, height: 32, child: Center(child: CoconutCircularIndicator())),
+            ] else if (_scannedMasterFingerprint != null) ...[
+              CoconutLayout.spacing_50h,
+              Text(
+                'MFP $_scannedMasterFingerprint',
+                style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
+              ),
+              CoconutLayout.spacing_300h,
+            ],
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (_) => setState(() => _isRescanButtonPressed = true),
+              onTapUp: (_) => setState(() => _isRescanButtonPressed = false),
+              onTapCancel: () => setState(() => _isRescanButtonPressed = false),
+              onTap: _rescanSeedQr,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 100),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 100),
+                  style: CoconutTypography.body2_14_Bold.setColor(
+                    _isRescanButtonPressed ? context.coconutColors.mutedText : context.coconutColors.primaryText,
+                  ),
+                  child: Text(t.wallet_home_screen.hot_wallet_restore.rescan_seed_qr),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+      passphraseOptions: _buildPassphraseSection(viewModel),
+      walletNameField: _buildWalletNameField(),
     );
   }
 
@@ -820,25 +815,12 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Widget _buildMnemonicInputSection(HotWalletRestoreViewModel viewModel) {
-    return Stack(
-      children: [
-        SingleChildScrollView(
-          controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 150),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildMnemonicGrid(viewModel),
-              CoconutLayout.spacing_700h,
-              _buildPassphraseSection(viewModel),
-              CoconutLayout.spacing_700h,
-              _buildWalletNameField(),
-            ],
-          ),
-        ),
-        if (_isWordCountDropdownVisible) _buildWordCountDropdown(),
-      ],
+    return MnemonicInputSection(
+      scrollController: _scrollController,
+      mnemonicInput: _buildMnemonicGrid(viewModel),
+      passphraseOptions: _buildPassphraseSection(viewModel),
+      walletNameField: _buildWalletNameField(),
+      overlay: _isWordCountDropdownVisible ? _buildWordCountDropdown() : null,
     );
   }
 
@@ -1070,37 +1052,19 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Widget _buildPassphraseSection(HotWalletRestoreViewModel viewModel) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                t.wallet_home_screen.hot_wallet_create.use_passphrase,
-                style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-              ),
-            ),
-            CoconutSwitch(
-              isOn: viewModel.usePassphrase,
-              scale: 0.75,
-              activeTrackColor: context.coconutColors.switchActiveTrack,
-              activeThumbColor: context.coconutColors.switchActiveThumb,
-              inactiveTrackColor: context.coconutColors.switchInactiveTrack,
-              inactiveThumbColor: context.coconutColors.switchInactiveThumb,
-              onChanged: (value) {
-                if (!value) {
-                  _passphraseFocusNode.unfocus();
-                  _passphraseController.clear();
-                  _passphraseVisible = false;
-                }
-                viewModel.setUsePassphrase(value);
-                _scheduleMasterFingerprintUpdate(immediate: !value);
-              },
-            ),
-          ],
-        ),
-        if (viewModel.usePassphrase) ...[
-          CoconutLayout.spacing_200h,
+    return PassphraseOptionsSection(
+      isEnabled: viewModel.usePassphrase,
+      onEnabledChanged: (value) {
+        if (!value) {
+          _passphraseFocusNode.unfocus();
+          _passphraseController.clear();
+          _passphraseVisible = false;
+        }
+        viewModel.setUsePassphrase(value);
+        _scheduleMasterFingerprintUpdate(immediate: !value);
+      },
+      options: Column(
+        children: [
           CoconutTextField(
             key: _passphraseFieldKey,
             controller: _passphraseController,
@@ -1152,7 +1116,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
             ],
           ),
         ],
-      ],
+      ),
     );
   }
 

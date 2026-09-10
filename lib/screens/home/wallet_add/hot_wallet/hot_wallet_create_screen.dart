@@ -10,9 +10,9 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_create_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/wallet_appearance_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
-import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/wallet_name_util.dart';
@@ -305,76 +305,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
 
   Widget _buildSectionTitle(String text) {
     return Text(text, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText));
-  }
-
-  Widget _buildColorPalette({required int selectedColorIndex, required ValueChanged<int> onSelected}) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 24,
-      ),
-      itemCount: CoconutColors.colorPalette.length,
-      itemBuilder: (context, index) {
-        final isSelected = index == selectedColorIndex;
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => onSelected(index),
-          child: Center(
-            child: Container(
-              width: 42,
-              height: 42,
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? context.coconutColors.primaryText : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: DecoratedBox(
-                decoration: BoxDecoration(shape: BoxShape.circle, color: CoconutColors.colorPalette[index]),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildIconItem({required int iconIndex, required int selectedIconIndex, required VoidCallback onSelected}) {
-    final isSelected = iconIndex == selectedIconIndex;
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onSelected,
-        child: Center(
-          child: Container(
-            width: 42,
-            height: 42,
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: isSelected ? context.coconutColors.primaryText : Colors.transparent, width: 2),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(shape: BoxShape.circle, color: context.coconutColors.iconBackgroundSubtle),
-              child: SvgPicture.asset(
-                CustomWalletIcons.getPathByIndex(iconIndex),
-                fit: BoxFit.contain,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildAdvancedSettings() {
@@ -700,130 +630,26 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
     setState(() => _usePassphrase = value);
   }
 
-  Widget _buildAppearancePreview({required int colorIndex, required int iconIndex}) {
-    final walletName = _nameController.text.trim().isEmpty ? _suggestedWalletName : _nameController.text.trim();
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.coconutColors.surface,
-        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-      ),
-      child: Row(
-        children: [
-          WalletIcon(
-            walletImportSource: WalletImportSource.coconutVault,
-            colorIndex: colorIndex,
-            iconIndex: iconIndex,
-            badgeSvgAssetPath: FeatureWalletIconPath.hotWalletFire,
-            badgeSize: 18,
-          ),
-          CoconutLayout.spacing_300w,
-          Expanded(
-            child: Text(
-              walletName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _showAppearanceSettings() async {
     _nameFocusNode.unfocus();
     FocusScope.of(context).requestFocus(_screenFocusNode);
-    var temporaryColorIndex = _selectedColorIndex;
-    var temporaryIconIndex = _selectedIconIndex;
-
     await CommonBottomSheets.showBottomSheet<void>(
       context: context,
       title: t.wallet_home_screen.hot_wallet_create.appearance_settings,
       showDragHandle: true,
       showCloseButton: true,
       adjustForKeyboardInset: false,
-      child: SafeArea(
-        top: false,
-        child: StatefulBuilder(
-          builder:
-              (bottomSheetContext, setBottomSheetState) => SizedBox(
-                height: MediaQuery.sizeOf(context).height * 0.65,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildAppearancePreview(colorIndex: temporaryColorIndex, iconIndex: temporaryIconIndex),
-                            CoconutLayout.spacing_500h,
-                            _buildSectionTitle(t.wallet_home_screen.hot_wallet_create.color),
-                            CoconutLayout.spacing_200h,
-                            _buildColorPalette(
-                              selectedColorIndex: temporaryColorIndex,
-                              onSelected: (index) => setBottomSheetState(() => temporaryColorIndex = index),
-                            ),
-                            CoconutLayout.spacing_500h,
-                            _buildSectionTitle(t.wallet_home_screen.hot_wallet_create.icon),
-                            CoconutLayout.spacing_200h,
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              padding: EdgeInsets.zero,
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 5,
-                                mainAxisSpacing: 10,
-                                crossAxisSpacing: 24,
-                              ),
-                              itemCount: CustomWalletIcons.totalCount,
-                              itemBuilder:
-                                  (context, index) => _buildIconItem(
-                                    iconIndex: index,
-                                    selectedIconIndex: temporaryIconIndex,
-                                    onSelected: () => setBottomSheetState(() => temporaryIconIndex = index),
-                                  ),
-                            ),
-                            CoconutLayout.spacing_300h,
-                          ],
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ShrinkAnimationButton(
-                          onPressed: () {
-                            setState(() {
-                              _selectedColorIndex = temporaryColorIndex;
-                              _selectedIconIndex = temporaryIconIndex;
-                            });
-                            Navigator.pop(bottomSheetContext);
-                          },
-                          defaultColor: context.coconutColors.buttonPrimaryBackground,
-                          pressedColor: context.coconutColors.buttonPrimaryPressOverlay,
-                          borderRadius: CoconutStyles.radius_200,
-                          child: SizedBox(
-                            height: 52,
-                            child: Center(
-                              child: Text(
-                                t.done,
-                                style: CoconutTypography.body1_16_Bold.setColor(
-                                  context.coconutColors.buttonPrimaryForeground,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-        ),
+      child: WalletAppearanceSheet(
+        walletName: _nameController.text.trim().isEmpty ? _suggestedWalletName : _nameController.text.trim(),
+        initialColorIndex: _selectedColorIndex,
+        initialIconIndex: _selectedIconIndex,
+        onDone: (selection) {
+          setState(() {
+            _selectedColorIndex = selection.colorIndex;
+            _selectedIconIndex = selection.iconIndex;
+          });
+          Navigator.pop(context);
+        },
       ),
     );
 
