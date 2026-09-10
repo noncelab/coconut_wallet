@@ -215,7 +215,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         Tuple7<
           List<WalletItemBase>,
           List<WalletItemBase>,
-          Tuple2<bool, bool>,
+          bool,
           bool,
           Map<int, AnimatedBalanceData>,
           Tuple2<int?, Map<int, dynamic>>,
@@ -226,7 +226,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             (_, vm) => Tuple7(
               vm.walletItemList,
               vm.favoriteWallets,
-              Tuple2(vm.isBalanceHidden, vm.isBalanceHidden),
+              vm.isBalanceHidden,
               vm.shouldShowLoadingIndicator,
               vm.walletBalanceMap,
               Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
@@ -239,7 +239,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           );
           final walletItem = data.item1;
           final favoriteWallets = data.item2;
-          final balanceVisibilityData = data.item3;
+          final isBalanceHidden = data.item3;
           final shouldShowLoadingIndicator = data.item4;
           final walletBalanceMap = data.item5;
           final fakeBalanceData = data.item6;
@@ -302,8 +302,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             CupertinoSliverRefreshControl(onRefresh: _onRefresh, refreshTriggerPullDistance: 80),
                           _buildLoadingIndicator(context, viewModel),
                           _buildHeader(
-                            balanceVisibilityData.item1,
-                            balanceVisibilityData.item2,
+                            isBalanceHidden,
                             fakeBalanceData.item1,
                             shouldShowLoadingIndicator,
                             walletItem.isEmpty,
@@ -616,7 +615,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildHeader(
     bool isBalanceHidden,
-    bool isFiatBalanceHidden,
     int? fakeBalanceTotalAmount,
     bool shouldShowLoadingIndicator,
     bool isWalletListEmpty,
