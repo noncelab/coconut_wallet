@@ -346,6 +346,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
   }
 
   Future<void> _enterAuthenticationStage({required bool requiresAuthentication}) async {
+    if (!mounted) return;
     setState(() {
       _isLocalSigning = true;
       _signingStage = requiresAuthentication ? _HotWalletSigningStage.authentication : _HotWalletSigningStage.signing;
