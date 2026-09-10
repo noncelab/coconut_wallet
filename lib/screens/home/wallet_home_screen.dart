@@ -1646,7 +1646,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       context,
       '/hot-wallet-mnemonic-backup-guide',
       arguments: {
-        'walletName': walletItem.name,
         'walletId': walletItem.id,
         'descriptor': walletItem.descriptor,
         'secureStorageKey': metadata.secureStorageKey,

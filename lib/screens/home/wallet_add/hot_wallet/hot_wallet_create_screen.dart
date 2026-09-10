@@ -684,7 +684,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
         context,
         '/hot-wallet-mnemonic-backup-guide',
         arguments: {
-          'walletName': result.walletName,
           'walletId': result.walletId,
           'descriptor': result.descriptor,
           'mnemonic': result.mnemonic,

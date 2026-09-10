@@ -731,7 +731,6 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
       context,
       '/hot-wallet-mnemonic-backup-guide',
       arguments: {
-        'walletName': viewModel.walletItemBase.name,
         'walletId': widget.id,
         'descriptor': viewModel.walletItemBase.descriptor,
         'secureStorageKey': metadata.secureStorageKey,

@@ -23,7 +23,6 @@ import 'package:provider/provider.dart';
 class HotWalletMnemonicBackupGuideScreen extends StatefulWidget {
   const HotWalletMnemonicBackupGuideScreen({
     super.key,
-    required this.walletName,
     required this.walletId,
     required this.descriptor,
     this.mnemonic,
@@ -35,7 +34,6 @@ class HotWalletMnemonicBackupGuideScreen extends StatefulWidget {
     this.returnToPreviousOnExit = false,
   });
 
-  final String walletName;
   final int walletId;
   final String descriptor;
   final Uint8List? mnemonic;
