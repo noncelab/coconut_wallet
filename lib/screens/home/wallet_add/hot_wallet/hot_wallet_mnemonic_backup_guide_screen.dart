@@ -77,7 +77,10 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
       _isBackupTitleMoved = true;
       _isBackupLottieVisible = true;
       _isBackupPreparationStage = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _showBackupPreparation());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showBackupPreparation();
+      });
     }
   }
 
@@ -526,7 +529,8 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
   }
 
   Future<void> _showBackupPreparation() async {
-    if (_isStageTransitioning) return;
+    if (!mounted || _isStageTransitioning) return;
+
     _isStageTransitioning = true;
     setState(() {
       _isBottomButtonVisible = false;
@@ -551,7 +555,8 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
   }
 
   Future<void> _hideBackupPreparation() async {
-    if (_isStageTransitioning) return;
+    if (!mounted || _isStageTransitioning) return;
+
     _isStageTransitioning = true;
     setState(() => _isBottomButtonVisible = false);
     await Future<void>.delayed(const Duration(milliseconds: 100));
