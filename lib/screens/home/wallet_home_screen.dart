@@ -1032,7 +1032,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     });
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(color: context.coconutColors.homeSurface, borderRadius: BorderRadius.circular(20)),
