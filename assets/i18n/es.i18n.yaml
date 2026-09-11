@@ -661,6 +661,7 @@ wallet_list:
   header:
     total_amount: "Tenencias totales"
     balance_history: "Cambio de saldo"
+    bitcoin_price: "Precio de 1 BTC"
     converted_amount: "Importe convertido"
     than_yesterday: "Desde ayer"
     than_a_week_ago: "Hace 7 días"

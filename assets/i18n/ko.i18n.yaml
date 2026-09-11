@@ -660,6 +660,7 @@ wallet_list:
   header:
     total_amount: "총 보유 수량"
     balance_history: "보유 수량 변화"
+    bitcoin_price: "1 BTC 가격"
     converted_amount: "환산 금액"
     than_yesterday: "어제보다"
     than_a_week_ago: "일주일 전보다"

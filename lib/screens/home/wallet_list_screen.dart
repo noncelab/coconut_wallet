@@ -577,34 +577,45 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               _viewModel.isWalletListBitcoinPriceVisible
                   ? Column(
                     key: const ValueKey('bitcoin_price_info_visible'),
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CoconutLayout.spacing_100h,
+                      CoconutLayout.spacing_300h,
+                      const Divider(height: 1),
+                      CoconutLayout.spacing_300h,
                       Row(
                         children: [
                           Text(
-                            '1 BTC = ',
-                            style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
+                            t.wallet_list.header.bitcoin_price,
+                            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong),
                           ),
-                          ListenableBuilder(
-                            listenable: _viewModel,
-                            builder: (context, _) {
-                              final oneBtcFiatPrice = _viewModel.getBitcoinPrice(100000000, _viewModel.selectedFiat);
-                              return Text(
-                                oneBtcFiatPrice.isEmpty ? '-' : oneBtcFiatPrice,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.secondaryText),
-                              );
-                            },
+                          const Spacer(),
+                          _BitcoinPriceInfoButton(viewModel: _viewModel),
+                        ],
+                      ),
+                      CoconutLayout.spacing_200h,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ListenableBuilder(
+                              listenable: _viewModel,
+                              builder: (context, _) {
+                                final oneBtcFiatPrice = _viewModel.getBitcoinPrice(100000000, _viewModel.selectedFiat);
+                                return FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    oneBtcFiatPrice.isEmpty ? '-' : oneBtcFiatPrice,
+                                    maxLines: 1,
+                                    style: CoconutTypography.body1_16_Number.setColor(
+                                      context.coconutColors.primaryText,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                           CoconutLayout.spacing_300w,
                           _HistoricalPriceChangeChip(viewModel: _viewModel),
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: _BitcoinPriceInfoButton(viewModel: _viewModel),
-                            ),
-                          ),
                         ],
                       ),
                     ],

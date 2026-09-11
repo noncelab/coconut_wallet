@@ -537,6 +537,7 @@ wallet_list:
   header:
     total_amount: "総保有量"
     balance_history: "保有量の推移"
+    bitcoin_price: "1 BTCの価格"
     converted_amount: "換算額"
     than_yesterday: "昨日比"
     than_a_week_ago: "1週間前比"

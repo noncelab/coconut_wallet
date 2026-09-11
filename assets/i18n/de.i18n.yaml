@@ -660,6 +660,7 @@ wallet_list:
   header:
     total_amount: "Gesamtbestand"
     balance_history: "Bestandsverlauf"
+    bitcoin_price: "Preis für 1 BTC"
     converted_amount: "Umgerechneter Betrag"
     than_yesterday: "Seit gestern"
     than_a_week_ago: "Vor 7 Tagen"
