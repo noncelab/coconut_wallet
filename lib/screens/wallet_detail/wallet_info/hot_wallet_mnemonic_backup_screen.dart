@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
@@ -15,15 +17,15 @@ class HotWalletMnemonicBackupScreen extends StatefulWidget {
   const HotWalletMnemonicBackupScreen({
     super.key,
     required this.mnemonic,
-    this.passphrase = '',
+    required this.passphrase,
     this.enterPassphraseWhenSigning = false,
     this.descriptor = '',
     this.walletId,
     this.continueToAppLockGuide = false,
   });
 
-  final String mnemonic;
-  final String passphrase;
+  final Uint8List mnemonic;
+  final Uint8List passphrase;
   final bool enterPassphraseWhenSigning;
   final String descriptor;
   final int? walletId;
@@ -35,13 +37,20 @@ class HotWalletMnemonicBackupScreen extends StatefulWidget {
 
 class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupScreen> {
   late final List<String> _words;
+  late final String _passphraseDisplay;
   bool _isWarningVisible = true;
   bool _isPassphraseVisible = false;
 
   @override
   void initState() {
     super.initState();
-    _words = widget.mnemonic.trim().split(RegExp(r'\s+')).where((word) => word.isNotEmpty).toList(growable: false);
+    _words = utf8
+        .decode(widget.mnemonic)
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .toList(growable: false);
+    _passphraseDisplay = utf8.decode(widget.passphrase);
   }
 
   @override
@@ -67,7 +76,7 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: _PassphraseCard(
-                        passphrase: widget.passphrase,
+                        passphrase: _passphraseDisplay,
                         isVisible: _isPassphraseVisible,
                         onPressed: () => setState(() => _isPassphraseVisible = !_isPassphraseVisible),
                       ),

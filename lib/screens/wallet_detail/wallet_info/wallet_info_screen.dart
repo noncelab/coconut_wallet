@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 
@@ -713,7 +712,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         await Navigator.pushNamed(
           context,
           '/hot-wallet-passphrase-check',
-          arguments: {'mnemonic': utf8.decode(plaintext.mnemonic), 'descriptor': viewModel.walletItemBase.descriptor},
+          arguments: {'mnemonic': plaintext.mnemonic, 'descriptor': viewModel.walletItemBase.descriptor},
         );
       } finally {
         plaintext.wipe();

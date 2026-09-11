@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
@@ -7,6 +6,7 @@ import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
@@ -477,26 +477,23 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
   }
 
   Future<void> _startMnemonicBackupFlow() async {
+    HotWalletPlaintext? plaintext;
     try {
-      String mnemonic;
-      String passphrase;
+      final Uint8List mnemonic;
+      final Uint8List passphrase;
       if (widget.secureStorageKey != null) {
-        final plaintext = await HotWalletUnlockService(
+        plaintext = await HotWalletUnlockService(
           authenticator: FlutterHotWalletAuthenticator(context),
         ).unlock(widget.secureStorageKey!);
         if (!mounted || plaintext == null) return;
-        try {
-          mnemonic = utf8.decode(plaintext.mnemonic);
-          passphrase = utf8.decode(plaintext.passphrase);
-        } finally {
-          plaintext.wipe();
-        }
+        mnemonic = plaintext.mnemonic;
+        passphrase = plaintext.passphrase;
       } else {
         final mnemonicBytes = widget.mnemonic;
         final passphraseBytes = widget.passphrase;
         if (mnemonicBytes == null || passphraseBytes == null) return;
-        mnemonic = utf8.decode(mnemonicBytes);
-        passphrase = utf8.decode(passphraseBytes);
+        mnemonic = mnemonicBytes;
+        passphrase = passphraseBytes;
       }
 
       final isBackupConfirmed = await Navigator.pushNamed(
@@ -523,6 +520,11 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
         t.alert.error_occurs,
         error.toString(),
       );
+    } finally {
+      // secureStorageKey 경로에서 unlock한 plaintext는 이 화면이 소유한다.
+      // 바이트를 하위 화면에 전달한 뒤 하위 화면이 dispose될 때까지 기다렸다가
+      // (await Navigator.pushNamed 완료 후) wipe한다.
+      plaintext?.wipe();
     }
   }
 
