@@ -372,5 +372,6 @@ class ElectrumService {
   SocketConnectionStatus get connectionStatus => _socketManager.connectionStatus;
 
   /// 직전 connect() 시도가 신뢰할 수 없는 인증서(HandshakeException) 때문에 실패했는지 여부
-  bool get lastConnectionFailedDueToUntrustedCertificate => _socketManager.lastConnectionFailedDueToUntrustedCertificate;
+  bool get lastConnectionFailedDueToUntrustedCertificate =>
+      _socketManager.lastConnectionFailedDueToUntrustedCertificate;
 }
