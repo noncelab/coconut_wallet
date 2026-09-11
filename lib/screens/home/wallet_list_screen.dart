@@ -1518,7 +1518,7 @@ class _HistoricalPriceChangeChipState extends State<_HistoricalPriceChangeChip> 
       historicalPrices.thirtyDaysAgoClose,
     ];
     final changeRate = (currentPrice - pastPrices[_periodIndex]) / pastPrices[_periodIndex] * 100;
-    final changeColor = changeRate >= 0 ? context.coconutColors.primary : context.coconutColors.warning;
+    final changeColor = changeRate >= 0 ? context.coconutColors.success : context.coconutColors.warning;
     final changeRateText = '${changeRate >= 0 ? '+' : ''}${changeRate.toStringAsFixed(1)}%';
 
     return Listener(
