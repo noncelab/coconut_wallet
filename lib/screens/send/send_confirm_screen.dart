@@ -456,26 +456,43 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     Uint8List? passphrase;
     try {
       if (requiresPassphrase) {
-        passphrase = await CommonBottomSheets.showBottomSheet<Uint8List>(
-          context: context,
-          title: t.send_confirm_screen.passphrase_input_title,
-          showCloseButton: true,
-          backgroundColor: context.coconutColors.surfaceBottomSheet,
-          showDragHandle: true,
-          titlePadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          child: _HotWalletPassphraseInputSheet(
-            requiresAuthentication: requiresAuthentication,
-            validatePassphrase:
-                (passphrase) =>
-                    AppGuard.runWithoutPrivacyScreen(() => viewModel.validateHotWalletPassphrase(passphrase)),
-            onAuthenticationStarted: () => _enterAuthenticationStage(requiresAuthentication: true),
-            onPassphraseInputResumed: _resumePassphraseInput,
-          ),
-        );
-        if (!mounted || passphrase == null) return;
-        if (!requiresAuthentication) {
-          await _enterAuthenticationStage(requiresAuthentication: false);
+        var showIncorrectError = false;
+        while (mounted) {
+          passphrase = await CommonBottomSheets.showBottomSheet<Uint8List>(
+            context: context,
+            title: t.send_confirm_screen.passphrase_input_title,
+            showCloseButton: true,
+            backgroundColor: context.coconutColors.surfaceBottomSheet,
+            showDragHandle: true,
+            titlePadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            keyboardInsetAnimationDuration: Duration.zero,
+            child: _HotWalletPassphraseInputSheet(
+              requiresAuthentication: requiresAuthentication,
+              showIncorrectError: showIncorrectError,
+              onAuthenticationStarted: () => _enterAuthenticationStage(requiresAuthentication: true),
+              onPassphraseInputResumed: _resumePassphraseInput,
+            ),
+          );
+          if (!mounted || passphrase == null) return;
+
+          _resumePassphraseInput();
+          await WidgetsBinding.instance.endOfFrame;
           if (!mounted) return;
+          context.loaderOverlay.show();
+          final isMatchingWallet = await AppGuard.runWithoutPrivacyScreen(
+            () => viewModel.validateHotWalletPassphrase(passphrase!),
+          );
+          if (!mounted) return;
+          context.loaderOverlay.hide();
+          if (isMatchingWallet) {
+            await _enterAuthenticationStage(requiresAuthentication: false);
+            if (!mounted) return;
+            break;
+          }
+
+          passphrase.fillRange(0, passphrase.length, 0);
+          passphrase = null;
+          showIncorrectError = true;
         }
       } else {
         final authenticated = await AppGuard.runWithoutPrivacyScreen(
@@ -726,13 +743,13 @@ class _SigningContentTransition extends StatelessWidget {
 class _HotWalletPassphraseInputSheet extends StatefulWidget {
   const _HotWalletPassphraseInputSheet({
     required this.requiresAuthentication,
-    required this.validatePassphrase,
+    required this.showIncorrectError,
     required this.onAuthenticationStarted,
     required this.onPassphraseInputResumed,
   });
 
   final bool requiresAuthentication;
-  final Future<bool> Function(Uint8List passphrase) validatePassphrase;
+  final bool showIncorrectError;
   final Future<void> Function() onAuthenticationStarted;
   final VoidCallback onPassphraseInputResumed;
 
@@ -744,12 +761,13 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isSubmitting = false;
-  bool _isIncorrect = false;
+  late bool _isIncorrect;
   bool _isPassphraseVisible = false;
 
   @override
   void initState() {
     super.initState();
+    _isIncorrect = widget.showIncorrectError;
     _controller.addListener(_handleChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
@@ -757,9 +775,12 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
   }
 
   void _handleChanged() {
-    if (mounted) {
-      setState(() => _isIncorrect = false);
-    }
+    if (!mounted) return;
+    setState(() {
+      if (_controller.text.isNotEmpty) {
+        _isIncorrect = false;
+      }
+    });
   }
 
   Future<void> _complete() async {
@@ -787,38 +808,7 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
     }
 
     final enteredPassphrase = Uint8List.fromList(utf8.encode(_controller.text));
-    var transferred = false;
-    try {
-      context.loaderOverlay.show();
-      final isMatchingWallet = await widget.validatePassphrase(enteredPassphrase);
-      if (!mounted) return;
-      context.loaderOverlay.hide();
-      if (!isMatchingWallet) {
-        setState(() {
-          _isSubmitting = false;
-          _isIncorrect = true;
-        });
-        widget.onPassphraseInputResumed();
-        _focusNode.requestFocus();
-        return;
-      }
-
-      transferred = true;
-      Navigator.pop(context, enteredPassphrase);
-    } catch (_) {
-      if (!mounted) return;
-      context.loaderOverlay.hide();
-      setState(() => _isSubmitting = false);
-      widget.onPassphraseInputResumed();
-      await showInfoDialog(
-        context,
-        context.read<PreferenceProvider>().language,
-        t.send_confirm_screen.signing_failed_title,
-        t.send_confirm_screen.signing_failed_description,
-      );
-    } finally {
-      if (!transferred) enteredPassphrase.fillRange(0, enteredPassphrase.length, 0);
-    }
+    Navigator.pop(context, enteredPassphrase);
   }
 
   @override
@@ -844,11 +834,13 @@ class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInpu
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               CoconutTextField(
+                key: const ValueKey('hot-wallet-passphrase-input'),
                 controller: _controller,
                 focusNode: _focusNode,
                 onChanged: (_) {},
                 isError: _isIncorrect,
                 errorText: _isIncorrect ? t.wallet_home_screen.hot_wallet_setup.passphrase_incorrect : null,
+                descriptionText: widget.showIncorrectError ? ' ' : null,
                 obscureText: !_isPassphraseVisible,
                 autocorrect: false,
                 enableSuggestions: false,

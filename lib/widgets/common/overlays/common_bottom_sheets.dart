@@ -26,6 +26,7 @@ class CommonBottomSheets {
     bool showDragHandle = false,
     bool adjustForKeyboardInset = true,
     double keyboardBottomPadding = 20,
+    Duration keyboardInsetAnimationDuration = const Duration(milliseconds: 280),
     Color? backgroundColor,
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
@@ -38,7 +39,7 @@ class CommonBottomSheets {
       builder: (context) {
         final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
         return AnimatedPadding(
-          duration: const Duration(milliseconds: 280),
+          duration: keyboardInsetAnimationDuration,
           curve: Curves.easeOutCubic,
           padding: EdgeInsets.only(bottom: adjustForKeyboardInset ? keyboardInset + keyboardBottomPadding : 0),
           child: Column(
