@@ -199,7 +199,7 @@ void main() {
     expect(find.text(t.wallet_home_screen.hot_wallet_create.creation_failed), findsOneWidget);
   });
 
-  testWidgets('백업 화면에 wallet ID, 니모닉, passphrase를 전달한다', (tester) async {
+  testWidgets('백업 화면에 wallet ID, descriptor, 니모닉, passphrase를 전달한다', (tester) async {
     Object? routeArguments;
     final result = _result();
     final viewModel = _ControlledCreateViewModel(result: result);
@@ -220,7 +220,6 @@ void main() {
 
     final arguments = routeArguments! as Map<String, dynamic>;
     expect(arguments['walletId'], 77);
-    expect(arguments['walletName'], '테스트 핫월렛');
     expect(arguments['descriptor'], result.descriptor);
     expect(arguments['mnemonic'], result.mnemonic);
     expect(arguments['passphrase'], result.passphrase);
