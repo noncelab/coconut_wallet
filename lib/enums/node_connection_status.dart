@@ -5,4 +5,5 @@ enum NodeConnectionStatus {
   failed, // 연결할 수 없습니다!
   networkMismatch, // 네트워크가 달라 연결할 수 없어요
   waiting, // 대기중
+  untrustedCertificate, // 서버 인증서를 신뢰할 수 없어 사용자 확인이 필요합니다 (커스텀 서버 전용)
 }

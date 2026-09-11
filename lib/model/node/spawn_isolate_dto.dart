@@ -8,6 +8,14 @@ class SpawnIsolateDto {
   final int port;
   final bool ssl;
   final NetworkType networkType;
+  final String? pinnedCertFingerprint;
 
-  SpawnIsolateDto(this.isolateToMainSendPort, this.host, this.port, this.ssl, this.networkType);
+  SpawnIsolateDto(
+    this.isolateToMainSendPort,
+    this.host,
+    this.port,
+    this.ssl,
+    this.networkType, [
+    this.pinnedCertFingerprint,
+  ]);
 }

@@ -342,11 +342,11 @@ class WalletHomeViewModel extends ChangeNotifier {
   Future<void> onRefresh() async {
     updateWalletBalancesAndRecentTxs();
 
+    await _nodeProvider.reconnectIfNeeded();
+
     for (final wallet in walletItemList) {
       unawaited(_nodeProvider.syncDormantAddresses(wallet));
     }
-
-    _nodeProvider.reconnectIfNeeded();
   }
 
   Future<void> updateWalletBalancesAndRecentTxs() async {
