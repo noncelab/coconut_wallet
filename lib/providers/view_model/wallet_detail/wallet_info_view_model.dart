@@ -244,9 +244,6 @@ class WalletInfoViewModel extends ChangeNotifier {
   }
 
   Future<void> deleteWallet() async {
-    await _sharedPrefs.removeFaucetHistory(_walletId);
-    await _sharedPrefs.removeWalletTargetSats(_walletId);
-
     await _walletProvider.deleteWallet(_walletId);
     _nodeProvider.reconnect();
   }

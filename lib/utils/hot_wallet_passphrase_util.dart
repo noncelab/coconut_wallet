@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter/foundation.dart';
 
-typedef _PassphraseMatchArguments = ({String mnemonic, String passphrase, String descriptor});
+typedef _PassphraseMatchBytesArguments = ({Uint8List mnemonic, String passphrase, String descriptor});
 
-bool _doesPassphraseMatchDescriptorInBackground(_PassphraseMatchArguments arguments) {
+bool _doesPassphraseMatchDescriptorInBackground(_PassphraseMatchBytesArguments arguments) {
   return doesPassphraseMatchDescriptor(
     mnemonic: arguments.mnemonic,
     passphrase: arguments.passphrase,
@@ -13,8 +13,15 @@ bool _doesPassphraseMatchDescriptorInBackground(_PassphraseMatchArguments argume
   );
 }
 
-bool doesPassphraseMatchDescriptor({required String mnemonic, required String passphrase, required String descriptor}) {
-  final mnemonicBytes = Uint8List.fromList(utf8.encode(mnemonic));
+/// [mnemonic]은 화면에 표시할 필요가 없는 경우(예: 서명용 패스프레이즈 재확인) 쓰는
+/// 니모닉을 String으로 변환하지 않기 위한 버전이다. 전달받은 [mnemonic]은 내부에서
+/// 복사해서만 사용하므로 호출자가 들고 있는 원본 바이트는 변경/삭제되지 않는다.
+bool doesPassphraseMatchDescriptor({
+  required Uint8List mnemonic,
+  required String passphrase,
+  required String descriptor,
+}) {
+  final mnemonicBytes = Uint8List.fromList(mnemonic);
   final passphraseBytes = Uint8List.fromList(utf8.encode(passphrase));
   final seed = Seed.fromMnemonic(mnemonicBytes, passphrase: passphraseBytes);
   try {
@@ -27,7 +34,7 @@ bool doesPassphraseMatchDescriptor({required String mnemonic, required String pa
 }
 
 Future<bool> doesPassphraseMatchDescriptorAsync({
-  required String mnemonic,
+  required Uint8List mnemonic,
   required String passphrase,
   required String descriptor,
 }) {

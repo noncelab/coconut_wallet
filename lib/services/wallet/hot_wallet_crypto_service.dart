@@ -19,9 +19,7 @@ class HotWalletCryptoService {
     required Uint8List passphrase,
   }) async {
     final dek = randomBytes(keyLength);
-    final payload = Uint8List.fromList(
-      utf8.encode(jsonEncode({'mnemonic': utf8.decode(mnemonic), 'passphrase': utf8.decode(passphrase)})),
-    );
+    final payload = _encodePayload(mnemonic, passphrase);
 
     try {
       return (encryptedPayload: await encrypt(payload, dek), dek: dek);
@@ -36,14 +34,50 @@ class HotWalletCryptoService {
     }
     final bytes = await decrypt(secret.encryptedPayload, dek);
     try {
-      final json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-      return HotWalletPlaintext(
-        mnemonic: Uint8List.fromList(utf8.encode(json['mnemonic'] as String)),
-        passphrase: Uint8List.fromList(utf8.encode(json['passphrase'] as String)),
-      );
+      return _decodePayload(bytes);
     } finally {
       bytes.fillRange(0, bytes.length, 0);
     }
+  }
+
+  /// mnemonic/passphrase는 평문 상태에서 절대 String으로 변환하지 않는다.
+  /// (Dart String은 immutable이라 사용 후 메모리에서 지울 수 없다.)
+  ///
+  /// Layout: [mnemonicLength(4B, big-endian)][mnemonic][passphraseLength(4B, big-endian)][passphrase]
+  Uint8List _encodePayload(Uint8List mnemonic, Uint8List passphrase) {
+    final payload = Uint8List(8 + mnemonic.length + passphrase.length);
+    final view = ByteData.sublistView(payload);
+    var offset = 0;
+    view.setUint32(offset, mnemonic.length, Endian.big);
+    offset += 4;
+    payload.setRange(offset, offset + mnemonic.length, mnemonic);
+    offset += mnemonic.length;
+    view.setUint32(offset, passphrase.length, Endian.big);
+    offset += 4;
+    payload.setRange(offset, offset + passphrase.length, passphrase);
+    return payload;
+  }
+
+  HotWalletPlaintext _decodePayload(Uint8List bytes) {
+    if (bytes.length < 8) {
+      throw const FormatException('Hot wallet payload is too short');
+    }
+    final view = ByteData.sublistView(bytes);
+    var offset = 0;
+    final mnemonicLength = view.getUint32(offset, Endian.big);
+    offset += 4;
+    if (offset + mnemonicLength + 4 > bytes.length) {
+      throw const FormatException('Hot wallet payload mnemonic length is invalid');
+    }
+    final mnemonic = bytes.sublist(offset, offset + mnemonicLength);
+    offset += mnemonicLength;
+    final passphraseLength = view.getUint32(offset, Endian.big);
+    offset += 4;
+    if (offset + passphraseLength != bytes.length) {
+      throw const FormatException('Hot wallet payload passphrase length is invalid');
+    }
+    final passphrase = bytes.sublist(offset, offset + passphraseLength);
+    return HotWalletPlaintext(mnemonic: mnemonic, passphrase: passphrase);
   }
 
   Future<EncryptedValue> encrypt(List<int> clearText, List<int> key) async {

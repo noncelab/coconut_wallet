@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
@@ -7,8 +8,31 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/hot_wallet_passphrase_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+/// 니모닉 바이트를 공백(0x20) 기준으로 잘라서 단어별 바이트 복사본 리스트를 만든다.
+/// 각 단어는 [Uint8List.sublistView]가 아닌 복사본이므로, 원본 니모닉 버퍼와
+/// 독립적으로 wipe할 수 있다.
+List<Uint8List> splitMnemonicWordBytes(Uint8List mnemonic) {
+  final words = <Uint8List>[];
+  int start = -1;
+  for (int i = 0; i < mnemonic.length; i++) {
+    if (mnemonic[i] == 0x20) {
+      if (start >= 0) {
+        words.add(mnemonic.sublist(start, i));
+        start = -1;
+      }
+    } else if (start < 0) {
+      start = i;
+    }
+  }
+  if (start >= 0) {
+    words.add(mnemonic.sublist(start));
+  }
+  return List<Uint8List>.unmodifiable(words);
+}
 
 List<int> selectMnemonicChallengeIndices({required int wordCount, int challengeCount = 3, Random? random}) {
   if (wordCount < challengeCount) {
@@ -22,15 +46,15 @@ class MnemonicBackupConfirmScreen extends StatefulWidget {
   const MnemonicBackupConfirmScreen({
     super.key,
     required this.mnemonic,
-    this.passphrase = '',
+    required this.passphrase,
     this.descriptor = '',
     this.confirmPassphrase = false,
     this.walletId,
     this.continueToAppLockGuide = false,
   });
 
-  final String mnemonic;
-  final String passphrase;
+  final Uint8List mnemonic;
+  final Uint8List passphrase;
   final String descriptor;
   final bool confirmPassphrase;
   final int? walletId;
@@ -43,7 +67,7 @@ class MnemonicBackupConfirmScreen extends StatefulWidget {
 class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScreen> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  late final List<String> _words;
+  late final List<Uint8List> _wordBytes;
   late final List<int> _questionIndices;
   int _questionIndex = 0;
   double _progress = 0;
@@ -54,8 +78,8 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
   @override
   void initState() {
     super.initState();
-    _words = widget.mnemonic.trim().split(RegExp(r'\s+')).where((word) => word.isNotEmpty).toList(growable: false);
-    _questionIndices = selectMnemonicChallengeIndices(wordCount: _words.length, challengeCount: 3);
+    _wordBytes = splitMnemonicWordBytes(widget.mnemonic);
+    _questionIndices = selectMnemonicChallengeIndices(wordCount: _wordBytes.length, challengeCount: 3);
     _controller.addListener(_handleInputChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _showKeyboard());
   }
@@ -80,6 +104,9 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
     _controller.clear();
     _controller.dispose();
     _focusNode.dispose();
+    for (final word in _wordBytes) {
+      word.fillRange(0, word.length, 0);
+    }
     super.dispose();
   }
 
@@ -219,7 +246,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
       isCorrect =
           isPassphraseQuestion
               ? await _isPassphraseCorrect(_controller.text)
-              : _controller.text.trim().toLowerCase() == _words[_questionIndices[_questionIndex]].toLowerCase();
+              : _isMnemonicWordCorrect(_questionIndices[_questionIndex], _controller.text);
     } finally {
       if (mounted && _isVerifyingPassphrase) {
         setState(() => _isVerifyingPassphrase = false);
@@ -267,8 +294,19 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
     _showKeyboard();
   }
 
+  bool _isMnemonicWordCorrect(int wordIndex, String input) {
+    // BIP-39 단어는 항상 소문자 ASCII이므로, 사용자 입력을 소문자로 변환해
+    // 바이트로 인코딩한 뒤 니모닉 단어 바이트와 직접 비교한다.
+    // 니모닉 자체는 String으로 변환하지 않는다.
+    final guess = Uint8List.fromList(utf8.encode(input.trim().toLowerCase()));
+    return listEquals(guess, _wordBytes[wordIndex]);
+  }
+
   Future<bool> _isPassphraseCorrect(String input) async {
-    if (widget.passphrase.isNotEmpty) return input == widget.passphrase;
+    if (widget.passphrase.isNotEmpty) {
+      final guess = Uint8List.fromList(utf8.encode(input));
+      return listEquals(guess, widget.passphrase);
+    }
     if (widget.descriptor.isEmpty) return false;
 
     return doesPassphraseMatchDescriptorAsync(
