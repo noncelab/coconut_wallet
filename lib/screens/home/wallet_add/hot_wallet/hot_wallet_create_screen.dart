@@ -57,8 +57,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   int _mnemonicWordCount = 12;
   bool _usePassphrase = false;
   bool _isPassphraseVisible = false;
-  bool _enterPassphraseWhenSigning = false;
-  bool _isPassphraseOptionPressed = false;
+  bool _enterPassphraseWhenSigning = true;
   bool _hasNameFieldEverFocused = false;
   bool _isAdvancedSettingsExpanded = false;
 
@@ -163,9 +162,10 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                 children: [
                   CustomScrollView(
                     controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
                     slivers: [
                       SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
+                        padding: EdgeInsets.fromLTRB(20, 24, 20, _isAdvancedSettingsExpanded ? 360 : 120),
                         sliver: SliverToBoxAdapter(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -541,35 +541,28 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.only(top: 16),
-                                    child: Listener(
-                                      key: const ValueKey('hot-wallet-enter-passphrase-when-signing'),
-                                      onPointerDown: (_) => setState(() => _isPassphraseOptionPressed = true),
-                                      onPointerUp: (_) => setState(() => _isPassphraseOptionPressed = false),
-                                      onPointerCancel: (_) => setState(() => _isPassphraseOptionPressed = false),
-                                      child: Row(
-                                        children: [
-                                          CoconutCheckbox(
-                                            isSelected: _enterPassphraseWhenSigning,
-                                            onChanged: _setEnterPassphraseWhenSigning,
-                                            disabledColor: context.coconutColors.chipSelectedBackground,
-                                            color: context.coconutColors.chipSelectedBackground,
-                                          ),
-                                          CoconutLayout.spacing_200w,
-                                          Expanded(
-                                            child: GestureDetector(
-                                              behavior: HitTestBehavior.opaque,
-                                              onTap: () => _setEnterPassphraseWhenSigning(!_enterPassphraseWhenSigning),
-                                              child: Text(
-                                                t.wallet_home_screen.hot_wallet_create.enter_passphrase_when_signing,
-                                                style: CoconutTypography.body3_12.setColor(
-                                                  _isPassphraseOptionPressed
-                                                      ? context.coconutColors.tertiaryText
-                                                      : context.coconutColors.secondaryText,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                    child: SingleButton(
+                                      key: const ValueKey('hot-wallet-store-passphrase'),
+                                      title: t.wallet_home_screen.hot_wallet_create.store_passphrase,
+                                      subtitle:
+                                          _enterPassphraseWhenSigning
+                                              ? t.wallet_home_screen.hot_wallet_create.store_passphrase_off_description
+                                              : t.wallet_home_screen.hot_wallet_create.store_passphrase_on_description,
+                                      isVerticalSubtitle: true,
+                                      subtitleStyle: CoconutTypography.body3_12.setColor(
+                                        context.coconutColors.secondaryText,
+                                      ),
+                                      customPadding: EdgeInsets.zero,
+                                      backgroundColor: context.coconutColors.surface,
+                                      onPressed: () => _setStorePassphrase(_enterPassphraseWhenSigning),
+                                      rightElement: CoconutSwitch(
+                                        isOn: !_enterPassphraseWhenSigning,
+                                        scale: 0.75,
+                                        activeTrackColor: context.coconutColors.switchActiveTrack,
+                                        activeThumbColor: context.coconutColors.switchActiveThumb,
+                                        inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+                                        inactiveThumbColor: context.coconutColors.switchInactiveThumb,
+                                        onChanged: _setStorePassphrase,
                                       ),
                                     ),
                                   ),
@@ -661,6 +654,21 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   Future<void> _onCreateWalletPressed() async {
     if (_viewModel.isCreating) return;
     FocusScope.of(context).unfocus();
+    if (_usePassphrase && _enterPassphraseWhenSigning) {
+      await showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_title,
+        t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_description,
+        buttonText: t.confirm,
+        barrierDismissible: false,
+      );
+      if (!mounted) return;
+      _keepKeyboardDismissed();
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      _keepKeyboardDismissed();
+    }
     final walletName = _nameController.text.trim().isEmpty ? _suggestedWalletName : _nameController.text.trim();
     await WidgetsBinding.instance.endOfFrame;
 
@@ -707,32 +715,8 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
     }
   }
 
-  Future<void> _setEnterPassphraseWhenSigning(bool value) async {
-    if (!value) {
-      if (mounted) setState(() => _enterPassphraseWhenSigning = false);
-      return;
-    }
-
-    _keepKeyboardDismissed();
-    var confirmed = false;
-    await showConfirmDialog(
-      context,
-      context.read<PreferenceProvider>().language,
-      t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_title,
-      t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_description,
-      leftButtonText: t.cancel,
-      rightButtonText: t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_confirm,
-      onTapRight: () {
-        confirmed = true;
-        Navigator.pop(context);
-      },
-    );
-    if (!mounted) return;
-    _keepKeyboardDismissed();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _keepKeyboardDismissed();
-    });
-    if (confirmed) setState(() => _enterPassphraseWhenSigning = true);
+  void _setStorePassphrase(bool value) {
+    setState(() => _enterPassphraseWhenSigning = !value);
   }
 
   void _keepKeyboardDismissed() {

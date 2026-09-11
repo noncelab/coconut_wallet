@@ -248,22 +248,93 @@ void main() {
     expect(find.text(t.wallet_home_screen.hot_wallet_create.creation_failed), findsOneWidget);
   });
 
-  testWidgets('서명 시 입력 옵션은 저장하지 않는다는 안내 후 선택된다', (tester) async {
-    final viewModel = _ControlledCreateViewModel(result: _result(enterPassphraseWhenSigning: true));
+  testWidgets('패스프레이즈 저장은 기본 OFF이며 상태에 따라 안내 문구가 변경된다', (tester) async {
+    final viewModel = _ControlledCreateViewModel(result: _result());
     await pumpScreen(tester, viewModel);
     await enablePassphrase(tester);
 
-    await tester.ensureVisible(find.byKey(const ValueKey('hot-wallet-enter-passphrase-when-signing')));
-    await tester.tap(find.byKey(const ValueKey('hot-wallet-enter-passphrase-when-signing')));
+    final storePassphrase = find.byKey(const ValueKey('hot-wallet-store-passphrase'));
+    await tester.ensureVisible(storePassphrase);
+
+    expect(
+      tester.widget<CoconutSwitch>(find.descendant(of: storePassphrase, matching: find.byType(CoconutSwitch))).isOn,
+      isFalse,
+    );
+    expect(find.text(t.wallet_home_screen.hot_wallet_create.store_passphrase_off_description), findsOneWidget);
+
+    await tester.tap(storePassphrase);
     await tester.pumpAndSettle();
 
+    expect(
+      tester.widget<CoconutSwitch>(find.descendant(of: storePassphrase, matching: find.byType(CoconutSwitch))).isOn,
+      isTrue,
+    );
+    expect(find.text(t.wallet_home_screen.hot_wallet_create.store_passphrase_on_description), findsOneWidget);
+  });
+
+  testWidgets('고급 설정을 펼치면 입력 필드 포커스 없이 스크롤할 수 있다', (tester) async {
+    final viewModel = _ControlledCreateViewModel(result: _result());
+    await pumpScreen(tester, viewModel);
+    await enablePassphrase(tester);
+
+    final scrollView = find.byType(CustomScrollView);
+    final controller = tester.widget<CustomScrollView>(scrollView).controller!;
+    final before = tester.getTopLeft(find.byKey(const ValueKey('hot-wallet-advanced-settings'))).dy;
+
+    expect(controller.position.maxScrollExtent, greaterThan(0));
+    await tester.dragFrom(const Offset(200, 300), const Offset(0, -200));
+    await tester.pumpAndSettle();
+
+    final after = tester.getTopLeft(find.byKey(const ValueKey('hot-wallet-advanced-settings'))).dy;
+    expect(after, lessThan(before));
+  });
+
+  testWidgets('패스프레이즈를 저장하지 않으면 생성 직전에 경고를 표시하고 확인 후 생성한다', (tester) async {
+    final viewModel = _ControlledCreateViewModel(result: _result(enterPassphraseWhenSigning: true))
+      ..gate = Completer<HotWalletCreateResult>();
+    await pumpScreen(tester, viewModel);
+    await enablePassphrase(tester);
+
+    await tester.enterText(
+      find.descendant(of: find.byKey(const ValueKey('hot-wallet-passphrase')), matching: find.byType(EditableText)),
+      'secret',
+    );
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(const ValueKey('hot-wallet-passphrase-confirm')),
+        matching: find.byType(EditableText),
+      ),
+      'secret',
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('hot-wallet-create-button-target')));
+    await tester.pumpAndSettle();
+
+    expect(viewModel.createCallCount, 0);
     expect(find.text(t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_title), findsOneWidget);
     expect(find.text(t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_description), findsOneWidget);
-    expect(find.text(t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_confirm), findsOneWidget);
-    await tester.tap(find.text(t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_confirm));
-    await tester.pumpAndSettle();
+    expect(find.text(t.confirm), findsOneWidget);
+    expect(find.text(t.cancel), findsNothing);
 
-    expect(find.text(t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_title), findsNothing);
-    expect(tester.widget<CoconutCheckbox>(find.byType(CoconutCheckbox)).isSelected, isTrue);
+    await tester.tap(find.text(t.confirm));
+    await tester.pump();
+    await tester.pump();
+
+    expect(viewModel.createCallCount, 1);
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(const ValueKey('hot-wallet-passphrase-confirm')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .focusNode
+          .hasFocus,
+      isFalse,
+    );
+    viewModel.gate!.complete(_result(enterPassphraseWhenSigning: true));
+    await tester.pumpAndSettle();
   });
 }
