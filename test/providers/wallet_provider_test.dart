@@ -60,6 +60,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   late SinglesigWalletItem addHotWalletResult;
   int promoteWatchOnlyWalletCallCount = 0;
   late SinglesigWalletItem promoteWatchOnlyWalletResult;
+  Object? promoteWatchOnlyWalletError;
 
   int addMultisigWalletCallCount = 0;
   late MultisigWalletItem addMultisigWalletResult;
@@ -134,6 +135,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
     required DateTime createdAt,
   }) async {
     promoteWatchOnlyWalletCallCount++;
+    if (promoteWatchOnlyWalletError != null) throw promoteWatchOnlyWalletError!;
     walletItems[walletItems.indexWhere((wallet) => wallet.id == walletId)] = promoteWatchOnlyWalletResult;
     hotWalletMetadata.add(promoteWatchOnlyWalletResult.hotWalletMetadata!);
     return promoteWatchOnlyWalletResult;
@@ -768,6 +770,36 @@ void main() {
       expect(addressRepository.ensureAddressesInitCallCount, 0);
       expect(preferenceProvider.removedWalletIds, isEmpty);
       expect(sharedPrefsRepository.removedWalletIds, isEmpty);
+
+      provider.dispose();
+    });
+
+    test('Watch-only 승격이 실패하면 이미 저장된 secret을 정리함', () async {
+      final existingWatchOnly = _createSinglesigWalletListItem(id: 7, name: 'Existing Watch-only');
+      final walletRepo =
+          FakeWalletRepository()
+            ..walletItems = [existingWatchOnly]
+            ..promoteWatchOnlyWalletError = StateError('descriptor mismatch');
+      final secretRepository = FakeHotWalletSecretRepository();
+      final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
+      // ViewModel이 addHotWallet 호출 전에 secret을 먼저 저장해 두는 상황을 재현한다.
+      secretRepository.storedKeys.add('local_wallet_seed_promoted');
+
+      await expectLater(
+        provider.addHotWallet(
+          _createSinglesigWatchOnlyWallet(name: 'New Restore Name'),
+          secureStorageKey: 'local_wallet_seed_promoted',
+          backupVerified: true,
+          enterPassphraseWhenSigning: false,
+          createdAt: DateTime.utc(2026, 9, 9),
+          watchOnlyWalletIdToPromote: existingWatchOnly.id,
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(secretRepository.storedKeys, isEmpty);
+      expect(secretRepository.deletedKeys, ['local_wallet_seed_promoted']);
+      expect(provider.walletItemList, [existingWatchOnly]);
 
       provider.dispose();
     });

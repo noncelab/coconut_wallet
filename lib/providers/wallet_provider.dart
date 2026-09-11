@@ -486,14 +486,22 @@ class WalletProvider extends ChangeNotifier {
         throw StateError('The watch-only wallet to promote is invalid');
       }
 
-      final promotedWallet = await _walletRepository.promoteWatchOnlyWalletToHotWallet(
-        watchOnlyWalletIdToPromote,
-        expectedDescriptor: wallet.descriptor,
-        secureStorageKey: secureStorageKey,
-        backupVerified: backupVerified,
-        enterPassphraseWhenSigning: enterPassphraseWhenSigning,
-        createdAt: createdAt,
-      );
+      final SinglesigWalletItem promotedWallet;
+      try {
+        promotedWallet = await _walletRepository.promoteWatchOnlyWalletToHotWallet(
+          watchOnlyWalletIdToPromote,
+          expectedDescriptor: wallet.descriptor,
+          secureStorageKey: secureStorageKey,
+          backupVerified: backupVerified,
+          enterPassphraseWhenSigning: enterPassphraseWhenSigning,
+          createdAt: createdAt,
+        );
+      } catch (_) {
+        // promoteWatchOnlyWalletToHotWallet은 단일 Realm 트랜잭션이므로 실패 시
+        // Realm에는 아무 것도 남지 않는다. 호출 전에 이미 저장된 secret만 정리한다.
+        await _deleteHotWalletSecretIgnoringFailure(secureStorageKey);
+        rethrow;
+      }
 
       // ID가 유지되므로 지갑 순서·즐겨찾기·잔액 제외 등의 기존 설정을
       // 삭제하거나 재생성할 필요 없이 목록의 항목만 핫월렛으로 교체한다.
