@@ -46,7 +46,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
   List<String> _words;
   int? _activeWordIndex;
   bool _usePassphrase = false;
-  bool _enterPassphraseWhenSigning = false;
+  bool _enterPassphraseWhenSigning = true;
   String _passphrase = '';
   bool _isRestoring = false;
   Uint8List? _scannedMnemonic;
@@ -167,7 +167,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     _usePassphrase = value;
     if (!value) {
       _passphrase = '';
-      _enterPassphraseWhenSigning = false;
+      _enterPassphraseWhenSigning = true;
     }
     _notifySafely();
   }

@@ -38,6 +38,7 @@ import 'package:coconut_wallet/utils/seed_qr_decoder.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart' as app_settings;
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/cupertino.dart';
@@ -1095,55 +1096,35 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
             },
           ),
           CoconutLayout.spacing_200h,
-          Row(
-            children: [
-              CoconutCheckbox(
-                isSelected: viewModel.enterPassphraseWhenSigning,
-                onChanged: _setEnterPassphraseWhenSigning,
-                disabledColor: context.coconutColors.chipSelectedBackground,
-                color: context.coconutColors.chipSelectedBackground,
-              ),
-              CoconutLayout.spacing_200w,
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _setEnterPassphraseWhenSigning(!viewModel.enterPassphraseWhenSigning),
-                  child: Text(
-                    t.wallet_home_screen.hot_wallet_create.enter_passphrase_when_signing,
-                    style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                  ),
-                ),
-              ),
-            ],
+          SingleButton(
+            key: const ValueKey('hot-wallet-store-passphrase'),
+            title: t.wallet_home_screen.hot_wallet_create.store_passphrase,
+            subtitle:
+                viewModel.enterPassphraseWhenSigning
+                    ? t.wallet_home_screen.hot_wallet_create.store_passphrase_off_description
+                    : t.wallet_home_screen.hot_wallet_create.store_passphrase_on_description,
+            isVerticalSubtitle: true,
+            subtitleStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+            customPadding: EdgeInsets.zero,
+            backgroundColor: context.coconutColors.background,
+            onPressed: () => _setStorePassphrase(viewModel.enterPassphraseWhenSigning),
+            rightElement: CoconutSwitch(
+              isOn: !viewModel.enterPassphraseWhenSigning,
+              scale: 0.75,
+              activeTrackColor: context.coconutColors.switchActiveTrack,
+              activeThumbColor: context.coconutColors.switchActiveThumb,
+              inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+              inactiveThumbColor: context.coconutColors.switchInactiveThumb,
+              onChanged: _setStorePassphrase,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _setEnterPassphraseWhenSigning(bool value) async {
-    final viewModel = context.read<HotWalletRestoreViewModel>();
-    if (!value) {
-      viewModel.setEnterPassphraseWhenSigning(false);
-      return;
-    }
-
-    FocusManager.instance.primaryFocus?.unfocus();
-    var confirmed = false;
-    await showConfirmDialog(
-      context,
-      context.read<PreferenceProvider>().language,
-      t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_title,
-      t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_description,
-      leftButtonText: t.cancel,
-      rightButtonText: t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_confirm,
-      onTapRight: () {
-        confirmed = true;
-        Navigator.of(context).pop();
-      },
-    );
-    if (!mounted) return;
-    _unfocusAfterDialogDismissed();
-    if (confirmed) viewModel.setEnterPassphraseWhenSigning(true);
+  void _setStorePassphrase(bool value) {
+    context.read<HotWalletRestoreViewModel>().setEnterPassphraseWhenSigning(!value);
   }
 
   Widget _buildWalletNameField() {
@@ -1235,6 +1216,22 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
     if (!mounted) return;
     final walletProvider = context.read<WalletProvider>();
     final viewModel = context.read<HotWalletRestoreViewModel>();
+    if (viewModel.usePassphrase && viewModel.enterPassphraseWhenSigning) {
+      await showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_title,
+        t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_description,
+        buttonText: t.confirm,
+        barrierDismissible: false,
+      );
+      if (!mounted) return;
+      FocusManager.instance.primaryFocus?.unfocus();
+      FocusScope.of(context).requestFocus(_screenFocusNode);
+      await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
     final walletName = _nameController.text.trim().isEmpty ? _suggestedName : _nameController.text.trim();
     String descriptor;
     try {

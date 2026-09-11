@@ -618,7 +618,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
       _passphraseFocusNode.unfocus();
       _passphraseConfirmFocusNode.unfocus();
       _isPassphraseVisible = false;
-      _enterPassphraseWhenSigning = false;
+      _enterPassphraseWhenSigning = true;
     }
     setState(() => _usePassphrase = value);
   }

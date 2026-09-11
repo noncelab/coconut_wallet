@@ -13,7 +13,7 @@ TextSpan buildDuplicateWalletDescriptionSpan({required String name, required Str
   return TextSpan(
     children: [
       TextSpan(text: strings.duplicate_wallet_description_prefix),
-      TextSpan(text: '$name($type)', style: CoconutTypography.heading4_18_Bold),
+      TextSpan(text: '$name($type)', style: CoconutTypography.body1_16_Bold),
       TextSpan(text: strings.duplicate_wallet_description_suffix),
     ],
   );
