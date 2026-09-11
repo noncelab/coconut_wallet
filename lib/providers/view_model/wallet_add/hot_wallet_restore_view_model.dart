@@ -96,7 +96,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     final index = _activeWordIndex;
     if (index == null) return const [];
     final query = _words[index];
-    if (query.length < 2 || WalletUtility.isInMnemonicWordList(query)) {
+    if (query.length < 2) {
       return const [];
     }
     return wordList.where((word) => word.startsWith(query)).take(12).toList(growable: false);

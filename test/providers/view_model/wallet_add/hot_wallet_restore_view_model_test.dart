@@ -45,6 +45,14 @@ class _GatedWalletProvider extends Fake implements WalletProvider {
 }
 
 void main() {
+  test('완성된 니모닉 단어도 추천 목록에 유지한다', () {
+    final viewModel = HotWalletRestoreViewModel();
+    viewModel.setActiveWordIndex(0);
+    viewModel.updateWord(0, 'apple');
+
+    expect(viewModel.suggestions, contains('apple'));
+  });
+
   group('HotWalletRestoreViewModel', () {
     test('validates a complete BIP39 mnemonic', () {
       final viewModel = HotWalletRestoreViewModel();
