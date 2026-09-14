@@ -38,6 +38,7 @@ class _ControlledCreateViewModel extends HotWalletCreateViewModel {
   int createCallCount = 0;
   bool committed = false;
   bool _creating = false;
+  bool? requestedEnterPassphraseWhenSigning;
 
   @override
   bool get isCreating => _creating;
@@ -58,6 +59,7 @@ class _ControlledCreateViewModel extends HotWalletCreateViewModel {
   }) async {
     if (_creating) throw StateError('already creating');
     createCallCount++;
+    requestedEnterPassphraseWhenSigning = enterPassphraseWhenSigning;
     setCreating(true);
     try {
       if (gate != null) return await gate!.future;
@@ -224,6 +226,7 @@ void main() {
     expect(arguments['mnemonic'], result.mnemonic);
     expect(arguments['passphrase'], result.passphrase);
     expect(arguments['enterPassphraseWhenSigning'], isFalse);
+    expect(viewModel.requestedEnterPassphraseWhenSigning, isFalse);
   });
 
   testWidgets('백업 화면 navigation 실패가 성공한 생성 요청을 다시 실행하지 않는다', (tester) async {

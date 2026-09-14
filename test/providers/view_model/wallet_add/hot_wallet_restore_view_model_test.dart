@@ -22,6 +22,7 @@ class _FakeSecretRepository extends Fake implements HotWalletSecretRepository {
 class _GatedWalletProvider extends Fake implements WalletProvider {
   final gate = Completer<void>();
   bool addStarted = false;
+  bool? enterPassphraseWhenSigning;
 
   @override
   Future<T> runHotWalletLifecycleOperation<T>(Future<T> Function() operation) => operation();
@@ -36,6 +37,7 @@ class _GatedWalletProvider extends Fake implements WalletProvider {
     int? watchOnlyWalletIdToConvert,
   }) async {
     addStarted = true;
+    this.enterPassphraseWhenSigning = enterPassphraseWhenSigning;
     await gate.future;
     return SinglesigWalletItem(
       id: 1,
@@ -150,6 +152,7 @@ void main() {
       final result = await restoration;
 
       expect(result.id, 1);
+      expect(walletProvider.enterPassphraseWhenSigning, isFalse);
       expect(viewModel.isRestoring, isFalse);
     });
   });

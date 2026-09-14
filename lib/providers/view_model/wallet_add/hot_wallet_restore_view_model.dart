@@ -246,6 +246,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
       }
       return await walletProvider.runHotWalletLifecycleOperation(() async {
         try {
+          final enterPassphraseWhenSigning = _usePassphrase && _enterPassphraseWhenSigning;
           final wallet = WatchOnlyWallet(
             walletName,
             colorIndex,
@@ -255,7 +256,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
             null,
             WalletImportSource.coconutVault.name,
           );
-          final passphraseToStore = _enterPassphraseWhenSigning ? Uint8List(0) : Uint8List.fromList(passphrase);
+          final passphraseToStore = enterPassphraseWhenSigning ? Uint8List(0) : Uint8List.fromList(passphrase);
           try {
             await AppGuard.runWithoutPrivacyScreen(
               () => _secretRepository.create(storageKey: storageKey, mnemonic: mnemonic, passphrase: passphraseToStore),
@@ -267,7 +268,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
             wallet,
             secureStorageKey: storageKey,
             backupVerified: true,
-            enterPassphraseWhenSigning: _enterPassphraseWhenSigning,
+            enterPassphraseWhenSigning: enterPassphraseWhenSigning,
             createdAt: DateTime.now(),
             watchOnlyWalletIdToConvert: watchOnlyWalletIdToConvert,
           );

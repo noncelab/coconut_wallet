@@ -7,6 +7,7 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/utils/hot_wallet_passphrase_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
@@ -40,6 +41,7 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
   late final String _passphraseDisplay;
   bool _isWarningVisible = true;
   bool _isPassphraseVisible = false;
+  bool _isStartingConfirmation = false;
 
   @override
   void initState() {
@@ -143,20 +145,39 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
   }
 
   Future<void> _startBackupConfirmation() async {
-    final isConfirmed = await Navigator.pushNamed(
-      context,
-      '/mnemonic-backup-confirm',
-      arguments: {
-        'mnemonic': widget.mnemonic,
-        'passphrase': widget.passphrase,
-        'descriptor': widget.descriptor,
-        'confirmPassphrase': widget.enterPassphraseWhenSigning || widget.passphrase.isNotEmpty,
-        'walletId': widget.walletId,
-        'continueToAppLockGuide': widget.continueToAppLockGuide,
-      },
-    );
-    if (!mounted || isConfirmed != true) return;
-    Navigator.pop(context, true);
+    if (_isStartingConfirmation) return;
+    _isStartingConfirmation = true;
+    try {
+      var confirmPassphrase = widget.passphrase.isNotEmpty;
+      if (widget.enterPassphraseWhenSigning && widget.passphrase.isEmpty && widget.descriptor.isNotEmpty) {
+        final descriptorMatchesWithoutPassphrase = await doesPassphraseMatchDescriptorAsync(
+          mnemonic: widget.mnemonic,
+          passphrase: '',
+          descriptor: widget.descriptor,
+        );
+        confirmPassphrase = !descriptorMatchesWithoutPassphrase;
+      } else if (widget.enterPassphraseWhenSigning) {
+        confirmPassphrase = true;
+      }
+
+      if (!mounted) return;
+      final isConfirmed = await Navigator.pushNamed(
+        context,
+        '/mnemonic-backup-confirm',
+        arguments: {
+          'mnemonic': widget.mnemonic,
+          'passphrase': widget.passphrase,
+          'descriptor': widget.descriptor,
+          'confirmPassphrase': confirmPassphrase,
+          'walletId': widget.walletId,
+          'continueToAppLockGuide': widget.continueToAppLockGuide,
+        },
+      );
+      if (!mounted || isConfirmed != true) return;
+      Navigator.pop(context, true);
+    } finally {
+      _isStartingConfirmation = false;
+    }
   }
 }
 

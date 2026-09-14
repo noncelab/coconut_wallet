@@ -673,13 +673,14 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
     await WidgetsBinding.instance.endOfFrame;
 
     try {
+      final enterPassphraseWhenSigning = _usePassphrase && _enterPassphraseWhenSigning;
       final result = await _viewModel.createWallet(
         walletName: walletName,
         colorIndex: _selectedColorIndex,
         iconIndex: _selectedIconIndex,
         mnemonicWordCount: _mnemonicWordCount,
         passphrase: _usePassphrase ? _passphraseController.text : '',
-        enterPassphraseWhenSigning: _enterPassphraseWhenSigning,
+        enterPassphraseWhenSigning: enterPassphraseWhenSigning,
       );
 
       if (!mounted) {

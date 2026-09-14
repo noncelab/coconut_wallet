@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_confirm_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -64,5 +66,49 @@ void main() {
       expect(words[0], equals(utf8.encode('abandon')));
       expect(words[1], equals(utf8.encode('about')));
     });
+  });
+
+  group('mnemonicGhostSuffix', () {
+    final expectedWord = Uint8List.fromList(utf8.encode('abandon'));
+
+    test('정답의 앞 4글자를 입력하면 나머지 글자를 반환한다', () {
+      expect(mnemonicGhostSuffix(expectedWord: expectedWord, input: 'aban'), 'don');
+    });
+
+    test('4글자 미만이거나 접두어가 틀리면 표시하지 않는다', () {
+      expect(mnemonicGhostSuffix(expectedWord: expectedWord, input: 'aba'), isEmpty);
+      expect(mnemonicGhostSuffix(expectedWord: expectedWord, input: 'abcd'), isEmpty);
+    });
+
+    test('단어를 전부 입력하면 표시하지 않는다', () {
+      expect(mnemonicGhostSuffix(expectedWord: expectedWord, input: 'abandon'), isEmpty);
+    });
+
+    test('고스트 텍스트가 표시된 상태에서 스페이스를 입력하면 단어를 완성한다', () {
+      expect(completeMnemonicWordOnSpace(expectedWord: expectedWord, input: 'aban '), 'abandon');
+    });
+
+    test('고스트 텍스트 표시 조건이 아니면 스페이스로 자동완성하지 않는다', () {
+      expect(completeMnemonicWordOnSpace(expectedWord: expectedWord, input: 'aba '), isNull);
+      expect(completeMnemonicWordOnSpace(expectedWord: expectedWord, input: 'abcd '), isNull);
+      expect(completeMnemonicWordOnSpace(expectedWord: expectedWord, input: 'abandon '), isNull);
+    });
+  });
+
+  testWidgets('고스트 텍스트가 보일 때 스페이스를 누르면 실제 입력값을 완성한다', (tester) async {
+    final mnemonic = Uint8List.fromList(utf8.encode(List<String>.filled(12, 'abandon').join(' ')));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: MnemonicBackupConfirmScreen(mnemonic: mnemonic, passphrase: Uint8List(0)),
+      ),
+    );
+    await tester.pump();
+
+    await tester.enterText(find.byType(EditableText), 'aban ');
+    await tester.pump();
+
+    expect(tester.widget<EditableText>(find.byType(EditableText)).controller.text, 'abandon');
   });
 }

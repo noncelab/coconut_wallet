@@ -25,6 +25,14 @@ class LiteralTextEditingController extends TextEditingController {
 
   LiteralTextEditingController.fromValue(super.value) : super.fromValue();
 
+  String ghostText = '';
+  Color? ghostTextColor;
+
+  void updateGhostText(String text, Color? color) {
+    ghostText = text;
+    ghostTextColor = color;
+  }
+
   @override
   TextSpan buildTextSpan({required BuildContext context, TextStyle? style, required bool withComposing}) {
     final composingRange = value.composing;
@@ -33,10 +41,10 @@ class LiteralTextEditingController extends TextEditingController {
 
     return TextSpan(
       style: style,
-      children: _buildLiteralCharacterSpans(
-        text: text,
-        composingRange: shouldStyleComposingRange ? composingRange : null,
-      ),
+      children: [
+        ..._buildLiteralCharacterSpans(text: text, composingRange: shouldStyleComposingRange ? composingRange : null),
+        if (ghostText.isNotEmpty) TextSpan(text: ghostText, style: style?.copyWith(color: ghostTextColor)),
+      ],
     );
   }
 
@@ -90,6 +98,8 @@ class CoconutTextField extends StatefulWidget {
   final CoconutTextFieldClearButtonVisibility clearButtonVisibility;
   final VoidCallback? onClear;
   final String? placeholderText;
+  final String ghostText;
+  final Color? ghostTextColor;
   final String? errorText;
   final String? descriptionText;
   final bool isErrorTextMultiline;
@@ -143,6 +153,8 @@ class CoconutTextField extends StatefulWidget {
     this.clearButtonVisibility = CoconutTextFieldClearButtonVisibility.never,
     this.onClear,
     this.placeholderText,
+    this.ghostText = '',
+    this.ghostTextColor,
     this.errorText,
     this.descriptionText,
     this.isErrorTextMultiline = false,
@@ -216,6 +228,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _updateResolvedColors();
+    _updateGhostText();
   }
 
   @override
@@ -228,6 +241,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
       _syncInputControllerFromWidget();
     }
     _updateResolvedColors();
+    _updateGhostText();
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureAffixes());
   }
 
@@ -306,6 +320,13 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     _focusedBorderColor = widget.activeColor ?? colors.inputBorderFocused;
     _backgroundColor = widget.backgroundColor ?? colors.inputSurface;
     _text = widget.controller.text;
+  }
+
+  void _updateGhostText() {
+    (_inputController as LiteralTextEditingController).updateGhostText(
+      widget.ghostText,
+      widget.ghostTextColor ?? context.coconutColors.tertiaryText,
+    );
   }
 
   void _measureAffixes() {
