@@ -29,7 +29,7 @@ final class DeviceDekKeystore {
         } catch {
             // A permanent Secure Enclave key may exist even though wrapping
             // failed. Deletion is safe when no key was created.
-            delete(alias: alias)
+            try? delete(alias: alias)
             throw error
         }
     }
@@ -55,12 +55,22 @@ final class DeviceDekKeystore {
         return decrypted as Data
     }
 
-    func delete(alias: String) {
-        SecItemDelete([
+    func delete(alias: String) throws {
+        let status = SecItemDelete([
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: tag(alias),
             kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
         ] as CFDictionary)
+
+        // 이미 삭제된 키를 다시 삭제하는 것은 성공으로 취급해 멱등성을 보장한다.
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            let statusMessage = SecCopyErrorMessageString(status, nil) as String? ?? "Unknown Keychain error"
+            throw NSError(
+                domain: "DeviceDekKeystore",
+                code: Int(status),
+                userInfo: [NSLocalizedDescriptionKey: "Unable to delete Secure Enclave key: \(statusMessage)"]
+            )
+        }
     }
 
     func getAliases() throws -> [String] {

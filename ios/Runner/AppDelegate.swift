@@ -151,7 +151,7 @@ import LocalAuthentication
               result(FlutterStandardTypedData(bytes: plaintext))
             }
           case "delete":
-            self.deviceDekKeystore.delete(alias: alias)
+            try self.deviceDekKeystore.delete(alias: alias)
             DispatchQueue.main.async { result(nil) }
           default:
             DispatchQueue.main.async { result(FlutterMethodNotImplemented) }

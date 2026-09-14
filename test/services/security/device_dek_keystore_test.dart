@@ -47,4 +47,16 @@ void main() {
 
     expect(await DeviceDekKeystore().getAliases(), ['hot_wallet_device_key_1', 'hot_wallet_device_key_2']);
   });
+
+  test('네이티브 키 삭제 실패를 호출자에게 전달한다', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+      expect(call.method, 'delete');
+      throw PlatformException(code: 'KEYSTORE_FAILED', message: 'Unable to delete Secure Enclave key');
+    });
+
+    await expectLater(
+      DeviceDekKeystore().delete('hot_wallet_device_key_1'),
+      throwsA(isA<PlatformException>().having((error) => error.code, 'code', 'KEYSTORE_FAILED')),
+    );
+  });
 }
