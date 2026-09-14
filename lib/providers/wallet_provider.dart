@@ -468,7 +468,7 @@ class WalletProvider extends ChangeNotifier {
     required bool backupVerified,
     required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
-    int? watchOnlyWalletIdToPromote,
+    int? watchOnlyWalletIdToConvert,
   }) async {
     if (wallet.walletType != WalletType.singleSignature) {
       throw ArgumentError.value(wallet.walletType, 'wallet.walletType', 'Hot wallet must be single-signature');
@@ -478,18 +478,18 @@ class WalletProvider extends ChangeNotifier {
       throw StateError('The hot wallet has already been added');
     }
 
-    if (watchOnlyWalletIdToPromote != null) {
-      final promotionTargetIndex = _walletItemList.indexWhere((item) => item.id == watchOnlyWalletIdToPromote);
-      if (promotionTargetIndex == -1 ||
-          _walletItemList[promotionTargetIndex] is! SinglesigWalletItem ||
-          _walletItemList[promotionTargetIndex].hasLocalKey) {
-        throw StateError('The watch-only wallet to promote is invalid');
+    if (watchOnlyWalletIdToConvert != null) {
+      final conversionTargetIndex = _walletItemList.indexWhere((item) => item.id == watchOnlyWalletIdToConvert);
+      if (conversionTargetIndex == -1 ||
+          _walletItemList[conversionTargetIndex] is! SinglesigWalletItem ||
+          _walletItemList[conversionTargetIndex].hasLocalKey) {
+        throw StateError('The watch-only wallet to convert is invalid');
       }
 
-      final SinglesigWalletItem promotedWallet;
+      final SinglesigWalletItem convertedWallet;
       try {
-        promotedWallet = await _walletRepository.promoteWatchOnlyWalletToHotWallet(
-          watchOnlyWalletIdToPromote,
+        convertedWallet = await _walletRepository.convertWatchOnlyToHotWallet(
+          watchOnlyWalletIdToConvert,
           expectedDescriptor: wallet.descriptor,
           secureStorageKey: secureStorageKey,
           backupVerified: backupVerified,
@@ -497,7 +497,7 @@ class WalletProvider extends ChangeNotifier {
           createdAt: createdAt,
         );
       } catch (_) {
-        // promoteWatchOnlyWalletToHotWallet은 단일 Realm 트랜잭션이므로 실패 시
+        // convertWatchOnlyToHotWallet은 단일 Realm 트랜잭션이므로 실패 시
         // Realm에는 아무 것도 남지 않는다. 호출 전에 이미 저장된 secret만 정리한다.
         await _deleteHotWalletSecretIgnoringFailure(secureStorageKey);
         rethrow;
@@ -506,22 +506,22 @@ class WalletProvider extends ChangeNotifier {
       // ID가 유지되므로 지갑 순서·즐겨찾기·잔액 제외 등의 기존 설정을
       // 삭제하거나 재생성할 필요 없이 목록의 항목만 핫월렛으로 교체한다.
       final updatedWallets = List<WalletItemBase>.of(_walletItemList);
-      updatedWallets[promotionTargetIndex] = promotedWallet;
+      updatedWallets[conversionTargetIndex] = convertedWallet;
       _setWalletItemList(updatedWallets);
       notifyListeners();
-      return promotedWallet;
+      return convertedWallet;
     }
 
     final resolvedName = _resolveWalletNameConflict(
       desiredName: wallet.name,
       descriptor: wallet.descriptor,
       isSingleSig: true,
-      excludeWalletId: watchOnlyWalletIdToPromote,
+      excludeWalletId: watchOnlyWalletIdToConvert,
     );
     if (resolvedName == null) {
       throw const WalletNameConflictException();
     }
-    if (_walletRepository.containsWalletName(resolvedName, excludeWalletId: watchOnlyWalletIdToPromote)) {
+    if (_walletRepository.containsWalletName(resolvedName, excludeWalletId: watchOnlyWalletIdToConvert)) {
       throw const WalletNameConflictException();
     }
 

@@ -1276,7 +1276,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       if (!mounted) return;
     }
 
-    // 기존 Watch-only를 승격할 때는 기존 지갑의 이름·아이콘·색상을 그대로 유지한다.
+    // 기존 Watch-only를 핫월렛으로 전환할 때는 기존 지갑의 이름·아이콘·색상을 그대로 유지한다.
     // 따라서 복원 화면의 입력 이름은 신규 지갑을 만들 때에만 충돌을 검사한다.
     final hasNameConflict =
         !removeWatchOnly && walletProvider.walletItemList.any((wallet) => wallet.name == walletName);
@@ -1298,7 +1298,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         walletProvider: walletProvider,
         walletName: walletName,
         derivedDescriptor: descriptor,
-        watchOnlyWalletIdToPromote: removeWatchOnly ? duplicateWatchOnly?.id : null,
+        watchOnlyWalletIdToConvert: removeWatchOnly ? duplicateWatchOnly?.id : null,
       );
       if (!mounted) return;
       setState(() => _isCheckingDuplicate = false);

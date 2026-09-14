@@ -58,9 +58,9 @@ class FakeWalletRepository extends Fake implements WalletRepository {
 
   int addHotWalletCallCount = 0;
   late SinglesigWalletItem addHotWalletResult;
-  int promoteWatchOnlyWalletCallCount = 0;
-  late SinglesigWalletItem promoteWatchOnlyWalletResult;
-  Object? promoteWatchOnlyWalletError;
+  int convertWatchOnlyWalletCallCount = 0;
+  late SinglesigWalletItem convertWatchOnlyWalletResult;
+  Object? convertWatchOnlyWalletError;
 
   int addMultisigWalletCallCount = 0;
   late MultisigWalletItem addMultisigWalletResult;
@@ -126,7 +126,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   }
 
   @override
-  Future<SinglesigWalletItem> promoteWatchOnlyWalletToHotWallet(
+  Future<SinglesigWalletItem> convertWatchOnlyToHotWallet(
     int walletId, {
     required String expectedDescriptor,
     required String secureStorageKey,
@@ -134,11 +134,11 @@ class FakeWalletRepository extends Fake implements WalletRepository {
     required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
   }) async {
-    promoteWatchOnlyWalletCallCount++;
-    if (promoteWatchOnlyWalletError != null) throw promoteWatchOnlyWalletError!;
-    walletItems[walletItems.indexWhere((wallet) => wallet.id == walletId)] = promoteWatchOnlyWalletResult;
-    hotWalletMetadata.add(promoteWatchOnlyWalletResult.hotWalletMetadata!);
-    return promoteWatchOnlyWalletResult;
+    convertWatchOnlyWalletCallCount++;
+    if (convertWatchOnlyWalletError != null) throw convertWatchOnlyWalletError!;
+    walletItems[walletItems.indexWhere((wallet) => wallet.id == walletId)] = convertWatchOnlyWalletResult;
+    hotWalletMetadata.add(convertWatchOnlyWalletResult.hotWalletMetadata!);
+    return convertWatchOnlyWalletResult;
   }
 
   @override
@@ -734,13 +734,13 @@ void main() {
       provider.dispose();
     });
 
-    test('기존 Watch-only 삭제를 선택하면 같은 ID의 핫월렛으로 승격함', () async {
+    test('기존 Watch-only 삭제를 선택하면 같은 ID의 핫월렛으로 전환함', () async {
       final existingWatchOnly = _createSinglesigWalletListItem(id: 7, name: 'Existing Watch-only');
-      final promotedWallet = _createSinglesigWalletListItem(id: 7, name: 'Existing Watch-only', isHotWallet: true);
+      final convertedWallet = _createSinglesigWalletListItem(id: 7, name: 'Existing Watch-only', isHotWallet: true);
       final walletRepo =
           FakeWalletRepository()
             ..walletItems = [existingWatchOnly]
-            ..promoteWatchOnlyWalletResult = promotedWallet;
+            ..convertWatchOnlyWalletResult = convertedWallet;
       final addressRepository = FakeAddressRepository();
       final preferenceProvider = FakePreferenceProvider();
       final sharedPrefsRepository = FakeSharedPrefsRepository();
@@ -753,18 +753,18 @@ void main() {
 
       final result = await provider.addHotWallet(
         _createSinglesigWatchOnlyWallet(name: 'New Restore Name'),
-        secureStorageKey: 'local_wallet_seed_promoted',
+        secureStorageKey: 'local_wallet_seed_converted',
         backupVerified: true,
         enterPassphraseWhenSigning: false,
         createdAt: DateTime.utc(2026, 9, 9),
-        watchOnlyWalletIdToPromote: existingWatchOnly.id,
+        watchOnlyWalletIdToConvert: existingWatchOnly.id,
       );
 
       expect(result.id, existingWatchOnly.id);
       expect(result.name, existingWatchOnly.name);
       expect(result.hasLocalKey, isTrue);
-      expect(provider.walletItemList, [promotedWallet]);
-      expect(walletRepo.promoteWatchOnlyWalletCallCount, 1);
+      expect(provider.walletItemList, [convertedWallet]);
+      expect(walletRepo.convertWatchOnlyWalletCallCount, 1);
       expect(walletRepo.addHotWalletCallCount, 0);
       expect(walletRepo.deletedWalletIds, isEmpty);
       expect(addressRepository.ensureAddressesInitCallCount, 0);
@@ -774,31 +774,31 @@ void main() {
       provider.dispose();
     });
 
-    test('Watch-only 승격이 실패하면 이미 저장된 secret을 정리함', () async {
+    test('Watch-only 전환이 실패하면 이미 저장된 secret을 정리함', () async {
       final existingWatchOnly = _createSinglesigWalletListItem(id: 7, name: 'Existing Watch-only');
       final walletRepo =
           FakeWalletRepository()
             ..walletItems = [existingWatchOnly]
-            ..promoteWatchOnlyWalletError = StateError('descriptor mismatch');
+            ..convertWatchOnlyWalletError = StateError('descriptor mismatch');
       final secretRepository = FakeHotWalletSecretRepository();
       final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
       // ViewModel이 addHotWallet 호출 전에 secret을 먼저 저장해 두는 상황을 재현한다.
-      secretRepository.storedKeys.add('local_wallet_seed_promoted');
+      secretRepository.storedKeys.add('local_wallet_seed_converted');
 
       await expectLater(
         provider.addHotWallet(
           _createSinglesigWatchOnlyWallet(name: 'New Restore Name'),
-          secureStorageKey: 'local_wallet_seed_promoted',
+          secureStorageKey: 'local_wallet_seed_converted',
           backupVerified: true,
           enterPassphraseWhenSigning: false,
           createdAt: DateTime.utc(2026, 9, 9),
-          watchOnlyWalletIdToPromote: existingWatchOnly.id,
+          watchOnlyWalletIdToConvert: existingWatchOnly.id,
         ),
         throwsA(isA<StateError>()),
       );
 
       expect(secretRepository.storedKeys, isEmpty);
-      expect(secretRepository.deletedKeys, ['local_wallet_seed_promoted']);
+      expect(secretRepository.deletedKeys, ['local_wallet_seed_converted']);
       expect(provider.walletItemList, [existingWatchOnly]);
 
       provider.dispose();

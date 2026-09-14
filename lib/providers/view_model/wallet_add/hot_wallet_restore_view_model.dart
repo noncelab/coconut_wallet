@@ -222,7 +222,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     int colorIndex = 0,
     int iconIndex = 0,
     String? derivedDescriptor,
-    int? watchOnlyWalletIdToPromote,
+    int? watchOnlyWalletIdToConvert,
   }) async {
     if (!isMnemonicValid || !isPassphraseValid || _isRestoring) {
       throw StateError('Invalid restore input');
@@ -266,7 +266,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
         backupVerified: true,
         enterPassphraseWhenSigning: _enterPassphraseWhenSigning,
         createdAt: DateTime.now(),
-        watchOnlyWalletIdToPromote: watchOnlyWalletIdToPromote,
+        watchOnlyWalletIdToConvert: watchOnlyWalletIdToConvert,
       );
     } catch (_) {
       await _secretRepository.delete(storageKey).catchError((_) {});

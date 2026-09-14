@@ -144,7 +144,7 @@ void main() {
       expect(wallets.where((wallet) => !wallet.hasLocalKey), hasLength(1));
     });
 
-    test('Watch-only를 같은 ID의 핫월렛으로 승격하면 캐시와 지갑 정보가 유지됨', () async {
+    test('Watch-only를 같은 ID의 핫월렛으로 전환하면 캐시와 지갑 정보가 유지됨', () async {
       final watchOnly = await walletRepository.addSinglesigWallet(
         createSinglesigWallet(name: 'Existing Watch-only', source: WalletImportSource.extendedPublicKey),
       );
@@ -182,18 +182,18 @@ void main() {
         );
       });
 
-      final promoted = await walletRepository.promoteWatchOnlyWalletToHotWallet(
+      final converted = await walletRepository.convertWatchOnlyToHotWallet(
         watchOnly.id,
         expectedDescriptor: _singlesigDescriptor,
-        secureStorageKey: 'hot_wallet_secret_promoted',
+        secureStorageKey: 'hot_wallet_secret_converted',
         backupVerified: true,
         enterPassphraseWhenSigning: false,
         createdAt: createdAt,
       );
 
-      expect(promoted.id, watchOnly.id);
-      expect(promoted.name, 'Existing Watch-only');
-      expect(promoted.hasLocalKey, isTrue);
+      expect(converted.id, watchOnly.id);
+      expect(converted.name, 'Existing Watch-only');
+      expect(converted.hasLocalKey, isTrue);
       expect(realmManager.realm.find<RealmWalletBase>(watchOnly.id)?.generatedReceiveIndex, 30);
       expect(realmManager.realm.find<RealmWalletBase>(watchOnly.id)?.usedReceiveIndex, 12);
       expect(realmManager.realm.query<RealmWalletAddress>('walletId == ${watchOnly.id}'), hasLength(1));
@@ -210,14 +210,14 @@ void main() {
       expect((await walletRepository.getWalletItemList()).single.id, watchOnly.id);
     });
 
-    test('Watch-only 승격 검증이 실패하면 기존 지갑을 변경하지 않음', () async {
+    test('Watch-only 전환 검증이 실패하면 기존 지갑을 변경하지 않음', () async {
       final watchOnly = await walletRepository.addSinglesigWallet(
         createSinglesigWallet(name: 'Existing Watch-only', source: WalletImportSource.extendedPublicKey),
       );
       final differentDescriptor = SingleSignatureVault.random().descriptor;
 
       await expectLater(
-        walletRepository.promoteWatchOnlyWalletToHotWallet(
+        walletRepository.convertWatchOnlyToHotWallet(
           watchOnly.id,
           expectedDescriptor: differentDescriptor,
           secureStorageKey: 'hot_wallet_secret_invalid',

@@ -183,7 +183,7 @@ class WalletRepository extends BaseRepository {
   ///
   /// Secret은 이 메서드 호출 전에 이미 저장되어 있어야 한다. Realm 변경은 하나의
   /// transaction으로 처리하므로 실패하면 Watch-only 상태가 그대로 유지된다.
-  Future<SinglesigWalletItem> promoteWatchOnlyWalletToHotWallet(
+  Future<SinglesigWalletItem> convertWatchOnlyToHotWallet(
     int walletId, {
     required String expectedDescriptor,
     required String secureStorageKey,
@@ -196,7 +196,7 @@ class WalletRepository extends BaseRepository {
       throw StateError('Watch-only wallet not found: $walletId');
     }
     if (walletBase.walletType != WalletType.singleSignature.name) {
-      throw StateError('Only a single-signature watch-only wallet can be promoted');
+      throw StateError('Only a single-signature watch-only wallet can be converted to a hot wallet');
     }
     if (realm.find<RealmHotWalletMetadata>(walletId) != null) {
       throw StateError('The wallet already has a local key');
