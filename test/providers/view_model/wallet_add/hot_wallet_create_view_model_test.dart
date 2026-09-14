@@ -59,6 +59,9 @@ class _FakeWalletProvider extends Fake implements WalletProvider {
   List<WalletItemBase> get walletItemList => List.unmodifiable(_wallets);
 
   @override
+  Future<T> runHotWalletLifecycleOperation<T>(Future<T> Function() operation) => operation();
+
+  @override
   Future<SinglesigWalletItem> addHotWallet(
     WatchOnlyWallet wallet, {
     required String secureStorageKey,

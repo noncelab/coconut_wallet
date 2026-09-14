@@ -24,6 +24,9 @@ class _GatedWalletProvider extends Fake implements WalletProvider {
   bool addStarted = false;
 
   @override
+  Future<T> runHotWalletLifecycleOperation<T>(Future<T> Function() operation) => operation();
+
+  @override
   Future<SinglesigWalletItem> addHotWallet(
     WatchOnlyWallet wallet, {
     required String secureStorageKey,

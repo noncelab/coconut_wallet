@@ -24,6 +24,7 @@ import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repos
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/services/security/hot_wallet_lifecycle_lock.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/suspicious_transaction_util.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +49,7 @@ class WalletProvider extends ChangeNotifier {
   final WalletRepository _walletRepository;
   final HotWalletSecretRepository _hotWalletSecretRepository;
   final SharedPrefsRepository _sharedPrefsRepository;
+  final HotWalletLifecycleLock _hotWalletLifecycleLock;
 
   late final PreferenceProvider _preferenceProvider;
 
@@ -71,9 +73,11 @@ class WalletProvider extends ChangeNotifier {
     this._preferenceProvider, {
     HotWalletSecretRepository? hotWalletSecretRepository,
     SharedPrefsRepository? sharedPrefsRepository,
+    HotWalletLifecycleLock? hotWalletLifecycleLock,
   }) : _saveWalletCount = saveWalletCount,
        _hotWalletSecretRepository = hotWalletSecretRepository ?? HotWalletSecretRepository(),
-       _sharedPrefsRepository = sharedPrefsRepository ?? SharedPrefsRepository() {
+       _sharedPrefsRepository = sharedPrefsRepository ?? SharedPrefsRepository(),
+       _hotWalletLifecycleLock = hotWalletLifecycleLock ?? HotWalletLifecycleLock() {
     // ValueNotifier들 초기화
     walletLoadStateNotifier = ValueNotifier(_walletLoadState);
     walletItemListNotifier = ValueNotifier(_walletItemList);
@@ -145,16 +149,22 @@ class WalletProvider extends ChangeNotifier {
 
   Future<void> _reconcileHotWalletLifecycleInBackground() async {
     try {
-      final walletListChanged = await _reconcileHotWalletLifecycle();
-      if (!walletListChanged) return;
+      await _hotWalletLifecycleLock.synchronized(() async {
+        final walletListChanged = await _reconcileHotWalletLifecycle();
+        if (!walletListChanged) return;
 
-      _setWalletItemList(await _fetchWalletListFromDB());
-      await _saveWalletCount(_walletItemList.length);
-      await _preferenceProvider.setWalletPreferences(_walletItemList);
-      notifyListeners();
+        _setWalletItemList(await _fetchWalletListFromDB());
+        await _saveWalletCount(_walletItemList.length);
+        await _preferenceProvider.setWalletPreferences(_walletItemList);
+        notifyListeners();
+      });
     } catch (error) {
       Logger.error('Failed to refresh wallets after hot wallet reconciliation: $error');
     }
+  }
+
+  Future<T> runHotWalletLifecycleOperation<T>(Future<T> Function() operation) {
+    return _hotWalletLifecycleLock.synchronized(operation);
   }
 
   Future<bool> _reconcileHotWalletLifecycle() async {
@@ -469,6 +479,26 @@ class WalletProvider extends ChangeNotifier {
     required bool enterPassphraseWhenSigning,
     required DateTime createdAt,
     int? watchOnlyWalletIdToConvert,
+  }) {
+    return _hotWalletLifecycleLock.synchronized(
+      () => _addHotWallet(
+        wallet,
+        secureStorageKey: secureStorageKey,
+        backupVerified: backupVerified,
+        enterPassphraseWhenSigning: enterPassphraseWhenSigning,
+        createdAt: createdAt,
+        watchOnlyWalletIdToConvert: watchOnlyWalletIdToConvert,
+      ),
+    );
+  }
+
+  Future<SinglesigWalletItem> _addHotWallet(
+    WatchOnlyWallet wallet, {
+    required String secureStorageKey,
+    required bool backupVerified,
+    required bool enterPassphraseWhenSigning,
+    required DateTime createdAt,
+    int? watchOnlyWalletIdToConvert,
   }) async {
     if (wallet.walletType != WalletType.singleSignature) {
       throw ArgumentError.value(wallet.walletType, 'wallet.walletType', 'Hot wallet must be single-signature');
@@ -719,6 +749,10 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
+    await _hotWalletLifecycleLock.synchronized(() => _deleteWallet(walletId));
+  }
+
+  Future<void> _deleteWallet(int walletId) async {
     final hotWalletMetadata = _walletRepository.getHotWalletMetadata(walletId);
     final secretStorageKey = hotWalletMetadata?.secureStorageKey;
     final walletToDelete = _walletItemList.firstWhereOrNull((w) => w.id == walletId);

@@ -233,6 +233,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     final mnemonic = _copyMnemonic();
     final passphrase = Uint8List.fromList(utf8.encode(_usePassphrase ? _passphrase : ''));
     final storageKey = _secretRepository.newSecretStorageKey();
+    var secretCleanupHandledUnderLock = false;
     try {
       final String descriptor;
       if (derivedDescriptor != null) {
@@ -243,33 +244,43 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
           passphrase: Uint8List.fromList(passphrase),
         ));
       }
-      final wallet = WatchOnlyWallet(
-        walletName,
-        colorIndex,
-        iconIndex,
-        descriptor,
-        null,
-        null,
-        WalletImportSource.coconutVault.name,
-      );
-      final passphraseToStore = _enterPassphraseWhenSigning ? Uint8List(0) : Uint8List.fromList(passphrase);
-      try {
-        await AppGuard.runWithoutPrivacyScreen(
-          () => _secretRepository.create(storageKey: storageKey, mnemonic: mnemonic, passphrase: passphraseToStore),
-        );
-      } finally {
-        passphraseToStore.fillRange(0, passphraseToStore.length, 0);
-      }
-      return await walletProvider.addHotWallet(
-        wallet,
-        secureStorageKey: storageKey,
-        backupVerified: true,
-        enterPassphraseWhenSigning: _enterPassphraseWhenSigning,
-        createdAt: DateTime.now(),
-        watchOnlyWalletIdToConvert: watchOnlyWalletIdToConvert,
-      );
+      return await walletProvider.runHotWalletLifecycleOperation(() async {
+        try {
+          final wallet = WatchOnlyWallet(
+            walletName,
+            colorIndex,
+            iconIndex,
+            descriptor,
+            null,
+            null,
+            WalletImportSource.coconutVault.name,
+          );
+          final passphraseToStore = _enterPassphraseWhenSigning ? Uint8List(0) : Uint8List.fromList(passphrase);
+          try {
+            await AppGuard.runWithoutPrivacyScreen(
+              () => _secretRepository.create(storageKey: storageKey, mnemonic: mnemonic, passphrase: passphraseToStore),
+            );
+          } finally {
+            passphraseToStore.fillRange(0, passphraseToStore.length, 0);
+          }
+          return await walletProvider.addHotWallet(
+            wallet,
+            secureStorageKey: storageKey,
+            backupVerified: true,
+            enterPassphraseWhenSigning: _enterPassphraseWhenSigning,
+            createdAt: DateTime.now(),
+            watchOnlyWalletIdToConvert: watchOnlyWalletIdToConvert,
+          );
+        } catch (_) {
+          secretCleanupHandledUnderLock = true;
+          await _secretRepository.delete(storageKey).catchError((_) {});
+          rethrow;
+        }
+      });
     } catch (_) {
-      await _secretRepository.delete(storageKey).catchError((_) {});
+      if (!secretCleanupHandledUnderLock) {
+        await _secretRepository.delete(storageKey).catchError((_) {});
+      }
       rethrow;
     } finally {
       mnemonic.fillRange(0, mnemonic.length, 0);

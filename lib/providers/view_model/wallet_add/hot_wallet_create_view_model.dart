@@ -90,50 +90,62 @@ class HotWalletCreateViewModel extends ChangeNotifier {
     final passphraseBytes = Uint8List.fromList(utf8.encode(passphrase));
     Uint8List? mnemonic;
     final storageKey = _secretRepository.newSecretStorageKey();
+    var secretCleanupHandledUnderLock = false;
 
     try {
       final material = await _materialGenerator(mnemonicWordCount, Uint8List.fromList(passphraseBytes));
       mnemonic = material.mnemonic;
 
-      final wallet = WatchOnlyWallet(
-        walletName,
-        colorIndex,
-        iconIndex,
-        material.descriptor,
-        null,
-        null,
-        WalletImportSource.coconutVault.name,
-      );
-      final passphraseToStore = enterPassphraseWhenSigning ? Uint8List(0) : Uint8List.fromList(passphraseBytes);
-      try {
-        await AppGuard.runWithoutPrivacyScreen(
-          () => _secretRepository.create(storageKey: storageKey, mnemonic: mnemonic!, passphrase: passphraseToStore),
-        );
-      } finally {
-        passphraseToStore.fillRange(0, passphraseToStore.length, 0);
-      }
+      return await _walletProvider.runHotWalletLifecycleOperation(() async {
+        try {
+          final wallet = WatchOnlyWallet(
+            walletName,
+            colorIndex,
+            iconIndex,
+            material.descriptor,
+            null,
+            null,
+            WalletImportSource.coconutVault.name,
+          );
+          final passphraseToStore = enterPassphraseWhenSigning ? Uint8List(0) : Uint8List.fromList(passphraseBytes);
+          try {
+            await AppGuard.runWithoutPrivacyScreen(
+              () =>
+                  _secretRepository.create(storageKey: storageKey, mnemonic: mnemonic!, passphrase: passphraseToStore),
+            );
+          } finally {
+            passphraseToStore.fillRange(0, passphraseToStore.length, 0);
+          }
 
-      final addedWallet = await _walletProvider.addHotWallet(
-        wallet,
-        secureStorageKey: storageKey,
-        backupVerified: false,
-        enterPassphraseWhenSigning: enterPassphraseWhenSigning,
-        createdAt: _now(),
-      );
+          final addedWallet = await _walletProvider.addHotWallet(
+            wallet,
+            secureStorageKey: storageKey,
+            backupVerified: false,
+            enterPassphraseWhenSigning: enterPassphraseWhenSigning,
+            createdAt: _now(),
+          );
 
-      return HotWalletCreateResult(
-        walletId: addedWallet.id,
-        walletName: walletName,
-        descriptor: material.descriptor,
-        mnemonic: Uint8List.fromList(mnemonic),
-        passphrase: Uint8List.fromList(passphraseBytes),
-        enterPassphraseWhenSigning: enterPassphraseWhenSigning,
-      );
+          return HotWalletCreateResult(
+            walletId: addedWallet.id,
+            walletName: walletName,
+            descriptor: material.descriptor,
+            mnemonic: Uint8List.fromList(mnemonic!),
+            passphrase: Uint8List.fromList(passphraseBytes),
+            enterPassphraseWhenSigning: enterPassphraseWhenSigning,
+          );
+        } catch (_) {
+          secretCleanupHandledUnderLock = true;
+          await _secretRepository.delete(storageKey).catchError((_) {});
+          rethrow;
+        }
+      });
     } catch (_) {
-      try {
-        await _secretRepository.delete(storageKey);
-      } catch (_) {
-        // 저장이 시작되기 전 실패했거나 이미 정리된 경우
+      if (!secretCleanupHandledUnderLock) {
+        try {
+          await _secretRepository.delete(storageKey);
+        } catch (_) {
+          // 저장이 시작되기 전 실패했거나 이미 정리된 경우
+        }
       }
       rethrow;
     } finally {

@@ -708,6 +708,29 @@ void main() {
       provider.dispose();
     });
 
+    test('시작 시 reconciliation과 핫월렛 등록을 동시에 실행하지 않음', () async {
+      final walletRepo = FakeWalletRepository()..addHotWalletResult = _createSinglesigWalletListItem(isHotWallet: true);
+      final secretRepository = FakeHotWalletSecretRepository()..getKeysGate = Completer<void>();
+      final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
+
+      final addFuture = provider.addHotWallet(
+        _createSinglesigWatchOnlyWallet(),
+        secureStorageKey: 'local_wallet_seed_new',
+        backupVerified: false,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 14),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(walletRepo.addHotWalletCallCount, 0);
+
+      secretRepository.getKeysGate!.complete();
+      await addFuture;
+
+      expect(walletRepo.addHotWalletCallCount, 1);
+      provider.dispose();
+    });
+
     test('같은 descriptor의 Watch-only 지갑이 있어도 핫월렛을 별도로 추가함', () async {
       final existingWatchOnly = _createSinglesigWalletListItem();
       final walletRepo = FakeWalletRepository()..walletItems = [existingWatchOnly];
