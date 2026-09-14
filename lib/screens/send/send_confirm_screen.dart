@@ -362,10 +362,17 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     if (requiresAuthentication) {
       _signatureController.value = 1;
     }
-    await Future.delayed(const Duration(milliseconds: 100));
-    if (mounted) setState(() => _showOutputDetail = false);
-    await Future.delayed(const Duration(milliseconds: 220));
-    if (mounted) setState(() => _showSigningStatus = true);
+    if (!mounted) return;
+    setState(() {
+      _showOutputDetail = false;
+      _showSigningStatus = true;
+    });
+    if (!requiresAuthentication) {
+      await WidgetsBinding.instance.endOfFrame;
+      await _signatureCompositionLoaded.future;
+      if (!mounted || _signingStage != _HotWalletSigningStage.signing) return;
+      _signatureController.repeat();
+    }
   }
 
   void _resumePassphraseInput() {
@@ -475,24 +482,20 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
           );
           if (!mounted || passphrase == null) return;
 
-          _resumePassphraseInput();
-          await WidgetsBinding.instance.endOfFrame;
+          await _enterAuthenticationStage(requiresAuthentication: false);
           if (!mounted) return;
-          context.loaderOverlay.show();
           final isMatchingWallet = await AppGuard.runWithoutPrivacyScreen(
             () => viewModel.validateHotWalletPassphrase(passphrase!),
           );
           if (!mounted) return;
-          context.loaderOverlay.hide();
           if (isMatchingWallet) {
-            await _enterAuthenticationStage(requiresAuthentication: false);
-            if (!mounted) return;
             break;
           }
 
           passphrase.fillRange(0, passphrase.length, 0);
           passphrase = null;
           showIncorrectError = true;
+          _resumePassphraseInput();
         }
       } else {
         final authenticated = await AppGuard.runWithoutPrivacyScreen(
