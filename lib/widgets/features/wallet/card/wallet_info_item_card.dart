@@ -341,8 +341,9 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
 
   void _onTap(BuildContext context, WalletImportSource? walletImportSource) {
     final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
+    final bool isHotWallet = walletItem.hasLocalKey;
 
-    if (!isExternalWallet && !isCustomAccount) {
+    if (!isExternalWallet && !isCustomAccount && !isHotWallet) {
       return;
     }
 
@@ -355,6 +356,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             id: widget.id,
             walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
             isCustomAccount: isCustomAccount,
+            isHotWallet: isHotWallet,
           ),
     ).then((result) {
       if (result != null) {
@@ -374,7 +376,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   Widget _buildIcon({required bool hasGradient}) {
     final colors = context.coconutColors;
     final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
-    final bool shouldShowEditIcon = isExternalWallet || isCustomAccount;
+    final bool shouldShowEditIcon = isExternalWallet || isCustomAccount || walletItem.hasLocalKey;
     final cardBackgroundColor = hasGradient ? colors.surface : colors.background;
     final pressedIconBackgroundSubtle = Color.alphaBlend(
       colors.surfacePressOverlay.withValues(alpha: colors.surfacePressOverlayOpacity),

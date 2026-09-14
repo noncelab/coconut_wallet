@@ -1665,6 +1665,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             id: walletItem.id,
             walletImportSource: walletItem.walletImportSource,
             isCustomAccount: false,
+            isHotWallet: walletItem.hasLocalKey,
           ),
     );
   }
