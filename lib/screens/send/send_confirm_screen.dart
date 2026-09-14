@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -11,7 +10,6 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -28,6 +26,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
+import 'package:coconut_wallet/screens/send/hot_wallet_passphrase_input_sheet.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
@@ -42,7 +41,6 @@ import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
@@ -473,7 +471,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
             showDragHandle: true,
             titlePadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
             keyboardInsetAnimationDuration: Duration.zero,
-            child: _HotWalletPassphraseInputSheet(
+            child: HotWalletPassphraseInputSheet(
               requiresAuthentication: requiresAuthentication,
               showIncorrectError: showIncorrectError,
               onAuthenticationStarted: () => _enterAuthenticationStage(requiresAuthentication: true),
@@ -741,138 +739,4 @@ class _SigningContentTransition extends StatelessWidget {
       child: AnimatedOpacity(opacity: visible ? 1 : 0, duration: const Duration(milliseconds: 220), child: child),
     ),
   );
-}
-
-class _HotWalletPassphraseInputSheet extends StatefulWidget {
-  const _HotWalletPassphraseInputSheet({
-    required this.requiresAuthentication,
-    required this.showIncorrectError,
-    required this.onAuthenticationStarted,
-    required this.onPassphraseInputResumed,
-  });
-
-  final bool requiresAuthentication;
-  final bool showIncorrectError;
-  final Future<void> Function() onAuthenticationStarted;
-  final VoidCallback onPassphraseInputResumed;
-
-  @override
-  State<_HotWalletPassphraseInputSheet> createState() => _HotWalletPassphraseInputSheetState();
-}
-
-class _HotWalletPassphraseInputSheetState extends State<_HotWalletPassphraseInputSheet> {
-  final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-  bool _isSubmitting = false;
-  late bool _isIncorrect;
-  bool _isPassphraseVisible = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isIncorrect = widget.showIncorrectError;
-    _controller.addListener(_handleChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNode.requestFocus();
-    });
-  }
-
-  void _handleChanged() {
-    if (!mounted) return;
-    setState(() {
-      if (_controller.text.isNotEmpty) {
-        _isIncorrect = false;
-      }
-    });
-  }
-
-  Future<void> _complete() async {
-    if (_controller.text.isEmpty || _isSubmitting) return;
-    _focusNode.unfocus();
-    setState(() => _isSubmitting = true);
-    if (widget.requiresAuthentication) {
-      await widget.onAuthenticationStarted();
-      if (!mounted) return;
-      final authenticated = await AppGuard.runWithoutPrivacyScreen(
-        () => FlutterHotWalletAuthenticator(context).authenticate(),
-      );
-      if (!mounted) return;
-      if (!authenticated) {
-        setState(() => _isSubmitting = false);
-        await showInfoDialog(
-          context,
-          context.read<PreferenceProvider>().language,
-          t.send_confirm_screen.authentication_failed_title,
-          t.send_confirm_screen.authentication_failed_description,
-        );
-        widget.onPassphraseInputResumed();
-        return;
-      }
-    }
-
-    final enteredPassphrase = Uint8List.fromList(utf8.encode(_controller.text));
-    Navigator.pop(context, enteredPassphrase);
-  }
-
-  @override
-  void dispose() {
-    _controller.removeListener(_handleChanged);
-    _controller.clear();
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: _focusNode.unfocus,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              CoconutTextField(
-                key: const ValueKey('hot-wallet-passphrase-input'),
-                controller: _controller,
-                focusNode: _focusNode,
-                onChanged: (_) {},
-                isError: _isIncorrect,
-                errorText: _isIncorrect ? t.wallet_home_screen.hot_wallet_setup.passphrase_incorrect : null,
-                descriptionText: widget.showIncorrectError ? ' ' : null,
-                obscureText: !_isPassphraseVisible,
-                autocorrect: false,
-                enableSuggestions: false,
-                maxLines: 1,
-                textInputAction: TextInputAction.done,
-                placeholderText: t.passphrase_input_text_field.placeholder,
-                suffix: IconButton(
-                  iconSize: 16,
-                  padding: EdgeInsets.zero,
-                  onPressed: () => setState(() => _isPassphraseVisible = !_isPassphraseVisible),
-                  icon: SvgPicture.asset(
-                    _isPassphraseVisible ? CommonVisibilityIconPath.eye : CommonVisibilityIconPath.eyeCrossed,
-                    width: 16,
-                    height: 16,
-                    colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
-                  ),
-                ),
-                onEditingComplete: _complete,
-              ),
-              CoconutLayout.spacing_500h,
-              InlineActionButton(
-                text: t.sign,
-                isActive: _controller.text.isNotEmpty && !_isSubmitting,
-                onPressed: _complete,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

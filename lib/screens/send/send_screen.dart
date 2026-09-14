@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui' as ui;
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 
@@ -34,13 +35,18 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart' show TransactionDraftRepository;
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
+import 'package:coconut_wallet/screens/send/hot_wallet_passphrase_input_sheet.dart';
+import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -57,6 +63,7 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_draft_card.dart';
+import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/common/effects/ripple_effect.dart';
@@ -70,6 +77,8 @@ import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
 
 part 'send_screen_draft.dart';
+
+enum _SendHotWalletSigningStage { idle, authentication, signing, completed, finalReview }
 
 class SendScreen extends StatefulWidget {
   final int? walletId;
@@ -100,6 +109,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   bool _isDropdownMenuVisible = false;
   bool _hasRetriedRecommendedFees = false;
+  bool _isHotWalletSigning = false;
+  SendConfirmViewModel? _hotWalletSigningViewModel;
+  _SendHotWalletSigningStage _hotWalletSigningStage = _SendHotWalletSigningStage.idle;
+  bool _showHotWalletSigningStatus = false;
+  late final AnimationController _hotWalletSignatureController;
+  final Completer<void> _hotWalletSignatureCompositionLoaded = Completer<void>();
 
   // 스크롤 범위 연산에 사용하는 값들
   final double kCoconutAppbarHeight = 60;
@@ -155,6 +170,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
+    _hotWalletSignatureController = AnimationController(vsync: this);
     _addAddressField();
     _viewModel = SendViewModel(
       context.read<WalletProvider>(),
@@ -319,6 +335,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _ownAddressCheckTimer?.cancel();
+    _hotWalletSignatureController.dispose();
 
     _recipientPageController.dispose();
     _feeRateController.dispose();
@@ -428,8 +445,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         MediaQuery.of(context).padding.top -
         MediaQuery.of(context).padding.bottom -
         kCoconutAppbarHeight;
+    final appBar = _buildAppBar(context);
 
     return PopScope(
+      canPop: !_isHotWalletSigning,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
           _viewModel.clearSendInfo();
@@ -448,7 +467,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         child: Scaffold(
           resizeToAvoidBottomInset: false,
           backgroundColor: context.coconutColors.background,
-          appBar: _buildAppBar(context),
+          appBar: PreferredSize(
+            preferredSize: appBar.preferredSize,
+            child: AnimatedOpacity(
+              opacity: _hotWalletSigningStage == _SendHotWalletSigningStage.idle ? 1 : 0,
+              duration: const Duration(milliseconds: 220),
+              child: IgnorePointer(ignoring: _hotWalletSigningStage != _SendHotWalletSigningStage.idle, child: appBar),
+            ),
+          ),
           body: GestureDetector(
             onTap: _clearFocus,
             behavior: HitTestBehavior.translucent,
@@ -456,45 +482,53 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               height: MediaQuery.sizeOf(context).height,
               child: Stack(
                 children: [
-                  SizedBox(
-                    height: usableHeight,
-                    child: Stack(
-                      children: [
-                        SingleChildScrollView(
-                          controller: _screenScrollController,
-                          child: Selector<SendViewModel, (bool, bool)>(
-                            selector:
-                                (_, viewModel) => (viewModel.showAddressBoard, viewModel.currentUnit.isBasedOnSatoshi),
-                            builder: (context, data, child) {
-                              return SizedBox(height: _getScrollableHeight(usableHeight), child: child);
-                            },
-                            child: Stack(
-                              children: [
-                                _buildInvisibleAmountField(),
-                                _buildCounter(context),
-                                _buildPageView(context),
-                                _buildBoard(context),
-                                if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
-                                  _buildKeyboardToolbar(context),
-                              ],
+                  AnimatedOpacity(
+                    opacity: _hotWalletSigningStage == _SendHotWalletSigningStage.idle ? 1 : 0,
+                    duration: const Duration(milliseconds: 220),
+                    child: SizedBox(
+                      height: usableHeight,
+                      child: Stack(
+                        children: [
+                          SingleChildScrollView(
+                            controller: _screenScrollController,
+                            child: Selector<SendViewModel, (bool, bool)>(
+                              selector:
+                                  (_, viewModel) => (
+                                    viewModel.showAddressBoard,
+                                    viewModel.currentUnit.isBasedOnSatoshi,
+                                  ),
+                              builder: (context, data, child) {
+                                return SizedBox(height: _getScrollableHeight(usableHeight), child: child);
+                              },
+                              child: Stack(
+                                children: [
+                                  _buildInvisibleAmountField(),
+                                  _buildCounter(context),
+                                  _buildPageView(context),
+                                  _buildBoard(context),
+                                  if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
+                                    _buildKeyboardToolbar(context),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
-                          selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
-                          builder: (context, data, child) {
-                            return _buildDropdownMenu(
-                              isSaved: data.item1,
-                              hasDrafts: data.item2,
-                              canGoNext: data.item3,
-                              isUtxoSelectionAuto: data.item4,
-                            );
-                          },
-                        ),
-                      ],
+                          Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
+                            selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
+                            builder: (context, data, child) {
+                              return _buildDropdownMenu(
+                                isSaved: data.item1,
+                                hasDrafts: data.item2,
+                                canGoNext: data.item3,
+                                isUtxoSelectionAuto: data.item4,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  _buildFinalButton(context),
+                  if (_hotWalletSigningStage == _SendHotWalletSigningStage.idle) _buildFinalButton(context),
+                  if (_hotWalletSigningStage != _SendHotWalletSigningStage.idle) _buildHotWalletSigningOverlay(),
                 ],
               ),
             ),
@@ -686,12 +720,323 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
+  Future<void> _enterHotWalletSigningStage(_SendHotWalletSigningStage stage) async {
+    if (!mounted) return;
+    final shouldFadeInStatus = _hotWalletSigningStage == _SendHotWalletSigningStage.idle;
+    setState(() {
+      _hotWalletSigningStage = stage;
+      _showHotWalletSigningStatus = !shouldFadeInStatus;
+    });
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted || _hotWalletSigningStage != stage) return;
+    if (shouldFadeInStatus) {
+      setState(() => _showHotWalletSigningStatus = true);
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    await _hotWalletSignatureCompositionLoaded.future;
+    if (!mounted || _hotWalletSigningStage != stage) return;
+    if (stage == _SendHotWalletSigningStage.authentication) {
+      _hotWalletSignatureController.value = 1;
+    } else if (stage == _SendHotWalletSigningStage.signing) {
+      _hotWalletSignatureController.repeat();
+    }
+  }
+
+  void _restoreHotWalletSendContent() {
+    if (!mounted) return;
+    _hotWalletSignatureController.stop();
+    setState(() {
+      _isHotWalletSigning = false;
+      _hotWalletSigningStage = _SendHotWalletSigningStage.idle;
+      _showHotWalletSigningStatus = false;
+      _hotWalletSigningViewModel = null;
+    });
+  }
+
+  void _resumeHotWalletPassphraseInput() {
+    if (!mounted) return;
+    _hotWalletSignatureController.stop();
+    setState(() {
+      _hotWalletSigningStage = _SendHotWalletSigningStage.idle;
+      _showHotWalletSigningStatus = false;
+    });
+  }
+
+  Future<void> _startHotWalletSigning() async {
+    if (_isHotWalletSigning) return;
+    setState(() => _isHotWalletSigning = true);
+    final signingViewModel = SendConfirmViewModel(context.read<SendInfoProvider>(), context.read<WalletProvider>());
+    _hotWalletSigningViewModel = signingViewModel;
+    Uint8List? passphrase;
+    try {
+      await signingViewModel.setEstimatedFeeAndTotalUsedAmount();
+      if (!mounted) return;
+      final requiresAuthentication = context.read<AuthProvider>().isAuthEnabled;
+      if (signingViewModel.shouldEnterPassphraseWhenSigning) {
+        var showIncorrectError = false;
+        while (mounted) {
+          passphrase = await CommonBottomSheets.showBottomSheet<Uint8List>(
+            context: context,
+            title: t.send_confirm_screen.passphrase_input_title,
+            showCloseButton: true,
+            backgroundColor: context.coconutColors.surfaceBottomSheet,
+            showDragHandle: true,
+            titlePadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            keyboardInsetAnimationDuration: Duration.zero,
+            child: HotWalletPassphraseInputSheet(
+              requiresAuthentication: requiresAuthentication,
+              showIncorrectError: showIncorrectError,
+              onAuthenticationStarted: () => _enterHotWalletSigningStage(_SendHotWalletSigningStage.authentication),
+              onPassphraseInputResumed: _resumeHotWalletPassphraseInput,
+            ),
+          );
+          if (!mounted || passphrase == null) return;
+
+          await _enterHotWalletSigningStage(_SendHotWalletSigningStage.signing);
+          if (!mounted) return;
+          final isMatchingWallet = await AppGuard.runWithoutPrivacyScreen(
+            () => signingViewModel.validateHotWalletPassphrase(passphrase!),
+          );
+          if (!mounted) return;
+          if (isMatchingWallet) break;
+
+          passphrase.fillRange(0, passphrase.length, 0);
+          passphrase = null;
+          showIncorrectError = true;
+          _resumeHotWalletPassphraseInput();
+        }
+      } else {
+        if (requiresAuthentication) {
+          await _enterHotWalletSigningStage(_SendHotWalletSigningStage.authentication);
+          if (!mounted) return;
+          final authenticated = await AppGuard.runWithoutPrivacyScreen(
+            () => FlutterHotWalletAuthenticator(context).authenticate(),
+          );
+          if (!mounted) return;
+          if (!authenticated) {
+            await showInfoDialog(
+              context,
+              context.read<PreferenceProvider>().language,
+              t.send_confirm_screen.authentication_failed_title,
+              t.send_confirm_screen.authentication_failed_description,
+            );
+            return;
+          }
+        }
+        await _enterHotWalletSigningStage(_SendHotWalletSigningStage.signing);
+        if (!mounted) return;
+      }
+
+      final signingAnimationStartedAt = DateTime.now();
+      await AppGuard.runWithoutPrivacyScreen(() => signingViewModel.signHotWallet(passphrase: passphrase));
+      if (!mounted) return;
+      final signingAnimationElapsed = DateTime.now().difference(signingAnimationStartedAt);
+      const minimumSigningAnimationDuration = Duration(milliseconds: 1500);
+      if (signingAnimationElapsed < minimumSigningAnimationDuration) {
+        await Future.delayed(minimumSigningAnimationDuration - signingAnimationElapsed);
+      }
+      if (!mounted) return;
+      _hotWalletSignatureController.stop();
+      await _hotWalletSignatureController.forward();
+      if (!mounted) return;
+      setState(() => _hotWalletSigningStage = _SendHotWalletSigningStage.completed);
+      await Future.delayed(const Duration(milliseconds: 1300));
+      if (!mounted) return;
+      setState(() => _hotWalletSigningStage = _SendHotWalletSigningStage.finalReview);
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        PageRouteBuilder<void>(
+          settings: const RouteSettings(name: '/broadcasting'),
+          transitionDuration: const Duration(milliseconds: 280),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
+          pageBuilder:
+              (_, animation, secondaryAnimation) => BroadcastingScreen(
+                animateHotWalletEntry: true,
+                initialAmount: UnitUtil.convertBitcoinToSatoshi(signingViewModel.totalSendAmount ?? 0),
+                initialTotalAmount: signingViewModel.totalUsedAmount,
+              ),
+          transitionsBuilder:
+              (_, animation, secondaryAnimation, child) =>
+                  FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic), child: child),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      await showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.send_confirm_screen.signing_failed_title,
+        t.send_confirm_screen.signing_failed_description,
+      );
+    } finally {
+      passphrase?.fillRange(0, passphrase.length, 0);
+      if (mounted) _restoreHotWalletSendContent();
+    }
+  }
+
+  Widget _buildHotWalletSigningStatus() {
+    final (text, emphasized) = switch (_hotWalletSigningStage) {
+      _SendHotWalletSigningStage.authentication => (
+        t.send_confirm_screen.authentication_required,
+        t.send_confirm_screen.authentication_emphasis,
+      ),
+      _SendHotWalletSigningStage.signing => (
+        t.send_confirm_screen.signing_in_progress,
+        t.send_confirm_screen.signing_emphasis,
+      ),
+      _SendHotWalletSigningStage.completed => (t.send_confirm_screen.signing_completed, ''),
+      _SendHotWalletSigningStage.finalReview => (t.broadcasting_screen.description, ''),
+      _ => ('', ''),
+    };
+    if (_hotWalletSigningStage == _SendHotWalletSigningStage.idle) {
+      return const SizedBox.shrink(key: ValueKey('idle'));
+    }
+    final parts = emphasized.isEmpty ? <String>[text] : text.split(emphasized);
+    return Padding(
+      key: ValueKey(_hotWalletSigningStage),
+      padding: EdgeInsets.zero,
+      child: Text.rich(
+        TextSpan(
+          style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+          children: [
+            TextSpan(text: parts.first),
+            if (emphasized.isNotEmpty) ...[
+              TextSpan(text: emphasized, style: TextStyle(color: context.coconutColors.primary)),
+              if (parts.length > 1) TextSpan(text: parts.sublist(1).join(emphasized)),
+            ],
+          ],
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildHotWalletSigningOverlay() {
+    final signingViewModel = _hotWalletSigningViewModel;
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Transform.translate(
+          offset: const Offset(0, -4),
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  CoconutLayout.spacing_1000h,
+                  AnimatedOpacity(
+                    opacity: _showHotWalletSigningStatus ? 1 : 0,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedContainer(
+                      height: 25.2,
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeInOutCubic,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 360),
+                        layoutBuilder:
+                            (currentChild, previousChildren) => Stack(
+                              alignment: Alignment.center,
+                              children: [...previousChildren, if (currentChild != null) currentChild],
+                            ),
+                        transitionBuilder: (child, animation) {
+                          final isIncoming = child.key == ValueKey(_hotWalletSigningStage);
+                          final sequencedAnimation = CurvedAnimation(
+                            parent: animation,
+                            curve: const Interval(0.5, 1, curve: Curves.easeOutCubic),
+                          );
+                          final slideAnimation = Tween<Offset>(
+                            begin: isIncoming ? const Offset(0, 0.35) : const Offset(0, -0.35),
+                            end: Offset.zero,
+                          ).animate(sequencedAnimation);
+                          return SlideTransition(
+                            position: slideAnimation,
+                            child: FadeTransition(opacity: sequencedAnimation, child: child),
+                          );
+                        },
+                        child: _buildHotWalletSigningStatus(),
+                      ),
+                    ),
+                  ),
+                  CoconutLayout.spacing_400h,
+                  if (signingViewModel != null)
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: 1),
+                      duration: const Duration(milliseconds: 360),
+                      curve: Curves.easeInOutCubic,
+                      builder: (context, progress, child) {
+                        final detailsOpacity = const Interval(0.3, 1, curve: Curves.easeOutCubic).transform(progress);
+                        return SendAmountHeader(
+                          amountText: _viewModel.currentUnit.displayBitcoinAmount(
+                            UnitUtil.convertBitcoinToSatoshi(signingViewModel.totalSendAmount ?? 0),
+                          ),
+                          unit: _viewModel.currentUnit,
+                          satoshiAmount: UnitUtil.convertBitcoinToSatoshi(signingViewModel.totalSendAmount ?? 0),
+                          totalCostAmountText: _viewModel.currentUnit.displayBitcoinAmount(
+                            signingViewModel.totalUsedAmount,
+                            defaultWhenZero: t.calculation_failed,
+                            shouldCheckZero: true,
+                          ),
+                          topMargin: 0,
+                          amountOffsetY: -40 * (1 - progress),
+                          amountFontSize: 28 + (8 * progress),
+                          unitFontSize: 18,
+                          detailsOpacity: detailsOpacity,
+                        );
+                      },
+                    ),
+                ],
+              ),
+              Center(
+                child: AnimatedOpacity(
+                  opacity:
+                      _hotWalletSigningStage == _SendHotWalletSigningStage.completed ||
+                              _hotWalletSigningStage == _SendHotWalletSigningStage.finalReview
+                          ? 0
+                          : 1,
+                  duration: const Duration(milliseconds: 220),
+                  child: Lottie.asset(
+                    ActionLottiePath.signature,
+                    controller: _hotWalletSignatureController,
+                    width: 180,
+                    height: 180,
+                    repeat: false,
+                    delegates: LottieDelegates(
+                      values: [
+                        ValueDelegate.colorFilter([
+                          '**',
+                        ], value: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcATop)),
+                      ],
+                    ),
+                    onLoaded: (composition) {
+                      _hotWalletSignatureController.duration = composition.duration;
+                      if (!_hotWalletSignatureCompositionLoaded.isCompleted) {
+                        _hotWalletSignatureCompositionLoaded.complete();
+                      }
+                      if (_hotWalletSigningStage == _SendHotWalletSigningStage.authentication) {
+                        _hotWalletSignatureController.value = 1;
+                      } else if (_hotWalletSigningStage == _SendHotWalletSigningStage.signing) {
+                        _hotWalletSignatureController.repeat();
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFinalButton(BuildContext context) {
     return Selector<SendViewModel, (String, bool, bool, int?)>(
       selector: (_, vm) => (vm.finalErrorMessage, vm.isReadyToSend, vm.isFeeRateLowerThanMin, vm.unintendedDustFee),
       builder: (context, data, child) {
         debugPrint('vm.unintendedDustFee: ${data.$4}');
         final (finalErrorMessage, isReadyToSend, isFeeRateLowerThanMin, unintendedDustFee) = data;
+        final isHotWallet =
+            _viewModel.selectedWalletItem?.hasLocalKey == true &&
+            _viewModel.selectedWalletItem?.hotWalletMetadata != null;
         final finalButtonMessages = [];
 
         /// errorMessage가 있으면 errorMessage만 표기
@@ -742,12 +1087,19 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) return;
                 if (mounted) {
                   _viewModel.saveSendInfo();
+                  if (isHotWallet) {
+                    _startHotWalletSigning();
+                    return;
+                  }
                   Navigator.pushNamed(context, '/send-confirm', arguments: {"currentUnit": _viewModel.currentUnit});
                 }
               },
               isActive:
-                  !isWalletWithoutMfp(_viewModel.selectedWalletItem) && isReadyToSend && finalErrorMessage.isEmpty,
-              text: t.done,
+                  !_isHotWalletSigning &&
+                  !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
+                  isReadyToSend &&
+                  finalErrorMessage.isEmpty,
+              text: isHotWallet ? t.sign : t.next,
             ),
           ],
         );
@@ -1393,46 +1745,51 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
                   return Column(
                     children: [
-                      IgnorePointer(
-                        child: SizedBox(
-                          height: kAmountHeight,
-                          child: FittedBox(
-                            child:
-                                _viewModel.isAmountInsufficient(index)
-                                    ? Text(
-                                      t.send_screen.max_mode_insufficient_balance,
-                                      style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.danger),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    )
-                                    : Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          _viewModel.currentUnit.isPrefixSymbol
-                                              ? CrossAxisAlignment.center
-                                              : CrossAxisAlignment.baseline,
-                                      textBaseline: TextBaseline.alphabetic,
-                                      children: [
-                                        if (_viewModel.currentUnit.isPrefixSymbol) ...[
-                                          Text(
-                                            _viewModel.currentUnit.symbol,
-                                            style: CoconutTypography.heading4_18_Number.setColor(amountTextColor),
-                                          ),
-                                          CoconutLayout.spacing_100w,
-                                        ],
-                                        Text(
-                                          '${amountText.isEmpty ? 0 : amountText.toBtcDisplayString()}',
-                                          style: CoconutTypography.heading2_28_NumberBold.setColor(amountTextColor),
+                      Opacity(
+                        opacity: _hotWalletSigningStage == _SendHotWalletSigningStage.idle ? 1 : 0,
+                        child: IgnorePointer(
+                          child: SizedBox(
+                            height: kAmountHeight,
+                            child: FittedBox(
+                              child:
+                                  _viewModel.isAmountInsufficient(index)
+                                      ? Text(
+                                        t.send_screen.max_mode_insufficient_balance,
+                                        style: CoconutTypography.heading3_21_Bold.setColor(
+                                          context.coconutColors.danger,
                                         ),
-                                        if (!_viewModel.currentUnit.isPrefixSymbol) ...[
-                                          CoconutLayout.spacing_100w,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      )
+                                      : Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            _viewModel.currentUnit.isPrefixSymbol
+                                                ? CrossAxisAlignment.center
+                                                : CrossAxisAlignment.baseline,
+                                        textBaseline: TextBaseline.alphabetic,
+                                        children: [
+                                          if (_viewModel.currentUnit.isPrefixSymbol) ...[
+                                            Text(
+                                              _viewModel.currentUnit.symbol,
+                                              style: CoconutTypography.heading4_18_Number.setColor(amountTextColor),
+                                            ),
+                                            CoconutLayout.spacing_100w,
+                                          ],
                                           Text(
-                                            _viewModel.currentUnit.symbol,
-                                            style: CoconutTypography.heading4_18_Number.setColor(amountTextColor),
+                                            '${amountText.isEmpty ? 0 : amountText.toBtcDisplayString()}',
+                                            style: CoconutTypography.heading2_28_NumberBold.setColor(amountTextColor),
                                           ),
+                                          if (!_viewModel.currentUnit.isPrefixSymbol) ...[
+                                            CoconutLayout.spacing_100w,
+                                            Text(
+                                              _viewModel.currentUnit.symbol,
+                                              style: CoconutTypography.heading4_18_Number.setColor(amountTextColor),
+                                            ),
+                                          ],
                                         ],
-                                      ],
-                                    ),
+                                      ),
+                            ),
                           ),
                         ),
                       ),
