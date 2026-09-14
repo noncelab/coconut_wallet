@@ -273,7 +273,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                 maxLines: 1,
                 isLengthVisible: true,
                 height: 52,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.only(left: 16),
                 placeholderText: _suggestedWalletName,
                 backgroundColor: context.coconutColors.inputSurface,
                 activeColor: context.coconutColors.primaryText,
@@ -457,7 +457,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                       height: 52,
                                       obscureText: !_isPassphraseVisible,
                                       isLengthVisible: true,
-                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      padding: const EdgeInsets.only(left: 16),
                                       placeholderText: t.wallet_home_screen.hot_wallet_create.passphrase_placeholder,
                                       backgroundColor: context.coconutColors.inputSurface,
                                       activeColor: context.coconutColors.primaryText,
@@ -492,6 +492,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                     key: _passphraseConfirmFieldKey,
                                     child: CoconutTextField(
                                       key: const ValueKey('hot-wallet-passphrase-confirm'),
+                                      padding: const EdgeInsets.only(left: 16),
                                       controller: _passphraseConfirmController,
                                       focusNode: _passphraseConfirmFocusNode,
                                       maxLength: 100,
@@ -500,7 +501,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                       height: 52,
                                       obscureText: !_isPassphraseVisible,
                                       isLengthVisible: true,
-                                      padding: const EdgeInsets.symmetric(horizontal: 16),
                                       placeholderText:
                                           t.wallet_home_screen.hot_wallet_create.passphrase_confirm_placeholder,
                                       backgroundColor: context.coconutColors.inputSurface,

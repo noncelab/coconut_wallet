@@ -1068,6 +1068,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         children: [
           CoconutTextField(
             key: _passphraseFieldKey,
+            padding: const EdgeInsets.only(left: 16),
             controller: _passphraseController,
             focusNode: _passphraseFocusNode,
             maxLength: 100,
