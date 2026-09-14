@@ -11,6 +11,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -746,9 +747,11 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
     if (metadata == null || !metadata.enterPassphraseWhenSigning) return;
 
     try {
-      final plaintext = await HotWalletUnlockService(
-        authenticator: FlutterHotWalletAuthenticator(context),
-      ).unlock(metadata.secureStorageKey);
+      final plaintext = await AppGuard.runWithoutPrivacyScreen(
+        () => HotWalletUnlockService(
+          authenticator: FlutterHotWalletAuthenticator(context),
+        ).unlock(metadata.secureStorageKey),
+      );
       if (!mounted || plaintext == null) return;
       try {
         await Navigator.pushNamed(

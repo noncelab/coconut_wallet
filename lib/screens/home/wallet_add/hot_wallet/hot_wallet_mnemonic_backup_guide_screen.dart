@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -482,9 +483,11 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
       final Uint8List mnemonic;
       final Uint8List passphrase;
       if (widget.secureStorageKey != null) {
-        plaintext = await HotWalletUnlockService(
-          authenticator: FlutterHotWalletAuthenticator(context),
-        ).unlock(widget.secureStorageKey!);
+        plaintext = await AppGuard.runWithoutPrivacyScreen(
+          () => HotWalletUnlockService(
+            authenticator: FlutterHotWalletAuthenticator(context),
+          ).unlock(widget.secureStorageKey!),
+        );
         if (!mounted || plaintext == null) return;
         mnemonic = plaintext.mnemonic;
         passphrase = plaintext.passphrase;
