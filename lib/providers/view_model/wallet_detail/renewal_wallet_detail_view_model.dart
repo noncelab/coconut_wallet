@@ -96,8 +96,16 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
   int get targetExcessSats => isTargetExceeded ? balance - targetSats! : 0;
 
   String get targetProgressPercent {
-    final percent = targetProgress * 100;
-    return percent == percent.roundToDouble() ? percent.toStringAsFixed(0) : percent.toStringAsFixed(1);
+    final target = targetSats;
+    if (target == null || target <= 0) return '0';
+    final currentBalance = balance;
+    if (currentBalance <= 0) return '0';
+
+    // 소수점 둘째 자리부터 버려 목표 달성 전에 100%로 표시되지 않도록 한다.
+    final tenths = currentBalance * 1000 ~/ target;
+    final whole = tenths ~/ 10;
+    final fraction = tenths % 10;
+    return fraction == 0 ? '$whole' : '$whole.$fraction';
   }
 
   /// 현재 잔액에서 거래를 역산해 만든 목표 달성률의 시간순 지점입니다.
