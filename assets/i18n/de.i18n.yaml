@@ -811,7 +811,7 @@ send_address_screen:
   address_placeholder: "Bitte geben Sie die zu sendende Adresse ein"
   amount_placeholder: "Bitte geben Sie den zu sendenden Betrag ein"
 send_confirm_screen:
-  title: "Transaktionsdetails"
+  title: "Transaktion prüfen"
   total_required_amount: "Insgesamt wird $n benötigt."
   output_detail_title: "Ausgabedetails"
   flow_input_title: "Eingabe #$index"

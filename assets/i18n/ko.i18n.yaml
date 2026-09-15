@@ -809,7 +809,7 @@ send_address_screen:
   address_placeholder: "받을 주소를 입력해 주세요"
   amount_placeholder: "수량을 입력해 주세요"
 send_confirm_screen:
-  title: "거래 정보 확인"
+  title: "트랜잭션 확인"
   total_required_amount: "총 $n가 소요됩니다"
   output_detail_title: "출력 상세 보기"
   flow_input_title: "입력 #$index"
