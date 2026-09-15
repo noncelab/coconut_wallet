@@ -34,7 +34,7 @@ class _MnemonicBackupCompleteScreenState extends State<MnemonicBackupCompleteScr
       child: Scaffold(
         backgroundColor: context.coconutColors.background,
         appBar: CoconutAppBar.build(
-          title: strings.backup_confirm_title,
+          title: '',
           context: context,
           isLeadingVisible: false,
           backgroundColor: context.coconutColors.background,
@@ -75,7 +75,7 @@ class _MnemonicBackupCompleteScreenState extends State<MnemonicBackupCompleteScr
                 ),
               ),
               FixedBottomButton(
-                text: widget.continueToAppLockGuide && !isAppLockSet ? t.next : t.complete,
+                text: t.confirm,
                 isActive: !_isCompleting,
                 surroundingsColor: context.coconutColors.background,
                 onButtonClicked: () => _handleComplete(isAppLockSet),
