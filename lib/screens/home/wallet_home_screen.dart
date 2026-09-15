@@ -1417,11 +1417,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       WalletFilter.watchOnly => t.wallet_home_screen.wallet_type_selection.watch_only.title,
       WalletFilter.hot => t.wallet_home_screen.wallet_type_selection.hot_wallet.title,
     };
-    final addWalletDescription = switch (filter) {
-      WalletFilter.all => null,
-      WalletFilter.watchOnly => t.wallet_home_screen.wallet_type_selection.watch_only.description,
-      WalletFilter.hot => t.wallet_home_screen.wallet_type_selection.hot_wallet.description,
-    };
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -1454,9 +1449,14 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (addWalletDescription != null)
+                      if (filter == WalletFilter.watchOnly)
                         Text(
-                          addWalletDescription,
+                          t.wallet_home_screen.wallet_type_selection.watch_only.description,
+                          style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
+                        ),
+                      if (filter == WalletFilter.hot)
+                        Text(
+                          t.wallet_home_screen.wallet_type_selection.hot_wallet.description,
                           style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
                         ),
                       Text(

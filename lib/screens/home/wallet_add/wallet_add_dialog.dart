@@ -213,13 +213,11 @@ class WalletAddDialog extends StatelessWidget {
           _WalletActionButton(
             iconPath: FeatureWalletIconPath.walletAddHot,
             title: t.wallet_home_screen.hot_wallet_add.create.title,
-            description: t.wallet_home_screen.hot_wallet_add.create.description,
             onPressed: () => _openHotWalletScreen(context, '/hot-wallet-create'),
           ),
           _WalletActionButton(
             iconPath: FeatureWalletIconPath.walletImportHot,
             title: t.wallet_home_screen.hot_wallet_add.restore.title,
-            description: t.wallet_home_screen.hot_wallet_add.restore.description,
             onPressed: () => _openHotWalletScreen(context, '/hot-wallet-restore'),
           ),
         ],
@@ -330,16 +328,11 @@ class WalletAddDialog extends StatelessWidget {
 }
 
 class _WalletActionButton extends StatelessWidget {
-  const _WalletActionButton({
-    required this.iconPath,
-    required this.title,
-    required this.description,
-    required this.onPressed,
-  });
+  const _WalletActionButton({required this.iconPath, required this.title, this.description, required this.onPressed});
 
   final String iconPath;
   final String title;
-  final String description;
+  final String? description;
   final VoidCallback onPressed;
 
   @override
@@ -364,13 +357,15 @@ class _WalletActionButton extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    description,
-                    style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                  CoconutLayout.spacing_50h,
+                  if (description != null) ...[
+                    Text(
+                      description!,
+                      style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    CoconutLayout.spacing_50h,
+                  ],
                   Text(
                     title,
                     style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),

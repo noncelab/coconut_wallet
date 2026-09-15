@@ -246,10 +246,10 @@ wallet_home_screen:
       description: "기기에 키를 보관해요"
   hot_wallet_add:
     create:
-      title: "새 지갑 생성하기"
+      title: "새 지갑 만들기"
       description: "자동으로 안전하게"
     restore:
-      title: "니모닉으로 복원하기"
+      title: "지갑 복원하기"
       description: "기존 지갑을 그대로"
     device_passcode_required:
       title: "기기 비밀번호 설정이 필요해요"
