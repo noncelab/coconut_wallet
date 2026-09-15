@@ -421,7 +421,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       child: MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
           child: Stack(
             children: [
               Container(
@@ -468,8 +468,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           totalBalance,
                           isInitialSyncing: isInitialSyncing,
                         ),
-                        // 전체 총액 - Fiat Price
-                        _buildFiatPricesSection(totalBalance, homeBalance, excludedBalance, currentUnit, excludedIds),
+                        // 홈 화면 잔액 및 제외 잔액
+                        _buildBalanceDetailsSection(homeBalance, excludedBalance, currentUnit, excludedIds),
                       ],
                     );
                   },
@@ -492,7 +492,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Column(
@@ -523,6 +523,31 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                       ),
                     ),
                   ),
+                  if (_viewModel.isWalletListFiatVisible)
+                    Consumer2<PriceProvider, ConnectivityProvider>(
+                      builder: (context, priceProvider, connectivityProvider, _) {
+                        if (!connectivityProvider.isInternetOn) return const SizedBox.shrink();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final fiat in _viewModel.visibleFiats)
+                              if (_viewModel.getBitcoinPrice(totalBalance, fiat).isNotEmpty) ...[
+                                CoconutLayout.spacing_100h,
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    _viewModel.getBitcoinPrice(totalBalance, fiat),
+                                    style: CoconutTypography.body2_14_Number.setColor(
+                                      context.coconutColors.secondaryText,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                          ],
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
@@ -604,7 +629,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                   fit: BoxFit.scaleDown,
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    oneBtcFiatPrice.isEmpty ? '-' : oneBtcFiatPrice,
+                                    '1 BTC = ${oneBtcFiatPrice.isEmpty ? '-' : oneBtcFiatPrice}',
                                     maxLines: 1,
                                     style: CoconutTypography.body1_16_Number.setColor(
                                       context.coconutColors.primaryText,
@@ -626,8 +651,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildFiatPricesSection(
-    int totalBalance,
+  Widget _buildBalanceDetailsSection(
     int homeBalance,
     int excludedBalance,
     BitcoinUnit currentUnit,
@@ -644,59 +668,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_viewModel.visibleFiats.isNotEmpty) ...[
-                    CoconutLayout.spacing_300h,
-                    const Divider(height: 1),
-                    CoconutLayout.spacing_300h,
-                    Row(
-                      children: [
-                        Text(
-                          t.wallet_list.header.converted_amount,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong),
-                        ),
-                        const Spacer(),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          transitionBuilder:
-                              (child, animation) => FadeTransition(
-                                opacity: animation,
-                                child: ScaleTransition(
-                                  scale: Tween<double>(begin: 0.7, end: 1).animate(
-                                    CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeOutBack,
-                                      reverseCurve: Curves.easeInCubic,
-                                    ),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: child,
-                                ),
-                              ),
-                          child:
-                              _viewModel.isWalletListBitcoinPriceVisible
-                                  ? const SizedBox.shrink(key: ValueKey('converted_amount_info_hidden'))
-                                  : _BitcoinPriceInfoButton(
-                                    key: const ValueKey('converted_amount_info_visible'),
-                                    viewModel: _viewModel,
-                                    fiatCodes: _viewModel.visibleFiats,
-                                    showComparisonBasis: false,
-                                  ),
-                        ),
-                      ],
-                    ),
-                    CoconutLayout.spacing_300h,
-                    for (var fiat in _viewModel.visibleFiats)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(fiat.code, style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText)),
-                          Text(
-                            _viewModel.getBitcoinPrice(totalBalance, fiat),
-                            style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
-                          ),
-                        ],
-                      ),
-                  ],
                   // 홈 화면 총액 (애니메이션)
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
@@ -1408,7 +1379,6 @@ class _HistoricalPriceChangeChipState extends State<_HistoricalPriceChangeChip> 
 
   Timer? _rotationTimer;
   int _periodIndex = 0;
-  int _slideDirection = 1;
   bool _isPointerDown = false;
   FiatCode? _lastFiatCode;
 
@@ -1450,7 +1420,6 @@ class _HistoricalPriceChangeChipState extends State<_HistoricalPriceChangeChip> 
     if (_lastFiatCode != widget.viewModel.selectedFiat) {
       _lastFiatCode = widget.viewModel.selectedFiat;
       _periodIndex = 0;
-      _slideDirection = 1;
     }
     _syncRotationTimer();
     setState(() {});
@@ -1482,7 +1451,6 @@ class _HistoricalPriceChangeChipState extends State<_HistoricalPriceChangeChip> 
 
   void _changePeriod(int delta, {bool restartTimer = true}) {
     setState(() {
-      _slideDirection = delta.isNegative ? -1 : 1;
       _periodIndex = (_periodIndex + delta) % 3;
     });
     if (restartTimer) _scheduleNextRotation();
@@ -1537,19 +1505,22 @@ class _HistoricalPriceChangeChipState extends State<_HistoricalPriceChangeChip> 
             duration: const Duration(milliseconds: 250),
             layoutBuilder: (currentChild, previousChildren) {
               return Stack(
-                alignment: Alignment.centerLeft,
+                alignment: Alignment.centerRight,
                 children: [...previousChildren, if (currentChild != null) currentChild],
               );
             },
             transitionBuilder: (child, animation) {
-              final isOutgoing = animation.status == AnimationStatus.reverse;
-              final offsetDirection = isOutgoing ? -_slideDirection.toDouble() : _slideDirection.toDouble();
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: Offset(0, offsetDirection),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+              return AnimatedBuilder(
+                animation: animation,
                 child: FadeTransition(opacity: animation, child: child),
+                builder: (context, transitionChild) {
+                  final isOutgoing = child.key != ValueKey(_periodIndex);
+                  final distance = 1 - Curves.easeOutCubic.transform(animation.value);
+                  return FractionalTranslation(
+                    translation: Offset(0, isOutgoing ? -distance : distance),
+                    child: transitionChild,
+                  );
+                },
               );
             },
             child: Container(
@@ -1574,10 +1545,7 @@ class _HistoricalPriceChangeChipState extends State<_HistoricalPriceChangeChip> 
 
 class _BitcoinPriceInfoButton extends StatefulWidget {
   final WalletListViewModel viewModel;
-  final List<FiatCode>? fiatCodes;
-  final bool showComparisonBasis;
-
-  const _BitcoinPriceInfoButton({super.key, required this.viewModel, this.fiatCodes, this.showComparisonBasis = true});
+  const _BitcoinPriceInfoButton({required this.viewModel});
 
   @override
   State<_BitcoinPriceInfoButton> createState() => _BitcoinPriceInfoButtonState();
@@ -1690,7 +1658,6 @@ class _BitcoinPriceInfoButtonState extends State<_BitcoinPriceInfoButton> with S
 
   RichText _buildTooltipText(BuildContext context) {
     final tooltip = t.wallet_list.header.tooltip;
-    final fiatCodes = widget.fiatCodes ?? [widget.viewModel.selectedFiat];
     final isHistoricalPriceAvailable = widget.viewModel.selectedFiat != FiatCode.JPY;
     return RichText(
       text: TextSpan(
@@ -1700,17 +1667,13 @@ class _BitcoinPriceInfoButtonState extends State<_BitcoinPriceInfoButton> with S
             text: tooltip.title,
             style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.popoverText),
           ),
-          if (widget.fiatCodes == null)
-            TextSpan(text: '\n${tooltip.price_source(source: _getPriceSource(widget.viewModel.selectedFiat))}')
-          else
-            for (final fiatCode in fiatCodes)
-              TextSpan(text: '\n${tooltip.fiat_price_source(fiat: fiatCode.code, source: _getPriceSource(fiatCode))}'),
-          if (widget.showComparisonBasis && isHistoricalPriceAvailable) ...[
+          TextSpan(text: '\n${tooltip.price_source(source: _getPriceSource(widget.viewModel.selectedFiat))}'),
+          if (isHistoricalPriceAvailable) ...[
             TextSpan(text: '\n\n${tooltip.closing_time}'),
             TextSpan(text: '\n\n${tooltip.yesterday_basis}'),
             TextSpan(text: '\n${tooltip.week_basis}'),
             TextSpan(text: '\n${tooltip.month_basis}'),
-          ] else if (widget.showComparisonBasis)
+          ] else
             TextSpan(text: '\n\n${tooltip.historical_price_unavailable}'),
         ],
       ),

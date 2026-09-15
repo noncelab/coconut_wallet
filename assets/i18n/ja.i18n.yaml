@@ -535,9 +535,9 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   header:
-    total_amount: "総保有量"
-    balance_history: "保有量の推移"
-    bitcoin_price: "1 BTCの価格"
+    total_amount: "合計残高"
+    balance_history: "残高の推移"
+    bitcoin_price: "BTC相場"
     converted_amount: "換算額"
     than_yesterday: "昨日比"
     than_a_week_ago: "1週間前比"

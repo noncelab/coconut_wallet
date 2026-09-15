@@ -536,9 +536,9 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   header:
-    total_amount: "Total holdings"
+    total_amount: "Total balance"
     balance_history: "Balance change"
-    bitcoin_price: "1 BTC price"
+    bitcoin_price: "BTC price"
     converted_amount: "Converted Amount"
     than_yesterday: "Since yesterday"
     than_a_week_ago: "Since a week ago"

@@ -658,9 +658,9 @@ wallet_connect_screen:
 # lib/screens/wallet_list
 wallet_list:
   header:
-    total_amount: "Gesamtbestand"
-    balance_history: "Bestandsverlauf"
-    bitcoin_price: "Preis für 1 BTC"
+    total_amount: "Gesamtguthaben"
+    balance_history: "Guthabenverlauf"
+    bitcoin_price: "BTC-Kurs"
     converted_amount: "Umgerechneter Betrag"
     than_yesterday: "Seit gestern"
     than_a_week_ago: "Vor 7 Tagen"
