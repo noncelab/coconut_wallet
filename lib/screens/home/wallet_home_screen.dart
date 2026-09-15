@@ -819,10 +819,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             _viewModel.setIsBalanceHidden(!isBalanceHidden);
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            child: Text(
-                              _viewModel.isBalanceHidden ? t.show : t.hide,
-                              style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: SvgPicture.asset(
+                              isBalanceHidden ? CommonVisibilityIconPath.eye : CommonVisibilityIconPath.eyeCrossed,
+                              width: 16,
+                              height: 16,
+                              colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
                             ),
                           ),
                         ),
