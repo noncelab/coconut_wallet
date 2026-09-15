@@ -304,11 +304,11 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
           pressedOverlayOpacity: target == null ? context.coconutColors.surfacePressOverlayOpacity : 0,
           animationEndValue: target == null ? 0.97 : 1,
           isActive: target == null,
-          borderRadius: 20,
+          borderRadius: CoconutStyles.radius_200,
           child: Stack(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                padding: HomeAlertCard.contentPadding.copyWith(right: target == null ? 36 : 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -378,8 +378,8 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
               ),
               if (target == null)
                 Positioned(
-                  top: 8,
-                  right: 8,
+                  top: HomeAlertCard.contentPadding.top,
+                  right: HomeAlertCard.contentPadding.right,
                   child: Semantics(
                     button: true,
                     label: t.close,
@@ -387,7 +387,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                       onTap: viewModel.dismissTargetSuggestion,
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
-                        padding: const EdgeInsets.all(8),
+                        padding: HomeAlertCard.closeButtonPadding,
                         child: SvgPicture.asset(
                           CommonActionIconPath.closeBold,
                           width: 12,
@@ -468,6 +468,8 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                   padding: EdgeInsets.only(bottom: entry.$1 == viewModel.recentTransactions.length - 1 ? 0 : 8),
                   child: TransactionItemCard(
                     tx: entry.$2,
+                    padding: HomeAlertCard.contentPadding.copyWith(right: HomeAlertCard.contentPadding.left),
+                    borderRadius: CoconutStyles.radius_200,
                     currentUnit: viewModel.currentUnit,
                     id: widget.id,
                     onPressed: () => _openTransaction(entry.$2),
@@ -493,7 +495,10 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
             ),
             CoconutLayout.spacing_200h,
             Container(
-              decoration: BoxDecoration(color: context.coconutColors.surface, borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(
+                color: context.coconutColors.surface,
+                borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+              ),
               child: Row(
                 children: [
                   Expanded(

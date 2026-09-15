@@ -12,6 +12,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 enum HomeAlertCardType { mnemonicBackup, appLock, openStore }
 
 class HomeAlertCard extends StatefulWidget {
+  static const contentPadding = EdgeInsets.fromLTRB(16, 14, 8, 14);
+  static const closeButtonPadding = EdgeInsets.all(8);
+
   const HomeAlertCard.security({
     super.key,
     required this.type,
@@ -164,7 +167,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
           alignment: Alignment.topCenter,
           heightFactor: heightFactor,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+            padding: HomeAlertCard.contentPadding,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -187,7 +190,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
                     onTap: _close,
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(
-                      padding: const EdgeInsets.all(8),
+                      padding: HomeAlertCard.closeButtonPadding,
                       child: SvgPicture.asset(
                         CommonActionIconPath.closeBold,
                         width: 12,

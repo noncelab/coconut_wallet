@@ -18,6 +18,8 @@ class TransactionItemCard extends StatelessWidget {
   final BitcoinUnit currentUnit;
   final int id;
   final Function onPressed;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
 
   late final TransactionStatus? status;
 
@@ -27,6 +29,8 @@ class TransactionItemCard extends StatelessWidget {
     required this.currentUnit,
     required this.id,
     required this.onPressed,
+    this.padding = const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
+    this.borderRadius = 24,
   }) {
     status = TransactionUtil.getStatus(tx);
   }
@@ -152,8 +156,9 @@ class TransactionItemCard extends StatelessWidget {
       pressedOverlayColor: colors.surfacePressOverlay,
       pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
       borderWidth: 0,
+      borderRadius: borderRadius,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
+        padding: padding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
