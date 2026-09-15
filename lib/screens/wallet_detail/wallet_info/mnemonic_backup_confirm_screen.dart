@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutTextField;
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -44,29 +45,23 @@ List<int> selectMnemonicChallengeIndices({required int wordCount, int challengeC
   return List<int>.unmodifiable(indices.take(challengeCount));
 }
 
-String mnemonicGhostSuffix({required Uint8List expectedWord, required String input, int minimumLength = 4}) {
+String mnemonicGhostSuffix({required String input, int minimumLength = 4}) {
   final normalized = input.trim().toLowerCase();
-  if (normalized.length < minimumLength || normalized.length >= expectedWord.length) {
-    return '';
-  }
+  if (normalized.length < minimumLength) return '';
 
-  final inputBytes = Uint8List.fromList(utf8.encode(normalized));
-  try {
-    if (inputBytes.length >= expectedWord.length) return '';
-    for (int i = 0; i < inputBytes.length; i++) {
-      if (inputBytes[i] != expectedWord[i]) return '';
+  for (final word in wordList) {
+    if (word.startsWith(normalized)) {
+      return word.substring(normalized.length);
     }
-    return utf8.decode(expectedWord.sublist(inputBytes.length));
-  } finally {
-    inputBytes.fillRange(0, inputBytes.length, 0);
   }
+  return '';
 }
 
-String? completeMnemonicWordOnSpace({required Uint8List expectedWord, required String input}) {
+String? completeMnemonicWordOnSpace({required String input}) {
   if (!input.endsWith(' ')) return null;
 
   final typedWord = input.substring(0, input.length - 1);
-  final suffix = mnemonicGhostSuffix(expectedWord: expectedWord, input: typedWord);
+  final suffix = mnemonicGhostSuffix(input: typedWord);
   if (suffix.isEmpty) return null;
 
   return '$typedWord$suffix';
@@ -118,10 +113,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
     if (!mounted) return;
     final isPassphraseQuestion = widget.confirmPassphrase && _questionIndex == _questionIndices.length;
     if (!isPassphraseQuestion) {
-      final completedWord = completeMnemonicWordOnSpace(
-        expectedWord: _wordBytes[_questionIndices[_questionIndex]],
-        input: _controller.text,
-      );
+      final completedWord = completeMnemonicWordOnSpace(input: _controller.text);
       if (completedWord != null) {
         final inputWithSpace = _controller.text;
         scheduleMicrotask(() {
@@ -165,10 +157,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
     final wordPosition = isPassphraseQuestion ? 0 : _questionIndices[_questionIndex] + 1;
     final isCursorAtEnd =
         _controller.selection.isCollapsed && _controller.selection.baseOffset == _controller.text.length;
-    final ghostText =
-        !isPassphraseQuestion && isCursorAtEnd
-            ? mnemonicGhostSuffix(expectedWord: _wordBytes[_questionIndices[_questionIndex]], input: _controller.text)
-            : '';
+    final ghostText = !isPassphraseQuestion && isCursorAtEnd ? mnemonicGhostSuffix(input: _controller.text) : '';
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -272,7 +261,10 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
               ),
               FixedBottomButton(
                 text: t.complete,
-                isActive: _controller.text.trim().isNotEmpty && !_isProcessing,
+                isActive:
+                    _controller.text.trim().isNotEmpty &&
+                    !_isProcessing &&
+                    (isPassphraseQuestion || wordList.contains(_controller.text.trim().toLowerCase())),
                 isVisibleAboveKeyboard: false,
                 showSurroundings: false,
                 onButtonClicked: _submitAnswer,
