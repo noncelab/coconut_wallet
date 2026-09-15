@@ -52,7 +52,7 @@ class UtxoListDropdownButton extends StatelessWidget {
             children: [
               Text(
                 activeOption,
-                style: CoconutTypography.body3_12.setColor(isEnabled ? colors.primaryText : colors.mutedText),
+                style: CoconutTypography.body3_12.setColor(isEnabled ? colors.secondaryText : colors.mutedText),
               ),
               CoconutLayout.spacing_200w,
               SvgPicture.asset(

@@ -40,7 +40,7 @@ class RenewalUtxoListFilterHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              border: Border.all(color: context.coconutColors.borderStrong),
+              border: Border.all(color: context.coconutColors.border),
               borderRadius: BorderRadius.circular(18),
             ),
             child: UtxoListDropdownButton(
