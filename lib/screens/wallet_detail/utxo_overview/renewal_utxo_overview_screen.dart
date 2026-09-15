@@ -41,7 +41,6 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
-import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/features/utxo/dropdown/utxo_filter_dropdown.dart';
 
 import 'package:flutter/cupertino.dart';
@@ -338,10 +337,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
         refreshButton: ListenableBuilder(
           listenable: viewModel,
           builder: (context, _) {
-            return CoconutAppBarActionButton(
-              onPressed: viewModel.isRefreshing || viewModel.isSyncing ? null : viewModel.refresh,
-              icon: WalletRefreshIcon(isRefreshing: viewModel.isRefreshing, size: 20),
-            );
+            return WalletRefreshIndicator(isRefreshing: viewModel.isRefreshing);
           },
         ),
       ),

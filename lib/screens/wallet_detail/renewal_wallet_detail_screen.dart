@@ -179,6 +179,10 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
               : null,
       backgroundColor: context.coconutColors.background,
       actionButtonList: [
+        ListenableBuilder(
+          listenable: _viewModel,
+          builder: (context, _) => WalletRefreshIndicator(isRefreshing: _viewModel.isRefreshing),
+        ),
         if (NetworkType.currentNetworkType.isTestnet)
           CoconutAppBarActionButton(
             onPressed: _openFaucetRequest,
@@ -189,14 +193,6 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
-        ListenableBuilder(
-          listenable: _viewModel,
-          builder:
-              (context, _) => CoconutAppBarActionButton(
-                onPressed: _viewModel.isRefreshing || _viewModel.isWalletSyncing ? null : _viewModel.refresh,
-                icon: WalletRefreshIcon(isRefreshing: _viewModel.isRefreshing, size: 20),
-              ),
-        ),
         CoconutAppBarActionButton(
           onPressed: _openWalletInfo,
           icon: SvgPicture.asset(

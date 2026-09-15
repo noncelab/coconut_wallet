@@ -27,7 +27,6 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
-import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_header.dart';
@@ -133,11 +132,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       actionButtonList: [
         ListenableBuilder(
           listenable: _viewModel,
-          builder:
-              (_, _) => CoconutAppBarActionButton(
-                onPressed: _isPullToRefreshing || _viewModel.isWalletSyncing ? null : _onRefresh,
-                icon: WalletRefreshIcon(isRefreshing: _isPullToRefreshing, size: 20),
-              ),
+          builder: (_, _) => WalletRefreshIndicator(isRefreshing: _isPullToRefreshing),
         ),
       ],
     );
