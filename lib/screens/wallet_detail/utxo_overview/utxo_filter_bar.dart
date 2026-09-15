@@ -397,7 +397,7 @@ class UtxoTagSelectionBarDelegate extends SliverPersistentHeaderDelegate {
         child:
             isSelectionMode
                 ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: _SelectionSummaryBar(
                     selectedCount: selectedCount,
                     selectedTotalSats: selectedTotalSats,

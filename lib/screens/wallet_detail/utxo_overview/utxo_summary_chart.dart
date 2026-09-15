@@ -30,6 +30,7 @@ class UtxoSummaryChart extends StatelessWidget {
   final VoidCallback? onThemeSettingTap;
   final bool hasReusedAddresses;
   final bool showBalanceHeader;
+  final double? height;
 
   const UtxoSummaryChart({
     super.key,
@@ -46,6 +47,7 @@ class UtxoSummaryChart extends StatelessWidget {
     this.onThemeSettingTap,
     this.hasReusedAddresses = false,
     this.showBalanceHeader = true,
+    this.height,
   });
 
   static const double estimatedHeight = 350;
@@ -55,6 +57,7 @@ class UtxoSummaryChart extends StatelessWidget {
     final colors = context.coconutColors;
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
     return Container(
+      height: height,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -66,6 +69,7 @@ class UtxoSummaryChart extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (showBalanceHeader) ...[

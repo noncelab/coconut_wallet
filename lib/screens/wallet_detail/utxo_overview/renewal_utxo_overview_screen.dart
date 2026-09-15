@@ -194,7 +194,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
 
   double get _effectiveFilterBarHeight =>
       _shouldShowAmountSelectionSummary ? _filterBarExpandedHeight : _filterBarBaseHeight;
-  double get _effectiveTagSelectionBarHeight => viewModel.isSelectionMode ? _filterBarBaseHeight : 0;
+  double get _effectiveTagSelectionBarHeight => viewModel.isSelectionMode ? _selectionSummaryRowHeight : 0;
 
   bool get _shouldShowAmountSelectionSummary =>
       viewModel.isByAmount && viewModel.viewModeIndex == 1 && viewModel.isSelectionMode;
@@ -486,6 +486,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
             CupertinoSliverRefreshControl(onRefresh: viewModel.refresh, refreshTriggerPullDistance: 80),
             SliverToBoxAdapter(
               child: UtxoSummaryChart(
+                height: UtxoSummaryChart.estimatedHeight,
                 buckets: _buckets,
                 totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
                 coinCount: viewModel.utxoList.length,
@@ -650,6 +651,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
         CupertinoSliverRefreshControl(onRefresh: viewModel.refresh, refreshTriggerPullDistance: 80),
         SliverToBoxAdapter(
           child: UtxoTagChart(
+            height: UtxoSummaryChart.estimatedHeight,
             utxoList: viewModel.utxoList,
             utxoTagList: utxoTagList,
             currentUnit: _currentUnit,
