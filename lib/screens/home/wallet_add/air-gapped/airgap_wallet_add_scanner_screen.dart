@@ -313,13 +313,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.note}\n'),
-              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
-              _em(t.wallet_add_scanner_screen.guide_passport.step1_em),
-              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
-              _em(t.wallet_add_scanner_screen.guide_passport.step2_em),
-              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step1}\n'),
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step2}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
               _em(t.wallet_add_scanner_screen.guide_passport.step3_em),
               TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
@@ -330,13 +325,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           } else {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.note}\n'),
-              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
-              TextSpan(text: t.wallet_add_scanner_screen.select),
-              _em(' ${t.wallet_add_scanner_screen.guide_passport.step1_em}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
-              TextSpan(text: t.wallet_add_scanner_screen.select),
-              _em(' ${t.wallet_add_scanner_screen.guide_passport.step2_em}\n'),
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step1}\n'),
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step2}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(' ${t.wallet_add_scanner_screen.guide_passport.step3_em}\n'),
