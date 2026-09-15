@@ -284,11 +284,6 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                               if (widget.walletType == WalletType.singleSignature) ...[
                                 _walletInfoMenu(
                                   title: t.wallet_info_screen.extended_public_key,
-                                  subWidget: Text(
-                                    _ellipsisAfter(viewModel.extendedPublicKey, 15),
-                                    style: _menuSubTextStyle,
-                                  ),
-                                  showArrowRight: false,
                                   onPressed: () {
                                     _removeTooltip();
                                     _handleAuthFlow(
@@ -347,7 +342,6 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                                           ),
                                           style: _menuSubTextStyle,
                                         ),
-                                showArrowRight: false,
                                 onPressed: () => _showTargetSettingBottomSheet(context, viewModel),
                               ),
                               _walletInfoMenu(
