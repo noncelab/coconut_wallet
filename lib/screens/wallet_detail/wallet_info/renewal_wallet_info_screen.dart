@@ -389,6 +389,21 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                                 title: t.wallet_info_screen.delete_wallet,
                                 titleStyle: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.danger),
                                 showArrowRight: false,
+                                subWidget: Container(
+                                  width: 24,
+                                  height: 24,
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: context.coconutColors.danger.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: SvgPicture.asset(
+                                    CommonActionIconPath.trash,
+                                    width: 16,
+                                    height: 16,
+                                    colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+                                  ),
+                                ),
                                 onPressed: () {
                                   _removeTooltip();
                                   showDialog(
