@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutTextField;
 import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
@@ -14,7 +13,6 @@ import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/wallet
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/wallet_name_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
@@ -192,7 +190,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                 _passphraseController.text == _passphraseConfirmController.text)),
                     surroundingsColor: context.coconutColors.background,
                     onButtonClicked: _onCreateWalletPressed,
-                    subWidget: _buildMnemonicBackupGuide(),
                   ),
                 ],
               ),
@@ -201,42 +198,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
           if (_viewModel.isCreating) const CoconutLoadingOverlay(applyFullScreen: true),
         ],
       ),
-    );
-  }
-
-  Widget _buildMnemonicBackupGuide() {
-    const iconSize = 16.0;
-    final guideText = t.wallet_home_screen.hot_wallet_create.mnemonic_backup_guide;
-    final textStyle = CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText);
-    final textPainter = TextPainter(
-      text: TextSpan(text: '가', style: textStyle),
-      textScaler: MediaQuery.textScalerOf(context),
-      textDirection: Directionality.of(context),
-      maxLines: 1,
-    )..layout();
-    final iconTopPadding = math.max(0.0, (textPainter.height - iconSize) / 2);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(top: iconTopPadding),
-          child: SvgPicture.asset(
-            CommonStateIconPath.circleInfo,
-            width: iconSize,
-            height: iconSize,
-            colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
-          ),
-        ),
-        CoconutLayout.spacing_100w,
-        Flexible(
-          child: Text(
-            LocaleSettings.currentLocale == AppLocale.ko ? TextUtils.preventLineBreakInsideWords(guideText) : guideText,
-            style: textStyle,
-          ),
-        ),
-      ],
     );
   }
 
@@ -303,10 +264,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String text) {
-    return Text(text, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText));
-  }
-
   Widget _buildAdvancedSettings() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -364,7 +321,10 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _buildSectionTitle(t.wallet_home_screen.hot_wallet_create.mnemonic_length),
+                          Text(
+                            t.wallet_home_screen.hot_wallet_create.mnemonic_length,
+                            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                          ),
                           CoconutLayout.spacing_200h,
                           Row(
                             children: [
@@ -415,6 +375,8 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                               ],
                             ],
                           ),
+                          CoconutLayout.spacing_500h,
+                          Divider(height: 1, thickness: 1, color: context.coconutColors.divider),
                           CoconutLayout.spacing_500h,
                           SingleButton(
                             key: const ValueKey('hot-wallet-use-passphrase'),
