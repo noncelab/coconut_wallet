@@ -52,7 +52,7 @@ class WalletAddDialog extends StatelessWidget {
     return Stack(
       children: [
         Positioned(
-          top: kToolbarHeight + MediaQuery.paddingOf(context).top,
+          top: kToolbarHeight + MediaQuery.paddingOf(context).top - 15,
           left: 0,
           right: 0,
           child: SlideTransition(
