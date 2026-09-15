@@ -55,10 +55,16 @@ class BlockExplorerProvider extends ChangeNotifier {
 
   String _getDefaultMempoolUrl() {
     // 언어 설정은 SharedPrefs에서 직접 가져옴
+    // mempool.space는 en 전용 경로(/en) 없음. en은 bare 도메인을 사용하고, 나머지 언어만 경로 적용
     final language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
     final effectiveLanguage = language.isNotEmpty ? language : getSystemLanguageCode();
+    final appLanguage = AppLanguage.fromCode(effectiveLanguage);
 
-    return '$DEFAULT_EXPLORER_URL_MAINNET/${AppLanguage.fromCode(effectiveLanguage).code}';
+    if (appLanguage == AppLanguage.en) {
+      return DEFAULT_EXPLORER_URL_MAINNET;
+    }
+
+    return '$DEFAULT_EXPLORER_URL_MAINNET/${appLanguage.code}';
   }
 
   Future<void> setUseDefaultExplorer(bool useDefault) async {
