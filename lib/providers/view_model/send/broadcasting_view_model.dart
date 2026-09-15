@@ -93,6 +93,10 @@ class BroadcastingViewModel extends ChangeNotifier {
   Transaction? get signedTx => _signedTx;
   bool get isFromSignedDraft => _signedDraftId != null;
   bool get isAlreadySaved => isFromSignedDraft || _savedDraftId != null;
+  bool get canUseTransactionDrafts {
+    final walletId = _walletId ?? _sendInfoProvider.walletId;
+    return walletId != null && !_walletProvider.getWalletById(walletId).hasLocalKey;
+  }
 
   bool get isTaprootScriptPathWallet {
     final walletId = _sendInfoProvider.walletId;
@@ -426,6 +430,9 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     assert(result.value.isSigned);
     final TransactionDraft draft = result.value;
+    if (_walletProvider.getWalletById(draft.walletId).hasLocalKey) {
+      throw StateError('Transaction drafts are not supported for hot wallets');
+    }
     clearSendInfo();
     _sendInfoProvider.setWalletId(draft.walletId);
     _sendInfoProvider.setFeeRate(draft.feeRate);
@@ -435,6 +442,9 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   Future<Result<TransactionDraft>> saveTransactionDraft() async {
+    if (!canUseTransactionDrafts) {
+      throw StateError('Transaction drafts are not supported for this wallet');
+    }
     final result = await _txDraftRepository.saveSignedDraft(
       walletId: walletId!,
       recipients:

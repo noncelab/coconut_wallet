@@ -512,9 +512,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               ),
                             ),
                           ),
-                          Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
-                            selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
+                          Selector<SendViewModel, Tuple5<bool, bool?, bool, bool, bool>>(
+                            selector:
+                                (_, vm) => Tuple5(
+                                ),
                             builder: (context, data, child) {
+                              if (!data.item5) return const SizedBox.shrink();
                               return _buildDropdownMenu(
                                 isSaved: data.item1,
                                 hasDrafts: data.item2,
@@ -544,7 +547,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     required bool canGoNext,
     required bool isUtxoSelectionAuto,
   }) {
-    if (!_isDropdownMenuVisible) return const SizedBox.shrink();
+    if (!_isDropdownMenuVisible || !_viewModel.canUseTransactionDrafts) return const SizedBox.shrink();
 
     return Positioned(
       top: 0,
@@ -650,17 +653,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context: context,
       isBottom: true,
       actionButtonList: [
-        CoconutAppBarActionButton(
-          icon: SvgPicture.asset(
-            CommonMenuIconPath.kebab,
-            colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-          ),
-          onPressed: () {
-            if (_isDropdownMenuVisible) {
-              _setDropdownMenuVisiblility(false);
-            } else {
-              _setDropdownMenuVisiblility(true);
-            }
+        ListenableBuilder(
+          listenable: _viewModel,
+          builder: (context, _) {
+            if (!_viewModel.canUseTransactionDrafts) return const SizedBox.shrink();
+            return CoconutAppBarActionButton(
+              icon: SvgPicture.asset(
+                CommonMenuIconPath.kebab,
+                colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+              ),
+              onPressed: () => _setDropdownMenuVisiblility(!_isDropdownMenuVisible),
+            );
           },
         ),
       ],

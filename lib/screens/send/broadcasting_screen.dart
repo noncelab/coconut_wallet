@@ -363,7 +363,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                               ),
                             ),
                           ),
-                        if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
+                        if (viewModel.canUseTransactionDrafts &&
+                            viewModel.feeBumpingType == null &&
+                            widget.signedTransactionDraftId == null) ...{
                           _BroadcastEntryTransition(
                             visible: _showBottomButton,
                             child: FixedBottomTweenButton(

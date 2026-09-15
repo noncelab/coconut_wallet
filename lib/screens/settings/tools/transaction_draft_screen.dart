@@ -14,6 +14,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/providers/view_model/transaction_draft/transaction_draft_view_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -48,7 +49,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     return ChangeNotifierProvider<TransactionDraftViewModel>(
       create:
           (_) =>
-              TransactionDraftViewModel(Provider.of<TransactionDraftRepository>(context, listen: false))
+              TransactionDraftViewModel(context.read<TransactionDraftRepository>(), context.read<WalletProvider>())
                 ..initializeDraftList(),
       child: Consumer<TransactionDraftViewModel>(
         builder: (context, viewModel, child) {
