@@ -1180,36 +1180,39 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         child: Row(
           children: [
             for (final filter in filters)
-              SizedBox(
-                width: 72,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => selectWalletFilter(filter, filters),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            _getWalletFilterLabel(filter),
-                            style:
-                                _walletFilter == filter
-                                    ? CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText)
-                                    : CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
+              IntrinsicWidth(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 72),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => selectWalletFilter(filter, filters),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _getWalletFilterLabel(filter),
+                              style:
+                                  _walletFilter == filter
+                                      ? CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText)
+                                      : CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
+                            ),
                           ),
                         ),
-                      ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        height: _walletFilter == filter ? 2 : 1,
-                        color:
-                            _walletFilter == filter
-                                ? context.coconutColors.primaryText
-                                : context.coconutColors.surfaceMuted,
-                      ),
-                    ],
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          height: _walletFilter == filter ? 2 : 1,
+                          color:
+                              _walletFilter == filter
+                                  ? context.coconutColors.primaryText
+                                  : context.coconutColors.surfaceMuted,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
