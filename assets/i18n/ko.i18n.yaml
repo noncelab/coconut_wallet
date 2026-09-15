@@ -243,7 +243,7 @@ wallet_home_screen:
       description: "키를 보관하지 않아요"
     hot_wallet:
       title: "핫월렛 추가하기"
-      description: "이 기기에 키를 보관해요"
+      description: "기기에 키를 보관해요"
   hot_wallet_add:
     create:
       title: "새 지갑 생성하기"
