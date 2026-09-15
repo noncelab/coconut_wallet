@@ -515,6 +515,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                           Selector<SendViewModel, Tuple5<bool, bool?, bool, bool, bool>>(
                             selector:
                                 (_, vm) => Tuple5(
+                                  vm.isSaved,
+                                  vm.hasDrafts,
+                                  vm.canGoNext,
+                                  vm.isUtxoSelectionAuto,
+                                  vm.canUseTransactionDrafts,
                                 ),
                             builder: (context, data, child) {
                               if (!data.item5) return const SizedBox.shrink();

@@ -24,6 +24,7 @@ abstract final class CommonActionIconPath {
   static const String check = 'assets/svg/common/actions/check.svg';
   static const String close = 'assets/svg/common/actions/close.svg';
   static const String closeBold = 'assets/svg/common/actions/close-bold.svg';
+  static const String closeSmall = 'assets/svg/common/actions/close-small.svg';
   static const String copy = 'assets/svg/common/actions/copy.svg';
   static const String delete = 'assets/svg/common/actions/delete.svg';
   static const String download = 'assets/svg/common/actions/download.svg';

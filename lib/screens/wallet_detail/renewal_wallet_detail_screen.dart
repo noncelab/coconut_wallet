@@ -32,6 +32,7 @@ import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/positioned_card_close_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
@@ -308,7 +309,10 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
           child: Stack(
             children: [
               Padding(
-                padding: HomeAlertCard.contentPadding.copyWith(right: target == null ? 36 : 8),
+                padding: HomeAlertCard.contentPadding.copyWith(
+                  right:
+                      target == null ? PositionedCardCloseButton.contentRightInset : HomeAlertCard.contentPadding.right,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -377,26 +381,9 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                 ),
               ),
               if (target == null)
-                Positioned(
-                  top: HomeAlertCard.contentPadding.top,
-                  right: HomeAlertCard.contentPadding.right,
-                  child: Semantics(
-                    button: true,
-                    label: t.close,
-                    child: InkWell(
-                      onTap: viewModel.dismissTargetSuggestion,
-                      borderRadius: BorderRadius.circular(16),
-                      child: Padding(
-                        padding: HomeAlertCard.closeButtonPadding,
-                        child: SvgPicture.asset(
-                          CommonActionIconPath.closeBold,
-                          width: 12,
-                          height: 12,
-                          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
-                        ),
-                      ),
-                    ),
-                  ),
+                PositionedCardCloseButton(
+                  onPressed: viewModel.dismissTargetSuggestion,
+                  color: context.coconutColors.iconSecondary,
                 ),
               if (_playTargetFireworksOnEntry && isTargetReached)
                 Positioned(

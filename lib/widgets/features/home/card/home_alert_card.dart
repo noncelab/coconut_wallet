@@ -2,18 +2,15 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/widgets/common/buttons/positioned_card_close_button.dart';
 import 'package:coconut_wallet/widgets/features/ccos/card/coconut_open_store_intro_card.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 enum HomeAlertCardType { mnemonicBackup, appLock, openStore }
 
 class HomeAlertCard extends StatefulWidget {
   static const contentPadding = EdgeInsets.fromLTRB(16, 14, 8, 14);
-  static const closeButtonPadding = EdgeInsets.all(8);
 
   const HomeAlertCard.security({
     super.key,
@@ -166,42 +163,32 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
         child: Align(
           alignment: Alignment.topCenter,
           heightFactor: heightFactor,
-          child: Padding(
-            padding: HomeAlertCard.contentPadding,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(padding: const EdgeInsets.only(top: 2), child: widget.icon!),
-                CoconutLayout.spacing_200w,
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(widget.title!, style: CoconutTypography.body1_16_Bold.setColor(textColor)),
-                      const SizedBox(height: 10),
-                      Text(widget.description!, style: CoconutTypography.body3_12_Bold.setColor(textColor)),
-                    ],
-                  ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: HomeAlertCard.contentPadding.copyWith(
+                  right: PositionedCardCloseButton.contentRightInset,
                 ),
-                Semantics(
-                  button: true,
-                  label: t.close,
-                  child: InkWell(
-                    onTap: _close,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: HomeAlertCard.closeButtonPadding,
-                      child: SvgPicture.asset(
-                        CommonActionIconPath.closeBold,
-                        width: 12,
-                        height: 12,
-                        colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(padding: const EdgeInsets.only(top: 2), child: widget.icon!),
+                    CoconutLayout.spacing_200w,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(widget.title!, style: CoconutTypography.body1_16_Bold.setColor(textColor)),
+                          const SizedBox(height: 10),
+                          Text(widget.description!, style: CoconutTypography.body3_12_Bold.setColor(textColor)),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              PositionedCardCloseButton(onPressed: _close, color: iconColor),
+            ],
           ),
         ),
       ),
