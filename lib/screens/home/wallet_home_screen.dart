@@ -377,9 +377,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           ),
 
                           if (walletItem.isNotEmpty) ...[
-                            SliverToBoxAdapter(
-                              child: showHomeAlertSlot ? CoconutLayout.spacing_300h : CoconutLayout.spacing_500h,
-                            ),
+                            const SliverToBoxAdapter(child: CoconutLayout.spacing_400h),
                             _buildViewAllWallets(walletItem.length),
                           ],
                           _buildWalletOverview(
@@ -393,7 +391,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               SliverToBoxAdapter(
                                 child: Column(
                                   children: [
-                                    CoconutLayout.spacing_600h,
                                     Divider(thickness: 12, color: context.coconutColors.divider),
                                     CoconutLayout.spacing_600h,
                                   ],
@@ -1034,10 +1031,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     });
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         child: Container(
           clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(color: context.coconutColors.homeSurface, borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: context.coconutColors.homeSurface, borderRadius: BorderRadius.circular(12)),
           child: Column(
             children: [
               if (!shouldUseSingleWalletView) _buildWalletFilterTabs(walletFilterOrder),
@@ -1306,7 +1303,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     const listTopPadding = 8.0;
     const addWalletRowTopGap = 4.0;
-    const pageBottomGap = 8.0;
+    const pageBottomGap = 20.0;
     return listTopPadding +
         (walletCount * _walletListItemHeight()) +
         addWalletRowTopGap +
