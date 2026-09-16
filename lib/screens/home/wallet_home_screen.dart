@@ -1423,7 +1423,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       child: ShrinkAnimationButton(
         onPressed: () => _onAddWalletPressed(filter),
         defaultColor: context.coconutColors.homeSurface,
-        pressedColor: context.coconutColors.homeSurfacePressOverlay,
+        pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+        pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
         borderRadius: 12,
         child: CustomPaint(
           painter: DashedBorderPainter(
@@ -1488,10 +1489,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     return SizedBox(
       height: _addWalletRowHeight(),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         child: ShrinkAnimationButton(
           defaultColor: context.coconutColors.homeSurface,
-          pressedColor: context.coconutColors.homeSurfacePressOverlay,
+          pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
+          pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
           borderRadius: 12,
           onPressed: () => _onAddWalletPressed(filter),
           child: CustomPaint(
@@ -1502,7 +1504,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               borderRadius: 12,
             ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   SvgPicture.asset(
