@@ -44,69 +44,72 @@ class RenewalUtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
     final amount = lastSpace < 0 ? totalBalance : totalBalance.substring(0, lastSpace);
     final unit = lastSpace < 0 ? '' : totalBalance.substring(lastSpace + 1);
 
-    return Material(
-      color: colors.background,
-      elevation: overlapsContent && progress > 0.95 ? 1 : 0,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            left: 4,
-            top: topPadding + 4,
-            child: BackButton(onPressed: onBackPressed, color: colors.primaryText),
-          ),
-          Positioned(right: 4, top: topPadding + 4, child: refreshButton),
-          Positioned(
-            left: 16,
-            top: topPadding + 58,
-            child: Opacity(
-              opacity: 1 - eased,
-              child: Transform.translate(
-                offset: Offset(0, -8 * eased),
-                child: Text(
-                  t.utxo_list_screen.total_balance,
-                  style: CoconutTypography.body2_14_Bold.setColor(colors.secondaryText),
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Material(
+        color: colors.background,
+        elevation: overlapsContent && progress > 0.95 ? 1 : 0,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: 4,
+              top: topPadding + 4,
+              child: BackButton(onPressed: onBackPressed, color: colors.primaryText),
+            ),
+            Positioned(right: 4, top: topPadding + 4, child: refreshButton),
+            Positioned(
+              left: 16,
+              top: topPadding + 58,
+              child: Opacity(
+                opacity: 1 - eased,
+                child: Transform.translate(
+                  offset: Offset(0, -8 * eased),
+                  child: Text(
+                    t.utxo_list_screen.total_balance,
+                    style: CoconutTypography.body2_14_Bold.setColor(colors.secondaryText),
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            top: _lerp(topPadding + 77, topPadding + 17, eased),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Align(
-                alignment: Alignment(_lerp(-1, 0, eased), 0),
-                child: _SuctionAmountText(amount: amount, unit: unit, progress: progress),
+            Positioned(
+              left: 0,
+              right: 0,
+              top: _lerp(topPadding + 77, topPadding + 17, eased),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment(_lerp(-1, 0, eased), 0),
+                  child: _SuctionAmountText(amount: amount, unit: unit, progress: progress),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            left: 16,
-            top: topPadding + 116,
-            child: Opacity(
-              opacity: (1 - progress * 1.8).clamp(0.0, 1.0),
-              child: Transform.translate(
-                offset: Offset(0, -6 * eased),
-                child: Text(fiatPrice, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+            Positioned(
+              left: 16,
+              top: topPadding + 116,
+              child: Opacity(
+                opacity: (1 - progress * 1.8).clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(0, -6 * eased),
+                  child: Text(fiatPrice, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            top: segmentTop,
-            left: (screenWidth - segmentWidth) / 2,
-            width: segmentWidth,
-            child: _MorphingSegmentedControl(
-              isFirstSelected: isOverviewSelected,
-              onPressed: onTabChanged,
-              horizontalLabelPadding: _lerp(8, 16, eased),
-              firstLabel: t.utxo_overview_screen.overview,
-              secondLabel: t.utxo_overview_screen.list,
+            Positioned(
+              top: segmentTop,
+              left: (screenWidth - segmentWidth) / 2,
+              width: segmentWidth,
+              child: _MorphingSegmentedControl(
+                isFirstSelected: isOverviewSelected,
+                onPressed: onTabChanged,
+                horizontalLabelPadding: _lerp(8, 16, eased),
+                firstLabel: t.utxo_overview_screen.overview,
+                secondLabel: t.utxo_overview_screen.list,
+              ),
             ),
-          ),
-          Positioned(left: 0, right: 0, bottom: 0, child: bottomBar),
-        ],
+            Positioned(left: 0, right: 0, bottom: 0, child: bottomBar),
+          ],
+        ),
       ),
     );
   }

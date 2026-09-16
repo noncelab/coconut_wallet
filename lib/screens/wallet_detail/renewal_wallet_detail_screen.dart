@@ -312,7 +312,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
               Padding(
                 padding: HomeAlertCard.contentPadding.copyWith(
                   right:
-                      target == null ? PositionedCardCloseButton.contentRightInset : HomeAlertCard.contentPadding.right,
+                      target == null ? PositionedCardCloseButton.contentRightInset : HomeAlertCard.contentPadding.left,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,7 +430,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
             CoconutLayout.spacing_200h,
             if (!viewModel.hasTransactions)
               Container(
-                width: double.infinity,
+                width: MediaQuery.sizeOf(context).width,
                 padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -440,10 +440,12 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                       colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
                     ),
                     CoconutLayout.spacing_200w,
-                    Text(
-                      t.wallet_detail_screen.never_used_wallet,
-                      textAlign: TextAlign.center,
-                      style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                    Flexible(
+                      child: Text(
+                        t.wallet_detail_screen.never_used_wallet,
+                        textAlign: TextAlign.center,
+                        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                      ),
                     ),
                   ],
                 ),
@@ -1021,6 +1023,7 @@ class _UtxoAction extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.only(top: 20, bottom: 22),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset(
                 iconPath,
@@ -1037,6 +1040,7 @@ class _UtxoAction extends StatelessWidget {
                 style: CoconutTypography.body3_12.setColor(
                   isEnabled ? context.coconutColors.primaryText : disabledColor,
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 2),
               Text(
@@ -1044,6 +1048,7 @@ class _UtxoAction extends StatelessWidget {
                 style: CoconutTypography.body3_12.setColor(
                   isEnabled ? context.coconutColors.tertiaryText : disabledColor,
                 ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

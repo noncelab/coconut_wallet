@@ -922,6 +922,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Widget _buildHotWalletSigningOverlay() {
     final signingViewModel = _hotWalletSigningViewModel;
+    final statusReservedHeight = _measureFinalHotWalletSigningStatusHeight();
     return Positioned.fill(
       child: IgnorePointer(
         child: Transform.translate(
@@ -931,40 +932,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               Column(
                 children: [
                   CoconutLayout.spacing_1000h,
-                  AnimatedOpacity(
-                    opacity: _showHotWalletSigningStatus ? 1 : 0,
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
-                    child: AnimatedContainer(
-                      height: 25.2,
-                      duration: const Duration(milliseconds: 280),
-                      curve: Curves.easeInOutCubic,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 360),
-                        layoutBuilder:
-                            (currentChild, previousChildren) => Stack(
-                              alignment: Alignment.center,
-                              children: [...previousChildren, if (currentChild != null) currentChild],
-                            ),
-                        transitionBuilder: (child, animation) {
-                          final isIncoming = child.key == ValueKey(_hotWalletSigningStage);
-                          final sequencedAnimation = CurvedAnimation(
-                            parent: animation,
-                            curve: const Interval(0.5, 1, curve: Curves.easeOutCubic),
-                          );
-                          final slideAnimation = Tween<Offset>(
-                            begin: isIncoming ? const Offset(0, 0.35) : const Offset(0, -0.35),
-                            end: Offset.zero,
-                          ).animate(sequencedAnimation);
-                          return SlideTransition(
-                            position: slideAnimation,
-                            child: FadeTransition(opacity: sequencedAnimation, child: child),
-                          );
-                        },
-                        child: _buildHotWalletSigningStatus(),
-                      ),
-                    ),
-                  ),
+                  SizedBox(height: statusReservedHeight),
                   CoconutLayout.spacing_400h,
                   if (signingViewModel != null)
                     TweenAnimationBuilder<double>(
@@ -994,6 +962,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     ),
                 ],
               ),
+              Positioned(top: 40, left: 16, right: 16, child: _buildHotWalletSigningStatusLayer(statusReservedHeight)),
               Center(
                 child: AnimatedOpacity(
                   opacity:
@@ -1031,6 +1000,54 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  double _measureFinalHotWalletSigningStatusHeight() {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: t.broadcasting_screen.description,
+        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout(maxWidth: MediaQuery.sizeOf(context).width - 32);
+    return painter.height > 25.2 ? painter.height : 25.2;
+  }
+
+  Widget _buildHotWalletSigningStatusLayer(double height) {
+    return AnimatedOpacity(
+      opacity: _showHotWalletSigningStatus ? 1 : 0,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      child: SizedBox(
+        height: height,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 360),
+          layoutBuilder:
+              (currentChild, previousChildren) => Stack(
+                alignment: Alignment.bottomCenter,
+                children: [...previousChildren, if (currentChild != null) currentChild],
+              ),
+          transitionBuilder: (child, animation) {
+            final isIncoming = child.key == ValueKey(_hotWalletSigningStage);
+            final sequencedAnimation = CurvedAnimation(
+              parent: animation,
+              curve: const Interval(0.5, 1, curve: Curves.easeOutCubic),
+            );
+            final slideAnimation = Tween<Offset>(
+              begin: isIncoming ? const Offset(0, 0.35) : const Offset(0, -0.35),
+              end: Offset.zero,
+            ).animate(sequencedAnimation);
+            return SlideTransition(
+              position: slideAnimation,
+              child: FadeTransition(opacity: sequencedAnimation, child: child),
+            );
+          },
+          child: _buildHotWalletSigningStatus(),
         ),
       ),
     );
@@ -1643,6 +1660,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     CoconutLayout.spacing_200h,
                     Text(
                       t.send_screen.swipe_to_add_address,
+                      textAlign: TextAlign.center,
                       style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
                     ),
                   ],

@@ -220,23 +220,26 @@ class _StickyFilterBar extends StatelessWidget {
   Widget _buildLockFilterChips() {
     return KeyedSubtree(
       key: const ValueKey('lock-filter-chips'),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _FilterChip(
-            iconPath: CommonSecurityIconPath.unlock,
-            label: t.utxo_detail_screen.utxo_unlocked,
-            isSelected: lockFilterIndex == 0,
-            onTap: () => onLockFilterSelected(0),
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            iconPath: CommonSecurityIconPath.lock,
-            label: t.utxo_detail_screen.utxo_locked,
-            isSelected: lockFilterIndex == 1,
-            onTap: () => onLockFilterSelected(1),
-          ),
-        ],
+      child: MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(1.0)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _FilterChip(
+              iconPath: CommonSecurityIconPath.unlock,
+              label: t.utxo_detail_screen.utxo_unlocked,
+              isSelected: lockFilterIndex == 0,
+              onTap: () => onLockFilterSelected(0),
+            ),
+            const SizedBox(width: 8),
+            _FilterChip(
+              iconPath: CommonSecurityIconPath.lock,
+              label: t.utxo_detail_screen.utxo_locked,
+              isSelected: lockFilterIndex == 1,
+              onTap: () => onLockFilterSelected(1),
+            ),
+          ],
+        ),
       ),
     );
   }

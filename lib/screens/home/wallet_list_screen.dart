@@ -223,7 +223,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                       _buildWalletListHeader(walletBalanceMap, isInitialSyncing: isInitialSyncing),
                                       SliverToBoxAdapter(
                                         child: Padding(
-                                          padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+                                          padding: const EdgeInsets.only(bottom: 16),
                                           child: _buildWalletFilterChips(),
                                         ),
                                       ),
@@ -796,13 +796,17 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   Widget _buildWalletFilterChips({bool isEditMode = false}) {
     if (!isEditMode) {
-      return Row(
-        children: [
-          for (var index = 0; index < _walletFilterOrder.length; index++) ...[
-            _buildWalletFilterChip(_walletFilterOrder[index], _getWalletFilterLabel(_walletFilterOrder[index])),
-            if (index < _walletFilterOrder.length - 1) CoconutLayout.spacing_100w,
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: [
+            for (var index = 0; index < _walletFilterOrder.length; index++) ...[
+              _buildWalletFilterChip(_walletFilterOrder[index], _getWalletFilterLabel(_walletFilterOrder[index])),
+              if (index < _walletFilterOrder.length - 1) CoconutLayout.spacing_100w,
+            ],
           ],
-        ],
+        ),
       );
     }
 
@@ -1609,7 +1613,7 @@ class _BitcoinPriceInfoButtonState extends State<_BitcoinPriceInfoButton> with S
     if (_tooltipOverlayEntry != null) return;
 
     final overlay = Overlay.of(context, rootOverlay: true);
-    final tooltipWidth = (MediaQuery.sizeOf(context).width - 32).clamp(0.0, 360.0);
+    final tooltipWidth = (MediaQuery.sizeOf(context).width - 32).clamp(0.0, 300.0);
     _isTooltipHiding = false;
     _tooltipOverlayEntry = OverlayEntry(
       builder:

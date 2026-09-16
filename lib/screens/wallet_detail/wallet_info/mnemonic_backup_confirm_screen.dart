@@ -174,8 +174,12 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
       resizeToAvoidBottomInset: true,
       backgroundColor: context.coconutColors.background,
       appBar: CoconutAppBar.build(
-        title: strings.backup_confirm_title,
         context: context,
+        customTitle: Text(
+          strings.backup_confirm_title,
+          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+          textScaler: const TextScaler.linear(1),
+        ),
         backgroundColor: context.coconutColors.background,
       ),
       body: SafeArea(
@@ -214,6 +218,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
                               ? strings.passphrase_confirm_question
                               : strings.backup_question(position: wordPosition),
                           style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+                          textScaler: const TextScaler.linear(1),
                         ),
                         AnimatedOpacity(
                           opacity: _isIncorrect ? 1 : 0,

@@ -17,6 +17,7 @@ Future<bool?> showHotWalletAppLockGuideBottomSheet(BuildContext context) async {
     title: t.wallet_home_screen.hot_wallet_setup.pin_title,
     showDragHandle: true,
     showCloseButton: true,
+    ignoreTextScaling: true,
     adjustForKeyboardInset: false,
     child: HotWalletAppLockGuideScreen(key: sheetKey),
   );

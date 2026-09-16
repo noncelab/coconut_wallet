@@ -50,6 +50,7 @@ class HomeAlertCard extends StatefulWidget {
 
 class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProviderStateMixin {
   static const _animationDuration = Duration(milliseconds: 240);
+  static const _securityIconSize = 20.0;
 
   late final AnimationController _controller;
   late final Animation<double> _animation;
@@ -139,6 +140,18 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
         isMnemonicBackup
             ? context.coconutColors.unbackedWarningForeground
             : context.coconutColors.appLockWarningForeground;
+    final titleStyle = CoconutTypography.body1_16_Bold.setColor(textColor);
+    final titleLineHeight =
+        TextPainter(
+          text: TextSpan(text: ' ', style: titleStyle),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        ).preferredLineHeight;
+    final calculatedIconTop = (titleLineHeight - _securityIconSize) / 2;
+    final iconTop = calculatedIconTop > 0 ? calculatedIconTop : 0.0;
+    final calculatedCloseIconTop = (titleLineHeight - PositionedCardCloseButton.iconSize) / 2;
+    final closeIconTop = calculatedCloseIconTop > 0 ? calculatedCloseIconTop : 0.0;
+    final closeButtonTop = HomeAlertCard.contentPadding.top + closeIconTop - PositionedCardCloseButton.padding.top;
     final iconColor =
         isMnemonicBackup ? context.coconutColors.iconOnDanger : context.coconutColors.appLockWarningForeground;
 
@@ -170,13 +183,13 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(padding: const EdgeInsets.only(top: 2), child: widget.icon!),
+                    Padding(padding: EdgeInsets.only(top: iconTop), child: widget.icon!),
                     CoconutLayout.spacing_200w,
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(widget.title!, style: CoconutTypography.body1_16_Bold.setColor(textColor)),
+                          Text(widget.title!, style: titleStyle),
                           const SizedBox(height: 10),
                           Text(widget.description!, style: CoconutTypography.body3_12_Bold.setColor(textColor)),
                         ],
@@ -185,7 +198,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
                   ],
                 ),
               ),
-              PositionedCardCloseButton(onPressed: _close, color: iconColor),
+              PositionedCardCloseButton(onPressed: _close, color: iconColor, positionTop: closeButtonTop),
             ],
           ),
         ),

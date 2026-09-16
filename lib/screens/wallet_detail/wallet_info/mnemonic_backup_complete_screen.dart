@@ -60,6 +60,7 @@ class _MnemonicBackupCompleteScreenState extends State<MnemonicBackupCompleteScr
                         strings.backup_complete_title,
                         style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
                         textAlign: TextAlign.center,
+                        textScaler: const TextScaler.linear(1),
                       ),
                       CoconutLayout.spacing_400h,
                       Padding(

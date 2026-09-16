@@ -24,6 +24,7 @@ class CommonBottomSheets {
     bool enableDrag = true,
     bool showCloseButton = false,
     bool showDragHandle = false,
+    bool ignoreTextScaling = false,
     bool adjustForKeyboardInset = true,
     double keyboardBottomPadding = 20,
     Duration keyboardInsetAnimationDuration = const Duration(milliseconds: 280),
@@ -38,7 +39,7 @@ class CommonBottomSheets {
       ),
       builder: (context) {
         final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
-        return AnimatedPadding(
+        final sheet = AnimatedPadding(
           duration: keyboardInsetAnimationDuration,
           curve: Curves.easeOutCubic,
           padding: EdgeInsets.only(bottom: adjustForKeyboardInset ? keyboardInset + keyboardBottomPadding : 0),
@@ -125,6 +126,8 @@ class CommonBottomSheets {
             ],
           ),
         );
+        if (!ignoreTextScaling) return sheet;
+        return MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)), child: sheet);
       },
       backgroundColor: resolvedBackgroundColor,
       isDismissible: isDismissible,

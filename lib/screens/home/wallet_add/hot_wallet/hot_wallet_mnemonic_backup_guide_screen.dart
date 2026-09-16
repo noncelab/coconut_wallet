@@ -154,8 +154,12 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
               duration: const Duration(milliseconds: 350),
               curve: Curves.easeOut,
               child: CoconutAppBar.build(
-                title: strings.backup_title,
                 context: context,
+                customTitle: Text(
+                  strings.backup_title,
+                  style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+                  textScaler: const TextScaler.linear(1),
+                ),
                 onBackPressed: _onAppBarBackPressed,
                 isBottom: true,
                 isBackButton: _isBackupPreparationStage,
@@ -204,6 +208,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                             strings.wallet_created_title,
                             textAlign: TextAlign.center,
                             style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+                            textScaler: const TextScaler.linear(1),
                           ),
                         ),
                       ),
@@ -234,6 +239,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                               strings.backup_intro_title,
                               textAlign: TextAlign.center,
                               style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+                              textScaler: const TextScaler.linear(1),
                             ).fadeInAnimation(duration: const Duration(milliseconds: 350)),
                           ),
                         ),
@@ -298,6 +304,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
                                         style: CoconutTypography.heading3_21_Bold.setColor(
                                           context.coconutColors.primaryText,
                                         ),
+                                        textScaler: const TextScaler.linear(1),
                                       ),
                                     ),
                                     CoconutLayout.spacing_300h,

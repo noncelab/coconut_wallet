@@ -10,15 +10,16 @@ class PositionedCardCloseButton extends StatelessWidget {
   static const padding = EdgeInsets.all(8);
   static const double contentRightInset = right + iconSize + 16;
 
-  const PositionedCardCloseButton({super.key, required this.onPressed, required this.color});
+  const PositionedCardCloseButton({super.key, required this.onPressed, required this.color, this.positionTop = top});
 
   final VoidCallback onPressed;
   final Color color;
+  final double positionTop;
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: top,
+      top: positionTop,
       right: right,
       child: Semantics(
         button: true,

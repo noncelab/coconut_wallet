@@ -123,28 +123,37 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  t.wallet_info_screen.mnemonic_backup,
-                  style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                Expanded(
+                  child: Text(
+                    t.wallet_info_screen.mnemonic_backup,
+                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                  ),
                 ),
-                Row(
-                  children: [
-                    if (widget.showWarning) ...[
-                      SvgPicture.asset(
-                        CommonStateIconPath.triangleWarning,
-                        width: 16,
-                        height: 16,
-                        colorFilter: ColorFilter.mode(colors.appLockWarningBackground, BlendMode.srcIn),
-                      ),
-                      CoconutLayout.spacing_50w,
-                      Text(
-                        t.wallet_info_screen.backup_required,
-                        style: CoconutTypography.body2_14.setColor(colors.appLockWarningBackground),
-                      ),
-                      CoconutLayout.spacing_100w,
+                CoconutLayout.spacing_200w,
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.showWarning) ...[
+                        SvgPicture.asset(
+                          CommonStateIconPath.triangleWarning,
+                          width: 16,
+                          height: 16,
+                          colorFilter: ColorFilter.mode(colors.appLockWarningBackground, BlendMode.srcIn),
+                        ),
+                        CoconutLayout.spacing_50w,
+                        Flexible(
+                          child: Text(
+                            t.wallet_info_screen.backup_required,
+                            style: CoconutTypography.body2_14.setColor(colors.appLockWarningBackground),
+                            textAlign: TextAlign.end,
+                          ),
+                        ),
+                        CoconutLayout.spacing_100w,
+                      ],
+                      Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
                     ],
-                    Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -804,14 +813,18 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title, style: resolvedTitleStyle),
-            Row(
-              children: [
-                if (subWidget != null) ...[subWidget, CoconutLayout.spacing_100w],
-                if (rightWidget != null) rightWidget,
-                if (showArrowRight)
-                  Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary),
-              ],
+            Expanded(child: Text(title, style: resolvedTitleStyle)),
+            CoconutLayout.spacing_200w,
+            Flexible(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (subWidget != null) ...[Flexible(child: subWidget), CoconutLayout.spacing_100w],
+                  if (rightWidget != null) rightWidget,
+                  if (showArrowRight)
+                    Icon(Icons.keyboard_arrow_right_rounded, color: context.coconutColors.iconSecondary),
+                ],
+              ),
             ),
           ],
         ),

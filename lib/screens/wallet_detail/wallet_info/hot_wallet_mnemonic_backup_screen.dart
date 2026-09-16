@@ -62,8 +62,12 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
     return Scaffold(
       backgroundColor: context.coconutColors.background,
       appBar: CoconutAppBar.build(
-        title: strings.backup_title,
         context: context,
+        customTitle: Text(
+          strings.backup_title,
+          style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText),
+          textScaler: const TextScaler.linear(1),
+        ),
         backgroundColor: context.coconutColors.background,
       ),
       body: SafeArea(
@@ -91,6 +95,7 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
                       strings.mnemonic_backup_guide,
                       style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.danger),
                       textAlign: TextAlign.center,
+                      textScaler: const TextScaler.linear(1),
                     ),
                   ),
                   CoconutLayout.spacing_600h,

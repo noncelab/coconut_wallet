@@ -358,6 +358,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                         ),
                                         child: Text(
                                           t.wallet_home_screen.hot_wallet_create.word_count(count: wordCount),
+                                          textAlign: TextAlign.center,
                                           style:
                                               _mnemonicWordCount == wordCount
                                                   ? CoconutTypography.body1_16_Bold.setColor(
@@ -547,8 +548,8 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
       behavior: HitTestBehavior.opaque,
       onTap: () => setState(() => _isPassphraseVisible = !_isPassphraseVisible),
       child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        constraints: const BoxConstraints(minHeight: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: context.coconutColors.surface,
           borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
@@ -556,11 +557,14 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _isPassphraseVisible
-                  ? t.wallet_home_screen.hot_wallet_create.hide_passphrase
-                  : t.wallet_home_screen.hot_wallet_create.show_passphrase,
-              style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+            Flexible(
+              child: Text(
+                _isPassphraseVisible
+                    ? t.wallet_home_screen.hot_wallet_create.hide_passphrase
+                    : t.wallet_home_screen.hot_wallet_create.show_passphrase,
+                textAlign: TextAlign.end,
+                style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+              ),
             ),
             CoconutLayout.spacing_100w,
             SvgPicture.asset(

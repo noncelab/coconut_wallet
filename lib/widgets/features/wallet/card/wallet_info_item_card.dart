@@ -220,7 +220,11 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          WalletTypeBadge(isHotWallet: walletItem.hasLocalKey),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: WalletTypeBadge(isHotWallet: walletItem.hasLocalKey),
+                          ),
                           CoconutLayout.spacing_50h,
                           Text(
                             nameText,
