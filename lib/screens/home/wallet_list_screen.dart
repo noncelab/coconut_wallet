@@ -1214,6 +1214,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     return CoconutAppBar.build(
       title: isEditMode ? t.wallet_list.edit.order : t.wallet_home_screen.view_all_wallets,
       context: context,
+      backgroundColor: context.coconutColors.background,
       onBackPressed: () {
         if (isEditMode) {
           if (hasWalletOrderChanged || _hasWalletFilterVisibilityChanged || _hasWalletFilterOrderChanged) {
