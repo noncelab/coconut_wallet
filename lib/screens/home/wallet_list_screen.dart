@@ -13,6 +13,8 @@ import 'package:coconut_design_system/coconut_design_system.dart'
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart'
+    show kExchangePriceFallBlue, kExchangePriceFallRed, kExchangePriceRiseGreen, kExchangePriceRiseRed;
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -1486,8 +1488,15 @@ class _HistoricalPriceChangeChipState extends State<_HistoricalPriceChangeChip> 
       historicalPrices.thirtyDaysAgoClose,
     ];
     final changeRate = (currentPrice - pastPrices[_periodIndex]) / pastPrices[_periodIndex] * 100;
-    final changeColor = changeRate >= 0 ? context.coconutColors.success : context.coconutColors.warning;
+    final changeColor =
+        changeRate == 0
+            ? context.coconutColors.secondaryText
+            : switch (widget.viewModel.selectedFiat) {
+              FiatCode.KRW || FiatCode.JPY => changeRate > 0 ? kExchangePriceRiseRed : kExchangePriceFallBlue,
+              FiatCode.USD || FiatCode.EUR => changeRate > 0 ? kExchangePriceRiseGreen : kExchangePriceFallRed,
+            };
     final changeRateText = '${changeRate >= 0 ? '+' : ''}${changeRate.toStringAsFixed(1)}%';
+    final changeBackgroundOpacity = changeColor == kExchangePriceFallBlue ? 0.24 : 0.12;
 
     return Listener(
       onPointerDown: (_) => _pauseRotation(),
@@ -1527,7 +1536,7 @@ class _HistoricalPriceChangeChipState extends State<_HistoricalPriceChangeChip> 
               key: ValueKey(_periodIndex),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: changeColor.withValues(alpha: 0.12),
+                color: changeColor.withValues(alpha: changeBackgroundOpacity),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
