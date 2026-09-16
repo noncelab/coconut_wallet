@@ -1,3 +1,16 @@
+## mainnet 0.18.0, regtest 3.18.0 - 26/09/16
+### Added
+1. CCOS 소개 + 코코넛 테마
+
+### Enhanced
+1. RawTx나 BBQR로 스캔한 PSBT의 서명 전 후 Intent 검증 추가
+2. Trezor, BitBox02 연결 로직 개선
+3. 일렉트럼 서버 정보 저장 방식 개선
+4. 패스포트 프라임 연결 가이드 문구 개선
+
+### Fixed
+1. 영어 - 멤풀 블록/Tx 조회 링크 오류
+
 ## mainnet 0.17.0, regtest 3.17.0 - 26/09/04
 ### Added
 1. 메모 관리 기능 (bip329)
