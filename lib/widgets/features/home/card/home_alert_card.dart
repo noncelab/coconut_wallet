@@ -166,9 +166,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
           child: Stack(
             children: [
               Padding(
-                padding: HomeAlertCard.contentPadding.copyWith(
-                  right: PositionedCardCloseButton.contentRightInset,
-                ),
+                padding: HomeAlertCard.contentPadding.copyWith(right: PositionedCardCloseButton.contentRightInset),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

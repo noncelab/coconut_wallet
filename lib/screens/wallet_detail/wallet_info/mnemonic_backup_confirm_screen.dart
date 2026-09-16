@@ -45,16 +45,25 @@ List<int> selectMnemonicChallengeIndices({required int wordCount, int challengeC
   return List<int>.unmodifiable(indices.take(challengeCount));
 }
 
-String mnemonicGhostSuffix({required String input, int minimumLength = 4}) {
+String? uniqueMnemonicWordCompletion({required String input, int minimumLength = 4}) {
   final normalized = input.trim().toLowerCase();
-  if (normalized.length < minimumLength) return '';
+  if (normalized.length < minimumLength) return null;
 
+  String? completion;
   for (final word in wordList) {
     if (word.startsWith(normalized)) {
-      return word.substring(normalized.length);
+      if (completion != null) return null;
+      completion = word;
     }
   }
-  return '';
+  return completion;
+}
+
+String mnemonicGhostSuffix({required String input, int minimumLength = 4}) {
+  final normalized = input.trim().toLowerCase();
+  final completion = uniqueMnemonicWordCompletion(input: normalized, minimumLength: minimumLength);
+  if (completion == null || completion.length == normalized.length) return '';
+  return completion.substring(normalized.length);
 }
 
 String? completeMnemonicWordOnSpace({required String input}) {
@@ -157,6 +166,8 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
     final wordPosition = isPassphraseQuestion ? 0 : _questionIndices[_questionIndex] + 1;
     final isCursorAtEnd =
         _controller.selection.isCollapsed && _controller.selection.baseOffset == _controller.text.length;
+    final normalizedInput = _controller.text.trim().toLowerCase();
+    final uniqueCompletion = isPassphraseQuestion ? null : uniqueMnemonicWordCompletion(input: normalizedInput);
     final ghostText = !isPassphraseQuestion && isCursorAtEnd ? mnemonicGhostSuffix(input: _controller.text) : '';
 
     return Scaffold(
@@ -262,9 +273,9 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
               FixedBottomButton(
                 text: t.complete,
                 isActive:
-                    _controller.text.trim().isNotEmpty &&
+                    normalizedInput.isNotEmpty &&
                     !_isProcessing &&
-                    (isPassphraseQuestion || wordList.contains(_controller.text.trim().toLowerCase())),
+                    (isPassphraseQuestion || wordList.contains(normalizedInput) || uniqueCompletion != null),
                 isVisibleAboveKeyboard: false,
                 showSurroundings: false,
                 onButtonClicked: _submitAnswer,
@@ -281,6 +292,14 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
   Future<void> _submitAnswer() async {
     if (_isProcessing || _controller.text.trim().isEmpty) return;
     final isPassphraseQuestion = widget.confirmPassphrase && _questionIndex == _questionIndices.length;
+    final completion = isPassphraseQuestion ? null : uniqueMnemonicWordCompletion(input: _controller.text);
+    if (completion != null && completion != _controller.text) {
+      _controller.value = TextEditingValue(
+        text: completion,
+        selection: TextSelection.collapsed(offset: completion.length),
+      );
+    }
+    final answer = completion ?? _controller.text;
     final requiresDescriptorVerification =
         isPassphraseQuestion && widget.passphrase.isEmpty && widget.descriptor.isNotEmpty;
     setState(() {
@@ -293,8 +312,8 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
     try {
       isCorrect =
           isPassphraseQuestion
-              ? await _isPassphraseCorrect(_controller.text)
-              : _isMnemonicWordCorrect(_questionIndices[_questionIndex], _controller.text);
+              ? await _isPassphraseCorrect(answer)
+              : _isMnemonicWordCorrect(_questionIndices[_questionIndex], answer);
     } finally {
       if (mounted && _isVerifyingPassphrase) {
         setState(() => _isVerifyingPassphrase = false);

@@ -15,11 +15,7 @@ void main() {
                 key: const ValueKey('card'),
                 width: 300,
                 height: height,
-                child: Stack(
-                  children: [
-                    PositionedCardCloseButton(onPressed: () => closed++, color: Colors.black),
-                  ],
-                ),
+                child: Stack(children: [PositionedCardCloseButton(onPressed: () => closed++, color: Colors.black)]),
               ),
             ),
           ),

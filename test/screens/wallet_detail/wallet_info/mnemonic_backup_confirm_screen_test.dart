@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_confirm_screen.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -70,6 +71,7 @@ void main() {
 
   group('mnemonicGhostSuffix', () {
     test('wordlist 단어의 앞 4글자를 입력하면 나머지 글자를 반환한다', () {
+      expect(uniqueMnemonicWordCompletion(input: 'aban'), 'abandon');
       expect(mnemonicGhostSuffix(input: 'aban'), 'don');
       expect(mnemonicGhostSuffix(input: 'zebr'), 'a');
       expect(completeMnemonicWordOnSpace(input: 'zebr '), 'zebra');
@@ -110,5 +112,29 @@ void main() {
     await tester.pump();
 
     expect(tester.widget<EditableText>(find.byType(EditableText)).controller.text, 'abandon');
+  });
+
+  testWidgets('완료를 누르면 고스트 텍스트를 실제 입력값으로 채우고 완성된 단어로 간주한다', (tester) async {
+    final mnemonic = Uint8List.fromList(utf8.encode(List<String>.filled(12, 'abandon').join(' ')));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: MnemonicBackupConfirmScreen(mnemonic: mnemonic, passphrase: Uint8List(0)),
+      ),
+    );
+    await tester.pump();
+
+    await tester.enterText(find.byType(EditableText), 'aban');
+    await tester.pump();
+
+    final button = tester.widget<FixedBottomButton>(find.byType(FixedBottomButton));
+    expect(button.isActive, isTrue);
+    final submission = button.onButtonClicked() as Future<void>;
+    expect(tester.widget<EditableText>(find.byType(EditableText)).controller.text, 'abandon');
+    await tester.pump(const Duration(milliseconds: 301));
+    await submission;
+
+    expect(tester.widget<EditableText>(find.byType(EditableText)).controller.text, isEmpty);
   });
 }
