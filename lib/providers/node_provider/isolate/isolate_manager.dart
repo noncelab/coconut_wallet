@@ -63,7 +63,13 @@ class IsolateManager {
     _isolateReady = Completer<void>();
   }
 
-  Future<void> initialize(String host, int port, bool ssl, NetworkType networkType) async {
+  Future<void> initialize(
+    String host,
+    int port,
+    bool ssl,
+    NetworkType networkType, [
+    String? pinnedCertFingerprint,
+  ]) async {
     // 이미 초기화 중인 경우 기존 작업 완료 대기
     if (_isInitializing) {
       Logger.log('IsolateManager: Already initializing, waiting for completion');
@@ -84,7 +90,7 @@ class IsolateManager {
       _createIsolateCompleter();
 
       final isolateToMainSendPort = _mainFromIsolateReceivePort!.sendPort;
-      final data = SpawnIsolateDto(isolateToMainSendPort, host, port, ssl, networkType);
+      final data = SpawnIsolateDto(isolateToMainSendPort, host, port, ssl, networkType, pinnedCertFingerprint);
 
       _isolate = await Isolate.spawn<SpawnIsolateDto>(_isolateEntry, data);
       _setUpReceivePortListener();
@@ -269,7 +275,12 @@ class IsolateManager {
     final electrumService = ElectrumService();
 
     try {
-      final isConnected = await electrumService.connect(data.host, data.port, ssl: data.ssl);
+      final isConnected = await electrumService.connect(
+        data.host,
+        data.port,
+        ssl: data.ssl,
+        pinnedCertFingerprint: data.pinnedCertFingerprint,
+      );
 
       final isolateController = IsolateInitializer.entryInitialize(data.isolateToMainSendPort, electrumService);
 

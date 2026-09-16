@@ -1,7 +1,10 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -30,14 +33,14 @@ class TrezorTransportSelectScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _TransportOptionCard(
-                        iconPath: 'assets/svg/wallet-type/trezor.svg',
+                        iconPath: ThirdPartyWalletTypeIconPath.trezor,
                         title: strings.btn.ble,
                         subtitle: strings.notice_ble,
                         onTap: () => _selectBle(context),
                       ),
                       CoconutLayout.spacing_300h,
                       _TransportOptionCard(
-                        iconPath: 'assets/svg/wallet-type/trezor.svg',
+                        iconPath: ThirdPartyWalletTypeIconPath.trezor,
                         title: strings.btn.usb,
                         subtitle: strings.notice_usb,
                         onTap: () => _selectUsb(context),
@@ -57,8 +60,12 @@ class TrezorTransportSelectScreen extends StatelessWidget {
     Navigator.pop(context);
     Navigator.pushNamed(
       context,
-      '/trezor-ble-connect',
-      arguments: {'psbtBase64': psbtBase64, 'walletName': walletName, 'walletFingerprint': walletFingerprint},
+      AppRouteNames.trezorBleConnect,
+      arguments: TrezorBleConnectRouteArgs(
+        psbtBase64: psbtBase64,
+        walletName: walletName,
+        walletFingerprint: walletFingerprint,
+      ),
     );
   }
 
@@ -66,8 +73,12 @@ class TrezorTransportSelectScreen extends StatelessWidget {
     Navigator.pop(context);
     Navigator.pushNamed(
       context,
-      '/trezor-usb-connect',
-      arguments: {'psbtBase64': psbtBase64, 'walletName': walletName, 'walletFingerprint': walletFingerprint},
+      AppRouteNames.trezorUsbConnect,
+      arguments: TrezorUsbConnectRouteArgs(
+        psbtBase64: psbtBase64,
+        walletName: walletName,
+        walletFingerprint: walletFingerprint,
+      ),
     );
   }
 }
@@ -89,7 +100,6 @@ class _TransportOptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShrinkAnimationButton(
       defaultColor: context.coconutColors.surface,
-      pressedColor: context.coconutColors.surfacePressed,
       borderRadius: CoconutStyles.radius_200,
       onPressed: onTap,
       child: Padding(

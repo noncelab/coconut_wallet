@@ -1,10 +1,13 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -12,12 +15,14 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
-import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
+import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/qrcode_info.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -39,14 +44,6 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   late int _walletCount;
   final GlobalKey _qrCaptureKey = GlobalKey();
   final GlobalKey _shareButtonKey = GlobalKey();
-
-  ImageProvider get _qrEmbedImage {
-    final path =
-        NetworkType.currentNetworkType == NetworkType.regtest
-            ? 'assets/images/splash_logo_regtest.png'
-            : 'assets/images/splash_logo_mainnet.png';
-    return AssetImage(path);
-  }
 
   String get derivationPath {
     if (_receiveAddress == null) return "";
@@ -107,7 +104,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                 ),
                 if (_walletCount > 1) ...[
                   CoconutLayout.spacing_50w,
-                  Icon(Icons.keyboard_arrow_down_sharp, color: context.coconutColors.iconDefault, size: 16),
+                  Icon(Icons.keyboard_arrow_down_sharp, color: context.coconutColors.iconPrimary, size: 16),
                 ],
               ],
             ),
@@ -133,6 +130,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                     context: context,
                     currentUnit: preferenceProvider.currentUnit,
                     initialAmountSats: _enteredReceiveAmountSats,
+                    screenName: AnalyticsScreenNames.receiveAddressSetAmountSheet,
                   );
                   if (!mounted || result == null || !result.didEdit) return;
                   setState(() {
@@ -202,14 +200,13 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                                     ),
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: _onAddressListButtonPressed,
+                                ShrinkAnimationButton(
+                                  onPressed: _onAddressListButtonPressed,
+                                  defaultColor: context.coconutColors.surface,
+                                  pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+                                  borderRadius: 8,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      color: context.coconutColors.surfaceCard,
-                                    ),
                                     child: Text(
                                       t.view_all_addresses,
                                       style: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
@@ -220,7 +217,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                             ),
                           ),
                           qrData: qrData,
-                          embedImage: _qrEmbedImage,
+                          embedWidget: const CoconutLogoIcon(size: 16),
                           isAddress: true,
                         ),
                       ],
@@ -233,7 +230,11 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   }
 
   void _onAddressListButtonPressed() {
-    Navigator.pushNamed(context, '/address-list', arguments: {'id': _selectedWalletItem!.id});
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.addressList,
+      arguments: AddressListRouteArgs(id: _selectedWalletItem!.id),
+    );
   }
 
   void _onAppBarTitlePressed() {
@@ -241,6 +242,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     AppGuard.enablePrivacyScreen();
     CommonBottomSheets.showDraggableBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.receiveAddressSelectWalletSheet,
       childBuilder:
           (scrollController) => SelectWalletBottomSheet(
             showOnlyMfpWallets: false,

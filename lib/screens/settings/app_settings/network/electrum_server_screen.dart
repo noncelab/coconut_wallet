@@ -1,4 +1,18 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutTextField,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup,
+        CoconutUnderlinedButton;
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
@@ -9,16 +23,17 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 class ElectrumServerScreen extends StatefulWidget {
   const ElectrumServerScreen({super.key});
@@ -43,6 +58,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   Size _defaultServerButtonSize = const Size(0, 0);
 
   late ElectrumServerViewModel _viewModel;
+  bool _isUntrustedCertificateDialogShowing = false;
 
   @override
   void initState() {
@@ -67,16 +83,66 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           _viewModel.setDefaultServerMenuVisible(true);
         }
       });
+
+      _viewModel.addListener(_onViewModelChanged);
     });
   }
 
   @override
   void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
     _serverAddressController.dispose();
     _portController.dispose();
     serverAddressFocusNode.dispose();
     portFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onViewModelChanged() {
+    if (_viewModel.nodeConnectionStatus == NodeConnectionStatus.untrustedCertificate &&
+        _viewModel.pendingCertificateFingerprint != null) {
+      _showUntrustedCertificateDialog();
+    }
+  }
+
+  void _showUntrustedCertificateDialog() {
+    if (_isUntrustedCertificateDialogShowing) return;
+    _isUntrustedCertificateDialogShowing = true;
+
+    final fingerprint = _viewModel.pendingCertificateFingerprint ?? '';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.settings_screen.electrum_server.popup.untrusted_certificate_title,
+          description: t.settings_screen.electrum_server.popup.untrusted_certificate_description(
+            fingerprint: fingerprint,
+          ),
+          onTapRight: () {
+            Navigator.of(dialogContext).pop();
+            _viewModel.trustPendingCertificateAndConnect().then((success) {
+              if (!mounted) return;
+              if (success) {
+                vibrateLight();
+              } else {
+                vibrateLightDouble();
+              }
+            });
+          },
+          onTapLeft: () {
+            _viewModel.cancelPendingCertificateTrust();
+            Navigator.of(dialogContext).pop();
+          },
+          leftButtonText: t.cancel,
+          rightButtonText: t.settings_screen.electrum_server.popup.trust_and_continue,
+        );
+      },
+    ).then((_) {
+      _isUntrustedCertificateDialogShowing = false;
+    });
   }
 
   void _unFocus() {
@@ -96,11 +162,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   }
 
   void _onSave() async {
-    final newServer = ElectrumServer.custom(
-      _serverAddressController.text,
-      int.parse(_portController.text),
-      _currentSslState,
-    );
+    final host = _serverAddressController.text;
+    final port = int.parse(_portController.text);
+
+    // 텍스트 필드 값이 기본 서버와 일치하면 그 서버의 pinnedCertFingerprint를 그대로 쓴다
+    final matchedDefault = DefaultElectrumServer.findMatching(host, port, _currentSslState);
+    final newServer = matchedDefault?.server ?? ElectrumServer.custom(host, port, _currentSslState);
 
     final success = await _viewModel.changeServerAndUpdateState(newServer);
 
@@ -150,7 +217,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     );
   }
 
-  /// 저장 버튼 활성화 조건: 현재 입력된 서버 정보가 현재 연결된 서버와 다른지 확인
+  /// 저장 버튼 활성화 조건: 입력된 서버 정보가 현재 연결된 서버와 다르거나,
+  /// 같은 서버라도 지금 연결이 끊긴 상태라 재시도가 필요한 경우
   bool _hasActualChanges() {
     if (_serverAddressController.text.isEmpty ||
         _portController.text.isEmpty ||
@@ -159,7 +227,15 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       return false;
     }
 
-    return !_viewModel.isSameWithCurrentServer(_serverAddressController.text, _portController.text, _currentSslState);
+    final isSameServer = _viewModel.isSameWithCurrentServer(
+      _serverAddressController.text,
+      _portController.text,
+      _currentSslState,
+    );
+    if (!isSameServer) return true;
+
+    // 서버는 그대로인데 연결이 실패한 상태 — 재저장으로 재검증/TOFU를 트리거할 수 있어야 한다.
+    return _viewModel.nodeConnectionStatus == NodeConnectionStatus.failed;
   }
 
   @override
@@ -190,7 +266,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     selector: (_, viewModel) => viewModel.nodeConnectionStatus,
                     builder: (context, nodeConnectionStatus, _) {
                       return CoconutAppBar.build(
-                        title: t.electrum_server,
+                        title: t.settings_screen.electrum_server.title,
                         context: context,
                         isLeadingVisible: nodeConnectionStatus != NodeConnectionStatus.connecting,
                       );
@@ -319,7 +395,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           style:
               isSelected
                   ? CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)
-                  : CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                  : CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
         ),
       ),
     );
@@ -347,7 +423,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
               ShrinkAnimationButton(
                 key: i == 0 ? _defaultServerButtonKey : null,
                 defaultColor: context.coconutColors.background,
-                pressedColor: context.coconutColors.primaryText.withValues(alpha: 0.08),
+                pressedOverlayColor: context.coconutColors.primaryText,
+                pressedOverlayOpacity: 0.08,
                 borderRadius: 12,
                 onPressed: () {
                   _serverAddressController.text = serverList[i].host;
@@ -425,7 +502,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                               ),
                               if (serverConnectionStatus == NodeConnectionStatus.connecting) ...[
                                 CoconutLayout.spacing_100w,
-                                const CupertinoActivityIndicator(radius: 6),
+                                const InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 6),
                               ],
                               if (serverConnectionStatus == NodeConnectionStatus.connected ||
                                   serverConnectionStatus == NodeConnectionStatus.failed) ...[
@@ -437,8 +514,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                                     shape: BoxShape.circle,
                                     color:
                                         serverConnectionStatus == NodeConnectionStatus.connected
-                                            ? context.coconutColors.nodeConnected
-                                            : context.coconutColors.nodeFailed,
+                                            ? context.coconutColors.success
+                                            : context.coconutColors.danger,
                                   ),
                                 ),
                               ],
@@ -498,7 +575,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     margin: const EdgeInsets.only(bottom: 4),
                     decoration: BoxDecoration(
-                      border: Border.all(color: context.coconutColors.tertiaryText),
+                      border: Border.all(color: context.coconutColors.border),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                     ),
@@ -506,7 +583,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       children: [
                         Text(
                           _serverAddressController.text,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
                         ),
                       ],
                     ),
@@ -530,24 +607,13 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
                     textInputType: TextInputType.text,
                     backgroundColor: context.coconutColors.background,
-                    borderColor: context.coconutColors.inputBorder,
                     maxLines: 1,
-                    suffix:
-                        _serverAddressController.text.isNotEmpty
-                            ? IconButton(
-                              iconSize: 14,
-                              padding: EdgeInsets.zero,
-                              onPressed: () {
-                                setState(() {
-                                  _serverAddressController.text = '';
-                                });
-                              },
-                              icon: SvgPicture.asset(
-                                'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                              ),
-                            )
-                            : null,
+                    clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                    onClear: () {
+                      setState(() {
+                        _serverAddressController.text = '';
+                      });
+                    },
                     onChanged: (text) {
                       _onServerInputChanged(); // 입력 변경 감지
                       setState(() {
@@ -587,7 +653,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     margin: const EdgeInsets.only(bottom: 4),
                     decoration: BoxDecoration(
-                      border: Border.all(color: context.coconutColors.tertiaryText),
+                      border: Border.all(color: context.coconutColors.border),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                     ),
@@ -595,7 +661,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       children: [
                         Text(
                           _portController.text,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
                         ),
                       ],
                     ),
@@ -614,23 +680,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                     textInputType: TextInputType.number,
                     backgroundColor: context.coconutColors.background,
-                    borderColor: context.coconutColors.inputBorder,
-                    suffix:
-                        _portController.text.isNotEmpty
-                            ? IconButton(
-                              iconSize: 14,
-                              padding: EdgeInsets.zero,
-                              onPressed: () {
-                                setState(() {
-                                  _portController.text = '';
-                                });
-                              },
-                              icon: SvgPicture.asset(
-                                'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
-                              ),
-                            )
-                            : null,
+                    clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                    onClear: () {
+                      setState(() {
+                        _portController.text = '';
+                      });
+                    },
                     onChanged: (text) {
                       _onServerInputChanged(); // 입력 변경 감지
                       setState(() {
@@ -706,7 +761,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 34),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surfaceCard),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: context.coconutColors.surface),
       child: Row(
         children: [
           _buildAlertIcon(status),
@@ -726,21 +781,22 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     switch (status) {
       case NodeConnectionStatus.failed:
       case NodeConnectionStatus.networkMismatch:
+      case NodeConnectionStatus.untrustedCertificate:
         {
           return SvgPicture.asset(
-            CustomIcons.triangleWarning,
+            CustomWalletIcons.triangleWarning,
             height: 20,
             colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
           );
         }
       case NodeConnectionStatus.connecting:
         {
-          return const CupertinoActivityIndicator(radius: 10);
+          return const InlineLoadingIndicator(padding: EdgeInsets.zero, radius: 10);
         }
       case NodeConnectionStatus.connected:
         {
           return SvgPicture.asset(
-            'assets/svg/circle-check.svg',
+            CommonFormIconPath.circleCheck,
             height: 20,
             colorFilter: ColorFilter.mode(CoconutColors.colorPalette[3], BlendMode.srcIn),
           );
@@ -761,6 +817,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       case NodeConnectionStatus.networkMismatch:
         {
           return t.settings_screen.electrum_server.alert.network_mismatch;
+        }
+      case NodeConnectionStatus.untrustedCertificate:
+        {
+          return t.settings_screen.electrum_server.alert.untrusted_certificate;
         }
       case NodeConnectionStatus.connecting:
         {
@@ -816,7 +876,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       isActive:
                           hasActualChanges &&
                           nodeConnectionStatus != NodeConnectionStatus.connecting &&
-                          nodeConnectionStatus != NodeConnectionStatus.networkMismatch,
+                          nodeConnectionStatus != NodeConnectionStatus.networkMismatch &&
+                          nodeConnectionStatus != NodeConnectionStatus.untrustedCertificate,
                       onPressed: () {
                         _unFocus();
                         _onSave();

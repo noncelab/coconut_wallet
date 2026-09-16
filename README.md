@@ -107,10 +107,6 @@ This project uses [gomobile](https://pkg.go.dev/golang.org/x/mobile/cmd/gomobile
 Quick steps:
 
 ```bash
-# 0. Clone the required fork as a sibling directory (do NOT use upstream BitBoxSwiss)
-git clone https://github.com/4xvgal/bitbox02-api-go.git ../bitbox02-api-go
-cd ../bitbox02-api-go && git checkout fix/nil-guard-psbt && cd ../coconut_wallet
-
 # 1. Install Go (if not already installed)
 brew install go
 
@@ -121,7 +117,7 @@ echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.zshrc && source ~/.zshrc
 # 3. Initialize gomobile (re-run if you upgrade Go, Xcode, or Android NDK)
 gomobile init
 
-# 4. Sync Go dependencies
+# 4. Sync Go dependencies (fetches the pinned bitbox02-api-go fork automatically, no manual clone needed)
 cd go && go mod tidy && cd ..
 
 # 5. Build native bindings (16KB page-aligned for Android 15+)
@@ -177,7 +173,34 @@ make ready
 
 ### Environment Variables
 
-This project requires environment variables configured via `flutter_dotenv`. To obtain the env file for development, please contact us at [hello@noncelab.com](mailto:hello@noncelab.com).
+This project requires environment variables configured via `flutter_dotenv`. Create the file for the flavor you're building (`regtest.env` for local development, `mainnet.env` for mainnet builds) in the project root.
+
+`regtest.env` (used by the default `flutter run --flavor regtest` in Quick Start, no secrets required):
+
+```env
+NETWORK_TYPE=regtest
+```
+
+`mainnet.env` (only needed if you build with `--flavor mainnet`; the `FIREBASE_*` values below are only read when building with `--dart-define=USE_FIREBASE=true`, so they can be left blank for local builds):
+
+```env
+NETWORK_TYPE=mainnet
+
+# ------- Firebase (leave blank unless you have your own Firebase project) --------
+FIREBASE_MESSAGING_SENDER_ID=
+FIREBASE_PROJECT_ID=
+FIREBASE_STORAGE_BUCKET=
+
+# Android
+FIREBASE_API_KEY_ANDROID=
+FIREBASE_APP_ID_ANDROID=
+
+# iOS
+FIREBASE_API_KEY_IOS=
+FIREBASE_APP_ID_IOS=
+FIREBASE_IOS_BUNDLE_ID=
+# ------- Firebase End --------
+```
 
 ### Android Keystore Setup
 
@@ -249,9 +272,19 @@ Run → Edit Configurations... → Set Build Flavor to `regtest`
 
 > **⚠️ Mainnet Self-Build Disclaimer**: If you build and run the app from source on mainnet outside of official distribution channels (App Store / Google Play), we assume no responsibility for any loss of funds or errors that may occur. Please use `regtest` mode for development and testing.
 
+## Coconut Open Store (CCOS)
+
+Coconut Wallet is opening up to external contributors through **CCOS (Coconut Contribution Open Store)** — the path for proposing new features and extensions, not fixes or improvements to something that already exists. Every proposal is classified as 🟢 Green (open to propose freely), 🟡 Yellow (needs pre-review), or 🔴 Red (not accepted) before implementation starts.
+
+- [CCOS docs](./docs/ccos/README.md) — start here
+- [Feature boundary (Green/Yellow/Red)](./docs/ccos/getting_started/feature_boundary.md)
+- [Contributor quickstart](./docs/ccos/getting_started/contributor_quickstart.md)
+
 ## Contributing
 
 Please refer to [CONTRIBUTING.md](https://github.com/noncelab/coconut_wallet/blob/main/CONTRIBUTING.md) for details.
+
+If you're proposing a new feature or extension (not a fix or improvement to something that already exists), start with the [CCOS docs](./docs/ccos/README.md) instead.
 
 - [Issues](https://github.com/noncelab/coconut_wallet/issues) — Bug reports and feature requests
 - [Pull Requests](https://github.com/noncelab/coconut_wallet/pulls) — New features, documentation improvements, and bug fixes

@@ -47,7 +47,7 @@ run-mainnet-release:
 	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --release
 
 ios-regtest:
-	fvm flutter build ios --flavor regtest --profile
+	fvm flutter build ios --flavor regtest --release
 
 aos-release:
 	./android/scripts/build_android_release.sh
@@ -62,10 +62,10 @@ pre-deploy:
 # gomobile bind targets
 gomobile-android:
 	mkdir -p android/app/libs
-	cd go && gomobile bind -target=android -ldflags="-extldflags=-Wl,-z,max-page-size=16384" -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
+	cd go && gomobile bind -trimpath -target=android -ldflags="-extldflags=-Wl,-z,max-page-size=16384" -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
 
 gomobile-ios:
-	cd go && gomobile bind -target=ios -o ../ios/Runner/bitboxbridge.xcframework .
+	cd go && gomobile bind -trimpath -target=ios -o ../ios/Runner/bitboxbridge.xcframework .
 
 gomobile-bind: gomobile-android gomobile-ios
 

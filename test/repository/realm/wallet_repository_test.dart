@@ -35,7 +35,7 @@ void main() {
 
   tearDown(() {
     realmManager.reset();
-    realmManager.realm.close();
+    realmManager.dispose();
   });
 
   group('WalletRepository - 싱글시그', () {

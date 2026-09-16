@@ -1,4 +1,17 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -19,11 +32,12 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_c
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_scroll_rail.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/utxo_tier_theme_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_filter_bar.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_summary_chart.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_tag_chart.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -212,7 +226,11 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     _restoreUtxoId = utxo.utxoId;
     _restoreScrollOffset = _scrollController.hasClients ? _scrollController.offset : null;
 
-    await Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.id});
+    await Navigator.pushNamed(
+      context,
+      AppRouteNames.utxoDetail,
+      arguments: UtxoDetailRouteArgs(utxo: utxo, id: widget.id),
+    );
     if (mounted) {
       viewModel.refetchFromDB();
     }
@@ -321,6 +339,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                 onThemeSettingTap: () {
                   CommonBottomSheets.showCustomHeightBottomSheet(
                     context: context,
+                    screenName: AnalyticsScreenNames.utxoOverviewTierThemeSheet,
                     heightRatio: 0.6,
                     child: const UtxoTierThemeBottomSheet(),
                   );
@@ -529,11 +548,11 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
           _isByAmount
               ? (isLockedFilter
                   ? BottomActionButton(
-                    iconPath: 'assets/svg/unlock_simple.svg',
+                    iconPath: CommonSecurityIconPath.unlock,
                     label: t.utxo_list_screen.utxo_unlocked_button,
                     onTap: () => _updateSelectedUtxosLock(lock: false),
                     buttonLayout: BottomActionButtonLayout.horizontal,
-                    textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconDefault),
+                    textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconPrimary),
                   )
                   : Builder(
                     builder: (context) {
@@ -544,7 +563,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                         children: [
                           Expanded(
                             child: BottomActionButton(
-                              iconPath: 'assets/svg/send.svg',
+                              iconPath: FeatureTransactionIconPath.send,
                               label: t.send,
                               onTap: _onSendPressed,
                               enabled: !hasLockedUtxo,
@@ -555,11 +574,11 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: BottomActionButton(
-                              iconPath: 'assets/svg/lock_simple.svg',
+                              iconPath: CommonSecurityIconPath.lock,
                               label: t.utxo_list_screen.utxo_locked_button,
                               onTap: () => _updateSelectedUtxosLock(lock: true),
                               buttonLayout: BottomActionButtonLayout.horizontal,
-                              textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconDefault),
+                              textStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.iconPrimary),
                             ),
                           ),
                         ],
@@ -578,7 +597,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
       children: [
         Expanded(
           child: BottomActionButton(
-            iconPath: 'assets/svg/send.svg',
+            iconPath: FeatureTransactionIconPath.send,
             label: t.send,
             onTap: () {
               if (hasLockedUtxo) {
@@ -599,7 +618,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
         const SizedBox(width: 8),
         Expanded(
           child: BottomActionButton(
-            iconPath: 'assets/svg/tag.svg',
+            iconPath: FeatureTagIconPath.tag,
             label: t.utxo_list_screen.tag_apply,
             onTap: _showTagApplyBottomSheet,
             buttonLayout: BottomActionButtonLayout.horizontal,
@@ -618,12 +637,12 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     });
     Navigator.pushNamed(
       context,
-      '/send',
-      arguments: {
-        'walletId': widget.id,
-        'sendEntryPoint': SendEntryPoint.walletDetail,
-        'selectedUtxoList': selectedUtxos,
-      },
+      AppRouteNames.send,
+      arguments: SendRouteArgs(
+        id: widget.id,
+        sendEntryPoint: SendEntryPoint.walletDetail,
+        selectedUtxoList: selectedUtxos,
+      ),
     );
   }
 
@@ -636,11 +655,13 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     if (_selectedUtxoIds.isEmpty) return;
 
     final selectedUtxoIds = _selectedUtxoIds.toList();
-    final result = await showModalBottomSheet<TagApplyResult>(
+    final result = await CommonBottomSheets.showBottomSheet_100<TagApplyResult>(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.utxoOverviewTagApplySheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
+      child: TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
     );
 
     if (result == null) return;
@@ -680,7 +701,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
+          iconPath: CommonStateIconPath.circleInfo,
           text: t.utxo_list_screen.utxo_tag_updated,
         );
       }
@@ -711,7 +732,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/triangle-warning.svg',
+          iconPath: CommonStateIconPath.triangleWarning,
           text: toastText,
           level: CoconutToastLevel.warning,
         );
@@ -719,7 +740,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
+          iconPath: CommonStateIconPath.circleInfo,
           text: toastText,
         );
       }
@@ -759,12 +780,12 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     });
     Navigator.pushNamed(
       context,
-      '/send',
-      arguments: {
-        'walletId': widget.id,
-        'sendEntryPoint': SendEntryPoint.walletDetail,
-        'selectedUtxoList': selectedUtxos,
-      },
+      AppRouteNames.send,
+      arguments: SendRouteArgs(
+        id: widget.id,
+        sendEntryPoint: SendEntryPoint.walletDetail,
+        selectedUtxoList: selectedUtxos,
+      ),
     );
   }
 
