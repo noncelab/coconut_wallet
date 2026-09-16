@@ -412,7 +412,11 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        CupertinoSliverRefreshControl(onRefresh: viewModel.refresh, refreshTriggerPullDistance: 80),
+        CupertinoSliverRefreshControl(
+          onRefresh: viewModel.refresh,
+          refreshTriggerPullDistance: 80,
+          builder: (_, _, _, _, _) => const SizedBox.shrink(),
+        ),
         UtxoList(
           walletId: widget.id,
           currentUnit: _currentUnit,
@@ -483,7 +487,11 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
         CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            CupertinoSliverRefreshControl(onRefresh: viewModel.refresh, refreshTriggerPullDistance: 80),
+            CupertinoSliverRefreshControl(
+              onRefresh: viewModel.refresh,
+              refreshTriggerPullDistance: 80,
+              builder: (_, _, _, _, _) => const SizedBox.shrink(),
+            ),
             SliverToBoxAdapter(
               child: UtxoSummaryChart(
                 height: UtxoSummaryChart.estimatedHeight,
@@ -648,7 +656,11 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
     return CustomScrollView(
       clipBehavior: Clip.none,
       slivers: [
-        CupertinoSliverRefreshControl(onRefresh: viewModel.refresh, refreshTriggerPullDistance: 80),
+        CupertinoSliverRefreshControl(
+          onRefresh: viewModel.refresh,
+          refreshTriggerPullDistance: 80,
+          builder: (_, _, _, _, _) => const SizedBox.shrink(),
+        ),
         SliverToBoxAdapter(
           child: UtxoTagChart(
             height: UtxoSummaryChart.estimatedHeight,

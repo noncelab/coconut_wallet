@@ -80,6 +80,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                   : CupertinoSliverRefreshControl(
                                     onRefresh: _onRefresh,
                                     refreshTriggerPullDistance: 80,
+                                    builder: (_, _, _, _, _) => const SizedBox.shrink(),
                                   ),
                     ),
                     SliverToBoxAdapter(

@@ -136,6 +136,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                                   : CupertinoSliverRefreshControl(
                                     onRefresh: _viewModel.refresh,
                                     refreshTriggerPullDistance: 80,
+                                    builder: (_, _, _, _, _) => const SizedBox.shrink(),
                                   ),
                     ),
                     SliverPadding(
