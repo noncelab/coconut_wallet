@@ -286,7 +286,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                     children: [
                       Text(
                         t.wallet_home_screen.hot_wallet_create.advanced_settings,
-                        style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+                        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
                       ),
                       CoconutLayout.spacing_100h,
                       Text(
@@ -351,7 +351,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                           border: Border.all(
                                             color:
                                                 _mnemonicWordCount == wordCount
-                                                    ? context.coconutColors.primaryText
+                                                    ? context.coconutColors.secondaryText
                                                     : context.coconutColors.divider,
                                             width: 2,
                                           ),
@@ -359,14 +359,11 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                                         child: Text(
                                           t.wallet_home_screen.hot_wallet_create.word_count(count: wordCount),
                                           textAlign: TextAlign.center,
-                                          style:
-                                              _mnemonicWordCount == wordCount
-                                                  ? CoconutTypography.body1_16_Bold.setColor(
-                                                    context.coconutColors.primaryText,
-                                                  )
-                                                  : CoconutTypography.body2_14.setColor(
-                                                    context.coconutColors.primaryText,
-                                                  ),
+                                          style: CoconutTypography.body2_14.setColor(
+                                            _mnemonicWordCount == wordCount
+                                                ? context.coconutColors.primaryText
+                                                : context.coconutColors.secondaryText,
+                                          ),
                                         ),
                                       ),
                                     ),
