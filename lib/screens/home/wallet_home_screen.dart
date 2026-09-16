@@ -1170,51 +1170,45 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildWalletFilterTabs(List<WalletFilter> filters) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: MediaQuery(
-        data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
-        child: Row(
-          children: [
-            for (final filter in filters)
-              IntrinsicWidth(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 72),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => selectWalletFilter(filter, filters),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              _getWalletFilterLabel(filter),
-                              style:
-                                  _walletFilter == filter
-                                      ? CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText)
-                                      : CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
-                            ),
-                          ),
-                        ),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          height: _walletFilter == filter ? 2 : 1,
-                          color:
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
+      child: Row(
+        children: [
+          for (final filter in filters)
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => selectWalletFilter(filter, filters),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _getWalletFilterLabel(filter),
+                          style:
                               _walletFilter == filter
-                                  ? context.coconutColors.primaryText
-                                  : context.coconutColors.surfaceMuted,
+                                  ? CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primaryText)
+                                  : CoconutTypography.body3_12.setColor(context.coconutColors.mutedText),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      height: _walletFilter == filter ? 2 : 1,
+                      color:
+                          _walletFilter == filter
+                              ? context.coconutColors.primaryText
+                              : context.coconutColors.surfaceMuted,
+                    ),
+                  ],
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
