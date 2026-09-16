@@ -312,7 +312,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
               Padding(
                 padding: HomeAlertCard.contentPadding.copyWith(
                   right:
-                      target == null ? PositionedCardCloseButton.contentRightInset : HomeAlertCard.contentPadding.left,
+                      target == null ? PositionedCardArrowButton.contentRightInset : HomeAlertCard.contentPadding.left,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,8 +382,8 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                 ),
               ),
               if (target == null)
-                PositionedCardCloseButton(
-                  onPressed: viewModel.dismissTargetSuggestion,
+                PositionedCardArrowButton(
+                  onPressed: () => _openWalletInfo(showTargetSetting: true),
                   color: context.coconutColors.iconSecondary,
                 ),
               if (_playTargetFireworksOnEntry && isTargetReached)

@@ -235,14 +235,6 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
 
   void reloadWalletMetadata() => notifyListeners();
 
-  Future<void> dismissTargetSuggestion() async {
-    await _sharedPrefs.setInt(
-      SharedPrefKeys.walletTargetSuggestionHiddenUntil(_walletId),
-      DateTime.now().add(_targetSuggestionDismissDuration).millisecondsSinceEpoch,
-    );
-    if (!_isDisposed) notifyListeners();
-  }
-
   void _handleWalletChanged() {
     final index = _walletProvider.walletItemList.indexWhere((wallet) => wallet.id == _walletId);
     if (index == -1) return;

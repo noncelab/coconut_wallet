@@ -41,3 +41,45 @@ class PositionedCardCloseButton extends StatelessWidget {
     );
   }
 }
+
+class PositionedCardArrowButton extends StatelessWidget {
+  static const double top = PositionedCardCloseButton.top;
+  static const double right = PositionedCardCloseButton.right;
+  static const double iconSize = PositionedCardCloseButton.iconSize;
+  static const padding = PositionedCardCloseButton.padding;
+  static const double contentRightInset = PositionedCardCloseButton.contentRightInset;
+
+  const PositionedCardArrowButton({super.key, required this.onPressed, required this.color, this.positionTop = top});
+
+  final VoidCallback onPressed;
+  final Color color;
+  final double positionTop;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: positionTop,
+      right: right,
+      child: Semantics(
+        button: true,
+        label: t.wallet_signer_section.view_details,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: padding,
+            child: Transform.flip(
+              flipX: true,
+              child: SvgPicture.asset(
+                CommonNavigationIconPath.arrowBack,
+                width: iconSize,
+                height: iconSize,
+                colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
