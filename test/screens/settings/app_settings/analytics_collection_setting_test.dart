@@ -108,18 +108,18 @@ void main() {
     await tester.tap(find.byType(CoconutSwitch));
     await tester.pump();
     expect(service.calls, 1);
-    expect(
-      tester
-          .widget<IgnorePointer>(
-            find.ancestor(of: find.byType(CoconutSwitch), matching: find.byType(IgnorePointer)).first,
-          )
-          .ignoring,
-      isTrue,
-    );
+    await tester.tapAt(tester.getCenter(find.byType(CoconutSwitch)));
+    await tester.pump();
+    expect(service.calls, 1);
     service.completion.completeError(StateError('test failure'));
     await tester.pumpAndSettle();
     expect(find.text(t.settings_screen.analytics_collection_error), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(CoconutSwitch));
+    await tester.pumpAndSettle();
+    expect(service.calls, 2);
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox());
