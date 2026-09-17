@@ -89,7 +89,7 @@ List<SingleChildWidget> buildAppProviders({
       ChangeNotifierProvider<NodeProvider>(
         create: (context) {
           final walletProvider = context.read<WalletProvider>();
-          return NodeProvider(
+          final nodeProvider = NodeProvider(
             context.read<ElectrumServerProvider>().getElectrumServer(),
             networkType,
             context.read<ConnectivityProvider>(),
@@ -97,6 +97,10 @@ List<SingleChildWidget> buildAppProviders({
             walletProvider.walletItemListNotifier,
             isFirebaseAnalyticsUsed ? context.read<AnalyticsService>() : null,
           );
+          walletProvider.setWalletUnsubscriber((wallet) async {
+            await nodeProvider.unsubscribeWallet(wallet);
+          });
+          return nodeProvider;
         },
       ),
     ],

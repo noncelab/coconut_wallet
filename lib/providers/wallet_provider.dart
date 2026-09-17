@@ -57,6 +57,7 @@ class WalletProvider extends ChangeNotifier {
   late final PreferenceProvider _preferenceProvider;
 
   late final Future<void> Function(int) _saveWalletCount;
+  Future<void> Function(WalletItemBase)? _unsubscribeWallet;
 
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
   late final ValueNotifier<List<WalletItemBase>> walletItemListNotifier;
@@ -119,6 +120,10 @@ class WalletProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  void setWalletUnsubscriber(Future<void> Function(WalletItemBase) unsubscribeWallet) {
+    _unsubscribeWallet = unsubscribeWallet;
   }
 
   Map<int, Balance> fetchWalletBalanceMap() {
@@ -835,6 +840,10 @@ class WalletProvider extends ChangeNotifier {
       await TrezorDevice.lastConnected?.disconnect();
     }
 
+    if (walletToDelete != null && _unsubscribeWallet != null) {
+      await _unsubscribeWallet!(walletToDelete);
+    }
+
     if (hotWalletMetadata != null) {
       await _walletRepository.updateHotWalletLifecycleState(walletId, HotWalletLifecycleState.deleting);
       _setWalletItemList(await _fetchWalletListFromDB());
@@ -953,6 +962,9 @@ class WalletProvider extends ChangeNotifier {
 
   /// gap window 안에 있는 활성 사용 주소는 고정 개수(2*gapLimit)에 이미 포함되므로 중복 집계하지 않는다.
   int getWatchedAddressCount(int walletId) {
+    // 지갑 삭제가 완료되고 화면 전환이 끝나기 전 마지막 빌드에서 호출될 수 있다.
+    if (!_walletItemList.any((wallet) => wallet.id == walletId)) return 0;
+
     final (receiveUsedIndex, changeUsedIndex) = getUsedIndexes(walletId);
     return 2 * kSubscriptionGapLimit +
         _countActiveUsedAddressesOutsideGapWindow(walletId, false, receiveUsedIndex) +
