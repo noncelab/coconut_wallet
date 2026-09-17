@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
@@ -168,15 +170,15 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
       if (!mounted) return;
       final isConfirmed = await Navigator.pushNamed(
         context,
-        '/mnemonic-backup-confirm',
-        arguments: {
-          'mnemonic': widget.mnemonic,
-          'passphrase': widget.passphrase,
-          'descriptor': widget.descriptor,
-          'confirmPassphrase': confirmPassphrase,
-          'walletId': widget.walletId,
-          'continueToAppLockGuide': widget.continueToAppLockGuide,
-        },
+        AppRouteNames.mnemonicBackupConfirm,
+        arguments: MnemonicBackupConfirmRouteArgs(
+          mnemonic: widget.mnemonic,
+          passphrase: widget.passphrase,
+          descriptor: widget.descriptor,
+          confirmPassphrase: confirmPassphrase,
+          walletId: widget.walletId,
+          continueToAppLockGuide: widget.continueToAppLockGuide,
+        ),
       );
       if (!mounted || isConfirmed != true) return;
       Navigator.pop(context, true);

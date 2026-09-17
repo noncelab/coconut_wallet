@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -127,9 +129,9 @@ class _MnemonicBackupCompleteScreenState extends State<MnemonicBackupCompleteScr
       return;
     }
     Navigator.of(context).pushNamedAndRemoveUntil(
-      '/renewal-wallet-detail',
+      AppRouteNames.walletDetail,
       (route) => route.isFirst,
-      arguments: {'id': widget.walletId, 'entryPoint': kEntryPointWalletHome},
+      arguments: WalletDetailRouteArgs(id: widget.walletId!, entryPoint: kEntryPointWalletHome),
     );
   }
 }

@@ -66,7 +66,9 @@ class LabelStepLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24),
+      width: MediaQuery.sizeOf(context).width,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(width: 40, height: 40, child: icon),
           CoconutLayout.spacing_200h,

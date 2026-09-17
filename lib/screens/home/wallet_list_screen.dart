@@ -1201,8 +1201,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           onPressed: () {
             Navigator.pushNamed(
               context,
-              '/renewal-wallet-detail',
-              arguments: {'id': walletItem.id, 'entryPoint': kEntryPointWalletList},
+              AppRouteNames.walletDetail,
+              arguments: WalletDetailRouteArgs(id: walletItem.id, entryPoint: kEntryPointWalletList),
             );
           },
           rightWidget: SvgPicture.asset(

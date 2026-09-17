@@ -542,7 +542,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
       shouldRestore = false;
       Navigator.of(context).pushReplacement(
         PageRouteBuilder<void>(
-          settings: const RouteSettings(name: '/broadcasting'),
+          settings: const RouteSettings(name: AppRouteNames.broadcasting),
           transitionDuration: const Duration(milliseconds: 280),
           reverseTransitionDuration: const Duration(milliseconds: 200),
           pageBuilder:

@@ -1146,6 +1146,7 @@ wallet_info_screen:
   utxo: "UTXO"
   target: "目標"
   watched_addresses: "監視アドレス"
+  watched_addresses_count: "${count}件を監視中"
   target_quantity: "目標数量"
   target_progress_title: "目標に向かって積み上げています"
   target_exceeded_title: "おめでとうございます！目標を達成しました"

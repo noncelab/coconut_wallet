@@ -1646,8 +1646,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             onPressed: () {
               Navigator.pushNamed(
                 context,
-                '/renewal-wallet-detail',
-                arguments: {'id': walletItem.id, 'entryPoint': kEntryPointWalletHome},
+                AppRouteNames.walletDetail,
+                arguments: WalletDetailRouteArgs(id: walletItem.id, entryPoint: kEntryPointWalletHome),
               );
             },
             rightWidget: SvgPicture.asset(
@@ -1705,16 +1705,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
     await Navigator.pushNamed(
       context,
-      '/hot-wallet-mnemonic-backup-guide',
-      arguments: {
-        'walletId': walletItem.id,
-        'descriptor': walletItem.descriptor,
-        'secureStorageKey': metadata.secureStorageKey,
-        'enterPassphraseWhenSigning': metadata.enterPassphraseWhenSigning,
-        'showWalletCreatedIntro': false,
-        'continueToAppLockGuide': false,
-        'returnToPreviousOnExit': true,
-      },
+      AppRouteNames.hotWalletMnemonicBackupGuide,
+      arguments: HotWalletMnemonicBackupGuideRouteArgs(
+        walletId: walletItem.id,
+        descriptor: walletItem.descriptor,
+        secureStorageKey: metadata.secureStorageKey,
+        enterPassphraseWhenSigning: metadata.enterPassphraseWhenSigning,
+        showWalletCreatedIntro: false,
+        continueToAppLockGuide: false,
+        returnToPreviousOnExit: true,
+      ),
     );
   }
 
@@ -1736,13 +1736,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   void _openWalletInfo(WalletItemBase walletItem, {bool highlightMnemonicBackup = false}) {
     Navigator.pushNamed(
       context,
-      '/wallet-info',
-      arguments: {
-        'id': walletItem.id,
-        'walletType': walletItem.walletType,
-        'entryPoint': kEntryPointWalletHome,
-        'highlightMnemonicBackup': highlightMnemonicBackup,
-      },
+      AppRouteNames.walletInfo,
+      arguments: WalletInfoRouteArgs(
+        id: walletItem.id,
+        walletType: walletItem.walletType,
+        entryPoint: kEntryPointWalletHome,
+        highlightMnemonicBackup: highlightMnemonicBackup,
+      ),
     );
   }
 

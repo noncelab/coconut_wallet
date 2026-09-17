@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:ui';
 import 'dart:async';
 import 'dart:convert';
@@ -1304,17 +1306,17 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       setState(() => _isCheckingDuplicate = false);
       if (context.read<AuthProvider>().isAuthEnabled) {
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/renewal-wallet-detail',
+          AppRouteNames.walletDetail,
           (route) => route.isFirst,
-          arguments: {'id': restoredWallet.id, 'entryPoint': kEntryPointWalletHome},
+          arguments: WalletDetailRouteArgs(id: restoredWallet.id, entryPoint: kEntryPointWalletHome),
         );
       } else {
         await showHotWalletAppLockGuideBottomSheet(context);
         if (!mounted) return;
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/renewal-wallet-detail',
+          AppRouteNames.walletDetail,
           (route) => route.isFirst,
-          arguments: {'id': restoredWallet.id, 'entryPoint': kEntryPointWalletHome},
+          arguments: WalletDetailRouteArgs(id: restoredWallet.id, entryPoint: kEntryPointWalletHome),
         );
       }
     } catch (_) {

@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -227,7 +229,11 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
     _restoreUtxoId = utxo.utxoId;
     _restoreScrollOffset = _contentScrollController?.hasClients == true ? _contentScrollController!.offset : null;
 
-    await Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.id});
+    await Navigator.pushNamed(
+      context,
+      AppRouteNames.utxoDetail,
+      arguments: UtxoDetailRouteArgs(utxo: utxo, id: widget.id),
+    );
     if (mounted) {
       viewModel.refetchFromDB();
     }
@@ -835,12 +841,12 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
     });
     Navigator.pushNamed(
       context,
-      '/send',
-      arguments: {
-        'walletId': widget.id,
-        'sendEntryPoint': SendEntryPoint.renewalWalletDetail,
-        'selectedUtxoList': selectedUtxos,
-      },
+      AppRouteNames.send,
+      arguments: SendRouteArgs(
+        id: widget.id,
+        sendEntryPoint: SendEntryPoint.renewalWalletDetail,
+        selectedUtxoList: selectedUtxos,
+      ),
     );
   }
 
@@ -962,12 +968,12 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
     });
     Navigator.pushNamed(
       context,
-      '/send',
-      arguments: {
-        'walletId': widget.id,
-        'sendEntryPoint': SendEntryPoint.renewalWalletDetail,
-        'selectedUtxoList': selectedUtxos,
-      },
+      AppRouteNames.send,
+      arguments: SendRouteArgs(
+        id: widget.id,
+        sendEntryPoint: SendEntryPoint.renewalWalletDetail,
+        selectedUtxoList: selectedUtxos,
+      ),
     );
   }
 

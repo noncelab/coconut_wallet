@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:typed_data';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
@@ -508,15 +510,15 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
 
       final isBackupConfirmed = await Navigator.pushNamed(
         context,
-        '/hot-wallet-mnemonic-backup',
-        arguments: {
-          'mnemonic': mnemonic,
-          'passphrase': passphrase,
-          'descriptor': widget.descriptor,
-          'enterPassphraseWhenSigning': widget.enterPassphraseWhenSigning,
-          'walletId': widget.walletId,
-          'continueToAppLockGuide': widget.continueToAppLockGuide,
-        },
+        AppRouteNames.hotWalletMnemonicBackup,
+        arguments: HotWalletMnemonicBackupRouteArgs(
+          mnemonic: mnemonic,
+          passphrase: passphrase,
+          descriptor: widget.descriptor,
+          enterPassphraseWhenSigning: widget.enterPassphraseWhenSigning,
+          walletId: widget.walletId,
+          continueToAppLockGuide: widget.continueToAppLockGuide,
+        ),
       );
       if (!mounted || isBackupConfirmed != true) return;
       if (!widget.continueToAppLockGuide) {
@@ -607,9 +609,9 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
       return;
     }
     Navigator.of(context).pushNamedAndRemoveUntil(
-      '/renewal-wallet-detail',
+      AppRouteNames.walletDetail,
       (route) => route.isFirst,
-      arguments: {'id': widget.walletId, 'entryPoint': kEntryPointWalletHome},
+      arguments: WalletDetailRouteArgs(id: widget.walletId, entryPoint: kEntryPointWalletHome),
     );
   }
 }

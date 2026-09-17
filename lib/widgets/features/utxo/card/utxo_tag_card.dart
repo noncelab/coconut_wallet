@@ -149,7 +149,7 @@ class UtxoTagItem extends StatelessWidget {
         border: Border.all(color: borderColor, width: 1),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 32,

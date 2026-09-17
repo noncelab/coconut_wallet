@@ -582,8 +582,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           if (mounted) {
             Navigator.pushReplacementNamed(
               context,
-              '/renewal-wallet-detail',
-              arguments: {'id': addResult.walletId, 'entryPoint': kEntryPointWalletHome},
+              AppRouteNames.walletDetail,
+              arguments: WalletDetailRouteArgs(id: addResult.walletId!, entryPoint: kEntryPointWalletHome),
             );
           }
           break;

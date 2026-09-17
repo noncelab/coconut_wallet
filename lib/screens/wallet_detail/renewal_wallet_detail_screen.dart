@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -498,7 +500,12 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                       label: t.wallet_detail_screen.utxo_overview,
                       description: t.wallet_detail_screen.utxo_overview_description,
                       isEnabled: hasUtxo,
-                      onTap: () => Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': widget.id}),
+                      onTap:
+                          () => Navigator.pushNamed(
+                            context,
+                            AppRouteNames.utxoOverview,
+                            arguments: UtxoOverviewRouteArgs(id: widget.id),
+                          ),
                     ),
                   ),
                   Expanded(
@@ -507,7 +514,12 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                       label: t.wallet_detail_screen.utxo_organize,
                       description: t.wallet_detail_screen.utxo_organize_description,
                       isEnabled: hasUtxo,
-                      onTap: () => Navigator.pushNamed(context, '/utxo-organizer', arguments: {'id': widget.id}),
+                      onTap:
+                          () => Navigator.pushNamed(
+                            context,
+                            AppRouteNames.utxoOrganizer,
+                            arguments: UtxoOrganizerRouteArgs(id: widget.id),
+                          ),
                     ),
                   ),
                 ],
@@ -541,7 +553,12 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                         child: BottomActionButton(
                           iconPath: FeatureTransactionIconPath.receivePlane,
                           label: t.receive,
-                          onTap: () => Navigator.pushNamed(context, '/receive-address', arguments: {'id': widget.id}),
+                          onTap:
+                              () => Navigator.pushNamed(
+                                context,
+                                AppRouteNames.receiveAddress,
+                                arguments: ReceiveAddressRouteArgs(id: widget.id),
+                              ),
                           buttonLayout: BottomActionButtonLayout.horizontal,
                           textStyle: CoconutTypography.body2_14_Bold,
                         ),
@@ -558,11 +575,11 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                           onTap:
                               () => Navigator.pushNamed(
                                 context,
-                                '/send',
-                                arguments: {
-                                  'walletId': widget.id,
-                                  'sendEntryPoint': SendEntryPoint.renewalWalletDetail,
-                                },
+                                AppRouteNames.send,
+                                arguments: SendRouteArgs(
+                                  id: widget.id,
+                                  sendEntryPoint: SendEntryPoint.renewalWalletDetail,
+                                ),
                               ),
                           buttonLayout: BottomActionButtonLayout.horizontal,
                           textStyle: CoconutTypography.body2_14_Bold,
@@ -599,25 +616,29 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
   void _openTransaction(TransactionRecord transaction) {
     Navigator.pushNamed(
       context,
-      '/transaction-detail',
-      arguments: {'id': widget.id, 'txHash': transaction.transactionHash},
+      AppRouteNames.transactionDetail,
+      arguments: TransactionDetailRouteArgs(id: widget.id, txHash: transaction.transactionHash),
     );
   }
 
   void _openTransactionList() {
-    Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': widget.id, 'entryPoint': widget.entryPoint});
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.transactionList,
+      arguments: WalletDetailRouteArgs(id: widget.id, entryPoint: widget.entryPoint),
+    );
   }
 
   Future<void> _openWalletInfo({bool showTargetSetting = false}) async {
     await Navigator.pushNamed(
       context,
-      '/wallet-info',
-      arguments: {
-        'id': widget.id,
-        'walletType': _viewModel.wallet.walletType,
-        'entryPoint': widget.entryPoint,
-        'showTargetSetting': showTargetSetting,
-      },
+      AppRouteNames.walletInfo,
+      arguments: WalletInfoRouteArgs(
+        id: widget.id,
+        walletType: _viewModel.wallet.walletType,
+        entryPoint: widget.entryPoint,
+        showTargetSetting: showTargetSetting,
+      ),
     );
     if (mounted) _viewModel.reloadWalletMetadata();
   }
@@ -625,13 +646,13 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
   void _openMnemonicBackup() {
     Navigator.pushNamed(
       context,
-      '/wallet-info',
-      arguments: {
-        'id': widget.id,
-        'walletType': _viewModel.wallet.walletType,
-        'entryPoint': widget.entryPoint,
-        'highlightMnemonicBackup': true,
-      },
+      AppRouteNames.walletInfo,
+      arguments: WalletInfoRouteArgs(
+        id: widget.id,
+        walletType: _viewModel.wallet.walletType,
+        entryPoint: widget.entryPoint,
+        highlightMnemonicBackup: true,
+      ),
     );
   }
 

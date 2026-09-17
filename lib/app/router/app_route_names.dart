@@ -32,6 +32,7 @@ class AppRouteNames {
   static const String splitUtxo = '/split-utxo';
   static const String taprootWalletBackupData = '/taproot-wallet-backup-data';
   static const String transactionDetail = '/transaction-detail';
+  static const String transactionList = '/transaction-list';
   static const String transactionDraft = '/transaction-draft';
   static const String transactionFeeBumping = '/transaction-fee-bumping';
   static const String trezorBleConnect = '/trezor-ble-connect';

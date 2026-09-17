@@ -1096,6 +1096,7 @@ wallet_info_screen:
   utxo: "UTXO"
   target: "Ziel"
   watched_addresses: "Beobachtete Adressen"
+  watched_addresses_count: "${count} werden beobachtet"
   target_quantity: "Zielmenge"
   target_progress_title: "Auf dem Weg zu Ihrem Ziel"
   target_exceeded_title: "Glückwunsch! Sie haben Ihr Ziel erreicht"

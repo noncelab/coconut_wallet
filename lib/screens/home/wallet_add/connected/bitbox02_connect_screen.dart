@@ -89,8 +89,8 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
       context.read<AnalyticsService>().logWalletAddCompleted(widget.importSource);
       Navigator.pushReplacementNamed(
         context,
-        '/renewal-wallet-detail',
-        arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
+        AppRouteNames.walletDetail,
+        arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
       );
       return;
     }

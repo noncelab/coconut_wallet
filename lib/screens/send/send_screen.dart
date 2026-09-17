@@ -268,28 +268,28 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               navigator.pop(); // WalletDetailScreen 닫기 → RenewalWalletDetailScreen으로 복귀
             }
             navigator.pushNamed(
-              '/wallet-info',
-              arguments: {
-                'id': walletId,
-                'walletType': _viewModel.selectedWalletItem?.walletType ?? WalletType.singleSignature,
-                'entryPoint': kEntryPointWalletHome,
-                'showMfpInput': true,
-              },
+              AppRouteNames.walletInfo,
+              arguments: WalletInfoRouteArgs(
+                id: walletId,
+                walletType: _viewModel.selectedWalletItem?.walletType ?? WalletType.singleSignature,
+                entryPoint: kEntryPointWalletHome,
+                showMfpInput: true,
+              ),
             );
           } else {
             navigator.pop(); // SendScreen 닫기
             navigator.pushNamed(
-              '/renewal-wallet-detail',
-              arguments: {'id': walletId, 'entryPoint': kEntryPointWalletHome},
+              AppRouteNames.walletDetail,
+              arguments: WalletDetailRouteArgs(id: walletId, entryPoint: kEntryPointWalletHome),
             );
             navigator.pushNamed(
-              '/wallet-info',
-              arguments: {
-                'id': walletId,
-                'walletType': _viewModel.selectedWalletItem?.walletType ?? WalletType.singleSignature,
-                'entryPoint': kEntryPointWalletHome,
-                'showMfpInput': true,
-              },
+              AppRouteNames.walletInfo,
+              arguments: WalletInfoRouteArgs(
+                id: walletId,
+                walletType: _viewModel.selectedWalletItem?.walletType ?? WalletType.singleSignature,
+                entryPoint: kEntryPointWalletHome,
+                showMfpInput: true,
+              ),
             );
           }
         });
@@ -860,7 +860,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       if (!mounted) return;
       await Navigator.of(context).push(
         PageRouteBuilder<void>(
-          settings: const RouteSettings(name: '/broadcasting'),
+          settings: const RouteSettings(name: AppRouteNames.broadcasting),
           transitionDuration: const Duration(milliseconds: 280),
           reverseTransitionDuration: const Duration(milliseconds: 200),
           pageBuilder:
@@ -1121,7 +1121,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     _startHotWalletSigning();
                     return;
                   }
-                  Navigator.pushNamed(context, '/send-confirm', arguments: {"currentUnit": _viewModel.currentUnit});
+                  Navigator.pushNamed(
+                    context,
+                    AppRouteNames.sendConfirm,
+                    arguments: SendConfirmRouteArgs(currentUnit: _viewModel.currentUnit),
+                  );
                 }
               },
               isActive:

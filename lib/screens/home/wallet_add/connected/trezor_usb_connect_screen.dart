@@ -153,8 +153,8 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
         context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
         Navigator.pushReplacementNamed(
           context,
-          '/renewal-wallet-detail',
-          arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
+          AppRouteNames.walletDetail,
+          arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
         );
         return;
       }

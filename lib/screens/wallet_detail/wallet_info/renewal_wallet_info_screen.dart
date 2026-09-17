@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
@@ -49,7 +51,7 @@ import 'package:lottie/lottie.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
-const String kEntryPointWalletList = '/wallet-list';
+const String kEntryPointWalletList = AppRouteNames.walletList;
 const String kEntryPointWalletHome = '/wallet-home';
 
 class RenewalWalletInfoScreen extends StatefulWidget {
@@ -198,6 +200,7 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                   backgroundColor: context.coconutColors.background,
                   appBar: CoconutAppBar.build(title: '', context: context),
                   body: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
@@ -259,15 +262,6 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                               },
                             ),
                           ),
-                        // _WalletInfoStatsSection(
-                        //   walletId: widget.id,
-                        //   transactionCount: viewModel.transactionCount,
-                        //   utxoCount: viewModel.utxoCount,
-                        //   balanceSats: viewModel.walletBalance.total,
-                        //   currentUnit: context.read<PreferenceProvider>().currentUnit,
-                        //   targetSats: viewModel.targetSats,
-                        //   onEditTargetTap: () => _showTargetSettingBottomSheet(context, viewModel),
-                        // ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Column(
@@ -285,10 +279,17 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                                 ),
                               _walletInfoMenu(
                                 title: t.wallet_info_screen.all_addresses,
-                                subWidget: null, // TODO: 모니터링 개수 표시하기
+                                subWidget: Text(
+                                  t.wallet_info_screen.watched_addresses_count(count: viewModel.watchedAddressCount),
+                                  style: _menuSubTextStyle,
+                                ),
                                 onPressed: () {
                                   _removeTooltip();
-                                  Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRouteNames.addressList,
+                                    arguments: AddressListRouteArgs(id: widget.id),
+                                  );
                                 },
                               ),
                               if (widget.walletType == WalletType.singleSignature) ...[
@@ -312,8 +313,11 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
 
                                     Navigator.pushNamed(
                                       context,
-                                      '/taproot-wallet-backup-data',
-                                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
+                                      AppRouteNames.taprootWalletBackupData,
+                                      arguments: TaprootWalletBackupDataRouteArgs(
+                                        id: widget.id,
+                                        walletName: viewModel.walletName,
+                                      ),
                                     );
                                   },
                                 ),
@@ -326,8 +330,11 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
 
                                     Navigator.pushNamed(
                                       context,
-                                      '/wallet-backup-data',
-                                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
+                                      AppRouteNames.walletBackupData,
+                                      arguments: WalletBackupDataRouteArgs(
+                                        id: widget.id,
+                                        walletName: viewModel.walletName,
+                                      ),
                                     );
                                   },
                                 ),
@@ -364,13 +371,17 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                                 ),
                                 onPressed: () {
                                   _removeTooltip();
-                                  Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRouteNames.utxoTag,
+                                    arguments: UtxoTagCrudRouteArgs(id: widget.id),
+                                  );
                                 },
                               ),
                               _walletInfoMenu(
                                 title: t.wallet_info_screen.memo_management,
                                 onPressed: () {
-                                  // TODO: 메모 관리 화면 연결하기
+                                  _showLabelsManagementScreen(context, viewModel);
                                 },
                               ),
                               if (viewModel.walletItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false)
@@ -392,7 +403,12 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                               _walletInfoMenu(
                                 title: t.wallet_info_screen.resync_label,
                                 onPressed: () {
-                                  // TODO: 지갑 재동기화 화면 연결하기
+                                  _removeTooltip();
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRouteNames.walletResync,
+                                    arguments: WalletResyncRouteArgs(id: widget.id),
+                                  );
                                 },
                               ),
                               _walletInfoMenu(
@@ -492,6 +508,15 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
       if (!mounted || !context.mounted) return;
       _showTargetSettingBottomSheet(context, viewModel);
     });
+  }
+
+  void _showLabelsManagementScreen(BuildContext context, WalletInfoViewModel viewModel) {
+    _removeTooltip();
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.labelManagement,
+      arguments: LabelManagementRouteArgs(id: viewModel.walletId),
+    );
   }
 
   String _getTooltipText(WalletInfoViewModel viewModel) {
@@ -751,16 +776,16 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
 
     await Navigator.pushNamed(
       context,
-      '/hot-wallet-mnemonic-backup-guide',
-      arguments: {
-        'walletId': widget.id,
-        'descriptor': viewModel.walletItemBase.descriptor,
-        'secureStorageKey': metadata.secureStorageKey,
-        'enterPassphraseWhenSigning': metadata.enterPassphraseWhenSigning,
-        'showWalletCreatedIntro': false,
-        'continueToAppLockGuide': false,
-        'returnToPreviousOnExit': true,
-      },
+      AppRouteNames.hotWalletMnemonicBackupGuide,
+      arguments: HotWalletMnemonicBackupGuideRouteArgs(
+        walletId: widget.id,
+        descriptor: viewModel.walletItemBase.descriptor,
+        secureStorageKey: metadata.secureStorageKey,
+        enterPassphraseWhenSigning: metadata.enterPassphraseWhenSigning,
+        showWalletCreatedIntro: false,
+        continueToAppLockGuide: false,
+        returnToPreviousOnExit: true,
+      ),
     );
   }
 
@@ -778,8 +803,11 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
       try {
         await Navigator.pushNamed(
           context,
-          '/hot-wallet-passphrase-check',
-          arguments: {'mnemonic': plaintext.mnemonic, 'descriptor': viewModel.walletItemBase.descriptor},
+          AppRouteNames.hotWalletPassphraseCheck,
+          arguments: HotWalletPassphraseCheckRouteArgs(
+            mnemonic: plaintext.mnemonic,
+            descriptor: viewModel.walletItemBase.descriptor,
+          ),
         );
       } finally {
         plaintext.wipe();
@@ -838,297 +866,5 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
 
   TextStyle get _menuSubTextStyle => CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText);
 
-  String _ellipsisAfter(String value, int maxLength) {
-    if (value.length <= maxLength) return value;
-    return '${value.substring(0, maxLength)}...';
-  }
-
   Widget _sectionDivider() => Container(height: 16, color: context.coconutColors.divider);
-}
-
-/// 트랜잭션 수, UTXO 수, 목표 수량 통계 카드
-class _WalletInfoStatsSection extends StatelessWidget {
-  final int walletId;
-  final int transactionCount;
-  final int utxoCount;
-  final int balanceSats;
-  final BitcoinUnit currentUnit;
-  final int? targetSats;
-  final VoidCallback onEditTargetTap;
-
-  const _WalletInfoStatsSection({
-    required this.walletId,
-    required this.transactionCount,
-    required this.utxoCount,
-    required this.balanceSats,
-    required this.currentUnit,
-    this.targetSats,
-    required this.onEditTargetTap,
-  });
-
-  static const int _maxBtcSats = 2100000000000000; // 21M BTC
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(child: _StatCard(label: t.wallet_info_screen.transaction, value: '$transactionCount')),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ShrinkAnimationButton(
-                  defaultColor: colors.surface,
-                  pressedOverlayColor: colors.surfacePressOverlay,
-                  pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
-                  borderRadius: 24,
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
-                  },
-                  child: _StatCard(label: t.wallet_info_screen.utxo, value: '$utxoCount', transparentBackground: true),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ShrinkAnimationButton(
-            defaultColor: colors.surface,
-            pressedOverlayColor: colors.surfacePressOverlay,
-            pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
-            borderRadius: 24,
-            onPressed: onEditTargetTap,
-            child: _TargetQuantityCard(
-              balanceSats: balanceSats,
-              currentUnit: currentUnit,
-              targetSats: targetSats,
-              maxSats: _maxBtcSats,
-              transparentBackground: true,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool transparentBackground;
-
-  const _StatCard({required this.label, required this.value, this.transparentBackground = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 16, 20),
-      decoration: BoxDecoration(
-        color: transparentBackground ? Colors.transparent : context.coconutColors.surface,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(label, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText)),
-              const SizedBox(width: 4),
-              transparentBackground
-                  ? Icon(Icons.keyboard_arrow_right_rounded, size: 20, color: context.coconutColors.iconSecondary)
-                  : const SizedBox.shrink(),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              value,
-              style: CoconutTypography.heading3_21_NumberBold.setColor(context.coconutColors.primaryText),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TargetQuantityCard extends StatelessWidget {
-  final int balanceSats;
-  final BitcoinUnit currentUnit;
-  final int? targetSats;
-  final int maxSats;
-  final bool transparentBackground;
-
-  const _TargetQuantityCard({
-    required this.balanceSats,
-    required this.currentUnit,
-    this.targetSats,
-    required this.maxSats,
-    this.transparentBackground = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveTarget = targetSats ?? maxSats;
-    final progress = effectiveTarget > 0 ? (balanceSats / effectiveTarget).clamp(0.0, 1.0) : 0.0;
-    final percent = _formatProgressPercent(progress);
-    final isTargetReached = targetSats != null && progress >= 1.0;
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          decoration: BoxDecoration(
-            color: transparentBackground ? Colors.transparent : context.coconutColors.surfaceInfoChip,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    t.wallet_info_screen.target_quantity,
-                    style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.secondaryText),
-                  ),
-                  const SizedBox(width: 4),
-                  SvgPicture.asset(
-                    CommonActionIconPath.editOutlined,
-                    width: 12,
-                    height: 12,
-                    colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              targetSats == null
-                  ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Stay humble, stack sats!',
-                        style: CoconutTypography.heading4_18_NumberBold.setColor(context.coconutColors.secondaryText),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        t.wallet_info_screen.target_not_set_secondary,
-                        style: CoconutTypography.body3_12.setColor(context.coconutColors.tertiaryText),
-                      ),
-                    ],
-                  )
-                  : _buildTargetProgressText(
-                    context: context,
-                    percent: percent,
-                    amountText: currentUnit.displayBitcoinAmount(effectiveTarget, withUnit: false),
-                    unitSymbol: currentUnit.symbol,
-                    isPrefixUnit: currentUnit.isPrefixSymbol,
-                  ),
-              if (targetSats != null) ...[
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: context.coconutColors.pageIndicatorActive,
-                      inactiveTrackColor: context.coconutColors.pageIndicatorInactive,
-                      overlayShape: SliderComponentShape.noOverlay,
-                      trackHeight: 6,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 0),
-                    ),
-                    child: IgnorePointer(child: Slider(value: progress, onChanged: (_) {})),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ],
-          ),
-        ),
-        if (isTargetReached)
-          Positioned(
-            top: -10,
-            right: 10,
-            child: IgnorePointer(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(topRight: Radius.circular(24)),
-                // 목표 수량 달성 축하 효과는 의도된 디자인이라 테마 색상을 적용하지 않음
-                child: Lottie.asset(
-                  CommonLottiePath.fireworks,
-                  width: 140,
-                  height: 120,
-                  fit: BoxFit.contain,
-                  repeat: true,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildTargetProgressText({
-    required BuildContext context,
-    required String percent,
-    required String amountText,
-    required String unitSymbol,
-    required bool isPrefixUnit,
-  }) {
-    final whiteStyle = CoconutTypography.heading3_21_Number.setColor(context.coconutColors.primaryText);
-    final grayStyle = CoconutTypography.body1_16_Number.setColor(context.coconutColors.secondaryText);
-
-    return RichText(
-      text: TextSpan(
-        style: whiteStyle,
-        children: [
-          TextSpan(text: percent, style: whiteStyle),
-          TextSpan(text: '%', style: grayStyle),
-          TextSpan(text: ' / ', style: whiteStyle),
-          if (isPrefixUnit) ...[
-            TextSpan(text: '$unitSymbol ', style: grayStyle),
-            TextSpan(text: amountText, style: whiteStyle),
-          ] else ...[
-            TextSpan(text: amountText, style: whiteStyle),
-            TextSpan(text: ' $unitSymbol', style: grayStyle),
-          ],
-        ],
-      ),
-    );
-  }
-
-  String _formatProgressPercent(double progress) {
-    final percentValue = progress * 100;
-    if (percentValue == percentValue.truncateToDouble()) {
-      return percentValue.toStringAsFixed(0);
-    }
-
-    var decimalPlaces = 1;
-    var formatted = percentValue.toStringAsFixed(decimalPlaces);
-
-    while (decimalPlaces < 16 && _countNonZeroFractionDigits(formatted) < 2) {
-      decimalPlaces++;
-      formatted = percentValue.toStringAsFixed(decimalPlaces);
-    }
-
-    return formatted;
-  }
-
-  int _countNonZeroFractionDigits(String value) {
-    final dotIndex = value.indexOf('.');
-    if (dotIndex < 0 || dotIndex == value.length - 1) {
-      return 0;
-    }
-
-    var count = 0;
-    for (final char in value.substring(dotIndex + 1).split('')) {
-      if (char != '0') {
-        count++;
-      }
-    }
-
-    return count;
-  }
 }

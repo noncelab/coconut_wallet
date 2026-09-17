@@ -615,8 +615,8 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                 if (isSuccess && context.mounted) {
                   await Navigator.pushNamed(
                     context,
-                    '/send-confirm',
-                    arguments: {"currentUnit": viewModel.currentUnit},
+                    AppRouteNames.sendConfirm,
+                    arguments: SendConfirmRouteArgs(currentUnit: viewModel.currentUnit),
                   );
                   if (context.mounted && widget.isActive) {
                     viewModel.revalidateSelectedUtxo();

@@ -36,6 +36,7 @@ import 'package:coconut_wallet/screens/settings/tools/transaction_draft_screen.d
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_search_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
@@ -90,6 +91,11 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(
           context,
           (args) => WalletDetailScreen(id: args.id, entryPoint: args.entryPoint),
+        ),
+    AppRouteNames.transactionList:
+        (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(
+          context,
+          (args) => TransactionListScreen(id: args.id, entryPoint: args.entryPoint),
         ),
     AppRouteNames.walletDetail:
         (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(

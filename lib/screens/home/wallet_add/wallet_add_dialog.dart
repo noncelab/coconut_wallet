@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -218,12 +220,12 @@ class WalletAddDialog extends StatelessWidget {
           _WalletActionButton(
             iconPath: FeatureWalletIconPath.walletAddHot,
             title: t.wallet_home_screen.hot_wallet_add.create.title,
-            onPressed: () => _openHotWalletScreen(context, '/hot-wallet-create'),
+            onPressed: () => _openHotWalletScreen(context, AppRouteNames.hotWalletCreate),
           ),
           _WalletActionButton(
             iconPath: FeatureWalletIconPath.walletImportHot,
             title: t.wallet_home_screen.hot_wallet_add.restore.title,
-            onPressed: () => _openHotWalletScreen(context, '/hot-wallet-restore'),
+            onPressed: () => _openHotWalletScreen(context, AppRouteNames.hotWalletRestore),
           ),
         ],
       },
@@ -277,16 +279,22 @@ class WalletAddDialog extends StatelessWidget {
 
     switch (walletImportSource) {
       case WalletImportSource.bitbox02:
-        navigator.pushNamed('/bitbox02-connect', arguments: {'walletImportSource': WalletImportSource.bitbox02});
+        navigator.pushNamed(
+          AppRouteNames.bitbox02Connect,
+          arguments: const BitBox02ConnectRouteArgs(importSource: WalletImportSource.bitbox02),
+        );
         return;
       case WalletImportSource.trezor:
         navigator.pushNamed(
-          Platform.isAndroid ? '/trezor-transport-select' : '/trezor-ble-connect',
-          arguments: const <String, dynamic>{},
+          Platform.isAndroid ? AppRouteNames.trezorTransportSelect : AppRouteNames.trezorBleConnect,
+          arguments: Platform.isAndroid ? const TrezorTransportSelectRouteArgs() : const TrezorBleConnectRouteArgs(),
         );
         return;
       default:
-        navigator.pushNamed('/wallet-add-scanner', arguments: {'walletImportSource': walletImportSource});
+        navigator.pushNamed(
+          AppRouteNames.walletAddScanner,
+          arguments: WalletAddScannerRouteArgs(walletImportSource: walletImportSource),
+        );
         return;
     }
   }

@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
@@ -657,14 +659,14 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
       _passphraseConfirmController.clear();
       await Navigator.pushReplacementNamed(
         context,
-        '/hot-wallet-mnemonic-backup-guide',
-        arguments: {
-          'walletId': result.walletId,
-          'descriptor': result.descriptor,
-          'mnemonic': result.mnemonic,
-          'passphrase': result.passphrase,
-          'enterPassphraseWhenSigning': result.enterPassphraseWhenSigning,
-        },
+        AppRouteNames.hotWalletMnemonicBackupGuide,
+        arguments: HotWalletMnemonicBackupGuideRouteArgs(
+          walletId: result.walletId,
+          descriptor: result.descriptor,
+          mnemonic: result.mnemonic,
+          passphrase: result.passphrase,
+          enterPassphraseWhenSigning: result.enterPassphraseWhenSigning,
+        ),
       );
     } catch (error, stackTrace) {
       Logger.error('Hot wallet creation failed: $error\n$stackTrace');

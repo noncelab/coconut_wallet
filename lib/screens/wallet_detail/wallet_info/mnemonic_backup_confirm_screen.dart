@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -348,8 +350,11 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
       if (!mounted) return;
       final isComplete = await Navigator.pushNamed(
         context,
-        '/mnemonic-backup-complete',
-        arguments: {'walletId': widget.walletId, 'continueToAppLockGuide': widget.continueToAppLockGuide},
+        AppRouteNames.mnemonicBackupComplete,
+        arguments: MnemonicBackupCompleteRouteArgs(
+          walletId: widget.walletId,
+          continueToAppLockGuide: widget.continueToAppLockGuide,
+        ),
       );
       if (!mounted || isComplete != true) return;
       Navigator.pop(context, true);

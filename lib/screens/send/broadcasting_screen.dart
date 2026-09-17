@@ -143,7 +143,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
         if (!mounted) return;
         Navigator.of(context).pushAndRemoveUntil(
           PageRouteBuilder<void>(
-            settings: const RouteSettings(name: '/broadcasting-complete'),
+            settings: const RouteSettings(name: AppRouteNames.broadcastingComplete),
             transitionDuration: const Duration(milliseconds: 280),
             reverseTransitionDuration: const Duration(milliseconds: 200),
             pageBuilder:
@@ -159,9 +159,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                 ),
           ),
           switch (_viewModel.sendEntryPoint) {
-            SendEntryPoint.renewalWalletDetail => ModalRoute.withName('/renewal-wallet-detail'),
-            SendEntryPoint.walletDetail => ModalRoute.withName('/wallet-detail'),
-            SendEntryPoint.transactionDetail => ModalRoute.withName('/transaction-detail'),
+            SendEntryPoint.renewalWalletDetail => ModalRoute.withName(AppRouteNames.walletDetail),
+            SendEntryPoint.walletDetail => ModalRoute.withName(AppRouteNames.legacyWalletDetail),
+            SendEntryPoint.transactionDetail => ModalRoute.withName(AppRouteNames.transactionDetail),
             SendEntryPoint.home || null => (route) => route.isFirst,
           },
         );
