@@ -210,7 +210,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                       borderRadius: 12,
                       onPressed: () {
                         if (link != null) {
-                          launchURL(link);
+                          launchURL(context, link);
                         }
                       },
                       child: Container(

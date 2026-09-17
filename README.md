@@ -107,10 +107,6 @@ This project uses [gomobile](https://pkg.go.dev/golang.org/x/mobile/cmd/gomobile
 Quick steps:
 
 ```bash
-# 0. Clone the required fork as a sibling directory (do NOT use upstream BitBoxSwiss)
-git clone https://github.com/4xvgal/bitbox02-api-go.git ../bitbox02-api-go
-cd ../bitbox02-api-go && git checkout fix/nil-guard-psbt && cd ../coconut_wallet
-
 # 1. Install Go (if not already installed)
 brew install go
 
@@ -121,7 +117,7 @@ echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.zshrc && source ~/.zshrc
 # 3. Initialize gomobile (re-run if you upgrade Go, Xcode, or Android NDK)
 gomobile init
 
-# 4. Sync Go dependencies
+# 4. Sync Go dependencies (fetches the pinned bitbox02-api-go fork automatically, no manual clone needed)
 cd go && go mod tidy && cd ..
 
 # 5. Build native bindings (16KB page-aligned for Android 15+)
@@ -177,7 +173,34 @@ make ready
 
 ### Environment Variables
 
-This project requires environment variables configured via `flutter_dotenv`. To obtain the env file for development, please contact us at [hello@noncelab.com](mailto:hello@noncelab.com).
+This project requires environment variables configured via `flutter_dotenv`. Create the file for the flavor you're building (`regtest.env` for local development, `mainnet.env` for mainnet builds) in the project root.
+
+`regtest.env` (used by the default `flutter run --flavor regtest` in Quick Start, no secrets required):
+
+```env
+NETWORK_TYPE=regtest
+```
+
+`mainnet.env` (only needed if you build with `--flavor mainnet`; the `FIREBASE_*` values below are only read when building with `--dart-define=USE_FIREBASE=true`, so they can be left blank for local builds):
+
+```env
+NETWORK_TYPE=mainnet
+
+# ------- Firebase (leave blank unless you have your own Firebase project) --------
+FIREBASE_MESSAGING_SENDER_ID=
+FIREBASE_PROJECT_ID=
+FIREBASE_STORAGE_BUCKET=
+
+# Android
+FIREBASE_API_KEY_ANDROID=
+FIREBASE_APP_ID_ANDROID=
+
+# iOS
+FIREBASE_API_KEY_IOS=
+FIREBASE_APP_ID_IOS=
+FIREBASE_IOS_BUNDLE_ID=
+# ------- Firebase End --------
+```
 
 ### Android Keystore Setup
 

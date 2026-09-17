@@ -122,7 +122,7 @@ void main() {
       decodeAndVerifyURFailed(urParts);
     });
 
-    test('should failed with invalid UR type', () {
+    test('should fail with invalid UR type', () {
       String sourceJson = """
       [
   {
@@ -152,7 +152,7 @@ void main() {
       cborEncoder.encodeText(sourceJson);
 
       // 3. UR 포맷 생성
-      var ur = UR("CRYPTO-ACCOUNT", cborEncoder.getBytes());
+      var ur = UR("crypto-account", cborEncoder.getBytes());
 
       // 4. UR 인코딩 준비
       var urEncoder = UREncoder(ur, 200); // 200 바이트 단위로 슬라이스 (원하면 조절 가능)
@@ -162,6 +162,9 @@ void main() {
       while (!urEncoder.isComplete) {
         parts.add(urEncoder.nextPart());
       }
+
+      parts = parts.map((part) => part.replaceFirst(RegExp(r'^ur:[^/]+'), 'ur:crypto_account')).toList();
+      decodeAndVerifyURFailed(parts);
 
       // 6. parts 출력
       for (var part in parts) {

@@ -33,7 +33,7 @@ class ElectrumService {
   }
 
   /// 연결 시도 후 성공/실패를 bool로 반환
-  Future<bool> connect(String host, int port, {bool ssl = true}) async {
+  Future<bool> connect(String host, int port, {bool ssl = true, String? pinnedCertFingerprint}) async {
     // // 이전 타이머 정리
     // _pingTimer?.cancel();
 
@@ -45,7 +45,12 @@ class ElectrumService {
     };
 
     try {
-      final isConnected = await _socketManager.connect(host, port, ssl: ssl);
+      final isConnected = await _socketManager.connect(
+        host,
+        port,
+        ssl: ssl,
+        pinnedCertFingerprint: pinnedCertFingerprint,
+      );
 
       if (!isConnected || _socketManager.connectionStatus != SocketConnectionStatus.connected) {
         return false;
@@ -54,8 +59,15 @@ class ElectrumService {
       /// 1분 이내 요청이 없으면 소켓 연결 중단됨
       /// 소켓 연결 유지를 위해 ping 요청 필요
       if (isConnected) {
-        _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) {
-          ping();
+        _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) async {
+          try {
+            await ping();
+          } catch (e) {
+            // 소켓 자체는 에러/종료 이벤트 없이 응답만 안 올 수 있음
+            // ping 실패로 직접 감지해서 연결 끊김으로 확정
+            Logger.error('ElectrumService: $host:$port ping 실패, 연결 끊김으로 처리: $e');
+            _socketManager.markConnectionLost();
+          }
         });
       }
 
@@ -386,4 +398,8 @@ class ElectrumService {
 
   /// connectionStatus getter 추가
   SocketConnectionStatus get connectionStatus => _socketManager.connectionStatus;
+
+  /// 직전 connect() 시도가 신뢰할 수 없는 인증서(HandshakeException) 때문에 실패했는지 여부
+  bool get lastConnectionFailedDueToUntrustedCertificate =>
+      _socketManager.lastConnectionFailedDueToUntrustedCertificate;
 }

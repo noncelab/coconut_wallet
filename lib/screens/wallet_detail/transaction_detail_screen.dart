@@ -1,6 +1,8 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
-
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -51,7 +53,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:coconut_wallet/utils/uri_launcher.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final int id;
@@ -144,7 +146,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           _buildTransactionFlowCard(context, tx, viewModel),
                         ],
                         CoconutLayout.spacing_300h,
-
                         _buildTxInputOutputDetail(context, tx, viewModel),
                         CoconutLayout.spacing_800h,
                         _buildTxId(tx, viewModel),
@@ -459,13 +460,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
                         await Navigator.pushNamed(
                           context,
-                          '/wallet-info',
-                          arguments: {
-                            'id': widget.id,
-                            'walletType': _viewModel.walletType,
-                            'entryPoint': kEntryPointWalletHome,
-                            'showMfpInput': true,
-                          },
+                          AppRouteNames.walletInfo,
+                          arguments: WalletInfoRouteArgs(
+                            id: widget.id,
+                            walletType: _viewModel.walletType,
+                            entryPoint: kEntryPointWalletHome,
+                            showMfpInput: true,
+                          ),
                         );
                         _viewModel.setNeedsMfp();
                         return;
@@ -473,13 +474,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
                       Navigator.pushNamed(
                         context,
-                        '/transaction-fee-bumping',
-                        arguments: {
-                          'transaction': tx,
-                          'feeBumpingType': _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
-                          'walletId': widget.id,
-                          'walletName': _viewModel.getWalletName(),
-                        },
+                        AppRouteNames.transactionFeeBumping,
+                        arguments: TransactionFeeBumpingRouteArgs(
+                          transaction: tx,
+                          feeBumpingType: _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
+                          id: widget.id,
+                          walletName: _viewModel.getWalletName(),
+                        ),
                       );
                     },
                     child: Padding(
@@ -677,11 +678,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                 spacing: 4,
                 runSpacing: 4,
                 children: List.generate(selectedTags.length, (index) {
-                  final foregroundColor = tagColorPalette[selectedTags[index].colorIndex];
+                  final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(selectedTags[index].colorIndex);
+                  final foregroundColor = tagColorPalette[colorIndex];
                   return IntrinsicWidth(
                     child: CoconutChip(
                       minWidth: 40,
-                      color: CoconutColors.backgroundColorPaletteDark[selectedTags[index].colorIndex],
+                      color: CoconutColors.backgroundColorPaletteDark[colorIndex],
                       borderColor: foregroundColor,
                       label: '#${selectedTags[index].name}',
                       labelSize: 12,
@@ -706,6 +708,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             SingleTextFieldBottomSheet.show(
               context: context,
               title: t.tx_memo,
+              screenName: AnalyticsScreenNames.transactionDetailEditMemoSheet,
               originalText: txMemo ?? '',
               completeButtonText: t.done,
               collapsedHeight: 300,
@@ -736,7 +739,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       label: t.tx_id,
       underlineButtonLabel: t.view_mempool,
       onTapUnderlineButton: () {
-        launchUrl(Uri.parse('${viewModel.mempoolHost}/tx/${tx.transactionHash}'));
+        launchURL(
+          context,
+          viewModel.explorerUrlFor(BlockExplorerPathType.tx, tx.transactionHash),
+          openInApp: true,
+          analyticsValue: viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.tx),
+        );
       },
       child: CopyTextContainer(
         text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
@@ -763,7 +771,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       label: t.block_num,
       underlineButtonLabel: tx.blockHeight != 0 ? t.view_mempool : '',
       onTapUnderlineButton: () {
-        tx.blockHeight != 0 ? launchUrl(Uri.parse('${_viewModel.mempoolHost}/block/${tx.blockHeight}')) : ();
+        if (tx.blockHeight != 0) {
+          launchURL(
+            context,
+            _viewModel.explorerUrlFor(BlockExplorerPathType.block, tx.blockHeight.toString()),
+            openInApp: true,
+            analyticsValue: _viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.block),
+          );
+        }
       },
 
       child: Text(
@@ -899,7 +914,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       status: status,
     );
 
-    Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': walletId});
+    Navigator.pushNamed(context, AppRouteNames.utxoDetail, arguments: UtxoDetailRouteArgs(utxo: utxo, id: walletId));
   }
 
   String _getPrefix(TransactionRecord tx) {

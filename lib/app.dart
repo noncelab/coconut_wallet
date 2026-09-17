@@ -1,12 +1,14 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app/providers/app_providers.dart';
 import 'package:coconut_wallet/app/router/app_routes.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -43,15 +45,40 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   @override
   void initState() {
     super.initState();
+    _saveMigratedWalletIds();
     BitBox02ConnectivityService.startMonitoring();
-    TrezorBleConnectivityService.startMonitoring();
+    TrezorConnectivityService.startMonitoring();
   }
 
   @override
   void dispose() {
     BitBox02ConnectivityService.stopMonitoring();
-    TrezorBleConnectivityService.stopMonitoring();
+    TrezorConnectivityService.stopMonitoring();
     super.dispose();
+  }
+
+  void _logScreenView(String screenName) {
+    if (!CoconutWalletApp.kIsFirebaseAnalyticsUsed) return;
+    FirebaseAnalytics.instance.logScreenView(screenName: screenName);
+  }
+
+  String? _extractAnalyticsScreenName(RouteSettings settings) {
+    if (settings.name == Navigator.defaultRouteName) {
+      return switch (_appEntryFlow) {
+        AppEntryFlow.splash => AnalyticsScreenNames.splash,
+        AppEntryFlow.pinCheck => AnalyticsScreenNames.pinCheck,
+        AppEntryFlow.main => AnalyticsScreenNames.walletHome,
+      };
+    }
+    return settings.name;
+  }
+
+  Future<void> _saveMigratedWalletIds() async {
+    // RealmManager는 State 필드 초기화 시 Realm을 동기적으로 open하며,
+    // Realm이 반환되는 시점에는 migration callback도 완료된 상태입니다.
+    final walletIds = _realmManager.migratedWalletIds;
+    if (walletIds.isEmpty) return;
+    await SharedPrefsRepository().addWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate(walletIds);
   }
 
   /// startSplash 완료 콜백
@@ -59,6 +86,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     setState(() {
       _appEntryFlow = appEntryFlow;
     });
+    _logScreenView(appEntryFlow == AppEntryFlow.main ? AnalyticsScreenNames.walletHome : AnalyticsScreenNames.pinCheck);
   }
 
   @override
@@ -92,7 +120,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               navigatorObservers: [
                 routeObserver,
                 if (CoconutWalletApp.kIsFirebaseAnalyticsUsed)
-                  FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+                  FirebaseAnalyticsObserver(
+                    analytics: FirebaseAnalytics.instance,
+                    nameExtractor: _extractAnalyticsScreenName,
+                  ),
               ],
               localizationsDelegates: const [
                 DefaultMaterialLocalizations.delegate,
@@ -113,6 +144,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                             setState(() {
                               _appEntryFlow = AppEntryFlow.main;
                             });
+                            _logScreenView(AnalyticsScreenNames.walletHome);
                           },
                         ),
                       ),

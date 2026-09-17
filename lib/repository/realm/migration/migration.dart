@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/realm_constants.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
+import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
+import 'package:coconut_wallet/utils/migration/taproot_older_to_after_migration.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:realm/realm.dart';
@@ -50,18 +54,21 @@ import 'package:realm/realm.dart';
 ///    포함 필드: keyPathSeedInfosInJsonSerialization, scriptPathSeedInfosInJsonSerialization,
 ///    createdAtInVault, defaultSpendTypeName(nullable, 사용자 사전 선택 경로)
 ///
-/// [addHotWalletAndScopeScriptStatusByWallet] (8 -> 9)
+/// [migrateTaprootWalletBackupData] (8 -> 9)
+/// 1. coconut_lib의 inheritance miniscript 직렬화 오류로 저장된 older를 after로 변환
+/// 2. descriptor와 scriptPathSeedInfos의 checksum/miniscript를 재생성
+///
+/// [addHotWalletAndScopeScriptStatusByWallet] (9 -> 10)
 /// 1. RealmHotWalletMetadata 스키마 추가 (기존 지갑은 모두 로컬 키 없음)
 /// 2. enterPassphraseWhenSigning 추가 (기본값 false)
 /// 3. RealmScriptStatus 기본키를 walletId + scriptPubKey 조합으로 변경
 /// 4. 스크립트 상태는 노드에서 다시 동기화할 수 있으므로 기존 데이터 삭제
 /// 5. RealmUtxo 기본키를 walletId + outpoint 조합으로 변경
 /// 6. UTXO는 노드에서 다시 동기화할 수 있으므로 기존 데이터 삭제
-///
-/// [addHotWalletLifecycleState] (10 -> 11)
+/// [addHotWalletLifecycleState] (9 -> 10 동일)
 /// 1. RealmHotWalletMetadata에 lifecycleStateName 필드 추가
 /// 2. 기존 핫월렛은 정상 사용 중인 지갑이므로 active 상태로 마이그레이션
-void defaultMigration(Migration migration, int oldVersion) {
+void defaultMigration(Migration migration, int oldVersion, {Set<int>? migratedWalletIds}) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
     return;
@@ -76,8 +83,11 @@ void defaultMigration(Migration migration, int oldVersion) {
     if (oldVersion < 7) {
       migrateExtendedPublicKeyToDescriptor(migration.newRealm);
     }
-    if (oldVersion < 9) scopeWalletSyncDataByWallet(migration);
-    if (oldVersion < 11) addHotWalletLifecycleState(migration.newRealm);
+    if (oldVersion < 9) {
+      migrateTaprootWalletBackupData(migration.newRealm, migratedWalletIds: migratedWalletIds);
+      scopeWalletSyncDataByWallet(migration);
+    }
+    if (oldVersion < 10) addHotWalletLifecycleState(migration.newRealm);
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
@@ -93,6 +103,44 @@ void addHotWalletLifecycleState(Realm realm) {
 void scopeWalletSyncDataByWallet(Migration migration) {
   migration.newRealm.deleteAll<RealmScriptStatus>();
   migration.newRealm.deleteAll<RealmUtxo>();
+}
+
+void migrateTaprootWalletBackupData(Realm realm, {Set<int>? migratedWalletIds}) {
+  Logger.log('migrateTaprootWalletBackupData migration start');
+  var migratedCount = 0;
+
+  for (final taprootWallet in realm.all<RealmTaprootWallet>()) {
+    final walletBase = taprootWallet.walletBase;
+    if (walletBase == null) continue;
+
+    try {
+      final scriptPathSeedInfos =
+          (jsonDecode(taprootWallet.scriptPathSeedInfosInJsonSerialization) as List<dynamic>)
+              .map((item) => TaprootScriptPathSeedInfo.fromJson(Map<String, dynamic>.from(item as Map)))
+              .toList();
+      final result = TaprootOlderToAfterMigration.migrate(
+        descriptor: walletBase.descriptor,
+        scriptPathSeedInfos: scriptPathSeedInfos,
+      );
+
+      if (!result.hasChanges) continue;
+
+      walletBase.descriptor = result.descriptor;
+      taprootWallet.scriptPathSeedInfosInJsonSerialization = jsonEncode(
+        result.scriptPathSeedInfos.map((item) => item.toJson()).toList(),
+      );
+      migratedWalletIds?.add(taprootWallet.id);
+      migratedCount++;
+    } catch (e, stackTrace) {
+      Logger.error(
+        'migrateTaprootWalletBackupData: migration failed for wallet '
+        '${taprootWallet.id} - $e\n$stackTrace',
+      );
+      rethrow;
+    }
+  }
+
+  Logger.log('migrateTaprootWalletBackupData migration end (migrated: $migratedCount)');
 }
 
 /// extendedPublicKey로 저장된 지갑 중 masterFingerprint가 00000000이 아닌 경우 descriptor로 마이그레이션

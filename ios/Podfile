@@ -33,6 +33,12 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
+$FirebaseAnalyticsWithoutAdIdSupport = true
+
+# file_picker only needs document selection; exclude media and audio support.
+Pod::PICKER_MEDIA = false
+Pod::PICKER_AUDIO = false
+
 target 'Runner' do
   use_frameworks!
   use_modular_headers!

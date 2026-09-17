@@ -1,8 +1,12 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:coconut_wallet/constants/icon_path.dart';
 
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -47,6 +51,7 @@ import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_b
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_edit_bottom_sheet.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
@@ -58,6 +63,7 @@ import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.da
 import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/common/card/notice_card.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/icon/transaction_status_gradient_mask.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
@@ -181,6 +187,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   bool _isFirstLoad = true;
   bool _isWalletListLoading = false;
   bool _isRefreshing = false;
+  final Set<int> _dismissedBackupUpdateWalletIds = <int>{};
+  Set<int>? _initialBackupUpdateWalletIds;
 
   int _recentTransactionCurrentPage = 0;
   late ScrollController _pageIndicatorController;
@@ -219,7 +227,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           bool,
           Map<int, AnimatedBalanceData>,
           Tuple2<int?, Map<int, dynamic>>,
-          NetworkStatus
+          Tuple2<NetworkStatus, String>
         >
       >(
         selector:
@@ -230,7 +238,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               vm.shouldShowLoadingIndicator,
               vm.walletBalanceMap,
               Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
-              vm.networkStatus,
+              Tuple2(vm.networkStatus, vm.unacknowledgedOlderToAfterBackupUpdateWalletIdsSignature),
             ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletHomeViewModel>(context, listen: false);
@@ -243,7 +251,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           final shouldShowLoadingIndicator = data.item4;
           final walletBalanceMap = data.item5;
           final fakeBalanceData = data.item6;
-          final networkStatus = data.item7;
+          final networkStatus = data.item7.item1;
           final homeFeatures = viewModel.homeFeatures;
           final hasEnabledHomeFeature = homeFeatures.any((feature) => feature.isEnabled);
           final securityWarningState = viewModel.securityWarningState(
@@ -256,7 +264,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   ? null
                   : walletItem.firstWhereOrNull((wallet) => wallet.id == securityWarningState.targetWalletId);
           final showOpenStoreIntroCard = securityWarningState.showOpenStoreIntro;
-          final showHomeAlertSlot = securityWarningType != null || showOpenStoreIntroCard;
+
+          if (_initialBackupUpdateWalletIds == null && !shouldShowLoadingIndicator) {
+            _initialBackupUpdateWalletIds = Set<int>.from(
+              viewModel.walletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
+            );
+          }
 
           if (viewModel.isWalletListChanged(_previousWalletList, walletItem, walletBalanceMap)) {
             _handleWalletListUpdate(walletItem);
@@ -300,6 +313,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           _buildAppBar(networkStatus),
                           if (!shouldShowLoadingIndicator)
                             CupertinoSliverRefreshControl(onRefresh: _onRefresh, refreshTriggerPullDistance: 80),
+                          _buildBackupUpdateNotice(viewModel, walletItem),
                           _buildLoadingIndicator(context, viewModel),
                           _buildHeader(
                             isBalanceHidden,
@@ -435,7 +449,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Future<void> _navigateToWalletHomeEdit() async {
     _viewModel.captureEnabledFeaturesSnapshot();
-    await Navigator.pushNamed(context, '/wallet-home-edit');
+    await Navigator.pushNamed(context, AppRouteNames.walletHomeEdit);
     if (context.mounted) {
       _viewModel.refreshEnabledFeaturesData();
     }
@@ -468,15 +482,21 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     _pageIndicatorController = ScrollController();
 
     _dropdownActions = {
-      'transaction_draft': () => Navigator.pushNamed(context, '/transaction-draft'),
+      'transaction_draft':
+          () => Navigator.pushNamed(
+            context,
+            AppRouteNames.transactionDraft,
+            arguments: const TransactionDraftRouteArgs(),
+          ),
       'glossary':
           () => CommonBottomSheets.showCustomHeightBottomSheet(
             context: context,
+            screenName: AnalyticsScreenNames.walletHomeGlossarySheet,
             child: const GlossaryBottomSheet(),
             heightRatio: 0.9,
           ),
-      'p2p_calculator': () => Navigator.pushNamed(context, '/p2p-calculator'),
-      'mnemonic_wordlist': () => Navigator.pushNamed(context, '/mnemonic-word-list'),
+      'p2p_calculator': () => Navigator.pushNamed(context, AppRouteNames.p2pCalculator),
+      'mnemonic_wordlist': () => Navigator.pushNamed(context, AppRouteNames.mnemonicWordList),
       'tutorial':
           () => showDialog(
             context: context,
@@ -491,7 +511,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   Navigator.of(context).pop();
                 },
                 onTapRight: () async {
-                  launchURL(TUTORIAL_URL, defaultMode: false);
+                  launchURL(context, TUTORIAL_URL);
                   Navigator.of(context).pop();
                 },
                 rightButtonColor: context.coconutColors.success,
@@ -503,6 +523,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       'app_settings':
           () => CommonBottomSheets.showCustomHeightBottomSheet(
             context: context,
+            screenName: AnalyticsScreenNames.walletHomeAppSettingsSheet,
             child: const AppSettingsScreen(),
             heightRatio: 0.9,
           ),
@@ -521,6 +542,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         var animationController = BottomSheet.createAnimationController(this)..duration = const Duration(seconds: 2);
         await CommonBottomSheets.showBottomSheet_100(
           context: context,
+          screenName: AnalyticsScreenNames.walletHomeReviewSurveySheet,
           child: const UserExperienceSurveyBottomSheet(),
           enableDrag: false,
           backgroundColor: context.coconutColors.surfaceBottomSheet,
@@ -608,6 +630,48 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     } finally {
       _isWalletListLoading = false;
     }
+  }
+
+  Widget _buildBackupUpdateNotice(WalletHomeViewModel viewModel, List<WalletItemBase> walletItems) {
+    final unacknowledgedWalletIds = viewModel.walletIdsWithUnacknowledgedOlderToAfterBackupUpdate;
+    final pendingWallet =
+        walletItems
+            .where(
+              (item) => unacknowledgedWalletIds.contains(item.id) && !_dismissedBackupUpdateWalletIds.contains(item.id),
+            )
+            .firstOrNull;
+    final wallet = pendingWallet;
+    if (wallet == null) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: NoticeCard(
+          title: t.wallet_home_screen.backup_update_notice.title,
+          description: t.wallet_home_screen.backup_update_notice.description,
+          actionLabel: t.wallet_home_screen.backup_update_notice_action,
+          onDismiss: () {
+            setState(() {
+              _dismissedBackupUpdateWalletIds.addAll(_initialBackupUpdateWalletIds ?? {wallet.id});
+            });
+          },
+          onDetails: () {
+            Navigator.pushNamed(
+              context,
+              AppRouteNames.walletInfo,
+              arguments: WalletInfoRouteArgs(
+                id: wallet.id,
+                walletType: wallet.walletType,
+                entryPoint: kEntryPointWalletHome,
+                showMfpInput: false,
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildHeader(
@@ -950,7 +1014,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     // walletOrder에 있는 순서대로 매칭된 첫 번째 지갑의 id
     final targetId = walletOrder.firstWhere((id) => id == firstWallet.id, orElse: () => firstWallet.id);
 
-    Navigator.of(context).pushNamed("/receive-address", arguments: {"id": targetId});
+    Navigator.of(context).pushNamed(AppRouteNames.receiveAddress, arguments: ReceiveAddressRouteArgs(id: targetId));
   }
 
   Future<void> _onTapSend(List<int> walletOrder, {String? bitcoinUri, bool shouldBypassSyncCheck = false}) async {
@@ -958,8 +1022,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     if (firstWallet == null) {
       await Navigator.pushNamed(
         context,
-        '/send',
-        arguments: {'walletId': null, 'sendEntryPoint': SendEntryPoint.home, 'initialBitcoinUri': bitcoinUri},
+        AppRouteNames.send,
+        arguments: SendRouteArgs(id: null, sendEntryPoint: SendEntryPoint.home, initialBitcoinUri: bitcoinUri),
       );
       return;
     }
@@ -975,8 +1039,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     if (!isManualUtxoSelection || bitcoinUri != null) {
       await Navigator.pushNamed(
         context,
-        '/send',
-        arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'initialBitcoinUri': bitcoinUri},
+        AppRouteNames.send,
+        arguments: SendRouteArgs(id: targetId, sendEntryPoint: SendEntryPoint.home, initialBitcoinUri: bitcoinUri),
       );
       return;
     }
@@ -985,6 +1049,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     // 수동선택 모드인 경우 UTXO 선택 화면으로 이동
     final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
       context: context,
+      screenName: AnalyticsScreenNames.walletHomeSelectUtxoSheet,
       minChildSize: 0.6,
       maxChildSize: 0.9,
       initialChildSize: 0.9,
@@ -1001,8 +1066,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     if (!mounted || result == null) return;
     Navigator.pushNamed(
       context,
-      '/send',
-      arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'selectedUtxoList': result},
+      AppRouteNames.send,
+      arguments: SendRouteArgs(id: targetId, sendEntryPoint: SendEntryPoint.home, selectedUtxoList: result),
     );
   }
 
@@ -1062,7 +1127,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
               pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
               onPressed: () {
-                Navigator.pushNamed(context, '/wallet-list');
+                Navigator.pushNamed(context, AppRouteNames.walletList);
               },
               borderRadius: CoconutStyles.radius_200,
               child: Container(
@@ -1694,6 +1759,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   void _openAppLockSettings() {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletHomeAppSettingsSheet,
       child: const AppSettingsScreen(),
       heightRatio: 0.9,
     );
@@ -1735,6 +1801,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     if (!mounted) return;
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletHomeDeleteWalletAuthSheet,
       heightRatio: 0.9,
       child: PinCheckScreen(
         onComplete: () async {
@@ -2046,8 +2113,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       onPressed: () {
         Navigator.pushNamed(
           context,
-          '/transaction-detail',
-          arguments: {'id': walletId, 'txHash': transaction.transactionHash},
+          AppRouteNames.transactionDetail,
+          arguments: TransactionDetailRouteArgs(id: walletId, txHash: transaction.transactionHash),
         );
       },
       child: Container(padding: const EdgeInsets.all(padding), child: buildTxRow(transaction)),
@@ -2161,6 +2228,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     onPressed: () {
                       CommonBottomSheets.showCustomHeightBottomSheet(
                         context: context,
+                        screenName: AnalyticsScreenNames.walletHomeAnalysisFilterSheet,
                         heightRatio: 0.55,
                         child: AnalysisPeriodBottomSheet(
                           onSelected: (days) {
@@ -2474,6 +2542,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   void _showAddWalletMenu(WalletAddDialogMode mode) {
+    context.read<AnalyticsService>().logWalletAddButtonClicked();
     WalletAddDialog.show(context, mode);
   }
 
@@ -2545,7 +2614,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       actionButtonList: [
         // 설정된 방식으로 지갑 추가하기
         if (addWalletIconPath != null)
-          _buildAppBarIconButton(
+          buildAppBarIconButton(
             key: GlobalKey(),
             icon: SvgPicture.asset(
               addWalletIconPath,
@@ -2558,7 +2627,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             },
           ),
         // 더보기(풀다운 메뉴 열림)
-        _buildAppBarIconButton(
+        buildAppBarIconButton(
           key: _dropdownButtonKey,
           icon: SvgPicture.asset(
             CommonMenuIconPath.kebab,
@@ -2572,7 +2641,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildAppBarIconButton({required Widget icon, required VoidCallback onPressed, Key? key}) {
+  Widget buildAppBarIconButton({required Widget icon, required VoidCallback onPressed, Key? key}) {
     return CoconutAppBarActionButton(
       buttonKey: key,
       icon: icon,

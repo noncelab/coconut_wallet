@@ -10,7 +10,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
   const NegativeFeedbackScreen({super.key});
 
   Future<void> _runKakaoOpenChat(BuildContext context) async {
-    launchURL('https://open.kakao.com/me/coconutwallet');
+    launchURL(context, 'https://open.kakao.com/me/coconutwallet');
     AppReviewService.setHasReviewed();
     await _stopGettingFeedback(context);
   }

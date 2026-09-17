@@ -1,5 +1,8 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:ui';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -683,7 +686,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
 
           if (tags.isNotEmpty) {
             final firstTag = tags.first;
-            final int colorIndex = firstTag.colorIndex;
+            final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(firstTag.colorIndex);
             final Color foregroundColor = tagColorPalette[colorIndex];
 
             inlineWidgets.add(
@@ -1230,6 +1233,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
     try {
       final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
         context: context,
+        screenName: AnalyticsScreenNames.splitUtxoSelectUtxosSheet,
         minChildSize: 0.6,
         maxChildSize: 0.9,
         initialChildSize: 0.6,
@@ -1267,6 +1271,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
 
     final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<SplitMethod>(
       context: context,
+      screenName: AnalyticsScreenNames.splitUtxoSelectMethodSheet,
       title: t.split_utxo_screen.method_bottom_sheet.title,
       items: SplitMethod.values,
       getItemId: (item) => item.name,

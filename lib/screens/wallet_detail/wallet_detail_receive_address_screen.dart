@@ -1,7 +1,11 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -18,7 +22,6 @@ import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
 import 'package:flutter/rendering.dart';
@@ -128,6 +131,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                     context: context,
                     currentUnit: preferenceProvider.currentUnit,
                     initialAmountSats: _enteredReceiveAmountSats,
+                    screenName: AnalyticsScreenNames.receiveAddressSetAmountSheet,
                   );
                   if (!mounted || result == null || !result.didEdit) return;
                   setState(() {
@@ -227,16 +231,10 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   }
 
   void _onAddressListButtonPressed() {
-    CommonBottomSheets.showCustomHeightBottomSheet(
-      context: context,
-      heightRatio: 0.9,
-      child: AddressListScreen(
-        id: _selectedWalletItem!.id,
-        isFullScreen: false,
-        // wallet info > address list 진입 시와 색상이 달라
-        // background로 통일
-        backgroundColor: context.coconutColors.background,
-      ),
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.addressList,
+      arguments: AddressListRouteArgs(id: _selectedWalletItem!.id),
     );
   }
 
@@ -245,6 +243,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     AppGuard.enablePrivacyScreen();
     CommonBottomSheets.showDraggableBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.receiveAddressSelectWalletSheet,
       childBuilder:
           (scrollController) => SelectWalletBottomSheet(
             showOnlyMfpWallets: false,

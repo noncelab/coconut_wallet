@@ -18,6 +18,7 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
 import 'package:flutter/material.dart';
 
 class InvalidTransactionException implements Exception {
@@ -85,6 +86,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   List<int> get changeOutputAmounts => UnmodifiableListView(_changeOutputAmounts);
   List<BroadcastingOutputDetailItem> get outputDetailItems => UnmodifiableListView(_outputDetailItems);
   AddressType? get walletAddressType => _walletBase?.addressType;
+  WalletBase get _wallet => _walletBase!;
   int? get walletId => _walletId;
   SendEntryPoint? get sendEntryPoint => _sendInfoProvider.sendEntryPoint;
   FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
@@ -179,27 +181,26 @@ class BroadcastingViewModel extends ChangeNotifier {
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
 
-    Psbt signedPsbt;
+    final originalPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+    final expectedTransaction = originalPsbt.unsignedTransaction;
+    late final Psbt signedPsbt;
     if (isPsbt(_sendInfoProvider.signedResult!)) {
       signedPsbt = Psbt.parse(_sendInfoProvider.signedResult!);
-      _signedTx = signedPsbt.getSignedTransaction(walletAddressType!);
+      TransactionIntentValidator.ensureMatches(expectedTransaction, signedPsbt.unsignedTransaction);
+
+      final finalizedTransaction = signedPsbt.getSignedTransaction(walletAddressType!);
+      TransactionIntentValidator.ensureMatches(expectedTransaction, finalizedTransaction);
+      _signedTx = finalizedTransaction;
     } else {
       try {
-        signedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+        signedPsbt = originalPsbt;
 
         // raw transaction 데이터 처리 (hex 또는 base64)
-        String hexTransaction = decodeTransactionToHex(_sendInfoProvider.signedResult!);
+        final hexTransaction = decodeTransactionToHex(_sendInfoProvider.signedResult!);
         final signedTx = Transaction.parse(hexTransaction);
-        final unSingedTx = signedPsbt.unsignedTransaction;
+        TransactionIntentValidator.ensureMatches(expectedTransaction, signedTx);
 
-        // 콜드카드의 경우 SignedTransaction을 넘겨주기 때문에, UnsignedTransaction과 같은 데이터인지 검사 필요
-        bool isContentEqual = isTxContentEqual(signedTx, unSingedTx);
-
-        if (!isContentEqual) {
-          throw InvalidTransactionException();
-        }
-
-        _signedTx = Transaction.parse(hexTransaction);
+        _signedTx = signedTx;
       } catch (e) {
         Logger.log('--> BroadcastingViewModel.setTxInfo: raw transaction processing error: $e');
         rethrow;
@@ -236,9 +237,9 @@ class BroadcastingViewModel extends ChangeNotifier {
         continue;
       }
       _outputDetailItems.add(
-        BroadcastingOutputDetailItem(address: output.outAddress, amount: amount, isChange: output.isChange),
+        BroadcastingOutputDetailItem(address: output.outAddress, amount: amount, isChange: output.isChange(_wallet)),
       );
-      if (output.isChange) {
+      if (output.isChange(_wallet)) {
         _changeOutputAmounts.add(amount);
       } else {
         _externalOutputAmounts.add(amount);
@@ -254,9 +255,9 @@ class BroadcastingViewModel extends ChangeNotifier {
     List<PsbtOutput> outputToMyChangeAddress = [];
     List<PsbtOutput> outputsToOther = [];
     for (int i = 0; i < outputs.length; i++) {
-      if (outputs[i].bip32Derivation == null) {
+      if (!outputs[i].isOwnedBy(_wallet)) {
         outputsToOther.add(outputs[i]);
-      } else if (outputs[i].isChange) {
+      } else if (outputs[i].isChange(_wallet)) {
         outputToMyChangeAddress.add(outputs[i]);
         _outputIndexesToMyAddress.add(i);
       } else {
@@ -284,7 +285,7 @@ class BroadcastingViewModel extends ChangeNotifier {
           recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
       }
-      _sendingAmount = psbt.sendingAmount;
+      _sendingAmount = psbt.sendingAmount(_wallet);
       _recipientAddresses.addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value} ${t.btc})'));
     } else {
       PsbtOutput? output;
@@ -307,13 +308,13 @@ class BroadcastingViewModel extends ChangeNotifier {
         _isSendingToMyAddress = true;
       }
 
-      _sendingAmount = psbt.sendingAmount;
+      _sendingAmount = psbt.sendingAmount(_wallet);
       if (output != null) {
         _recipientAddresses.add(output.outAddress);
       }
     }
     _fee = psbt.fee;
-    _totalAmount = psbt.sendingAmount + psbt.fee;
+    _totalAmount = psbt.sendingAmount(_wallet) + psbt.fee;
 
     if (excludedUtxoStatus == null) {
       _isInitDone = true;
@@ -324,34 +325,6 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   void clearSendInfo() {
     _sendInfoProvider.clear();
-  }
-
-  bool isTxContentEqual(Transaction signedTx, Transaction? unSignedTx) {
-    if (unSignedTx == null) return false;
-
-    debugPrint('unsignedPsbt:: $unSignedTx');
-
-    // inputs, outputs 길이가 같은지 비교
-    if (signedTx.inputs.length != unSignedTx.inputs.length) return false;
-    if (signedTx.outputs.length != unSignedTx.outputs.length) return false;
-
-    // outputs에서 각 output의 amount가 같은지 비교
-    for (int i = 0; i < signedTx.outputs.length; i++) {
-      if (signedTx.outputs[i].amount != unSignedTx.outputs[i].amount) {
-        return false;
-      }
-    }
-
-    // totalInputAmount 비교
-    if (signedTx.totalInputAmount != unSignedTx.totalInputAmount) return false;
-
-    // 트랜잭션 버전 비교
-    if (signedTx.version != unSignedTx.version) return false;
-
-    // lockTime 비교 - 추후 필요시 구현, 현재는 다르기 때문에 사용안함
-    // if (tx.lockTime != unSignedTx.lockTime) return false;
-
-    return true;
   }
 
   ///예외: 사용자가 배치 트랜잭션에 '남의 주소 또는 내 Receive 주소 1개'와 '본인 change 주소 1개'를 입력하고, 이 트랜잭션의 잔액이 없는 희박한 상황에서는 배치 트랜잭션임을 구분하지 못함

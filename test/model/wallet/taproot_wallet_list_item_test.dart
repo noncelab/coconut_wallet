@@ -10,15 +10,15 @@ void main() {
   const childTaprootXpub =
       "tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8";
   const oneParentDescriptor =
-      "tr([9B1441E4/86'/1'/0']$parentTaprootXpub/<0;1>/*,{and_v(v:pk([70C4E9DE/86'/1'/0']$childTaprootXpub/<0;1>/*),older(500000000))})#w0hf4lu5";
+      "tr([9B1441E4/86'/1'/0']$parentTaprootXpub/<0;1>/*,{and_v(v:pk([70C4E9DE/86'/1'/0']$childTaprootXpub/<0;1>/*),after(500000000))})#652j50l8";
 
   const cosigner1TaprootXpub =
       "tpubDDJ3csugKLHjjx6HpLQLc9kpbQs5Kh1Kp3riEQ7Zm9YebjK8v7eFcZKdVRSuVDeXcjU3yM2e1cZXe1T7cTtPJQZvow5EovmgNoV6zgEJdc9";
   const cosigner2TaprootXpub =
       "tpubDDSNhWuFHA8XgWyxzM9yoGpmfYiBrzYZyGy29koZLXzPgSYjK7RUpkrrnmKiaMBWBzVUhvShA3vaSPTMGbx8YHL6sa8yY4eLqnuSSuECheK";
-  const inheritanceMiniscript = "and_v(v:pk([70C4E9DE/86'/1'/0']$childTaprootXpub/<0;1>/*),older(500000000))";
+  const inheritanceMiniscript = "and_v(v:pk([70C4E9DE/86'/1'/0']$childTaprootXpub/<0;1>/*),after(500000000))";
   const twoParentDescriptor =
-      "tr(musig(sorted([57450F41/86'/1'/0']$cosigner1TaprootXpub/<0;1>/*,[F82D58DD/86'/1'/0']$cosigner2TaprootXpub/<0;1>/*)),{$inheritanceMiniscript})#sz5a4k3h";
+      "tr(musig(sorted([57450F41/86'/1'/0']$cosigner1TaprootXpub/<0;1>/*,[F82D58DD/86'/1'/0']$cosigner2TaprootXpub/<0;1>/*)),{$inheritanceMiniscript})#waz6c4j2";
 
   group('TaprootWalletListItem', () {
     test('oneParentDescriptor: 필드 값 보존', () {

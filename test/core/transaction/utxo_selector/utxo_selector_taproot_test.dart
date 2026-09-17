@@ -14,7 +14,7 @@ void main() {
   setUpAll(() {
     utxoList = [
       UtxoState(
-        transactionHash: '1',
+        transactionHash: '0000000000000000000000000000000000000000000000000000000000000021',
         index: 0,
         amount: 100000,
         derivationPath: "m/86'/0'/0'/0/0",
@@ -24,7 +24,7 @@ void main() {
         status: UtxoStatus.unspent,
       ),
       UtxoState(
-        transactionHash: '2',
+        transactionHash: '0000000000000000000000000000000000000000000000000000000000000022',
         index: 0,
         amount: 50000,
         derivationPath: "m/86'/0'/0'/0/1",
@@ -34,7 +34,7 @@ void main() {
         status: UtxoStatus.unspent,
       ),
       UtxoState(
-        transactionHash: '3',
+        transactionHash: '0000000000000000000000000000000000000000000000000000000000000023',
         index: 0,
         amount: 25000,
         derivationPath: "m/86'/0'/0'/0/2",

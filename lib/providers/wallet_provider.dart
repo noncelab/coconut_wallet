@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
@@ -17,12 +18,14 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/air-gapped/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
+import 'package:coconut_wallet/utils/migration/taproot_older_to_after_migration.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_lifecycle_lock.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -41,8 +44,6 @@ class WalletProvider extends ChangeNotifier {
   List<WalletItemBase> _walletItemList = [];
   List<WalletItemBase> get walletItemList => walletItemListNotifier.value;
 
-  int gapLimit = 20;
-
   final AddressRepository _addressRepository;
   final TransactionRepository _transactionRepository;
   final UtxoRepository _utxoRepository;
@@ -50,6 +51,8 @@ class WalletProvider extends ChangeNotifier {
   final HotWalletSecretRepository _hotWalletSecretRepository;
   final SharedPrefsRepository _sharedPrefsRepository;
   final HotWalletLifecycleLock _hotWalletLifecycleLock;
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+  final Set<int> _walletIdsWithUnacknowledgedBackupUpdate = <int>{};
 
   late final PreferenceProvider _preferenceProvider;
 
@@ -82,6 +85,11 @@ class WalletProvider extends ChangeNotifier {
     walletLoadStateNotifier = ValueNotifier(_walletLoadState);
     walletItemListNotifier = ValueNotifier(_walletItemList);
     currentBlockHeightNotifier = ValueNotifier(null);
+    if (_sharedPrefs.isInitialized) {
+      _walletIdsWithUnacknowledgedBackupUpdate.addAll(
+        _sharedPrefs.getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate(),
+      );
+    }
 
     _loadWalletListFromDB().then((_) {
       _preferenceProvider.setWalletPreferences(walletItemList); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
@@ -308,6 +316,43 @@ class WalletProvider extends ChangeNotifier {
     );
   }
 
+  Set<int> get walletIdsWithUnacknowledgedOlderToAfterBackupUpdate =>
+      Set.unmodifiable(_walletIdsWithUnacknowledgedBackupUpdate);
+
+  bool get hasUnacknowledgedOlderToAfterBackupUpdate => _walletIdsWithUnacknowledgedBackupUpdate.isNotEmpty;
+
+  Future<void> addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(int walletId) async {
+    if (_walletIdsWithUnacknowledgedBackupUpdate.contains(walletId)) return;
+
+    try {
+      await _sharedPrefs.addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
+    } catch (e, stackTrace) {
+      Logger.error('Failed to save backup update state: $e\n$stackTrace');
+      return;
+    }
+
+    _walletIdsWithUnacknowledgedBackupUpdate.add(walletId);
+    notifyListeners();
+  }
+
+  Future<void> removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(int walletId) async {
+    if (!_walletIdsWithUnacknowledgedBackupUpdate.contains(walletId)) return;
+
+    try {
+      await _sharedPrefs.removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
+    } catch (e, stackTrace) {
+      Logger.error('Failed to remove backup update state: $e\n$stackTrace');
+      return;
+    }
+
+    _walletIdsWithUnacknowledgedBackupUpdate.remove(walletId);
+    notifyListeners();
+  }
+
+  Future<void> acknowledgeOlderToAfterBackupUpdate(int walletId) {
+    return removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
+  }
+
   Future<void> addToWalletOrder(int walletId) async {
     final walletOrder = _preferenceProvider.walletOrder.toList();
     if (!walletOrder.contains(walletId)) {
@@ -327,17 +372,44 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
+  ({WatchOnlyWallet wallet, bool changed}) _migrateTaprootOlderToAfter(WatchOnlyWallet wallet) {
+    if (!wallet.isTaproot) return (wallet: wallet, changed: false);
+
+    final result = TaprootOlderToAfterMigration.migrate(
+      descriptor: wallet.descriptor,
+      scriptPathSeedInfos: wallet.scriptPathSeedInfos ?? const [],
+    );
+    if (!result.hasChanges) return (wallet: wallet, changed: false);
+
+    return (
+      wallet: WatchOnlyWallet(
+        wallet.name,
+        wallet.colorIndex,
+        wallet.iconIndex,
+        result.descriptor,
+        wallet.requiredSignatureCount,
+        wallet.signers,
+        wallet.walletImportSource.name,
+        keyPathSeedInfos: wallet.keyPathSeedInfos,
+        scriptPathSeedInfos: result.scriptPathSeedInfos,
+        createdAtInVault: wallet.createdAtInVault,
+      ),
+      changed: true,
+    );
+  }
+
   /// case1. 이미 존재하는 fingerprint이지만 이름/계정/칼라 중 하나라도 변경되었을 경우 ("동기화를 완료했습니다.")
   /// case2. 이미 존재하고 변화가 없는 경우 ("이미 추가된 지갑입니다.")
   /// case3. 외부 지갑 형태로 이미 추가된 지갑 ("이미 추가된 지갑입니다. ([지갑 이름])")
   /// case4. 새로운 pubkey인지 확인 후 지갑으로 추가하기 ("지갑을 추가했습니다.")
   /// case5. 같은 이름과 MFP를 가졌지만 다른 derivation path의 지갑이 있는 경우 ("다른 계정 번호의 지갑을 추가했습니다.")
   /// case6. 같은 이름을 가진 다른 지갑이 있는 경우 ("같은 이름을 가진 지갑이 있습니다. 이름을 변경한 후 동기화 해주세요.")
-
   Future<ResultOfSyncFromVault> syncFromCoconutVault(
     WatchOnlyWallet watchOnlyWallet, {
     bool allowExistingHotWallet = false,
   }) async {
+    final migration = _migrateTaprootOlderToAfter(watchOnlyWallet);
+    watchOnlyWallet = migration.wallet;
     final isSingleSig = watchOnlyWallet.walletType == WalletType.singleSignature;
     if (isSingleSig && !allowExistingHotWallet) {
       final existingHotWallet = findSameSinglesigWallet(watchOnlyWallet.descriptor, hasLocalKey: true);
@@ -400,6 +472,9 @@ class WalletProvider extends ChangeNotifier {
 
     watchOnlyWallet = _copyWithNewName(watchOnlyWallet, resolvedName);
     final newWallet = await _addNewWallet(watchOnlyWallet);
+    if (migration.changed) {
+      await addWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(newWallet.id);
+    }
 
     Logger.log('--> syncFromCoconutVault:::::: ${_walletItemList.map((e) => e.id).toList()}');
     await _handleNewWalletAdded(newWallet.id);
@@ -774,6 +849,7 @@ class WalletProvider extends ChangeNotifier {
     _setWalletItemList(await _fetchWalletListFromDB());
     await _saveWalletCount(_walletItemList.length);
     await _removeWalletPreferencesIgnoringFailure(walletId);
+    await removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
     if (_walletItemList.isEmpty) {
       await _preferenceProvider.changeIsBalanceHidden(false); // 잔액 숨기기 비활성화, fakeBalance 초기화
       await _preferenceProvider.clearFakeBalanceTotalAmount();
@@ -787,6 +863,14 @@ class WalletProvider extends ChangeNotifier {
       );
     }
 
+    _setWalletItemList(List.from(_walletItemList));
+    notifyListeners();
+  }
+
+  /// 지갑 재동기화 완료 후, isolate에서 리셋/재구독한 최신 상태로
+  /// 메인 isolate의 캐시된 WalletItemBase를 다시 읽어옴
+  Future<void> refreshWalletAfterResync(int walletId) async {
+    _setWalletItemList(await _fetchWalletListFromDB());
     notifyListeners();
   }
 
@@ -863,8 +947,31 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.searchWalletAddressList(wallet, keyword);
   }
 
+  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) {
+    return _addressRepository.getActiveUsedAddresses(walletId, isChange);
+  }
+
+  /// gap window 안에 있는 활성 사용 주소는 고정 개수(2*gapLimit)에 이미 포함되므로 중복 집계하지 않는다.
+  int getWatchedAddressCount(int walletId) {
+    final (receiveUsedIndex, changeUsedIndex) = getUsedIndexes(walletId);
+    return 2 * kSubscriptionGapLimit +
+        _countActiveUsedAddressesOutsideGapWindow(walletId, false, receiveUsedIndex) +
+        _countActiveUsedAddressesOutsideGapWindow(walletId, true, changeUsedIndex);
+  }
+
+  int _countActiveUsedAddressesOutsideGapWindow(int walletId, bool isChange, int usedIndex) {
+    return _addressRepository
+        .getActiveUsedAddresses(walletId, isChange)
+        .where((address) => address.index <= usedIndex || address.index > usedIndex + kSubscriptionGapLimit)
+        .length;
+  }
+
   (int, int) getGeneratedIndexes(WalletItemBase wallet) {
     return _addressRepository.getGeneratedAddressIndexes(wallet);
+  }
+
+  (int receiveUsedIndex, int changeUsedIndex) getUsedIndexes(int walletId) {
+    return _addressRepository.getUsedIndexes(walletId);
   }
 
   WalletAddress generateAddress(WalletBase wallet, int index, bool isChange) {
@@ -895,11 +1002,11 @@ class WalletProvider extends ChangeNotifier {
   }
 
   WalletAddress getChangeAddress(int walletId) {
-    return _addressRepository.getChangeAddress(walletId);
+    return _addressRepository.getChangeAddress(walletId, wallet: getWalletById(walletId).walletBase);
   }
 
   WalletAddress getReceiveAddress(int walletId) {
-    return _addressRepository.getReceiveAddress(walletId);
+    return _addressRepository.getReceiveAddress(walletId, wallet: getWalletById(walletId).walletBase);
   }
 
   Map<int, WalletAddress> getReceiveAddressMap() {
@@ -912,6 +1019,10 @@ class WalletProvider extends ChangeNotifier {
 
   List<UtxoState> getUtxoListByStatus(int walletId, UtxoStatus utxoStatus) {
     return _utxoRepository.getUtxosByStatus(walletId, utxoStatus);
+  }
+
+  List<RealmUtxoTag> getUtxoTags(int walletId) {
+    return _utxoRepository.getRealmUtxoTags(walletId);
   }
 
   List<TransactionRecord> getTransactionRecordList(int walletId) {
@@ -965,6 +1076,10 @@ class WalletProvider extends ChangeNotifier {
 
   TransactionRecord? getTransactionRecord(int walletId, String transactionHash) {
     return _transactionRepository.getTransactionRecord(walletId, transactionHash);
+  }
+
+  List<RealmTransactionMemo> getAllTransactionMemos(int walletId) {
+    return _transactionRepository.getAllTransactionMemos(walletId);
   }
 
   Future<void> toggleUtxoLockStatus(int walletId, String utxoId) async {
@@ -1044,6 +1159,59 @@ class WalletProvider extends ChangeNotifier {
 
   bool isUtxoSuspicious(UtxoState utxo, TransactionRecord? txRecord) {
     return SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, _addressRepository.containsAddressInAnyWallet);
+  }
+
+  Future<void> updateTransactionMemo(int walletId, String txHash, String memo) async {
+    final result = _transactionRepository.updateTransactionMemo(walletId, txHash, memo);
+    if (result.isSuccess) {
+      notifyListeners();
+    } else {
+      throw result.error;
+    }
+  }
+
+  Future<void> addUtxoToTag(int walletId, String tagName, String utxoId, {int? colorIndex}) async {
+    final result = await _utxoRepository.addUtxoToTag(walletId, tagName, utxoId, colorIndex: colorIndex);
+    if (result.isSuccess) {
+      notifyListeners();
+    } else {
+      throw result.error;
+    }
+  }
+
+  Future<void> addUtxosToTags(int walletId, Map<String, Set<UtxoTagImportInfo>> utxoTags) async {
+    final result = await _utxoRepository.addUtxosToTags(walletId, utxoTags);
+    if (result.isSuccess) {
+      notifyListeners();
+    } else {
+      throw result.error;
+    }
+  }
+
+  Future<void> lockUtxo(int walletId, String utxoId) async {
+    final utxo = getUtxoState(walletId, utxoId);
+    if (utxo != null && utxo.status != UtxoStatus.locked) {
+      final result = await _utxoRepository.toggleUtxoLockStatus(walletId, utxoId);
+      if (result.isFailure) {
+        throw result.error;
+      }
+    }
+  }
+
+  Future<void> updateTransactionMemos(int walletId, Map<String, String> txMemos) async {
+    final result = _transactionRepository.addAllTransactionMemos(walletId, txMemos);
+    if (result.isFailure) {
+      throw result.error;
+    }
+    notifyListeners();
+  }
+
+  Future<void> lockUtxos(int walletId, List<String> utxoIds) async {
+    final result = await _utxoRepository.lockAllUtxos(walletId, utxoIds);
+    if (result.isFailure) {
+      throw result.error;
+    }
+    notifyListeners();
   }
 
   @override

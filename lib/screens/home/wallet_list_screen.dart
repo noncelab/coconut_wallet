@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -10,6 +12,8 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup,
         CoconutUnderlinedButton;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -144,6 +148,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               viewModel.pinCheckNotifier.value = false;
               await CommonBottomSheets.showCustomHeightBottomSheet(
                 context: context,
+                screenName: AnalyticsScreenNames.walletListPinCheckSheet,
                 child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: () => viewModel.handleAuthCompletion())),
                 heightRatio: 0.9,
               );
@@ -309,6 +314,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   void _showWalletListSettingsBottomSheet() {
     CommonBottomSheets.showBottomSheet(
+      screenName: AnalyticsScreenNames.walletListSettingsSheet,
       title: t.wallet_list.menu.display_settings,
       showCloseButton: true,
       showDragHandle: true,
@@ -1172,6 +1178,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           backgroundColor: context.coconutColors.background,
           isPrimaryWallet: isFirstItem,
           isExcludeFromTotalBalance: isExcludedFromTotalBalance,
+          watchedAddressCount: _viewModel.watchedAddressCount(walletItem.id),
           isEditMode: isEditMode,
           isFavorite: isFavorite,
           isStarVisible: !isEditMode,
@@ -1187,6 +1194,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               showCloseButton: true,
               showDragHandle: true,
               context: context,
+              screenName: AnalyticsScreenNames.walletListItemOptionsSheet,
               child: WalletItemSettingBottomSheet(id: walletItem.id),
             );
           },

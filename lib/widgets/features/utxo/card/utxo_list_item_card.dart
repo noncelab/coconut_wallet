@@ -176,7 +176,10 @@ class UtxoListItemCard extends StatelessWidget {
                               return Container();
                             }
                           }
-                          Color foregroundColor = tagColorPalette[utxo.tags?[index - 1].colorIndex ?? 0];
+                          final colorIndex = WalletVisualStyleUtil.normalizePaletteIndex(
+                            utxo.tags?[index - 1].colorIndex ?? 0,
+                          );
+                          Color foregroundColor = tagColorPalette[colorIndex];
                           return IntrinsicWidth(
                             child: CoconutChip(
                               minWidth: chipMinWidth,

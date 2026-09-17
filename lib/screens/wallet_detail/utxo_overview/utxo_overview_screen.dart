@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -7,6 +9,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -180,6 +183,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
       context.read<ConnectivityProvider>(),
       context.read<PriceProvider>(),
       context.read<PreferenceProvider>(),
+      context.read<NodeProvider>(),
       context.read<NodeProvider>().getWalletStateStream(widget.id),
     );
 
@@ -222,7 +226,11 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     _restoreUtxoId = utxo.utxoId;
     _restoreScrollOffset = _scrollController.hasClients ? _scrollController.offset : null;
 
-    await Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.id});
+    await Navigator.pushNamed(
+      context,
+      AppRouteNames.utxoDetail,
+      arguments: UtxoDetailRouteArgs(utxo: utxo, id: widget.id),
+    );
     if (mounted) {
       viewModel.refetchFromDB();
     }
@@ -331,6 +339,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                 onThemeSettingTap: () {
                   CommonBottomSheets.showCustomHeightBottomSheet(
                     context: context,
+                    screenName: AnalyticsScreenNames.utxoOverviewTierThemeSheet,
                     heightRatio: 0.6,
                     child: const UtxoTierThemeBottomSheet(),
                   );
@@ -628,12 +637,12 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     });
     Navigator.pushNamed(
       context,
-      '/send',
-      arguments: {
-        'walletId': widget.id,
-        'sendEntryPoint': SendEntryPoint.walletDetail,
-        'selectedUtxoList': selectedUtxos,
-      },
+      AppRouteNames.send,
+      arguments: SendRouteArgs(
+        id: widget.id,
+        sendEntryPoint: SendEntryPoint.walletDetail,
+        selectedUtxoList: selectedUtxos,
+      ),
     );
   }
 
@@ -646,11 +655,13 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     if (_selectedUtxoIds.isEmpty) return;
 
     final selectedUtxoIds = _selectedUtxoIds.toList();
-    final result = await showModalBottomSheet<TagApplyResult>(
+    final result = await CommonBottomSheets.showBottomSheet_100<TagApplyResult>(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.utxoOverviewTagApplySheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
+      child: TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
     );
 
     if (result == null) return;
@@ -769,12 +780,12 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     });
     Navigator.pushNamed(
       context,
-      '/send',
-      arguments: {
-        'walletId': widget.id,
-        'sendEntryPoint': SendEntryPoint.walletDetail,
-        'selectedUtxoList': selectedUtxos,
-      },
+      AppRouteNames.send,
+      arguments: SendRouteArgs(
+        id: widget.id,
+        sendEntryPoint: SendEntryPoint.walletDetail,
+        selectedUtxoList: selectedUtxos,
+      ),
     );
   }
 

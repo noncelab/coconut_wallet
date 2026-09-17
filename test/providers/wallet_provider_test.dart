@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
@@ -9,6 +10,7 @@ import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/taproot_script_path_seed_info.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -29,8 +31,8 @@ const _parentTaprootXpub =
     "tpubDDMbU29QrSafD2Ui4yGv31Xp3PPSMvudreoohYjR8xLTng7hbsjYwUTeRhiKULFqX16M5M8zZh9siw5i6RRyisc6LtWjr1FwBYTiZUGGYJN";
 const _childTaprootXpub =
     "tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8";
-const _inheritanceMiniscript = "and_v(v:pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*),older(500000000))";
-const _oneParentDescriptor = "tr([9B1441E4/86'/1'/0']$_parentTaprootXpub/<0;1>/*,{$_inheritanceMiniscript})#w0hf4lu5";
+const _inheritanceMiniscript = "and_v(v:pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*),after(500000000))";
+const _oneParentDescriptor = "tr([9B1441E4/86'/1'/0']$_parentTaprootXpub/<0;1>/*,{$_inheritanceMiniscript})#652j50l8";
 
 const _singlesigDescriptor =
     "wpkh([D45AA182/84'/1'/0']vpub5YtEovN9MqeUZxWqdpUKngsiaLCPFY34KpWGQVk9Tjq8G5SYcRFj9s5aCKeAQYGunG7LrFkA5obtH8kPJiv92JtWHfRvnir6PDvhd4p93Pp/<0;1>/*)#rcn2hj6y";
@@ -194,7 +196,19 @@ class FakeAddressRepository extends Fake implements AddressRepository {
     ensureAddressesInitCallCount++;
     if (error != null) throw error!;
   }
+
+  (int, int) usedIndexesResult = (-1, -1);
+  Map<bool, List<WalletAddress>> activeUsedAddressesResult = const {};
+
+  @override
+  (int, int) getUsedIndexes(int walletId) => usedIndexesResult;
+
+  @override
+  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) => activeUsedAddressesResult[isChange] ?? [];
 }
+
+WalletAddress _activeUsedAddress(int index, bool isChange) =>
+    WalletAddress('addr_$index', 'm/0/$index', index, isChange, true, 1000, 0, 1000);
 
 class FakeTransactionRepository extends Fake implements TransactionRepository {}
 
@@ -474,7 +488,7 @@ TaprootWalletItem _createTaprootWalletListItem({
 /// WalletProvider를 생성하고 생성자 내부의 비동기 초기화가 완료될 때까지 대기
 Future<WalletProvider> _buildProvider(
   FakeWalletRepository walletRepository, {
-  FakeAddressRepository? addressRepository,
+  AddressRepository? addressRepository,
   FakePreferenceProvider? preferenceProvider,
   FakeHotWalletSecretRepository? secretRepository,
   FakeSharedPrefsRepository? sharedPrefsRepository,
@@ -1097,6 +1111,55 @@ void main() {
 
       expect(result.result, WalletSyncResult.existingName);
       expect(walletRepo.addMultisigWalletCallCount, 0);
+
+      provider.dispose();
+    });
+  });
+
+  group('WalletProvider - getWatchedAddressCount', () {
+    const walletId = 1;
+
+    test('gap window 밖에서 발견된 활성 사용 주소는 고정 개수(2*gapLimit)에 추가로 더한다', () async {
+      final addressRepository =
+          FakeAddressRepository()
+            ..usedIndexesResult = (2, -1)
+            ..activeUsedAddressesResult = {
+              false: [_activeUsedAddress(50, false)],
+              true: <WalletAddress>[],
+            };
+
+      final provider = await _buildProvider(FakeWalletRepository(), addressRepository: addressRepository);
+
+      expect(provider.getWatchedAddressCount(walletId), 2 * kSubscriptionGapLimit + 1);
+
+      provider.dispose();
+    });
+
+    test('gap window 안으로 들어온 활성 사용 주소는 중복 집계하지 않는다', () async {
+      // 회귀 시나리오: 스크롤로 50번 주소를 먼저 발견(receiveUsedIndex는 그대로 2)했다가,
+      // 이후 3~30번을 순서대로 사용해 receiveUsedIndex가 30까지 올라온 상태.
+      // gap window(31~50)에 50번이 들어와 있으므로 고정 40개에 이미 포함돼 있다.
+      final addressRepository =
+          FakeAddressRepository()
+            ..usedIndexesResult = (30, -1)
+            ..activeUsedAddressesResult = {
+              false: [_activeUsedAddress(50, false)],
+              true: <WalletAddress>[],
+            };
+
+      final provider = await _buildProvider(FakeWalletRepository(), addressRepository: addressRepository);
+
+      expect(provider.getWatchedAddressCount(walletId), 2 * kSubscriptionGapLimit);
+
+      provider.dispose();
+    });
+
+    test('활성 사용 주소가 없으면 고정 개수(2*gapLimit)만 반환한다', () async {
+      final addressRepository = FakeAddressRepository()..usedIndexesResult = (-1, -1);
+
+      final provider = await _buildProvider(FakeWalletRepository(), addressRepository: addressRepository);
+
+      expect(provider.getWatchedAddressCount(walletId), 2 * kSubscriptionGapLimit);
 
       provider.dispose();
     });

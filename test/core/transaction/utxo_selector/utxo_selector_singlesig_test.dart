@@ -10,7 +10,7 @@ void main() {
   setUpAll(() {
     utxoList = [
       UtxoState(
-        transactionHash: '1',
+        transactionHash: '0000000000000000000000000000000000000000000000000000000000000011',
         index: 0,
         amount: 100000,
         derivationPath: "m/84'/0'/0'/0/0",
@@ -20,7 +20,7 @@ void main() {
         status: UtxoStatus.unspent,
       ),
       UtxoState(
-        transactionHash: '2',
+        transactionHash: '0000000000000000000000000000000000000000000000000000000000000012',
         index: 0,
         amount: 50000,
         derivationPath: "m/84'/0'/0'/0/1",
@@ -30,7 +30,7 @@ void main() {
         status: UtxoStatus.unspent,
       ),
       UtxoState(
-        transactionHash: '3',
+        transactionHash: '0000000000000000000000000000000000000000000000000000000000000013',
         index: 0,
         amount: 25000, // 0.00025 BTC
         derivationPath: "m/84'/0'/0'/0/2",

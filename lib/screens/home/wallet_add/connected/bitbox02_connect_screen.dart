@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:io' show Platform;
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -10,6 +12,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -17,7 +20,8 @@ import 'package:coconut_wallet/providers/view_model/wallet_add/connected/bitbox0
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
-import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
+
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
@@ -82,6 +86,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     if (!mounted) return;
 
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
+      context.read<AnalyticsService>().logWalletAddCompleted(widget.importSource);
       Navigator.pushReplacementNamed(
         context,
         '/renewal-wallet-detail',
@@ -97,8 +102,13 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
   }
 
   Future<void> _handleClose() async {
-    if (_viewModel.step == BitBox02ConnectStep.pairing) {
-      Navigator.pop(context);
+    if (_viewModel.step == BitBox02ConnectStep.pairing || _viewModel.step == BitBox02ConnectStep.confirmPairing) {
+      if (_viewModel.step == BitBox02ConnectStep.confirmPairing) {
+        await _viewModel.confirmPairing(false);
+      } else {
+        await _viewModel.disconnect();
+      }
+      if (mounted) Navigator.pop(context);
       return;
     }
     if (!_viewModel.isPaired) {
@@ -162,6 +172,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
                         vm.step == BitBox02ConnectStep.error ||
                         (vm.step == BitBox02ConnectStep.paired && !vm.isConnecting))
                       Stack(alignment: Alignment.center, children: [_buildPrimaryActionButton(vm)]),
+                    if (vm.step == BitBox02ConnectStep.confirmPairing) _buildPairingCancelButton(vm),
                     if (_isAddingWallet) const CoconutLoadingOverlay(applyFullScreen: true),
                   ],
                 ),
@@ -197,6 +208,13 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
           t.wallet_connect_screen.guide_bitbox02.connecting.step1,
           t.wallet_connect_screen.guide_bitbox02.connecting.step2,
         ]);
+      case BitBox02ConnectStep.confirmPairing:
+        return BitBox02PairingCodeCard(
+          pairingCode: vm.pairingCode,
+          title: t.wallet_connect_screen.guide_bitbox02.pairing.title,
+          description: t.wallet_connect_screen.guide_bitbox02.pairing.description,
+          status: t.wallet_connect_screen.guide_bitbox02.pairing.wait_for_device,
+        );
       case BitBox02ConnectStep.paired:
         return _buildSuccessCard(vm);
       case BitBox02ConnectStep.error:
@@ -289,6 +307,16 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     );
   }
 
+  Widget _buildPairingCancelButton(BitBox02ConnectViewModel vm) {
+    // The user compares the code with the BitBox02 and taps the check mark on
+    // the device. The app only needs a cancel option for explicit rejection.
+    return FixedBottomButton(
+      onButtonClicked: () => vm.confirmPairing(false),
+      text: t.wallet_connect_screen.guide_bitbox02.pairing.cancel,
+      isActive: !vm.isConnecting,
+    );
+  }
+
   Widget _buildPrimaryActionButton(BitBox02ConnectViewModel vm) {
     final bool isRetry = vm.step == BitBox02ConnectStep.error;
     final bool hasXpub = vm.xpub.isNotEmpty;
@@ -315,14 +343,13 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
         Navigator.pop(context);
         Navigator.pushNamed(
           context,
-          '/bitbox02-sign',
-          arguments: {
-            'psbtBase64': widget.psbtBase64,
-            'walletName': widget.walletName ?? '',
-            'walletFingerprint': widget.walletFingerprint ?? '',
-            'isFromSendFlow': true,
-            'transport': BitBox02Transport.resolveForSign(),
-          },
+          AppRouteNames.bitbox02Sign,
+          arguments: BitBox02SignRouteArgs(
+            psbtBase64: widget.psbtBase64!,
+            walletName: widget.walletName ?? '',
+            walletFingerprint: widget.walletFingerprint ?? '',
+            isFromSendFlow: true,
+          ),
         );
       };
     } else if (!isSignFlow && isPaired && hasXpub) {

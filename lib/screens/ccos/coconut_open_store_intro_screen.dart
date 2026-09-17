@@ -1323,7 +1323,7 @@ class _StoryScene extends StatelessWidget {
                                 : ContributeSceneBody(
                                   animation: sceneAnimation,
                                   sceneDurationMs: sceneDurationMs,
-                                  onStartPr: () => launchURL(CONTRIBUTING_URL),
+                                  onStartPr: () => launchURL(context, CONTRIBUTING_URL),
                                 ),
                       ),
                       const SizedBox(height: 10),

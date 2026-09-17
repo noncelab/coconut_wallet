@@ -44,8 +44,9 @@ class _TransactionDetailHeaderState extends State<TransactionDetailHeader> {
         children: [
           CoconutLayout.spacing_800h,
           _buildBalanceInfo(context),
-          CoconutLayout.spacing_500h,
+          CoconutLayout.spacing_100h,
           _buildPendingAmountStatus(context),
+          CoconutLayout.spacing_500h,
         ],
       ),
     );

@@ -7,6 +7,7 @@ import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/firebase_options.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/app_icon_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
@@ -27,6 +28,8 @@ class AppBootstrap {
     await configureSystemUi();
 
     await _loadEnvironment();
+    // 기본 서버 매칭(findMatching)이 NetworkType에 의존하므로 _loadEnvironment() 이후에 호출해야 한다.
+    await ElectrumServerProvider().migrateLegacyCustomServerStorage();
     await _initializeFirebase();
     await FileLogger.initialize();
     await _updateAppIconIfNeeded();

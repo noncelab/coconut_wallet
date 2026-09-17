@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -11,6 +13,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup;
 import 'package:coconut_wallet/constants/lottie_path.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -29,15 +32,15 @@ import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
 import 'package:coconut_wallet/screens/send/hot_wallet_passphrase_input_sheet.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
-import 'package:coconut_wallet/services/hardware_wallet/bitbox02_transport.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_navigator.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_navigator.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
-import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/features/send/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
@@ -465,6 +468,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
         while (mounted) {
           passphrase = await CommonBottomSheets.showBottomSheet<Uint8List>(
             context: context,
+            screenName: AnalyticsScreenNames.sendHotWalletPassphraseSheet,
             title: t.send_confirm_screen.passphrase_input_title,
             showCloseButton: true,
             backgroundColor: context.coconutColors.surfaceBottomSheet,
@@ -588,21 +592,24 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
           _navigateToTrezorConnectIfNeeded(viewModel);
         }
       default:
-        Navigator.pushNamed(context, '/unsigned-transaction-qr', arguments: {'walletName': viewModel.walletName});
+        Navigator.pushNamed(
+          context,
+          AppRouteNames.unsignedTransactionQr,
+          arguments: UnsignedTransactionQrRouteArgs(walletName: viewModel.walletName),
+        );
     }
   }
 
   void _pushBitBox02SignScreen(SendConfirmViewModel viewModel) {
     Navigator.pushNamed(
       context,
-      '/bitbox02-sign',
-      arguments: {
-        'psbtBase64': viewModel.txWaitingForSign,
-        'walletName': viewModel.walletName,
-        'walletFingerprint': viewModel.walletFingerprint,
-        'isFromSendFlow': true,
-        'transport': BitBox02Transport.resolveForSign(),
-      },
+      AppRouteNames.bitbox02Sign,
+      arguments: BitBox02SignRouteArgs(
+        psbtBase64: viewModel.txWaitingForSign!,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        isFromSendFlow: true,
+      ),
     );
   }
 
@@ -616,16 +623,13 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     if (isConnected && hasSession && isMatchingWallet) {
       _pushBitBox02SignScreen(viewModel);
     } else {
-      CommonBottomSheets.showCustomHeightBottomSheet(
+      BitBox02Navigator.showConnectScreen(
         context: context,
-        child: BitBox02ConnectScreen(
-          importSource: WalletImportSource.bitbox02,
-          psbtBase64: viewModel.txWaitingForSign,
-          walletName: viewModel.walletName,
-          walletFingerprint: viewModel.walletFingerprint,
-          resumeFromExistingSession: isConnected && hasSession,
-        ),
-        heightRatio: 0.9,
+        screenName: AnalyticsScreenNames.sendConfirmConnectBitbox02Sheet,
+        psbtBase64: viewModel.txWaitingForSign,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        resumeFromExistingSession: isConnected && hasSession,
       );
     }
   }
@@ -634,20 +638,20 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
     final lastConnected = TrezorDevice.lastConnected!;
     Navigator.pushNamed(
       context,
-      '/trezor-sign',
-      arguments: {
-        'psbtBase64': viewModel.txWaitingForSign,
-        'walletName': viewModel.walletName,
-        'walletFingerprint': viewModel.walletFingerprint,
-        'isFromSendFlow': true,
-        'transport': lastConnected.transport.name,
-      },
+      AppRouteNames.trezorSign,
+      arguments: TrezorSignRouteArgs(
+        psbtBase64: viewModel.txWaitingForSign!,
+        walletName: viewModel.walletName,
+        walletFingerprint: viewModel.walletFingerprint,
+        isFromSendFlow: true,
+        transport: lastConnected.transport.name,
+      ),
     );
   }
 
   Future<void> _navigateToTrezorConnectIfNeeded(SendConfirmViewModel viewModel) async {
     final lastConnected = TrezorDevice.lastConnected;
-    final isConnected = await TrezorBleConnectivityService.isDeviceConnected(
+    final isConnected = await TrezorConnectivityService.isDeviceConnected(
       lastConnected?.transport ?? TrezorTransport.ble,
     );
     final hasSession = lastConnected != null;

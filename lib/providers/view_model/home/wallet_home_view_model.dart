@@ -226,6 +226,18 @@ class WalletHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Set<int> get walletIdsWithUnacknowledgedOlderToAfterBackupUpdate =>
+      _walletProvider.walletIdsWithUnacknowledgedOlderToAfterBackupUpdate;
+
+  bool get hasUnacknowledgedOlderToAfterBackupUpdate => _walletProvider.hasUnacknowledgedOlderToAfterBackupUpdate;
+
+  String get unacknowledgedOlderToAfterBackupUpdateWalletIdsSignature =>
+      (walletIdsWithUnacknowledgedOlderToAfterBackupUpdate.toList()..sort()).join(',');
+
+  Future<void> acknowledgeOlderToAfterBackupUpdate(int walletId) {
+    return _walletProvider.acknowledgeOlderToAfterBackupUpdate(walletId);
+  }
+
   bool get isEmptyFavoriteWallet => _isEmptyFavoriteWallet;
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isFiatBalanceHidden => _isFiatBalanceHidden;
@@ -370,11 +382,11 @@ class WalletHomeViewModel extends ChangeNotifier {
   Future<void> onRefresh() async {
     updateWalletBalancesAndRecentTxs();
 
-    if (networkStatus != NetworkStatus.connectionFailed) {
-      return;
-    }
+    await _nodeProvider.reconnectIfNeeded();
 
-    _nodeProvider.reconnect();
+    for (final wallet in walletItemList) {
+      unawaited(_nodeProvider.syncDormantAddresses(wallet));
+    }
   }
 
   Future<void> updateWalletBalancesAndRecentTxs() async {

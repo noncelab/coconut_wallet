@@ -3,24 +3,32 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/analytics/analytics_event_names.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/analytics/wallet_sync_analytics.dart';
 import 'package:coconut_wallet/constants/isolate_constants.dart';
+import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:coconut_wallet/model/node/resync_progress.dart';
+import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/services/network/socket/socket_factory.dart';
+import 'package:coconut_wallet/utils/certificate_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
 
@@ -29,6 +37,7 @@ class NodeProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final ValueNotifier<WalletLoadState> _walletLoadStateNotifier;
   final ValueNotifier<List<WalletItemBase>> _walletItemListNotifier;
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   ElectrumServer _electrumServer;
   final NetworkType _networkType;
   final AnalyticsService? _analyticsService;
@@ -47,6 +56,8 @@ class NodeProvider extends ChangeNotifier {
 
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
   final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
+  final _resyncProgressController = StreamController<Map<int, ResyncProgress>>.broadcast();
+  final _fetchProgressController = StreamController<Map<int, WalletFetchProgress>>.broadcast();
   final _currentBlockController = StreamController<BlockTimestamp?>.broadcast();
 
   final ValueNotifier<BlockTimestamp?> _currentBlockNotifier = ValueNotifier<BlockTimestamp?>(null);
@@ -76,6 +87,47 @@ class NodeProvider extends ChangeNotifier {
           .map((wallets) => wallets[walletId])
           .where((state) => state != null)
           .cast<WalletUpdateInfo>()
+          .listen(controller.add);
+      controller.onCancel = () => subscription.cancel();
+    });
+  }
+
+  /// 새 재동기화를 시작하기 직전에 호출
+  /// getResyncProgressStream이 이전 실행의 마지막 상태를 리플레이하지 않도록 캐시 삭제
+  void clearResyncProgress(int walletId) {
+    _stateManager?.clearResyncProgress(walletId);
+  }
+
+  /// 특정 지갑의 재동기화 진행 상태만 구독할 수 있는 스트림
+  Stream<ResyncProgress> getResyncProgressStream(int walletId) {
+    return Stream.multi((controller) {
+      final initialState = _stateManager?.resyncProgressByWallet[walletId];
+      if (initialState != null) {
+        controller.add(initialState);
+      }
+
+      final subscription = _resyncProgressController.stream
+          .map((wallets) => wallets[walletId])
+          .where((state) => state != null)
+          .cast<ResyncProgress>()
+          .listen(controller.add);
+      controller.onCancel = () => subscription.cancel();
+    });
+  }
+
+  /// 특정 지갑의 트랜잭션 fetch 진행 상태(dispatched/completed 카운트)를 구독할 수 있는 스트림
+  /// syncing/completed 이진 상태보다 정확하게 "지금 진짜로 처리 중인 요청이 있는지"를 알려준다.
+  Stream<WalletFetchProgress> getWalletFetchProgressStream(int walletId) {
+    return Stream.multi((controller) {
+      final initialState = _stateManager?.fetchProgressByWallet[walletId];
+      if (initialState != null) {
+        controller.add(initialState);
+      }
+
+      final subscription = _fetchProgressController.stream
+          .map((wallets) => wallets[walletId])
+          .where((state) => state != null)
+          .cast<WalletFetchProgress>()
           .listen(controller.add);
       controller.onCancel = () => subscription.cancel();
     });
@@ -136,6 +188,11 @@ class NodeProvider extends ChangeNotifier {
       if (_isWalletLoaded && isInitialized && _isFirstInitialization) {
         _stateManager?.setNodeSyncStateToFailed();
       }
+      final nodeSyncState = state.nodeSyncState;
+      final isBootstrapping = nodeSyncState == NodeSyncState.init || nodeSyncState == NodeSyncState.syncing;
+      if (_connectivityProvider.isInternetOn && !isBootstrapping) {
+        unawaited(reconnect());
+      }
     }
   }
 
@@ -149,6 +206,7 @@ class NodeProvider extends ChangeNotifier {
   String get host => _electrumServer.host;
   int get port => _electrumServer.port;
   bool get ssl => _electrumServer.ssl;
+  String? get pinnedCertFingerprint => _electrumServer.pinnedCertFingerprint;
   bool get isServerChanging => _isServerChanging;
   bool get hasConnectionError => _hasConnectionError;
   int get currentBlockHeight => _currentBlockNotifier.value?.height ?? 0;
@@ -228,8 +286,10 @@ class NodeProvider extends ChangeNotifier {
       if (result.isFailure) {
         Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
         _stateManager?.setNodeSyncStateToFailed();
+        _analyticsService?.logWalletBulkSyncFailed();
       } else {
         _setConnectionError(false);
+        _analyticsService?.logWalletBulkSyncCompleted();
 
         await Future.delayed(const Duration(seconds: 1));
         await _startBlockUpdates();
@@ -262,8 +322,9 @@ class NodeProvider extends ChangeNotifier {
           if (result.isFailure) {
             Logger.error('NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}');
             _stateManager?.setNodeSyncStateToFailed();
+            _analyticsService?.logWalletAddSyncFailed();
           } else {
-            _analyticsService?.logEvent(eventName: AnalyticsEventNames.walletAddSyncCompleted);
+            _analyticsService?.logWalletAddSyncCompleted();
           }
         });
       }
@@ -277,6 +338,8 @@ class NodeProvider extends ChangeNotifier {
       },
       _syncStateController,
       _walletStateController,
+      _resyncProgressController,
+      _fetchProgressController,
     );
   }
 
@@ -323,7 +386,8 @@ class NodeProvider extends ChangeNotifier {
     try {
       _createNewCompleter();
       _createStateManager();
-      await _isolateManager.initialize(host, port, ssl, _networkType);
+      await _isolateManager.initialize(host, port, ssl, _networkType, pinnedCertFingerprint);
+      unawaited(_recordCurrentServerGenesisHash());
 
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
         _initCompleter!.complete();
@@ -406,6 +470,66 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.unsubscribeWallet(walletItem);
   }
 
+  /// 지갑 재동기화 진입 전, 현재 연결된 일렉트럼 서버 상태가 정상인지 확인
+  /// _hasConnectionError는 다음 블록 업데이트/재연결 성공 시점에야 풀리는 캐시값이라
+  /// 콜드 스타트 등에서 실제로는 연결됐는데도 한동안 true로 남아있을 수 있어 참고하지 않고
+  /// 일렉트럼 서버 설정 화면과 동일하게 항상 실시간으로 확인한다.
+  Future<Result<bool>> verifyCurrentConnectionHealth() async {
+    return _verifyChainCompatibility(_electrumServer);
+  }
+
+  /// 지갑의 온체인 데이터를 초기화하고 처음부터 다시 동기화
+  Future<Result<bool>> resyncWallet(WalletItemBase walletItem) async {
+    if (_connectivityProvider.isInternetOff) {
+      Logger.log('NodeProvider: 네트워크가 연결되지 않아 재동기화를 시작하지 않습니다.');
+      return Result.failure(ErrorCodes.networkError);
+    }
+
+    final result = await raceResyncAgainstConnectionLoss(_isolateManager.resyncWallet(walletItem), syncStateStream);
+
+    if (result.isSuccess) {
+      await _sharedPrefs.setWalletLastResyncTimestamp(walletItem.id, DateTime.now());
+    }
+    return result;
+  }
+
+  /// [isolateFuture]와 [syncStateStream]의 다음 [NodeSyncState.failed] 이벤트 중
+  /// 먼저 끝나는 쪽을 채택한다. isolate 쪽 작업 자체는 취소하지 않고 흘려보낸다.
+  @visibleForTesting
+  static Future<Result<bool>> raceResyncAgainstConnectionLoss(
+    Future<Result<bool>> isolateFuture,
+    Stream<NodeSyncState> syncStateStream,
+  ) async {
+    late StreamSubscription<NodeSyncState> connectionLostSubscription;
+    final connectionLostCompleter = Completer<Result<bool>>();
+    connectionLostSubscription = syncStateStream.listen((syncState) {
+      if (syncState == NodeSyncState.failed && !connectionLostCompleter.isCompleted) {
+        connectionLostCompleter.complete(Result.failure(ErrorCodes.nodeConnectionError));
+      }
+    });
+
+    try {
+      return await Future.any([isolateFuture, connectionLostCompleter.future]);
+    } finally {
+      await connectionLostSubscription.cancel();
+    }
+  }
+
+  DateTime? getLastResyncTimestamp(int walletId) {
+    return _sharedPrefs.getWalletLastResyncTimestamp(walletId);
+  }
+
+  Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) async {
+    return _isolateManager.syncDormantAddresses(walletItem);
+  }
+
+  Future<Result<List<WalletAddress>>> syncViewedAddresses(
+    WalletItemBase walletItem,
+    List<WalletAddress> addresses,
+  ) async {
+    return _isolateManager.syncViewedAddresses(walletItem, addresses);
+  }
+
   Future<Result<String>> broadcast(Transaction signedTx) async {
     final result = await _isolateManager.broadcast(signedTx);
     if (result.isFailure) {
@@ -448,20 +572,29 @@ class NodeProvider extends ChangeNotifier {
     return result;
   }
 
-  Future<void> reconnect() async {
-    _setConnectionError(false); // 재연결 시작 시 에러 상태 리셋
+  /// 연결이 끊긴 상태면 재연결을 시도
+  /// pull-to-refresh 등에서 조건 분기 없이 호출할 수 있도록, 필요 없으면 내부에서 바로 no-op한다.
+  Future<Result<bool>> reconnectIfNeeded() async {
+    if (!isInitialized) return reconnect();
+    if (state.nodeSyncState != NodeSyncState.failed && !hasConnectionError) return Result.success(true);
+    return reconnect();
+  }
+
+  Future<Result<bool>> reconnect() async {
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');
       _isPendingInitialization = true;
-      return;
+      return Result.failure(ErrorCodes.networkError);
     }
 
     // 이미 초기화 중이거나 종료 중인 경우 대기
     if (_isInitializing || _isClosing) {
       Logger.log('NodeProvider: Reconnect skipped - operation in progress');
-      return;
+      return Result.failure(ErrorCodes.nodeConnectionError);
     }
+
+    _setConnectionError(false); // 재연결 시작 시 에러 상태 리셋
 
     try {
       Logger.log('NodeProvider: Starting reconnect');
@@ -483,25 +616,32 @@ class NodeProvider extends ChangeNotifier {
           Logger.log('NodeProvider: Reconnect completed successfully');
           _setConnectionError(false);
           _restartBlockUpdates();
+          _analyticsService?.logWalletBulkSyncCompleted();
+          return Result.success(true);
         } else {
           Logger.error('NodeProvider: subscribeWallets failed: ${result.error}');
           _stateManager?.setNodeSyncStateToFailed();
           _setConnectionError(true);
+          _analyticsService?.logWalletBulkSyncFailed();
+          return Result.failure(result.error);
         }
       } else if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isEmpty) {
         Logger.log('NodeProvider: Wallet Loaded & Wallet Items is Empty, set state to completed');
         _stateManager?.setNodeSyncStateToCompleted();
         _setConnectionError(false);
         notifyListeners();
+        return Result.success(true);
       } else {
         Logger.log('NodeProvider: Wallet Loading, reset flag for auto-subscription');
         _isFirstInitialization = true;
         notifyListeners();
+        return Result.success(true);
       }
     } catch (e) {
       Logger.error('NodeProvider: Reconnect failed: $e');
       _setConnectionError(true);
       _stateManager?.setNodeSyncStateToFailed();
+      return Result.failure(ErrorCodes.networkError);
     }
   }
 
@@ -564,6 +704,9 @@ class NodeProvider extends ChangeNotifier {
     } catch (e) {
       Logger.error('NodeProvider: 서버 연결 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
       await electrumService.close();
+      if (electrumService.lastConnectionFailedDueToUntrustedCertificate) {
+        return Result.failure(ErrorCodes.untrustedCertificateError);
+      }
       return Result.failure(ErrorCodes.networkError);
     } finally {
       await electrumService.close();
@@ -574,10 +717,29 @@ class NodeProvider extends ChangeNotifier {
     final isOnionHost = server.host.trim().toLowerCase().endsWith('.onion');
     final connectionTimeout = isOnionHost ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
 
-    await service.connect(server.host, server.port, ssl: server.ssl).timeout(connectionTimeout);
+    await service
+        .connect(server.host, server.port, ssl: server.ssl, pinnedCertFingerprint: server.pinnedCertFingerprint)
+        .timeout(connectionTimeout);
 
     if (service.connectionStatus != SocketConnectionStatus.connected) {
       throw Exception('Socket connection failed');
+    }
+  }
+
+  /// 커스텀 서버가 제시하는 인증서의 SHA-256 지문을 확인만 하기 위한 임시 연결
+  /// 실제 프로토콜 통신은 하지 않으며, TOFU 확인 UI에서만 사용한다.
+  Future<Result<String>> probeCertificateFingerprint(ElectrumServer server) async {
+    try {
+      final cert = await DefaultSocketFactory().peekCertificate(server.host, server.port).timeout(kIsolateInitTimeout);
+
+      if (cert == null) {
+        return Result.failure(ErrorCodes.networkError);
+      }
+
+      return Result.success(CertificateUtil.sha256Fingerprint(cert));
+    } catch (e) {
+      Logger.error('NodeProvider: 인증서 확인 실패 - ${server.host}:${server.port}: $e');
+      return Result.failure(ErrorCodes.networkError);
     }
   }
 
@@ -585,32 +747,138 @@ class NodeProvider extends ChangeNotifier {
     await service.serverVersion().timeout(const Duration(seconds: 5));
   }
 
-  Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
-    _isServerChanging = true;
-    await closeConnection();
-    _electrumServer = electrumServer;
-
-    Logger.log('NodeProvider: 서버 변경: $host:$port, ssl=$ssl');
+  /// 새 서버가 이전에 동기화하던 것과 같은 체인인지 genesis hash로 확인합니다.
+  /// 다른 체인의 서버로 전환하면, 그 서버 입장에서는 지갑 주소들이 전부 "본 적 없는" 상태라
+  /// 잔액이 0으로 조회되고, 그 결과가 기존 잔액에 그대로 diff 반영되어 덮어써지는 문제가 있어
+  /// 전환 자체를 막습니다. 이전에 기록된 genesis hash가 없으면(최초 연결) 그대로 통과시킵니다.
+  Future<Result<bool>> _verifyChainCompatibility(ElectrumServer electrumServer) async {
+    final electrumService = ElectrumService();
 
     try {
-      await initialize();
+      await _establishSocketConnection(electrumService, electrumServer);
+      final features = await electrumService.serverFeatures().timeout(const Duration(seconds: 5));
+      final genesisHash = features.genesisHash;
 
-      subscribeWallets().then((result) {
-        if (result.isFailure) {
-          Logger.error('NodeProvider: 서버 변경 실패: ${result.error}');
-          _stateManager?.setNodeSyncStateToFailed();
-          notifyListeners();
+      if (isBuildNetworkGenesisMismatch(buildNetworkType: _networkType, genesisHash: genesisHash)) {
+        Logger.error(
+          'NodeProvider: 서버 변경 차단 - 빌드 네트워크($_networkType)와 다른 체인의 서버 (genesis: $genesisHash, '
+          '${electrumServer.host}:${electrumServer.port})',
+        );
+        return Result.failure(ErrorCodes.chainMismatchError);
+      }
+
+      // mainnet/testnet은 위 하드코딩 상수 비교만으로 이미 배타적으로 검증되므로,
+      // 기준값 비교는 그런 고정값이 없는 regtest에서만 의미가 있다.
+      if (_networkType == NetworkType.regtest) {
+        final baselineGenesisHash = _sharedPrefs.getBaselineGenesisHash();
+        if (isChainGenesisMismatch(baselineGenesisHash: baselineGenesisHash, newGenesisHash: genesisHash)) {
+          Logger.error(
+            'NodeProvider: 서버 변경 차단 - 체인 불일치 (기준값: $baselineGenesisHash, 새 서버: $genesisHash, '
+            '${electrumServer.host}:${electrumServer.port})',
+          );
+          return Result.failure(ErrorCodes.chainMismatchError);
         }
-      });
+      }
 
-      Logger.log('NodeProvider: 서버 변경 성공');
+      return Result.success(true);
+    } catch (e) {
+      Logger.error('NodeProvider: 체인 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
+      return Result.failure(ErrorCodes.networkError);
+    } finally {
+      await electrumService.close();
+    }
+  }
+
+  static const String _kMainnetGenesisHash = '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f';
+  static const String _kTestnetGenesisHash = '000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943';
+
+  /// 이 앱 빌드의 네트워크(mainnet/testnet/regtest)와 다른 체인인지,
+  /// genesis hash와 직접 대조해서 판단합니다.
+  @visibleForTesting
+  static bool isBuildNetworkGenesisMismatch({required NetworkType buildNetworkType, required String genesisHash}) {
+    if (buildNetworkType == NetworkType.mainnet) {
+      return genesisHash != _kMainnetGenesisHash;
+    }
+    if (buildNetworkType == NetworkType.testnet) {
+      return genesisHash != _kTestnetGenesisHash;
+    }
+    return genesisHash == _kMainnetGenesisHash || genesisHash == _kTestnetGenesisHash;
+  }
+
+  /// 두 genesis hash가 다르면(그리고 기준값이 확립되어 있으면) 체인이 다른 것으로 판단합니다.
+  /// 기준값이 아직 없으면(최초 연결) 항상 false를 반환합니다.
+  @visibleForTesting
+  static bool isChainGenesisMismatch({required String? baselineGenesisHash, required String newGenesisHash}) {
+    return baselineGenesisHash != null && baselineGenesisHash != newGenesisHash;
+  }
+
+  /// 이 앱 빌드의 네트워크(flavor)에 해당하는 coconut 기본 서버에 연결해 genesis hash를
+  /// 기준값으로 기록합니다. mainnet/testnet은 하드코딩된 genesis hash로 검증되므로,
+  /// 기준값이 필요한 건 regtest뿐이다.
+  Future<void> _recordCurrentServerGenesisHash() async {
+    if (_networkType != NetworkType.regtest) {
+      return;
+    }
+
+    if (_sharedPrefs.getBaselineGenesisHash() != null) {
+      return;
+    }
+
+    final trustedServer = DefaultElectrumServer.regtestServers.first;
+    final electrumService = ElectrumService();
+
+    try {
+      await _establishSocketConnection(electrumService, trustedServer);
+      final features = await electrumService.serverFeatures().timeout(const Duration(seconds: 5));
+      await _sharedPrefs.setBaselineGenesisHash(features.genesisHash);
+    } catch (e) {
+      Logger.error('NodeProvider: 기본 서버 genesis hash 기록 실패 - ${trustedServer.host}:${trustedServer.port}: $e');
+    } finally {
+      await electrumService.close();
+    }
+  }
+
+  /// 사용할 엔드포인트만 교체하고, 실제 소켓은 건드리지 않는다.
+  /// 일렉트럼 서버 설정 화면에서 사용자가 후보를 고르는 동안 연결/해제가 반복되지 않도록,
+  /// 실제 반영은 화면을 벗어나는 시점에 [applyServerChange]로 한 번만 수행한다.
+  Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
+    try {
+      final chainCheckResult = await _verifyChainCompatibility(electrumServer);
+      if (chainCheckResult.isFailure) {
+        notifyListeners();
+        return Result.failure(chainCheckResult.error);
+      }
+
+      _electrumServer = electrumServer;
+
+      Logger.log('NodeProvider: 서버 엔드포인트 교체: $host:$port, ssl=$ssl');
+
       notifyListeners();
       return Result.success(true);
     } catch (e) {
-      Logger.error('NodeProvider: 서버 변경 중 초기화 실패: $e');
-      _stateManager?.setNodeSyncStateToFailed();
+      Logger.error('NodeProvider: 서버 엔드포인트 교체 실패: $e');
       notifyListeners();
       return Result.failure(ErrorCodes.networkError);
+    }
+  }
+
+  /// [changeServer]로 교체해둔 엔드포인트를 실제 연결에 반영한다.
+  /// reconnect는 host/port/ssl/pinnedCertFingerprint 게터를 통해 _electrumServer를 읽으므로,
+  /// 여기서 새 엔드포인트로 소켓이 다시 열리는 것이 보장된다.
+  Future<Result<bool>> applyServerChange() async {
+    _isServerChanging = true;
+
+    try {
+      Logger.log('NodeProvider: 서버 변경 반영: $host:$port, ssl=$ssl');
+      final result = await reconnect();
+
+      if (result.isFailure) {
+        Logger.error('NodeProvider: 서버 변경 반영 실패: ${result.error}');
+      } else {
+        Logger.log('NodeProvider: 서버 변경 반영 성공');
+      }
+
+      return result;
     } finally {
       _isServerChanging = false;
     }
@@ -627,6 +895,8 @@ class NodeProvider extends ChangeNotifier {
     // Stream Controllers 정리
     _syncStateController.close();
     _walletStateController.close();
+    _resyncProgressController.close();
+    _fetchProgressController.close();
     _currentBlockController.close();
 
     super.dispose();

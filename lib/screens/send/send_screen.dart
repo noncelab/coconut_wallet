@@ -1,6 +1,9 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 
@@ -682,6 +685,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _setDropdownMenuVisiblility(false);
     final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
       context: context,
+      screenName: AnalyticsScreenNames.sendSelectUtxoSheet,
       minChildSize: 0.6,
       maxChildSize: 0.9,
       initialChildSize: 0.9,
@@ -785,6 +789,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         while (mounted) {
           passphrase = await CommonBottomSheets.showBottomSheet<Uint8List>(
             context: context,
+            screenName: AnalyticsScreenNames.sendHotWalletPassphraseSheet,
             title: t.send_confirm_screen.passphrase_input_title,
             showCloseButton: true,
             backgroundColor: context.coconutColors.surfaceBottomSheet,
@@ -2150,6 +2155,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               }
                               CommonBottomSheets.showDraggableBottomSheet(
                                 context: context,
+                                screenName: AnalyticsScreenNames.sendSelectWalletSheet,
                                 childBuilder:
                                     (scrollController) => SelectWalletBottomSheet(
                                       showOnlyMfpWallets: false,
@@ -2313,7 +2319,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
       // 사용 가능 높이에 키보드 높이와 보드의 바텀 위치를 빼서 스크롤 가능 범위를 구한다.
       final keyboardGap = usableHeight - keyboardHeight - addressBoardBottomPos;
-      if (keyboardGap < 0) scrollbarHeight += -keyboardGap + CoconutLayout.defaultPadding;
+      if (keyboardGap < 0) {
+        scrollbarHeight += -keyboardGap + CoconutLayout.defaultPadding;
+      }
     } else if (_viewModel.showFeeBoard && _isAddressFocused) {
       // FeeBoard와 키보드간 간격만큼 스크롤 범위를 조정한다.
       double bottomPos = kPageViewHeight + feeBoardHeight;
@@ -2329,7 +2337,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       bottomPos += tooltipCount * kTooltipHeight;
 
       final keyboardGap = usableHeight - keyboardHeight - bottomPos;
-      if (keyboardGap < 0) scrollbarHeight += -keyboardGap + CoconutLayout.defaultPadding;
+      if (keyboardGap < 0) {
+        scrollbarHeight += -keyboardGap + CoconutLayout.defaultPadding;
+      }
     }
 
     // amount, fee는 스크롤 허용하지 않음
@@ -2339,6 +2349,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   void _showAddressListBottomSheet(int walletId) {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.sendAddressListSheet,
       heightRatio: 0.9,
       child: AddressListScreen(
         id: walletId,

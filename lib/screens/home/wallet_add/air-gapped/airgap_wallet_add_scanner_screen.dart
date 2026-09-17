@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -15,8 +17,9 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/analytics/analytics_event_names.dart';
-import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -313,13 +316,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           if (!hasEnglishWordOrder) {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.note}\n'),
-              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
-              _em(t.wallet_add_scanner_screen.guide_passport.step1_em),
-              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
-              _em(t.wallet_add_scanner_screen.guide_passport.step2_em),
-              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step1}\n'),
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step2}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
               _em(t.wallet_add_scanner_screen.guide_passport.step3_em),
               TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
@@ -330,13 +328,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           } else {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.note}\n'),
-              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step0}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step1),
-              TextSpan(text: t.wallet_add_scanner_screen.select),
-              _em(' ${t.wallet_add_scanner_screen.guide_passport.step1_em}\n'),
-              TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step2),
-              TextSpan(text: t.wallet_add_scanner_screen.select),
-              _em(' ${t.wallet_add_scanner_screen.guide_passport.step2_em}\n'),
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step1}\n'),
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_passport.step2}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_passport.step3),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(' ${t.wallet_add_scanner_screen.guide_passport.step3_em}\n'),
@@ -491,22 +484,20 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   Future<String?> _showMfpInputBottomSheet() async {
-    final result = await showModalBottomSheet(
+    final result = await CommonBottomSheets.showBottomSheet_100(
       context: context,
-      builder: (context) {
-        return WalletAddMfpInputBottomSheet(
-          onSkip: () {
-            Navigator.pop(context, null);
-          },
-          onComplete: (text) {
-            Navigator.pop(context, text);
-          },
-        );
-      },
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      enableDrag: true,
+      screenName: AnalyticsScreenNames.walletAddAirgapMfpSheet,
+      isDismissible: true,
       useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      child: WalletAddMfpInputBottomSheet(
+        onSkip: () {
+          Navigator.pop(context, null);
+        },
+        onComplete: (text) {
+          Navigator.pop(context, text);
+        },
+      ),
     );
 
     return result;
@@ -583,10 +574,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     switch (addResult.result) {
       case WalletSyncResult.newWalletAdded:
         {
-          context.read<AnalyticsService>().logEvent(
-            eventName: AnalyticsEventNames.walletAddCompleted,
-            parameters: {AnalyticsParameterNames.walletAddImportSource: widget.importSource.name},
-          );
+          context.read<AnalyticsService>().logWalletAddCompleted(widget.importSource);
 
           if (widget.onNewWalletAdded != null) {
             widget.onNewWalletAdded!(addResult);

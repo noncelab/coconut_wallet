@@ -35,6 +35,7 @@ class WalletItemCard extends StatelessWidget {
   final VoidCallback? onLongPressed;
   final Widget rightWidget;
   final VoidCallback onPressed;
+  final int? watchedAddressCount;
 
   const WalletItemCard({
     super.key,
@@ -58,6 +59,7 @@ class WalletItemCard extends StatelessWidget {
     this.onLongPressed,
     required this.rightWidget,
     required this.onPressed,
+    this.watchedAddressCount,
   });
 
   @override

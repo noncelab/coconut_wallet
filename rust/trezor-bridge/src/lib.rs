@@ -656,11 +656,17 @@ pub fn trezor_connect(
             .map_err(|e| TrezorError::Connect(e.to_string()))?;
 
         let uses_thp = transport.has_thp(&path).await;
+        if !uses_thp {
+            return Err(TrezorError::Connect(
+                "THP handshake was not completed".to_string(),
+            ));
+        }
+
         let dev_info = DeviceInfo::new_bluetooth(path.clone(), Some("Trezor Safe 7".to_string()));
 
         let mut connected = ConnectedDevice::new(dev_info, Box::new(transport), session);
 
-        // BLE connections always use THP v2 — set unconditionally.
+        // BLE connections always use THP v2.
         connected.set_uses_thp(true);
         connected.set_ui_callback(ui_adapter);
 

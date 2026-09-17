@@ -16,6 +16,7 @@ import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
+import 'package:coconut_wallet/enums/node_connection_status.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -57,6 +58,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   Size _defaultServerButtonSize = const Size(0, 0);
 
   late ElectrumServerViewModel _viewModel;
+  bool _isUntrustedCertificateDialogShowing = false;
 
   @override
   void initState() {
@@ -81,16 +83,66 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           _viewModel.setDefaultServerMenuVisible(true);
         }
       });
+
+      _viewModel.addListener(_onViewModelChanged);
     });
   }
 
   @override
   void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
     _serverAddressController.dispose();
     _portController.dispose();
     serverAddressFocusNode.dispose();
     portFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onViewModelChanged() {
+    if (_viewModel.nodeConnectionStatus == NodeConnectionStatus.untrustedCertificate &&
+        _viewModel.pendingCertificateFingerprint != null) {
+      _showUntrustedCertificateDialog();
+    }
+  }
+
+  void _showUntrustedCertificateDialog() {
+    if (_isUntrustedCertificateDialogShowing) return;
+    _isUntrustedCertificateDialogShowing = true;
+
+    final fingerprint = _viewModel.pendingCertificateFingerprint ?? '';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.settings_screen.electrum_server.popup.untrusted_certificate_title,
+          description: t.settings_screen.electrum_server.popup.untrusted_certificate_description(
+            fingerprint: fingerprint,
+          ),
+          onTapRight: () {
+            Navigator.of(dialogContext).pop();
+            _viewModel.trustPendingCertificateAndConnect().then((success) {
+              if (!mounted) return;
+              if (success) {
+                vibrateLight();
+              } else {
+                vibrateLightDouble();
+              }
+            });
+          },
+          onTapLeft: () {
+            _viewModel.cancelPendingCertificateTrust();
+            Navigator.of(dialogContext).pop();
+          },
+          leftButtonText: t.cancel,
+          rightButtonText: t.settings_screen.electrum_server.popup.trust_and_continue,
+        );
+      },
+    ).then((_) {
+      _isUntrustedCertificateDialogShowing = false;
+    });
   }
 
   void _unFocus() {
@@ -110,11 +162,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   }
 
   void _onSave() async {
-    final newServer = ElectrumServer.custom(
-      _serverAddressController.text,
-      int.parse(_portController.text),
-      _currentSslState,
-    );
+    final host = _serverAddressController.text;
+    final port = int.parse(_portController.text);
+
+    // 텍스트 필드 값이 기본 서버와 일치하면 그 서버의 pinnedCertFingerprint를 그대로 쓴다
+    final matchedDefault = DefaultElectrumServer.findMatching(host, port, _currentSslState);
+    final newServer = matchedDefault?.server ?? ElectrumServer.custom(host, port, _currentSslState);
 
     final success = await _viewModel.changeServerAndUpdateState(newServer);
 
@@ -164,7 +217,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     );
   }
 
-  /// 저장 버튼 활성화 조건: 현재 입력된 서버 정보가 현재 연결된 서버와 다른지 확인
+  /// 저장 버튼 활성화 조건: 입력된 서버 정보가 현재 연결된 서버와 다르거나,
+  /// 같은 서버라도 지금 연결이 끊긴 상태라 재시도가 필요한 경우
   bool _hasActualChanges() {
     if (_serverAddressController.text.isEmpty ||
         _portController.text.isEmpty ||
@@ -173,7 +227,15 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       return false;
     }
 
-    return !_viewModel.isSameWithCurrentServer(_serverAddressController.text, _portController.text, _currentSslState);
+    final isSameServer = _viewModel.isSameWithCurrentServer(
+      _serverAddressController.text,
+      _portController.text,
+      _currentSslState,
+    );
+    if (!isSameServer) return true;
+
+    // 서버는 그대로인데 연결이 실패한 상태 — 재저장으로 재검증/TOFU를 트리거할 수 있어야 한다.
+    return _viewModel.nodeConnectionStatus == NodeConnectionStatus.failed;
   }
 
   @override
@@ -718,6 +780,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   Widget _buildAlertIcon(NodeConnectionStatus status) {
     switch (status) {
       case NodeConnectionStatus.failed:
+      case NodeConnectionStatus.networkMismatch:
+      case NodeConnectionStatus.untrustedCertificate:
         {
           return SvgPicture.asset(
             CustomWalletIcons.triangleWarning,
@@ -749,6 +813,14 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       case NodeConnectionStatus.failed:
         {
           return t.settings_screen.electrum_server.alert.connection_failed;
+        }
+      case NodeConnectionStatus.networkMismatch:
+        {
+          return t.settings_screen.electrum_server.alert.network_mismatch;
+        }
+      case NodeConnectionStatus.untrustedCertificate:
+        {
+          return t.settings_screen.electrum_server.alert.untrusted_certificate;
         }
       case NodeConnectionStatus.connecting:
         {
@@ -801,7 +873,11 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                   Flexible(
                     flex: 2,
                     child: InlineActionButton(
-                      isActive: hasActualChanges && nodeConnectionStatus != NodeConnectionStatus.connecting,
+                      isActive:
+                          hasActualChanges &&
+                          nodeConnectionStatus != NodeConnectionStatus.connecting &&
+                          nodeConnectionStatus != NodeConnectionStatus.networkMismatch &&
+                          nodeConnectionStatus != NodeConnectionStatus.untrustedCertificate,
                       onPressed: () {
                         _unFocus();
                         _onSave();
@@ -820,10 +896,3 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 }
 
 enum ServerTab { defaultServer, userServer }
-
-enum NodeConnectionStatus {
-  connecting, // 연결 중입니다
-  connected, // 연결되었습니다
-  failed, // 연결할 수 없습니다!
-  waiting, // 대기중
-}

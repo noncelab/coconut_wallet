@@ -3,12 +3,14 @@ import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/bottom_sheet/selectable_list_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 class CommonBottomSheets {
@@ -17,6 +19,7 @@ class CommonBottomSheets {
     String? subtitle,
     required BuildContext context,
     required Widget child,
+    required String screenName,
     List<Widget>? actionList,
     TextStyle? titleTextStyle,
     TextStyle? subtitleTextStyle,
@@ -32,6 +35,7 @@ class CommonBottomSheets {
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
     final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
+    context.read<AnalyticsService>().logScreenView(screenName: screenName);
     return showModalBottomSheet<T>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -139,6 +143,7 @@ class CommonBottomSheets {
 
   static Future<T?> showCustomHeightBottomSheet<T>({
     required BuildContext context,
+    required String screenName,
     Widget? child,
     Widget Function(ScrollController scrollController)? childBuilder,
     required double heightRatio,
@@ -155,6 +160,7 @@ class CommonBottomSheets {
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
     final sheetHeight = MediaQuery.of(context).size.height * heightRatio;
+    context.read<AnalyticsService>().logScreenView(screenName: screenName);
 
     return showModalBottomSheet<T>(
       context: context,
@@ -179,7 +185,9 @@ class CommonBottomSheets {
                               shouldCloseOnMinExtent: true,
                               builder: (context, scrollController) {
                                 void handleDragEnd() {
-                                  if (isAnimating || !draggableController.isAttached) return;
+                                  if (isAnimating || !draggableController.isAttached) {
+                                    return;
+                                  }
 
                                   final extent = draggableController.size;
                                   const closeThreshold = 0.7;
@@ -234,13 +242,16 @@ class CommonBottomSheets {
   static Future<T?> showBottomSheet_100<T>({
     required BuildContext context,
     required Widget child,
+    required String screenName,
     bool enableDrag = true,
     Color? backgroundColor,
     bool isDismissible = false,
     bool isScrollControlled = true,
     bool useSafeArea = true,
     AnimationController? animationController,
+    ShapeBorder? shape,
   }) async {
+    context.read<AnalyticsService>().logScreenView(screenName: screenName);
     return showModalBottomSheet<T>(
       context: context,
       builder: (context) {
@@ -251,6 +262,7 @@ class CommonBottomSheets {
       isDismissible: isDismissible,
       isScrollControlled: isScrollControlled,
       enableDrag: enableDrag,
+      shape: shape,
       useSafeArea: useSafeArea,
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height),
     );
@@ -261,6 +273,7 @@ class CommonBottomSheets {
   static Future<T?> showDraggableBottomSheet<T>({
     required BuildContext context,
     required Widget Function(ScrollController) childBuilder,
+    required String screenName,
     double minChildSize = 0.5,
     double maxChildSize = 0.9,
     double? initialChildSize,
@@ -283,6 +296,8 @@ class CommonBottomSheets {
 
     // initialChildSize가 maxChildSize를 초과하지 않도록 보장
     final finalInitialSize = calculatedInitialSize > maxChildSize ? maxChildSize : calculatedInitialSize;
+
+    context.read<AnalyticsService>().logScreenView(screenName: screenName);
 
     return showModalBottomSheet<T>(
       context: context,
@@ -417,6 +432,7 @@ class CommonBottomSheets {
   static Future<T?> showSelectableDraggableSheet<T>({
     required BuildContext context,
     required String title,
+    required String screenName,
     List<T>? items,
     Object Function(T item)? getItemId,
     SelectableItemBuilder<T>? itemBuilder,
@@ -441,6 +457,7 @@ class CommonBottomSheets {
     return showDraggableBottomSheet<T>(
       context: context,
       title: title,
+      screenName: screenName,
       minChildSize: minChildSize,
       maxChildSize: maxChildSize,
       initialChildSize: initialChildSize,
@@ -469,6 +486,7 @@ class CommonBottomSheets {
   static Future<T?> showDraggableScrollableSheet<T>({
     required BuildContext context,
     required Widget child,
+    required String screenName,
     bool enableDrag = true,
     Color? backgroundColor,
     bool isDismissible = true,
@@ -482,7 +500,10 @@ class CommonBottomSheets {
     double maxHeight = 0.9,
   }) async {
     var adjustedMinChildSize = minChildSize;
-    if (maxHeight >= adjustedMinChildSize) adjustedMinChildSize = maxHeight + 0.0001;
+    if (maxHeight >= adjustedMinChildSize) {
+      adjustedMinChildSize = maxHeight + 0.0001;
+    }
+    context.read<AnalyticsService>().logScreenView(screenName: screenName);
     return showModalBottomSheet<T>(
       context: context,
       builder: (context) {

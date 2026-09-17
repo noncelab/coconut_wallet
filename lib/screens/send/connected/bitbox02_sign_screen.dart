@@ -1,4 +1,7 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutUnderlinedButton;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/connected/bitbox02_connect_screen.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
@@ -6,11 +9,12 @@ import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/connected/bitbox02_sign_viewmodel.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/hardware_wallet/bitbox02_navigator.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -26,7 +30,6 @@ class BitBox02SignScreen extends StatefulWidget {
   final String walletName;
   final String walletFingerprint;
   final bool isFromSendFlow;
-  final String transport;
 
   const BitBox02SignScreen({
     super.key,
@@ -34,7 +37,6 @@ class BitBox02SignScreen extends StatefulWidget {
     required this.walletName,
     this.walletFingerprint = '',
     this.isFromSendFlow = false,
-    this.transport = 'usb',
   });
 
   @override
@@ -55,7 +57,6 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       psbtBase64: widget.psbtBase64,
       walletName: widget.walletName,
       walletFingerprint: widget.walletFingerprint,
-      transport: widget.transport,
       walletProvider: context.read<WalletProvider>(),
     );
     _viewModel.addListener(_onStateChanged);
@@ -77,7 +78,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
       if (widget.isFromSendFlow) {
         final sendInfoProvider = context.read<SendInfoProvider>();
         sendInfoProvider.setSignedResult(_viewModel.signedPsbt);
-        Navigator.pushReplacementNamed(context, '/broadcasting');
+        Navigator.pushReplacementNamed(context, AppRouteNames.broadcasting, arguments: const BroadcastingRouteArgs());
       } else {
         Navigator.pop(context, {'signedPsbt': _viewModel.signedPsbt});
       }
@@ -265,7 +266,7 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
         child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: color, radius: 6),
       );
       stateLabel = t.bitbox02_sign_screen.state_label.signing;
-      detailText = _subStatusText(vm.subStatus);
+      detailText = _subStatusText(vm, vm.subStatus);
     } else if (isDone) {
       final color = context.coconutColors.success;
       stateColor = color;
@@ -343,16 +344,14 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     );
   }
 
-  String _subStatusText(BitBox02SignSubStatus subStatus) {
+  String _subStatusText(BitBox02SignViewModel vm, BitBox02SignSubStatus subStatus) {
     switch (subStatus) {
       case BitBox02SignSubStatus.waiting:
         return t.bitbox02_sign_screen.idle.waiting;
       case BitBox02SignSubStatus.connectingDevice:
-        return widget.transport == 'ble'
+        return vm.device?.transport == 'ble'
             ? t.bitbox02_sign_screen.status.connecting_device_ble
             : t.bitbox02_sign_screen.status.connecting_device;
-      case BitBox02SignSubStatus.checkPairing:
-        return t.bitbox02_sign_screen.status.check_pairing;
       case BitBox02SignSubStatus.preparingData:
         return t.bitbox02_sign_screen.status.preparing_data;
       case BitBox02SignSubStatus.confirmOnDevice:
@@ -364,22 +363,24 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     final bool isError = vm.step == BitBox02SignStep.error;
     final bool isBusy = vm.step == BitBox02SignStep.signing;
 
+    Future<void> showConnectScreen() async {
+      if (!mounted) return;
+      final navigator = Navigator.of(context);
+      navigator.pop();
+      await BitBox02Navigator.showConnectScreen(
+        context: navigator.context,
+        screenName: AnalyticsScreenNames.bitbox02SignReconnectDeviceSheet,
+        psbtBase64: widget.psbtBase64,
+        walletName: widget.walletName,
+        walletFingerprint: widget.walletFingerprint,
+      );
+    }
+
     if (vm.isWalletMismatch) {
       return FixedBottomButton(
         onButtonClicked: () async {
           await vm.disconnectForReconnect();
-          if (!mounted) return;
-          Navigator.pop(context);
-          CommonBottomSheets.showCustomHeightBottomSheet(
-            context: context,
-            child: BitBox02ConnectScreen(
-              importSource: WalletImportSource.bitbox02,
-              psbtBase64: widget.psbtBase64,
-              walletName: widget.walletName,
-              walletFingerprint: widget.walletFingerprint,
-            ),
-            heightRatio: 0.9,
-          );
+          await showConnectScreen();
         },
         text: t.bitbox02_sign_screen.btn.connect_other_bitbox02,
         isActive: !isBusy,
@@ -391,10 +392,20 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
     final VoidCallback onPressed =
         isError
             ? () {
+              if (vm.isConnectionError) {
+                showConnectScreen();
+                return;
+              }
               vm.reset();
               vm.signTransaction();
             }
-            : () => vm.signTransaction();
+            : () async {
+              if (!await vm.isDeviceConnected()) {
+                await showConnectScreen();
+                return;
+              }
+              vm.signTransaction();
+            };
 
     return FixedBottomButton(
       onButtonClicked: onPressed,

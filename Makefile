@@ -1,6 +1,8 @@
 realm-clean:
-	rm -f default.realm.lock default.realm.note
-	rm -rf default.realm.management
+	rm -f ./*.realm.lock ./*.realm.note
+	rm -rf ./*.realm.management
+	rm -f ./test_*.realm
+	rm -rf ./test_*.realm.management
 
 format:
 	fvm dart format . --line-length 120
@@ -45,7 +47,7 @@ run-mainnet-release:
 	fvm flutter run --flavor mainnet --dart-define=USE_FIREBASE=true --release
 
 ios-regtest:
-	fvm flutter build ios --flavor regtest --profile
+	fvm flutter build ios --flavor regtest --release
 
 aos-release:
 	./android/scripts/build_android_release.sh
@@ -60,10 +62,10 @@ pre-deploy:
 # gomobile bind targets
 gomobile-android:
 	mkdir -p android/app/libs
-	cd go && gomobile bind -target=android -ldflags="-extldflags=-Wl,-z,max-page-size=16384" -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
+	cd go && gomobile bind -trimpath -target=android -ldflags="-extldflags=-Wl,-z,max-page-size=16384" -o ../android/app/libs/bitboxbridge.aar -androidapi 23 .
 
 gomobile-ios:
-	cd go && gomobile bind -target=ios -o ../ios/Runner/bitboxbridge.xcframework .
+	cd go && gomobile bind -trimpath -target=ios -o ../ios/Runner/bitboxbridge.xcframework .
 
 gomobile-bind: gomobile-android gomobile-ios
 
@@ -77,22 +79,38 @@ trezor-android:
 trezor-bind: trezor-android trezor-ios
 
 fastlane-mainnet:
-	cd android && caffeinate -dimsu bundle exec fastlane release_android_mainnet && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_prep:true
+	cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_prep:true
 
 fastlane-regtest:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
 
 # Production draft/App Store preparation (manual review submission remains required)
-fastlane-production-mainnet: realm-clean
-	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production skip_prep:true
-	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true
+ifeq ($(SKIP_PREP),true)
+PRODUCTION_PREP_COMMAND := true
+else
+PRODUCTION_PREP_COMMAND := $(MAKE) pre-deploy && $(MAKE) realm-clean
+endif
 
-fastlane-production-regtest: realm-clean
-	cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production
-	cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true
+fastlane-production-mainnet:
+	@FASTLANE_USER="$${FASTLANE_USER:-}"; \
+	if [ -z "$$FASTLANE_USER" ]; then printf "Apple ID Username: "; IFS= read -r FASTLANE_USER; fi; \
+	if [ -z "$$FASTLANE_USER" ]; then echo "Apple ID username cannot be empty." >&2; exit 1; fi; \
+	export FASTLANE_USER; \
+	$(PRODUCTION_PREP_COMMAND) && \
+	(cd android/fastlane_production && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane prepare_android_mainnet_production) && \
+	(cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_mainnet_production skip_prep:true)
+
+fastlane-production-regtest:
+	@FASTLANE_USER="$${FASTLANE_USER:-}"; \
+	if [ -z "$$FASTLANE_USER" ]; then printf "Apple ID Username: "; IFS= read -r FASTLANE_USER; fi; \
+	if [ -z "$$FASTLANE_USER" ]; then echo "Apple ID username cannot be empty." >&2; exit 1; fi; \
+	export FASTLANE_USER; \
+	$(PRODUCTION_PREP_COMMAND) && \
+	(cd android/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_android_regtest_production) && \
+	(cd ios/fastlane_production && caffeinate -dimsu bundle exec fastlane prepare_ios_regtest_production skip_prep:true)
 	
 fastlane-mainnet-skipbridge:
-	cd android && caffeinate -dimsu bundle exec fastlane release_android_mainnet skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_bridge:true
+	cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet skip_bridge:true
 
 fastlane-regtest-skipbridge:
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest skip_bridge:true && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_bridge:true

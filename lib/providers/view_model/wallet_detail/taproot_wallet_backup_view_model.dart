@@ -8,7 +8,9 @@ class TaprootWalletBackupViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final int _walletId;
 
-  TaprootWalletBackupViewModel(this._walletProvider, this._walletId);
+  TaprootWalletBackupViewModel(this._walletProvider, this._walletId) {
+    _walletProvider.acknowledgeOlderToAfterBackupUpdate(_walletId);
+  }
 
   Map<String, String> get walletQrDataMap {
     final wallet = _walletProvider.getWalletById(_walletId);

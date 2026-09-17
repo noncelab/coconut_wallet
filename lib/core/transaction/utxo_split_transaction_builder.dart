@@ -124,7 +124,8 @@ class UtxoSplitTransactionBuilder {
     if (utxo != null) {
       _validateUtxo(utxo);
     }
-    _nextReceiveAddressIndex = addressRepository.getReceiveAddress(walletListItemBase.id).index;
+    _nextReceiveAddressIndex =
+        addressRepository.getReceiveAddress(walletListItemBase.id, wallet: walletListItemBase.walletBase).index;
   }
 
   void setUtxo(UtxoState? utxo) {
@@ -632,7 +633,10 @@ class UtxoSplitTransactionBuilder {
 
   CancelableTask<TransactionBuildResult> _buildTransactionWithRecipients(Map<String, int> recipients) {
     final utxo = _requiredUtxo;
-    final changeAddress = addressRepository.getChangeAddress(walletListItemBase.id);
+    final changeAddress = addressRepository.getChangeAddress(
+      walletListItemBase.id,
+      wallet: walletListItemBase.walletBase,
+    );
     return _spawnBuildTask(utxo: utxo, recipients: recipients, changeDerivationPath: changeAddress.derivationPath);
   }
 

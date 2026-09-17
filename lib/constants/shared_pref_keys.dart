@@ -1,7 +1,6 @@
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 
 class SharedPrefKeys {
-  /// 아래 7개는 비밀번호 분실 시 초기화 필요
   static const String kWalletCount = 'WALLET_COUNT';
   static const String kFaucetHistories = "FAUCET_HISTORIES";
   static const String kIsSetPin = "IS_SET_PIN";
@@ -17,8 +16,8 @@ class SharedPrefKeys {
   static const String kIsBtcUnit = "IS_BTC_UNIT"; // deprecated: 마이그레이션 전용
   static const String kBitcoinUnit = "BITCOIN_UNIT";
   static const String kShowOnlyUnusedAddresses = "SHOW_ONLY_UNUSED_ADDRESSES";
-  static const String kIsReceivingTooltipDisabled = "IS_RECEIVING_TOOLTIP_DISABLED";
-  static const String kIsChangeTooltipDisabled = "IS_CHANGE_TOOLTIP_DISABLED";
+  static const String kReceivingTooltipLastShownDate = "RECEIVING_TOOLTIP_LAST_SHOWN_DATE";
+  static const String kChangeTooltipLastShownDate = "CHANGE_TOOLTIP_LAST_SHOWN_DATE";
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
   static const String kIsFiatBalanceHidden = "IS_FIAT_BALANCE_HIDDEN";
   // deprecated
@@ -63,26 +62,21 @@ class SharedPrefKeys {
   /// 목표 수량 미설정 안내 카드 숨김 만료일 (지갑별)
   static String walletTargetSuggestionHiddenUntil(int walletId) => 'WALLET_TARGET_SUGGESTION_HIDDEN_UNTIL_$walletId';
 
+  /// 지갑별 마지막 재동기화 완료 시각 - Map<walletId, epochMillis> JSON
+  static const String kWalletLastResyncMap = "WALLET_LAST_RESYNC_MAP";
+
   // Electrum
   /// [DefaultElectrumServer.serverName] 또는 'CUSTOM'
   static const String kElectrumServerName = 'ELECTRUM_SERVER_NAME';
   static const String kCustomElectrumHost = 'CUSTOM_ELECTRUM_HOST';
   static const String kCustomElectrumPort = 'CUSTOM_ELECTRUM_PORT';
   static const String kCustomElectrumIsSsl = 'CUSTOM_ELECTRUM_IS_SSL';
+  static const String kCustomElectrumCertFingerprint = 'CUSTOM_ELECTRUM_CERT_FINGERPRINT';
   static const String kUserServers = 'USER_SERVERS';
+  static const String kBaselineGenesisHash = 'BASELINE_GENESIS_HASH';
 
   /// kHasLaunchedBefore 절대 초기화 금지
   static const String kHasLaunchedBefore = 'hasLaunchedBefore';
-
-  static const List<String> keysToReset = [
-    SharedPrefKeys.kWalletCount,
-    SharedPrefKeys.kFaucetHistories,
-    SharedPrefKeys.kIsSetPin,
-    SharedPrefKeys.kPinLength,
-    SharedPrefKeys.kIsSetBiometrics,
-    SharedPrefKeys.kFakeBalanceTotal,
-    SharedPrefKeys.kFakeBalanceMap,
-  ];
 
   // Block explorer
   static const String kUseDefaultExplorer = 'USE_DEFAULT_EXPLORER';
@@ -103,6 +97,28 @@ class SharedPrefKeys {
 
   /// 테마 variant
   static const String kThemeVariant = 'THEME_VARIANT';
+
+  // coconut_lib older -> after 변환으로 백업 정보가 변경되었지만 아직 확인하지 않은 지갑 ID 목록
+  static const String kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate =
+      'WALLET_IDS_WITH_UNACKNOWLEDGED_OLDER_TO_AFTER_BACKUP_UPDATE';
+
+  /// 비밀번호 분실 시 초기화 대상
+  /// 새로운 SharedPreferences 키를 추가할 때 비밀번호 분실 시 초기화가 필요한 키인지 확인하고,
+  /// 초기화가 필요하면 반드시 아래 목록에도 함께 추가해야 합니다.
+  static const List<String> keysToReset = [
+    kWalletCount,
+    kFaucetHistories,
+    kIsSetPin,
+    kPinLength,
+    kIsSetBiometrics,
+    kFakeBalanceTotal,
+    kFakeBalanceMap,
+    kWalletOrder,
+    kFavoriteWalletIds,
+    kExcludedFromTotalBalanceWalletIds,
+    kWalletTargetSatsMap,
+    kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
+  ];
 
   /// 코코넛 오픈 스토어 소개 카드 숨김 만료일
   static const String kOpenStoreIntroCardHiddenUntil = 'OPEN_STORE_INTRO_CARD_HIDDEN_UNTIL';

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:coconut_wallet/model/node/resync_progress.dart';
+import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
@@ -13,11 +15,25 @@ class NodeStateManager implements StateManagerInterface {
   final void Function() _notifyListeners;
   final StreamController<NodeSyncState> _syncStateController;
   final StreamController<Map<int, WalletUpdateInfo>> _walletStateController;
+  final StreamController<Map<int, ResyncProgress>> _resyncProgressController;
+  final StreamController<Map<int, WalletFetchProgress>> _fetchProgressController;
 
   NodeProviderState _state = const NodeProviderState(nodeSyncState: NodeSyncState.init, registeredWallets: {});
   NodeProviderState get state => _state;
 
-  NodeStateManager(this._notifyListeners, this._syncStateController, this._walletStateController);
+  Map<int, ResyncProgress> _resyncProgressByWallet = {};
+  Map<int, ResyncProgress> get resyncProgressByWallet => _resyncProgressByWallet;
+
+  Map<int, WalletFetchProgress> _fetchProgressByWallet = {};
+  Map<int, WalletFetchProgress> get fetchProgressByWallet => _fetchProgressByWallet;
+
+  NodeStateManager(
+    this._notifyListeners,
+    this._syncStateController,
+    this._walletStateController,
+    this._resyncProgressController,
+    this._fetchProgressController,
+  );
 
   /// 노드 상태 업데이트
   /// [newConnectionState] 노드 상태
@@ -200,6 +216,57 @@ class NodeStateManager implements StateManagerInterface {
     _setState(newConnectionState: newConnectionState, newUpdatedWallets: newUpdatedWallets);
   }
 
+  /// 지갑 재동기화 진행 상태 캐시 삭제
+  /// getResyncProgressStream은 구독 시점에 이 캐시를 그대로 리플레이하므로, 이전 실행의 이벤트가 잘못 보이는 것을 방지
+  void clearResyncProgress(int walletId) {
+    if (!_resyncProgressByWallet.containsKey(walletId)) return;
+    _resyncProgressByWallet = {..._resyncProgressByWallet}..remove(walletId);
+    _resyncProgressController.add(_resyncProgressByWallet);
+  }
+
+  /// 지갑 재동기화 단계 변경
+  void setWalletResyncPhase(int walletId, ResyncPhase phase, {String? errorMessage}) {
+    _resyncProgressByWallet = {
+      ..._resyncProgressByWallet,
+      walletId: ResyncProgress(phase: phase, errorMessage: errorMessage),
+    };
+    _resyncProgressController.add(_resyncProgressByWallet);
+  }
+
+  /// 지갑 재동기화 fetch 진행률 갱신(scanning 단계, 총량 확정 이후에만 호출됨)
+  void setWalletResyncFetchProgress(int walletId, int completed, int total) {
+    final current = _resyncProgressByWallet[walletId];
+    _resyncProgressByWallet = {
+      ..._resyncProgressByWallet,
+      walletId: ResyncProgress(
+        phase: current?.phase ?? ResyncPhase.scanning,
+        fetchCompleted: completed,
+        fetchTotal: total,
+      ),
+    };
+    _resyncProgressController.add(_resyncProgressByWallet);
+  }
+
+  @override
+  void addWalletFetchDispatched(int walletId, int count) {
+    final current = _fetchProgressByWallet[walletId] ?? const WalletFetchProgress();
+    _fetchProgressByWallet = {
+      ..._fetchProgressByWallet,
+      walletId: current.copyWith(dispatched: current.dispatched + count),
+    };
+    _fetchProgressController.add(_fetchProgressByWallet);
+  }
+
+  @override
+  void addWalletFetchCompleted(int walletId, int count) {
+    final current = _fetchProgressByWallet[walletId] ?? const WalletFetchProgress();
+    _fetchProgressByWallet = {
+      ..._fetchProgressByWallet,
+      walletId: current.copyWith(completed: current.completed + count),
+    };
+    _fetchProgressController.add(_fetchProgressByWallet);
+  }
+
   void handleIsolateStateMessage(IsolateStateMessage message) {
     final methodName = message.methodName;
     final params = message.params;
@@ -226,6 +293,18 @@ class NodeStateManager implements StateManagerInterface {
           break;
         case IsolateStateMethod.setNodeSyncStateToFailed:
           setNodeSyncStateToFailed();
+          break;
+        case IsolateStateMethod.setWalletResyncPhase:
+          setWalletResyncPhase(params[0], params[1], errorMessage: params[2]);
+          break;
+        case IsolateStateMethod.setWalletResyncFetchProgress:
+          setWalletResyncFetchProgress(params[0], params[1], params[2]);
+          break;
+        case IsolateStateMethod.addWalletFetchDispatched:
+          addWalletFetchDispatched(params[0], params[1]);
+          break;
+        case IsolateStateMethod.addWalletFetchCompleted:
+          addWalletFetchCompleted(params[0], params[1]);
           break;
       }
     } catch (e) {

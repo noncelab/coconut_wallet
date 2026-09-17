@@ -3,6 +3,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/widgets/common/animation/success_check_lottie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:shimmer/shimmer.dart';
@@ -193,7 +194,7 @@ class WalletConnectProgressCard extends StatelessWidget {
             height: 40,
             child: CircularProgressIndicator(color: context.coconutColors.primary, strokeWidth: 3),
           ),
-          CoconutLayout.spacing_400h,
+          CoconutLayout.spacing_200h,
           Text(
             title,
             style: CoconutTypography.body2_14.setColor(context.coconutColors.primary),
@@ -283,12 +284,7 @@ class WalletConnectSuccessCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          SvgPicture.asset(
-            CommonFormIconPath.circleCheck,
-            colorFilter: ColorFilter.mode(context.coconutColors.success, BlendMode.srcIn),
-            height: 48,
-            width: 48,
-          ),
+          SuccessCheckLottie(size: 40, color: context.coconutColors.success),
           CoconutLayout.spacing_200h,
           Text(
             title,
@@ -421,6 +417,77 @@ class FingerprintCompareCard extends StatelessWidget {
           value: connectedFingerprint.toUpperCase(),
         ),
       ],
+    );
+  }
+}
+
+/// Pairing code display card used by BitBox02.
+/// The pairing code is shown in a read-only format; the user must compare it
+/// with the code displayed on the BitBox02 device before confirming.
+class BitBox02PairingCodeCard extends StatelessWidget {
+  final String pairingCode;
+  final String title;
+  final String description;
+  final String? status;
+
+  const BitBox02PairingCodeCard({
+    super.key,
+    required this.pairingCode,
+    required this.title,
+    required this.description,
+    this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      decoration: BoxDecoration(
+        color: context.coconutColors.surface,
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            title,
+            style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            decoration: BoxDecoration(
+              color: context.coconutColors.background,
+              borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+            ),
+            child: Text(
+              pairingCode,
+              textAlign: TextAlign.center,
+              style: CoconutTypography.heading3_21_Number.copyWith(
+                fontWeight: FontWeight.w700,
+                color: context.coconutColors.primaryText,
+              ),
+            ),
+          ),
+          if (status != null && status!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              status!,
+              textAlign: TextAlign.center,
+              style: CoconutTypography.body2_14.setColor(context.coconutColors.success), // TODO: ccos랑 머지 후 색상은 primary
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -78,6 +78,15 @@ class WalletListViewModel extends ChangeNotifier {
   List<WalletBalanceHistoryPoint> get walletBalanceHistory => _walletBalanceHistory;
   int _walletBalanceHistoryRevision = 0;
   int get walletBalanceHistoryRevision => _walletBalanceHistoryRevision;
+  Set<int> get walletIdsWithUnacknowledgedOlderToAfterBackupUpdate =>
+      sharedPrefs.getWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate();
+
+  bool get hasUnacknowledgedOlderToAfterBackupUpdate => walletIdsWithUnacknowledgedOlderToAfterBackupUpdate.isNotEmpty;
+
+  Future<void> acknowledgeOlderToAfterBackupUpdate(int walletId) async {
+    await sharedPrefs.removeWalletIdWithUnacknowledgedOlderToAfterBackupUpdate(walletId);
+    notifyListeners();
+  }
 
   late List<FiatCode> _visibleFiats;
   List<FiatCode> get visibleFiats => _visibleFiats;
@@ -160,6 +169,8 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
+
+  int watchedAddressCount(int walletId) => _walletProvider.getWatchedAddressCount(walletId);
   List<WalletItemBase> get walletItemList {
     final walletList = _walletProvider.walletItemListNotifier.value;
     final order = _preferenceProvider.walletOrder;
@@ -245,6 +256,12 @@ class WalletListViewModel extends ChangeNotifier {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
     _updateWalletBalanceHistory();
+
+    for (final wallet in walletItemList) {
+      unawaited(_nodeProvider.syncDormantAddresses(wallet));
+    }
+    _nodeProvider.reconnectIfNeeded();
+
     notifyListeners();
   }
 

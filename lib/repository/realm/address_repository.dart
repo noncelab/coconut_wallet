@@ -168,8 +168,12 @@ class AddressRepository extends BaseRepository {
       return;
     }
 
-    int maxReceiveIndex = 0;
-    int maxChangeIndex = 0;
+    // -1은 "이 배치에 해당 타입 주소가 없음"을 뜻하는 센티널. 0으로 두면 receive만 있는
+    // 배치를 처리할 때 change 인덱스가 실제로 생성된 적 없는데도 0으로 잘못 갱신되어(0 > -1),
+    // 이후 change 주소 생성 시 index 0이 이미 만들어진 걸로 착각해 건너뛰게 된다
+    // (지갑 재동기화처럼 generatedReceiveIndex/generatedChangeIndex가 -1부터 시작할 때 노출됨).
+    int maxReceiveIndex = -1;
+    int maxChangeIndex = -1;
 
     // 주소 인덱스 최대값 계산
     for (final address in addresses) {
@@ -310,28 +314,50 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 변경 주소 가져오기
-  WalletAddress getChangeAddress(int walletId) {
+  /// [wallet]에 주소가 하나도 없으면(재동기화가 지우기 이후 재스캔에 실패하는 등)
+  /// 인덱스 0 주소를 생성해 자가 복구한다.
+  WalletAddress getChangeAddress(int walletId, {WalletBase? wallet}) {
     final realmWalletBase = getWalletBase(walletId);
     final changeIndex = realmWalletBase.usedChangeIndex + 1;
-    final realmWalletAddress = realm.query<RealmWalletAddress>(r'walletId == $0 AND isChange == true AND index == $1', [
-      walletId,
-      changeIndex,
-    ]);
+    final realmWalletAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND isChange == true AND index == $1', [
+          walletId,
+          changeIndex,
+        ]).firstOrNull;
 
-    return mapRealmToWalletAddress(realmWalletAddress.first);
+    if (realmWalletAddress != null) {
+      return mapRealmToWalletAddress(realmWalletAddress);
+    }
+
+    // 주소 파생만 하고 반환 — 여기서 realm.write를 동기 실행하면 다른 isolate가 같은 Realm 파일에
+    // 쓰기 트랜잭션을 걸고 있을 때 메인 스레드가 그 잠금을 풀릴 때까지 블로킹돼 UI가 멈추고 ANR까지 날 수 있다(실측).
+    // 영구 저장은 다음 정상 동기화/재동기화 사이클(ensureAddressesExist 등, 비동기 경로)에 맡긴다.
+    if (wallet != null && changeIndex == 0 && realmWalletBase.generatedChangeIndex < 0) {
+      return generateAddress(wallet, 0, true);
+    }
+
+    throw StateError('[getChangeAddress] No address at index $changeIndex for wallet $walletId');
   }
 
   /// 수신 주소 가져오기
-  WalletAddress getReceiveAddress(int walletId) {
+  WalletAddress getReceiveAddress(int walletId, {WalletBase? wallet}) {
     final realmWalletBase = getWalletBase(walletId);
     final receiveIndex = realmWalletBase.usedReceiveIndex + 1;
     final realmWalletAddress =
         realm.query<RealmWalletAddress>(r'walletId == $0 AND isChange == false AND index == $1', [
           walletId,
           receiveIndex,
-        ]).first;
+        ]).firstOrNull;
 
-    return mapRealmToWalletAddress(realmWalletAddress);
+    if (realmWalletAddress != null) {
+      return mapRealmToWalletAddress(realmWalletAddress);
+    }
+
+    if (wallet != null && receiveIndex == 0 && realmWalletBase.generatedReceiveIndex < 0) {
+      return generateAddress(wallet, 0, false);
+    }
+
+    throw StateError('[getReceiveAddress] No address at index $receiveIndex for wallet $walletId');
   }
 
   /// 모든 월렛의 수신 주소를 1개씩 조회
@@ -359,6 +385,14 @@ class AddressRepository extends BaseRepository {
       throw StateError('[getWalletBase] Wallet not found');
     }
     return realmWalletBase;
+  }
+
+  /// receiveUsedIndex/changeUsedIndex 조회
+  /// [NOTE] 백그라운드 isolate의 구독 처리가 다른 isolate에 캐시된 WalletItemBase를 갱신하지 않으므로,
+  /// 최신 값이 필요한 곳에서는 이 메서드를 사용해야 한다.
+  (int receiveUsedIndex, int changeUsedIndex) getUsedIndexes(int walletId) {
+    final realmWalletBase = getWalletBase(walletId);
+    return (realmWalletBase.usedReceiveIndex, realmWalletBase.usedChangeIndex);
   }
 
   Future<void> setWalletAddressUsed(WalletItemBase walletItem, int addressIndex, bool isChange) async {
@@ -434,18 +468,13 @@ class AddressRepository extends BaseRepository {
 
     int cursor = max(usedIndex, dbUsedIndex) + 1;
 
-    if (isChange) {
-      walletItem.changeUsedIndex = cursor - 1;
-    } else {
-      walletItem.receiveUsedIndex = cursor - 1;
-    }
-
     // 필요한 경우에만 새 주소 생성
     await ensureAddressesExist(walletItemBase: walletItem, cursor: cursor, count: 20, isChange: isChange);
 
-    // 지갑 인덱스 업데이트
+    // 지갑 인덱스 업데이트 (writeAsync 콜백 안에서 최신 값을 다시 읽어 비교)
     await realm.writeAsync(() {
-      if (usedIndex > dbUsedIndex) {
+      final currentDbUsedIndex = isChange ? realmWalletBase.usedChangeIndex : realmWalletBase.usedReceiveIndex;
+      if (usedIndex > currentDbUsedIndex) {
         if (isChange) {
           realmWalletBase.usedChangeIndex = usedIndex;
         } else {
@@ -453,6 +482,14 @@ class AddressRepository extends BaseRepository {
         }
       }
     });
+
+    // walletItem 인메모리 캐시도 실제로 반영된 값 기준으로만 전진시킨다
+    final persistedUsedIndex = isChange ? realmWalletBase.usedChangeIndex : realmWalletBase.usedReceiveIndex;
+    if (isChange) {
+      walletItem.changeUsedIndex = max(walletItem.changeUsedIndex, persistedUsedIndex);
+    } else {
+      walletItem.receiveUsedIndex = max(walletItem.receiveUsedIndex, persistedUsedIndex);
+    }
   }
 
   /// 주소 잔액 업데이트
@@ -558,6 +595,68 @@ class AddressRepository extends BaseRepository {
       return existingAddress.derivationPath;
     }
     return '';
+  }
+
+  /// 주소로 index/isChange 정보를 조회합니다. 주소가 없으면 null을 반환합니다.
+  ({int index, bool isChange})? getIndexAndIsChange(int walletId, String address) {
+    final existingAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).firstOrNull;
+
+    if (existingAddress == null) {
+      return null;
+    }
+    return (index: existingAddress.index, isChange: existingAddress.isChange);
+  }
+
+  /// 주소에 잔액이나 미확정 트랜잭션이 있는지 확인합니다(사용 여부 플래그와 무관).
+  bool isAddressActive(int walletId, String address) {
+    final existingAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).firstOrNull;
+
+    if (existingAddress == null) {
+      return false;
+    }
+    return existingAddress.total != 0 || existingAddress.unconfirmed != 0;
+  }
+
+  /// 주소가 사용된 적 있지만 지금은 잔액도 미확정 트랜잭션도 없는지 확인합니다.
+  bool isAddressDormant(int walletId, String address) {
+    final existingAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).firstOrNull;
+
+    if (existingAddress == null) {
+      return false;
+    }
+    return existingAddress.isUsed && existingAddress.total == 0 && existingAddress.unconfirmed == 0;
+  }
+
+  /// 과거에 사용됐지만 지금은 잔액도 미확정 트랜잭션도 없는 주소 목록을 조회합니다.
+  List<WalletAddress> getDormantUsedAddresses(int walletId) {
+    final realmWalletAddresses = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isUsed == true AND total == 0 AND unconfirmed == 0 SORT(index ASC)',
+      [walletId],
+    );
+    return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
+  }
+
+  /// 사용된 주소 중 잔액이나 미확정 트랜잭션이 남아있는(=여전히 감시가 필요한) 주소 목록을 조회합니다.
+  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) {
+    final realmWalletAddresses = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isChange == $1 AND isUsed == true AND (total != 0 OR unconfirmed != 0) SORT(index ASC)',
+      [walletId, isChange],
+    );
+    return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
+  }
+
+  /// isUsed로 표시된 주소 중 최대 인덱스 / 없으면 -1
+  /// (getUsedIndexes와 달리 updateUsedIndex:false로 갱신된 인덱스도 포함)
+  int getMaxUsedAddressIndex(int walletId, bool isChange) {
+    final realmWalletAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND isChange == $1 AND isUsed == true SORT(index DESC)', [
+          walletId,
+          isChange,
+        ]).firstOrNull;
+    return realmWalletAddress?.index ?? -1;
   }
 
   Future<void> syncWalletWithSubscriptionData(

@@ -49,7 +49,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
       recognizer:
           TapGestureRecognizer()
             ..onTap = () async {
-              launchURL(url);
+              launchURL(context, url);
             },
     );
   }

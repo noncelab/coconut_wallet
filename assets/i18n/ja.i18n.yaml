@@ -23,6 +23,7 @@ receive: "受取"
 show: "表示"
 hide: "非表示"
 paste: "貼り付け"
+import: "インポート"
 export: "エクスポート"
 edit: "編集"
 max: "最大"
@@ -110,6 +111,8 @@ account: "アカウント"
 merge_utxos: "をまとめる"
 split_utxo: "を分割"
 apply: "適用する"
+retry: "再試行"
+share: "共有する"
 
 relative_time:
   just_now: "たった今"
@@ -119,6 +122,9 @@ relative_time:
   hours_ago(cardinal):
     one: "1時間前"
     other: "${n}時間前"
+  days_ago(cardinal):
+    one: "1日前"
+    other: "${n}日前"
 
 apply_item: "$count 項目"
 fee_sats: " ($value sat/vB)"
@@ -357,6 +363,11 @@ wallet_home_screen:
     remove_from_home: "ホームから削除"
     delete: "ウォレットを削除"
   edit_home_screen: "ホーム画面を編集"
+  backup_update_notice_action: "詳しく見る"
+  backup_update_notice:
+    title: "継承ウォレットのバックアップ更新のお知らせ"
+    description: "継承ウォレットのバックアップ情報が一部変更されました。\nCoconut Walletを最新バージョンに更新してください。\nVaultを更新すると変更が自動的に反映されます。\nその後、ウォレット情報をもう一度バックアップしてください。"
+    action: "詳しく見る"
   edit:
     title: "ホーム画面で機能を\n非表示にしたり、追加したりできます"
     hide_balance: "残高を非表示"
@@ -491,16 +502,13 @@ wallet_add_scanner_screen:
     step2_em: "XPUB - QR Code"
     select: "を選択"
   guide_passport:
-    note: "本ガイドはPassport Prime基準で作成されています。"
-    step0: "接続するアカウントを開いてください"
-    step1: "1. "
-    step1_em: "Account Details"
-    step2: "2. "
-    step2_em: "「⋯」アイコンをタップして、Connect Wallet"
+    note: "本ガイドはPassport Prime（KeyOS 1.4.0）基準で作成されています。"
+    step1: "1. ホーム画面のビットコインウォレットアイコンをタップ"
+    step2: "2. 接続するアカウントを開いてください"
     step3: "3. "
-    step3_em: "Sparrow"
+    step3_em: "Connect Wallet"
     step4: "4. "
-    step4_em: "Connect as Single Sig"
+    step4_em: "Coconut Wallet"
     select: "を選択"
   paste:
     paste_button: "ペーストからインポート"
@@ -611,6 +619,12 @@ wallet_connect_screen:
       title: "デバイスを接続中"
       step1: "デバイスのロックを解除してください。"
       step2: "デバイスにペアリングコードが表示されたら、チェックマーク（✓）を押してください。"
+    pairing:
+      title: "Confirm Pairing Code"
+      description: "Make sure the code below matches the one shown on your BitBox02."
+      cancel: "Cancel"
+      wait_for_device: "Please tap the check mark (✓) on your BitBox02."
+      rejected: "Pairing was rejected. The connection could not be established."
     paired:
       title: "BitBox02のペアリングが完了しました。"
       device_name: "デバイス名"
@@ -837,22 +851,14 @@ bitbox02_sign_screen:
     title: "デバイスの状態"
   idle:
     waiting: "署名待機中"
-    not_connected: "未接続"
-    tap_sign_to_connect: "署名ボタンで接続"
-    locked: "ロック中"
-    device_found_pin: "デバイス発見 — PIN が必要"
-    device_found: "デバイス発見: $fingerprint"
-    ready: "準備完了"
   status:
     connecting_device: "USBでBitBox02に接続中..."
     connecting_device_ble: "Bluetoothで BitBox02を検索中..."
-    check_pairing: "デバイスでペアリングコードを確認してください"
     preparing_data: "署名データを準備しています..."
     confirm_on_device: "デバイスで金額・アドレス・手数料を確認してください"
   done:
     title: "署名完了"
     description: "BitBox02がトランザクションに署名しました。"
-    ready_to_broadcast: "ブロードキャストの準備が完了しました。"
   error_title: "署名に失敗"
   wrong_wallet_title: "接続されたウォレットが正しくありません"
   device_mismatch: "接続されたBitBox02が署名しようとしているウォレットと一致しません。"
@@ -980,6 +986,11 @@ settings_screen:
   language: "言語"
   utxo_manual_selection: "UTXO 数手動選択"
   utxo_manual_selection_description: "送金に使用するUTXOを手動で選択します"
+  import_labels: "メモをインポート"
+  import_all_labels_description: "他のデバイスで記録したメモを\nCoconut Walletに適用します。\n\nインポートを続行しますか？"
+  export_labels: "メモをエクスポート"
+  export_all_labels_description: "Coconut Walletで記録したメモは、\n他のデバイスでも同じように\n適用できます。\n\nエクスポートを続行しますか？"
+  export_labels_failed: "メモのエクスポートに失敗しました"
   utxo_tier_theme: "コインの色"
   electrum_server:
     title: "Electrum Server設定"
@@ -994,13 +1005,18 @@ settings_screen:
     error_msg:
       invalid_domain_format: "有効なドメインフォーマットではありません"
       port_out_of_range: "有効なポート番号（1-65535）を入力してください"
-    alert: 
+    alert:
       connection_failed: "接続できません！"
+      network_mismatch: "ネットワークが異なるため接続できません"
       connecting: "接続中..."
       connected: "接続済み"
+      untrusted_certificate: "信頼できない証明書です"
     popup:
       delete_server_info: "サーバー情報を削除"
       delete_server_info_description: "保存されたサーバー情報を削除してもよろしいですか？"
+      untrusted_certificate_title: "証明書を信頼できません"
+      untrusted_certificate_description: "このサーバーは信頼できる認証局（CA）によって署名された証明書を使用していません。ご自身でこのサーバーを運用しており、下記のフィンガープリントが正しい場合のみ続行してください。そうでない場合は接続しないでください。\n\n証明書フィンガープリント（SHA-256）\n$fingerprint"
+      trust_and_continue: "信頼して続行"
   block_explorer:
     default_explorer: "デフォルトエクスプローラー"
     custom_explorer: "カスタムエクスプローラー"
@@ -1034,10 +1050,13 @@ address_list_screen:
   receiving: "受信"
   change: "おつり"
   show_only_unused_address: "未使用アドレスのみ表示"
+  show_only_watched_address: "監視中アドレスのみ表示"
+  show_only_watched_address_count: "監視中アドレスのみ表示 ($count件)"
   set_amount: "金額設定"
   share: "共有する"
   enter_receive_amount: "受け取る金額を入力"
-  
+  discovered_new_balance_address: "新しい残高があるアドレスを$count件発見しました"
+
 utxo_overview_screen:
   overview: "概要"
   list: "一覧"
@@ -1126,6 +1145,7 @@ wallet_info_screen:
   transaction: "トランザクション"
   utxo: "UTXO"
   target: "目標"
+  watched_addresses: "監視アドレス"
   target_quantity: "目標数量"
   target_progress_title: "目標に向かって積み上げています"
   target_exceeded_title: "おめでとうございます！目標を達成しました"
@@ -1138,13 +1158,28 @@ wallet_info_screen:
   target_set_21m: "サトシ積み上げ競争だ!!!"
   view_xpub: "拡張公開鍵を表示"
   duplicated_name: "名前が既に使用されています"
+  import_labels_description: "JSONL形式のラベルファイルをインポートします。ファイル内のラベルは、現在のウォレットのトランザクションとUTXOに適用されます。既存のラベルは上書きされる可能性があります。"
+  import_labels_success: "メモのインポートに成功しました"
+  import_labels_fail: "メモのインポートに失敗しました"
+  import_labels: "メモをインポート"
+  export_labels: "メモをエクスポート"
+  export_labels_fail: "メモのエクスポートに失敗しました"
+  export_labels_description: "現在のウォレットに記録されているすべてのメモをJSONLファイル形式でエクスポートします。このファイルは、他のデバイスやウォレットソフトウェアでメモを復元するために使用できます。"
   view_descriptor: "ディスクリプタを表示"
   view_wallet_backup_data: "ウォレットバックアップデータを表示"
+  backup_update_dialog:
+    title: "相続ウォレットのバックアップ更新のお知らせ"
+    step1_title: "1. 既存の相続ウォレットのバックアップフレーズを別の場所に保存している場合は、新しいバックアップフレーズに更新してください。"
+    step1_description: "「ウォレットバックアップデータを表示」を選択 > 更新されたバックアップフレーズを確認してコピー > 安全な場所に保存"
+    step2_title: "2. Vaultを$version以上にアップデートしてください。"
+    step2_description: "Vaultをアップデートしなくてもウォレットの追加や署名はできますが、新しいバックアップフレーズで「準備済みの相続ウォレットをインポート」はできません。"
+    why_title: "Q. なぜ変更されたのですか？"
+    why_description: "バックアップデータは、定められたルール（Miniscript）に従って作成される情報です。相続人がビットコインを使用できる時点は「after」と表示する必要がありますが、誤って「older」と表示されていました。\n\nこれはバックアップデータの表現上の問題であり、現在のウォレットのアドレス、資産、設定した相続条件には影響しません。最初に設定したままウォレットを使用でき、新しく作成する必要もありません。"
+    confirm: "理解しました"
   wallet_backup_data: "ウォレットバックアップデータ"
   confirm_backup_data: "バックアップデータを確認"
   no_info: "データなし"
   memo_management: "メモ管理"
-  resync_label: "ウォレットを再同期"
   tag_count(count): "${count}個"
   backup_required: "バックアップが必要"
   delete_wallet: "ウォレットを削除"
@@ -1152,6 +1187,7 @@ wallet_info_screen:
   all_addresses: "すべてのアドレス"
   extended_public_key: "拡張公開鍵"
   tag_management: "タグ管理"
+  resync_label: "ウォレット再同期"
   tooltip:
     mfp_placeholder_description: "これは拡張公開鍵で追加されたウォレットで\nマスターフィンガープリントが入力されていないため\n00000000として表示されています。"
     wallet_backup_data: "これはこのウォレットのBSMS(BIP-129)バックアップ情報です。デバイスの紛失や交換の場合に、このデータを使用してマルチシグウォレットを再構築できます。外部で共有する際は注意して保管してください。"
@@ -1167,6 +1203,8 @@ wallet_info_screen:
       select: "選択"
   error:
     delete: "ウォレットの削除に失敗しました"
+    no_memos: "ウォレットに記録されたメモがありません。"
+    invalid_file_type: "無効なファイル形式です。jsonlファイルを選択してください。"
   connected_hardware_wallet:
     title: "デバイス情報"
     connection_status: "接続状態"
@@ -1175,6 +1213,34 @@ wallet_info_screen:
     disconnect_button: "接続解除"
     disconnect_confirm_title: "接続解除"
     disconnect_confirm_description: "現在接続中のデバイスを解除します。\n次回署名時に再接続が必要です。"
+wallet_resync_screen:
+  title: "ウォレット再同期"
+  exit_blocked_toast: "再同期が完了するまでお待ちください"
+  confirm:
+    title: "アプリに保存されたウォレットのデータを削除して\n最初から読み込み直します"
+    description: "トランザクションメモ、UTXOタグ、ロック状態はそのまま保持されます"
+    connection_alert:
+      connecting: "サーバー接続を確認しています"
+      connected: "サーバーに接続されました"
+      failed: "サーバーに接続できません"
+      network_mismatch: "ネットワークが違うため接続できません"
+    warning:
+      title: "トラブル解決用の機能です"
+      description: "残高や取引履歴が正しく表示されない、または同期がうまくいかない場合にのみ使用してください"
+    syncing_notice:
+      title: "同期を実行中です"
+      description: "今すぐ再同期を始めても、実行中の同期が終わり次第自動的に進みます"
+    last_resync_hint: "前回の再同期: $time"
+    cta: "再同期を開始"
+  progress:
+    phase_wiping: "既存のウォレットデータを削除しています"
+    phase_scanning: "ウォレットデータを読み込み直しています"
+    scanning_hint: "データが多いと、完了までにさらに時間がかかることがあります\n完了するまでそのままお待ちください"
+    phase_restoring_metadata: "既存のトランザクションメモ、UTXOタグ、ロック情報を復元しています"
+    success_title: "ウォレットデータを読み込み直しました"
+    success_cta: "ウォレットへ移動"
+    error_title: "ウォレットデータを読み込めませんでした"
+    error_cta: "再試行"
 wallet_signer_section:
   title: "署名方式"
   view_details: "詳細を見る"
@@ -1326,9 +1392,78 @@ split_utxo_screen:
     preview: "結果を確認"
     description: "分割数が多いため、トランザクションの作成に時間がかかる場合があります。先に予想結果を確認しますか？"
 
+label_management_screen:
+  title: "メモの管理"
+  subtitle: "記録したメモをインポートまたはエクスポートします"
+  description: "BIP-329はウォレット間でメモをやり取りできるように作成された公開標準です。メモを出力しておけば、デバイスの変更やアプリの再インストール後もインポートしてそのまま復元できます。"
+  import_title: "インポート"
+  import_description: "保存されたメモファイルの読み込み"
+  export_title: "エクスポート"
+  export_description: "メモをバックアップするか、他のウォレットに shared します"
+  tooltip:
+    title: "ココナッツのメモ"
+    description: "取引やUTXOをより簡単に visual / 区別できるように、自分だけの情報を記録できます。"
+    supported_title: "サポートされているメモ"
+    supported_list: "• 取引メモ\n• UTXOタグ（名前/色）\n• UTXO使用ロック"
+    import: "BIP-329メモファイル（.jsonl）をインポートしてCoconut Walletに適用します。"
+  file:
+    select: "選択"
+    select_button: "選択する"
+    apply: "適用"
+    apply_description: "$fileName\nファイルを適用しますか？"
+    delete: "ファイルを削除"
+    delete_description: "$fileName\nファイルを削除しますか？"
+    delete_multiple_description: "選択した $count 件のファイルを削除しますか？"
+    delete_success: "ファイルの削除に成功しました"
+    delete_failed: "ファイルの削除に失敗しました"
+    invalid_file_type: "無効なファイル形式です。JSONLファイルを選択してください。"
+label_import_screen:
+  loading_title: "メモを適用中"
+  success_title: "メモをインポートしました"
+  no_applied_memo: "メモファイルを適用できるウォレットがありません。"
+  delete_file: "完了ボタンを押すとファイルを削除します"
+  error_title: "メモを取得できませんでした"
+  result:
+    step1: "ウォレット名"
+    step2: "取引メモ"
+    step3: "UTXOタグ"
+    step4: "ロックされたUTXO"
+  option_selection:
+    title: "メモを適用しますか？"
+    description_1: "ファイルに保存されたメモをココナッツウォレットに適用します。"
+    description_2: "既存のメモがある場合は、インポートしたメモを追加します。"
+    add_memo_to_existing:
+      title: "既存のメモを上書きする"
+      subtitle: "既存のメモは削除され、インポートしたメモが適用されます"
+    import_memos_from_other_wallets:
+      title: "他のウォレットのメモもインポートする"
+      subtitle: "選択したウォレットに該当しないメモも一緒にインポートします"
+  widget:
+    count_unit(cardinal):
+      zero: "個"
+      one: "個"
+      other: "個"
+label_export_screen:
+  info_tooltip: "メモをBIP-329ファイル（.jsonl）として保存したり、他のウォレットと共有したりできます。"
+  all_wallets: "すべてのウォレット"
+  create_file: "ファイルを作成"
+  view_list: "リストを表示"
+  no_wallet: "ウォレットが見つかりません"
+  no_file: "ファイルが見つかりません。\nまず［ファイルを作成］でファイルを作成してください。"
+  loading_title: "ファイルを作成しています"
+  success_title: "ファイルを共有しますか？"
+  error_title: "ファイルを作成できません"
+  no_labels_to_export: "メモがありません"
+  no_labels_to_share: "共有するメモがありません。"
+  result:
+    step1: "ファイル名"
+    step2: "作成日時"
+    step3: "適用ウォレット"
+    step4: "取引メモ"
+    step5: "UTXOタグ"
+    step6: "ロック済みUTXO"
+
 # lib/widgets/card
-wallet_list_add_guide_card:
-  add_watch_only: "ウォッチオンリーウォレットを\n追加してみてください！"
 wallet_list_glossary_shortcut_card:
   any_word_you_dont_know: "知らない用語はありませんか？"
   top_right: "右上の"
@@ -1391,6 +1526,7 @@ errors:
   storage_write_error: "ストレージへのデータ保存に失敗しました。"
   network_error: "ネットワークに接続できません。接続状態を確認してください。"
   node_connection_error: "ビットコインノードへの接続に失敗しました。"
+  untrusted_certificate_error: "サーバーの証明書を信頼できませんでした。"
   fetch_wallet_error: "ウォレットの取得に失敗しました。"
   wallet_sync_failed_error: "ネットワークからウォレット情報の読み込みに失敗"
   fetch_balance_error: "残高の取得に失敗しました。"
@@ -1403,6 +1539,7 @@ errors:
   realm_exception: "Realm操作中にエラーが発生しました。"
   node_unknown: "ノード接続中に不明なエラーが発生しました。"
   broadcast_error: "トランザクションの送信に失敗しました。"
+  chain_mismatch_error: "ネットワークが異なるため接続できません"
   network_connect: "ネットワーク接続がありません。"
   network_disconnected: "ネットワークが切断されました"
   network_not_found: "ネットワークが接続されていません！"

@@ -34,8 +34,8 @@ void main() {
     });
   });
 
-  group('CoconutPulpFeature.listing', () {
-    test('id가 lib/ccos/features/coconut_pulp/ 폴더명 규칙과 일치한다', () {
+  group('CoconutFeature.listing', () {
+    test('id가 lib/ccos/features/coconut/ 폴더명 규칙과 일치한다', () {
       expect(CoconutThemeFeature.id, 'ccos-feature-theme-coconut-pulp');
       expect(CoconutThemeFeature.listing.id, CoconutThemeFeature.id);
     });

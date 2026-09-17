@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -63,7 +64,7 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 80),
                   GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/positive-feedback'),
+                    onTap: () => Navigator.pushNamed(context, AppRouteNames.positiveFeedback),
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -81,7 +82,7 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                   const SizedBox(height: 20),
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(context, '/negative-feedback');
+                      Navigator.pushNamed(context, AppRouteNames.negativeFeedback);
                     },
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,

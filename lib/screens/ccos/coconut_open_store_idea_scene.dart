@@ -206,9 +206,11 @@ class _IdeaQuestionMorphLine extends StatefulWidget {
 }
 
 class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with SingleTickerProviderStateMixin {
+  static const int _suffixDurationMs = 3700;
+
   late final AnimationController _suffixController = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 2300),
+    duration: const Duration(milliseconds: _suffixDurationMs),
   );
   bool _hasStartedSuffixAnimation = false;
 
@@ -336,29 +338,44 @@ class _IdeaQuestionMorphLineState extends State<_IdeaQuestionMorphLine> with Sin
     );
   }
 
-  static const String _trailingDots = '...?';
-  static const double _typeDotsEnd = 0.1330; // 306ms
-  static const double _eraseStart = 0.2722; // hold full "...?" until 626ms
-  static const double _eraseEnd = 0.4052; // erase finishes at 932ms
-  static const double _finalMarkStart = 0.7965; // "!" appears at 1832ms
+  static const String _questionMark = '?';
+  static const String _finalDots = '...';
+  static const String _finalMark = '$_finalDots!';
+
+  static const int _questionMarkAppearAtMs = 306; // "?" appears
+  static const int _questionMarkHoldMs = 900; // "?" stays for a while before it's erased
+  static const int _questionMarkRemoveAtMs = _questionMarkAppearAtMs + _questionMarkHoldMs;
+
+  // "..." starts the moment "?" is erased, but each dot lands slowly and deliberately,
+  // like someone pondering, rather than typing at the rest of the line's normal pace.
+  static const int _dotsMsPerCharacter = kTypewriterMsPerCharacter * 10;
+  static const int _finalDotsTypeEndMs = _questionMarkRemoveAtMs + _finalDots.length * _dotsMsPerCharacter;
+
+  // The pause before "!" lands is longer than the pondering pace of the dots above.
+  static const int _exclamationHoldMs = kTypewriterMsPerCharacter * 13;
+  static const int _exclamationAppearAtMs = _finalDotsTypeEndMs + _exclamationHoldMs;
+
+  static const double _questionMarkAppearAt = _questionMarkAppearAtMs / _suffixDurationMs;
+  static const double _questionMarkRemoveAt = _questionMarkRemoveAtMs / _suffixDurationMs;
+  static const double _finalDotsTypeEnd = _finalDotsTypeEndMs / _suffixDurationMs;
+  static const double _exclamationAppearAt = _exclamationAppearAtMs / _suffixDurationMs;
 
   String _suffixText(double progress) {
-    if (progress < _typeDotsEnd) {
-      final count = (_trailingDots.length * (progress / _typeDotsEnd)).floor().clamp(0, _trailingDots.length);
-      return _trailingDots.substring(0, count);
-    }
-    if (progress < _eraseStart) {
-      return _trailingDots;
-    }
-    if (progress < _eraseEnd) {
-      final eraseProgress = (progress - _eraseStart) / (_eraseEnd - _eraseStart);
-      final remaining = (_trailingDots.length * (1 - eraseProgress)).ceil().clamp(0, _trailingDots.length);
-      return _trailingDots.substring(0, remaining);
-    }
-    if (progress < _finalMarkStart) {
+    if (progress < _questionMarkAppearAt) {
       return '';
     }
-    return '!';
+    if (progress < _questionMarkRemoveAt) {
+      return _questionMark;
+    }
+    if (progress < _finalDotsTypeEnd) {
+      final typeProgress = (progress - _questionMarkRemoveAt) / (_finalDotsTypeEnd - _questionMarkRemoveAt);
+      final count = (_finalDots.length * typeProgress).floor().clamp(0, _finalDots.length);
+      return _finalDots.substring(0, count);
+    }
+    if (progress < _exclamationAppearAt) {
+      return _finalDots;
+    }
+    return _finalMark;
   }
 }
 

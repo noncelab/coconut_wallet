@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -58,8 +60,12 @@ class TrezorTransportSelectScreen extends StatelessWidget {
     Navigator.pop(context);
     Navigator.pushNamed(
       context,
-      '/trezor-ble-connect',
-      arguments: {'psbtBase64': psbtBase64, 'walletName': walletName, 'walletFingerprint': walletFingerprint},
+      AppRouteNames.trezorBleConnect,
+      arguments: TrezorBleConnectRouteArgs(
+        psbtBase64: psbtBase64,
+        walletName: walletName,
+        walletFingerprint: walletFingerprint,
+      ),
     );
   }
 
@@ -67,8 +73,12 @@ class TrezorTransportSelectScreen extends StatelessWidget {
     Navigator.pop(context);
     Navigator.pushNamed(
       context,
-      '/trezor-usb-connect',
-      arguments: {'psbtBase64': psbtBase64, 'walletName': walletName, 'walletFingerprint': walletFingerprint},
+      AppRouteNames.trezorUsbConnect,
+      arguments: TrezorUsbConnectRouteArgs(
+        psbtBase64: psbtBase64,
+        walletName: walletName,
+        walletFingerprint: walletFingerprint,
+      ),
     );
   }
 }
