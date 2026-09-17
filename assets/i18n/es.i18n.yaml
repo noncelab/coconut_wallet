@@ -146,6 +146,7 @@ sign_multisig: "Firmar multifirma"
 
 forgot_password: "¿Contraseña olvidada?"
 tx_not_found: "No hay transacciones"
+tx_loading: "Cargando el historial de transacciones"
 utxo_not_found: "UTXO no encontrado"
 utxo_loading: "UTXO cargando"
 faucet_request: "Solicitud de prueba de Bitcoin. Por favor, espere un momento."

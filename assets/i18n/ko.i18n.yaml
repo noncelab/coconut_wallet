@@ -145,6 +145,7 @@ sign_multisig: "다중 서명하기"
 
 forgot_password: "비밀번호가 기억나지 않나요?"
 tx_not_found: "거래 내역이 없어요"
+tx_loading: "거래내역을 불러오는 중이에요"
 utxo_not_found: "UTXO가 없어요"
 utxo_loading: "UTXO를 확인하는 중이에요"
 faucet_request: "테스트 비트코인을 요청했어요. 잠시만 기다려 주세요."

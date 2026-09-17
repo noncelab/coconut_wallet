@@ -145,6 +145,7 @@ sign_multisig: "Multisig signieren"
 
 forgot_password: "Passwort vergessen?"
 tx_not_found: "Keine Transaktion gefunden"
+tx_loading: "Transaktionsverlauf wird geladen"
 utxo_not_found: "Kein UTXO gefunden"
 utxo_loading: "UTXO wird geladen"
 faucet_request: "Test-Bitcoin angefordert. Bitte warten Sie einen Moment."

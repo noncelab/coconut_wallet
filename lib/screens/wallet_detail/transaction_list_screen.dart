@@ -430,15 +430,18 @@ class _TransactionListState extends State<TransactionList> {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<WalletDetailViewModel, List<TransactionRecord>>(
-      selector: (_, viewModel) => viewModel.txList,
-      builder: (_, txList, __) {
+    return Selector<WalletDetailViewModel, Tuple2<List<TransactionRecord>, bool>>(
+      selector: (_, viewModel) => Tuple2(viewModel.txList, viewModel.isWalletSyncing),
+      builder: (_, data, __) {
+        final txList = data.item1;
+        final isWalletSyncing = data.item2;
         if (!listEquals(_displayedTxList, txList) || !_deepEquals(_displayedTxList, txList)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _handleTransactionListUpdate(txList);
           });
         }
-        return txList.isNotEmpty ? _buildSliverAnimatedList(_displayedTxList) : _buildEmptyState();
+        if (txList.isNotEmpty) return _buildSliverAnimatedList(_displayedTxList);
+        return _buildEmptyState(isWalletSyncing ? t.tx_loading : t.tx_not_found);
       },
     );
   }
@@ -565,13 +568,13 @@ class _TransactionListState extends State<TransactionList> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(String message) {
     return SliverFillRemaining(
       child: Padding(
         padding: const EdgeInsets.only(top: 80),
         child: Align(
           alignment: Alignment.topCenter,
-          child: Text(t.tx_not_found, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
+          child: Text(message, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
         ),
       ),
     );

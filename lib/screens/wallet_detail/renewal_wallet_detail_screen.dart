@@ -438,18 +438,28 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SvgPicture.asset(
-                      CommonStateIconPath.leafFall,
-                      colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
-                    ),
-                    CoconutLayout.spacing_200w,
-                    Flexible(
+                    WalletBalanceSyncShimmer(
+                      isRefreshing: viewModel.isWalletSyncing,
                       child: Text(
-                        t.wallet_detail_screen.never_used_wallet,
+                        t.tx_loading,
                         textAlign: TextAlign.center,
                         style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                       ),
                     ),
+                    if (!viewModel.isWalletSyncing) ...[
+                      SvgPicture.asset(
+                        CommonStateIconPath.leafFall,
+                        colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
+                      ),
+                      CoconutLayout.spacing_200w,
+                      Flexible(
+                        child: Text(
+                          t.wallet_detail_screen.never_used_wallet,
+                          textAlign: TextAlign.center,
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               )

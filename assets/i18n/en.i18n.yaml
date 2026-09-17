@@ -145,6 +145,7 @@ sign_multisig: "Sign Multisig"
 
 forgot_password: "Forgot Password?"
 tx_not_found: "Tx Not Found"
+tx_loading: "Loading transaction history"
 utxo_not_found: "UTXO Not Found"
 utxo_loading: "UTXO Loading"
 faucet_request: "Test Bitcoin requested. Please wait a moment."
