@@ -33,6 +33,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/renewal_utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
@@ -684,6 +685,7 @@ class UtxoList extends StatefulWidget {
     this.onSettingLockChanged,
     this.emptyStateText,
     this.emptyStateTextStyle,
+    this.renewalViewModel,
   });
 
   final int walletId;
@@ -694,6 +696,7 @@ class UtxoList extends StatefulWidget {
   final ValueChanged<bool>? onSettingLockChanged;
   final String? emptyStateText;
   final TextStyle? emptyStateTextStyle;
+  final RenewalUtxoListViewModel? renewalViewModel;
 
   @override
   State<UtxoList> createState() => _UtxoListState();
@@ -721,28 +724,37 @@ class _UtxoListState extends State<UtxoList> {
   Widget build(BuildContext context) {
     double bottomInset = MediaQuery.of(context).padding.bottom;
 
+    final renewalViewModel = widget.renewalViewModel;
+    if (renewalViewModel != null) {
+      return ListenableBuilder(
+        listenable: renewalViewModel,
+        builder: (_, __) => _buildList(renewalViewModel.utxoList, renewalViewModel.activeUtxoTagName, bottomInset),
+      );
+    }
+
     return Selector<UtxoListViewModel, Tuple3<List<UtxoState>, String, UtxoOrder>>(
       selector: (_, vm) => Tuple3(vm.utxoList, vm.activeUtxoTagName, vm.activeUtxoOrder),
       shouldRebuild: (prev, next) => prev.item1 != next.item1 || prev.item2 != next.item2 || prev.item3 != next.item3,
       builder: (_, data, __) {
-        final utxoList = data.item1;
-        final activeTag = data.item2;
-
-        if (utxoList.isEmpty || !utxoList.any((utxo) => _belongsToTag(utxo, activeTag))) {
-          return _buildEmptyState();
-        }
-
-        if (_isListChanged(_displayedUtxoList, utxoList)) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _handleUtxoListChange(utxoList);
-          });
-        }
-
-        return SliverPadding(
-          padding: EdgeInsets.only(bottom: bottomInset + 70),
-          sliver: _buildSliverAnimatedList(utxoList, activeTag),
-        );
+        return _buildList(data.item1, data.item2, bottomInset);
       },
+    );
+  }
+
+  Widget _buildList(List<UtxoState> utxoList, String activeTag, double bottomInset) {
+    if (utxoList.isEmpty || !utxoList.any((utxo) => _belongsToTag(utxo, activeTag))) {
+      return _buildEmptyState();
+    }
+
+    if (_isListChanged(_displayedUtxoList, utxoList)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleUtxoListChange(utxoList);
+      });
+    }
+
+    return SliverPadding(
+      padding: EdgeInsets.only(bottom: bottomInset + 70),
+      sliver: _buildSliverAnimatedList(utxoList, activeTag),
     );
   }
 
@@ -818,11 +830,10 @@ class _UtxoListState extends State<UtxoList> {
   Future<void> _updateSelectedUtxos({required bool lock}) async {
     if (_selectedUtxoIds.isEmpty) return;
 
-    final viewModel = context.read<UtxoListViewModel>();
     final selectedCount = _selectedUtxoIds.length;
 
     try {
-      final changedCount = await viewModel.setUtxoLockStatus(_selectedUtxoIds.toList(), lock);
+      final changedCount = await _setUtxoLockStatus(_selectedUtxoIds.toList(), lock);
 
       setState(() {
         _selectedUtxoIds.clear();
@@ -877,7 +888,6 @@ class _UtxoListState extends State<UtxoList> {
   // Item Builders
   // --------------------
   Widget _buildUtxoItem(UtxoState utxo, Animation<Offset> offsetAnimation) {
-    final viewModel = context.read<UtxoListViewModel>();
     final isSelectionMode = widget.isSelectionMode;
     final isSelected = _selectedUtxoIds.contains(utxo.utxoId);
 
@@ -901,14 +911,14 @@ class _UtxoListState extends State<UtxoList> {
               setState(() {
                 if (_selectedUtxoIds.contains(utxo.utxoId)) {
                   _selectedUtxoIds.remove(utxo.utxoId);
-                  viewModel.removeSelectUtxo(utxo);
+                  _removeSelectUtxo(utxo);
                 } else {
                   _selectedUtxoIds.add(utxo.utxoId);
-                  viewModel.addSelectUtxo(utxo);
+                  _addSelectUtxo(utxo);
                 }
               });
             } else {
-              _openDetailPage(utxo, viewModel);
+              _openDetailPage(utxo);
             }
           },
           // 요소 중 하나를 Long Press 하면 선택 모드로 진입
@@ -920,7 +930,7 @@ class _UtxoListState extends State<UtxoList> {
             }
             setState(() {
               _selectedUtxoIds.add(utxo.utxoId);
-              viewModel.addSelectUtxo(utxo);
+              _addSelectUtxo(utxo);
             });
             widget.onSettingLockChanged?.call(true);
           },
@@ -929,14 +939,46 @@ class _UtxoListState extends State<UtxoList> {
     );
   }
 
-  void _openDetailPage(UtxoState utxo, UtxoListViewModel viewModel) async {
+  Future<int> _setUtxoLockStatus(List<String> ids, bool lock) {
+    return widget.renewalViewModel?.setUtxoLockStatus(ids, lock) ??
+        context.read<UtxoListViewModel>().setUtxoLockStatus(ids, lock);
+  }
+
+  void _addSelectUtxo(UtxoState utxo) {
+    final renewalViewModel = widget.renewalViewModel;
+    if (renewalViewModel != null) {
+      renewalViewModel.addSelectUtxo(utxo);
+      return;
+    }
+    context.read<UtxoListViewModel>().addSelectUtxo(utxo);
+  }
+
+  void _removeSelectUtxo(UtxoState utxo) {
+    final renewalViewModel = widget.renewalViewModel;
+    if (renewalViewModel != null) {
+      renewalViewModel.removeSelectUtxo(utxo);
+      return;
+    }
+    context.read<UtxoListViewModel>().removeSelectUtxo(utxo);
+  }
+
+  void _refetchFromDB() {
+    final renewalViewModel = widget.renewalViewModel;
+    if (renewalViewModel != null) {
+      renewalViewModel.refetchFromDB();
+      return;
+    }
+    context.read<UtxoListViewModel>().refetchFromDB();
+  }
+
+  void _openDetailPage(UtxoState utxo) async {
     widget.onRemoveDropdown();
     await Navigator.pushNamed(
       context,
       AppRouteNames.utxoDetail,
       arguments: UtxoDetailRouteArgs(utxo: utxo, id: widget.walletId),
     );
-    viewModel.refetchFromDB();
+    _refetchFromDB();
   }
 
   Animation<Offset> _buildSlideAnimation(Animation<double> animation) {

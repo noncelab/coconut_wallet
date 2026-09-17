@@ -11,6 +11,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -610,6 +611,7 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
 
     SingleTextFieldBottomSheet.show(
       context: context,
+      screenName: AnalyticsScreenNames.walletInfoEditTargetAmountSheet,
       title: t.wallet_info_screen.target_set_title,
       originalText: btcString,
       completeButtonText: t.done,
@@ -722,6 +724,7 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
     if (!mounted) return;
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletInfoAuthSheet,
       heightRatio: 0.9,
       child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: onComplete)),
     );
@@ -730,6 +733,7 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
   void _showExtendedBottomSheet(String extendedPublicKey) {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletInfoXpubSheet,
       heightRatio: 0.9,
       backgroundColor: context.coconutColors.background,
       child: QrWithCopyTextScreen(

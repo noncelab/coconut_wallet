@@ -7,6 +7,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
@@ -23,7 +24,6 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/renewal_utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
@@ -178,6 +178,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
       context.read<ConnectivityProvider>(),
       context.read<PriceProvider>(),
       context.read<PreferenceProvider>(),
+      context.read<NodeProvider>(),
       context.read<NodeProvider>().getWalletStateStream(widget.id),
     );
 
@@ -355,7 +356,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<UtxoListViewModel>.value(
+    return ChangeNotifierProvider<RenewalUtxoListViewModel>.value(
       value: viewModel,
       child: Scaffold(
         backgroundColor: context.coconutColors.background,
@@ -418,6 +419,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
           builder: (_, _, _, _, _) => const SizedBox.shrink(),
         ),
         UtxoList(
+          renewalViewModel: viewModel,
           walletId: widget.id,
           currentUnit: _currentUnit,
           emptyStateText:
@@ -512,6 +514,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
                 onThemeSettingTap: () {
                   CommonBottomSheets.showCustomHeightBottomSheet(
                     context: context,
+                    screenName: AnalyticsScreenNames.utxoOverviewTierThemeSheet,
                     heightRatio: 0.6,
                     child: const UtxoTierThemeBottomSheet(),
                   );

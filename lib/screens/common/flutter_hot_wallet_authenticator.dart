@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_authenticator.dart';
@@ -20,6 +21,7 @@ class FlutterHotWalletAuthenticator implements HotWalletAuthenticator {
 
     final pinVerified = await CommonBottomSheets.showCustomHeightBottomSheet<bool>(
       context: context,
+      screenName: AnalyticsScreenNames.hotWalletAuthSheet,
       heightRatio: 0.9,
       child: const PinCheckScreen(allowBiometrics: false),
     );

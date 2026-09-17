@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +36,9 @@ class WalletAddDialog extends StatelessWidget {
   const WalletAddDialog({super.key, required this.animation, required this.mode});
 
   static Future<void> show(BuildContext context, WalletAddDialogMode mode) async {
+    if (mode == WalletAddDialogMode.hotWalletAction) {
+      context.read<AnalyticsService>().logHotWalletAddScreenEntered();
+    }
     await showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
@@ -266,6 +271,7 @@ class WalletAddDialog extends StatelessWidget {
   }
 
   void _onWalletSelected(BuildContext context, WalletImportSource walletImportSource) {
+    context.read<AnalyticsService>().logWalletAddScreenEntered(walletImportSource);
     final navigator = Navigator.of(context);
     navigator.pop();
 

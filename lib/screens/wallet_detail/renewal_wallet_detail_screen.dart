@@ -8,6 +8,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutTooltipState,
         CoconutTooltipType;
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -637,6 +638,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
   void _openAppLockSettings() {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletDetailAppSettingsSheet,
       child: const AppSettingsScreen(),
       heightRatio: 0.9,
     );
@@ -645,6 +647,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
   Future<void> _openFaucetRequest() async {
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      screenName: AnalyticsScreenNames.walletDetailFaucetSheet,
       heightRatio: 0.5,
       child: FaucetRequestBottomSheet(
         walletData: {

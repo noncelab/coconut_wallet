@@ -16,6 +16,13 @@ extension WalletAddAnalytics on AnalyticsService {
     );
   }
 
+  void logHotWalletAddScreenEntered() {
+    logEvent(
+      eventName: AnalyticsEventNames.walletAddScreenEntered,
+      parameters: {AnalyticsParameterNames.walletAddImportSource: 'hotWallet'},
+    );
+  }
+
   void logWalletAddCompleted(WalletImportSource importSource) {
     logEvent(
       eventName: AnalyticsEventNames.walletAddCompleted,

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutTextField;
 import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -591,6 +593,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
     FocusScope.of(context).requestFocus(_screenFocusNode);
     await CommonBottomSheets.showBottomSheet<void>(
       context: context,
+      screenName: AnalyticsScreenNames.hotWalletAppearanceSettingsSheet,
       title: t.wallet_home_screen.hot_wallet_create.appearance_settings,
       showDragHandle: true,
       showCloseButton: true,

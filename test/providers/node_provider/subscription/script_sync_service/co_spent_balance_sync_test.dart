@@ -168,7 +168,8 @@ void main() {
       expect(receiveBalanceCallCount, 2, reason: 'receive 주소는 최초 실패 후 co-spent 동기화로 한 번 더 잔액 조회가 일어나야 한다.');
 
       final balance = ScriptSyncServiceMock.walletRepository.getWalletBalance(wallet.id);
-      expect(balance.total, 0, reason: 'receive 주소의 최초 잔액 조회가 실패했더라도, co-spent 잔액 동기화를 통해 지갑 총 잔액이 0으로 정확히 반영되어야 한다.');
+      expect(balance, isNotNull);
+      expect(balance!.total, 0, reason: 'receive 주소의 최초 잔액 조회가 실패했더라도, co-spent 잔액 동기화를 통해 지갑 총 잔액이 0으로 정확히 반영되어야 한다.');
 
       expect(
         ScriptSyncServiceMock.unsubscribedAddresses,
