@@ -566,7 +566,6 @@ wallet_list:
   wallet_count: "$count 項目"
   empty_watch_only: "閲覧専用ウォレットがありません"
   empty_hot_wallet: "ホットウォレットがありません"
-  view_all_wallets: "すべてのウォレットを表示"
   primary_wallet: "プライマリウォレット"
   exclude_from_total_amount: "ホーム合計から除外"
   home_balance: "ホーム残高"

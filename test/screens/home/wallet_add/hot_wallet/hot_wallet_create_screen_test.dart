@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -220,12 +221,12 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('hot-wallet-create-button-target')));
     await tester.pumpAndSettle();
 
-    final arguments = routeArguments! as Map<String, dynamic>;
-    expect(arguments['walletId'], 77);
-    expect(arguments['descriptor'], result.descriptor);
-    expect(arguments['mnemonic'], result.mnemonic);
-    expect(arguments['passphrase'], result.passphrase);
-    expect(arguments['enterPassphraseWhenSigning'], isFalse);
+    final arguments = routeArguments! as HotWalletMnemonicBackupGuideRouteArgs;
+    expect(arguments.walletId, 77);
+    expect(arguments.descriptor, result.descriptor);
+    expect(arguments.mnemonic, result.mnemonic);
+    expect(arguments.passphrase, result.passphrase);
+    expect(arguments.enterPassphraseWhenSigning, isFalse);
     expect(viewModel.requestedEnterPassphraseWhenSigning, isFalse);
   });
 
