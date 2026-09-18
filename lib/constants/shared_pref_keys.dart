@@ -82,9 +82,6 @@ class SharedPrefKeys {
   static const String kUseDefaultExplorer = 'USE_DEFAULT_EXPLORER';
   static const String kCustomExplorerUrl = 'CUSTOM_EXPLORER_URL';
 
-  /// 생일 아이콘 변경 날짜 (해당 기간 동안 한번만 변경하기 위해)
-  static const String kEventIconChangedDate = 'EVENT_ICON_CHANGED_DATE';
-
   /// UTXO 수동선택 모드 여부
   static const String kIsManualUtxoSelectionMode = 'IS_MANUAL_UTXO_SELECTION_MODE';
 

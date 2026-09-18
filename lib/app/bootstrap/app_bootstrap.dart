@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/app/bootstrap/localization_bootstrap.dart';
@@ -9,7 +7,6 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/utils/app_icon_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -32,8 +29,6 @@ class AppBootstrap {
     await ElectrumServerProvider().migrateLegacyCustomServerStorage();
     await _initializeFirebase();
     await FileLogger.initialize();
-    await _updateAppIconIfNeeded();
-
     applyPersistedLocale();
     setupPluralResolvers();
   }
@@ -67,12 +62,6 @@ class AppBootstrap {
         Logger.error('Firebase initialization failed: $e');
         CoconutWalletApp.kIsFirebaseAnalyticsUsed = false;
       }
-    }
-  }
-
-  static Future<void> _updateAppIconIfNeeded() async {
-    if (Platform.isIOS && appFlavor == 'mainnet') {
-      await changeAppIcon();
     }
   }
 }
