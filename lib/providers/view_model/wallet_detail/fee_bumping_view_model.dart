@@ -323,7 +323,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     return RbfBuilder(
       preparer: preparer,
-      walletListItemBase: _walletListItemBase,
+      walletItemBase: _walletListItemBase,
       nextChangeAddress: _addressRepository.getChangeAddress(walletId, wallet: _walletListItemBase.walletBase),
       additionalSpendable: _isUtxoSelectionAuto ? _availableUtxos : [],
     );
@@ -340,7 +340,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     return CpfpBuilder(
       preparer: preparer,
-      walletListItemBase: _walletListItemBase,
+      walletItemBase: _walletListItemBase,
       nextReceiveAddress: _addressRepository.getReceiveAddress(_walletId, wallet: _walletListItemBase.walletBase),
       minimumFeeRate: slowFeeRate,
       additionalSpendable: _isUtxoSelectionAuto ? _availableUtxos : [],

@@ -1,4 +1,4 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -7,7 +7,7 @@ import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
+import 'package:coconut_wallet/widgets/features/auth/pin/pin_input_pad.dart';
 import 'package:provider/provider.dart';
 
 class PinCheckScreen extends StatefulWidget {

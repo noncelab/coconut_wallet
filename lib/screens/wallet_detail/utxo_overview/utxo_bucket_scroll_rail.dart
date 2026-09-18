@@ -52,7 +52,7 @@ class UtxoBucketScrollRail extends StatelessWidget {
                       width: 8,
                       height: _indicatorHeight,
                       decoration: BoxDecoration(
-                        color: context.coconutColors.mutedText,
+                        color: context.coconutColors.iconSecondary,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),

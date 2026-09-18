@@ -5,7 +5,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_device.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_device.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +62,7 @@ class SendConfirmViewModel extends ChangeNotifier {
 
     final trezorDevice = TrezorDevice.lastConnected;
     if (trezorDevice != null && trezorDevice.cachedXpub == xpub) {
-      final connected = await TrezorBleConnectivityService.isDeviceConnected(trezorDevice.transport);
+      final connected = await TrezorConnectivityService.isDeviceConnected(trezorDevice.transport);
       if (connected) return WalletImportSource.trezor;
     }
 

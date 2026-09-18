@@ -1,10 +1,11 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app/providers/app_providers.dart';
 import 'package:coconut_wallet/app/router/app_routes.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
-import 'package:coconut_wallet/services/hardware_wallet/trezor_ble_connectivity_service.dart';
+import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -15,8 +16,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
-import 'package:coconut_wallet/widgets/deep_link_listener.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
+import 'package:coconut_wallet/app/deep_link/deep_link_listener.dart';
+import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
@@ -46,14 +47,30 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     super.initState();
     _saveMigratedWalletIds();
     BitBox02ConnectivityService.startMonitoring();
-    TrezorBleConnectivityService.startMonitoring();
+    TrezorConnectivityService.startMonitoring();
   }
 
   @override
   void dispose() {
     BitBox02ConnectivityService.stopMonitoring();
-    TrezorBleConnectivityService.stopMonitoring();
+    TrezorConnectivityService.stopMonitoring();
     super.dispose();
+  }
+
+  void _logScreenView(String screenName) {
+    if (!CoconutWalletApp.kIsFirebaseAnalyticsUsed) return;
+    FirebaseAnalytics.instance.logScreenView(screenName: screenName);
+  }
+
+  String? _extractAnalyticsScreenName(RouteSettings settings) {
+    if (settings.name == Navigator.defaultRouteName) {
+      return switch (_appEntryFlow) {
+        AppEntryFlow.splash => AnalyticsScreenNames.splash,
+        AppEntryFlow.pinCheck => AnalyticsScreenNames.pinCheck,
+        AppEntryFlow.main => AnalyticsScreenNames.walletHome,
+      };
+    }
+    return settings.name;
   }
 
   Future<void> _saveMigratedWalletIds() async {
@@ -69,6 +86,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     setState(() {
       _appEntryFlow = appEntryFlow;
     });
+    _logScreenView(appEntryFlow == AppEntryFlow.main ? AnalyticsScreenNames.walletHome : AnalyticsScreenNames.pinCheck);
   }
 
   @override
@@ -102,7 +120,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               navigatorObservers: [
                 routeObserver,
                 if (CoconutWalletApp.kIsFirebaseAnalyticsUsed)
-                  FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+                  FirebaseAnalyticsObserver(
+                    analytics: FirebaseAnalytics.instance,
+                    nameExtractor: _extractAnalyticsScreenName,
+                  ),
               ],
               localizationsDelegates: const [
                 DefaultMaterialLocalizations.delegate,
@@ -123,6 +144,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                             setState(() {
                               _appEntryFlow = AppEntryFlow.main;
                             });
+                            _logScreenView(AnalyticsScreenNames.walletHome);
                           },
                         ),
                       ),

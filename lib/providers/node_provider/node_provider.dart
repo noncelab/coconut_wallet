@@ -27,6 +27,8 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/services/network/socket/socket_factory.dart';
+import 'package:coconut_wallet/utils/certificate_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
 
@@ -204,6 +206,7 @@ class NodeProvider extends ChangeNotifier {
   String get host => _electrumServer.host;
   int get port => _electrumServer.port;
   bool get ssl => _electrumServer.ssl;
+  String? get pinnedCertFingerprint => _electrumServer.pinnedCertFingerprint;
   bool get isServerChanging => _isServerChanging;
   bool get hasConnectionError => _hasConnectionError;
   int get currentBlockHeight => _currentBlockNotifier.value?.height ?? 0;
@@ -383,7 +386,7 @@ class NodeProvider extends ChangeNotifier {
     try {
       _createNewCompleter();
       _createStateManager();
-      await _isolateManager.initialize(host, port, ssl, _networkType);
+      await _isolateManager.initialize(host, port, ssl, _networkType, pinnedCertFingerprint);
       unawaited(_recordCurrentServerGenesisHash());
 
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
@@ -569,27 +572,29 @@ class NodeProvider extends ChangeNotifier {
     return result;
   }
 
-  /// 연결이 끊긴 상태면(NodeSyncState.failed 또는 hasConnectionError) 재연결을 시도한다.
+  /// 연결이 끊긴 상태면 재연결을 시도
   /// pull-to-refresh 등에서 조건 분기 없이 호출할 수 있도록, 필요 없으면 내부에서 바로 no-op한다.
-  Future<void> reconnectIfNeeded() async {
-    if (state.nodeSyncState != NodeSyncState.failed && !hasConnectionError) return;
-    await reconnect();
+  Future<Result<bool>> reconnectIfNeeded() async {
+    if (!isInitialized) return reconnect();
+    if (state.nodeSyncState != NodeSyncState.failed && !hasConnectionError) return Result.success(true);
+    return reconnect();
   }
 
-  Future<void> reconnect() async {
-    _setConnectionError(false); // 재연결 시작 시 에러 상태 리셋
+  Future<Result<bool>> reconnect() async {
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');
       _isPendingInitialization = true;
-      return;
+      return Result.failure(ErrorCodes.networkError);
     }
 
     // 이미 초기화 중이거나 종료 중인 경우 대기
     if (_isInitializing || _isClosing) {
       Logger.log('NodeProvider: Reconnect skipped - operation in progress');
-      return;
+      return Result.failure(ErrorCodes.nodeConnectionError);
     }
+
+    _setConnectionError(false); // 재연결 시작 시 에러 상태 리셋
 
     try {
       Logger.log('NodeProvider: Starting reconnect');
@@ -612,26 +617,31 @@ class NodeProvider extends ChangeNotifier {
           _setConnectionError(false);
           _restartBlockUpdates();
           _analyticsService?.logWalletBulkSyncCompleted();
+          return Result.success(true);
         } else {
           Logger.error('NodeProvider: subscribeWallets failed: ${result.error}');
           _stateManager?.setNodeSyncStateToFailed();
           _setConnectionError(true);
           _analyticsService?.logWalletBulkSyncFailed();
+          return Result.failure(result.error);
         }
       } else if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isEmpty) {
         Logger.log('NodeProvider: Wallet Loaded & Wallet Items is Empty, set state to completed');
         _stateManager?.setNodeSyncStateToCompleted();
         _setConnectionError(false);
         notifyListeners();
+        return Result.success(true);
       } else {
         Logger.log('NodeProvider: Wallet Loading, reset flag for auto-subscription');
         _isFirstInitialization = true;
         notifyListeners();
+        return Result.success(true);
       }
     } catch (e) {
       Logger.error('NodeProvider: Reconnect failed: $e');
       _setConnectionError(true);
       _stateManager?.setNodeSyncStateToFailed();
+      return Result.failure(ErrorCodes.networkError);
     }
   }
 
@@ -694,6 +704,9 @@ class NodeProvider extends ChangeNotifier {
     } catch (e) {
       Logger.error('NodeProvider: 서버 연결 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
       await electrumService.close();
+      if (electrumService.lastConnectionFailedDueToUntrustedCertificate) {
+        return Result.failure(ErrorCodes.untrustedCertificateError);
+      }
       return Result.failure(ErrorCodes.networkError);
     } finally {
       await electrumService.close();
@@ -704,10 +717,29 @@ class NodeProvider extends ChangeNotifier {
     final isOnionHost = server.host.trim().toLowerCase().endsWith('.onion');
     final connectionTimeout = isOnionHost ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
 
-    await service.connect(server.host, server.port, ssl: server.ssl).timeout(connectionTimeout);
+    await service
+        .connect(server.host, server.port, ssl: server.ssl, pinnedCertFingerprint: server.pinnedCertFingerprint)
+        .timeout(connectionTimeout);
 
     if (service.connectionStatus != SocketConnectionStatus.connected) {
       throw Exception('Socket connection failed');
+    }
+  }
+
+  /// 커스텀 서버가 제시하는 인증서의 SHA-256 지문을 확인만 하기 위한 임시 연결
+  /// 실제 프로토콜 통신은 하지 않으며, TOFU 확인 UI에서만 사용한다.
+  Future<Result<String>> probeCertificateFingerprint(ElectrumServer server) async {
+    try {
+      final cert = await DefaultSocketFactory().peekCertificate(server.host, server.port).timeout(kIsolateInitTimeout);
+
+      if (cert == null) {
+        return Result.failure(ErrorCodes.networkError);
+      }
+
+      return Result.success(CertificateUtil.sha256Fingerprint(cert));
+    } catch (e) {
+      Logger.error('NodeProvider: 인증서 확인 실패 - ${server.host}:${server.port}: $e');
+      return Result.failure(ErrorCodes.networkError);
     }
   }
 
@@ -806,9 +838,10 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
+  /// 사용할 엔드포인트만 교체하고, 실제 소켓은 건드리지 않는다.
+  /// 일렉트럼 서버 설정 화면에서 사용자가 후보를 고르는 동안 연결/해제가 반복되지 않도록,
+  /// 실제 반영은 화면을 벗어나는 시점에 [applyServerChange]로 한 번만 수행한다.
   Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
-    _isServerChanging = true;
-
     try {
       final chainCheckResult = await _verifyChainCompatibility(electrumServer);
       if (chainCheckResult.isFailure) {
@@ -816,29 +849,36 @@ class NodeProvider extends ChangeNotifier {
         return Result.failure(chainCheckResult.error);
       }
 
-      await closeConnection();
       _electrumServer = electrumServer;
 
-      Logger.log('NodeProvider: 서버 변경: $host:$port, ssl=$ssl');
+      Logger.log('NodeProvider: 서버 엔드포인트 교체: $host:$port, ssl=$ssl');
 
-      await initialize();
-
-      subscribeWallets().then((result) {
-        if (result.isFailure) {
-          Logger.error('NodeProvider: 서버 변경 실패: ${result.error}');
-          _stateManager?.setNodeSyncStateToFailed();
-          notifyListeners();
-        }
-      });
-
-      Logger.log('NodeProvider: 서버 변경 성공');
       notifyListeners();
       return Result.success(true);
     } catch (e) {
-      Logger.error('NodeProvider: 서버 변경 중 초기화 실패: $e');
-      _stateManager?.setNodeSyncStateToFailed();
+      Logger.error('NodeProvider: 서버 엔드포인트 교체 실패: $e');
       notifyListeners();
       return Result.failure(ErrorCodes.networkError);
+    }
+  }
+
+  /// [changeServer]로 교체해둔 엔드포인트를 실제 연결에 반영한다.
+  /// reconnect는 host/port/ssl/pinnedCertFingerprint 게터를 통해 _electrumServer를 읽으므로,
+  /// 여기서 새 엔드포인트로 소켓이 다시 열리는 것이 보장된다.
+  Future<Result<bool>> applyServerChange() async {
+    _isServerChanging = true;
+
+    try {
+      Logger.log('NodeProvider: 서버 변경 반영: $host:$port, ssl=$ssl');
+      final result = await reconnect();
+
+      if (result.isFailure) {
+        Logger.error('NodeProvider: 서버 변경 반영 실패: ${result.error}');
+      } else {
+        Logger.log('NodeProvider: 서버 변경 반영 성공');
+      }
+
+      return result;
     } finally {
       _isServerChanging = false;
     }

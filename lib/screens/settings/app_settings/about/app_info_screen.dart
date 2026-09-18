@@ -1,17 +1,21 @@
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'dart:io';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/settings/app_info_license_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/button/button_group.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -180,7 +184,9 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault));
+          return Center(
+            child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.iconPrimary),
+          );
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {
@@ -202,10 +208,12 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.rectangle,
                   borderRadius: BorderRadius.circular(20),
-                  color: CoconutColors.black, // fixed color
+                  color: colors.surfaceMuted,
                 ),
-                child: Image.asset(
-                  'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
+                // TODO: mainnet인 경우 gradient 적용 필요
+                child: SvgPicture.asset(
+                  AppIconPath.coconut,
+                  colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
                 ),
               ),
               const SizedBox(width: 30),
@@ -236,10 +244,10 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: ShrinkAnimationButton(
-        defaultColor: context.coconutColors.surfaceCard,
-        pressedColor: context.coconutColors.surfacePressed,
+        defaultColor: context.coconutColors.surface,
+        pressedOverlayColor: context.coconutColors.surfacePressOverlay,
         onPressed: () {
-          Navigator.pushNamed(context, '/coconut-crew');
+          Navigator.pushNamed(context, AppRouteNames.coconutCrew);
         },
         borderRadius: CoconutStyles.radius_200,
         child: Container(
@@ -284,7 +292,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   child: Image.asset('assets/images/discord-full-logo.png', width: 24, height: 24, fit: BoxFit.cover),
                 ),
                 onPressed: () {
-                  launchURL(DISCORD_COCONUT);
+                  launchURL(context, DISCORD_COCONUT);
                 },
               ),
               SingleButton(
@@ -296,7 +304,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   child: Image.asset('assets/images/x-logo.jpg', width: 24, height: 24, fit: BoxFit.cover),
                 ),
                 onPressed: () {
-                  launchURL(X_POW);
+                  launchURL(context, X_COCONUT);
                 },
               ),
               SingleButton(
@@ -315,7 +323,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     query: 'subject=${t.email_subject}&body=$info',
                   );
 
-                  launchURL(params.toString());
+                  if (!mounted) return;
+                  launchURL(context, params.toString(), analyticsValue: 'mailto:$CONTACT_EMAIL_ADDRESS');
                 },
               ),
             ],
@@ -327,11 +336,11 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
 
   Widget githubWidget() {
     Widget githubLogo = SvgPicture.asset(
-      'assets/svg/github-logo-white.svg',
+      CommonCommunicationIconPath.githubLogoWhite,
       width: 24,
       height: 24,
       fit: BoxFit.cover,
-      colorFilter: ColorFilter.mode(context.coconutColors.iconDefault, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
     );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -348,7 +357,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 title: t.coconut_lib,
                 leftElement: githubLogo,
                 onPressed: () {
-                  launchURL(GITHUB_URL_COCONUT_LIBRARY);
+                  launchURL(context, GITHUB_URL_COCONUT_LIBRARY);
                 },
               ),
               SingleButton(
@@ -357,7 +366,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 title: t.coconut_wallet,
                 leftElement: githubLogo,
                 onPressed: () {
-                  launchURL(GITHUB_URL_WALLET);
+                  launchURL(context, GITHUB_URL_WALLET);
                 },
               ),
               SingleButton(
@@ -366,7 +375,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 title: t.coconut_vault,
                 leftElement: githubLogo,
                 onPressed: () {
-                  launchURL(GITHUB_URL_VAULT);
+                  launchURL(context, GITHUB_URL_VAULT);
                 },
               ),
               SingleButton(
@@ -374,7 +383,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 buttonPosition: SingleButtonPosition.bottom,
                 title: t.app_info_screen.contribution,
                 onPressed: () {
-                  launchURL(CONTRIBUTING_URL);
+                  launchURL(context, CONTRIBUTING_URL);
                 },
               ),
             ],
@@ -399,7 +408,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 buttonPosition: SingleButtonPosition.top,
                 title: t.app_info_screen.terms_of_service,
                 onPressed: () {
-                  launchURL(TERMS_OF_SERVICE_URL);
+                  launchURL(context, TERMS_OF_SERVICE_URL);
                 },
               ),
               SingleButton(
@@ -407,7 +416,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 buttonPosition: SingleButtonPosition.middle,
                 title: t.app_info_screen.privacy_policy,
                 onPressed: () {
-                  launchURL(PRIVACY_POLICY_URL);
+                  launchURL(context, PRIVACY_POLICY_URL);
                 },
               ),
               SingleButton(
@@ -417,6 +426,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 onPressed: () {
                   CommonBottomSheets.showCustomHeightBottomSheet(
                     context: context,
+                    screenName: AnalyticsScreenNames.appInfoLicenseSheet,
                     heightRatio: 0.95,
                     child: const LicenseBottomSheet(),
                   );
@@ -427,7 +437,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   buttonPosition: SingleButtonPosition.bottom,
                   title: t.app_info_screen.data_collection,
                   onPressed: () {
-                    launchURL(DATA_COLLECTION_URL);
+                    launchURL(context, DATA_COLLECTION_URL);
                   },
                 ),
             ],
@@ -442,7 +452,9 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       future: packageInfoFuture,
       builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: context.coconutColors.iconDefault));
+          return Center(
+            child: InlineLoadingIndicator(padding: EdgeInsets.zero, color: context.coconutColors.iconPrimary),
+          );
         } else if (snapshot.hasError) {
           return Center(child: Text(t.errors.data_loading_failed));
         } else if (!snapshot.hasData) {
@@ -471,11 +483,12 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: InkWell(
-                  onTap: () => launchURL(LICENSE_URL, defaultMode: true),
+                  onTap: () => launchURL(context, LICENSE_URL, openInApp: true),
                   child: Text(
                     COPYRIGHT_TEXT,
                     style: CoconutTypography.body2_14.merge(
                       TextStyle(
+                        color: colors.primaryText,
                         decoration: TextDecoration.underline,
                         decorationColor: colors.primaryText.withValues(alpha: 0.3),
                       ),

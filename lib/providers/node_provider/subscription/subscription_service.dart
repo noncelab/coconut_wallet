@@ -242,20 +242,18 @@ class SubscriptionService {
       return _scanAndSubscribeRange(walletItem, isChange, 0, minKnownUsedIndex ?? -1, scriptStatusController);
     }
 
-    List<ScriptStatus> scriptStatuses = [];
     final activeAddresses = _addressRepository.getActiveUsedAddresses(walletItem.id, isChange);
-    for (final activeAddress in activeAddresses) {
-      final result = await _subscribeAddress(
-        walletItem,
-        activeAddress.index,
-        activeAddress.address,
-        isChange,
-        scriptStatusController,
-      );
-      if (!result.isSubscribed) {
-        scriptStatuses.add(result.scriptStatus);
-      }
-    }
+    final activeResults = await Future.wait(
+      activeAddresses.map(
+        (activeAddress) =>
+            _subscribeAddress(walletItem, activeAddress.index, activeAddress.address, isChange, scriptStatusController),
+      ),
+    );
+
+    List<ScriptStatus> scriptStatuses = [
+      for (final result in activeResults)
+        if (!result.isSubscribed) result.scriptStatus,
+    ];
 
     final scanResult = await _scanAndSubscribeRange(
       walletItem,

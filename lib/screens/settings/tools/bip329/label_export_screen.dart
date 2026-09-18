@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/label/label_result.dart';
@@ -8,12 +9,13 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/label_export_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
-import 'package:coconut_wallet/widgets/card/file_list_item_card.dart';
-import 'package:coconut_wallet/widgets/card/label_result_card.dart';
-import 'package:coconut_wallet/widgets/label_export_widgets.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_tween_button.dart';
+import 'package:coconut_wallet/widgets/features/bip329/file_list_item_card.dart';
+import 'package:coconut_wallet/widgets/common/animation/success_check_lottie.dart';
+import 'package:coconut_wallet/widgets/features/bip329/label_result_card.dart';
+import 'package:coconut_wallet/widgets/features/bip329/label_shared_widgets.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/size_reporting_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -194,7 +196,7 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
             future: _filesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularLoadingSpinner());
+                return const Center(child: FullscreenLoadingIndicator(size: 40, strokeWidth: 3));
               }
               final noFiles = snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty;
               if (noFiles) {
@@ -205,11 +207,11 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
           );
         }
       case LabelExportStep.exporting:
-        return Center(child: _buildLoadingCard());
+        return _buildLoadingCard();
       case LabelExportStep.success:
         return _buildSuccessView();
       case LabelExportStep.error:
-        return Center(child: _buildErrorCard());
+        return _buildErrorCard();
     }
   }
 
@@ -386,7 +388,7 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
         backgroundColor: context.coconutColors.surface,
         borderColor: context.coconutColors.surface,
         icon: SvgPicture.asset(
-          'assets/svg/circle-info.svg',
+          CommonStateIconPath.circleInfo,
           width: 20,
           colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
         ),
@@ -402,31 +404,45 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
   }
 
   Widget _buildLoadingCard() {
-    return LabelExportProgressCard(
-      title: Text(
-        t.label_export_screen.loading_title,
-        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-        textAlign: TextAlign.center,
-        textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
+    return LabelStepLayout(
+      icon: const FullscreenLoadingIndicator(size: 40, strokeWidth: 3),
+      heading: t.label_export_screen.loading_title,
+      titleColor: context.coconutColors.primaryText,
+      content: Column(
+        children: [
+          LabelResultCard(
+            steps: [t.label_export_screen.result.step1, t.label_export_screen.result.step2],
+            showSkeleton: true,
+          ),
+          CoconutLayout.spacing_300h,
+          LabelResultCard(
+            steps: [
+              t.label_export_screen.result.step3,
+              t.label_export_screen.result.step4,
+              t.label_export_screen.result.step5,
+              t.label_export_screen.result.step6,
+            ],
+            showSkeleton: true,
+          ),
+        ],
       ),
-      topSteps: [t.label_export_screen.result.step1, t.label_export_screen.result.step2],
-      bottomSteps: [
-        t.label_export_screen.result.step3,
-        t.label_export_screen.result.step4,
-        t.label_export_screen.result.step5,
-        t.label_export_screen.result.step6,
-      ],
     );
   }
 
   Widget _buildErrorCard() {
-    return LabelExportErrorCard(
-      title: Text(
-        t.label_export_screen.error_title,
-        style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.danger),
-        textAlign: TextAlign.center,
-        textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
+    return LabelStepLayout(
+      icon: fixedFootprintIcon(
+        footprint: 40,
+        renderSize: 48,
+        child: SvgPicture.asset(
+          CommonStateIconPath.circleWarning,
+          colorFilter: ColorFilter.mode(context.coconutColors.danger, BlendMode.srcIn),
+          height: 48,
+          width: 48,
+        ),
       ),
+      heading: t.label_export_screen.error_title,
+      titleColor: context.coconutColors.danger,
     );
   }
 
@@ -486,52 +502,51 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
       );
     }
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: LabelExportSuccessCard(
-            title: Text(
-              t.label_export_screen.success_title,
-              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-              textAlign: TextAlign.center,
-              textScaler: TextScaler.linear(MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.2)),
-            ),
-            steps: [t.label_export_screen.result.step1, t.label_export_screen.result.step2],
-            stepResults: [
-              _exportResults.first.xFile?.name ?? '',
-              DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
-            ],
-          ),
-        ),
-        CoconutLayout.spacing_300h,
-        Offstage(
-          child: Padding(
+    return LabelStepLayout(
+      icon: SuccessCheckLottie(size: 40, color: context.coconutColors.success),
+      heading: t.label_export_screen.success_title,
+      titleColor: context.coconutColors.primaryText,
+      content: Column(
+        children: [
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: SizeReportingWidget(
-              onSizeChanged: (size) {
-                if (!mounted || _successCardHeight == size.height) return;
-                setState(() => _successCardHeight = size.height);
-              },
-              child: _buildSuccessBottomCard(_exportResults[_currentPage]),
+            child: LabelResultCard(
+              steps: [t.label_export_screen.result.step1, t.label_export_screen.result.step2],
+              showSkeleton: false,
+              stepResults: [
+                _exportResults.first.xFile?.name ?? '',
+                DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+              ],
             ),
           ),
-        ),
-        SizedBox(
-          height: _successCardHeight,
-          child: PageView.builder(
-            itemCount: _exportResults.length,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            itemBuilder:
-                (context, index) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildSuccessBottomCard(_exportResults[index]),
-                ),
+          CoconutLayout.spacing_300h,
+          Offstage(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: SizeReportingWidget(
+                onSizeChanged: (size) {
+                  if (!mounted || _successCardHeight == size.height) return;
+                  setState(() => _successCardHeight = size.height);
+                },
+                child: _buildSuccessBottomCard(_exportResults[_currentPage]),
+              ),
+            ),
           ),
-        ),
-        if (_exportResults.length > 1) ...[const SizedBox(height: 14), _buildPageIndicator()],
-      ],
+          SizedBox(
+            height: _successCardHeight,
+            child: PageView.builder(
+              itemCount: _exportResults.length,
+              onPageChanged: (index) => setState(() => _currentPage = index),
+              itemBuilder:
+                  (context, index) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildSuccessBottomCard(_exportResults[index]),
+                  ),
+            ),
+          ),
+          if (_exportResults.length > 1) ...[const SizedBox(height: 14), _buildPageIndicator()],
+        ],
+      ),
     );
   }
 
@@ -615,7 +630,7 @@ class _LabelExportScreenState extends State<LabelExportScreen> {
           context: context,
           text: t.label_management_screen.file.delete_success,
           isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
+          iconPath: CommonStateIconPath.circleInfo,
           level: CoconutToastLevel.info,
         );
         _refreshFiles();
@@ -709,8 +724,8 @@ class _WalletListItemCardState extends State<_WalletListItemCard> {
                 isSelected: widget.isSelected,
                 onChanged: (_) => widget.onTap(),
                 width: 24,
-                color: context.coconutColors.iconDefault,
-                unSelectedColor: context.coconutColors.iconSubDefault,
+                color: context.coconutColors.iconPrimary,
+                unSelectedColor: context.coconutColors.iconSecondary,
                 inactiveColor: context.coconutColors.iconDisabled,
                 isDisabled: effectiveDisabled,
               ),

@@ -10,7 +10,7 @@ void printLongString(String str) {
     if (end > length) {
       end = length;
     }
-    Logger.log(str.substring(start, end));
+    Logger.log('[printLong] ${str.substring(start, end)}');
     start = end;
   }
 }

@@ -206,6 +206,7 @@ class SharedPrefsRepository {
               server.value['host'] as String,
               server.value['port'] as int,
               server.value['ssl'] as bool,
+              pinnedCertFingerprint: server.value['pinnedCertFingerprint'] as String?,
             ),
           );
         }
@@ -218,22 +219,16 @@ class SharedPrefsRepository {
     return null;
   }
 
-  /// 사용자 서버 추가 (키 기반으로 중복 확인)
+  /// 사용자 서버 추가 (키 기반으로 중복 확인, 이미 있으면 정보 갱신 - 인증서 지문 재승인 등)
   Future<void> addUserServer(ElectrumServer server) async {
-    final existingServers = await getUserServers();
+    final existingServers = await getUserServers() ?? [];
     final serverKey = '${server.host}:${server.port}';
 
-    // 중복 확인
-    final isDuplicate = existingServers?.any((existing) => '${existing.host}:${existing.port}' == serverKey);
+    existingServers.removeWhere((existing) => '${existing.host}:${existing.port}' == serverKey);
+    existingServers.add(server);
 
-    if (isDuplicate ?? false) {
-      Logger.log('User server already exists: $serverKey');
-      return;
-    }
-
-    existingServers?.add(server);
-    await saveUserServers(existingServers ?? []);
-    Logger.log('User server added: $serverKey');
+    await saveUserServers(existingServers);
+    Logger.log('User server added/updated: $serverKey');
   }
 
   /// 사용자 서버 목록 저장 (host:port를 키로 사용)
@@ -243,7 +238,12 @@ class SharedPrefsRepository {
 
     for (final server in servers) {
       final key = '${server.host}:${server.port}';
-      serversMap[key] = {'host': server.host, 'port': server.port, 'ssl': server.ssl};
+      serversMap[key] = {
+        'host': server.host,
+        'port': server.port,
+        'ssl': server.ssl,
+        'pinnedCertFingerprint': server.pinnedCertFingerprint,
+      };
     }
 
     await prefs.setString(SharedPrefKeys.kUserServers, jsonEncode(serversMap));

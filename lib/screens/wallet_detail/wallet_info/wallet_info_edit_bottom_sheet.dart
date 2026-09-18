@@ -1,15 +1,16 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutTextField, CoconutTextFieldStyle;
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
-import 'package:coconut_wallet/widgets/icon/icon_palette_cell.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/utils/custom_wallet_icons.dart';
+import 'package:coconut_wallet/widgets/features/wallet/icon/icon_palette_cell.dart';
+import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
@@ -105,7 +106,6 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     return Selector<WalletInfoEditViewModel, Tuple3<bool, bool, String>>(
       selector: (_, viewModel) => Tuple3(viewModel.canUpdateName, viewModel.isProcessing, viewModel.walletName),
       builder: (context, data, child) {
-        final typography = context.coconutTypography;
         final canUpdateName = data.item1;
         final isProcessing = data.item2;
         final walletName = data.item3;
@@ -178,7 +178,9 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                                   Expanded(
                                     child: Text(
                                       walletName,
-                                      style: typography.bodyBold.copyWith(color: context.coconutColors.primaryText),
+                                      style: CoconutTypography.body2_14_Bold.setColor(
+                                        context.coconutColors.primaryText,
+                                      ),
                                       textAlign: TextAlign.center,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -222,9 +224,9 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                         if (isProcessing)
                           Positioned.fill(
                             child: Container(
-                              color: context.coconutColors.iconDefault.withValues(alpha: 0.6),
+                              color: context.coconutColors.iconPrimary.withValues(alpha: 0.6),
                               alignment: Alignment.center,
-                              child: const CoconutCircularIndicator(size: 160),
+                              child: const FullscreenLoadingIndicator(size: 160, padding: EdgeInsets.zero),
                             ),
                           ),
                       ],
@@ -267,7 +269,6 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                     CoconutLayout.spacing_400w,
                     Expanded(
                       child: CoconutTextField(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                         controller: _textEditingController,
                         focusNode: _textFieldFocusNode,
                         onChanged: (text) {
@@ -276,13 +277,9 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                           }
                         },
                         placeholderText: t.name,
-                        backgroundColor: context.coconutColors.inputSurface,
-                        errorColor: context.coconutColors.danger,
-                        cursorColor: context.coconutColors.primaryText,
-                        activeColor: context.coconutColors.primaryText,
-                        placeholderColor: context.coconutColors.inputPlaceholder,
-                        borderColor: context.coconutColors.inputBorder,
                         maxLength: 20,
+                        clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                        onClear: _textEditingController.clear,
                         errorText:
                             _isFirst
                                 ? ''
@@ -291,20 +288,6 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                                 : '',
                         isError: _isFirst ? false : isError,
                         maxLines: 1,
-                        suffix:
-                            _textEditingController.text.isNotEmpty
-                                ? IconButton(
-                                  iconSize: 14,
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () {
-                                    _textEditingController.clear();
-                                  },
-                                  icon: SvgPicture.asset(
-                                    'assets/svg/text-field-clear.svg',
-                                    colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
-                                  ),
-                                )
-                                : null,
                       ),
                     ),
                   ],
@@ -336,7 +319,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5),
-      itemCount: _colorCount + CustomIcons.totalCount,
+      itemCount: _colorCount + CustomWalletIcons.totalCount,
       itemBuilder: (context, index) {
         final isColorItem = index < _colorCount;
         final backgroundColor = context.coconutColors.surfaceBottomSheet;

@@ -14,7 +14,7 @@ class BluetoothTransport: NSObject {
     private var writeCharacteristic: CBCharacteristic?
     private var readCharacteristic: CBCharacteristic?
 
-    private let readQueue = DispatchQueue(label: "bitbox02.ble.read")
+    private let bufferLock = NSLock()
     private var readSemaphore = DispatchSemaphore(value: 0)
     private var readBuffer = Data()
 
@@ -70,23 +70,26 @@ class BluetoothTransport: NSObject {
 extension BluetoothTransport: BridgeTransportProtocol {
 
     func read(_ n: Int) throws -> Data {
-        return try readQueue.sync {
-            while readBuffer.isEmpty {
-                guard peripheral?.state == .connected else {
+        while true {
+            guard peripheral?.state == .connected else {
+                throw NSError(domain: "BitBox02", code: -2,
+                              userInfo: [NSLocalizedDescriptionKey: "BLE disconnected"])
+            }
+            bufferLock.lock()
+            if !readBuffer.isEmpty {
+                let count = min(readBuffer.count, n)
+                let result = Data(readBuffer.prefix(count))
+                readBuffer.removeFirst(count)
+                bufferLock.unlock()
+                return result
+            }
+            bufferLock.unlock()
+            if readSemaphore.wait(timeout: .now() + 5) == .timedOut {
+                if peripheral?.state != .connected {
                     throw NSError(domain: "BitBox02", code: -2,
                                   userInfo: [NSLocalizedDescriptionKey: "BLE disconnected"])
                 }
-                if readSemaphore.wait(timeout: .now() + 5) == .timedOut {
-                    if peripheral?.state != .connected {
-                        throw NSError(domain: "BitBox02", code: -2,
-                                      userInfo: [NSLocalizedDescriptionKey: "BLE disconnected"])
-                    }
-                }
             }
-            let count = min(readBuffer.count, n)
-            let result = Data(readBuffer.prefix(count))
-            readBuffer.removeFirst(count)
-            return result
         }
     }
 
@@ -209,7 +212,9 @@ extension BluetoothTransport: CBPeripheralDelegate {
                     error: Error?) {
         if characteristic.uuid == BluetoothTransport.readUUID,
            let data = characteristic.value {
+            bufferLock.lock()
             readBuffer.append(data)
+            bufferLock.unlock()
             readSemaphore.signal()
         } else if characteristic.uuid == BluetoothTransport.productUUID,
                   let data = characteristic.value {

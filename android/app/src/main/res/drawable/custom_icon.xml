@@ -1,4 +1,7 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:top="50dp" android:left="50dp" android:right="50dp" android:bottom="50dp"
-        android:drawable="@mipmap/ic_launcher"/>
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/native_splash_mainnet_logo" />
+    </item>
 </layer-list>

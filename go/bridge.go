@@ -23,7 +23,16 @@ var (
 	logger       = newBridgeLogger()
 	prevTxStore  = make(map[string]map[int]string) // deviceID -> inputIndex -> rawTxHex
 	prevTxStoreMu sync.RWMutex
+
+	initJobs   = make(map[string]*initJob)
+	initJobsMu sync.Mutex
 )
+
+type initJob struct {
+	result string
+	err    error
+	done   chan struct{}
+}
 
 // SetLoggerEnabled toggles logging.
 func SetLoggerEnabled(v bool) {
@@ -79,20 +88,15 @@ func connectDevice(transport Transport, version *semver.SemVer, product *common.
 	return id, nil
 }
 
-// Init performs the Noise handshake and pairing.
-func Init(deviceID string) (string, error) {
-	entry, err := manager.get(deviceID)
-	if err != nil {
-		return "", err
-	}
-
+// runInit is the synchronous implementation of Init; shared by StartInit/WaitInit.
+func runInit(entry *deviceEntry, deviceID string) (string, error) {
 	if err := entry.Device.Init(); err != nil {
 		logger.Info(fmt.Sprintf("Init failed for device %s: %v", deviceID, err))
 		return "", fmt.Errorf("init failed: %w", err)
 	}
 	logger.Info(fmt.Sprintf("Init succeeded for device %s", deviceID))
 
-	// Best-effort: fetch device name after Noise handshake is established.
+	// Best-effort: fetch device name after the Noise handshake / device pairing.
 	deviceName := ""
 	if info, err := entry.Device.DeviceInfo(); err == nil {
 		deviceName = info.Name
@@ -101,15 +105,80 @@ func Init(deviceID string) (string, error) {
 		logger.Info(fmt.Sprintf("DeviceInfo error: %v", err))
 	}
 
-	result := map[string]interface{}{
-		"pairing_code": nil,
-		"name":         deviceName,
-	}
-	b, err := json.Marshal(result)
+	b, err := json.Marshal(map[string]interface{}{"name": deviceName})
 	if err != nil {
 		return "", err
 	}
 	return string(b), nil
+}
+
+// Init performs the Noise handshake and pairing synchronously.
+// Deprecated: use StartInit + ChannelHash + WaitInit for host-side pairing UI.
+func Init(deviceID string) (string, error) {
+	entry, err := manager.get(deviceID)
+	if err != nil {
+		return "", err
+	}
+	return runInit(entry, deviceID)
+}
+
+// StartInit begins the Noise handshake and pairing in a background goroutine.
+// While it is running, the pairing code can be read with ChannelHash().
+// Wait for completion with WaitInit().
+func StartInit(deviceID string) error {
+	entry, err := manager.get(deviceID)
+	if err != nil {
+		return err
+	}
+
+	initJobsMu.Lock()
+	defer initJobsMu.Unlock()
+	if _, ok := initJobs[deviceID]; ok {
+		return fmt.Errorf("init already started for %s", deviceID)
+	}
+
+	job := &initJob{done: make(chan struct{})}
+	initJobs[deviceID] = job
+
+	go func() {
+		job.result, job.err = runInit(entry, deviceID)
+		close(job.done)
+	}()
+
+	return nil
+}
+
+// WaitInit blocks until the Init goroutine started by StartInit completes.
+// It returns the JSON device info (e.g. name) and cleans up the job.
+func WaitInit(deviceID string) (string, error) {
+	initJobsMu.Lock()
+	job, ok := initJobs[deviceID]
+	initJobsMu.Unlock()
+	if !ok {
+		return "", fmt.Errorf("init not started for %s", deviceID)
+	}
+
+	<-job.done
+
+	initJobsMu.Lock()
+	delete(initJobs, deviceID)
+	initJobsMu.Unlock()
+
+	if job.err != nil {
+		return "", job.err
+	}
+	return job.result, nil
+}
+
+// ChannelHash returns the current pairing code computed by the Noise handshake.
+// This can be called repeatedly while StartInit is running, before WaitInit completes.
+func ChannelHash(deviceID string) (string, error) {
+	entry, err := manager.get(deviceID)
+	if err != nil {
+		return "", err
+	}
+	code, _ := entry.Device.ChannelHash()
+	return code, nil
 }
 
 // RootFingerprint returns the keystore's root fingerprint as a hex string.

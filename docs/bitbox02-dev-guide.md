@@ -12,7 +12,7 @@ Coconut Wallet ↔ BitBox02 Nova (BTC-only) hardware wallet via gomobile bridge.
 |---|---|---|
 | Go | 1.22+ | `brew install go` |
 | gomobile | latest | `go install golang.org/x/mobile/cmd/gomobile@latest`, then `gomobile init` |
-| **bitbox02-api-go fork** | branch `fix/nil-guard-psbt` | `git clone https://github.com/4xvgal/bitbox02-api-go.git ../bitbox02-api-go && cd ../bitbox02-api-go && git checkout fix/nil-guard-psbt` (clone as a **sibling of this repo**, i.e. at `../bitbox02-api-go` relative to `coconut_wallet/`). Required by the `replace` directive in `go/go.mod` — gomobile bind fails without it. Has nil-guard patches for externally-built PSBTs (see §6.6 / `bitbox02-psbt-signing-fix.md`); plain upstream `BitBoxSwiss/bitbox02-api-go` will panic on `BTCSignPSBT`. |
+| **bitbox02-api-go fork** | pinned via `go.mod`/`go.sum` | No manual clone needed. `go/go.mod` has `replace github.com/BitBoxSwiss/bitbox02-api-go => github.com/noncelab/bitbox02-api-go <pseudo-version>`, pointing at a specific commit on the `fix/nil-guard-psbt` branch of [`github.com/noncelab/bitbox02-api-go`](https://github.com/noncelab/bitbox02-api-go/tree/fix/nil-guard-psbt) (org-owned fork, not a personal account). `go build`/`gomobile bind` fetch it automatically like any other module, and `go.sum` pins its content hash. Note: this dependency is intentionally **not** vendored (`go mod vendor`) — `gomobile bind` internally runs `go mod tidy` against a synthesized per-arch temp module, which is incompatible with automatic vendor mode and fails if `go/vendor/` exists. Has nil-guard patches for externally-built PSBTs (see §6.6 / `bitbox02-psbt-signing-fix.md`); plain upstream `BitBoxSwiss/bitbox02-api-go` will panic on `BTCSignPSBT`. To bump to a newer commit on the fork: `cd go && go get github.com/BitBoxSwiss/bitbox02-api-go@none && go mod edit -replace github.com/BitBoxSwiss/bitbox02-api-go=github.com/noncelab/bitbox02-api-go@<new-commit>` then `go mod tidy`. |
 | ANDROID_NDK_HOME | 26+ | Required for gomobile CGo cross-compile |
 | Java | 17 (21 also verified working) | `build.gradle` targets Java 17 bytecode (`sourceCompatibility`/`jvmTarget`); a JDK 21 host can still build it via Gradle's toolchain support |
 | Flutter | stable | installed via FVM at `$HOME/.fvm/flutter_sdk/` |
@@ -96,11 +96,11 @@ coconut_wallet/
 
 | Platform | Required before building | What it does |
 |---|---|---|
-| Android | `make gomobile-android` | Regenerates `android/app/libs/bitboxbridge.aar` + `-sources.jar` from `go/*.go`. Needs Go/gomobile + the `bitbox02-api-go` fork cloned (see Prerequisites). Gradle/Kotlin will fail to compile `Bitbox02MethodHandler.kt` against a stale AAR with confusing "too many arguments" / "unresolved reference" errors if you skip this after changing `go/bridge.go`. |
-| iOS | `make gomobile-ios` **+ manual Xcode wiring** | Generates `ios/Runner/bitboxbridge.xcframework`. As of this writing, **nothing in `ios/Podfile` or `Runner.xcodeproj` references this framework** — it must be added manually to the Runner target's "Frameworks, Libraries, and Embedded Content" (embed & sign) before `Bitbox02MethodHandler.swift`'s `Bitboxbridge*` calls will link. This matches §5.5 status: iOS BitBox02 support is not yet built/wired up. |
-| Both | `make gomobile-bind` | Convenience target that runs both of the above gomobile steps (still excludes the manual Xcode step for iOS). |
+| Android | `make gomobile-android` | Regenerates `android/app/libs/bitboxbridge.aar` + `-sources.jar` from `go/*.go`. Needs Go/gomobile (see Prerequisites); the pinned `bitbox02-api-go` fork is fetched automatically via `go.mod`/`go.sum`. Gradle/Kotlin will fail to compile `Bitbox02MethodHandler.kt` against a stale AAR with confusing "too many arguments" / "unresolved reference" errors if you skip this after changing `go/bridge.go`. |
+| iOS | `make gomobile-ios` | Generates `ios/Runner/bitboxbridge.xcframework` at the exact path already referenced by `Runner.xcodeproj` (Frameworks build phase, same pattern as `TrezorBridge.xcframework`). No manual Xcode wiring needed — `Bitboxbridge.framework` is a static library, so linking (already configured) is sufficient; no "Embed & Sign" step is required. `bitboxbridge.xcframework` itself is gitignored (build artifact, like the AAR's `-sources.jar`), so a fresh clone must run `make gomobile-ios` once before the iOS app will build. |
+| Both | `make gomobile-bind` | Convenience target that runs both of the above gomobile steps. |
 
-Recommended order for a clean machine: clone the `bitbox02-api-go` fork → `gomobile init` → `make gomobile-android` (and/or `gomobile-ios`) → `make ready` → platform build/run command.
+Recommended order for a clean machine: `gomobile init` → `make gomobile-android` (and/or `gomobile-ios`, which fetches the pinned `bitbox02-api-go` fork automatically via `go.mod`) → `make ready` → platform build/run command.
 
 ### 3.1 Go Bridge → AAR
 
@@ -241,12 +241,11 @@ For real USB testing, a **physical Android device with USB OTG** is required.
 
 ### 5.5 iOS Testing
 
-**Status: NOT YET BUILT**
+**Status: WIRED UP.** `bitboxbridge.xcframework` is linked in `Runner.xcodeproj` (Frameworks build phase) and `AppDelegate.swift` initializes `Bitbox02MethodHandler`, which uses BLE (`BluetoothTransport.swift`) to talk to the device — this is how BLE pairing works today.
 
-- CoreBluetooth is unavailable on iOS Simulator
-- Requires a real iOS device
-- Requires XCFramework from `gomobile bind -target=ios`
-- Requires CocoaPods install with `bitboxbridge.xcframework` linked
+- CoreBluetooth is unavailable on iOS Simulator, so a real iOS device is required
+- `bitboxbridge.xcframework` is gitignored (build artifact) — run `make gomobile-ios` once after cloning, or after changing `go/*.go`, before building for iOS
+- Not routed through CocoaPods; the xcframework is a static library referenced directly by the Xcode project, so no Podfile entry or "Embed & Sign" step is needed
 
 ### 5.6 Integration Test Flow (simulator)
 

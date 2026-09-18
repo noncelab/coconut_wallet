@@ -24,6 +24,12 @@ class Bitbox02MethodHandler: NSObject {
             connect(call, result: result)
         case "init":
             initDevice(call, result: result)
+        case "startInit":
+            startInit(call, result: result)
+        case "waitInit":
+            waitInit(call, result: result)
+        case "channelHash":
+            channelHash(call, result: result)
         case "rootFingerprint":
             rootFingerprint(call, result: result)
         case "btcXPub":
@@ -108,6 +114,74 @@ class Bitbox02MethodHandler: NSObject {
                     result(FlutterError(code: "BLE_FAILED",
                                         message: error.localizedDescription, details: nil))
                 }
+            }
+        }
+    }
+
+    private func startInit(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+            var err: NSError?
+            BridgeStartInit(deviceId, &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "START_INIT_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                result(nil)
+            }
+        }
+    }
+
+    private func waitInit(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+            var err: NSError?
+            let status = BridgeWaitInit(deviceId, &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "WAIT_INIT_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                if let data = status.data(using: .utf8),
+                   var json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let name = json["name"] as? String, name.isEmpty,
+                   let bleName = self.bleTransport?.bleName, !bleName.isEmpty {
+                    json["name"] = bleName
+                    if let updated = try? JSONSerialization.data(withJSONObject: json),
+                       let updatedStr = String(data: updated, encoding: .utf8) {
+                        result(updatedStr)
+                        return
+                    }
+                }
+                result(status)
+            }
+        }
+    }
+
+    private func channelHash(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any] ?? [:]
+        guard let deviceId = args["id"] as? String else {
+            result(FlutterError(code: "INVALID_ARG", message: "id required", details: nil))
+            return
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+            var err: NSError?
+            let code = BridgeChannelHash(deviceId, &err)
+            DispatchQueue.main.async {
+                if let err = err {
+                    result(FlutterError(code: "CHANNEL_HASH_FAILED", message: err.localizedDescription, details: nil))
+                    return
+                }
+                result(code)
             }
         }
     }

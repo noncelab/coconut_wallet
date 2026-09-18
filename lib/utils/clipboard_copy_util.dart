@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/app/bootstrap/platform_channels.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/logger.dart';
