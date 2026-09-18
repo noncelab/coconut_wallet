@@ -85,9 +85,11 @@ void defaultMigration(Migration migration, int oldVersion, {Set<int>? migratedWa
     }
     if (oldVersion < 9) {
       migrateTaprootWalletBackupData(migration.newRealm, migratedWalletIds: migratedWalletIds);
-      scopeWalletSyncDataByWallet(migration);
     }
-    if (oldVersion < 10) addHotWalletLifecycleState(migration.newRealm);
+    if (oldVersion < 10) {
+      scopeWalletSyncDataByWallet(migration);
+      addHotWalletLifecycleState(migration.newRealm);
+    }
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
