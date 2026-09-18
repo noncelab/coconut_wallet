@@ -24,6 +24,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TrezorBleConnectScreen extends StatefulWidget {
+  final int? walletId;
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
@@ -31,6 +32,7 @@ class TrezorBleConnectScreen extends StatefulWidget {
 
   const TrezorBleConnectScreen({
     super.key,
+    this.walletId,
     this.psbtBase64,
     this.walletName,
     this.walletFingerprint,
@@ -550,6 +552,7 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
           context,
           AppRouteNames.trezorSign,
           arguments: TrezorSignRouteArgs(
+            walletId: widget.walletId!,
             psbtBase64: widget.psbtBase64!,
             walletName: widget.walletName ?? '',
             walletFingerprint: widget.walletFingerprint ?? '',
