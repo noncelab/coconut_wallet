@@ -27,6 +27,7 @@ class SendConfirmViewModel extends ChangeNotifier {
   }
 
   int? get estimatedFee => _unsignedPsbt?.fee;
+  int get walletId => _walletListItemBase.id;
   String get walletName => _walletListItemBase.name;
   String? get txWaitingForSign => _sendInfoProvider.txWaitingForSign;
   int? get totalUsedAmount => _totalUsedAmount;

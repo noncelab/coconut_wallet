@@ -248,40 +248,46 @@ class TransactionDraftRouteArgs {
 }
 
 class TrezorTransportSelectRouteArgs {
+  final int? walletId;
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
-  const TrezorTransportSelectRouteArgs({this.psbtBase64, this.walletName, this.walletFingerprint});
+  const TrezorTransportSelectRouteArgs({this.walletId, this.psbtBase64, this.walletName, this.walletFingerprint});
 }
 
 class TrezorBleConnectRouteArgs {
+  final int? walletId;
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
-  const TrezorBleConnectRouteArgs({this.psbtBase64, this.walletName, this.walletFingerprint});
+  const TrezorBleConnectRouteArgs({this.walletId, this.psbtBase64, this.walletName, this.walletFingerprint});
 }
 
 class TrezorUsbConnectRouteArgs {
+  final int? walletId;
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
-  const TrezorUsbConnectRouteArgs({this.psbtBase64, this.walletName, this.walletFingerprint});
+  const TrezorUsbConnectRouteArgs({this.walletId, this.psbtBase64, this.walletName, this.walletFingerprint});
 }
 
 class BitBox02ConnectRouteArgs {
   final WalletImportSource importSource;
+  final int? walletId;
   final String? psbtBase64;
   final String? walletName;
-  const BitBox02ConnectRouteArgs({required this.importSource, this.psbtBase64, this.walletName});
+  const BitBox02ConnectRouteArgs({required this.importSource, this.walletId, this.psbtBase64, this.walletName});
 }
 
 class BitBox02SignRouteArgs {
+  final int walletId;
   final String psbtBase64;
   final String walletName;
   final String? walletFingerprint;
   final bool? isFromSendFlow;
 
   const BitBox02SignRouteArgs({
+    required this.walletId,
     required this.psbtBase64,
     required this.walletName,
     this.walletFingerprint,
@@ -290,12 +296,14 @@ class BitBox02SignRouteArgs {
 }
 
 class TrezorSignRouteArgs {
+  final int walletId;
   final String psbtBase64;
   final String walletName;
   final String? walletFingerprint;
   final bool? isFromSendFlow;
   final String? transport;
   const TrezorSignRouteArgs({
+    required this.walletId,
     required this.psbtBase64,
     required this.walletName,
     this.walletFingerprint,

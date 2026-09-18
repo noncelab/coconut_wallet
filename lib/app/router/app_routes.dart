@@ -222,6 +222,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         (context) => _buildScreenWithArgs<TrezorTransportSelectRouteArgs>(
           context,
           (args) => TrezorTransportSelectScreen(
+            walletId: args.walletId,
             psbtBase64: args.psbtBase64,
             walletName: args.walletName,
             walletFingerprint: args.walletFingerprint,
@@ -231,6 +232,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         (context) => _buildScreenWithArgs<TrezorBleConnectRouteArgs>(
           context,
           (args) => TrezorBleConnectScreen(
+            walletId: args.walletId,
             psbtBase64: args.psbtBase64,
             walletName: args.walletName,
             walletFingerprint: args.walletFingerprint,
@@ -240,6 +242,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         (context) => _buildScreenWithArgs<TrezorUsbConnectRouteArgs>(
           context,
           (args) => TrezorUsbConnectScreen(
+            walletId: args.walletId,
             psbtBase64: args.psbtBase64,
             walletName: args.walletName,
             walletFingerprint: args.walletFingerprint,
@@ -250,6 +253,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => BitBox02ConnectScreen(
             importSource: args.importSource,
+            walletId: args.walletId,
             psbtBase64: args.psbtBase64,
             walletName: args.walletName,
           ),
@@ -258,6 +262,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         (context) => _buildScreenWithArgs<BitBox02SignRouteArgs>(
           context,
           (args) => BitBox02SignScreen(
+            walletId: args.walletId,
             psbtBase64: args.psbtBase64,
             walletName: args.walletName,
             walletFingerprint: args.walletFingerprint ?? '',
@@ -268,6 +273,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         (context) => _buildScreenWithArgs<TrezorSignRouteArgs>(
           context,
           (args) => TrezorSignScreen(
+            walletId: args.walletId,
             psbtBase64: args.psbtBase64,
             walletName: args.walletName,
             walletFingerprint: args.walletFingerprint ?? '',
