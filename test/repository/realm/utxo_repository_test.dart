@@ -181,6 +181,33 @@ void main() {
     });
 
     group('snapshotLockedUtxoIds / restoreLockedUtxos 테스트', () {
+      test('도메인 UTXO id 목록으로 여러 UTXO를 잠근다', () async {
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createUnspentRealmUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: lockedTxHash,
+            ),
+          );
+          realmManager.realm.add(
+            UtxoMock.createUnspentRealmUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: unspentTxHash,
+            ),
+          );
+        });
+
+        final result = await utxoRepository.lockAllUtxos(testWalletId, [
+          getUtxoId(lockedTxHash, 0),
+          getUtxoId(unspentTxHash, 0),
+        ]);
+
+        expect(result.isSuccess, isTrue);
+        expect(utxoRepository.getUtxosByStatus(testWalletId, UtxoStatus.locked), hasLength(2));
+      });
+
       test('잠긴 UTXO id만 정확히 스냅샷됨', () async {
         realmManager.realm.write(() {
           realmManager.realm.add(

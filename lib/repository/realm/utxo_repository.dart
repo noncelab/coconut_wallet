@@ -415,9 +415,10 @@ class UtxoRepository extends BaseRepository {
   Future<Result<void>> lockAllUtxos(int walletId, List<String> utxoIds) async {
     if (utxoIds.isEmpty) return Result.success(null);
     return handleAsyncRealm(() async {
+      final realmUtxoIds = utxoIds.map((utxoId) => '$walletId:$utxoId').toList();
       final utxosToLock =
           realm
-              .query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [walletId, utxoIds])
+              .query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [walletId, realmUtxoIds])
               .where((u) => u.status != utxoStatusToString(UtxoStatus.locked))
               .toList();
 
@@ -442,9 +443,10 @@ class UtxoRepository extends BaseRepository {
   Future<void> restoreLockedUtxos(int walletId, Set<String> lockedUtxoIdsSnapshot) async {
     if (lockedUtxoIdsSnapshot.isEmpty) return;
 
+    final realmUtxoIds = lockedUtxoIdsSnapshot.map((utxoId) => '$walletId:$utxoId').toList();
     final toRelock = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND status == $2 AND isDeleted == false', [
       walletId,
-      lockedUtxoIdsSnapshot.toList(),
+      realmUtxoIds,
       utxoStatusToString(UtxoStatus.unspent),
     ]);
 
