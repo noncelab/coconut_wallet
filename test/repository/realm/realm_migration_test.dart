@@ -55,11 +55,7 @@ void main() {
 
   void realmSetup({required int initialVersion}) {
     // 테스트용 Realm 설정
-    config = Configuration.local(
-      realmAllSchemas,
-      schemaVersion: initialVersion,
-      path: testPath,
-    );
+    config = Configuration.local(realmAllSchemas, schemaVersion: initialVersion, path: testPath);
 
     // 새로운 Realm 인스턴스 생성
     realm = Realm(config);
@@ -96,14 +92,7 @@ void main() {
             "tr([9B1441E4/86'/1'/0']tpubDDMbU29QrSafD2Ui4yGv31Xp3PPSMvudreoohYjR8xLTng7hbsjYwUTeRhiKULFqX16M5M8zZh9siw5i6RRyisc6LtWjr1FwBYTiZUGGYJN/<0;1>/*,{and_v(v:pk([70C4E9DE/86'/1'/0']tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8/<0;1>/*),older(500000000))})#w0hf4lu5";
         const miniscript =
             "and_v(v:pk([70C4E9DE/86'/1'/0']tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8/<0;1>/*),older(500000000))";
-        final walletBase = RealmWalletBase(
-          101,
-          0,
-          0,
-          descriptor,
-          'Legacy Taproot',
-          'taproot',
-        );
+        final walletBase = RealmWalletBase(101, 0, 0, descriptor, 'Legacy Taproot', 'taproot');
         final taprootWallet = RealmTaprootWallet(
           101,
           jsonEncode([
@@ -130,11 +119,7 @@ void main() {
           realmAllSchemas,
           schemaVersion: 9,
           migrationCallback:
-              (migration, oldVersion) => defaultMigration(
-                migration,
-                oldVersion,
-                migratedWalletIds: migratedWalletIds,
-              ),
+              (migration, oldVersion) => defaultMigration(migration, oldVersion, migratedWalletIds: migratedWalletIds),
           path: testPath,
         );
         realm = Realm(migratedConfig);
@@ -144,73 +129,34 @@ void main() {
         expect(migratedWalletIds, contains(101));
         expect(migratedWalletBase.descriptor, contains('after(500000000)'));
         expect(migratedWalletBase.descriptor, isNot(contains('older(')));
-        expect(
-          DescriptorUtil.hasDescriptorChecksum(migratedWalletBase.descriptor),
-          isTrue,
-        );
+        expect(DescriptorUtil.hasDescriptorChecksum(migratedWalletBase.descriptor), isTrue);
 
-        final restoredWallet = TaprootWallet.fromDescriptor(
-          migratedWalletBase.descriptor,
-        );
+        final restoredWallet = TaprootWallet.fromDescriptor(migratedWalletBase.descriptor);
         expect(restoredWallet.policyList.length, 1);
         expect(
-          () => InheritancePolicy.fromMiniscript(
-            Descriptor.parse(
-              migratedWalletBase.descriptor,
-            ).miniscriptList.single,
-          ),
+          () => InheritancePolicy.fromMiniscript(Descriptor.parse(migratedWalletBase.descriptor).miniscriptList.single),
           returnsNormally,
         );
 
         final migratedSeedInfo =
-            (jsonDecode(
-                          migratedTaprootWallet
-                              .scriptPathSeedInfosInJsonSerialization,
-                        )
-                        as List)
-                    .single
+            (jsonDecode(migratedTaprootWallet.scriptPathSeedInfosInJsonSerialization) as List).single
                 as Map<String, dynamic>;
         expect(migratedSeedInfo['miniscript'], contains('after(500000000)'));
         expect(migratedSeedInfo['miniscript'], isNot(contains('older(')));
-        expect(
-          () => InheritancePolicy.fromMiniscript(
-            migratedSeedInfo['miniscript'] as String,
-          ),
-          returnsNormally,
-        );
+        expect(() => InheritancePolicy.fromMiniscript(migratedSeedInfo['miniscript'] as String), returnsNormally);
       });
 
       test('[9 -> 10] wallet-scoped sync data is cleared', () {
         realmSetup(initialVersion: 9);
         final now = DateTime.now();
         realm.write(() {
-          realm.add(
-            RealmScriptStatus('1:0014script', '0014script', 'status', 1, now),
-          );
-          realm.add(
-            RealmUtxo(
-              '1:txid:0',
-              1,
-              'address',
-              1000,
-              now,
-              'txid',
-              0,
-              'm/0/0',
-              1,
-              'unspent',
-            ),
-          );
+          realm.add(RealmScriptStatus('1:0014script', '0014script', 'status', 1, now));
+          realm.add(RealmUtxo('1:txid:0', 1, 'address', 1000, now, 'txid', 0, 'm/0/0', 1, 'unspent'));
         });
         realm.close();
 
         realm = Realm(
-          Configuration.local(
-            realmAllSchemas,
-            schemaVersion: 10,
-            migrationCallback: defaultMigration,
-            path: testPath,
-          ),
+          Configuration.local(realmAllSchemas, schemaVersion: 10, migrationCallback: defaultMigration, path: testPath),
         );
 
         expect(realm.all<RealmScriptStatus>(), isEmpty);
@@ -274,28 +220,17 @@ void main() {
 
       realm.write(() => addHotWalletLifecycleState(realm));
 
-      expect(
-        realm.all<RealmHotWalletMetadata>().single.lifecycleStateName,
-        HotWalletLifecycleState.active.name,
-      );
+      expect(realm.all<RealmHotWalletMetadata>().single.lifecycleStateName, HotWalletLifecycleState.active.name);
     });
   });
 }
 
 // migrationFrom2To3 테스트는 기본 검증 코드라 1to2 코드로 검증
-void migrationFrom0ToLatest(
-  Realm originalRealm,
-  int newRealmVersion,
-  String newRealmPath,
-) {
+void migrationFrom0ToLatest(Realm originalRealm, int newRealmVersion, String newRealmPath) {
   migrationFrom1toLatest(originalRealm, newRealmVersion, newRealmPath);
 }
 
-void migrationFrom1toLatest(
-  Realm originalRealm,
-  int newRealmVersion,
-  String newRealmPath,
-) {
+void migrationFrom1toLatest(Realm originalRealm, int newRealmVersion, String newRealmPath) {
   // Given
   int usedReceiveIndex = 5;
   int usedChangeIndex = 3;
@@ -308,22 +243,8 @@ void migrationFrom1toLatest(
         usedChangeIndex: usedChangeIndex,
       ),
     );
-    originalRealm.add(
-      RealmWalletAddressMock.getUsedMock(
-        id: 1,
-        address: 'address1',
-        index: 0,
-        isChange: false,
-      ),
-    );
-    originalRealm.add(
-      RealmWalletAddressMock.getUsedMock(
-        id: 2,
-        address: 'address2',
-        index: 0,
-        isChange: true,
-      ),
-    );
+    originalRealm.add(RealmWalletAddressMock.getUsedMock(id: 1, address: 'address1', index: 0, isChange: false));
+    originalRealm.add(RealmWalletAddressMock.getUsedMock(id: 2, address: 'address2', index: 0, isChange: true));
     originalRealm.add(RealmTransactionMock.getMock());
     originalRealm.add(RealmUtxoMock.getMock());
   });
@@ -361,23 +282,11 @@ void migrationFrom1toLatest(
     expect(migratedWallet.name, 'Test Wallet', reason: '지갑 이름은 유지되어야 함');
 
     // usedReceiveIndex 확인 - 초기화 후에는 -1이어야 함
-    expect(
-      migratedWallet.usedReceiveIndex,
-      -1,
-      reason: 'usedReceiveIndex가 -1로 초기화되어야 함',
-    );
-    expect(
-      migratedWallet.usedChangeIndex,
-      -1,
-      reason: 'usedChangeIndex가 -1로 초기화되어야 함',
-    );
+    expect(migratedWallet.usedReceiveIndex, -1, reason: 'usedReceiveIndex가 -1로 초기화되어야 함');
+    expect(migratedWallet.usedChangeIndex, -1, reason: 'usedChangeIndex가 -1로 초기화되어야 함');
 
     // 2. 주소 정보는 유지되지만 초기화되어야 함
-    expect(
-      newRealm.all<RealmWalletAddress>().length,
-      2,
-      reason: '주소 정보는 유지되어야 함',
-    );
+    expect(newRealm.all<RealmWalletAddress>().length, 2, reason: '주소 정보는 유지되어야 함');
     final migratedAddress = newRealm.all<RealmWalletAddress>().first;
     expect(migratedAddress.address, 'address1', reason: '주소 값은 유지되어야 함');
     expect(migratedAddress.isUsed, false, reason: 'isUsed가 false로 초기화되어야 함');
@@ -388,19 +297,11 @@ void migrationFrom1toLatest(
     expect(migratedAddress2.address, 'address2', reason: '주소 값은 유지되어야 함');
     expect(migratedAddress2.isUsed, false, reason: 'isUsed가 false로 초기화되어야 함');
     expect(migratedAddress2.confirmed, 0, reason: 'confirmed가 0으로 초기화되어야 함');
-    expect(
-      migratedAddress2.unconfirmed,
-      0,
-      reason: 'unconfirmed가 0으로 초기화되어야 함',
-    );
+    expect(migratedAddress2.unconfirmed, 0, reason: 'unconfirmed가 0으로 초기화되어야 함');
     expect(migratedAddress2.total, 0, reason: 'total이 0으로 초기화되어야 함');
 
     // 3. 나머지는 삭제
-    expect(
-      newRealm.all<RealmTransaction>().isEmpty,
-      isTrue,
-      reason: '트랜잭션이 삭제되어야 함',
-    );
+    expect(newRealm.all<RealmTransaction>().isEmpty, isTrue, reason: '트랜잭션이 삭제되어야 함');
     expect(newRealm.all<RealmUtxo>().isEmpty, isTrue, reason: 'UTXO가 삭제되어야 함');
   } else {
     // Then - 마이그레이션 후 검증
@@ -427,32 +328,22 @@ void migrationFrom1toLatest(
     expect(migratedAddress2.total, 1500);
 
     // 3. 나머지 정보도 유지
-    expect(
-      newRealm.all<RealmTransaction>().length,
-      1,
-      reason: '트랜잭션 정보는 유지되어야 함',
-    );
+    expect(newRealm.all<RealmTransaction>().length, 1, reason: '트랜잭션 정보는 유지되어야 함');
     expect(newRealm.all<RealmUtxo>().length, 1, reason: 'UTXO 정보는 유지되어야 함');
   }
 
   newRealm.close();
 }
 
-void migrationFrom2toLatest(
-  Realm originalRealm,
-  int newRealmVersion,
-  String newRealmPath,
-) {
+void migrationFrom2toLatest(Realm originalRealm, int newRealmVersion, String newRealmPath) {
   originalRealm.write(() {
     originalRealm.add(RealmWalletBaseMock.getMock(name: 'Test Wallet1', id: 1));
     originalRealm.add(RealmWalletBaseMock.getMock(name: 'Test Wallet2', id: 2));
   });
 
-  final testWallet1BeforeMigration =
-      originalRealm.query<RealmWalletBase>('id == 1').first;
+  final testWallet1BeforeMigration = originalRealm.query<RealmWalletBase>('id == 1').first;
 
-  final testWallet2BeforeMigration =
-      originalRealm.query<RealmWalletBase>('id == 2').first;
+  final testWallet2BeforeMigration = originalRealm.query<RealmWalletBase>('id == 2').first;
 
   expect(testWallet1BeforeMigration.name, 'Test Wallet1');
   expect(testWallet1BeforeMigration.id, 1);
@@ -472,11 +363,9 @@ void migrationFrom2toLatest(
   );
   final newRealm = Realm(newRealmConfig);
 
-  final testWallet1AfterMigration =
-      newRealm.query<RealmWalletBase>('id == 1').first;
+  final testWallet1AfterMigration = newRealm.query<RealmWalletBase>('id == 1').first;
 
-  final testWallet2AfterMigration =
-      newRealm.query<RealmWalletBase>('id == 2').first;
+  final testWallet2AfterMigration = newRealm.query<RealmWalletBase>('id == 2').first;
 
   expect(testWallet1AfterMigration.name, 'Test Wallet1');
   expect(testWallet1AfterMigration.id, 1);
