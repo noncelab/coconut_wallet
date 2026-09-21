@@ -416,17 +416,6 @@ class WalletProvider extends ChangeNotifier {
     final migration = _migrateTaprootOlderToAfter(watchOnlyWallet);
     watchOnlyWallet = migration.wallet;
     final isSingleSig = watchOnlyWallet.walletType == WalletType.singleSignature;
-    if (isSingleSig && !allowExistingHotWallet) {
-      final existingHotWallet = findSameSinglesigWallet(watchOnlyWallet.descriptor, hasLocalKey: true);
-      if (existingHotWallet != null) {
-        return ResultOfSyncFromVault(
-          result: WalletSyncResult.existingWalletDifferentType,
-          walletId: existingHotWallet.id,
-          pendingWatchOnlyWallet: watchOnlyWallet,
-          isCoconutVaultWallet: true,
-        );
-      }
-    }
     final index = _findSameWalletIndex(watchOnlyWallet.descriptor, watchOnlyWallet.walletType);
 
     // Existing wallet (Case 1, 2, 3)
@@ -462,6 +451,19 @@ class WalletProvider extends ChangeNotifier {
       notifyListeners();
 
       return ResultOfSyncFromVault(result: WalletSyncResult.existingWalletUpdated, walletId: existingWallet.id);
+    }
+
+    // 동일한 Watch-only 지갑이 없는 신규 추가인 경우에만 핫월렛 중복 여부를 확인한다.
+    if (isSingleSig && !allowExistingHotWallet) {
+      final existingHotWallet = findSameSinglesigWallet(watchOnlyWallet.descriptor, hasLocalKey: true);
+      if (existingHotWallet != null) {
+        return ResultOfSyncFromVault(
+          result: WalletSyncResult.existingWalletDifferentType,
+          walletId: existingHotWallet.id,
+          pendingWatchOnlyWallet: watchOnlyWallet,
+          isCoconutVaultWallet: true,
+        );
+      }
     }
 
     // New Wallet (Case 4, 5, 6)
@@ -695,7 +697,13 @@ class WalletProvider extends ChangeNotifier {
     required bool isSingleSig,
     int? excludeWalletId,
   }) {
-    final conflictWallet = _walletItemList.firstWhereOrNull((w) => w.id != excludeWalletId && w.name == desiredName);
+    final incomingAddress = isSingleSig ? SingleSignatureWallet.fromDescriptor(descriptor).getAddress(0) : null;
+    final conflictWallet = _walletItemList.firstWhereOrNull(
+      (wallet) =>
+          wallet.id != excludeWalletId &&
+          wallet.name == desiredName &&
+          !(wallet is SinglesigWalletItem && wallet.walletBase.getAddress(0) == incomingAddress),
+    );
 
     // No conflict
     if (conflictWallet == null) return desiredName;

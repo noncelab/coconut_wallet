@@ -57,6 +57,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
 
   int addSinglesigWalletCallCount = 0;
   late SinglesigWalletItem addSinglesigWalletResult;
+  WatchOnlyWallet? lastSinglesigWallet;
 
   int addHotWalletCallCount = 0;
   late SinglesigWalletItem addHotWalletResult;
@@ -98,6 +99,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   @override
   Future<SinglesigWalletItem> addSinglesigWallet(WatchOnlyWallet watchOnlyWallet) async {
     addSinglesigWalletCallCount++;
+    lastSinglesigWallet = watchOnlyWallet;
     return addSinglesigWalletResult;
   }
 
@@ -629,6 +631,21 @@ void main() {
       provider.dispose();
     });
 
+    test('같은 이름과 descriptor의 핫월렛 옆에 Watch-only를 추가해도 계정 번호를 이름에 붙이지 않음', () async {
+      final existingHotWallet = _createSinglesigWalletListItem(name: 'Same Wallet', isHotWallet: true);
+      final walletRepo = FakeWalletRepository()..walletItems = [existingHotWallet];
+      walletRepo.addSinglesigWalletResult = _createSinglesigWalletListItem(id: 2, name: 'Same Wallet');
+
+      final provider = await _buildProvider(walletRepo);
+      final duplicateResult = await provider.syncFromCoconutVault(_createSinglesigWatchOnlyWallet(name: 'Same Wallet'));
+      final result = await provider.confirmWatchOnlyWalletAddition(duplicateResult, removeExistingHotWallet: false);
+
+      expect(result.result, WalletSyncResult.newWalletAdded);
+      expect(walletRepo.lastSinglesigWallet?.name, 'Same Wallet');
+
+      provider.dispose();
+    });
+
     test('기존 지갑 이름 변경 시 updateWalletUI 호출 및 existingWalletUpdated 반환', () async {
       final existingItem = _createSinglesigWalletListItem(name: 'Old Name');
       final walletRepo = FakeWalletRepository()..walletItems = [existingItem];
@@ -640,6 +657,26 @@ void main() {
       expect(result.result, WalletSyncResult.existingWalletUpdated);
       expect(walletRepo.updateWalletUICallCount, 1);
       expect(walletRepo.addSinglesigWalletCallCount, 0);
+
+      provider.dispose();
+    });
+
+    test('같은 descriptor의 핫월렛과 Watch-only가 함께 있어도 기존 Watch-only 정보를 먼저 갱신함', () async {
+      final existingHotWallet = _createSinglesigWalletListItem(id: 1, name: 'Hot Wallet', isHotWallet: true);
+      final existingWatchOnly = _createSinglesigWalletListItem(id: 2, name: 'Old Watch-only');
+      final walletRepo = FakeWalletRepository()..walletItems = [existingHotWallet, existingWatchOnly];
+
+      final provider = await _buildProvider(walletRepo);
+
+      final result = await provider.syncFromCoconutVault(
+        _createSinglesigWatchOnlyWallet(name: 'Updated Watch-only', colorIndex: 1, iconIndex: 1),
+      );
+
+      expect(result.result, WalletSyncResult.existingWalletUpdated);
+      expect(result.walletId, existingWatchOnly.id);
+      expect(walletRepo.updateWalletUICallCount, 1);
+      expect(walletRepo.addSinglesigWalletCallCount, 0);
+      expect(walletRepo.deletedWalletIds, isEmpty);
 
       provider.dispose();
     });
