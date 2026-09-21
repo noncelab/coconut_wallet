@@ -8,6 +8,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
@@ -21,6 +22,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;
@@ -83,6 +85,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   final GlobalKey _qrCaptureKey = GlobalKey();
   final GlobalKey _shareButtonKey = GlobalKey();
   bool _isPulldownOpen = false;
+  bool _showAnimatedKeystoneQr = false;
   int? _amountInSats; // bip21 포맷의 amount를 sats로 변환한 값
 
   String _selectedKey = "";
@@ -187,6 +190,9 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                         onSelected: (index, title) {
                           setState(() {
                             _selectedKey = _optionKeys[index];
+                            if (_selectedKey != 'Keystone Multisig') {
+                              _showAnimatedKeystoneQr = false;
+                            }
                           });
                           Navigator.pop(context);
                         },
@@ -333,6 +339,19 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                     ),
                   ),
                 ),
+              if (_selectedKey == 'Keystone Multisig')
+                Padding(
+                  padding: const EdgeInsets.only(left: 26, right: 26, bottom: 8),
+                  child: CoconutSegmentedControl(
+                    isSelected: [!_showAnimatedKeystoneQr, _showAnimatedKeystoneQr],
+                    onPressed: (index) {
+                      setState(() {
+                        _showAnimatedKeystoneQr = index == 1;
+                      });
+                    },
+                    children: [Text(t.unsigned_tx_qr_screen.static_qr), Text(t.unsigned_tx_qr_screen.animated_qr)],
+                  ),
+                ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                 child: QrCodeInfo(
@@ -343,6 +362,10 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                   embedWidget: widget.showQrEmbedImage ? const CoconutLogoIcon(size: 16) : null,
                   isAddress: widget.isAddress,
                   qrInternalPadding: widget.qrInternalPadding,
+                  qrViewDataHandler:
+                      _selectedKey == 'Keystone Multisig' && _showAnimatedKeystoneQr
+                          ? Utf8BcUrQrViewHandler(displayTextData)
+                          : null,
                 ),
               ),
               if (widget.footer != null) widget.footer!,

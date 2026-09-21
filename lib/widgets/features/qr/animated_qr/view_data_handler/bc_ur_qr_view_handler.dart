@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:coconut_wallet/providers/view_model/send/air-gapped/unsigned_transaction_qr_view_model.dart';
 import 'package:ur/ur.dart';
@@ -67,6 +68,22 @@ class BcUrQrViewHandler implements IQrViewDataHandler {
   String nextPart() {
     return _urEncoder.nextPart();
   }
+
+  @override
+  String get source => _source;
+}
+
+class Utf8BcUrQrViewHandler implements IQrViewDataHandler {
+  Utf8BcUrQrViewHandler(this._source, {String urType = 'bytes', int maxFragmentLength = 30}) {
+    final cborEncoder = CBOREncoder()..encodeBytes(Uint8List.fromList(utf8.encode(_source)));
+    _urEncoder = UREncoder(UR(urType.toLowerCase(), cborEncoder.getBytes()), maxFragmentLength);
+  }
+
+  final String _source;
+  late final UREncoder _urEncoder;
+
+  @override
+  String nextPart() => _urEncoder.nextPart();
 
   @override
   String get source => _source;

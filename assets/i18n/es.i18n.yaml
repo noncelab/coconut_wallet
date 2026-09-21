@@ -740,6 +740,8 @@ unsigned_tx_qr_screen:
     step1_end: "seleccionar"
     step2: "2. Escanea el código QR a continuación con la cámara"
   fast_scan_mode: "Modo de escaneo rápido"
+  static_qr: "QR estático"
+  animated_qr: "QR animado"
   low_density_qr: "QR simple"
   high_density_qr: "QR complejo"
 

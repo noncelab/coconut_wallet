@@ -747,6 +747,8 @@ unsigned_tx_qr_screen:
     step1_end: "선택"
     step2: "2. 카메라로 아래 QR 코드 스캔"
   fast_scan_mode: "빠른 스캔 모드"
+  static_qr: "정적 QR"
+  animated_qr: "동적 QR"
   low_density_qr: "단순한 QR"
   high_density_qr: "복잡한 QR"
   view_bbqr: "BBQR 보기"
