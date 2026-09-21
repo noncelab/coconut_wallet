@@ -39,16 +39,22 @@ class HotWalletSigningService {
 
   Future<String> sign(HotWalletSigningRequest request) async {
     final plaintext = await _secretRepository.unlockAfterAuthentication(request.storageKey);
+    // compute로 isolate에 복사 전달되는 인자와는 별개로, 메인 isolate에 남는
+    // 전달용 사본도 사용 후 명시적으로 지운다.
+    final mnemonicCopy = Uint8List.fromList(plaintext.mnemonic);
+    final passphraseCopy = Uint8List.fromList(request.passphrase ?? plaintext.passphrase);
     try {
       return await compute(_signHotWalletInBackground, (
-        mnemonic: Uint8List.fromList(plaintext.mnemonic),
-        passphrase: Uint8List.fromList(request.passphrase ?? plaintext.passphrase),
+        mnemonic: mnemonicCopy,
+        passphrase: passphraseCopy,
         addressTypeName: request.addressTypeName,
         accountIndex: request.accountIndex,
         expectedExtendedPublicKey: request.expectedExtendedPublicKey,
         unsignedPsbt: request.unsignedPsbt,
       ));
     } finally {
+      mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
+      passphraseCopy.fillRange(0, passphraseCopy.length, 0);
       plaintext.wipe();
     }
   }
@@ -61,15 +67,19 @@ class HotWalletSigningService {
     required String expectedExtendedPublicKey,
   }) async {
     final plaintext = await _secretRepository.unlockAfterAuthentication(storageKey);
+    final mnemonicCopy = Uint8List.fromList(plaintext.mnemonic);
+    final passphraseCopy = Uint8List.fromList(passphrase);
     try {
       return await compute(_validateHotWalletPassphraseInBackground, (
-        mnemonic: Uint8List.fromList(plaintext.mnemonic),
-        passphrase: Uint8List.fromList(passphrase),
+        mnemonic: mnemonicCopy,
+        passphrase: passphraseCopy,
         addressTypeName: addressTypeName,
         accountIndex: accountIndex,
         expectedExtendedPublicKey: expectedExtendedPublicKey,
       ));
     } finally {
+      mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
+      passphraseCopy.fillRange(0, passphraseCopy.length, 0);
       plaintext.wipe();
     }
   }

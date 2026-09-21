@@ -93,7 +93,13 @@ class HotWalletCreateViewModel extends ChangeNotifier {
     var secretCleanupHandledUnderLock = false;
 
     try {
-      final material = await _materialGenerator(mnemonicWordCount, Uint8List.fromList(passphraseBytes));
+      final generatorPassphrase = Uint8List.fromList(passphraseBytes);
+      final HotWalletMaterial material;
+      try {
+        material = await _materialGenerator(mnemonicWordCount, generatorPassphrase);
+      } finally {
+        generatorPassphrase.fillRange(0, generatorPassphrase.length, 0);
+      }
       mnemonic = material.mnemonic;
 
       return await _walletProvider.runHotWalletLifecycleOperation(() async {

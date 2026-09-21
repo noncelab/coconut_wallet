@@ -188,12 +188,13 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     }
     final mnemonic = _copyMnemonic();
     final passphrase = Uint8List.fromList(utf8.encode(_usePassphrase ? _passphrase : ''));
+    final mnemonicCopy = Uint8List.fromList(mnemonic);
+    final passphraseCopy = Uint8List.fromList(passphrase);
     try {
-      return await compute(_deriveDescriptor, (
-        mnemonic: Uint8List.fromList(mnemonic),
-        passphrase: Uint8List.fromList(passphrase),
-      ));
+      return await compute(_deriveDescriptor, (mnemonic: mnemonicCopy, passphrase: passphraseCopy));
     } finally {
+      mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
+      passphraseCopy.fillRange(0, passphraseCopy.length, 0);
       mnemonic.fillRange(0, mnemonic.length, 0);
       passphrase.fillRange(0, passphrase.length, 0);
     }
@@ -205,12 +206,13 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     }
     final mnemonic = _copyMnemonic();
     final passphrase = Uint8List.fromList(utf8.encode(_usePassphrase ? _passphrase : ''));
+    final mnemonicCopy = Uint8List.fromList(mnemonic);
+    final passphraseCopy = Uint8List.fromList(passphrase);
     try {
-      return await compute(_deriveMasterFingerprint, (
-        mnemonic: Uint8List.fromList(mnemonic),
-        passphrase: Uint8List.fromList(passphrase),
-      ));
+      return await compute(_deriveMasterFingerprint, (mnemonic: mnemonicCopy, passphrase: passphraseCopy));
     } finally {
+      mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
+      passphraseCopy.fillRange(0, passphraseCopy.length, 0);
       mnemonic.fillRange(0, mnemonic.length, 0);
       passphrase.fillRange(0, passphrase.length, 0);
     }
@@ -239,10 +241,14 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
       if (derivedDescriptor != null) {
         descriptor = derivedDescriptor;
       } else {
-        descriptor = await compute(_deriveDescriptor, (
-          mnemonic: Uint8List.fromList(mnemonic),
-          passphrase: Uint8List.fromList(passphrase),
-        ));
+        final mnemonicCopy = Uint8List.fromList(mnemonic);
+        final passphraseCopy = Uint8List.fromList(passphrase);
+        try {
+          descriptor = await compute(_deriveDescriptor, (mnemonic: mnemonicCopy, passphrase: passphraseCopy));
+        } finally {
+          mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
+          passphraseCopy.fillRange(0, passphraseCopy.length, 0);
+        }
       }
       return await walletProvider.runHotWalletLifecycleOperation(() async {
         try {
