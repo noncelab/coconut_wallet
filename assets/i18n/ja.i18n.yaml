@@ -737,6 +737,8 @@ unsigned_tx_qr_screen:
     step1_end: "を選択"
     step2: "2. カメラで下のQRコードをスキャン"
   fast_scan_mode: "高速スキャンモード"
+  static_qr: "静的QR"
+  animated_qr: "動的QR"
   low_density_qr: "シンプルQR"
   high_density_qr: "高密度QR"
   view_bbqr: "BBQR表示"
