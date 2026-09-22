@@ -439,15 +439,16 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    WalletBalanceSyncShimmer(
-                      isRefreshing: viewModel.isWalletSyncing,
-                      child: Text(
-                        t.tx_loading,
-                        textAlign: TextAlign.center,
-                        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                      ),
-                    ),
-                    if (!viewModel.isWalletSyncing) ...[
+                    if (viewModel.isWalletSyncing)
+                      WalletBalanceSyncShimmer(
+                        isRefreshing: true,
+                        child: Text(
+                          t.tx_loading,
+                          textAlign: TextAlign.center,
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                        ),
+                      )
+                    else ...[
                       SvgPicture.asset(
                         CommonStateIconPath.leafFall,
                         colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
