@@ -11,6 +11,8 @@ Future<void> showInfoDialog(
   String? buttonText,
   Function? onTapButton,
   bool barrierDismissible = true,
+  bool wrapTitleByWords = false,
+  bool wrapDescriptionByWords = false,
   InlineSpan? descriptionSpan,
 }) async {
   await showDialog(
@@ -20,7 +22,9 @@ Future<void> showInfoDialog(
       return CoconutPopup(
         languageCode: languageCode,
         title: title,
+        wrapTitleByWords: wrapTitleByWords,
         description: description,
+        wrapDescriptionByWords: wrapDescriptionByWords,
         descriptionSpan: descriptionSpan,
         descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
         insetPadding: const EdgeInsets.symmetric(horizontal: 50),

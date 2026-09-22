@@ -646,7 +646,9 @@ class CoconutPopup extends StatefulWidget {
     this.leftButtonText,
     this.rightButtonText,
     this.centerTitle = true,
+    this.wrapTitleByWords = false,
     this.centerDescription = true,
+    this.wrapDescriptionByWords = false,
     this.useFixedFontSize = true,
     this.onTapLeft,
     this.backgroundColor,
@@ -675,7 +677,9 @@ class CoconutPopup extends StatefulWidget {
   final String? leftButtonText;
   final String? rightButtonText;
   final bool centerTitle;
+  final bool wrapTitleByWords;
   final bool centerDescription;
+  final bool wrapDescriptionByWords;
   final bool useFixedFontSize;
   final Color? backgroundColor;
   final Color? titleColor;
@@ -708,6 +712,9 @@ class _CoconutPopupState extends State<CoconutPopup> {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final titleStyle =
+        widget.titleTextStyle?.setColor(widget.titleColor ?? colors.primaryText) ??
+        CoconutTypography.heading4_18_Bold.setColor(widget.titleColor ?? colors.primaryText);
     final descriptionStyle =
         widget.descriptionTextStyle?.setColor(widget.descriptionColor ?? colors.primaryText) ??
         CoconutTypography.body1_16.setColor(widget.descriptionColor ?? colors.primaryText);
@@ -727,13 +734,26 @@ class _CoconutPopupState extends State<CoconutPopup> {
           children: [
             Container(
               padding: widget.titlePadding ?? const EdgeInsets.only(top: 24, bottom: 12),
-              child: Text(
-                widget.title,
-                style:
-                    widget.titleTextStyle?.setColor(widget.titleColor ?? colors.primaryText) ??
-                    CoconutTypography.heading4_18_Bold.setColor(widget.titleColor ?? colors.primaryText),
-                textAlign: widget.centerTitle ? TextAlign.center : null,
-              ),
+              child:
+                  widget.wrapTitleByWords
+                      ? Semantics(
+                        label: widget.title,
+                        container: true,
+                        child: ExcludeSemantics(
+                          child: Wrap(
+                            alignment: widget.centerTitle ? WrapAlignment.center : WrapAlignment.start,
+                            spacing: (titleStyle.fontSize ?? 18) * 0.25,
+                            children: [
+                              for (final word in widget.title.split(RegExp(r'\s+'))) Text(word, style: titleStyle),
+                            ],
+                          ),
+                        ),
+                      )
+                      : Text(
+                        widget.title,
+                        style: titleStyle,
+                        textAlign: widget.centerTitle ? TextAlign.center : null,
+                      ),
             ),
             Container(
               alignment: Alignment.topCenter,
@@ -746,6 +766,21 @@ class _CoconutPopupState extends State<CoconutPopup> {
                         textAlign: widget.centerDescription ? TextAlign.center : TextAlign.start,
                         textScaler:
                             widget.useFixedFontSize ? const TextScaler.linear(1) : MediaQuery.textScalerOf(context),
+                      )
+                      : widget.wrapDescriptionByWords
+                      ? Semantics(
+                        label: widget.description,
+                        container: true,
+                        child: ExcludeSemantics(
+                          child: Wrap(
+                            alignment: widget.centerDescription ? WrapAlignment.center : WrapAlignment.start,
+                            spacing: (descriptionStyle.fontSize ?? 16) * 0.25,
+                            children: [
+                              for (final word in widget.description.split(RegExp(r'\s+')))
+                                Text(word, style: descriptionStyle),
+                            ],
+                          ),
+                        ),
                       )
                       : Text(
                         widget.description,

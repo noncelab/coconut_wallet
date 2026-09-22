@@ -1238,6 +1238,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_description,
         buttonText: t.confirm,
         barrierDismissible: false,
+        wrapTitleByWords: LocaleSettings.currentLocale == AppLocale.ko,
+        wrapDescriptionByWords: LocaleSettings.currentLocale == AppLocale.ko,
       );
       if (!mounted) return;
       FocusManager.instance.primaryFocus?.unfocus();

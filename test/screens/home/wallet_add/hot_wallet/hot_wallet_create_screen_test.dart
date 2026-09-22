@@ -343,8 +343,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(viewModel.createCallCount, 0);
-    expect(find.text(t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_title), findsOneWidget);
-    expect(find.text(t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_description), findsOneWidget);
+    expect(find.bySemanticsLabel(t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_title), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(t.wallet_home_screen.hot_wallet_create.passphrase_not_stored_description),
+      findsOneWidget,
+    );
     expect(find.text(t.confirm), findsOneWidget);
     expect(find.text(t.cancel), findsNothing);
 
