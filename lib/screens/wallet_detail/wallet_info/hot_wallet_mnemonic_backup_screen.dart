@@ -9,7 +9,6 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
-import 'package:coconut_wallet/utils/hot_wallet_passphrase_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
@@ -22,7 +21,6 @@ class HotWalletMnemonicBackupScreen extends StatefulWidget {
     required this.mnemonic,
     required this.passphrase,
     this.enterPassphraseWhenSigning = false,
-    this.descriptor = '',
     this.walletId,
     this.continueToAppLockGuide = false,
   });
@@ -30,7 +28,6 @@ class HotWalletMnemonicBackupScreen extends StatefulWidget {
   final Uint8List mnemonic;
   final Uint8List passphrase;
   final bool enterPassphraseWhenSigning;
-  final String descriptor;
   final int? walletId;
   final bool continueToAppLockGuide;
 
@@ -155,27 +152,12 @@ class _HotWalletMnemonicBackupScreenState extends State<HotWalletMnemonicBackupS
     if (_isStartingConfirmation) return;
     _isStartingConfirmation = true;
     try {
-      var confirmPassphrase = widget.passphrase.isNotEmpty;
-      if (widget.enterPassphraseWhenSigning && widget.passphrase.isEmpty && widget.descriptor.isNotEmpty) {
-        final descriptorMatchesWithoutPassphrase = await doesPassphraseMatchDescriptorAsync(
-          mnemonic: widget.mnemonic,
-          passphrase: '',
-          descriptor: widget.descriptor,
-        );
-        confirmPassphrase = !descriptorMatchesWithoutPassphrase;
-      } else if (widget.enterPassphraseWhenSigning) {
-        confirmPassphrase = true;
-      }
-
       if (!mounted) return;
       final isConfirmed = await Navigator.pushNamed(
         context,
         AppRouteNames.mnemonicBackupConfirm,
         arguments: MnemonicBackupConfirmRouteArgs(
           mnemonic: widget.mnemonic,
-          passphrase: widget.passphrase,
-          descriptor: widget.descriptor,
-          confirmPassphrase: confirmPassphrase,
           walletId: widget.walletId,
           continueToAppLockGuide: widget.continueToAppLockGuide,
         ),

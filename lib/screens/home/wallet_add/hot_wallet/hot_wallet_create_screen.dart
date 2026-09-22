@@ -679,7 +679,6 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
         AppRouteNames.hotWalletMnemonicBackupGuide,
         arguments: HotWalletMnemonicBackupGuideRouteArgs(
           walletId: result.walletId,
-          descriptor: result.descriptor,
           mnemonic: result.mnemonic,
           passphrase: result.passphrase,
           enterPassphraseWhenSigning: result.enterPassphraseWhenSigning,

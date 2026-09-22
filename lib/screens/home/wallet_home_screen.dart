@@ -1708,7 +1708,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       AppRouteNames.hotWalletMnemonicBackupGuide,
       arguments: HotWalletMnemonicBackupGuideRouteArgs(
         walletId: walletItem.id,
-        descriptor: walletItem.descriptor,
         secureStorageKey: metadata.secureStorageKey,
         enterPassphraseWhenSigning: metadata.enterPassphraseWhenSigning,
         showWalletCreatedIntro: false,

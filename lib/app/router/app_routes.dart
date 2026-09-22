@@ -288,7 +288,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => HotWalletMnemonicBackupGuideScreen(
             walletId: args.walletId,
-            descriptor: args.descriptor,
             mnemonic: args.mnemonic,
             passphrase: args.passphrase,
             secureStorageKey: args.secureStorageKey,
@@ -305,7 +304,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             mnemonic: args.mnemonic,
             passphrase: args.passphrase,
             enterPassphraseWhenSigning: args.enterPassphraseWhenSigning,
-            descriptor: args.descriptor,
             walletId: args.walletId,
             continueToAppLockGuide: args.continueToAppLockGuide,
           ),
@@ -315,9 +313,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => MnemonicBackupConfirmScreen(
             mnemonic: args.mnemonic,
-            passphrase: args.passphrase,
-            descriptor: args.descriptor,
-            confirmPassphrase: args.confirmPassphrase,
             walletId: args.walletId,
             continueToAppLockGuide: args.continueToAppLockGuide,
           ),

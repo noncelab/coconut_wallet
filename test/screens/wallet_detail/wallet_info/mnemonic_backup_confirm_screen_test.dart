@@ -24,7 +24,7 @@ void main() {
       expect(() => selectMnemonicChallengeIndices(wordCount: 2, random: Random(42)), throwsArgumentError);
     });
 
-    test('패스프레이즈 확인이 있으면 서로 다른 니모닉 3개를 선택한다', () {
+    test('서로 다른 니모닉 3개를 선택한다', () {
       final indices = selectMnemonicChallengeIndices(wordCount: 12, challengeCount: 3, random: Random(42));
       expect(indices, hasLength(3));
       expect(indices.toSet(), hasLength(3));
@@ -101,10 +101,7 @@ void main() {
     final mnemonic = Uint8List.fromList(utf8.encode(List<String>.filled(12, 'abandon').join(' ')));
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: buildCoconutThemeData(),
-        home: MnemonicBackupConfirmScreen(mnemonic: mnemonic, passphrase: Uint8List(0)),
-      ),
+      MaterialApp(theme: buildCoconutThemeData(), home: MnemonicBackupConfirmScreen(mnemonic: mnemonic)),
     );
     await tester.pump();
 
@@ -118,10 +115,7 @@ void main() {
     final mnemonic = Uint8List.fromList(utf8.encode(List<String>.filled(12, 'abandon').join(' ')));
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: buildCoconutThemeData(),
-        home: MnemonicBackupConfirmScreen(mnemonic: mnemonic, passphrase: Uint8List(0)),
-      ),
+      MaterialApp(theme: buildCoconutThemeData(), home: MnemonicBackupConfirmScreen(mnemonic: mnemonic)),
     );
     await tester.pump();
 

@@ -10,9 +10,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
-import 'package:coconut_wallet/utils/hot_wallet_passphrase_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -82,17 +80,11 @@ class MnemonicBackupConfirmScreen extends StatefulWidget {
   const MnemonicBackupConfirmScreen({
     super.key,
     required this.mnemonic,
-    required this.passphrase,
-    this.descriptor = '',
-    this.confirmPassphrase = false,
     this.walletId,
     this.continueToAppLockGuide = false,
   });
 
   final Uint8List mnemonic;
-  final Uint8List passphrase;
-  final String descriptor;
-  final bool confirmPassphrase;
   final int? walletId;
   final bool continueToAppLockGuide;
 
@@ -109,7 +101,6 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
   double _progress = 0;
   bool _isIncorrect = false;
   bool _isProcessing = false;
-  bool _isVerifyingPassphrase = false;
 
   @override
   void initState() {
@@ -122,20 +113,17 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
 
   void _handleInputChanged() {
     if (!mounted) return;
-    final isPassphraseQuestion = widget.confirmPassphrase && _questionIndex == _questionIndices.length;
-    if (!isPassphraseQuestion) {
-      final completedWord = completeMnemonicWordOnSpace(input: _controller.text);
-      if (completedWord != null) {
-        final inputWithSpace = _controller.text;
-        scheduleMicrotask(() {
-          if (!mounted || _controller.text != inputWithSpace) return;
-          _controller.value = TextEditingValue(
-            text: completedWord,
-            selection: TextSelection.collapsed(offset: completedWord.length),
-          );
-        });
-        return;
-      }
+    final completedWord = completeMnemonicWordOnSpace(input: _controller.text);
+    if (completedWord != null) {
+      final inputWithSpace = _controller.text;
+      scheduleMicrotask(() {
+        if (!mounted || _controller.text != inputWithSpace) return;
+        _controller.value = TextEditingValue(
+          text: completedWord,
+          selection: TextSelection.collapsed(offset: completedWord.length),
+        );
+      });
+      return;
     }
     setState(() => _isIncorrect = false);
   }
@@ -164,13 +152,12 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
   @override
   Widget build(BuildContext context) {
     final strings = t.wallet_home_screen.hot_wallet_setup;
-    final isPassphraseQuestion = widget.confirmPassphrase && _questionIndex == _questionIndices.length;
-    final wordPosition = isPassphraseQuestion ? 0 : _questionIndices[_questionIndex] + 1;
+    final wordPosition = _questionIndices[_questionIndex] + 1;
     final isCursorAtEnd =
         _controller.selection.isCollapsed && _controller.selection.baseOffset == _controller.text.length;
     final normalizedInput = _controller.text.trim().toLowerCase();
-    final uniqueCompletion = isPassphraseQuestion ? null : uniqueMnemonicWordCompletion(input: normalizedInput);
-    final ghostText = !isPassphraseQuestion && isCursorAtEnd ? mnemonicGhostSuffix(input: _controller.text) : '';
+    final uniqueCompletion = uniqueMnemonicWordCompletion(input: normalizedInput);
+    final ghostText = isCursorAtEnd ? mnemonicGhostSuffix(input: _controller.text) : '';
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -216,9 +203,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isPassphraseQuestion
-                              ? strings.passphrase_confirm_question
-                              : strings.backup_question(position: wordPosition),
+                          strings.backup_question(position: wordPosition),
                           style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
                           textScaler: const TextScaler.linear(1),
                         ),
@@ -228,7 +213,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
                           child: Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
-                              isPassphraseQuestion ? strings.passphrase_incorrect : strings.backup_incorrect,
+                              strings.backup_incorrect,
                               style: CoconutTypography.body2_14.setColor(context.coconutColors.danger),
                             ),
                           ),
@@ -246,7 +231,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
                           onChanged: (_) {},
                           autocorrect: false,
                           enableSuggestions: false,
-                          obscureText: isPassphraseQuestion,
+                          obscureText: false,
                           ghostText: ghostText,
                           ghostTextColor: context.coconutColors.tertiaryText,
                           textAlign: TextAlign.center,
@@ -282,13 +267,11 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
                 isActive:
                     normalizedInput.isNotEmpty &&
                     !_isProcessing &&
-                    (isPassphraseQuestion || wordList.contains(normalizedInput) || uniqueCompletion != null),
+                    (wordList.contains(normalizedInput) || uniqueCompletion != null),
                 isVisibleAboveKeyboard: false,
                 showSurroundings: false,
                 onButtonClicked: _submitAnswer,
               ),
-              if (_isVerifyingPassphrase)
-                const Positioned.fill(child: CoconutLoadingOverlay(applyFullScreen: true, indicatorSize: 36)),
             ],
           ),
         ),
@@ -298,8 +281,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
 
   Future<void> _submitAnswer() async {
     if (_isProcessing || _controller.text.trim().isEmpty) return;
-    final isPassphraseQuestion = widget.confirmPassphrase && _questionIndex == _questionIndices.length;
-    final completion = isPassphraseQuestion ? null : uniqueMnemonicWordCompletion(input: _controller.text);
+    final completion = uniqueMnemonicWordCompletion(input: _controller.text);
     if (completion != null && completion != _controller.text) {
       _controller.value = TextEditingValue(
         text: completion,
@@ -307,25 +289,12 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
       );
     }
     final answer = completion ?? _controller.text;
-    final requiresDescriptorVerification =
-        isPassphraseQuestion && widget.passphrase.isEmpty && widget.descriptor.isNotEmpty;
     setState(() {
       _isIncorrect = false;
       _isProcessing = true;
-      _isVerifyingPassphrase = requiresDescriptorVerification;
     });
 
-    late final bool isCorrect;
-    try {
-      isCorrect =
-          isPassphraseQuestion
-              ? await _isPassphraseCorrect(answer)
-              : _isMnemonicWordCorrect(_questionIndices[_questionIndex], answer);
-    } finally {
-      if (mounted && _isVerifyingPassphrase) {
-        setState(() => _isVerifyingPassphrase = false);
-      }
-    }
+    final isCorrect = _isMnemonicWordCorrect(_questionIndices[_questionIndex], answer);
     if (!mounted) return;
     if (!isCorrect) {
       setState(() {
@@ -337,7 +306,7 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
     }
 
     final completedCount = _questionIndex + 1;
-    final questionCount = _questionIndices.length + (widget.confirmPassphrase ? 1 : 0);
+    final questionCount = _questionIndices.length;
     setState(() {
       _progress = completedCount / questionCount;
     });
@@ -377,19 +346,5 @@ class _MnemonicBackupConfirmScreenState extends State<MnemonicBackupConfirmScree
     // 니모닉 자체는 String으로 변환하지 않는다.
     final guess = Uint8List.fromList(utf8.encode(input.trim().toLowerCase()));
     return listEquals(guess, _wordBytes[wordIndex]);
-  }
-
-  Future<bool> _isPassphraseCorrect(String input) async {
-    if (widget.passphrase.isNotEmpty) {
-      final guess = Uint8List.fromList(utf8.encode(input));
-      return listEquals(guess, widget.passphrase);
-    }
-    if (widget.descriptor.isEmpty) return false;
-
-    return doesPassphraseMatchDescriptorAsync(
-      mnemonic: widget.mnemonic,
-      passphrase: input,
-      descriptor: widget.descriptor,
-    );
   }
 }

@@ -250,7 +250,6 @@ void main() {
 
     final arguments = routeArguments! as HotWalletMnemonicBackupGuideRouteArgs;
     expect(arguments.walletId, 77);
-    expect(arguments.descriptor, result.descriptor);
     expect(arguments.mnemonic, result.mnemonic);
     expect(arguments.passphrase, result.passphrase);
     expect(arguments.enterPassphraseWhenSigning, isFalse);

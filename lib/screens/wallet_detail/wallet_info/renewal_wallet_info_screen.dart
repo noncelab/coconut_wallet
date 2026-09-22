@@ -823,7 +823,6 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
       AppRouteNames.hotWalletMnemonicBackupGuide,
       arguments: HotWalletMnemonicBackupGuideRouteArgs(
         walletId: widget.id,
-        descriptor: viewModel.walletItemBase.descriptor,
         secureStorageKey: metadata.secureStorageKey,
         enterPassphraseWhenSigning: metadata.enterPassphraseWhenSigning,
         showWalletCreatedIntro: false,

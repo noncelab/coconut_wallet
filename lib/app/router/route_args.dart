@@ -138,7 +138,6 @@ class WalletInfoRouteArgs {
 
 class HotWalletMnemonicBackupGuideRouteArgs {
   final int walletId;
-  final String descriptor;
   final Uint8List? mnemonic;
   final Uint8List? passphrase;
   final String? secureStorageKey;
@@ -149,7 +148,6 @@ class HotWalletMnemonicBackupGuideRouteArgs {
 
   const HotWalletMnemonicBackupGuideRouteArgs({
     required this.walletId,
-    required this.descriptor,
     this.mnemonic,
     this.passphrase,
     this.secureStorageKey,
@@ -164,7 +162,6 @@ class HotWalletMnemonicBackupRouteArgs {
   final Uint8List mnemonic;
   final Uint8List passphrase;
   final bool enterPassphraseWhenSigning;
-  final String descriptor;
   final int? walletId;
   final bool continueToAppLockGuide;
 
@@ -172,7 +169,6 @@ class HotWalletMnemonicBackupRouteArgs {
     required this.mnemonic,
     required this.passphrase,
     this.enterPassphraseWhenSigning = false,
-    this.descriptor = '',
     this.walletId,
     this.continueToAppLockGuide = false,
   });
@@ -180,20 +176,10 @@ class HotWalletMnemonicBackupRouteArgs {
 
 class MnemonicBackupConfirmRouteArgs {
   final Uint8List mnemonic;
-  final Uint8List passphrase;
-  final String descriptor;
-  final bool confirmPassphrase;
   final int? walletId;
   final bool continueToAppLockGuide;
 
-  const MnemonicBackupConfirmRouteArgs({
-    required this.mnemonic,
-    required this.passphrase,
-    this.descriptor = '',
-    this.confirmPassphrase = false,
-    this.walletId,
-    this.continueToAppLockGuide = false,
-  });
+  const MnemonicBackupConfirmRouteArgs({required this.mnemonic, this.walletId, this.continueToAppLockGuide = false});
 }
 
 class MnemonicBackupCompleteRouteArgs {
