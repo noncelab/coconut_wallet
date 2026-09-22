@@ -60,8 +60,15 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   bool _usePassphrase = false;
   bool _isPassphraseVisible = false;
   bool _enterPassphraseWhenSigning = true;
+  bool _hasNameConflict = false;
+  bool _isCreateRequestInProgress = false;
   bool _hasNameFieldEverFocused = false;
   bool _isAdvancedSettingsExpanded = false;
+
+  String get _walletName => _nameController.text.trim().isEmpty ? _suggestedWalletName : _nameController.text.trim();
+
+  bool get _isWalletNameDuplicated =>
+      !_isCreateRequestInProgress && (_hasNameConflict || _viewModel.isWalletNameDuplicated(_walletName));
 
   @override
   void initState() {
@@ -188,6 +195,8 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                     text: t.wallet_home_screen.hot_wallet_create.create_wallet,
                     isActive:
                         !_viewModel.isCreating &&
+                        !_isCreateRequestInProgress &&
+                        !_isWalletNameDuplicated &&
                         (!_usePassphrase ||
                             (_passphraseController.text.isNotEmpty &&
                                 _passphraseConfirmController.text.isNotEmpty &&
@@ -232,6 +241,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CoconutTextField(
+                key: const ValueKey('hot-wallet-name'),
                 controller: _nameController,
                 focusNode: _nameFocusNode,
                 maxLength: 20,
@@ -244,7 +254,10 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                 activeColor: context.coconutColors.primaryText,
                 cursorColor: context.coconutColors.primaryText,
                 placeholderColor: context.coconutColors.inputPlaceholder,
-                onChanged: (_) => setState(() {}),
+                isError: _isWalletNameDuplicated,
+                errorText:
+                    _isWalletNameDuplicated ? t.wallet_home_screen.hot_wallet_create.duplicate_name_description : null,
+                onChanged: (_) => setState(() => _hasNameConflict = false),
                 suffix:
                     _nameController.text.isEmpty
                         ? null
@@ -253,7 +266,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
                           iconSize: 14,
                           onPressed: () {
                             _nameController.clear();
-                            setState(() {});
+                            setState(() => _hasNameConflict = false);
                           },
                           icon: SvgPicture.asset(
                             CommonFormIconPath.textFieldClear,
@@ -620,7 +633,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   }
 
   Future<void> _onCreateWalletPressed() async {
-    if (_viewModel.isCreating) return;
+    if (_viewModel.isCreating || _isWalletNameDuplicated) return;
     FocusScope.of(context).unfocus();
     if (_usePassphrase && _enterPassphraseWhenSigning) {
       await showInfoDialog(
@@ -637,8 +650,10 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
       if (!mounted) return;
       _keepKeyboardDismissed();
     }
-    final walletName = _nameController.text.trim().isEmpty ? _suggestedWalletName : _nameController.text.trim();
+    final walletName = _walletName;
     await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    setState(() => _isCreateRequestInProgress = true);
 
     try {
       final enterPassphraseWhenSigning = _usePassphrase && _enterPassphraseWhenSigning;
@@ -672,13 +687,19 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
       Logger.error('Hot wallet creation failed: $error\n$stackTrace');
       if (mounted) {
         final isNameConflict = error is WalletNameConflictException;
+        if (isNameConflict) {
+          setState(() {
+            _isCreateRequestInProgress = false;
+            _hasNameConflict = true;
+          });
+          return;
+        }
+        setState(() => _isCreateRequestInProgress = false);
         await showInfoDialog(
           context,
           context.read<PreferenceProvider>().language,
-          isNameConflict ? t.wallet_home_screen.hot_wallet_create.duplicate_name_title : t.alert.error_occurs,
-          isNameConflict
-              ? t.wallet_home_screen.hot_wallet_create.duplicate_name_description
-              : t.wallet_home_screen.hot_wallet_create.creation_failed,
+          t.alert.error_occurs,
+          t.wallet_home_screen.hot_wallet_create.creation_failed,
         );
       }
     }

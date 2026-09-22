@@ -30,11 +30,12 @@ class _FakePreferenceProvider extends Fake implements PreferenceProvider {
 class _NoopSecretRepository extends Fake implements HotWalletSecretRepository {}
 
 class _ControlledCreateViewModel extends HotWalletCreateViewModel {
-  _ControlledCreateViewModel({this.result, this.error})
+  _ControlledCreateViewModel({this.result, this.error, this.duplicateNames = const {}})
     : super(_FakeWalletProvider(), secretRepository: _NoopSecretRepository());
 
   HotWalletCreateResult? result;
   Object? error;
+  final Set<String> duplicateNames;
   Completer<HotWalletCreateResult>? gate;
   int createCallCount = 0;
   bool committed = false;
@@ -43,6 +44,9 @@ class _ControlledCreateViewModel extends HotWalletCreateViewModel {
 
   @override
   bool get isCreating => _creating;
+
+  @override
+  bool isWalletNameDuplicated(String walletName) => duplicateNames.contains(walletName.trim());
 
   void setCreating(bool value) {
     _creating = value;
@@ -180,15 +184,38 @@ void main() {
     expect(find.byType(HotWalletCreateScreen), findsOneWidget);
   });
 
-  testWidgets('중복 이름 오류 다이얼로그를 표시한다', (tester) async {
+  testWidgets('중복 이름은 입력 중 오류로 표시하고 생성 버튼을 비활성화한다', (tester) async {
+    final viewModel = _ControlledCreateViewModel(result: _result(), duplicateNames: {'이미 있는 지갑'});
+    await pumpScreen(tester, viewModel);
+
+    final nameField = find.descendant(
+      of: find.byKey(const ValueKey('hot-wallet-name')),
+      matching: find.byType(EditableText),
+    );
+    await tester.enterText(nameField, '이미 있는 지갑');
+    await tester.pump();
+
+    expect(find.text(t.wallet_home_screen.hot_wallet_create.duplicate_name_description), findsOneWidget);
+    expect(createButton(tester).isActive, isFalse);
+    expect(viewModel.createCallCount, 0);
+
+    await tester.enterText(nameField, '새 지갑');
+    await tester.pump();
+
+    expect(find.text(t.wallet_home_screen.hot_wallet_create.duplicate_name_description), findsNothing);
+    expect(createButton(tester).isActive, isTrue);
+  });
+
+  testWidgets('생성 직전 발견된 중복 이름도 다이얼로그 대신 입력 오류로 표시한다', (tester) async {
     final viewModel = _ControlledCreateViewModel(error: const WalletNameConflictException());
     await pumpScreen(tester, viewModel);
 
     await tester.tap(find.byKey(const ValueKey('hot-wallet-create-button-target')));
     await tester.pumpAndSettle();
 
-    expect(find.text(t.wallet_home_screen.hot_wallet_create.duplicate_name_title), findsOneWidget);
+    expect(find.text(t.wallet_home_screen.hot_wallet_create.duplicate_name_title), findsNothing);
     expect(find.text(t.wallet_home_screen.hot_wallet_create.duplicate_name_description), findsOneWidget);
+    expect(createButton(tester).isActive, isFalse);
   });
 
   testWidgets('일반 생성 실패 다이얼로그를 표시한다', (tester) async {

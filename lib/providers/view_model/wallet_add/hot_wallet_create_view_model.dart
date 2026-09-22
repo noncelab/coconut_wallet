@@ -69,6 +69,11 @@ class HotWalletCreateViewModel extends ChangeNotifier {
 
   bool get isCreating => _isCreating;
 
+  bool isWalletNameDuplicated(String walletName) {
+    final trimmedName = walletName.trim();
+    return _walletProvider.walletItemList.any((wallet) => wallet.name == trimmedName);
+  }
+
   Future<HotWalletCreateResult> createWallet({
     required String walletName,
     required int colorIndex,
@@ -80,7 +85,7 @@ class HotWalletCreateViewModel extends ChangeNotifier {
     if (_isCreating) {
       throw StateError('Hot wallet creation is already in progress');
     }
-    if (_walletProvider.walletItemList.any((wallet) => wallet.name == walletName)) {
+    if (isWalletNameDuplicated(walletName)) {
       throw const WalletNameConflictException();
     }
 
