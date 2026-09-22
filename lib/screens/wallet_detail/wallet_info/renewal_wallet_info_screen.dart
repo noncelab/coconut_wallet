@@ -309,6 +309,14 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                                     _showMnemonicBackup(viewModel);
                                   },
                                 ),
+                              if (viewModel.walletItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false)
+                                _walletInfoMenu(
+                                  title: t.wallet_home_screen.hot_wallet_setup.passphrase_check_title,
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    _showPassphraseCheck(viewModel);
+                                  },
+                                ),
                               _walletInfoMenu(
                                 title: t.wallet_info_screen.all_addresses,
                                 subWidget: Text(
@@ -416,14 +424,6 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                                   _showLabelsManagementScreen(context, viewModel);
                                 },
                               ),
-                              if (viewModel.walletItemBase.hotWalletMetadata?.enterPassphraseWhenSigning ?? false)
-                                _walletInfoMenu(
-                                  title: t.wallet_home_screen.hot_wallet_setup.passphrase_check_title,
-                                  onPressed: () {
-                                    _removeTooltip();
-                                    _showPassphraseCheck(viewModel);
-                                  },
-                                ),
                             ],
                           ),
                         ),
