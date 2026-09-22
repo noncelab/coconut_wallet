@@ -43,6 +43,7 @@ class SingleButton extends StatelessWidget {
   final bool showRightArrowWithRightElement;
   final Widget? leftElement;
   final SingleButtonPosition buttonPosition;
+  final TextStyle? titleStyle;
   final TextStyle? subtitleStyle;
   final Color? backgroundColor;
   final double? betweenGap;
@@ -62,6 +63,7 @@ class SingleButton extends StatelessWidget {
     this.showRightArrowWithRightElement = false,
     this.leftElement,
     this.buttonPosition = SingleButtonPosition.none,
+    this.titleStyle,
     this.subtitleStyle,
     this.backgroundColor,
     this.betweenGap = 0,
@@ -134,7 +136,7 @@ class SingleButton extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       title,
-                      style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+                      style: titleStyle ?? CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                     ),
                   ),
                   if (showNotificationDot)

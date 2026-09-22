@@ -1118,7 +1118,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
             isVerticalSubtitle: true,
             subtitleStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
             customPadding: EdgeInsets.zero,
-            backgroundColor: context.coconutColors.background,
+            backgroundColor: Colors.transparent,
             onPressed: () => _setStorePassphrase(viewModel.enterPassphraseWhenSigning),
             rightElement: CoconutSwitch(
               isOn: !viewModel.enterPassphraseWhenSigning,

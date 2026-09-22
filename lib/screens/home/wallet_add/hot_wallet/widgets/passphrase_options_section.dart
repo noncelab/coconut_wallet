@@ -18,28 +18,38 @@ class PassphraseOptionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SingleButton(
-          title: t.wallet_home_screen.hot_wallet_create.use_passphrase,
-          subtitle: t.wallet_home_screen.hot_wallet_create.passphrase_description,
-          isVerticalSubtitle: true,
-          subtitleStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-          customPadding: EdgeInsets.zero,
-          backgroundColor: context.coconutColors.background,
-          onPressed: () => onEnabledChanged(!isEnabled),
-          rightElement: CoconutSwitch(
-            isOn: isEnabled,
-            scale: 0.75,
-            activeTrackColor: context.coconutColors.switchActiveTrack,
-            activeThumbColor: context.coconutColors.switchActiveThumb,
-            inactiveTrackColor: context.coconutColors.switchInactiveTrack,
-            inactiveThumbColor: context.coconutColors.switchInactiveThumb,
-            onChanged: onEnabledChanged,
-          ),
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: context.coconutColors.surface, borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          children: [
+            SingleButton(
+              title: t.wallet_home_screen.hot_wallet_create.use_passphrase,
+              titleStyle: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
+              subtitle: t.wallet_home_screen.hot_wallet_create.passphrase_description,
+              isVerticalSubtitle: true,
+              subtitleStyle: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+              customPadding: EdgeInsets.zero,
+              backgroundColor: Colors.transparent,
+              onPressed: () => onEnabledChanged(!isEnabled),
+              rightElement: CoconutSwitch(
+                isOn: isEnabled,
+                scale: 0.75,
+                activeTrackColor: context.coconutColors.switchActiveTrack,
+                activeThumbColor: context.coconutColors.switchActiveThumb,
+                inactiveTrackColor: context.coconutColors.switchInactiveTrack,
+                inactiveThumbColor: context.coconutColors.switchInactiveThumb,
+                onChanged: onEnabledChanged,
+              ),
+            ),
+            if (isEnabled) ...[const SizedBox(height: 16), options],
+          ],
         ),
-        if (isEnabled) ...[const SizedBox(height: 8), options],
-      ],
+      ),
     );
   }
 }
