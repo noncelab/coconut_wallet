@@ -156,6 +156,7 @@ class WalletRepository extends BaseRepository {
       backupVerified: backupVerified,
       enterPassphraseWhenSigning: enterPassphraseWhenSigning,
       createdAt: createdAt,
+      backupVerifiedAt: backupVerified ? createdAt : null,
       lifecycleState: lifecycleState,
     );
     final realmMetadata = RealmHotWalletMetadata(
@@ -168,6 +169,7 @@ class WalletRepository extends BaseRepository {
       metadata.enterPassphraseWhenSigning,
       metadata.createdAt,
       metadata.lifecycleState.name,
+      backupVerifiedAt: metadata.backupVerifiedAt,
     );
 
     realm.write(() {
@@ -218,6 +220,7 @@ class WalletRepository extends BaseRepository {
       backupVerified: backupVerified,
       enterPassphraseWhenSigning: enterPassphraseWhenSigning,
       createdAt: createdAt,
+      backupVerifiedAt: backupVerified ? createdAt : null,
       lifecycleState: HotWalletLifecycleState.active,
     );
     final realmMetadata = RealmHotWalletMetadata(
@@ -230,6 +233,7 @@ class WalletRepository extends BaseRepository {
       metadata.enterPassphraseWhenSigning,
       metadata.createdAt,
       metadata.lifecycleState.name,
+      backupVerifiedAt: metadata.backupVerifiedAt,
     );
     final externalWallet = realm.find<RealmExternalWallet>(walletId);
 
@@ -283,13 +287,18 @@ class WalletRepository extends BaseRepository {
     return int.parse(segments[3].replaceAll(RegExp(r"['hH]"), ''));
   }
 
-  Future<void> updateHotWalletBackupVerified(int walletId, {required bool backupVerified}) async {
+  Future<void> updateHotWalletBackupVerified(
+    int walletId, {
+    required bool backupVerified,
+    DateTime? backupVerifiedAt,
+  }) async {
     final metadata = realm.find<RealmHotWalletMetadata>(walletId);
     if (metadata == null) {
       throw StateError('Hot wallet metadata not found');
     }
     await realm.writeAsync(() {
       metadata.backupVerified = backupVerified;
+      metadata.backupVerifiedAt = backupVerified ? (backupVerifiedAt ?? DateTime.now()) : null;
     });
   }
 

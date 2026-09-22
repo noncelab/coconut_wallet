@@ -1199,6 +1199,8 @@ wallet_info_screen:
   memo_management: "Manage Memos"
   tag_count(count): "$count"
   backup_required: "Backup required"
+  backup_completed: "Complete"
+  backup_date(year, month, day): "$month/$day/$year"
   delete_wallet: "Delete Wallet"
   mnemonic_backup: "Mnemonic Backup"
   all_addresses: "All Addresses"

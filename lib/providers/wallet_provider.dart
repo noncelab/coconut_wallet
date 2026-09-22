@@ -685,7 +685,11 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> updateHotWalletBackupVerified(int walletId, {required bool backupVerified}) async {
-    await _walletRepository.updateHotWalletBackupVerified(walletId, backupVerified: backupVerified);
+    await _walletRepository.updateHotWalletBackupVerified(
+      walletId,
+      backupVerified: backupVerified,
+      backupVerifiedAt: backupVerified ? DateTime.now() : null,
+    );
     _setWalletItemList(await _fetchWalletListFromDB());
     notifyListeners();
   }

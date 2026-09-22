@@ -2,7 +2,6 @@ import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'package:coconut_wallet/constants/icon_path.dart';
-import 'package:coconut_wallet/constants/lottie_path.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -47,7 +46,6 @@ import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lottie/lottie.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
@@ -76,10 +74,18 @@ class RenewalWalletInfoScreen extends StatefulWidget {
 }
 
 class _MnemonicBackupButton extends StatefulWidget {
-  const _MnemonicBackupButton({super.key, required this.onPressed, required this.showWarning});
+  const _MnemonicBackupButton({
+    super.key,
+    required this.onPressed,
+    required this.showWarning,
+    required this.isBackupVerified,
+    this.backupVerifiedAt,
+  });
 
   final VoidCallback onPressed;
   final bool showWarning;
+  final bool isBackupVerified;
+  final DateTime? backupVerifiedAt;
 
   @override
   State<_MnemonicBackupButton> createState() => _MnemonicBackupButtonState();
@@ -87,6 +93,16 @@ class _MnemonicBackupButton extends StatefulWidget {
 
 class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with SingleTickerProviderStateMixin {
   late final AnimationController _highlightController;
+
+  String _formatBackupVerifiedAt(DateTime value) {
+    final backupDate = value.toLocal();
+    final formattedDate = t.wallet_info_screen.backup_date(
+      year: backupDate.year,
+      month: backupDate.month,
+      day: backupDate.day,
+    );
+    return '${t.wallet_info_screen.backup_completed} · $formattedDate';
+  }
 
   @override
   void initState() {
@@ -126,36 +142,50 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    t.wallet_info_screen.mnemonic_backup,
-                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
-                  ),
+                Text(
+                  t.wallet_info_screen.mnemonic_backup,
+                  style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
                 ),
                 CoconutLayout.spacing_200w,
                 Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.showWarning) ...[
-                        SvgPicture.asset(
-                          CommonStateIconPath.triangleWarning,
-                          width: 16,
-                          height: 16,
-                          colorFilter: ColorFilter.mode(colors.appLockWarningBackground, BlendMode.srcIn),
-                        ),
-                        CoconutLayout.spacing_50w,
-                        Flexible(
-                          child: Text(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.showWarning) ...[
+                          SvgPicture.asset(
+                            CommonStateIconPath.triangleWarning,
+                            width: 16,
+                            height: 16,
+                            colorFilter: ColorFilter.mode(colors.appLockWarningBackground, BlendMode.srcIn),
+                          ),
+                          CoconutLayout.spacing_50w,
+                          Text(
                             t.wallet_info_screen.backup_required,
                             style: CoconutTypography.body2_14.setColor(colors.appLockWarningBackground),
                             textAlign: TextAlign.end,
                           ),
-                        ),
-                        CoconutLayout.spacing_100w,
+                          CoconutLayout.spacing_100w,
+                        ] else if (widget.backupVerifiedAt != null) ...[
+                          Text(
+                            _formatBackupVerifiedAt(widget.backupVerifiedAt!),
+                            style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                            textAlign: TextAlign.end,
+                          ),
+                          CoconutLayout.spacing_100w,
+                        ] else if (widget.isBackupVerified) ...[
+                          Text(
+                            t.wallet_info_screen.backup_completed,
+                            style: CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText),
+                            textAlign: TextAlign.end,
+                          ),
+                          CoconutLayout.spacing_100w,
+                        ],
+                        Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
                       ],
-                      Icon(Icons.keyboard_arrow_right_rounded, color: colors.iconSecondary),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -269,9 +299,11 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                               if (viewModel.walletItemBase.hasLocalKey)
                                 _MnemonicBackupButton(
                                   key: _mnemonicBackupButtonKey,
+                                  isBackupVerified: viewModel.walletItemBase.hotWalletMetadata?.backupVerified ?? false,
                                   showWarning:
                                       viewModel.walletBalance.total > 0 &&
                                       !(viewModel.walletItemBase.hotWalletMetadata?.backupVerified ?? false),
+                                  backupVerifiedAt: viewModel.walletItemBase.hotWalletMetadata?.backupVerifiedAt,
                                   onPressed: () {
                                     _removeTooltip();
                                     _showMnemonicBackup(viewModel);

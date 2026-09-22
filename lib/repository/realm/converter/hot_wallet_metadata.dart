@@ -11,6 +11,7 @@ HotWalletMetadata mapRealmToHotWalletMetadata(RealmHotWalletMetadata metadata) {
     backupVerified: metadata.backupVerified,
     enterPassphraseWhenSigning: metadata.enterPassphraseWhenSigning,
     createdAt: metadata.createdAt,
+    backupVerifiedAt: metadata.backupVerifiedAt,
     lifecycleState: HotWalletLifecycleState.fromName(metadata.lifecycleStateName),
   );
 }

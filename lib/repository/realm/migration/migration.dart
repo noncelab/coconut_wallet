@@ -68,6 +68,9 @@ import 'package:realm/realm.dart';
 /// [addHotWalletLifecycleState] (9 -> 10 동일)
 /// 1. RealmHotWalletMetadata에 lifecycleStateName 필드 추가
 /// 2. 기존 핫월렛은 정상 사용 중인 지갑이므로 active 상태로 마이그레이션
+/// [addHotWalletBackupVerifiedAt] (9 -> 10 동일)
+/// 1. RealmHotWalletMetadata에 nullable backupVerifiedAt 필드 추가
+/// 2. 기존 백업 완료 지갑은 정확한 완료 시각을 알 수 없으므로 null 유지
 void defaultMigration(Migration migration, int oldVersion, {Set<int>? migratedWalletIds}) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');

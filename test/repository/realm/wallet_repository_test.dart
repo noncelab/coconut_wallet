@@ -114,6 +114,30 @@ void main() {
       expect(wallet.hotWalletMetadata?.secureStorageKey, 'local_wallet_seed_regtest_1');
       expect(wallet.hotWalletMetadata?.masterFingerprint, 'D45AA182');
       expect(wallet.hotWalletMetadata?.enterPassphraseWhenSigning, isTrue);
+      expect(wallet.hotWalletMetadata?.backupVerifiedAt, DateTime.utc(2026, 7, 20));
+    });
+
+    test('니모닉 백업 확인 시 완료 일시를 저장함', () async {
+      final created = await walletRepository.addHotWallet(
+        createSinglesigWallet(),
+        secureStorageKey: 'local_wallet_seed_regtest_1',
+        backupVerified: false,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 7, 20),
+        lifecycleState: HotWalletLifecycleState.active,
+      );
+      expect(created.hotWalletMetadata?.backupVerifiedAt, isNull);
+
+      final verifiedAt = DateTime.utc(2026, 9, 22, 6, 30);
+      await walletRepository.updateHotWalletBackupVerified(
+        created.id,
+        backupVerified: true,
+        backupVerifiedAt: verifiedAt,
+      );
+
+      final wallet = (await walletRepository.getWalletItemList()).single;
+      expect(wallet.hotWalletMetadata?.backupVerified, isTrue);
+      expect(wallet.hotWalletMetadata?.backupVerifiedAt, verifiedAt);
     });
 
     test('외부 출처 싱글시그는 핫월렛 생성 경로로 저장할 수 없음', () async {

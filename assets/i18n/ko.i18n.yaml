@@ -1203,6 +1203,8 @@ wallet_info_screen:
   memo_management: "메모 관리"
   tag_count(count): "${count}개"
   backup_required: "백업 필요"
+  backup_completed: "완료"
+  backup_date(year, month, day): "$year년 $month월 $day일"
   delete_wallet: "지갑 삭제하기"
   mnemonic_backup: "니모닉 백업"
   all_addresses: "전체 주소"

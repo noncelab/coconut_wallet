@@ -1187,6 +1187,8 @@ wallet_info_screen:
   memo_management: "メモ管理"
   tag_count(count): "${count}個"
   backup_required: "バックアップが必要"
+  backup_completed: "完了"
+  backup_date(year, month, day): "$year年$month月$day日"
   delete_wallet: "ウォレットを削除"
   mnemonic_backup: "ニーモニックバックアップ"
   all_addresses: "すべてのアドレス"

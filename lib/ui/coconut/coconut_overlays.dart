@@ -749,11 +749,7 @@ class _CoconutPopupState extends State<CoconutPopup> {
                           ),
                         ),
                       )
-                      : Text(
-                        widget.title,
-                        style: titleStyle,
-                        textAlign: widget.centerTitle ? TextAlign.center : null,
-                      ),
+                      : Text(widget.title, style: titleStyle, textAlign: widget.centerTitle ? TextAlign.center : null),
             ),
             Container(
               alignment: Alignment.topCenter,

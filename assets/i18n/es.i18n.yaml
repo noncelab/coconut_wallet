@@ -1190,6 +1190,8 @@ wallet_info_screen:
   memo_management: "Administrar notas"
   tag_count(count): "$count"
   backup_required: "Copia de seguridad necesaria"
+  backup_completed: "Completada"
+  backup_date(year, month, day): "$day/$month/$year"
   delete_wallet: "Eliminar billetera"
   mnemonic_backup: "Copia de seguridad mnemónica"
   all_addresses: "Todas las direcciones"

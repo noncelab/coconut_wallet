@@ -22,6 +22,7 @@ class HotWalletMetadata {
     required this.backupVerified,
     required this.enterPassphraseWhenSigning,
     required this.createdAt,
+    this.backupVerifiedAt,
     this.lifecycleState = HotWalletLifecycleState.active,
   });
 
@@ -33,5 +34,6 @@ class HotWalletMetadata {
   final bool backupVerified;
   final bool enterPassphraseWhenSigning;
   final DateTime createdAt;
+  final DateTime? backupVerifiedAt;
   final HotWalletLifecycleState lifecycleState;
 }
