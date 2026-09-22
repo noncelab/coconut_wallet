@@ -1623,6 +1623,10 @@ alert:
   wallet_delete:
     confirm_delete: "Wallet löschen"
     confirm_delete_description: "Möchten Sie die Wallet wirklich löschen?"
+    confirm_backup: "Haben Sie Ihre Mnemonik gesichert?"
+    confirm_backup_description: "Wenn Sie die Wallet ohne Sicherung löschen, können Sie Ihre Vermögenswerte nicht wiederherstellen."
+    backup_now: "Jetzt sichern"
+    backup_and_delete: "Ja, Wallet löschen"
   update:
     title: "Update-Benachrichtigung"
     description: "Für eine stabile Nutzung des Dienstes,\naktualisieren Sie bitte auf die neueste Version."

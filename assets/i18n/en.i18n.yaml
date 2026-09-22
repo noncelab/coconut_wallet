@@ -1684,6 +1684,10 @@ alert:
   wallet_delete:
     confirm_delete: "Delete Wallet"
     confirm_delete_description: "Do you really want to delete the wallet?"
+    confirm_backup: "Have you backed up your mnemonic?"
+    confirm_backup_description: "If you delete the wallet without a backup, you will not be able to recover your assets."
+    backup_now: "Back Up"
+    backup_and_delete: "Yes, Delete Wallet"
   update:
     title: "Update Notification"
     description: "For stable service use,\nplease update to the latest version."

@@ -1675,6 +1675,10 @@ alert:
   wallet_delete:
     confirm_delete: "Eliminar billetera"
     confirm_delete_description: "¿Estás seguro de querer eliminar la billetera?"
+    confirm_backup: "¿Has guardado una copia de tu frase mnemónica?"
+    confirm_backup_description: "Si eliminas la billetera sin una copia de seguridad, no podrás recuperar tus activos."
+    backup_now: "Crear copia"
+    backup_and_delete: "Sí, eliminar billetera"
   update:
     title: "Notificación de actualización"
     description: "Para un servicio estable,\npor favor, actualiza a la última versión."

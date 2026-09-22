@@ -1690,6 +1690,10 @@ alert:
   wallet_delete:
     confirm_delete: "지갑 삭제"
     confirm_delete_description: "지갑을 정말 삭제하시겠어요?"
+    confirm_backup: "니모닉을 백업하셨나요?"
+    confirm_backup_description: "백업하지 않고 지갑을 삭제하면 자산을 복구할 수 없어요."
+    backup_now: "백업하기"
+    backup_and_delete: "네, 삭제할게요"
   update:
     title: "업데이트 알림"
     description: "안정적인 서비스 이용을 위해\n최신 버전으로 업데이트 해주세요."

@@ -1672,6 +1672,10 @@ alert:
   wallet_delete:
     confirm_delete: "ウォレット削除"
     confirm_delete_description: "ウォレットを本当に削除しますか？"
+    confirm_backup: "ニーモニックをバックアップしましたか？"
+    confirm_backup_description: "バックアップせずにウォレットを削除すると、資産を復元できません。"
+    backup_now: "バックアップする"
+    backup_and_delete: "はい、削除します"
   update:
     title: "更新通知"
     description: "安定したサービスを利用するために\n最新バージョンに更新してください。"

@@ -464,31 +464,7 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                                 ),
                                 onPressed: () {
                                   _removeTooltip();
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return CoconutPopup(
-                                        languageCode: context.read<PreferenceProvider>().language,
-                                        title: t.alert.wallet_delete.confirm_delete,
-                                        description: t.alert.wallet_delete.confirm_delete_description,
-                                        onTapRight: () {
-                                          final dialogContext = context;
-                                          _handleAuthFlow(
-                                            onComplete: () async {
-                                              Navigator.of(dialogContext).pop();
-                                              await _deleteWalletAndGoToEntryPoint(viewModel);
-                                            },
-                                          );
-                                        },
-                                        onTapLeft: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                        rightButtonText: t.delete,
-                                        rightButtonColor: context.coconutColors.danger,
-                                        leftButtonText: t.cancel,
-                                      );
-                                    },
-                                  );
+                                  _showDeleteWalletDialog(viewModel);
                                 },
                               ),
                             ],
@@ -767,6 +743,56 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
         await showInfoDialog(context, languageCode, t.wallet_info_screen.error.delete, e.toString());
       }
     }
+  }
+
+  Future<void> _showDeleteWalletDialog(WalletInfoViewModel viewModel) async {
+    final shouldConfirmBackup = viewModel.walletItemBase.hasLocalKey && viewModel.walletBalance.total > 0;
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.wallet_delete.confirm_delete,
+          description: t.alert.wallet_delete.confirm_delete_description,
+          onTapRight: () => Navigator.of(dialogContext).pop(true),
+          onTapLeft: () => Navigator.of(dialogContext).pop(false),
+          rightButtonText: t.delete,
+          rightButtonColor: context.coconutColors.danger,
+          leftButtonText: t.cancel,
+        );
+      },
+    );
+    if (shouldDelete != true || !mounted) return;
+
+    if (shouldConfirmBackup) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      if (!mounted) return;
+      final backupConfirmed = await _showBackupBeforeDeleteDialog(viewModel);
+      if (backupConfirmed != true || !mounted) return;
+    }
+
+    _handleAuthFlow(onComplete: () => _deleteWalletAndGoToEntryPoint(viewModel));
+  }
+
+  Future<bool?> _showBackupBeforeDeleteDialog(WalletInfoViewModel viewModel) {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.wallet_delete.confirm_backup,
+          description: t.alert.wallet_delete.confirm_backup_description,
+          onTapRight: () => Navigator.of(dialogContext).pop(true),
+          onTapLeft: () {
+            Navigator.of(dialogContext).pop(false);
+            _showMnemonicBackup(viewModel);
+          },
+          rightButtonText: t.alert.wallet_delete.backup_and_delete,
+          rightButtonColor: context.coconutColors.danger,
+          leftButtonText: t.alert.wallet_delete.backup_now,
+        );
+      },
+    );
   }
 
   void _setOverlayLoading(bool value) {
