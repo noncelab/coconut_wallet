@@ -408,6 +408,7 @@ class WalletRepository extends BaseRepository {
     final walletBalance = realm.query<RealmWalletBalance>('walletId == $walletId');
     final walletAddress = realm.query<RealmWalletAddress>('walletId == $walletId');
     final utxos = realm.query<RealmUtxo>('walletId == $walletId');
+    final pendingUtxoLocks = realm.query<RealmPendingUtxoLock>('walletId == $walletId');
     final utxoTags = realm.query<RealmUtxoTag>('walletId == $walletId');
     final scriptStatuses = realm.query<RealmScriptStatus>('walletId == $walletId');
 
@@ -453,6 +454,9 @@ class WalletRepository extends BaseRepository {
       }
       if (utxos.isNotEmpty) {
         realm.deleteMany(utxos);
+      }
+      if (pendingUtxoLocks.isNotEmpty) {
+        realm.deleteMany(pendingUtxoLocks);
       }
       if (utxoTags.isNotEmpty) {
         realm.deleteMany(utxoTags);

@@ -24,6 +24,7 @@ final realmAllSchemas = [
   RealmScriptStatus.schema,
   RealmBlockTimestamp.schema,
   RealmUtxo.schema,
+  RealmPendingUtxoLock.schema,
   RealmRbfHistory.schema,
   RealmCpfpHistory.schema,
   RealmTransactionMemo.schema,
@@ -219,6 +220,17 @@ class _RealmUtxo {
 
   @Indexed()
   bool isDeleted = false;
+}
+
+/// 앱 업데이트 중 UTXO를 다시 동기화할 때 복원해야 할 잠금 설정.
+/// 실제 UTXO 데이터와 분리해 보관하고 동기화가 완료되면 삭제한다.
+@RealmModel()
+class _RealmPendingUtxoLock {
+  @PrimaryKey()
+  late String id;
+  @Indexed()
+  late int walletId;
+  late String utxoId;
 }
 
 @RealmModel()

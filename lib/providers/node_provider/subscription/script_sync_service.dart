@@ -57,6 +57,10 @@ class ScriptSyncService {
     _subscribeAddress = subscribeAddress;
   }
 
+  Future<void> restorePendingUtxoLocks(int walletId) {
+    return _utxoSyncService.restorePendingUtxoLocks(walletId);
+  }
+
   /// 주소가 dormant(사용됐지만 잔액/미확정 트랜잭션 없음) 상태가 됐으면 실시간 구독에서 제외한다.
   Future<void> _unsubscribeIfDormant(WalletItemBase walletItem, String address) async {
     if (!_addressRepository.isAddressDormant(walletItem.id, address)) {
@@ -419,6 +423,8 @@ class ScriptSyncService {
 
       // orphaned UTXO가 있으면 정리함
       await _utxoSyncService.cleanupOrphanedUtxos(walletItem);
+
+      await _utxoSyncService.restorePendingUtxoLocks(walletItem.id);
 
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
 

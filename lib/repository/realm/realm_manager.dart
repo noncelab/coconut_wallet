@@ -44,6 +44,7 @@ class RealmManager {
       realm.deleteAll<RealmWalletBalance>();
       realm.deleteAll<RealmWalletAddress>();
       realm.deleteAll<RealmUtxo>();
+      realm.deleteAll<RealmPendingUtxoLock>();
       realm.deleteAll<RealmScriptStatus>();
       realm.deleteAll<RealmBlockTimestamp>();
       realm.deleteAll<RealmIntegerId>();

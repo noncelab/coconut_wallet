@@ -459,6 +459,27 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
+  /// 앱 업데이트 마이그레이션에서 보관한 잠금 설정을 최신 UTXO 동기화 결과에 적용한다.
+  /// 실제로 다시 발견된 unspent UTXO만 잠그고, 처리 후 복원 대기 데이터는 삭제한다.
+  Future<void> restorePendingUtxoLocks(int walletId) async {
+    final pendingLocks = realm.query<RealmPendingUtxoLock>(r'walletId == $0', [walletId]).toList();
+    if (pendingLocks.isEmpty) return;
+
+    final realmUtxoIds = pendingLocks.map((lock) => lock.id).toList();
+    final toRelock = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND status == $2 AND isDeleted == false', [
+      walletId,
+      realmUtxoIds,
+      utxoStatusToString(UtxoStatus.unspent),
+    ]);
+
+    await realm.writeAsync(() {
+      for (final utxo in toRelock) {
+        utxo.status = utxoStatusToString(UtxoStatus.locked);
+      }
+      realm.deleteMany(pendingLocks);
+    });
+  }
+
   Future<void> updateUtxoStatus(int walletId, List<String> utxoList, UtxoStatus status) async {
     final statusStr = utxoStatusToString(status);
     final realmUtxoIds = utxoList.map((utxoId) => '$walletId:$utxoId').toList();

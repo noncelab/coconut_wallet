@@ -64,7 +64,7 @@ import 'package:realm/realm.dart';
 /// 3. RealmScriptStatus 기본키를 walletId + scriptPubKey 조합으로 변경
 /// 4. 스크립트 상태는 노드에서 다시 동기화할 수 있으므로 기존 데이터 삭제
 /// 5. RealmUtxo 기본키를 walletId + outpoint 조합으로 변경
-/// 6. UTXO는 노드에서 다시 동기화할 수 있으므로 기존 데이터 삭제
+/// 6. UTXO는 노드에서 다시 동기화하되, 사용자가 설정한 잠금 상태는 새 기본키로 변환해 보존
 /// [addHotWalletLifecycleState] (9 -> 10 동일)
 /// 1. RealmHotWalletMetadata에 lifecycleStateName 필드 추가
 /// 2. 기존 핫월렛은 정상 사용 중인 지갑이므로 active 상태로 마이그레이션
@@ -106,8 +106,21 @@ void addHotWalletLifecycleState(Realm realm) {
 }
 
 void scopeWalletSyncDataByWallet(Migration migration) {
+  final pendingUtxoLocks =
+      migration.newRealm
+          .query<RealmUtxo>(r'status == $0 AND isDeleted == false', ['locked'])
+          .map(
+            (utxo) => RealmPendingUtxoLock(
+              getRealmUtxoId(utxo.walletId, utxo.transactionHash, utxo.index),
+              utxo.walletId,
+              getUtxoId(utxo.transactionHash, utxo.index),
+            ),
+          )
+          .toList();
+
   migration.newRealm.deleteAll<RealmScriptStatus>();
   migration.newRealm.deleteAll<RealmUtxo>();
+  migration.newRealm.addAll(pendingUtxoLocks);
 }
 
 void migrateTaprootWalletBackupData(Realm realm, {Set<int>? migratedWalletIds}) {
