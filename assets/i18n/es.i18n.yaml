@@ -294,7 +294,7 @@ wallet_home_screen:
     passphrase_not_stored_confirm: "La recordaré"
     creation_failed: "No se pudo crear la billetera. Inténtalo de nuevo."
     duplicate_name_title: "Nombre de billetera duplicado"
-    duplicate_name_description: "Ya existe una billetera con este nombre."
+    duplicate_name_description: "Ya existe una billetera con este nombre"
   hot_wallet_restore:
     title: "Restaurar con mnemónico"
     seed_qr_title: "Restaurar con Seed QR"

@@ -144,6 +144,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   bool _canPop = false;
   bool _isCheckingDuplicate = false;
   bool _isSubmitting = false;
+  bool _isLeavingScreen = false;
   _RestoreInputMode _inputMode = _RestoreInputMode.mnemonic;
   final GlobalKey _seedQrKey = GlobalKey(debugLabel: 'SeedQR');
   QRViewController? _seedQrScannerController;
@@ -157,6 +158,13 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   int _masterFingerprintRequestId = 0;
   int _fieldScrollRequestId = 0;
   late final String _suggestedName;
+
+  String get _walletName => _nameController.text.trim().isEmpty ? _suggestedName : _nameController.text.trim();
+
+  bool get _isWalletNameDuplicated =>
+      !_isSubmitting &&
+      !_isLeavingScreen &&
+      context.read<WalletProvider>().walletItemList.any((wallet) => wallet.name == _walletName);
 
   @override
   void initState() {
@@ -396,7 +404,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
                         FixedBottomButton(
                           buttonKey: _bottomButtonKey,
                           text: t.wallet_home_screen.hot_wallet_restore.restore_wallet,
-                          isActive: viewModel.canRestore && !_isSubmitting,
+                          isActive:
+                              viewModel.canRestore && !_isSubmitting && !_isLeavingScreen && !_isWalletNameDuplicated,
                           subWidget: _inputMode == _RestoreInputMode.mnemonic ? _buildMnemonicError(viewModel) : null,
                           surroundingsColor: context.coconutColors.background,
                           onButtonClicked: _restore,
@@ -1150,6 +1159,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
           backgroundColor: context.coconutColors.inputSurface,
           activeColor: context.coconutColors.primaryText,
           cursorColor: context.coconutColors.primaryText,
+          isError: _isWalletNameDuplicated,
+          errorText: _isWalletNameDuplicated ? t.wallet_home_screen.hot_wallet_create.duplicate_name_description : null,
           onChanged: (_) => setState(() {}),
         ),
       ],
@@ -1198,7 +1209,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   }
 
   Future<void> _restore() async {
-    if (_isSubmitting) return;
+    if (_isSubmitting || _isLeavingScreen || _isWalletNameDuplicated) return;
     setState(() => _isSubmitting = true);
     try {
       await _performRestore();
@@ -1235,7 +1246,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
     }
-    final walletName = _nameController.text.trim().isEmpty ? _suggestedName : _nameController.text.trim();
+    final walletName = _walletName;
     String descriptor;
     try {
       setState(() => _isCheckingDuplicate = true);
@@ -1284,12 +1295,6 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         !removeWatchOnly && walletProvider.walletItemList.any((wallet) => wallet.name == walletName);
     if (hasNameConflict) {
       setState(() => _isCheckingDuplicate = false);
-      await showInfoDialog(
-        context,
-        context.read<PreferenceProvider>().language,
-        t.wallet_home_screen.hot_wallet_create.duplicate_name_title,
-        t.wallet_home_screen.hot_wallet_create.duplicate_name_description,
-      );
       return;
     }
 
@@ -1305,6 +1310,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       if (!mounted) return;
       setState(() => _isCheckingDuplicate = false);
       if (context.read<AuthProvider>().isAuthEnabled) {
+        setState(() => _isLeavingScreen = true);
         Navigator.of(context).pushNamedAndRemoveUntil(
           AppRouteNames.walletDetail,
           (route) => route.isFirst,
@@ -1313,6 +1319,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       } else {
         await showHotWalletAppLockGuideBottomSheet(context);
         if (!mounted) return;
+        setState(() => _isLeavingScreen = true);
         Navigator.of(context).pushNamedAndRemoveUntil(
           AppRouteNames.walletDetail,
           (route) => route.isFirst,

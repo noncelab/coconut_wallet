@@ -293,7 +293,7 @@ wallet_home_screen:
     passphrase_not_stored_confirm: "Ich merke sie mir"
     creation_failed: "Die Wallet konnte nicht erstellt werden. Versuche es erneut."
     duplicate_name_title: "Doppelter Wallet-Name"
-    duplicate_name_description: "Eine Wallet mit diesem Namen existiert bereits."
+    duplicate_name_description: "Eine Wallet mit diesem Namen existiert bereits"
   hot_wallet_restore:
     title: "Mit Mnemonik wiederherstellen"
     seed_qr_title: "Mit Seed QR wiederherstellen"

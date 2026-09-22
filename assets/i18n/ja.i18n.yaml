@@ -292,7 +292,7 @@ wallet_home_screen:
     passphrase_not_stored_confirm: "覚えておきます"
     creation_failed: "ウォレットを作成できませんでした。もう一度お試しください。"
     duplicate_name_title: "ウォレット名の重複"
-    duplicate_name_description: "同じ名前のウォレットが既にあります。"
+    duplicate_name_description: "同じ名前のウォレットが既にあります"
   hot_wallet_restore:
     title: "ニーモニックから復元"
     seed_qr_title: "Seed QRから復元"
