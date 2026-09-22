@@ -281,6 +281,8 @@ class CoconutColors {
   final Color utxoOverviewSelectedCoinBorder;
   final Color utxoOverviewBillSurface;
   final Color utxoOverviewUnselectedOverlay;
+  final Color utxoOverviewGroupingTabSelectedText;
+  final Color utxoOverviewGroupingTabUnselectedText;
   final double utxoOverviewCoinTintStrength;
   final double utxoOverviewCoinIconOpacity;
   final double utxoOverviewCoinInnerStrokeOpacity;
@@ -444,6 +446,8 @@ class CoconutColors {
     required this.utxoOverviewSelectedCoinBorder,
     required this.utxoOverviewBillSurface,
     required this.utxoOverviewUnselectedOverlay,
+    required this.utxoOverviewGroupingTabSelectedText,
+    required this.utxoOverviewGroupingTabUnselectedText,
     required this.utxoOverviewCoinTintStrength,
     required this.utxoOverviewCoinIconOpacity,
     required this.utxoOverviewCoinInnerStrokeOpacity,
@@ -591,6 +595,8 @@ class CoconutColors {
       utxoOverviewSelectedCoinBorder: ds.CoconutColors.gray150,
       utxoOverviewBillSurface: ds.CoconutColors.gray900,
       utxoOverviewUnselectedOverlay: ds.CoconutColors.black,
+      utxoOverviewGroupingTabSelectedText: ds.CoconutColors.white,
+      utxoOverviewGroupingTabUnselectedText: ds.CoconutColors.gray500,
       utxoOverviewCoinTintStrength: 0.7,
       utxoOverviewCoinIconOpacity: 0.1,
       utxoOverviewCoinInnerStrokeOpacity: 0.1,
@@ -740,6 +746,8 @@ class CoconutColors {
       utxoOverviewSelectedCoinBorder: ds.CoconutColors.black,
       utxoOverviewBillSurface: ds.CoconutColors.white,
       utxoOverviewUnselectedOverlay: ds.CoconutColors.black,
+      utxoOverviewGroupingTabSelectedText: ds.CoconutColors.black,
+      utxoOverviewGroupingTabUnselectedText: ds.CoconutColors.gray400,
       utxoOverviewCoinTintStrength: 0.7,
       utxoOverviewCoinIconOpacity: 0.1,
       utxoOverviewCoinInnerStrokeOpacity: 0.1,
@@ -905,6 +913,8 @@ class CoconutColors {
       utxoOverviewSelectedCoinBorder: huskDeep,
       utxoOverviewBillSurface: shell,
       utxoOverviewUnselectedOverlay: sand,
+      utxoOverviewGroupingTabSelectedText: huskDeep,
+      utxoOverviewGroupingTabUnselectedText: huskSoft,
       utxoOverviewCoinTintStrength: 1,
       utxoOverviewCoinIconOpacity: 0.06,
       utxoOverviewCoinInnerStrokeOpacity: 0.06,

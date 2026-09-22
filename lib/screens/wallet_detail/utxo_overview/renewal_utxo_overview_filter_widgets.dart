@@ -200,8 +200,8 @@ class UtxoGroupingTab extends StatelessWidget {
             curve: Curves.easeOutCubic,
             style: CoconutTypography.body1_16_Bold.setColor(
               isSelected
-                  ? context.coconutColors.segmentedControlSelectedText
-                  : context.coconutColors.segmentedControlUnselectedText,
+                  ? context.coconutColors.utxoOverviewGroupingTabSelectedText
+                  : context.coconutColors.utxoOverviewGroupingTabUnselectedText,
             ),
             child: Text(label),
           ),
