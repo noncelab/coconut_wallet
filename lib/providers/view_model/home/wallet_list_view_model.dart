@@ -71,7 +71,6 @@ class WalletListViewModel extends ChangeNotifier {
   bool get hasEnglishWordOrder => AppLanguage.fromCode(_preferenceProvider.language).hasEnglishWordOrder;
 
   bool get isWalletListFiatVisible => _preferenceProvider.isWalletListFiatVisible;
-  bool get isWalletListBitcoinPriceVisible => _preferenceProvider.isWalletListBitcoinPriceVisible;
   bool get isWalletListBalanceChartVisible => _preferenceProvider.isWalletListBalanceChartVisible;
 
   List<WalletBalanceHistoryPoint> _walletBalanceHistory = const [];

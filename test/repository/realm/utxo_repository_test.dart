@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -287,6 +288,48 @@ void main() {
 
         final utxo = utxoRepository.getUtxoState(testWalletId, getUtxoId(unspentTxHash, 0));
         expect(utxo!.status, UtxoStatus.unspent);
+      });
+
+      test('마이그레이션 잠금 설정은 다시 발견된 unspent UTXO에만 복원하고 처리 후 삭제함', () async {
+        final reappearedUtxoId = getUtxoId(reappearedUnspentTxHash, 0);
+        final missingUtxoId = getUtxoId(notReappearedTxHash, 0);
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createUnspentRealmUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: reappearedUnspentTxHash,
+            ),
+          );
+          realmManager.realm.add(
+            RealmPendingUtxoLock('$testWalletId:$reappearedUtxoId', testWalletId, reappearedUtxoId),
+          );
+          realmManager.realm.add(RealmPendingUtxoLock('$testWalletId:$missingUtxoId', testWalletId, missingUtxoId));
+        });
+
+        await utxoRepository.restorePendingUtxoLocks(testWalletId);
+
+        expect(utxoRepository.getUtxoState(testWalletId, reappearedUtxoId)!.status, UtxoStatus.locked);
+        expect(realmManager.realm.query<RealmPendingUtxoLock>(r'walletId == $0', [testWalletId]), isEmpty);
+      });
+
+      test('마이그레이션 잠금 설정은 outgoing UTXO를 잠그지 않음', () async {
+        final outgoingUtxoId = getUtxoId(nowOutgoingTxHash, 0);
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createOutgoingRealmUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: nowOutgoingTxHash,
+            ),
+          );
+          realmManager.realm.add(RealmPendingUtxoLock('$testWalletId:$outgoingUtxoId', testWalletId, outgoingUtxoId));
+        });
+
+        await utxoRepository.restorePendingUtxoLocks(testWalletId);
+
+        expect(utxoRepository.getUtxoState(testWalletId, outgoingUtxoId)!.status, UtxoStatus.outgoing);
+        expect(realmManager.realm.query<RealmPendingUtxoLock>(r'walletId == $0', [testWalletId]), isEmpty);
       });
     });
   });

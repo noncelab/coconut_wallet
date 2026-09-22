@@ -28,18 +28,6 @@ const Color kCoconutUnbackedWarningForeground = ds.CoconutColors.white;
 const Color kCoconutTaprootParent = ds.CoconutColors.purple;
 const Color kCoconutTaprootChild = ds.CoconutColors.sky;
 
-/// 거래소의 시장권별 상승·하락 표기 관례를 따르는 의미 색상입니다.
-/// 사용자가 색상만으로도 가격 방향을 즉시 인식하는 사실상의 규약이므로,
-/// 특별한 접근성 또는 정책상 이유가 없다면 변경하지 않는 것을 권장합니다.
-///
-/// 한국·일본식 거래 화면에서 사용하는 상승 빨강과 하락 파랑
-const Color kExchangePriceRiseRed = Color(0xFFDD3C44);
-const Color kExchangePriceFallBlue = Color(0xFF2075EB);
-
-/// 미국·유럽식 거래 화면에서 사용하는 상승 초록과 하락 빨강
-const Color kExchangePriceRiseGreen = Color(0xFF32BD85);
-const Color kExchangePriceFallRed = Color(0xFFF6465D);
-
 @immutable
 class CoconutColors {
   /// 코코넛 고유 메인넷 로고 그라디언트

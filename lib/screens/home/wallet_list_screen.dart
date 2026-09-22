@@ -13,12 +13,9 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutPopup,
         CoconutUnderlinedButton;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
-import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart'
-    show kExchangePriceFallBlue, kExchangePriceFallRed, kExchangePriceRiseGreen, kExchangePriceRiseRed;
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -598,62 +595,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                       : const SizedBox.shrink(key: ValueKey('wallet_balance_chart_hidden')),
             ),
           ],
-        ),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder:
-              (child, animation) => FadeTransition(
-                opacity: animation,
-                child: SizeTransition(sizeFactor: animation, axisAlignment: -1, child: child),
-              ),
-          child:
-              _viewModel.isWalletListBitcoinPriceVisible
-                  ? Column(
-                    key: const ValueKey('bitcoin_price_info_visible'),
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CoconutLayout.spacing_300h,
-                      const Divider(height: 1),
-                      CoconutLayout.spacing_300h,
-                      Row(
-                        children: [
-                          Text(
-                            t.wallet_list.header.bitcoin_price,
-                            style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryTextStrong),
-                          ),
-                          const Spacer(),
-                          _BitcoinPriceInfoButton(viewModel: _viewModel),
-                        ],
-                      ),
-                      CoconutLayout.spacing_200h,
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ListenableBuilder(
-                              listenable: _viewModel,
-                              builder: (context, _) {
-                                final oneBtcFiatPrice = _viewModel.getBitcoinPrice(100000000, _viewModel.selectedFiat);
-                                return FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    '1 BTC = ${oneBtcFiatPrice.isEmpty ? '-' : oneBtcFiatPrice}',
-                                    maxLines: 1,
-                                    style: CoconutTypography.body1_16_Number.setColor(
-                                      context.coconutColors.primaryText,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          CoconutLayout.spacing_300w,
-                          _HistoricalPriceChangeChip(viewModel: _viewModel),
-                        ],
-                      ),
-                    ],
-                  )
-                  : const SizedBox.shrink(key: ValueKey('bitcoin_price_info_hidden')),
         ),
       ],
     );
@@ -1380,191 +1321,6 @@ class _WalletListAppBarMenuButtonState extends State<_WalletListAppBarMenuButton
   }
 }
 
-class _HistoricalPriceChangeChip extends StatefulWidget {
-  final WalletListViewModel viewModel;
-
-  const _HistoricalPriceChangeChip({required this.viewModel});
-
-  @override
-  State<_HistoricalPriceChangeChip> createState() => _HistoricalPriceChangeChipState();
-}
-
-class _HistoricalPriceChangeChipState extends State<_HistoricalPriceChangeChip> {
-  static const _rotationDuration = Duration(seconds: 5);
-
-  Timer? _rotationTimer;
-  int _periodIndex = 0;
-  bool _isPointerDown = false;
-  FiatCode? _lastFiatCode;
-
-  bool get _hasPriceData =>
-      widget.viewModel.supportsHistoricalBitcoinPrices &&
-      widget.viewModel.historicalBitcoinPrices != null &&
-      widget.viewModel.currentSelectedFiatBitcoinPrice != null;
-
-  @override
-  void initState() {
-    super.initState();
-    _lastFiatCode = widget.viewModel.selectedFiat;
-    widget.viewModel.addListener(_onViewModelChanged);
-    _syncRotationTimer();
-  }
-
-  @override
-  void didUpdateWidget(covariant _HistoricalPriceChangeChip oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.viewModel == widget.viewModel) return;
-
-    oldWidget.viewModel.removeListener(_onViewModelChanged);
-    widget.viewModel.addListener(_onViewModelChanged);
-    _lastFiatCode = widget.viewModel.selectedFiat;
-    _periodIndex = 0;
-    _syncRotationTimer();
-  }
-
-  @override
-  void dispose() {
-    _rotationTimer?.cancel();
-    widget.viewModel.removeListener(_onViewModelChanged);
-    super.dispose();
-  }
-
-  void _onViewModelChanged() {
-    if (!mounted) return;
-
-    if (_lastFiatCode != widget.viewModel.selectedFiat) {
-      _lastFiatCode = widget.viewModel.selectedFiat;
-      _periodIndex = 0;
-    }
-    _syncRotationTimer();
-    setState(() {});
-  }
-
-  void _syncRotationTimer() {
-    if (!_hasPriceData || _isPointerDown) {
-      _rotationTimer?.cancel();
-      _rotationTimer = null;
-      return;
-    }
-    if (_rotationTimer?.isActive ?? false) return;
-    _scheduleNextRotation();
-  }
-
-  void _scheduleNextRotation() {
-    _rotationTimer?.cancel();
-    if (!_hasPriceData || _isPointerDown) {
-      _rotationTimer = null;
-      return;
-    }
-
-    _rotationTimer = Timer(_rotationDuration, () {
-      if (!mounted || _isPointerDown || !_hasPriceData) return;
-      _changePeriod(1, restartTimer: false);
-      _scheduleNextRotation();
-    });
-  }
-
-  void _changePeriod(int delta, {bool restartTimer = true}) {
-    setState(() {
-      _periodIndex = (_periodIndex + delta) % 3;
-    });
-    if (restartTimer) _scheduleNextRotation();
-  }
-
-  void _pauseRotation() {
-    _isPointerDown = true;
-    _rotationTimer?.cancel();
-    _rotationTimer = null;
-  }
-
-  void _resumeRotation() {
-    _isPointerDown = false;
-    _scheduleNextRotation();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final historicalPrices = widget.viewModel.historicalBitcoinPrices;
-    final currentPrice = widget.viewModel.currentSelectedFiatBitcoinPrice;
-    if (!_hasPriceData || historicalPrices == null || currentPrice == null) {
-      return const SizedBox.shrink();
-    }
-
-    final labels = [
-      t.wallet_list.header.than_yesterday,
-      t.wallet_list.header.than_a_week_ago,
-      t.wallet_list.header.than_a_month_ago,
-    ];
-    final pastPrices = [
-      historicalPrices.previousDayClose,
-      historicalPrices.sevenDaysAgoClose,
-      historicalPrices.thirtyDaysAgoClose,
-    ];
-    final changeRate = (currentPrice - pastPrices[_periodIndex]) / pastPrices[_periodIndex] * 100;
-    final changeColor =
-        changeRate == 0
-            ? context.coconutColors.secondaryText
-            : switch (widget.viewModel.selectedFiat) {
-              FiatCode.KRW || FiatCode.JPY => changeRate > 0 ? kExchangePriceRiseRed : kExchangePriceFallBlue,
-              FiatCode.USD || FiatCode.EUR => changeRate > 0 ? kExchangePriceRiseGreen : kExchangePriceFallRed,
-            };
-    final changeRateText = '${changeRate >= 0 ? '+' : ''}${changeRate.toStringAsFixed(1)}%';
-    final changeBackgroundOpacity = changeColor == kExchangePriceFallBlue ? 0.24 : 0.12;
-
-    return Listener(
-      onPointerDown: (_) => _pauseRotation(),
-      onPointerUp: (_) => _resumeRotation(),
-      onPointerCancel: (_) => _resumeRotation(),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onVerticalDragEnd: (details) {
-          final velocity = details.primaryVelocity ?? 0;
-          if (velocity.abs() < 50) return;
-          _changePeriod(velocity < 0 ? 1 : -1);
-        },
-        child: ClipRect(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            layoutBuilder: (currentChild, previousChildren) {
-              return Stack(
-                alignment: Alignment.centerRight,
-                children: [...previousChildren, if (currentChild != null) currentChild],
-              );
-            },
-            transitionBuilder: (child, animation) {
-              return AnimatedBuilder(
-                animation: animation,
-                child: FadeTransition(opacity: animation, child: child),
-                builder: (context, transitionChild) {
-                  final isOutgoing = child.key != ValueKey(_periodIndex);
-                  final distance = 1 - Curves.easeOutCubic.transform(animation.value);
-                  return FractionalTranslation(
-                    translation: Offset(0, isOutgoing ? -distance : distance),
-                    child: transitionChild,
-                  );
-                },
-              );
-            },
-            child: Container(
-              key: ValueKey(_periodIndex),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: changeColor.withValues(alpha: changeBackgroundOpacity),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${labels[_periodIndex]} $changeRateText',
-                maxLines: 1,
-                style: CoconutTypography.body3_12_Number.setColor(changeColor),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _BitcoinPriceInfoButton extends StatefulWidget {
   final WalletListViewModel viewModel;
   const _BitcoinPriceInfoButton({required this.viewModel});
@@ -1824,32 +1580,6 @@ class _WalletListSettingsBottomSheetState extends State<WalletListSettingsBottom
                                   inactiveThumbColor: context.coconutColors.switchInactiveThumb,
                                   onChanged: (value) {
                                     viewModel.setWalletListBalanceChartVisible(value);
-                                    vibrateExtraLight();
-                                  },
-                                ),
-                              ),
-                              CoconutLayout.spacing_200h,
-                              SingleButton(
-                                customPadding: const EdgeInsets.fromLTRB(2, 8, 2, 8),
-                                title: t.wallet_list.bottom_sheet.show_bitcoin_price,
-                                subtitle: t.wallet_list.bottom_sheet.show_bitcoin_price_description,
-                                isVerticalSubtitle: true,
-                                backgroundColor: context.coconutColors.surfaceBottomSheet,
-                                onPressed: () {
-                                  viewModel.setWalletListBitcoinPriceVisible(
-                                    !viewModel.isWalletListBitcoinPriceVisible,
-                                  );
-                                  vibrateExtraLight();
-                                },
-                                rightElement: CoconutSwitch(
-                                  isOn: viewModel.isWalletListBitcoinPriceVisible,
-                                  scale: 0.7,
-                                  activeTrackColor: context.coconutColors.switchActiveTrack,
-                                  activeThumbColor: context.coconutColors.switchActiveThumb,
-                                  inactiveTrackColor: context.coconutColors.switchInactiveTrack,
-                                  inactiveThumbColor: context.coconutColors.switchInactiveThumb,
-                                  onChanged: (value) {
-                                    viewModel.setWalletListBitcoinPriceVisible(value);
                                     vibrateExtraLight();
                                   },
                                 ),
