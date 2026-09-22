@@ -149,7 +149,7 @@ class _HomeAlertCardState extends State<HomeAlertCard> with SingleTickerProvider
         ).preferredLineHeight;
     final calculatedIconTop = (titleLineHeight - _securityIconSize) / 2;
     final iconTop = calculatedIconTop > 0 ? calculatedIconTop : 0.0;
-    final calculatedCloseIconTop = (titleLineHeight - PositionedCardCloseButton.iconSize) / 2;
+    final calculatedCloseIconTop = (titleLineHeight - PositionedCardCloseButton.defaultIconSize) / 2;
     final closeIconTop = calculatedCloseIconTop > 0 ? calculatedCloseIconTop : 0.0;
     final closeButtonTop = HomeAlertCard.contentPadding.top + closeIconTop - PositionedCardCloseButton.padding.top;
     final iconColor =

@@ -351,7 +351,7 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
                                 title: t.wallet_info_screen.target_quantity,
                                 subWidget:
                                     viewModel.targetSats == null
-                                        ? null
+                                        ? Text(t.wallet_info_screen.target_disabled, style: _menuSubTextStyle)
                                         : Text(
                                           context.read<PreferenceProvider>().currentUnit.displayBitcoinAmount(
                                             viewModel.targetSats,
@@ -504,7 +504,7 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
     _hasScheduledTargetSetting = true;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future<void>.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
       if (!mounted || !context.mounted) return;
       _showTargetSettingBottomSheet(context, viewModel);
     });
@@ -651,11 +651,23 @@ class _RenewalWalletInfoScreenState extends State<RenewalWalletInfoScreen> {
         return currentText.isNotEmpty && currentText != original.trim();
       },
       focusOnlyWhenOriginalNotEmpty: true,
+      toggleLabel: t.wallet_info_screen.target_enabled,
+      toggleDescription: t.wallet_info_screen.target_enabled_description,
+      initiallyEnabled: !viewModel.isTargetDisabled,
+      submitValidator: (text) {
+        final btc = text.toDoubleSafe();
+        return btc != null && btc <= 0 ? t.wallet_info_screen.target_set_zero_error : null;
+      },
       suffix: Text(
         BitcoinUnit.btc.symbol,
         style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
       ),
       onComplete: (text) {
+        if (text.isEmpty) {
+          viewModel.removeTargetSats();
+          return;
+        }
+
         final btc = text.toDoubleSafe();
         if (btc == null || btc <= 0) {
           if (text.isNotEmpty) {

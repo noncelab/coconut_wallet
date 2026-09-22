@@ -13,6 +13,7 @@ class SingleFieldFixedBottomSheetBody extends StatelessWidget {
     this.completeLabel,
     this.collapsedHeight = 240,
     this.fieldHorizontalPadding = 16,
+    this.keyboardContentHeight = 120,
   });
 
   final Widget textField;
@@ -21,6 +22,7 @@ class SingleFieldFixedBottomSheetBody extends StatelessWidget {
   final String? completeLabel;
   final double collapsedHeight;
   final double fieldHorizontalPadding;
+  final double keyboardContentHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +32,7 @@ class SingleFieldFixedBottomSheetBody extends StatelessWidget {
         FixedBottomButton.fixedBottomButtonDefaultHeight +
         FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
         bottomPadding +
-        120;
+        keyboardContentHeight;
 
     return SizedBox(
       height: keyboardInset > 0 ? minVisibleHeight : collapsedHeight,

@@ -297,7 +297,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
         final target = viewModel.targetSats;
         final isTargetReached = viewModel.isTargetReached;
         final isTargetExceeded = viewModel.isTargetExceeded;
-        if (target == null && !viewModel.shouldShowTargetSuggestion) {
+        if (target == null && (viewModel.isTargetDisabled || !viewModel.shouldShowTargetSuggestion)) {
           return const SizedBox.shrink();
         }
 
@@ -388,6 +388,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                 PositionedCardArrowButton(
                   onPressed: () => _openWalletInfo(showTargetSetting: true),
                   color: context.coconutColors.iconSecondary,
+                  iconSize: 12,
                 ),
               if (_playTargetFireworksOnEntry && isTargetReached)
                 Positioned(

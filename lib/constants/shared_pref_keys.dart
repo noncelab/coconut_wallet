@@ -62,6 +62,9 @@ class SharedPrefKeys {
   /// 목표 수량 미설정 안내 카드 숨김 만료일 (지갑별)
   static String walletTargetSuggestionHiddenUntil(int walletId) => 'WALLET_TARGET_SUGGESTION_HIDDEN_UNTIL_$walletId';
 
+  /// 목표 수량 사용 안 함 여부 (지갑별)
+  static String walletTargetDisabled(int walletId) => 'WALLET_TARGET_DISABLED_$walletId';
+
   /// 지갑별 마지막 재동기화 완료 시각 - Map<walletId, epochMillis> JSON
   static const String kWalletLastResyncMap = "WALLET_LAST_RESYNC_MAP";
 

@@ -201,6 +201,9 @@ class CoconutColors {
   /// 바텀시트 컨테이너의 기본 표면색
   final Color surfaceBottomSheet;
 
+  /// 바텀시트 기본 표면보다 한 단계 밝은 강조 영역의 표면색
+  final Color surfaceBottomSheetElevated;
+
   /// 바텀시트 상단 드래그 핸들 바
   final Color bottomSheetHandle;
   final Color bottomSheetKeyboardToolbar;
@@ -400,6 +403,7 @@ class CoconutColors {
     required this.segmentedControlSelectedText,
     required this.segmentedControlUnselectedText,
     required this.surfaceBottomSheet,
+    required this.surfaceBottomSheetElevated,
     required this.bottomSheetHandle,
     required this.bottomSheetKeyboardToolbar,
     required this.bottomSheetExtensionFieldBackground,
@@ -545,6 +549,7 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray500,
       surfaceBottomSheet: ds.CoconutColors.gray900,
+      surfaceBottomSheetElevated: ds.CoconutColors.gray850,
       bottomSheetHandle: ds.CoconutColors.gray600,
       bottomSheetKeyboardToolbar: const Color(0xFF2E2E2E),
       bottomSheetExtensionFieldBackground: ds.CoconutColors.black,
@@ -693,6 +698,7 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: ds.CoconutColors.gray400,
       surfaceBottomSheet: ds.CoconutColors.white,
+      surfaceBottomSheetElevated: ds.CoconutColors.gray150,
       bottomSheetHandle: ds.CoconutColors.gray600,
       bottomSheetKeyboardToolbar: ds.CoconutColors.gray150,
       bottomSheetExtensionFieldBackground: const Color(0xFFF1F2F5),
@@ -857,6 +863,7 @@ class CoconutColors {
       segmentedControlSelectedText: ds.CoconutColors.white,
       segmentedControlUnselectedText: huskSoft,
       surfaceBottomSheet: shell,
+      surfaceBottomSheetElevated: Color.lerp(shell, caramel, 0.15)!,
       bottomSheetHandle: caramel,
       bottomSheetKeyboardToolbar: dim,
       bottomSheetExtensionFieldBackground: shell,

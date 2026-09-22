@@ -22,7 +22,6 @@ import 'package:flutter/foundation.dart';
 class RenewalWalletDetailViewModel extends ChangeNotifier {
   static const int recentTransactionLimit = 3;
   static const _minimumRefreshIndicatorDuration = Duration(milliseconds: 700);
-  static const _targetSuggestionDismissDuration = Duration(days: 30);
 
   final int _walletId;
   final WalletProvider _walletProvider;
@@ -68,6 +67,7 @@ class RenewalWalletDetailViewModel extends ChangeNotifier {
   int get balance => _walletProvider.getWalletBalance(_walletId).total;
   int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
   int? get targetSats => _sharedPrefs.getWalletTargetSats(_walletId);
+  bool get isTargetDisabled => _sharedPrefs.isWalletTargetDisabled(_walletId);
   bool get shouldShowTargetSuggestion {
     if (targetSats != null) return false;
     final hiddenUntil = _sharedPrefs.getInt(SharedPrefKeys.walletTargetSuggestionHiddenUntil(_walletId));

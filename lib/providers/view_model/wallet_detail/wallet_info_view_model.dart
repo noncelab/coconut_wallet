@@ -226,9 +226,17 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   /// 지갑별 목표 수량 (sats). null이면 미설정
   int? get targetSats => _sharedPrefs.getWalletTargetSats(_walletId);
+  bool get isTargetDisabled => _sharedPrefs.isWalletTargetDisabled(_walletId);
 
   Future<void> setTargetSats(int targetSats) async {
     await _sharedPrefs.setWalletTargetSats(_walletId, targetSats);
+    await _sharedPrefs.setWalletTargetDisabled(_walletId, false);
+    notifyListeners();
+  }
+
+  Future<void> removeTargetSats() async {
+    await _sharedPrefs.removeWalletTargetSats(_walletId);
+    await _sharedPrefs.setWalletTargetDisabled(_walletId, true);
     notifyListeners();
   }
 

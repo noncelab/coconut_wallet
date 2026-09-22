@@ -162,6 +162,16 @@ class SharedPrefsRepository {
     await _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map));
   }
 
+  bool isWalletTargetDisabled(int walletId) => getBool(SharedPrefKeys.walletTargetDisabled(walletId));
+
+  Future<void> setWalletTargetDisabled(int walletId, bool disabled) async {
+    await setBool(SharedPrefKeys.walletTargetDisabled(walletId), disabled);
+  }
+
+  Future<void> removeWalletTargetDisabled(int walletId) async {
+    await deleteSharedPrefsWithKey(SharedPrefKeys.walletTargetDisabled(walletId));
+  }
+
   /// 지갑별 마지막 재동기화 완료 시각------------------------------------------------
   DateTime? getWalletLastResyncTimestamp(int walletId) {
     final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletLastResyncMap);
