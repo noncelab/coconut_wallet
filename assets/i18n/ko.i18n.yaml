@@ -695,6 +695,8 @@ wallet_list:
   wallet_count: "$count개"
   empty_watch_only: "보기 전용 지갑이 없어요"
   empty_hot_wallet: "핫월렛이 없어요"
+  favorite_watch_only_limit: "보기 전용 지갑은 즐겨찾기에 최대 5개까지 추가할 수 있어요"
+  favorite_hot_wallet_limit: "핫월렛은 즐겨찾기에 최대 5개까지 추가할 수 있어요"
   primary_wallet: "대표 지갑"
   exclude_from_total_amount: "홈 화면 총액에서 제외"
   home_balance: "홈 화면 총액"

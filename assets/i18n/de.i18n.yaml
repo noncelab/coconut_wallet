@@ -695,6 +695,8 @@ wallet_list:
   wallet_count: "$count Elemente"
   empty_watch_only: "Keine Watch-only-Wallets"
   empty_hot_wallet: "Keine Hot Wallets"
+  favorite_watch_only_limit: "Du kannst bis zu 5 Watch-only-Wallets zu den Favoriten hinzufügen"
+  favorite_hot_wallet_limit: "Du kannst bis zu 5 Hot Wallets zu den Favoriten hinzufügen"
   primary_wallet: "Primäre Wallet"
   exclude_from_total_amount: "Von der Gesamtsumme ausgeschlossen"
   home_balance: "Startseiten-Guthaben"

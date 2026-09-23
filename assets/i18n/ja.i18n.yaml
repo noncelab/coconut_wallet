@@ -566,6 +566,8 @@ wallet_list:
   wallet_count: "$count 項目"
   empty_watch_only: "閲覧専用ウォレットがありません"
   empty_hot_wallet: "ホットウォレットがありません"
+  favorite_watch_only_limit: "閲覧専用ウォレットはお気に入りに最大5件まで追加できます"
+  favorite_hot_wallet_limit: "ホットウォレットはお気に入りに最大5件まで追加できます"
   primary_wallet: "プライマリウォレット"
   exclude_from_total_amount: "ホーム合計から除外"
   home_balance: "ホーム残高"

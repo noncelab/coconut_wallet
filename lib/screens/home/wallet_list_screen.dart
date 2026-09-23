@@ -28,6 +28,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_item_setting_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
@@ -1123,9 +1124,16 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           isEditMode: isEditMode,
           isFavorite: isFavorite,
           isStarVisible: !isEditMode,
-          onTapStar: (pair) {
+          onTapStar: (pair) async {
             vibrateExtraLight();
-            _viewModel.toggleFavorite(pair.$2);
+            final result = await _viewModel.toggleFavorite(pair.$2);
+            if (!mounted || result == FavoriteToggleResult.updated) return;
+
+            _showFavoriteLimitToast(
+              result == FavoriteToggleResult.hotWalletLimitReached
+                  ? t.wallet_list.favorite_hot_wallet_limit
+                  : t.wallet_list.favorite_watch_only_limit,
+            );
           },
           index: index,
           onLongPressed: () {
@@ -1154,6 +1162,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           ),
         );
       },
+    );
+  }
+
+  void _showFavoriteLimitToast(String message) {
+    CoconutToast.showToast(
+      context: context,
+      text: TextUtils.preventLineBreakInsideWords(message),
+      isVisibleIcon: true,
+      seconds: 2,
     );
   }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/constants/wallet_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/price/historical_bitcoin_prices.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -23,6 +24,8 @@ import 'package:collection/collection.dart';
 typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
 typedef BalanceGetter = int Function(int id);
 typedef FakeBalanceGetter = int? Function(int id);
+
+enum FavoriteToggleResult { updated, watchOnlyLimitReached, hotWalletLimitReached }
 
 class WalletListViewModel extends ChangeNotifier {
   final ValueNotifier<bool> loadingNotifier = ValueNotifier(false);
@@ -378,18 +381,30 @@ class WalletListViewModel extends ChangeNotifier {
     return walletListChanged || balanceChanged;
   }
 
-  Future<void> toggleFavorite(int walletId) async {
+  Future<FavoriteToggleResult> toggleFavorite(int walletId) async {
     final updatedFavoriteWalletIds = List<int>.from(_favoriteWalletIds);
     if (updatedFavoriteWalletIds.contains(walletId)) {
       updatedFavoriteWalletIds.remove(walletId);
     } else {
-      if (updatedFavoriteWalletIds.length >= 5) return;
+      final wallet = walletItemList.firstWhereOrNull((wallet) => wallet.id == walletId);
+      if (wallet == null) return FavoriteToggleResult.updated;
+
+      final walletMap = {for (final wallet in walletItemList) wallet.id: wallet};
+      final favoriteWallets = updatedFavoriteWalletIds.map((id) => walletMap[id]).whereType<WalletItemBase>();
+      final sameTypeFavoriteCount =
+          favoriteWallets.where((favorite) => favorite.hasLocalKey == wallet.hasLocalKey).length;
+      if (sameTypeFavoriteCount >= kMaxFavoriteWalletCountPerType) {
+        return wallet.hasLocalKey
+            ? FavoriteToggleResult.hotWalletLimitReached
+            : FavoriteToggleResult.watchOnlyLimitReached;
+      }
       updatedFavoriteWalletIds.add(walletId);
     }
 
     _favoriteWalletIds = updatedFavoriteWalletIds;
     notifyListeners();
     await _preferenceProvider.setFavoriteWalletIds(updatedFavoriteWalletIds);
+    return FavoriteToggleResult.updated;
   }
 
   void clearTempDatas() {

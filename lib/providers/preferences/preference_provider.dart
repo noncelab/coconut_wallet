@@ -5,6 +5,7 @@ import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/constants/wallet_constants.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
@@ -627,7 +628,22 @@ class PreferenceProvider extends ChangeNotifier {
       await setWalletOrder(walletOrder);
     }
     if (!_hasInitializedFavoriteWalletIds) {
-      favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
+      var watchOnlyCount = 0;
+      var hotWalletCount = 0;
+      favoriteWalletIds =
+          walletItemList
+              .where((wallet) {
+                if (wallet.hasLocalKey) {
+                  if (hotWalletCount >= kMaxFavoriteWalletCountPerType) return false;
+                  hotWalletCount++;
+                  return true;
+                }
+                if (watchOnlyCount >= kMaxFavoriteWalletCountPerType) return false;
+                watchOnlyCount++;
+                return true;
+              })
+              .map((wallet) => wallet.id)
+              .toList();
       await setFavoriteWalletIds(favoriteWalletIds);
     }
 

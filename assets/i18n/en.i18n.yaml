@@ -567,6 +567,8 @@ wallet_list:
   wallet_count: "$count Items"
   empty_watch_only: "No watch-only wallets"
   empty_hot_wallet: "No hot wallets"
+  favorite_watch_only_limit: "You can add up to 5 watch-only wallets to favorites"
+  favorite_hot_wallet_limit: "You can add up to 5 hot wallets to favorites"
   primary_wallet: "Primary Wallet"
   exclude_from_total_amount: "Excluded from Home Total"
   home_balance: "Home Balance"

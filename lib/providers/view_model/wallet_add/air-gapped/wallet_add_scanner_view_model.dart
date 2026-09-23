@@ -16,7 +16,6 @@ import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/descriptor_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
-const kMaxStarLenght = 5;
 const String className = 'WalletAddScannerViewModel';
 
 class WalletAddScannerViewModel extends ChangeNotifier {

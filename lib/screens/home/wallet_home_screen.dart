@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/wallet_constants.dart';
 
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
@@ -1434,9 +1435,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   List<WalletItemBase> _filteredWallets(WalletFilter filter, List<WalletItemBase> wallets) {
     return switch (filter) {
-      WalletFilter.all => wallets,
-      WalletFilter.watchOnly => wallets.where((wallet) => !wallet.hasLocalKey).toList(),
-      WalletFilter.hot => wallets.where((wallet) => wallet.hasLocalKey).toList(),
+      WalletFilter.all => wallets.take(kMaxFavoriteWalletCountPerType).toList(),
+      WalletFilter.watchOnly =>
+        wallets.where((wallet) => !wallet.hasLocalKey).take(kMaxFavoriteWalletCountPerType).toList(),
+      WalletFilter.hot => wallets.where((wallet) => wallet.hasLocalKey).take(kMaxFavoriteWalletCountPerType).toList(),
     };
   }
 

@@ -268,7 +268,7 @@ class _RealmWalletPreferences {
   late int id;
   // UI에서 표시되는 지갑 순서를 저장
   late List<int> walletOrder;
-  // 즐겨찾기된 지갑 ID 목록 (최대 5개까지 사용).
+  // 즐겨찾기된 지갑 ID 목록 (보기 전용/핫월렛 각각 최대 5개까지 사용).
   late List<int> favoriteWalletIds;
   // 총 잔액에서 제외되는 지갑 ID 목록.
   late List<int> excludedFromTotalBalanceWalletIds;

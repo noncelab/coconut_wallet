@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/address.dart';
+import 'package:coconut_wallet/constants/wallet_constants.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
@@ -16,7 +17,6 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_add/air-gapped/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -368,11 +368,22 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addToFavoriteWalletsUntilFive(int walletId) async {
+  Future<void> addToFavoriteWalletsUntilTypeLimit(int walletId) async {
     final favoriteWallets = _preferenceProvider.favoriteWalletIds.toList();
+    if (favoriteWallets.contains(walletId)) return;
 
-    // 즐겨찾기된 지갑이 5개이상이면 등록안함
-    if (favoriteWallets.length < kMaxStarLenght && !favoriteWallets.contains(walletId)) {
+    final wallet = _walletItemList.firstWhereOrNull((wallet) => wallet.id == walletId);
+    if (wallet == null) return;
+
+    final walletMap = {for (final wallet in _walletItemList) wallet.id: wallet};
+    final sameTypeFavoriteCount =
+        favoriteWallets
+            .map((id) => walletMap[id])
+            .whereType<WalletItemBase>()
+            .where((favorite) => favorite.hasLocalKey == wallet.hasLocalKey)
+            .length;
+
+    if (sameTypeFavoriteCount < kMaxFavoriteWalletCountPerType) {
       favoriteWallets.add(walletId);
       await _preferenceProvider.setFavoriteWalletIds(favoriteWallets);
     }
@@ -1150,8 +1161,8 @@ class WalletProvider extends ChangeNotifier {
     await Future.wait([
       // 지갑 순서 목록에 추가
       addToWalletOrder(walletId),
-      // 5개 이하라면 즐겨찾기 목록에 추가
-      addToFavoriteWalletsUntilFive(walletId),
+      // 같은 종류의 즐겨찾기가 5개 미만이면 목록에 추가
+      addToFavoriteWalletsUntilTypeLimit(walletId),
     ]);
   }
 

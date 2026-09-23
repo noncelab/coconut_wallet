@@ -696,6 +696,8 @@ wallet_list:
   wallet_count: "$count Elementos"
   empty_watch_only: "No hay billeteras de solo lectura"
   empty_hot_wallet: "No hay billeteras calientes"
+  favorite_watch_only_limit: "Puedes añadir hasta 5 billeteras de solo lectura a favoritos"
+  favorite_hot_wallet_limit: "Puedes añadir hasta 5 billeteras calientes a favoritos"
   primary_wallet: "Cartera Principal"
   exclude_from_total_amount: "Excluido del Total"
   home_balance: "Saldo en la Pantalla Principal"
