@@ -211,6 +211,12 @@ class NodeProvider extends ChangeNotifier {
   bool get hasConnectionError => _hasConnectionError;
   int get currentBlockHeight => _currentBlockNotifier.value?.height ?? 0;
   bool get isInitializing => _isInitializing;
+  bool get isConnected =>
+      isInitialized &&
+      !_isInitializing &&
+      !_isClosing &&
+      !_hasConnectionError &&
+      state.nodeSyncState != NodeSyncState.failed;
 
   NodeProvider(
     this._electrumServer,
@@ -593,8 +599,6 @@ class NodeProvider extends ChangeNotifier {
       Logger.log('NodeProvider: Reconnect skipped - operation in progress');
       return Result.failure(ErrorCodes.nodeConnectionError);
     }
-
-    _setConnectionError(false); // 재연결 시작 시 에러 상태 리셋
 
     try {
       Logger.log('NodeProvider: Starting reconnect');
