@@ -41,7 +41,7 @@ import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
-import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_header.dart';
+import 'package:coconut_wallet/widgets/features/wallet/header/transaction_list_header.dart';
 import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_sticky_header.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
@@ -115,7 +115,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                 viewModel.isWalletSyncing,
                               ),
                           builder: (_, data, __) {
-                            return TransactionDetailHeader(
+                            return TransactionListHeader(
                               key: _headerWidgetKey,
                               animatedBalanceData: data.item1,
                               currentUnit: _currentUnit,

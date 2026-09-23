@@ -51,6 +51,7 @@ import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dar
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
+import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
@@ -67,12 +68,14 @@ class TransactionDetailScreen extends StatefulWidget {
 }
 
 class _TransactionDetailScreenState extends State<TransactionDetailScreen> with TickerProviderStateMixin {
+  static const _minimumRefreshIndicatorDuration = Duration(milliseconds: 700);
   Timer? _timer; // timeGap을 최신화 하기 위한 타이머
   late TransactionDetailViewModel _viewModel;
   late AnimationController _animationController;
   late Animation<Offset> _slideInAnimation;
   late Animation<Offset> _slideOutAnimation;
   bool isAnimating = false; // 애니메이션 실행 중 여부 확인
+  bool _isPullToRefreshing = false;
   late BitcoinUnit _currentUnit;
 
   void _toggleUnit() {
@@ -119,13 +122,20 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
           return Scaffold(
             backgroundColor: context.coconutColors.background,
-            appBar: CoconutAppBar.build(title: t.view_tx_details, context: context),
+            appBar: CoconutAppBar.build(
+              title: t.view_tx_details,
+              context: context,
+              backgroundColor: context.coconutColors.background,
+              actionButtonList: [WalletRefreshIndicator(isRefreshing: _isPullToRefreshing)],
+            ),
             body: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 CupertinoSliverRefreshControl(
-                  onRefresh: () async => viewModel.onRefresh(),
+                  onRefresh: () => _onRefresh(viewModel),
                   refreshTriggerPullDistance: 80,
+                  refreshIndicatorExtent: 0,
+                  builder: (_, _, _, _, _) => const SizedBox.shrink(),
                 ),
                 SliverToBoxAdapter(
                   child: Container(
@@ -164,6 +174,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         },
       ),
     );
+  }
+
+  Future<void> _onRefresh(TransactionDetailViewModel viewModel) async {
+    if (_isPullToRefreshing) return;
+
+    setState(() => _isPullToRefreshing = true);
+    final stopwatch = Stopwatch()..start();
+    try {
+      await viewModel.onRefresh();
+    } finally {
+      final remaining = _minimumRefreshIndicatorDuration - stopwatch.elapsed;
+      if (remaining > Duration.zero) {
+        await Future<void>.delayed(remaining);
+      }
+      if (mounted) setState(() => _isPullToRefreshing = false);
+    }
   }
 
   @override

@@ -6,6 +6,7 @@ import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:flutter/cupertino.dart';
 
+/// TODO: RenewalWalletDetailScreen에서 TransactionListHeader를 사용하도록 변경 후 삭제 예정
 class TransactionDetailStickyHeader extends StatefulWidget {
   final Key widgetKey;
   final double height;
