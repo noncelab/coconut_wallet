@@ -313,9 +313,11 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
           child: Stack(
             children: [
               Padding(
-                padding: HomeAlertCard.contentPadding.copyWith(
-                  right:
-                      target == null ? PositionedCardArrowButton.contentRightInset : HomeAlertCard.contentPadding.left,
+                padding: EdgeInsets.fromLTRB(
+                  22,
+                  HomeAlertCard.contentPadding.top,
+                  target == null ? PositionedCardArrowButton.contentRightInset : 22,
+                  HomeAlertCard.contentPadding.bottom,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,7 +475,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                   padding: EdgeInsets.only(bottom: entry.$1 == viewModel.recentTransactions.length - 1 ? 0 : 8),
                   child: TransactionItemCard(
                     tx: entry.$2,
-                    padding: HomeAlertCard.contentPadding.copyWith(right: HomeAlertCard.contentPadding.left),
+                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                     borderRadius: CoconutStyles.radius_200,
                     currentUnit: viewModel.currentUnit,
                     id: widget.id,
@@ -1057,7 +1059,7 @@ class _UtxoAction extends StatelessWidget {
         pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
         borderRadius: 12,
         child: Padding(
-          padding: const EdgeInsets.only(top: 20, bottom: 22),
+          padding: const EdgeInsets.only(top: 20, bottom: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [

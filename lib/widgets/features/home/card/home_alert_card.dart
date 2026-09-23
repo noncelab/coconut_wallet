@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 enum HomeAlertCardType { mnemonicBackup, appLock, openStore }
 
 class HomeAlertCard extends StatefulWidget {
-  static const contentPadding = EdgeInsets.fromLTRB(16, 14, 8, 14);
+  static const contentPadding = EdgeInsets.fromLTRB(22, 14, 8, 14);
 
   const HomeAlertCard.security({
     super.key,

@@ -8,7 +8,7 @@ class PositionedCardCloseButton extends StatelessWidget {
   static const double right = 6;
   static const double defaultIconSize = 24;
   static const padding = EdgeInsets.all(8);
-  static const double contentRightInset = right + defaultIconSize + 16;
+  static const double contentRightInset = right + defaultIconSize + 8;
 
   const PositionedCardCloseButton({
     super.key,

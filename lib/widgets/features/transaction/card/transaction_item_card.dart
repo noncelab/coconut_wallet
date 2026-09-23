@@ -29,8 +29,8 @@ class TransactionItemCard extends StatelessWidget {
     required this.currentUnit,
     required this.id,
     required this.onPressed,
-    this.padding = const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
-    this.borderRadius = 24,
+    this.padding = const EdgeInsets.symmetric(horizontal: Sizes.size20, vertical: Sizes.size16),
+    this.borderRadius = 12,
   }) {
     status = TransactionUtil.getStatus(tx);
   }

@@ -524,6 +524,7 @@ class _TransactionListState extends State<TransactionList> {
             child: TransactionItemCard(
               key: Key(tx.transactionHash),
               tx: tx,
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
               currentUnit: widget._currentUnit,
               id: widget.walldtId,
               onPressed: () {
@@ -553,6 +554,7 @@ class _TransactionListState extends State<TransactionList> {
           child: TransactionItemCard(
             key: Key(tx.transactionHash),
             tx: tx,
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
             currentUnit: widget._currentUnit,
             id: widget.walldtId,
             onPressed: () {
