@@ -32,6 +32,9 @@ const kAnalysisPeriodFallbackDays = 30;
 /// 에러 표시 지연 상수
 const kErrorDisplayDelayDuration = Duration(seconds: 5);
 
+/// 연결 복구 안내를 홈 상단에 보여 주는 시간
+const kElectrumReconnectedNoticeDuration = Duration(seconds: 2);
+
 class WalletHomeViewModel extends ChangeNotifier {
   WalletProvider _walletProvider;
   late final PreferenceProvider _preferenceProvider;
@@ -46,6 +49,12 @@ class WalletHomeViewModel extends ChangeNotifier {
   DateTime? _failedFromSyncingOrInitAt;
   Timer? _errorDisplayDelayTimer;
   final DateTime _viewModelCreatedAt = DateTime.now();
+  bool _sawDisconnect = false;
+  bool _showReconnected = false;
+  bool _recoveryInterrupted = false;
+  Timer? _reconnectedTimer;
+
+  bool get showElectrumReconnected => _showReconnected;
 
   void _onCurrentBlockChanged() {
     // 블록이 바뀌면 tx 상태가 바뀌었을 수 있으므로 최근 tx·분석 갱신
@@ -155,6 +164,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     // NodeProvider의 변경사항 listening 추가
     _nodeProvider.addListener(_onNodeProviderChanged);
+    _connectivityProvider.addListener(_onConnectivityChanged);
 
     _isBalanceHidden = _preferenceProvider.isBalanceHidden;
     _isFiatBalanceHidden = _preferenceProvider.isFiatBalanceHidden;
@@ -180,9 +190,16 @@ class WalletHomeViewModel extends ChangeNotifier {
       _errorDisplayDelayTimer?.cancel();
       _errorDisplayDelayTimer = Timer(kErrorDisplayDelayDuration, () {
         _clearErrorDisplayDelay();
+        _refreshElectrumRecoveryNotice();
         notifyListeners();
       });
     }
+    _refreshElectrumRecoveryNotice();
+    notifyListeners();
+  }
+
+  void _onConnectivityChanged() {
+    _refreshElectrumRecoveryNotice();
     notifyListeners();
   }
 
@@ -266,16 +283,17 @@ class WalletHomeViewModel extends ChangeNotifier {
       return NetworkStatus.offline;
     }
 
-    if (_nodeSyncState == NodeSyncState.completed ||
-        _nodeSyncState == NodeSyncState.init ||
-        _nodeSyncState == NodeSyncState.syncing ||
-        _nodeProvider.isInitializing) {
+    if (!_recoveryInterrupted &&
+        (_nodeSyncState == NodeSyncState.completed ||
+            _nodeSyncState == NodeSyncState.init ||
+            _nodeSyncState == NodeSyncState.syncing ||
+            _nodeProvider.isInitializing)) {
       return NetworkStatus.online;
     }
 
     if (_nodeSyncState == NodeSyncState.failed || _nodeProvider.hasConnectionError) {
       // 에러 표시 지연 중인 경우 온라인 상태로 간주
-      if (_isInErrorDisplayDelay) {
+      if (!_recoveryInterrupted && _isInErrorDisplayDelay) {
         return NetworkStatus.online;
       }
       if (_connectivityProvider.isVpnActive) {
@@ -316,6 +334,7 @@ class WalletHomeViewModel extends ChangeNotifier {
           _errorDisplayDelayTimer?.cancel();
           _errorDisplayDelayTimer = Timer(kErrorDisplayDelayDuration, () {
             _clearErrorDisplayDelay();
+            _refreshElectrumRecoveryNotice();
             notifyListeners();
           });
         } else {
@@ -326,6 +345,7 @@ class WalletHomeViewModel extends ChangeNotifier {
       }
       _nodeSyncState = syncState;
       // Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
+      _refreshElectrumRecoveryNotice();
       notifyListeners();
     } else if (_nodeSyncState == NodeSyncState.completed && syncState == NodeSyncState.completed) {
       // 동기화가 완료된 상태에서 다시 완료 상태로 변경되면 트랜잭션 갱신
@@ -681,10 +701,46 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
   }
 
+  void _refreshElectrumRecoveryNotice() {
+    if (_showReconnected &&
+        (_nodeSyncState == NodeSyncState.failed ||
+            _nodeProvider.state.nodeSyncState == NodeSyncState.failed ||
+            _nodeProvider.hasConnectionError)) {
+      _recoveryInterrupted = true;
+    }
+    final disconnected = networkStatus != NetworkStatus.online;
+    final connected =
+        _nodeProvider.isConnected &&
+        (_nodeSyncState == NodeSyncState.syncing || _nodeSyncState == NodeSyncState.completed);
+
+    if (disconnected || (_showReconnected && !connected)) {
+      _sawDisconnect = true;
+      if (_showReconnected) {
+        _showReconnected = false;
+        _reconnectedTimer?.cancel();
+        _reconnectedTimer = null;
+      }
+      return;
+    }
+    if (!_sawDisconnect || !connected || _showReconnected) return;
+
+    _sawDisconnect = false;
+    _recoveryInterrupted = false;
+    _showReconnected = true;
+    _reconnectedTimer?.cancel();
+    _reconnectedTimer = Timer(kElectrumReconnectedNoticeDuration, () {
+      _reconnectedTimer = null;
+      _showReconnected = false;
+      notifyListeners();
+    });
+  }
+
   @override
   void dispose() {
     _errorDisplayDelayTimer?.cancel();
+    _reconnectedTimer?.cancel();
     _syncNodeStateSubscription?.cancel();
+    _connectivityProvider.removeListener(_onConnectivityChanged);
     _nodeProvider.removeListener(_onNodeProviderChanged);
     _nodeProvider.currentBlockNotifier.removeListener(_onCurrentBlockChanged);
     super.dispose();
