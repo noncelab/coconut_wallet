@@ -513,6 +513,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                       iconPath: CommonMenuIconPath.grid,
                       label: t.wallet_detail_screen.utxo_overview,
                       description: t.wallet_detail_screen.utxo_overview_description,
+                      iconPadding: const EdgeInsets.all(2),
                       isEnabled: hasUtxo,
                       onTap:
                           () => Navigator.pushNamed(
@@ -527,6 +528,7 @@ class _RenewalWalletDetailScreenState extends State<RenewalWalletDetailScreen> w
                       iconPath: FeatureUtxoIconPath.splitUtxo,
                       label: t.wallet_detail_screen.utxo_organize,
                       description: t.wallet_detail_screen.utxo_organize_description,
+                      iconPadding: EdgeInsets.zero,
                       isEnabled: hasUtxo,
                       onTap:
                           () => Navigator.pushNamed(
@@ -1037,6 +1039,7 @@ class _UtxoAction extends StatelessWidget {
   final String description;
   final VoidCallback onTap;
   final bool isEnabled;
+  final EdgeInsetsGeometry iconPadding;
 
   const _UtxoAction({
     required this.iconPath,
@@ -1044,6 +1047,7 @@ class _UtxoAction extends StatelessWidget {
     required this.description,
     required this.onTap,
     this.isEnabled = true,
+    this.iconPadding = EdgeInsets.zero,
   });
 
   @override
@@ -1063,13 +1067,17 @@ class _UtxoAction extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SvgPicture.asset(
-                iconPath,
-                width: 24,
-                height: 24,
-                colorFilter: ColorFilter.mode(
-                  isEnabled ? context.coconutColors.iconPrimary : disabledColor,
-                  BlendMode.srcIn,
+              SizedBox.square(
+                dimension: 24,
+                child: Padding(
+                  padding: iconPadding,
+                  child: SvgPicture.asset(
+                    iconPath,
+                    colorFilter: ColorFilter.mode(
+                      isEnabled ? context.coconutColors.iconPrimary : disabledColor,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                 ),
               ),
               CoconutLayout.spacing_100h,
