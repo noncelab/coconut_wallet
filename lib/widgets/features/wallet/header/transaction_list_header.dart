@@ -43,7 +43,7 @@ class _TransactionListHeaderState extends State<TransactionListHeader> {
     return ColoredBox(
       color: context.coconutColors.background,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: 16 + 40 * progress),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,

@@ -13,7 +13,6 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
-import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -36,6 +35,7 @@ import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
@@ -52,6 +52,7 @@ class TransactionListScreen extends StatefulWidget {
 class _TransactionListScreenState extends State<TransactionListScreen> {
   static const _minimumRefreshIndicatorDuration = Duration(milliseconds: 700);
   bool _isPullToRefreshing = false;
+  bool _isSnappingHeader = false;
   late BitcoinUnit _currentUnit;
   late WalletDetailViewModel _viewModel;
 
@@ -67,76 +68,64 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             children: [
               Scaffold(
                 backgroundColor: context.coconutColors.background,
-                appBar: _buildAppBar(context),
-                body: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  controller: _scrollController,
-                  slivers: [
-                    Selector<WalletDetailViewModel, bool>(
-                      selector: (_, viewModel) => viewModel.isWalletSyncing,
-                      builder:
-                          (_, isWalletSyncing, _) =>
-                              isWalletSyncing
-                                  ? const SliverToBoxAdapter(child: SizedBox.shrink())
-                                  : CupertinoSliverRefreshControl(
-                                    onRefresh: _onRefresh,
-                                    refreshTriggerPullDistance: 80,
-                                    refreshIndicatorExtent: 0,
-                                    builder: (_, _, _, _, _) => const SizedBox.shrink(),
-                                  ),
-                    ),
-                    Selector<WalletDetailViewModel, Tuple5<AnimatedBalanceData, String, int, int, bool>>(
-                      selector:
-                          (_, viewModel) => Tuple5(
-                            AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
-                            viewModel.fiatPriceString,
-                            viewModel.sendingAmount,
-                            viewModel.receivingAmount,
-                            viewModel.isWalletSyncing,
-                          ),
-                      builder: (_, data, __) {
-                        return SliverPersistentHeader(
-                          pinned: true,
-                          delegate: _TransactionListHeaderDelegate(
-                            animatedBalanceData: data.item1,
-                            currentUnit: _currentUnit,
-                            fiatPrice: data.item2,
-                            sendingAmount: data.item3,
-                            receivingAmount: data.item4,
-                            isRefreshing: _isPullToRefreshing || data.item5,
-                            onPressedUnitToggle: _toggleUnit,
-                          ),
-                        );
-                      },
-                    ),
-                    _buildTxListLabel(),
-                    TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
+                body: NotificationListener<ScrollEndNotification>(
+                  onNotification: _handleScrollEnd,
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    controller: _scrollController,
+                    slivers: [
+                      Selector<WalletDetailViewModel, Tuple5<AnimatedBalanceData, String, int, int, bool>>(
+                        selector:
+                            (_, viewModel) => Tuple5(
+                              AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
+                              viewModel.fiatPriceString,
+                              viewModel.sendingAmount,
+                              viewModel.receivingAmount,
+                              viewModel.isWalletSyncing,
+                            ),
+                        builder: (_, data, __) {
+                          return SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _TransactionListHeaderDelegate(
+                              topPadding: MediaQuery.paddingOf(context).top,
+                              animatedBalanceData: data.item1,
+                              currentUnit: _currentUnit,
+                              fiatPrice: data.item2,
+                              sendingAmount: data.item3,
+                              receivingAmount: data.item4,
+                              isRefreshing: _isPullToRefreshing || data.item5,
+                              onPressedUnitToggle: _toggleUnit,
+                              onBackPressed: () => Navigator.pop(context),
+                              refreshButton: WalletRefreshIndicator(isRefreshing: _isPullToRefreshing),
+                            ),
+                          );
+                        },
+                      ),
+                      Selector<WalletDetailViewModel, bool>(
+                        selector: (_, viewModel) => viewModel.isWalletSyncing,
+                        builder:
+                            (_, isWalletSyncing, _) =>
+                                isWalletSyncing
+                                    ? const SliverToBoxAdapter(child: SizedBox.shrink())
+                                    : CupertinoSliverRefreshControl(
+                                      onRefresh: _onRefresh,
+                                      refreshTriggerPullDistance: 80,
+                                      refreshIndicatorExtent: 0,
+                                      builder: (_, _, _, _, _) => const SizedBox.shrink(),
+                                    ),
+                      ),
+                      _buildTxListLabel(),
+                      TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
 
-                    SliverToBoxAdapter(child: SizedBox(height: 35 + MediaQuery.of(context).padding.bottom)),
-                  ],
+                      SliverToBoxAdapter(child: SizedBox(height: 35 + MediaQuery.of(context).padding.bottom)),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return CoconutAppBar.build(
-      // FIXME: CDN 백버튼 및 닫기 버튼 지정할 수 있어야 함.
-      // 예: iconColor: context.coconutColors.iconPrimary,
-      entireWidgetKey: _appBarKey,
-      backgroundColor: context.coconutColors.background,
-      title: '',
-      context: context,
-      actionButtonList: [
-        ListenableBuilder(
-          listenable: _viewModel,
-          builder: (_, _) => WalletRefreshIndicator(isRefreshing: _isPullToRefreshing),
-        ),
-      ],
     );
   }
 
@@ -232,9 +221,40 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   final ScrollController _scrollController = ScrollController();
   OverlayEntry? _statusBarTapOverlayEntry;
 
-  final GlobalKey _appBarKey = GlobalKey();
-
   final GlobalKey _txListLabelWidgetKey = GlobalKey();
+
+  double get _headerCollapseExtent {
+    final pendingCount = (_viewModel.sendingAmount != 0 ? 1 : 0) + (_viewModel.receivingAmount != 0 ? 1 : 0);
+    return _TransactionListHeaderDelegate.expandedBodyExtent(pendingCount);
+  }
+
+  bool _handleScrollEnd(ScrollEndNotification notification) {
+    if (!_scrollController.hasClients || _isSnappingHeader || notification.depth != 0) return false;
+
+    final collapseExtent = _headerCollapseExtent;
+    final offset = _scrollController.offset;
+    if (offset <= 0 || offset >= collapseExtent) return false;
+
+    final target = offset < collapseExtent * 0.7 ? 0.0 : collapseExtent;
+    _isSnappingHeader = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || !_scrollController.hasClients) {
+        _isSnappingHeader = false;
+        return;
+      }
+      HapticFeedback.selectionClick();
+      try {
+        await _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+        );
+      } finally {
+        _isSnappingHeader = false;
+      }
+    });
+    return false;
+  }
 
   @override
   void initState() {
@@ -337,6 +357,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
 class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
   const _TransactionListHeaderDelegate({
+    required this.topPadding,
     required this.animatedBalanceData,
     required this.currentUnit,
     required this.fiatPrice,
@@ -344,8 +365,11 @@ class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.receivingAmount,
     required this.isRefreshing,
     required this.onPressedUnitToggle,
+    required this.onBackPressed,
+    required this.refreshButton,
   });
 
+  final double topPadding;
   final AnimatedBalanceData animatedBalanceData;
   final BitcoinUnit currentUnit;
   final String fiatPrice;
@@ -353,18 +377,24 @@ class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
   final int receivingAmount;
   final bool isRefreshing;
   final VoidCallback onPressedUnitToggle;
+  final VoidCallback onBackPressed;
+  final Widget refreshButton;
+
+  static const double _toolbarHeight = 56;
+
+  static double expandedBodyExtent(int pendingCount) => switch (pendingCount) {
+    0 => 88,
+    1 => 108,
+    _ => 132,
+  };
 
   @override
-  double get minExtent => 60;
+  double get minExtent => topPadding + _toolbarHeight;
 
   @override
   double get maxExtent {
     final pendingCount = (sendingAmount != 0 ? 1 : 0) + (receivingAmount != 0 ? 1 : 0);
-    return switch (pendingCount) {
-      0 => 88,
-      1 => 108,
-      _ => 132,
-    };
+    return minExtent + expandedBodyExtent(pendingCount);
   }
 
   @override
@@ -372,45 +402,59 @@ class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
     final collapseRange = maxExtent - minExtent;
     final progress = collapseRange == 0 ? 1.0 : (shrinkOffset / collapseRange).clamp(0.0, 1.0);
     final easedProgress = Curves.easeInOutCubic.transform(progress);
-    return Stack(
-      clipBehavior: Clip.none,
-      fit: StackFit.expand,
-      children: [
-        Positioned(top: -1, left: 0, right: 0, bottom: 0, child: ColoredBox(color: context.coconutColors.background)),
-        Padding(
-          padding: EdgeInsets.only(bottom: 8 * easedProgress),
-          child: TransactionListHeader(
-            animatedBalanceData: animatedBalanceData,
-            currentUnit: currentUnit,
-            fiatPrice: fiatPrice,
-            sendingAmount: sendingAmount,
-            receivingAmount: receivingAmount,
-            isRefreshing: isRefreshing,
-            onPressedUnitToggle: onPressedUnitToggle,
-            collapseProgress: easedProgress,
+    final bodyExtent = collapseRange;
+    final balanceTop = topPadding + _toolbarHeight * (1 - easedProgress);
+    final balanceHeight = bodyExtent + (_toolbarHeight - bodyExtent) * easedProgress;
+    return Material(
+      color: context.coconutColors.background,
+      child: Stack(
+        clipBehavior: Clip.none,
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            top: balanceTop,
+            left: 0,
+            right: 0,
+            height: balanceHeight,
+            child: TransactionListHeader(
+              animatedBalanceData: animatedBalanceData,
+              currentUnit: currentUnit,
+              fiatPrice: fiatPrice,
+              sendingAmount: sendingAmount,
+              receivingAmount: receivingAmount,
+              isRefreshing: isRefreshing,
+              onPressedUnitToggle: onPressedUnitToggle,
+              collapseProgress: easedProgress,
+            ),
           ),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: -16,
-          height: 16,
-          child: IgnorePointer(
-            child: Opacity(
-              opacity: easedProgress,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [context.coconutColors.background, context.coconutColors.background.withValues(alpha: 0)],
+          Positioned(
+            left: 4,
+            top: topPadding + 4,
+            child: BackButton(onPressed: onBackPressed, color: context.coconutColors.primaryText),
+          ),
+          Positioned(right: 4, top: topPadding + 4, child: refreshButton),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: -16,
+            height: 16,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: easedProgress,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [context.coconutColors.background, context.coconutColors.background.withValues(alpha: 0)],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -421,7 +465,9 @@ class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
       fiatPrice != oldDelegate.fiatPrice ||
       sendingAmount != oldDelegate.sendingAmount ||
       receivingAmount != oldDelegate.receivingAmount ||
-      isRefreshing != oldDelegate.isRefreshing;
+      isRefreshing != oldDelegate.isRefreshing ||
+      topPadding != oldDelegate.topPadding ||
+      refreshButton != oldDelegate.refreshButton;
 }
 
 class TransactionList extends StatefulWidget {
