@@ -460,23 +460,21 @@ class UtxoRepository extends BaseRepository {
   }
 
   /// 앱 업데이트 마이그레이션에서 보관한 잠금 설정을 최신 UTXO 동기화 결과에 적용한다.
-  /// 실제로 다시 발견된 unspent UTXO만 잠그고, 처리 후 복원 대기 데이터는 삭제한다.
+  /// 잠금 복원이 확인된 항목만 제거하고, 미조회·미확정 항목은 다음 동기화를 위해 유지한다.
   Future<void> restorePendingUtxoLocks(int walletId) async {
-    final pendingLocks = realm.query<RealmPendingUtxoLock>(r'walletId == $0', [walletId]).toList();
-    if (pendingLocks.isEmpty) return;
-
-    final realmUtxoIds = pendingLocks.map((lock) => lock.id).toList();
-    final toRelock = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND status == $2 AND isDeleted == false', [
-      walletId,
-      realmUtxoIds,
-      utxoStatusToString(UtxoStatus.unspent),
-    ]);
-
     await realm.writeAsync(() {
-      for (final utxo in toRelock) {
-        utxo.status = utxoStatusToString(UtxoStatus.locked);
+      final pendingLocks = realm.query<RealmPendingUtxoLock>(r'walletId == $0', [walletId]).toList();
+      for (final pendingLock in pendingLocks) {
+        final utxo = realm.find<RealmUtxo>(pendingLock.id);
+        if (utxo == null || utxo.walletId != walletId || utxo.isDeleted) continue;
+
+        if (utxo.status == utxoStatusToString(UtxoStatus.unspent)) {
+          utxo.status = utxoStatusToString(UtxoStatus.locked);
+        }
+        if (utxo.status == utxoStatusToString(UtxoStatus.locked)) {
+          realm.delete(pendingLock);
+        }
       }
-      realm.deleteMany(pendingLocks);
     });
   }
 

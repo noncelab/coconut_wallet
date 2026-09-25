@@ -44,6 +44,7 @@ class UtxoSyncService {
     await _utxoRepository.addAllUtxos(walletItem.id, utxos);
 
     if (!inBatchProcess) {
+      await restorePendingUtxoLocks(walletItem.id);
       // UTXO 업데이트 완료 state 업데이트
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
     }

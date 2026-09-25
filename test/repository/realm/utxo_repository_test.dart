@@ -290,7 +290,7 @@ void main() {
         expect(utxo!.status, UtxoStatus.unspent);
       });
 
-      test('마이그레이션 잠금 설정은 다시 발견된 unspent UTXO에만 복원하고 처리 후 삭제함', () async {
+      test('일부 UTXO 조회 실패 후 재동기화해도 마이그레이션 잠금을 복원함', () async {
         final reappearedUtxoId = getUtxoId(reappearedUnspentTxHash, 0);
         final missingUtxoId = getUtxoId(notReappearedTxHash, 0);
         realmManager.realm.write(() {
@@ -310,6 +310,23 @@ void main() {
         await utxoRepository.restorePendingUtxoLocks(testWalletId);
 
         expect(utxoRepository.getUtxoState(testWalletId, reappearedUtxoId)!.status, UtxoStatus.locked);
+        expect(realmManager.realm.all<RealmPendingUtxoLock>().map((lock) => lock.utxoId), [missingUtxoId]);
+
+        // 재시도에서도 아직 조회되지 않으면 복원 대기 정보를 유지한다.
+        await utxoRepository.restorePendingUtxoLocks(testWalletId);
+        expect(realmManager.realm.all<RealmPendingUtxoLock>(), hasLength(1));
+
+        realmManager.realm.write(() {
+          realmManager.realm.add(
+            UtxoMock.createUnspentRealmUtxo(
+              walletId: testWalletId,
+              address: testAddress,
+              transactionHash: notReappearedTxHash,
+            ),
+          );
+        });
+        await utxoRepository.restorePendingUtxoLocks(testWalletId);
+        expect(utxoRepository.getUtxoState(testWalletId, missingUtxoId)!.status, UtxoStatus.locked);
         expect(realmManager.realm.query<RealmPendingUtxoLock>(r'walletId == $0', [testWalletId]), isEmpty);
       });
 
@@ -329,7 +346,7 @@ void main() {
         await utxoRepository.restorePendingUtxoLocks(testWalletId);
 
         expect(utxoRepository.getUtxoState(testWalletId, outgoingUtxoId)!.status, UtxoStatus.outgoing);
-        expect(realmManager.realm.query<RealmPendingUtxoLock>(r'walletId == $0', [testWalletId]), isEmpty);
+        expect(realmManager.realm.all<RealmPendingUtxoLock>(), hasLength(1));
       });
     });
   });
