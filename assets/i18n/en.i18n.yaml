@@ -629,6 +629,7 @@ broadcasting_screen:
     already_saved_draft: "This transaction has already been saved."
   dialog:
     send_unavailable: "Unable to Send"
+    tag_apply_failed: "The transaction was sent, but tags could not be applied. Check the tags in your UTXO list."
 send_address_screen:
   text1: "Scan QR or\npaste the copied address"
   text2: "Please scan the address QR code"
@@ -1460,6 +1461,7 @@ alert:
     title: "Apply Tag"
     description: "Do you want to apply the tag from existing UTXO to new UTXO?"
     btn_apply: "Apply"
+    btn_without_tags: "Skip"
   tx_detail:
     fetch_failed: "Transaction Fetch Failed"
     fetch_failed_description: "Please try again later"

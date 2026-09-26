@@ -628,6 +628,7 @@ broadcasting_screen:
     already_saved_draft: "Diese Transaktion wurde bereits gespeichert."
   dialog:
     send_unavailable: "Senden nicht möglich"
+    tag_apply_failed: "Die Transaktion wurde gesendet, aber die Tags konnten nicht angewendet werden. Prüfe die Tags in deiner UTXO-Liste."
 send_address_screen:
   text1: "QR scannen oder\nkopierte Adresse einfügen"
   text2: "Bitte scannen Sie den Adress-QR-Code"
@@ -1399,6 +1400,7 @@ alert:
     title: "Tag anwenden"
     description: "Möchten Sie das Tag von einem vorhandenen UTXO auf ein neues UTXO anwenden?"
     btn_apply: "Anwenden"
+    btn_without_tags: "Überspringen"
   tx_detail:
     fetch_failed: "Transaktionsabruf fehlgeschlagen"
     fetch_failed_description: "Bitte versuchen Sie es später erneut"

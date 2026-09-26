@@ -44,23 +44,43 @@ class UtxoRepository extends BaseRepository {
     return _queryUtxoTags(walletId).toList();
   }
 
-  /// 사용된 UTXO의 태그 업데이트
-  Future<Result<void>> updateTagsOfSpentUtxos(int walletId, List<String> usedUtxoIds, List<String> newUtxoIds) async {
+  /// 동기화가 사용된 UTXO를 정리해도 전송 전에 선택한 태그를 원자적으로 승계한다.
+  Future<Result<void>> applyInheritedTags(
+    int walletId, {
+    required List<String> sourceUtxoIds,
+    required List<String> targetUtxoIds,
+    required List<String> tagIds,
+  }) async {
     return handleAsyncRealm(() async {
-      final tags = realm.query<RealmUtxoTag>("walletId == '$walletId'");
+      final selectedTagIds = tagIds.toSet();
+      final sourceIds = sourceUtxoIds.toSet();
+      final targetIds = targetUtxoIds.toSet();
 
       await realm.writeAsync(() {
-        for (int i = 0; i < tags.length; i++) {
-          if (tags[i].utxoIdList.isEmpty) continue;
+        if (selectedTagIds.length > _maxTagsPerUtxo) {
+          throw ErrorCodes.withMessage(ErrorCodes.realmException, 'Too many inherited UTXO tags');
+        }
 
-          int previousCount = tags[i].utxoIdList.length;
+        final tags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]).toList();
+        if (!tags.map((tag) => tag.id).toSet().containsAll(selectedTagIds)) {
+          throw ErrorCodes.realmNotFound;
+        }
 
-          tags[i].utxoIdList.removeWhere((utxoId) => usedUtxoIds.any((targetUtxoId) => targetUtxoId == utxoId));
+        for (final targetId in targetIds) {
+          final prospectiveTagCount =
+              tags.where((tag) => selectedTagIds.contains(tag.id) || tag.utxoIdList.contains(targetId)).length;
+          if (prospectiveTagCount > _maxTagsPerUtxo) {
+            throw ErrorCodes.withMessage(ErrorCodes.realmException, 'Too many tags on an inherited UTXO');
+          }
+        }
 
-          if (newUtxoIds.isNotEmpty) {
-            bool needToMove = previousCount > tags[i].utxoIdList.length;
-            if (needToMove) {
-              tags[i].utxoIdList.addAll(newUtxoIds);
+        for (final tag in tags) {
+          tag.utxoIdList.removeWhere(sourceIds.contains);
+          if (selectedTagIds.contains(tag.id)) {
+            for (final targetId in targetIds) {
+              if (!tag.utxoIdList.contains(targetId)) {
+                tag.utxoIdList.add(targetId);
+              }
             }
           }
         }

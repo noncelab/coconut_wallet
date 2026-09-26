@@ -628,6 +628,7 @@ broadcasting_screen:
     already_saved_draft: "Esta transacción ya ha sido guardada."
   dialog:
     send_unavailable: "No se puede enviar"
+    tag_apply_failed: "La transacción se envió, pero no se pudieron aplicar las etiquetas. Revisa las etiquetas en tu lista de UTXO."
 send_address_screen:
   text1: "Escanea QR o\npega la dirección copiada"
   text2: "Escanea el código QR de la dirección"
@@ -1451,6 +1452,7 @@ alert:
     title: "Aplicar etiqueta"
     description: "¿Quieres aplicar la etiqueta de UTXO existente a la nueva UTXO?"
     btn_apply: "Aplicar"
+    btn_without_tags: "Omitir"
   tx_detail:
     fetch_failed: "Fallo al obtener la transacción"
     fetch_failed_description: "Por favor, intenta nuevamente más tarde"

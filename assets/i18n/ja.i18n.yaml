@@ -625,6 +625,7 @@ broadcasting_screen:
     already_saved_draft: "すでに追加されたトランザクションです。"
   dialog:
     send_unavailable: "送信不可"
+    tag_apply_failed: "送信は完了しましたが、タグを適用できませんでした。UTXO一覧でタグを確認してください。"
 send_address_screen:
   text1: "QRをスキャンまたは\nコピーしたアドレスを貼り付け"
   text2: "アドレスQRコードをスキャンしてください"
@@ -1448,6 +1449,7 @@ alert:
     title: "タグ適用"
     description: "既存 UTXOのタグを新しいUTXOにも適用しますか？"
     btn_apply: "適用する"
+    btn_without_tags: "スキップ"
   tx_detail:
     fetch_failed: "トランザクション取得に失敗しました"
     fetch_failed_description: "しばらく待ってからもう一度お試しください"
