@@ -238,6 +238,35 @@ void main() {
       expect((await walletRepository.getWalletItemList()).single.id, watchOnly.id);
     });
 
+    test('MFP 없는 Watch-only 전환 시 저장된 descriptor와 반환 객체의 MFP를 함께 갱신함', () async {
+      final expected = SingleSignatureWallet.fromDescriptor(_singlesigDescriptor);
+      final placeholder = SingleSignatureWallet.fromExtendedPublicKey(
+        expected.addressType,
+        expected.keyStore.extendedPublicKey.serialize(),
+        '00000000',
+      );
+      final watchOnly = await walletRepository.addSinglesigWallet(
+        WatchOnlyWallet('No MFP', 0, 0, placeholder.descriptor, null, null, WalletImportSource.extendedPublicKey.name),
+      );
+      final converted = await walletRepository.convertWatchOnlyToHotWallet(
+        watchOnly.id,
+        expectedDescriptor: _singlesigDescriptor,
+        secureStorageKey: 'converted_no_mfp',
+        backupVerified: true,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026, 9, 26),
+      );
+      expect(converted.id, watchOnly.id);
+      expect(converted.walletBase.getAddress(0), placeholder.getAddress(0));
+      expect(converted.walletBase.getAddress(0, isChange: true), placeholder.getAddress(0, isChange: true));
+      expect(realmManager.realm.find<RealmWalletBase>(watchOnly.id)!.descriptor, _singlesigDescriptor);
+      final returnedWallet = converted.walletBase as SingleSignatureWallet;
+      expect(returnedWallet.keyStore.masterFingerprint, expected.keyStore.masterFingerprint);
+      expect(converted.hotWalletMetadata!.masterFingerprint, returnedWallet.keyStore.masterFingerprint);
+      final reloaded = (await walletRepository.getWalletItemList()).single.walletBase as SingleSignatureWallet;
+      expect(reloaded.keyStore.masterFingerprint, expected.keyStore.masterFingerprint);
+    });
+
     test('Watch-only 전환 검증이 실패하면 기존 지갑을 변경하지 않음', () async {
       final watchOnly = await walletRepository.addSinglesigWallet(
         createSinglesigWallet(name: 'Existing Watch-only', source: WalletImportSource.extendedPublicKey),

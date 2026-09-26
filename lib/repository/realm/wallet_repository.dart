@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:collection/collection.dart';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -206,7 +207,17 @@ class WalletRepository extends BaseRepository {
 
     final expectedWallet = SingleSignatureWallet.fromDescriptor(expectedDescriptor);
     final existingWallet = SingleSignatureWallet.fromDescriptor(walletBase.descriptor);
-    if (expectedWallet.getAddress(0) != existingWallet.getAddress(0)) {
+    if (expectedWallet.addressType != existingWallet.addressType ||
+        expectedWallet.derivationPath != existingWallet.derivationPath ||
+        !const ListEquality<int>().equals(
+          expectedWallet.keyStore.extendedPublicKey.publicKey,
+          existingWallet.keyStore.extendedPublicKey.publicKey,
+        ) ||
+        !const ListEquality<int>().equals(
+          expectedWallet.keyStore.extendedPublicKey.chainCode,
+          existingWallet.keyStore.extendedPublicKey.chainCode,
+        ) ||
+        expectedWallet.getAddress(0) != existingWallet.getAddress(0)) {
       throw StateError('The watch-only wallet descriptor does not match');
     }
 
@@ -238,6 +249,8 @@ class WalletRepository extends BaseRepository {
     final externalWallet = realm.find<RealmExternalWallet>(walletId);
 
     await realm.writeAsync(() {
+      // 시드에서 확인한 key origin으로 교체하여 placeholder MFP가 PSBT에 남지 않게 한다.
+      walletBase.descriptor = expectedDescriptor;
       if (externalWallet != null) {
         realm.delete(externalWallet);
       }
