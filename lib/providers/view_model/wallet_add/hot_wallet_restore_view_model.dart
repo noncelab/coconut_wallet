@@ -52,6 +52,39 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
   Uint8List? _scannedMnemonic;
   int? _scannedMnemonicWordCount;
   bool _disposed = false;
+  String? _validatedDescriptor;
+  int _inputRevision = 0;
+  List<(int, String, String, WalletType)>? _nameValidationSnapshot;
+  final Set<String> _conflictingNames = {};
+
+  void _invalidateDescriptor() {
+    _validatedDescriptor = null;
+    _nameValidationSnapshot = null;
+    _conflictingNames.clear();
+    _inputRevision++;
+  }
+
+  bool hasWalletNameConflict(WalletProvider walletProvider, String walletName) {
+    final descriptor = _validatedDescriptor;
+    if (descriptor == null) return false;
+    // Reuse identity checks while only the text field changes. Include names and
+    // descriptors so wallet additions, renames and replacements invalidate the cache.
+    final snapshot = [
+      for (final wallet in walletProvider.walletItemList)
+        (wallet.id, wallet.name, wallet.descriptor, wallet.walletType),
+    ];
+    if (!listEquals(_nameValidationSnapshot, snapshot)) {
+      _conflictingNames.clear();
+      for (final name in snapshot.map((wallet) => wallet.$2).toSet()) {
+        if (walletProvider.resolveWalletNameConflict(desiredName: name, descriptor: descriptor, isSingleSig: true) ==
+            null) {
+          _conflictingNames.add(name);
+        }
+      }
+      _nameValidationSnapshot = snapshot;
+    }
+    return _conflictingNames.contains(walletName);
+  }
 
   int get wordCount => _wordCount;
   List<String> get words => List.unmodifiable(_words);
@@ -104,6 +137,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
 
   void setWordCount(int value) {
     if (value == _wordCount || (value != 12 && value != 24)) return;
+    _invalidateDescriptor();
     final previous = _words;
     _wordCount = value;
     _words = List.generate(value, (index) => index < previous.length ? previous[index] : '');
@@ -118,12 +152,14 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
   }
 
   void updateWord(int index, String value) {
+    _invalidateDescriptor();
     _words[index] = value.trim().toLowerCase();
     _activeWordIndex = index;
     _notifySafely();
   }
 
   int applyWords(int startIndex, Iterable<String> values) {
+    _invalidateDescriptor();
     var index = startIndex;
     for (final value in values) {
       if (index >= _wordCount) break;
@@ -136,6 +172,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
   }
 
   void clearWords() {
+    _invalidateDescriptor();
     _words = List.filled(_wordCount, '');
     _activeWordIndex = 0;
     _notifySafely();
@@ -150,6 +187,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
   }
 
   void clearScannedMnemonic({bool notify = true}) {
+    _invalidateDescriptor();
     _scannedMnemonic?.fillRange(0, _scannedMnemonic!.length, 0);
     _scannedMnemonic = null;
     _scannedMnemonicWordCount = null;
@@ -164,6 +202,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
   }
 
   void setUsePassphrase(bool value) {
+    _invalidateDescriptor();
     _usePassphrase = value;
     if (!value) {
       _passphrase = '';
@@ -173,6 +212,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
   }
 
   void setPassphrase(String value) {
+    _invalidateDescriptor();
     _passphrase = value;
     _notifySafely();
   }
@@ -183,6 +223,7 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
   }
 
   Future<String> deriveDescriptor() async {
+    final revision = _inputRevision;
     if (!isMnemonicValid || !isPassphraseValid) {
       throw StateError('Invalid restore input');
     }
@@ -191,7 +232,14 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     final mnemonicCopy = Uint8List.fromList(mnemonic);
     final passphraseCopy = Uint8List.fromList(passphrase);
     try {
-      return await compute(_deriveDescriptor, (mnemonic: mnemonicCopy, passphrase: passphraseCopy));
+      final descriptor = await compute(_deriveDescriptor, (mnemonic: mnemonicCopy, passphrase: passphraseCopy));
+      if (revision != _inputRevision || _disposed) {
+        throw StateError('Restore input changed during derivation');
+      }
+      if (_validatedDescriptor != descriptor) _nameValidationSnapshot = null;
+      _validatedDescriptor = descriptor;
+      _notifySafely();
+      return descriptor;
     } finally {
       mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
       passphraseCopy.fillRange(0, passphraseCopy.length, 0);

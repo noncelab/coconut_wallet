@@ -448,7 +448,7 @@ class WalletProvider extends ChangeNotifier {
         return ResultOfSyncFromVault(result: WalletSyncResult.existingWalletNoUpdate, walletId: existingWallet.id);
       }
 
-      final resolvedName = _resolveWalletNameConflict(
+      final resolvedName = resolveWalletNameConflict(
         desiredName: watchOnlyWallet.name,
         descriptor: watchOnlyWallet.descriptor,
         isSingleSig: isSingleSig,
@@ -482,7 +482,7 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // New Wallet (Case 4, 5, 6)
-    final resolvedName = _resolveWalletNameConflict(
+    final resolvedName = resolveWalletNameConflict(
       desiredName: watchOnlyWallet.name,
       descriptor: watchOnlyWallet.descriptor,
       isSingleSig: isSingleSig,
@@ -530,8 +530,8 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // 현재 wallet_add_scanner_view_model에서 getNextThirdPartyWalletName을 통해 중복 이름을 미리 처리해서
-    // _resolveWalletNameConflict가 호출되는 경우가 없음
-    final resolvedName = _resolveWalletNameConflict(
+    // resolveWalletNameConflict가 호출되는 경우가 없음
+    final resolvedName = resolveWalletNameConflict(
       desiredName: watchOnlyWallet.name,
       descriptor: watchOnlyWallet.descriptor,
       isSingleSig: watchOnlyWallet.walletType == WalletType.singleSignature,
@@ -639,7 +639,7 @@ class WalletProvider extends ChangeNotifier {
       return convertedWallet;
     }
 
-    final resolvedName = _resolveWalletNameConflict(
+    final resolvedName = resolveWalletNameConflict(
       desiredName: wallet.name,
       descriptor: wallet.descriptor,
       isSingleSig: true,
@@ -648,7 +648,8 @@ class WalletProvider extends ChangeNotifier {
     if (resolvedName == null) {
       throw const WalletNameConflictException();
     }
-    if (_walletRepository.containsWalletName(resolvedName, excludeWalletId: watchOnlyWalletIdToConvert)) {
+
+    if (_walletRepository.containsWalletName(resolvedName, matchingWatchOnlyDescriptor: wallet.descriptor)) {
       throw const WalletNameConflictException();
     }
 
@@ -710,7 +711,9 @@ class WalletProvider extends ChangeNotifier {
 
   // MARK: - Name Conflict, MFP verification Helpers
 
-  String? _resolveWalletNameConflict({
+  /// Same singlesig addresses may share a name across hot/watch-only wallets.
+  /// Returns null for an unresolvable conflict, or the existing account-name fallback.
+  String? resolveWalletNameConflict({
     required String desiredName,
     required String descriptor,
     required bool isSingleSig,

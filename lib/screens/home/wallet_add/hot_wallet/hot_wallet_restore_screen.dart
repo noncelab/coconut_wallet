@@ -164,7 +164,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   bool get _isWalletNameDuplicated =>
       !_isSubmitting &&
       !_isLeavingScreen &&
-      context.read<WalletProvider>().walletItemList.any((wallet) => wallet.name == _walletName);
+      context.read<HotWalletRestoreViewModel>().hasWalletNameConflict(context.read<WalletProvider>(), _walletName);
 
   @override
   void initState() {
@@ -1293,8 +1293,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
 
     // 기존 Watch-only를 핫월렛으로 전환할 때는 기존 지갑의 이름·아이콘·색상을 그대로 유지한다.
     // 따라서 복원 화면의 입력 이름은 신규 지갑을 만들 때에만 충돌을 검사한다.
-    final hasNameConflict =
-        !removeWatchOnly && walletProvider.walletItemList.any((wallet) => wallet.name == walletName);
+    final hasNameConflict = !removeWatchOnly && viewModel.hasWalletNameConflict(walletProvider, walletName);
     if (hasNameConflict) {
       setState(() => _isCheckingDuplicate = false);
       return;

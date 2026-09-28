@@ -55,6 +55,22 @@ void main() {
       return WatchOnlyWallet(name, 0, 0, _singlesigDescriptor, null, null, source.name);
     }
 
+    test('DB 이름 검사는 같은 주소의 보기 전용만 예외로 허용한다', () async {
+      final watchOnly = await walletRepository.addSinglesigWallet(createSinglesigWallet(name: 'Shared'));
+      expect(walletRepository.containsWalletName('Shared'), isTrue);
+      expect(walletRepository.containsWalletName('Shared', matchingWatchOnlyDescriptor: _singlesigDescriptor), isFalse);
+      expect(walletRepository.containsWalletName('Shared', excludeWalletId: watchOnly.id), isFalse);
+      await walletRepository.addHotWallet(
+        createSinglesigWallet(name: 'Shared'),
+        secureStorageKey: 'test-key',
+        backupVerified: false,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.utc(2026),
+        lifecycleState: HotWalletLifecycleState.creating,
+      );
+      expect(walletRepository.containsWalletName('Shared', matchingWatchOnlyDescriptor: _singlesigDescriptor), isTrue);
+    });
+
     test('지갑 삭제 테스트', () async {
       final walletBase = RealmWalletBase(
         1,

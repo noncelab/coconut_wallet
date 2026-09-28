@@ -279,8 +279,23 @@ class WalletRepository extends BaseRepository {
     });
   }
 
-  bool containsWalletName(String name, {int? excludeWalletId}) {
-    return realm.all<RealmWalletBase>().any((wallet) => wallet.id != excludeWalletId && wallet.name == name);
+  /// A hot wallet may reuse the name of its matching watch-only wallet.
+  /// Other database entries, including inactive hot wallets, remain conflicts.
+  bool containsWalletName(String name, {int? excludeWalletId, String? matchingWatchOnlyDescriptor}) {
+    final matchingAddress =
+        matchingWatchOnlyDescriptor == null
+            ? null
+            : SingleSignatureWallet.fromDescriptor(matchingWatchOnlyDescriptor).getAddress(0);
+    return realm.all<RealmWalletBase>().any((wallet) {
+      if (wallet.id == excludeWalletId || wallet.name != name) return false;
+      if (matchingAddress != null &&
+          wallet.walletType == WalletType.singleSignature.name &&
+          realm.find<RealmHotWalletMetadata>(wallet.id) == null &&
+          SingleSignatureWallet.fromDescriptor(wallet.descriptor).getAddress(0) == matchingAddress) {
+        return false;
+      }
+      return true;
+    });
   }
 
   bool containsHotWalletDescriptor(String descriptor) {

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
 import 'dart:async';
 import 'dart:ui';
 
@@ -60,6 +61,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   WatchOnlyWallet? lastSinglesigWallet;
 
   int addHotWalletCallCount = 0;
+  WatchOnlyWallet? lastHotWallet;
   late SinglesigWalletItem addHotWalletResult;
   int convertWatchOnlyWalletCallCount = 0;
   late SinglesigWalletItem convertWatchOnlyWalletResult;
@@ -81,8 +83,16 @@ class FakeWalletRepository extends Fake implements WalletRepository {
       hotWalletMetadata.where((metadata) => metadata.walletId == walletId).firstOrNull;
 
   @override
-  bool containsWalletName(String name, {int? excludeWalletId}) =>
-      walletItems.any((wallet) => wallet.id != excludeWalletId && wallet.name == name);
+  bool containsWalletName(String name, {int? excludeWalletId, String? matchingWatchOnlyDescriptor}) => walletItems.any(
+    (wallet) =>
+        wallet.id != excludeWalletId &&
+        wallet.name == name &&
+        !(matchingWatchOnlyDescriptor != null &&
+            wallet is SinglesigWalletItem &&
+            !wallet.hasLocalKey &&
+            wallet.walletBase.getAddress(0) ==
+                SingleSignatureWallet.fromDescriptor(matchingWatchOnlyDescriptor).getAddress(0)),
+  );
 
   @override
   bool containsHotWalletDescriptor(String descriptor) => hotWalletMetadata.any(
@@ -113,6 +123,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
     HotWalletLifecycleState lifecycleState = HotWalletLifecycleState.creating,
   }) async {
     addHotWalletCallCount++;
+    lastHotWallet = wallet;
     hotWalletMetadata.add(
       HotWalletMetadata(
         walletId: addHotWalletResult.id,
@@ -782,12 +793,30 @@ void main() {
       provider.dispose();
     });
 
+    test('다른 지갑과 같은 이름인 핫월렛은 저장 전에 거부한다', () async {
+      final existing = _createMultisigWalletListItem(name: 'My Wallet');
+      final walletRepo = FakeWalletRepository()..walletItems = [existing];
+      final provider = await _buildProvider(walletRepo);
+      await expectLater(
+        provider.addHotWallet(
+          _createSinglesigWatchOnlyWallet(name: 'My Wallet'),
+          secureStorageKey: 'unused',
+          backupVerified: true,
+          enterPassphraseWhenSigning: false,
+          createdAt: DateTime.utc(2026),
+        ),
+        throwsA(isA<WalletNameConflictException>()),
+      );
+      expect(walletRepo.addHotWalletCallCount, 0);
+      provider.dispose();
+    });
+
     test('같은 descriptor의 Watch-only 지갑이 있어도 핫월렛을 별도로 추가함', () async {
       final existingWatchOnly = _createSinglesigWalletListItem();
       final walletRepo = FakeWalletRepository()..walletItems = [existingWatchOnly];
       walletRepo.addHotWalletResult = _createSinglesigWalletListItem(
         id: 2,
-        name: 'My Wallet Account 0',
+        name: existingWatchOnly.name,
         isHotWallet: true,
       );
 
@@ -800,6 +829,7 @@ void main() {
         createdAt: DateTime.utc(2026, 7, 21),
       );
 
+      expect(walletRepo.lastHotWallet?.name, existingWatchOnly.name);
       expect(result.hasLocalKey, isTrue);
       expect(walletRepo.addHotWalletCallCount, 1);
       expect(walletRepo.lifecycleUpdates, [(2, HotWalletLifecycleState.active)]);

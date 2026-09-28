@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -49,6 +51,34 @@ class _GatedWalletProvider extends Fake implements WalletProvider {
   }
 }
 
+class _NameValidationWallet extends Fake implements WalletItemBase {
+  @override
+  int get id => 1;
+  @override
+  String name = 'taken';
+  @override
+  String get descriptor => 'test-descriptor';
+  @override
+  WalletType get walletType => WalletType.singleSignature;
+}
+
+class _NameConflictProvider extends Fake implements WalletProvider {
+  final wallet = _NameValidationWallet();
+  int validationCalls = 0;
+  @override
+  List<WalletItemBase> get walletItemList => [wallet];
+  @override
+  String? resolveWalletNameConflict({
+    required String desiredName,
+    required String descriptor,
+    required bool isSingleSig,
+    int? excludeWalletId,
+  }) {
+    validationCalls++;
+    return desiredName == wallet.name ? null : desiredName;
+  }
+}
+
 void main() {
   test('완성된 니모닉 단어도 추천 목록에 유지한다', () {
     final viewModel = HotWalletRestoreViewModel();
@@ -56,6 +86,34 @@ void main() {
     viewModel.updateWord(0, 'apple');
 
     expect(viewModel.suggestions, contains('apple'));
+  });
+
+  test('이름 검사는 지갑 식별 후 적용하고 시드 입력이 바뀌면 초기화한다', () async {
+    final vm = HotWalletRestoreViewModel();
+    final provider = _NameConflictProvider();
+    vm.applyWords(0, [...List.filled(11, 'abandon'), 'about']);
+    expect(vm.hasWalletNameConflict(provider, 'taken'), isFalse);
+    await vm.deriveDescriptor();
+    expect(vm.hasWalletNameConflict(provider, 'taken'), isTrue);
+    expect(vm.hasWalletNameConflict(provider, 'available'), isFalse);
+    final initialCalls = provider.validationCalls;
+    for (final name in ['t', 'ta', 'tak', 'taken', 'other']) {
+      vm.hasWalletNameConflict(provider, name);
+    }
+    expect(provider.validationCalls, initialCalls);
+    provider.wallet.name = 'renamed';
+    expect(vm.hasWalletNameConflict(provider, 'taken'), isFalse);
+    expect(vm.hasWalletNameConflict(provider, 'renamed'), isTrue);
+    expect(provider.validationCalls, initialCalls + 1);
+    provider.wallet.name = 'taken';
+
+    vm.setPassphrase('changed');
+    expect(vm.hasWalletNameConflict(provider, 'taken'), isFalse);
+    await vm.deriveDescriptor();
+    expect(vm.hasWalletNameConflict(provider, 'taken'), isTrue);
+    vm.updateWord(0, 'ability');
+    expect(vm.hasWalletNameConflict(provider, 'taken'), isFalse);
+    vm.dispose();
   });
 
   group('HotWalletRestoreViewModel', () {
