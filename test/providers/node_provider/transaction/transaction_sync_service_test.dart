@@ -346,9 +346,108 @@ void main() {
       });
     }
 
+    for (final scenario in [
+      (height: 0, oldAvailable: true, withNewDeposit: false),
+      (height: 700000, oldAvailable: true, withNewDeposit: false),
+      (height: 0, oldAvailable: true, withNewDeposit: true),
+      (height: 0, oldAvailable: false, withNewDeposit: true),
+    ]) {
+      test('수신 RBF는 새 입금에서 제외하되 독립 입금은 유지한다: $scenario', () async {
+        final funding = TransactionMock.createMockTransaction(
+          toAddress: testWalletItem.walletBase.getAddress(9999),
+          amount: 1000000,
+        );
+        final oldDeposit = TransactionMock.createMockTransaction(
+          toAddress: testAddress,
+          amount: 950000,
+          inputTransactionHash: funding.transactionHash,
+        );
+        final replacement = TransactionMock.createMockTransaction(
+          toAddress: testAddress,
+          amount: 900000,
+          inputTransactionHash: funding.transactionHash,
+        );
+        final otherFunding = TransactionMock.createMockTransaction(
+          toAddress: testWalletItem.walletBase.getAddress(9999),
+          amount: 2000000,
+        );
+        final newDeposit = TransactionMock.createMockTransaction(
+          toAddress: testAddress,
+          amount: 1900000,
+          inputTransactionHash: otherFunding.transactionHash,
+        );
+        await transactionRepository.addAllTransactions(testWalletId, [
+          TransactionMock.createMockTransactionRecord(
+            transactionHash: oldDeposit.transactionHash,
+            blockHeight: 0,
+            transactionType: TransactionType.received,
+            fee: 50000,
+          ),
+        ]);
+        await utxoRepository.addAllUtxos(testWalletId, [
+          UtxoMock.createIncomingUtxo(transactionHash: oldDeposit.transactionHash),
+        ]);
+        when(electrumService.getHistory(any, any)).thenAnswer(
+          (_) async => [
+            GetTxHistoryRes(height: scenario.height, txHash: replacement.transactionHash),
+            if (scenario.withNewDeposit) GetTxHistoryRes(height: 0, txHash: newDeposit.transactionHash),
+          ],
+        );
+        when(
+          electrumService.getTransaction(replacement.transactionHash),
+        ).thenAnswer((_) async => replacement.serialize());
+        when(
+          electrumService.getTransaction(newDeposit.transactionHash),
+        ).thenAnswer((_) async => newDeposit.serialize());
+        if (scenario.oldAvailable) {
+          when(
+            electrumService.getTransaction(oldDeposit.transactionHash),
+          ).thenAnswer((_) async => oldDeposit.serialize());
+        } else {
+          when(
+            electrumService.getTransaction(oldDeposit.transactionHash),
+          ).thenThrow(Exception('transaction unavailable'));
+        }
+        when(
+          electrumService.fetchBlocksByHeight(any),
+        ).thenAnswer((_) async => {scenario.height: BlockTimestamp(scenario.height, now)});
+        when(
+          electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+        ).thenAnswer((_) async => [funding, if (scenario.withNewDeposit) otherFunding]);
+
+        await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+
+        expect(transactionRepository.getTransactionRecord(testWalletId, replacement.transactionHash), isNotNull);
+        expect(transactionRepository.getTransactionRecord(testWalletId, oldDeposit.transactionHash), isNull);
+        if (scenario.withNewDeposit) {
+          verifyInOrder([
+            stateManager.notifyReceiveDepositDetected(testWalletId),
+            stateManager.notifyReceiveWalletSynced(testWalletId),
+          ]);
+        } else {
+          verifyNever(stateManager.notifyReceiveDepositDetected(any));
+          verifyNever(stateManager.notifyReceiveWalletSynced(any));
+        }
+      });
+    }
+
     test('일괄 처리 모드에서 상태 관리자를 호출하지 않는지 확인', () async {
-      // 트랜잭션 없음으로 설정
-      when(electrumService.getHistory(any, any)).thenAnswer((_) async => []);
+      final funding = TransactionMock.createMockTransaction(
+        toAddress: testWalletItem.walletBase.getAddress(9999),
+        amount: 1000000,
+      );
+      final receivedTx = TransactionMock.createMockTransaction(
+        toAddress: testAddress,
+        amount: 900000,
+        inputTransactionHash: funding.transactionHash,
+      );
+      when(
+        electrumService.getHistory(any, any),
+      ).thenAnswer((_) async => [GetTxHistoryRes(height: 0, txHash: receivedTx.transactionHash)]);
+      when(electrumService.getTransaction(receivedTx.transactionHash)).thenAnswer((_) async => receivedTx.serialize());
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [funding]);
 
       // 함수 실행 (inBatchProcess = true)
       await transactionSyncService.fetchScriptTransaction(
@@ -359,6 +458,10 @@ void main() {
       );
 
       // 검증 - 상태 관리자가 호출되지 않아야 함
+      expect(
+        transactionRepository.getTransactionRecord(testWalletId, receivedTx.transactionHash)?.transactionType,
+        TransactionType.received,
+      );
       verifyNever(stateManager.addWalletSyncState(any, any));
       verifyNever(stateManager.addWalletCompletedState(any, any));
       verifyNever(stateManager.notifyReceiveDepositDetected(any));

@@ -122,16 +122,7 @@ class TransactionSyncService {
                 .getRealmTransactionListByHashes(walletId, newTxHashes)
                 .map((record) => record.transactionHash)
                 .toSet();
-    final hasNewReceivedDeposit =
-        !inBatchProcess &&
-        txRecords.any(
-          (record) =>
-              record.transactionType == TransactionType.received && !existingTxHashes.contains(record.transactionHash),
-        );
     await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
-    if (hasNewReceivedDeposit) {
-      _stateManager.notifyReceiveDepositDetected(walletId);
-    }
 
     // 5. UTXO 상태 업데이트 및 RBF/CPFP 처리
     final RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
@@ -147,7 +138,21 @@ class TransactionSyncService {
     await _saveRbfAndCpfpHistory(walletItem, txRecords, rbfCpfpResult);
 
     // 7. 대체된 언컨펌 트랜잭션 삭제
-    await _cleanupOrphanedUnconfirmedTransactions(walletId, fetchedTransactionDetails.fetchedTransactions);
+    final replacementTxHashes = await _cleanupOrphanedUnconfirmedTransactions(
+      walletId,
+      fetchedTransactionDetails.fetchedTransactions,
+    );
+    final hasNewReceivedDeposit =
+        !inBatchProcess &&
+        txRecords.any(
+          (record) =>
+              record.transactionType == TransactionType.received &&
+              !existingTxHashes.contains(record.transactionHash) &&
+              !replacementTxHashes.contains(record.transactionHash),
+        );
+    if (hasNewReceivedDeposit) {
+      _stateManager.notifyReceiveDepositDetected(walletId);
+    }
 
     // 8. 마무리 단계
     await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
@@ -330,9 +335,10 @@ class TransactionSyncService {
   }
 
   /// 7. 대체된 언컨펌 트랜잭션 삭제
-  Future<void> _cleanupOrphanedUnconfirmedTransactions(int walletId, List<Transaction> newTxs) async {
+  Future<Set<String>> _cleanupOrphanedUnconfirmedTransactions(int walletId, List<Transaction> newTxs) async {
     final unconfirmedTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
     final toDeleteTxs = <String>[];
+    final replacementTxHashes = <String>{};
 
     for (final localUnconfirmedTxRecord in unconfirmedTxs) {
       Transaction? unconfirmedTx;
@@ -356,6 +362,7 @@ class TransactionSyncService {
         // 겹치는 인풋이 있으면서 새 트랜잭션의 수수료율이 더 높다면 로컬의 언컨펌 트랜잭션은 대체된 것으로 간주
         if (overlappingInputs.isNotEmpty) {
           if (unconfirmedTx.transactionHash != newTx.transactionHash) {
+            replacementTxHashes.add(newTx.transactionHash);
             final newTxRecord = _transactionRepository.getTransactionRecord(walletId, newTx.transactionHash);
 
             if (newTxRecord != null && localUnconfirmedTxRecord.feeRate < newTxRecord.feeRate) {
@@ -378,6 +385,7 @@ class TransactionSyncService {
         Logger.log('[$walletId] Deleted orphaned unconfirmed transactions: $toDeleteTxs');
       }
     }
+    return replacementTxHashes;
   }
 
   /// 8. 마무리 단계: 상태 업데이트 및 완료 등록

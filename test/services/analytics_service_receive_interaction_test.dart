@@ -76,9 +76,9 @@ void main() {
       recording.logWalletResyncFailed();
 
       expect(recording.events.map((event) => event.name), [
-        AnalyticsEventNames.walletResyncStarted,
-        AnalyticsEventNames.walletResyncCompleted,
-        AnalyticsEventNames.walletResyncFailed,
+        'wallet_resync_started',
+        'wallet_resync_completed',
+        'wallet_resync_failed',
       ]);
     });
 
