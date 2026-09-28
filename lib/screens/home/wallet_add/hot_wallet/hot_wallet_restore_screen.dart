@@ -3,6 +3,7 @@ import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:ui';
 import 'dart:async';
 import 'dart:convert';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -122,7 +123,7 @@ class _HotWalletRestoreView extends StatefulWidget {
   State<_HotWalletRestoreView> createState() => _HotWalletRestoreViewState();
 }
 
-class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
+class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with WidgetsBindingObserver {
   final List<WordSuggestableController> _wordControllers = List.generate(24, (_) => WordSuggestableController());
   final List<FocusNode> _wordFocusNodes = List.generate(24, (_) => FocusNode());
   final List<GlobalKey> _mnemonicRowKeys = List.generate(8, (_) => GlobalKey());
@@ -169,6 +170,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _suggestedName = _generateSuggestedName();
     for (var index = 0; index < _wordFocusNodes.length; index++) {
       _wordFocusNodes[index].addListener(() {
@@ -207,6 +209,17 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
       _seedQrScannerController?.pauseCamera();
     }
     _seedQrScannerController?.resumeCamera();
+  }
+
+  @override
+  void didChangeMetrics() {
+    // Focus can arrive before the keyboard resizes the viewport. Recalculate
+    // after each metrics update; request IDs cancel stale scroll requests.
+    if (_nameFocusNode.hasFocus) {
+      _scrollToFocusedField(_nameFieldKey, _nameFocusNode, delay: const Duration(milliseconds: 150));
+    } else if (_passphraseFocusNode.hasFocus) {
+      _scrollToFocusedField(_passphraseFieldKey, _passphraseFocusNode, delay: const Duration(milliseconds: 150));
+    }
   }
 
   void _scrollToMnemonicRowIfNeeded(int index) {
@@ -300,6 +313,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (final controller in _wordControllers) {
       controller.dispose();
     }
@@ -1309,6 +1323,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> {
         watchOnlyWalletIdToConvert: removeWatchOnly ? duplicateWatchOnly?.id : null,
       );
       if (!mounted) return;
+      vibrateMedium();
       setState(() => _isCheckingDuplicate = false);
       if (context.read<AuthProvider>().isAuthEnabled) {
         setState(() => _isLeavingScreen = true);
