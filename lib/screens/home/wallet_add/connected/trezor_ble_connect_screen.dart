@@ -186,9 +186,9 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
     _showFullScreenLoading();
 
     final stopwatch = Stopwatch()..start();
-    ResultOfSyncFromVault result;
+    ResultOfSyncFromVault initialResult;
     try {
-      result = await vm.addToWalletList();
+      initialResult = await vm.addToWalletList();
     } catch (e) {
       if (!mounted) return;
       _hideFullScreenLoading();
@@ -212,6 +212,14 @@ class _TrezorBleConnectScreenState extends State<TrezorBleConnectScreen> {
 
     if (!mounted) return;
 
+    _loadingOverlayEntry?.remove();
+    _loadingOverlayEntry = null;
+    final result = await confirmConnectedWatchOnlyWalletAddition(context, initialResult);
+    if (!mounted) return;
+    if (result == null) {
+      setState(() => _isAddingWallet = false);
+      return;
+    }
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
       context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
       _hideFullScreenLoading();

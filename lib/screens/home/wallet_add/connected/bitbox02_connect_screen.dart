@@ -79,7 +79,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
     setState(() => _isAddingWallet = true);
 
     final stopwatch = Stopwatch()..start();
-    final result = await vm.addToWalletList();
+    final initialResult = await vm.addToWalletList();
     final remaining = const Duration(seconds: 3) - stopwatch.elapsed;
     if (remaining > Duration.zero) {
       await Future.delayed(remaining);
@@ -87,6 +87,12 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
 
     if (!mounted) return;
 
+    final result = await confirmConnectedWatchOnlyWalletAddition(context, initialResult);
+    if (!mounted) return;
+    if (result == null) {
+      setState(() => _isAddingWallet = false);
+      return;
+    }
     if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
       context.read<AnalyticsService>().logWalletAddCompleted(widget.importSource);
       Navigator.pushReplacementNamed(

@@ -1,4 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' as wallet_ui;
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -88,4 +91,60 @@ void showWalletSyncResultErrorDialog(
           rightButtonText: t.confirm,
         ),
   );
+}
+
+/// Returns null when the user cancels or authentication fails.
+Future<ResultOfSyncFromVault?> confirmConnectedWatchOnlyWalletAddition(
+  BuildContext context,
+  ResultOfSyncFromVault result,
+) async {
+  if (result.result != WalletSyncResult.existingWalletDifferentType) return result;
+  final provider = context.read<WalletProvider>();
+  final existingWallet = provider.getWalletById(result.walletId!);
+  var removeHotWallet = false;
+  final shouldAdd = await showDialog<bool>(
+    context: context,
+    builder:
+        (dialogContext) => StatefulBuilder(
+          builder:
+              (context, setDialogState) => wallet_ui.CoconutPopup(
+                languageCode: context.read<PreferenceProvider>().language,
+                title: t.wallet_home_screen.hot_wallet_restore.duplicate_wallet_title,
+                description: '',
+                descriptionSpan: buildDuplicateWalletDescriptionSpan(
+                  name: existingWallet.name,
+                  type: t.wallet_home_screen.hot_wallet_restore.hot_wallet_type,
+                ),
+                backgroundColor: context.coconutColors.popupBackground.withValues(alpha: 0.7),
+                checkboxText: t.wallet_home_screen.hot_wallet_restore.remove_hot_wallet,
+                isCheckboxSelected: removeHotWallet,
+                onCheckboxChanged: (value) => setDialogState(() => removeHotWallet = value),
+                rightButtonText: t.wallet_home_screen.add_wallet_action,
+                rightButtonColor: context.coconutColors.primaryText,
+                onTapRight: () => Navigator.of(dialogContext).pop(true),
+              ),
+        ),
+  );
+  if (!context.mounted || shouldAdd != true) return null;
+  if (removeHotWallet) {
+    final authenticated = await FlutterHotWalletAuthenticator(context).authenticate();
+    if (!context.mounted || !authenticated) return null;
+  }
+  try {
+    return await provider.confirmWatchOnlyWalletAddition(result, removeExistingHotWallet: removeHotWallet);
+  } catch (error) {
+    if (!context.mounted) return null;
+    await showDialog<void>(
+      context: context,
+      builder:
+          (dialogContext) => wallet_ui.CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            title: t.alert.wallet_add.add_failed,
+            description: error.toString(),
+            rightButtonText: t.OK,
+            onTapRight: () => Navigator.of(dialogContext).pop(),
+          ),
+    );
+    return null;
+  }
 }

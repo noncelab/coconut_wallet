@@ -149,8 +149,10 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
     if (_isAddingWallet) return;
     setState(() => _isAddingWallet = true);
     try {
-      final result = await _viewModel.addToWalletList();
+      final initialResult = await _viewModel.addToWalletList();
       if (!mounted) return;
+      final result = await confirmConnectedWatchOnlyWalletAddition(context, initialResult);
+      if (!mounted || result == null) return;
       if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
         context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
         Navigator.pushReplacementNamed(
