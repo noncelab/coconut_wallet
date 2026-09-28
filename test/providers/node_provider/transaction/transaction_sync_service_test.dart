@@ -310,6 +310,42 @@ void main() {
       expect(stored?.transactionType, TransactionType.received);
     });
 
+    for (final height in [0, 700000]) {
+      test('기존 입금의 높이 $height 재조회는 새 입금으로 기록하지 않는다', () async {
+        final externalPrevTx = TransactionMock.createMockTransaction(
+          toAddress: testWalletItem.walletBase.getAddress(9999),
+          amount: 1000000,
+        );
+        final receivedTx = TransactionMock.createMockTransaction(
+          toAddress: testAddress,
+          amount: 900000,
+          inputTransactionHash: externalPrevTx.transactionHash,
+        );
+        await transactionRepository.addAllTransactions(testWalletId, [
+          TransactionMock.createUnconfirmedTransactionRecord(transactionHash: receivedTx.transactionHash),
+        ]);
+        when(
+          electrumService.getHistory(any, any),
+        ).thenAnswer((_) async => [GetTxHistoryRes(height: height, txHash: receivedTx.transactionHash)]);
+        when(
+          electrumService.getTransaction(receivedTx.transactionHash),
+        ).thenAnswer((_) async => receivedTx.serialize());
+        when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {height: BlockTimestamp(height, now)});
+        when(
+          electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+        ).thenAnswer((_) async => [externalPrevTx]);
+
+        await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+
+        expect(
+          transactionRepository.getTransactionRecord(testWalletId, receivedTx.transactionHash)?.blockHeight,
+          height,
+        );
+        verifyNever(stateManager.notifyReceiveDepositDetected(any));
+        verifyNever(stateManager.notifyReceiveWalletSynced(any));
+      });
+    }
+
     test('일괄 처리 모드에서 상태 관리자를 호출하지 않는지 확인', () async {
       // 트랜잭션 없음으로 설정
       when(electrumService.getHistory(any, any)).thenAnswer((_) async => []);

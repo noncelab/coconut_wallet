@@ -115,9 +115,20 @@ class TransactionSyncService {
       fetchedTransactionDetails,
       now: now,
     );
-    await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
+    final existingTxHashes =
+        inBatchProcess
+            ? <String>{}
+            : _transactionRepository
+                .getRealmTransactionListByHashes(walletId, newTxHashes)
+                .map((record) => record.transactionHash)
+                .toSet();
     final hasNewReceivedDeposit =
-        !inBatchProcess && txRecords.any((record) => record.transactionType == TransactionType.received);
+        !inBatchProcess &&
+        txRecords.any(
+          (record) =>
+              record.transactionType == TransactionType.received && !existingTxHashes.contains(record.transactionHash),
+        );
+    await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
     if (hasNewReceivedDeposit) {
       _stateManager.notifyReceiveDepositDetected(walletId);
     }
