@@ -47,7 +47,6 @@ void main() {
   int sumOfBalance = tAvailableUtxos.map((u) => u.amount).reduce((a, b) => a + b);
 
   Map<String, int> singleRecipient = {recipient1: 50000};
-  Map<String, int> singleRecipientEdgeBalance = {recipient1: 199999};
   Map<String, int> singleRecipientSameBalance = {recipient1: sumOfBalance};
   Map<String, int> batchRecipients = {recipient2: 30000, recipient3: 40000};
   int sumOfBatchRecipients = batchRecipients.values.reduce((a, b) => a + b);

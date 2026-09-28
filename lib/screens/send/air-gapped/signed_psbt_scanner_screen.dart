@@ -1,7 +1,6 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide

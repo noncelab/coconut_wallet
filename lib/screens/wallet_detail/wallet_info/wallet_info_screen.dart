@@ -678,31 +678,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     );
   }
 
-  void _showDeleteWalletDialog(BuildContext context, WalletInfoViewModel viewModel) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
-          title: t.alert.wallet_delete.confirm_delete,
-          description: t.alert.wallet_delete.confirm_delete_description,
-          onTapRight: () {
-            _handleAuthFlow(
-              onComplete: () async {
-                Navigator.of(dialogContext).pop();
-                await _deleteWalletAndGoToEntryPoint(viewModel);
-              },
-            );
-          },
-          onTapLeft: () => Navigator.of(dialogContext).pop(),
-          rightButtonText: t.delete,
-          rightButtonColor: context.coconutColors.danger,
-          leftButtonText: t.cancel,
-        );
-      },
-    );
-  }
-
   void _showLabelsManagementScreen(BuildContext context, WalletInfoViewModel viewModel) {
     Navigator.pushNamed(
       context,

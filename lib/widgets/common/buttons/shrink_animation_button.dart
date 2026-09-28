@@ -118,11 +118,9 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with Sing
         ((widget.pressedOverlayColor == null || widget.pressedOverlayColor == colors.surfacePressOverlay)
             ? colors.surfacePressOverlayOpacity
             : _resolveOverlayOpacity(widget.pressedOverlayColor!));
-    final pressedColor = widget.pressedColor ?? colors.surfacePressOverlay;
     final defaultColor = widget.defaultColor ?? colors.surface;
     final disabledColor = widget.disabledColor ?? colors.surface;
 
-    final Color solidColor = widget.isActive ? (_isPressed ? pressedColor : defaultColor) : disabledColor;
     final Color baseColor = widget.isActive ? defaultColor : disabledColor;
     final bool useGradientBorder = widget.borderGradient != null;
     final child = widget.childBuilder != null ? widget.childBuilder!(context, _isPressed) : widget.child!;

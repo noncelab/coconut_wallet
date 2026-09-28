@@ -158,11 +158,6 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             ? WalletVisualStyleUtil.getGradientColors(signers!, lighten: true)
             : taprootStyle?.iconGradientColors;
     final bool hasGradient = gradientColors != null;
-    final bool isMfpDisplayed =
-        walletItem is! TaprootWalletItem &&
-        walletItem is! MultisigWalletItem &&
-        !_isWithoutMfp() &&
-        !_isExtendedPublicKey();
 
     return Container(
       decoration: BoxDecoration(

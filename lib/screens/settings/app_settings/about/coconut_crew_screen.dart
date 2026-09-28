@@ -48,22 +48,6 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
           return 0;
         }
         if (first >= 0xAC00 && first <= 0xD7AF) {
-          // 한글
-          final initialCode = ((first - 0xAC00) / 588).floor();
-          const initials = [
-            'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', // 개행 방지
-            'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', // 개행 방지
-            'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ', // 개행 방지
-          ];
-          final initialChar = initials[initialCode];
-          final normalizedInitial = switch (initialChar) {
-            'ㄲ' => 'ㄱ',
-            'ㄸ' => 'ㄷ',
-            'ㅃ' => 'ㅂ',
-            'ㅆ' => 'ㅅ',
-            'ㅉ' => 'ㅈ',
-            _ => initialChar,
-          };
           // // 첫 글자의 자음을 추출해서 _scrollbarList에 추가, 쌍자음은 자음으로 변환
           // if (_scrollbarList.where((w) => w.str == normalizedInitial).isEmpty) {
           //   _scrollbarList.add(ScrollbarItemData(str: normalizedInitial, offsetY: 0));
@@ -72,7 +56,6 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
         }
         if ((first >= 0x41 && first <= 0x5A) || (first >= 0x61 && first <= 0x7A)) {
           // 영어
-          final upperChar = s[0].toUpperCase();
           // if (_scrollbarList.where((w) => w.str == upperChar).isEmpty) {
           //   _scrollbarList.add(ScrollbarItemData(str: upperChar, offsetY: 0));
           // }
