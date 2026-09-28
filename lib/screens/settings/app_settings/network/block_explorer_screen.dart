@@ -231,7 +231,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
             SvgPicture.asset(
               CommonFormIconPath.circleCheck,
               height: 24,
-              colorFilter: ColorFilter.mode(CoconutColors.colorPalette[3], BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(context.coconutColors.success, BlendMode.srcIn),
             )
           else
             SvgPicture.asset(
