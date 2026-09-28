@@ -267,6 +267,12 @@ class NodeStateManager implements StateManagerInterface {
     _fetchProgressController.add(_fetchProgressByWallet);
   }
 
+  @override
+  void notifyReceiveDepositDetected(int walletId) {}
+
+  @override
+  void notifyReceiveWalletSynced(int walletId) {}
+
   void handleIsolateStateMessage(IsolateStateMessage message) {
     final methodName = message.methodName;
     final params = message.params;
@@ -305,6 +311,9 @@ class NodeStateManager implements StateManagerInterface {
           break;
         case IsolateStateMethod.addWalletFetchCompleted:
           addWalletFetchCompleted(params[0], params[1]);
+          break;
+        case IsolateStateMethod.notifyReceiveDepositDetected:
+        case IsolateStateMethod.notifyReceiveWalletSynced:
           break;
       }
     } catch (e) {

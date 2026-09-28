@@ -116,6 +116,11 @@ class TransactionSyncService {
       now: now,
     );
     await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
+    final hasNewReceivedDeposit =
+        !inBatchProcess && txRecords.any((record) => record.transactionType == TransactionType.received);
+    if (hasNewReceivedDeposit) {
+      _stateManager.notifyReceiveDepositDetected(walletId);
+    }
 
     // 5. UTXO 상태 업데이트 및 RBF/CPFP 처리
     final RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
@@ -135,6 +140,9 @@ class TransactionSyncService {
 
     // 8. 마무리 단계
     await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
+    if (hasNewReceivedDeposit) {
+      _stateManager.notifyReceiveWalletSynced(walletId);
+    }
 
     return (
       txHashes: txFetchResults.map((tx) => tx.transactionHash).toList(),

@@ -31,4 +31,8 @@ abstract class StateManagerInterface {
 
   /// 지갑의 트랜잭션 fetch 요청이 몇 건 완료됐는지 보고
   void addWalletFetchCompleted(int walletId, int count);
+
+  void notifyReceiveDepositDetected(int walletId);
+
+  void notifyReceiveWalletSynced(int walletId);
 }

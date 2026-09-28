@@ -5,6 +5,13 @@ class AnalyticsEventNames {
   static const String walletAddCompleted = 'wallet_add_completed'; // event
   static const String walletAddSyncCompleted = 'wallet_add_sync_completed'; // event
   static const String walletAddSyncFailed = 'wallet_add_sync_failed'; // event
+  static const String walletAddQrRecognized = 'wallet_add_qr_recognized';
+
+  // 받기 흐름
+  static const String receiveAddressCopied = 'receive_address_copied';
+  static const String receiveQrShown = 'receive_qr_shown';
+  static const String receiveDepositDetected = 'receive_deposit_detected';
+  static const String receiveWalletSynced = 'receive_wallet_synced';
 
   // 앱 구동 또는 재연결 시 이미 등록된 지갑 일괄 재구독 및 동기화 이벤트
   static const String walletBulkSyncCompleted = 'wallet_bulk_sync_completed';

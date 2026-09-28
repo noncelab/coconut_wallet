@@ -209,6 +209,8 @@ void main() {
       verify(stateManager.addWalletSyncState(testWalletId, UpdateElement.transaction)).called(1);
       verify(stateManager.addWalletCompletedState(testWalletId, UpdateElement.transaction)).called(1);
       verify(electrumService.getHistory(any, testAddress)).called(1);
+      verifyNever(stateManager.notifyReceiveDepositDetected(any));
+      verifyNever(stateManager.notifyReceiveWalletSynced(any));
     });
 
     test('미확인 트랜잭션 처리를 올바르게 하는지 확인', () async {
@@ -279,6 +281,35 @@ void main() {
       verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
     });
 
+    test('실시간 새 입금 저장 후 감지와 같은 지갑 동기화 완료를 순서대로 알린다', () async {
+      final externalPrevTx = TransactionMock.createMockTransaction(
+        toAddress: testWalletItem.walletBase.getAddress(9999),
+        amount: 1000000,
+      );
+      final receivedTx = TransactionMock.createMockTransaction(
+        toAddress: testAddress,
+        amount: 900000,
+        inputTransactionHash: externalPrevTx.transactionHash,
+      );
+
+      when(
+        electrumService.getHistory(any, any),
+      ).thenAnswer((_) async => [GetTxHistoryRes(height: 0, txHash: receivedTx.transactionHash)]);
+      when(electrumService.getTransaction(receivedTx.transactionHash)).thenAnswer((_) async => receivedTx.serialize());
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [externalPrevTx]);
+
+      await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
+
+      verifyInOrder([
+        stateManager.notifyReceiveDepositDetected(testWalletId),
+        stateManager.notifyReceiveWalletSynced(testWalletId),
+      ]);
+      final stored = transactionRepository.getTransactionRecord(testWalletId, receivedTx.transactionHash);
+      expect(stored?.transactionType, TransactionType.received);
+    });
+
     test('일괄 처리 모드에서 상태 관리자를 호출하지 않는지 확인', () async {
       // 트랜잭션 없음으로 설정
       when(electrumService.getHistory(any, any)).thenAnswer((_) async => []);
@@ -294,6 +325,8 @@ void main() {
       // 검증 - 상태 관리자가 호출되지 않아야 함
       verifyNever(stateManager.addWalletSyncState(any, any));
       verifyNever(stateManager.addWalletCompletedState(any, any));
+      verifyNever(stateManager.notifyReceiveDepositDetected(any));
+      verifyNever(stateManager.notifyReceiveWalletSynced(any));
     });
 
     test('RBF 트랜잭션을 감지하고 처리하는지 확인', () async {

@@ -1,12 +1,67 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _TestConnectivityProvider extends ChangeNotifier implements ConnectivityProvider {
+  bool internetOn = false;
+
+  @override
+  bool get isInternetOff => !internetOn;
+
+  @override
+  bool get isInternetOn => internetOn;
+
+  @override
+  bool get isVpnActive => false;
+
+  @override
+  bool get isVpnInactive => true;
+
+  @override
+  Future<void> refreshConnectivity() async {}
+}
+
+class _TestIsolateManager extends IsolateManager {
+  late Future<Result<bool>> Function(WalletItemBase wallet) onResync;
+
+  @override
+  Future<Result<bool>> resyncWallet(WalletItemBase walletItem) => onResync(walletItem);
+
+  @override
+  Future<void> closeIsolate() async {}
+}
+
+class _MockWalletItem extends Fake implements WalletItemBase {
+  @override
+  int get id => 7;
+}
+
+class _RecordingAnalyticsService extends AnalyticsService {
+  final List<String> events = [];
+
+  _RecordingAnalyticsService() : super(null, true);
+
+  @override
+  Future<void> logEvent({required String eventName, Map<String, Object>? parameters}) async {
+    events.add(eventName);
+  }
+}
 
 /// [NodeProvider.isChainGenesisMismatch]가 [DefaultElectrumServer]의 실제 서버 구성 기준으로
 /// regtest <-> mainnet 양방향 전환을 정확히 "호환 불가"로 판단하는지 검증한다.
@@ -186,6 +241,65 @@ void main() {
       await future;
 
       expect(syncStateController.hasListener, false, reason: 'race가 끝나면 내부 구독도 정리되어야 leak이 없다.');
+    });
+  });
+
+  group('NodeProvider.resyncWallet analytics', () {
+    late _TestConnectivityProvider connectivityProvider;
+    late _TestIsolateManager isolateManager;
+    late _MockWalletItem wallet;
+    late _RecordingAnalyticsService analytics;
+    late NodeProvider nodeProvider;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      await SharedPrefsRepository().init();
+      connectivityProvider = _TestConnectivityProvider();
+      isolateManager = _TestIsolateManager();
+      wallet = _MockWalletItem();
+      analytics = _RecordingAnalyticsService();
+
+      nodeProvider = NodeProvider(
+        const ElectrumServer('127.0.0.1', 50001, false),
+        NetworkType.regtest,
+        connectivityProvider,
+        ValueNotifier(WalletLoadState.loadCompleted),
+        ValueNotifier([wallet]),
+        analytics,
+        isolateManager: isolateManager,
+      );
+      connectivityProvider.internetOn = true;
+    });
+
+    tearDown(() async {
+      await nodeProvider.closeConnection();
+      connectivityProvider.dispose();
+    });
+
+    test('성공하면 시작과 완료 이벤트를 순서대로 기록한다', () async {
+      isolateManager.onResync = (_) async => Result.success(true);
+
+      final result = await nodeProvider.resyncWallet(wallet);
+
+      expect(result.isSuccess, true);
+      expect(analytics.events, [AnalyticsEventNames.walletResyncStarted, AnalyticsEventNames.walletResyncCompleted]);
+    });
+
+    test('실패 결과면 시작과 실패 이벤트를 순서대로 기록한다', () async {
+      isolateManager.onResync = (_) async => Result.failure(ErrorCodes.nodeUnknown);
+
+      final result = await nodeProvider.resyncWallet(wallet);
+
+      expect(result.isFailure, true);
+      expect(analytics.events, [AnalyticsEventNames.walletResyncStarted, AnalyticsEventNames.walletResyncFailed]);
+    });
+
+    test('예외가 발생해도 실패 이벤트를 기록하고 예외를 다시 던진다', () async {
+      isolateManager.onResync = (_) => throw StateError('resync failed');
+
+      await expectLater(nodeProvider.resyncWallet(wallet), throwsStateError);
+
+      expect(analytics.events, [AnalyticsEventNames.walletResyncStarted, AnalyticsEventNames.walletResyncFailed]);
     });
   });
 }

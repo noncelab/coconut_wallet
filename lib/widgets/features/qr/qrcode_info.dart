@@ -13,6 +13,7 @@ class QrCodeInfo extends StatefulWidget {
   final GlobalKey? qrCaptureKey;
   final TextStyle? textStyle;
   final double? qrInternalPadding;
+  final VoidCallback? onCopied;
 
   const QrCodeInfo({
     super.key,
@@ -24,6 +25,7 @@ class QrCodeInfo extends StatefulWidget {
     this.qrCaptureKey,
     this.textStyle,
     this.qrInternalPadding,
+    this.onCopied,
   });
 
   @override
@@ -54,6 +56,7 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
             textStyle: widget.textStyle ?? CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
             isAddress: widget.isAddress,
             padding: const EdgeInsets.all(20),
+            onCopied: widget.onCopied,
           ),
         ),
       ],

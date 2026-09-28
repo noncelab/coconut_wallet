@@ -20,6 +20,7 @@ class CopyTextContainer extends StatefulWidget {
   final bool showButton;
   final bool isAddress;
   final EdgeInsets? padding;
+  final VoidCallback? onCopied;
 
   const CopyTextContainer({
     super.key,
@@ -35,6 +36,7 @@ class CopyTextContainer extends StatefulWidget {
     this.showButton = true,
     this.isAddress = false,
     this.padding,
+    this.onCopied,
   });
   @override
   State<CopyTextContainer> createState() => _CopyTextContainerState();
@@ -71,6 +73,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
     final colors = context.coconutColors;
     return GestureDetector(
       onTap: () async {
+        final onCopied = widget.onCopied;
         setState(() {
           _textColor = colors.primaryText;
           _buttonColor = colors.surfaceMuted;
@@ -82,6 +85,8 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
           text: widget.copyText ?? widget.text,
           toastMessage: widget.toastMsg,
         );
+        if (!mounted) return;
+        onCopied?.call();
       },
       onTapDown: (details) {
         setState(() {

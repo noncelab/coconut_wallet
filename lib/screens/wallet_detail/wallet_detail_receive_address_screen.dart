@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/receive_analytics.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -14,6 +15,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
@@ -78,6 +80,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     _selectedWalletItem = walletProvider.walletItemList.where((e) => e.id == widget.id).first;
     _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
     _walletCount = walletProvider.walletItemList.length;
+    _startReceiveInteraction();
   }
 
   @override
@@ -219,6 +222,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                           qrData: qrData,
                           embedWidget: const CoconutLogoIcon(size: 16),
                           isAddress: true,
+                          onCopied: _buildAddressCopiedCallback(),
                         ),
                       ],
                     ),
@@ -237,6 +241,19 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     );
   }
 
+  VoidCallback _buildAddressCopiedCallback() {
+    final copiedWalletId = selectedWalletId;
+    final copiedAmountSats = _enteredReceiveAmountSats;
+    final analytics = context.read<AnalyticsService>();
+    final copiedInteractionId = analytics.activeReceiveInteractionId(copiedWalletId);
+
+    return () {
+      if (copiedAmountSats != null || copiedInteractionId == null) return;
+      if (analytics.activeReceiveInteractionId(copiedWalletId) != copiedInteractionId) return;
+      analytics.logReceiveAddressCopied(copiedWalletId);
+    };
+  }
+
   void _onAppBarTitlePressed() {
     if (_walletCount <= 1) return;
     AppGuard.enablePrivacyScreen();
@@ -253,10 +270,20 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
               final walletProvider = context.read<WalletProvider>();
               _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
               _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
+              _startReceiveInteraction();
               setState(() {});
               Navigator.pop(context);
             },
           ),
     ).whenComplete(() => AppGuard.disablePrivacyScreen());
+  }
+
+  void _startReceiveInteraction() {
+    final walletId = selectedWalletId;
+    context.read<AnalyticsService>().startReceiveInteraction(walletId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || selectedWalletId != walletId) return;
+      context.read<AnalyticsService>().logReceiveQrShown(walletId);
+    });
   }
 }

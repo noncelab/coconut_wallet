@@ -5,6 +5,8 @@ import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/analytics/wallet_sync_analytics.dart';
+import 'package:coconut_wallet/analytics/receive_analytics.dart';
+import 'package:coconut_wallet/analytics/wallet_resync_analytics.dart';
 import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -21,6 +23,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
@@ -433,6 +436,14 @@ class NodeProvider extends ChangeNotifier {
       _stateSubscription = null;
       _stateSubscription = _isolateManager.stateStream.listen(
         (message) {
+          if (message.methodName == IsolateStateMethod.notifyReceiveDepositDetected) {
+            _analyticsService?.logReceiveDepositDetected(message.params[0]);
+            return;
+          }
+          if (message.methodName == IsolateStateMethod.notifyReceiveWalletSynced) {
+            _analyticsService?.logReceiveWalletSynced(message.params[0]);
+            return;
+          }
           if (_stateManager == null) {
             Logger.log('NodeProvider: StateManager가 초기화되지 않았습니다.');
             return;
@@ -485,12 +496,21 @@ class NodeProvider extends ChangeNotifier {
       return Result.failure(ErrorCodes.networkError);
     }
 
-    final result = await raceResyncAgainstConnectionLoss(_isolateManager.resyncWallet(walletItem), syncStateStream);
+    _analyticsService?.logWalletResyncStarted();
+    try {
+      final result = await raceResyncAgainstConnectionLoss(_isolateManager.resyncWallet(walletItem), syncStateStream);
 
-    if (result.isSuccess) {
-      await _sharedPrefs.setWalletLastResyncTimestamp(walletItem.id, DateTime.now());
+      if (result.isSuccess) {
+        await _sharedPrefs.setWalletLastResyncTimestamp(walletItem.id, DateTime.now());
+        _analyticsService?.logWalletResyncCompleted();
+      } else {
+        _analyticsService?.logWalletResyncFailed();
+      }
+      return result;
+    } catch (_) {
+      _analyticsService?.logWalletResyncFailed();
+      rethrow;
     }
-    return result;
   }
 
   /// [isolateFuture]와 [syncStateStream]의 다음 [NodeSyncState.failed] 이벤트 중

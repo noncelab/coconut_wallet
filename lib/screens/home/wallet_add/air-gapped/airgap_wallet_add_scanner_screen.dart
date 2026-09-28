@@ -19,6 +19,7 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/analytics/receive_analytics.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -537,6 +538,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     FileLogger.log(className, methodName, 'additionInfo type: ${additionInfo.runtimeType}');
     if (_isProcessing) return;
     _isProcessing = true;
+    context.read<AnalyticsService>().logWalletAddQrRecognized();
 
     try {
       String? mfp;
