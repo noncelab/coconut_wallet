@@ -126,6 +126,9 @@ class WalletProvider extends ChangeNotifier {
     _unsubscribeWallet = unsubscribeWallet;
   }
 
+  bool get hasHotWalletWithBalance =>
+      _walletItemList.any((wallet) => wallet.hasLocalKey && getWalletBalance(wallet.id).total > 0);
+
   Map<int, Balance> fetchWalletBalanceMap() {
     return {for (var wallet in _walletItemList) wallet.id: getWalletBalance(wallet.id)};
   }

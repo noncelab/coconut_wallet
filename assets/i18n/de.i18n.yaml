@@ -927,6 +927,9 @@ pin_setting_screen:
   set_to_6_digit: "Auf 6-stelliges Passwort setzen"
   set_to_4_digit: "Auf 4-stelliges Passwort setzen"
 settings_screen:
+  disable_app_lock_title: "App-Sperre deaktivieren?"
+  disable_app_lock_description: "Du hast eine Hot Wallet mit Guthaben. Wenn du die App-Sperre deaktivierst, werden für das Senden aus Hot Wallets und das Anzeigen der Mnemonics weder die App-PIN noch eine biometrische Authentifizierung angefordert."
+  disable_app_lock_confirm: "Sperre deaktivieren"
   set_password: "Passwort festlegen"
   use_biometric: "Biometrische Authentifizierung verwenden"
   change_password: "Passwort ändern"

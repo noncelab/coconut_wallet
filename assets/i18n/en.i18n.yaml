@@ -994,6 +994,9 @@ pin_setting_screen:
   set_to_6_digit: "Set to 6-digit password"
   set_to_4_digit: "Set to 4-digit password"
 settings_screen:
+  disable_app_lock_title: "Disable app lock?"
+  disable_app_lock_description: "You have a hot wallet with a balance. If you disable app lock, sending from hot wallets and viewing mnemonics will no longer require your app PIN or biometric authentication."
+  disable_app_lock_confirm: "Disable lock"
   set_password: "Set Password"
   use_biometric: "Use Biometric Auth"
   change_password: "Change Password"

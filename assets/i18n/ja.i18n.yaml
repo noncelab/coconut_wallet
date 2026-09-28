@@ -981,6 +981,9 @@ pin_setting_screen:
   set_to_6_digit: "6桁パスワードに設定"
   set_to_4_digit: "4桁パスワードに設定"
 settings_screen:
+  disable_app_lock_title: "アプリロックを解除しますか？"
+  disable_app_lock_description: "残高のあるホットウォレットがあります。アプリロックを解除すると、ホットウォレットからの送金やニーモニックの表示に、アプリのPINや生体認証が要求されなくなります。"
+  disable_app_lock_confirm: "ロックを解除"
   set_password: "パスワード設定"
   use_biometric: "生体認証を使用"
   change_password: "パスワード変更"

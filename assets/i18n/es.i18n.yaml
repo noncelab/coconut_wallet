@@ -985,6 +985,9 @@ pin_setting_screen:
   set_to_6_digit: "Establecer contraseña de 6 dígitos"
   set_to_4_digit: "Establecer contraseña de 4 dígitos"
 settings_screen:
+  disable_app_lock_title: "¿Desactivar el bloqueo de la aplicación?"
+  disable_app_lock_description: "Tienes una billetera caliente con saldo. Si desactivas el bloqueo, no se solicitará el PIN de la aplicación ni la autenticación biométrica para enviar desde billeteras calientes o consultar las frases mnemónicas."
+  disable_app_lock_confirm: "Desactivar bloqueo"
   set_password: "Establecer contraseña"
   use_biometric: "Usar autenticación biométrica"
   change_password: "Cambiar contraseña"

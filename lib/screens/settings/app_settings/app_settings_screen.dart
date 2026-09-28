@@ -1,6 +1,8 @@
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutPopup;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutPopup;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
@@ -37,6 +39,8 @@ class AppSettingsScreen extends StatefulWidget {
 }
 
 class _AppSettingsScreen extends State<AppSettingsScreen> {
+  bool _isDisablingAppLock = false;
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<AuthProvider, PreferenceProvider, SettingsViewModel>(
@@ -73,15 +77,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                               return;
                             }
 
-                            final authProvider = viewModel.authProvider;
-                            if (await authProvider.isBiometricsAuthValid()) {
-                              viewModel.deletePin();
-                              return;
-                            }
-
-                            if (await _requestPin()) {
-                              viewModel.deletePin();
-                            }
+                            await _disableAppLock();
                           },
                         ),
                       ),
@@ -363,6 +359,40 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
       heightRatio: 0.9,
       child: CustomLoadingOverlay(child: PinSettingScreen(useBiometrics: useBiometrics)),
     );
+  }
+
+  Future<void> _disableAppLock() async {
+    if (_isDisablingAppLock) return;
+    _isDisablingAppLock = true;
+    try {
+      final authProvider = context.read<AuthProvider>();
+      if (context.read<WalletProvider>().hasHotWalletWithBalance) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder:
+              (dialogContext) => CoconutPopup(
+                languageCode: context.read<PreferenceProvider>().language,
+                title: t.settings_screen.disable_app_lock_title,
+                description: t.settings_screen.disable_app_lock_description,
+                leftButtonText: t.cancel,
+                rightButtonText: t.settings_screen.disable_app_lock_confirm,
+                onTapLeft: () => Navigator.of(dialogContext).pop(false),
+                onTapRight: () => Navigator.of(dialogContext).pop(true),
+              ),
+        );
+        if (!mounted || confirmed != true) return;
+      }
+
+      final biometricVerified = await authProvider.isBiometricsAuthValid();
+      if (!mounted) return;
+      if (!biometricVerified) {
+        final pinVerified = await _requestPin();
+        if (!mounted || !pinVerified) return;
+      }
+      await authProvider.deletePin();
+    } finally {
+      _isDisablingAppLock = false;
+    }
   }
 
   Future<bool> _requestPin() async {
