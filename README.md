@@ -80,16 +80,19 @@ flowchart LR
     G[Fallback key<br/>in platform Secure Storage] -->|Wraps| W
     W --> S
 
-    H[Sign or view backup] --> I{App lock enabled?}
+    H[Later signing or backup access] --> I{App lock enabled?}
     I -->|Yes| J[Biometrics or app PIN]
     I -->|No| K[Continue]
     J --> L[Unwrap DEK and decrypt temporarily]
     K --> L
-    L --> M[Verify wallet identity and sign]
-    M --> N[Best-effort memory wipe]
+    L --> M{Requested operation}
+    M -->|Sign| O[Verify wallet identity and sign]
+    M -->|Backup| P[Display mnemonic]
+    O --> N[Best-effort memory wipe]
+    P --> N
 ```
 
-The mnemonic is decrypted only when it is needed for signing or backup display. When app lock is enabled, biometric authentication or the app PIN is required first. A hot wallet still keeps signing keys on an online device, so it does not provide the same isolation as a watch-only wallet used with an offline signer.
+After setup, the stored mnemonic is decrypted only when it is needed for signing or backup display. The backup shown immediately after creation or restoration uses the mnemonic already held in memory. When app lock is enabled, later access requires biometric authentication or the app PIN first. A hot wallet still keeps signing keys on an online device, so it does not provide the same isolation as a watch-only wallet used with an offline signer.
 
 See [Hot Wallet Security Architecture](./docs/security/hot_wallet_security.md) for implementation details, platform behavior, passphrase handling, deletion, and security boundaries.
 

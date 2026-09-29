@@ -7,13 +7,13 @@ This document explains how Coconut Wallet protects hot-wallet secrets. It is wri
 - Hot-wallet support is optional. Coconut Wallet remains focused on the watch-only experience.
 - A hot wallet keeps its signing secret on the online phone. It is more convenient, but it does not have the same isolation as a watch-only wallet paired with an offline signer.
 - Each hot wallet is encrypted independently. It does not share one encryption key with every other hot wallet in the app.
-- Coconut Wallet requires a device screen lock at the time a hot wallet is created or restored.
-- App lock is optional. When enabled, signing and mnemonic access require biometrics or the app PIN.
+- The normal create and restore entry flow requires a device screen lock at setup time. This is a UI prerequisite rather than an input to key derivation.
+- App lock is optional. When enabled, later signing and mnemonic access require biometrics or the app PIN. The backup shown immediately after creation or restoration uses the mnemonic already held in memory during that setup flow.
 - A mnemonic backup is still essential. Device loss, app deletion, storage corruption, or loss of a device-bound key can make the wallet unavailable.
 
 ## Stored data
 
-The mnemonic and the passphrase selected for storage are encoded as bytes and encrypted with AES-256-GCM. A fresh random 256-bit data encryption key (DEK) is generated for every hot wallet.
+The mnemonic and the passphrase selected for storage are encoded as bytes and encrypted with AES-256-GCM. When the user chooses to enter the passphrase for each signature, the stored passphrase field is empty. A fresh random 256-bit data encryption key (DEK) is generated for every hot wallet.
 
 The encrypted payload contains:
 
@@ -39,8 +39,8 @@ flowchart TD
     C --> E
     D --> E
 
-    F[StrongBox / TEE / Secure Enclave] -->|Keeps non-exportable wrapping keys| C
-    F -->|Keeps non-exportable wrapping keys| D
+    F1[Non-exportable device key 1<br/>StrongBox / TEE / Secure Enclave] -->|Wraps DEK 1| C
+    F2[Non-exportable device key 2<br/>StrongBox / TEE / Secure Enclave] -->|Wraps DEK 2| D
 ```
 
 On the hardware-backed path, Secure Storage holds only the encrypted payload and wrapped DEK; the non-exportable wrapping key stays in StrongBox, the TEE, or Secure Enclave. On the fallback path, Secure Storage also holds the separate random key used to wrap the DEK.
@@ -53,13 +53,15 @@ Coconut Wallet attempts the strongest supported device-backed path first.
 
 | Platform | Preferred protection | Implementation |
 |---|---|---|
-| Android | StrongBox, then hardware-backed TEE | A non-exportable RSA-2048 key in Android Keystore wraps the wallet DEK with OAEP-SHA-256. Software-backed Keystore keys are rejected. |
+| Android | StrongBox, then hardware-backed TEE | A non-exportable RSA-2048 key in Android Keystore wraps the wallet DEK with RSA-OAEP using SHA-256 and MGF1-SHA-1. Software-backed Keystore keys are rejected. |
 | iOS | Secure Enclave | A permanent Secure Enclave P-256 key wraps the wallet DEK with ECIES using SHA-256 and AES-GCM. |
 | Unsupported environment | Platform Secure Storage fallback | A separate random 256-bit key is stored in Secure Storage and wraps the DEK with AES-256-GCM. |
 
 The fallback preserves encryption at rest but does not provide the same hardware separation as StrongBox, a hardware-backed TEE, or Secure Enclave.
 
 The device keys currently protect key material from export, but they are not configured to require an operating-system authentication prompt for every unwrap. Coconut Wallet applies its optional app-lock policy before sensitive actions.
+
+The setup-time device-screen-lock check is not used to derive or wrap the DEK. With the current key configuration, removing the device screen lock after setup does not intentionally invalidate an existing hot wallet key. On iOS, the Secure Enclave key is configured as accessible while the device is unlocked; Android sets `setUserAuthenticationRequired(false)`.
 
 ## Authentication, unlock, and signing
 
@@ -85,14 +87,20 @@ sequenceDiagram
     HW-->>Repo: DEK
     Repo->>Repo: AES-256-GCM decrypt payload
     Repo-->>UI: Mnemonic and stored passphrase bytes
-    UI->>Signer: Sign PSBT in a background isolate
-    Signer->>Signer: Verify derived extended public key
-    Signer->>Signer: Add signature and validate transaction
-    Signer-->>UI: Signed PSBT
+    alt Signing
+        UI->>Signer: Sign PSBT in a background isolate
+        Signer->>Signer: Verify derived extended public key
+        Signer->>Signer: Add signature and validate transaction
+        Signer-->>UI: Signed PSBT
+    else Backup display
+        UI->>UI: Display mnemonic to the user
+    end
     UI->>UI: Overwrite mutable secret buffers
 ```
 
 Before signing, the derived extended public key must match the wallet being used. This prevents a mnemonic or passphrase for another wallet from signing through the wrong wallet record. The resulting PSBT is also parsed and checked as a signed transaction before it is returned.
+
+Authentication is enforced by the calling UI through `FlutterHotWalletAuthenticator` or `HotWalletUnlockService`. `HotWalletSigningService` and `HotWalletSecretRepository.unlockAfterAuthentication` assume that this check has already completed; they do not independently verify app authentication state. New sensitive call sites must preserve this boundary.
 
 Secret values are handled as mutable byte arrays where practical. The implementation overwrites the DEK, mnemonic, passphrase, decoded payload, and signing copies after use. This is a best-effort memory hygiene measure; managed runtimes and platform channels may create internal copies that the application cannot reliably erase.
 
@@ -107,7 +115,7 @@ An incorrect passphrase derives a different wallet and fails the identity check.
 
 ## Deletion and lifecycle cleanup
 
-Deleting a hot wallet removes its encrypted payload, fallback wrapping key if present, secret index entry, and device-key alias. Creation failures also attempt to roll back every partially created record. Startup cleanup removes unreferenced hot-wallet hardware aliases left by interrupted operations.
+Deleting a hot wallet removes its encrypted payload, fallback wrapping key if present, secret index entry, and device-key alias. Creation failures also attempt to roll back every partially created record. After the wallet list is loaded at startup, background lifecycle reconciliation retries interrupted cleanup and removes unreferenced hot-wallet hardware aliases.
 
 Because each wallet has its own secret record and alias, deleting one hot wallet does not intentionally remove the keys for another hot wallet.
 
