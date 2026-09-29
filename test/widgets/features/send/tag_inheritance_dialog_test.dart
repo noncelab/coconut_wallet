@@ -145,6 +145,33 @@ void main() {
     expect(result, ['tag-1', 'tag-2', 'tag-3', 'tag-4', 'tag-5']);
   });
 
+  testWidgets('tag positions stay fixed when selecting and deselecting', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final candidates = [
+      for (final (index, name) in ['gift', 'business', 'travel', 'refund', '저축', '급여'].indexed)
+        UtxoTag(id: 'tag-$index', walletId: 1, name: name, colorIndex: index),
+    ];
+    List<Offset> positions() => [for (final tag in candidates) tester.getTopLeft(find.byKey(ValueKey(tag.id)))];
+
+    for (final width in [320.0, 414.0]) {
+      for (final textScale in [1.0, 2.0]) {
+        tester.view.physicalSize = Size(width, 896);
+        await openDialog(tester, candidates, (_) {}, textScale: textScale);
+        final initialPositions = positions();
+        for (final index in [0, 1, 2, 3, 4, 5, 0, 5, 1, 2, 3, 4, 5]) {
+          await tester.tap(find.byKey(ValueKey('tag-$index')));
+          await tester.pump();
+          expect(positions(), initialPositions, reason: 'width=$width, textScale=$textScale, tag=$index');
+          expect(tester.takeException(), isNull);
+        }
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+      }
+    }
+  });
+
   testWidgets('large text keeps long tags scrollable and actions accessible', (tester) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;

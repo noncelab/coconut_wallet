@@ -92,15 +92,21 @@ class _TagInheritanceDialogState extends State<TagInheritanceDialog> {
                               label: '#${tag.name}',
                               excludeSemantics: true,
                               onTap: toggleTag,
-                              child: CoconutChip(
-                                key: ValueKey(tag.id),
-                                label: keepKoreanWordsTogether('#${tag.name}'),
-                                color: WalletVisualStyleUtil.getColor(tag.colorIndex).backgroundColor,
-                                borderColor: selected ? colors.primaryText : colors.border,
-                                labelColor: colors.primaryText,
-                                isSelected: selected,
-                                padding: const EdgeInsets.all(Sizes.size12),
-                                onTap: toggleTag,
+                              // Reserve both chip sizes so selection does not reflow the tags.
+                              child: IndexedStack(
+                                index: selected ? 1 : 0,
+                                children: [
+                                  for (final isSelected in [false, true])
+                                    CoconutChip(
+                                      key: isSelected == selected ? ValueKey(tag.id) : null,
+                                      label: keepKoreanWordsTogether('#${tag.name}'),
+                                      color: WalletVisualStyleUtil.getColor(tag.colorIndex).backgroundColor,
+                                      borderColor: isSelected ? colors.primaryText : colors.border,
+                                      labelColor: colors.primaryText,
+                                      isSelected: isSelected,
+                                      onTap: toggleTag,
+                                    ),
+                                ],
                               ),
                             );
                           }).toList(),
