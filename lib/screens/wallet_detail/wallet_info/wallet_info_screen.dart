@@ -585,22 +585,16 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   Future<String?> _showMfpInputBottomSheet() async {
-    final result = await showModalBottomSheet<String>(
+    final result = await CommonBottomSheets.showBottomSheet_100<String>(
       context: context,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: WalletAddMfpInputBottomSheet(
-            onComplete: (text) {
-              Navigator.pop(context, text);
-            },
-          ),
-        );
-      },
+      screenName: AnalyticsScreenNames.walletInfoMfpSheet,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      enableDrag: true,
-      useSafeArea: true,
+      isDismissible: true,
+      child: WalletAddMfpInputBottomSheet(
+        onComplete: (text) {
+          Navigator.pop(context, text);
+        },
+      ),
     );
 
     if (result != null && result.isNotEmpty && mounted) {

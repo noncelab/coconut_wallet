@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -9,7 +8,7 @@ class WalletInfoEditViewModel extends ChangeNotifier {
   late String _walletName;
   late int _iconIndex;
   late int _colorIndex;
-  late List<WalletItemBase> _walletList;
+  late String _walletDescriptor;
 
   bool _isProcessing = false;
   bool _isNameDuplicated = false;
@@ -20,6 +19,7 @@ class WalletInfoEditViewModel extends ChangeNotifier {
   WalletInfoEditViewModel(this._walletId, this._walletProvider) {
     final walletItemBase = _walletProvider.getWalletById(_walletId);
     _walletName = walletItemBase.name;
+    _walletDescriptor = walletItemBase.descriptor;
 
     try {
       final dynamicWallet = walletItemBase as dynamic;
@@ -29,8 +29,6 @@ class WalletInfoEditViewModel extends ChangeNotifier {
       _iconIndex = 0;
       _colorIndex = 0;
     }
-
-    _walletList = _walletProvider.walletItemList;
   }
 
   String get walletName => _walletName;
@@ -58,7 +56,15 @@ class WalletInfoEditViewModel extends ChangeNotifier {
     if (_isSameAsCurrentName) {
       _isNameDuplicated = false;
     } else {
-      _isNameDuplicated = _walletList.any((wallet) => wallet.name == trimmedName);
+      final resolvedName = _walletProvider.resolveWalletNameConflict(
+        desiredName: trimmedName,
+        descriptor: _walletDescriptor,
+        isSingleSig: true,
+        excludeWalletId: _walletId,
+      );
+      // 동일 주소의 Watch-only/핫월렛은 입력한 이름이 그대로 반환된다.
+      // 다른 계정처럼 대체 이름이 필요한 경우에는 이름 변경 화면에서 자동 변경하지 않고 충돌로 안내한다.
+      _isNameDuplicated = resolvedName != trimmedName;
     }
 
     notifyListeners();

@@ -222,10 +222,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   bool shouldUseShortWarningDelay(WalletDetailSecurityWarningType type) => _nextWarningAfterDismissal == type;
 
-  Future<void> dismissSecurityWarning(
-    WalletDetailSecurityWarningType type, {
-    required bool showNextWarning,
-  }) async {
+  Future<void> dismissSecurityWarning(WalletDetailSecurityWarningType type, {required bool showNextWarning}) async {
     _dismissedWarningsThisSession.add(type);
     await _sharedPrefs.setInt(type.dismissedAtKey, DateTime.now().millisecondsSinceEpoch);
     if (_isDisposed) return;

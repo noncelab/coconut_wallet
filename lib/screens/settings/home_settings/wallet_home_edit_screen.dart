@@ -24,11 +24,13 @@ import 'package:coconut_wallet/providers/view_model/home/wallet_home_edit_view_m
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/text/fixed_text_scale.dart';
+import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/settings/home_settings/home_add_wallet_option_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -424,12 +426,12 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
   }
 
   Future<void> _showHomeAddWalletOptionBottomSheet(WalletHomeEditViewModel viewModel) async {
-    final selectedOption = await showModalBottomSheet<HomeAddWalletOption>(
+    final selectedOption = await CommonBottomSheets.showBottomSheet_100<HomeAddWalletOption>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
+      screenName: AnalyticsScreenNames.walletHomeEditAddWalletOptionSheet,
+      isDismissible: true,
       backgroundColor: context.coconutColors.surfaceBottomSheet,
-      builder: (_) => HomeAddWalletOptionBottomSheet(initialOption: viewModel.tempHomeAddWalletOption),
+      child: HomeAddWalletOptionBottomSheet(initialOption: viewModel.tempHomeAddWalletOption),
     );
     if (selectedOption != null && mounted) {
       viewModel.setTempHomeAddWalletOption(selectedOption);

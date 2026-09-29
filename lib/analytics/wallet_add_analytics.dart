@@ -5,6 +5,20 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 
 // 지갑 추가 퍼널
 extension WalletAddAnalytics on AnalyticsService {
+  void logWalletAddMenuEntered({required bool isHotWallet}) {
+    logEvent(
+      eventName: AnalyticsEventNames.walletAddMenuEntered,
+      parameters: {AnalyticsParameterNames.walletType: isHotWallet ? 'hotWallet' : 'watchOnly'},
+    );
+  }
+
+  void logHotWalletFlowEntered({required bool isRestore}) {
+    logEvent(
+      eventName: AnalyticsEventNames.hotWalletFlowEntered,
+      parameters: {AnalyticsParameterNames.hotWalletAction: isRestore ? 'restore' : 'create'},
+    );
+  }
+
   void logWalletAddButtonClicked() {
     logEvent(eventName: AnalyticsEventNames.walletAddButtonClicked);
   }
@@ -13,13 +27,6 @@ extension WalletAddAnalytics on AnalyticsService {
     logEvent(
       eventName: AnalyticsEventNames.walletAddScreenEntered,
       parameters: {AnalyticsParameterNames.walletAddImportSource: importSource.name},
-    );
-  }
-
-  void logHotWalletAddScreenEntered() {
-    logEvent(
-      eventName: AnalyticsEventNames.walletAddScreenEntered,
-      parameters: {AnalyticsParameterNames.walletAddImportSource: 'hotWallet'},
     );
   }
 

@@ -1720,17 +1720,17 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   void showWalletRenameBottomSheet(WalletItemBase walletItem) {
-    showModalBottomSheet(
+    CommonBottomSheets.showBottomSheet_100<void>(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.walletHomeEditWalletSheet,
+      isDismissible: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (_) => WalletInfoEditBottomSheet(
-            id: walletItem.id,
-            walletImportSource: walletItem.walletImportSource,
-            isCustomAccount: false,
-            isHotWallet: walletItem.hasLocalKey,
-          ),
+      child: WalletInfoEditBottomSheet(
+        id: walletItem.id,
+        walletImportSource: walletItem.walletImportSource,
+        isCustomAccount: false,
+        isHotWallet: walletItem.hasLocalKey,
+      ),
     );
   }
 

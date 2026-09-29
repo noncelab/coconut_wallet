@@ -38,8 +38,10 @@ class WalletAddDialog extends StatelessWidget {
   const WalletAddDialog({super.key, required this.animation, required this.mode});
 
   static Future<void> show(BuildContext context, WalletAddDialogMode mode) async {
-    if (mode == WalletAddDialogMode.hotWalletAction) {
-      context.read<AnalyticsService>().logHotWalletAddScreenEntered();
+    if (mode != WalletAddDialogMode.walletType) {
+      context.read<AnalyticsService>().logWalletAddMenuEntered(
+        isHotWallet: mode == WalletAddDialogMode.hotWalletAction,
+      );
     }
     await showGeneralDialog<void>(
       context: context,
@@ -245,6 +247,7 @@ class WalletAddDialog extends StatelessWidget {
   Future<void> _openHotWalletScreen(BuildContext context, String routeName) async {
     if (!await _ensureDevicePasscodeIsSet(context) || !context.mounted) return;
 
+    context.read<AnalyticsService>().logHotWalletFlowEntered(isRestore: routeName == AppRouteNames.hotWalletRestore);
     final navigator = Navigator.of(context);
     navigator.pop();
     navigator.pushNamed(routeName);

@@ -858,11 +858,12 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     if (viewModel.selectedUtxoIds.isEmpty) return;
 
     final selectedUtxoIds = viewModel.selectedUtxoIds.toList();
-    final result = await showModalBottomSheet<TagApplyResult>(
+    final result = await CommonBottomSheets.showBottomSheet_100<TagApplyResult>(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.utxoOverviewTagApplySheet,
+      isDismissible: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
+      child: TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
     );
 
     if (result == null) return;

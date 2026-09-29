@@ -18,6 +18,8 @@ class AnalyticsScreenNames {
   static const String walletHomeAnalysisFilterSheet = 'wallet-home-analysis-filter-sheet';
   static const String walletHomeGlossaryTermDetailSheet = 'wallet-home-glossary-term-detail-sheet';
   static const String walletHomeDeleteWalletAuthSheet = 'wallet-home-delete-wallet-auth-sheet';
+  static const String walletHomeEditWalletSheet = 'wallet-home-edit-wallet-sheet';
+  static const String walletHomeEditAddWalletOptionSheet = 'wallet-home-edit-add-wallet-option-sheet';
   static const String walletListPinCheckSheet = 'wallet-list-pin-check-sheet';
   static const String walletListSettingsSheet = 'wallet-list-settings-sheet';
   static const String walletListItemOptionsSheet = 'wallet-list-item-options-sheet';
