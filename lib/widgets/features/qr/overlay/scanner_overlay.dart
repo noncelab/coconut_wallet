@@ -23,6 +23,17 @@ class ScannerOverlay extends StatelessWidget {
     final scanSize = preferredSize.clamp(0.0, size.shortestSide);
     return Rect.fromCenter(center: size.center(Offset.zero), width: scanSize, height: scanSize);
   }
+
+  static double calculateScanAreaSize(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isWideScreen = size.width > 600;
+
+    return (size.width < 400 || size.height < 400)
+        ? 320.0
+        : isWideScreen
+        ? 500.0
+        : size.width * 0.85;
+  }
 }
 
 class _ScannerOverlayPainter extends CustomPainter {

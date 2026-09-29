@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/coconut_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/features/qr/overlay/scanner_overlay.dart';
@@ -51,6 +53,50 @@ void main() {
     MobileScannerPlatform.instance = originalPlatform;
     await platform.captures.close();
   });
+
+  for (final signedPsbt in [false, true]) {
+    testWidgets('${signedPsbt ? "PSBT" : "wallet"} preserves the original progress spacing', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(414, 896);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+      final scanner = CoconutQrScanner(
+        setMobileScannerController: (_) {},
+        onComplete: (_) => fail('A partial QR must not complete'),
+        onFailed: (message, _) => fail(message),
+        qrDataHandler: BbQrScanDataHandler(),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(),
+          home: MediaQuery(
+            data: const MediaQueryData(size: Size(414, 896), padding: EdgeInsets.only(top: 48, bottom: 34)),
+            child: Builder(
+              builder:
+                  (context) => Scaffold(
+                    appBar: CoconutAppBar.build(context: context, isBottom: !signedPsbt),
+                    body: signedPsbt ? SafeArea(child: Stack(children: [scanner])) : Stack(children: [scanner]),
+                  ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final cameraFinder = find.byType(MobileScanner);
+      final camera = tester.widget<MobileScanner>(cameraFinder);
+      camera.onDetect!(const BarcodeCapture(barcodes: [Barcode(rawValue: r'B$2J0700MZXW6YTB')]));
+      await tester.pumpAndSettle();
+
+      final progress = tester.getRect(find.ancestor(of: find.text('14%'), matching: find.byType(Row)));
+      final scanBottom = tester.getTopLeft(cameraFinder).dy + camera.scanWindow!.bottom;
+      expect(progress.top - scanBottom, signedPsbt ? 69 : 54);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+  }
 
   for (final addressScanner in [false, true]) {
     final scannerName = addressScanner ? 'address' : 'wallet/PSBT';
