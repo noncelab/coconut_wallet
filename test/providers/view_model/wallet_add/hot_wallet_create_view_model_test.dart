@@ -91,6 +91,32 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('HotWalletCreateViewModel', () {
+    test('mainnet에서는 mainnet descriptor로 지갑을 생성한다', () async {
+      NetworkType.setNetworkType(NetworkType.mainnet);
+      final secretRepository = _FakeSecretRepository();
+      final walletProvider = _FakeWalletProvider();
+      final viewModel = HotWalletCreateViewModel(walletProvider, secretRepository: secretRepository);
+
+      try {
+        final result = await viewModel.createWallet(
+          walletName: 'Mainnet Hot Wallet',
+          colorIndex: 0,
+          iconIndex: 0,
+          mnemonicWordCount: 12,
+          passphrase: '',
+          enterPassphraseWhenSigning: false,
+        );
+
+        expect(result.descriptor, contains('zpub'));
+        expect(result.descriptor, contains("/84'/0'/0'"));
+        expect(() => SingleSignatureWallet.fromDescriptor(result.descriptor), returnsNormally);
+        result.clearSensitiveBytes();
+      } finally {
+        viewModel.dispose();
+        NetworkType.setNetworkType(NetworkType.testnet);
+      }
+    });
+
     for (final wordCount in [12, 24]) {
       test('$wordCount단어를 생성하고 실제 passphrase의 descriptor와 저장 secret이 일치한다', () async {
         final secretRepository = _FakeSecretRepository();

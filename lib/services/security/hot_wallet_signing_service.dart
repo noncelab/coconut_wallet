@@ -19,6 +19,7 @@ typedef _HotWalletSigningArguments =
       String addressTypeName,
       int accountIndex,
       String expectedExtendedPublicKey,
+      String networkType,
       String unsignedPsbt,
     });
 
@@ -29,6 +30,7 @@ typedef _HotWalletPassphraseValidationArguments =
       String addressTypeName,
       int accountIndex,
       String expectedExtendedPublicKey,
+      String networkType,
     });
 
 class HotWalletSigningService {
@@ -51,6 +53,7 @@ class HotWalletSigningService {
         accountIndex: request.accountIndex,
         expectedExtendedPublicKey: request.expectedExtendedPublicKey,
         unsignedPsbt: request.unsignedPsbt,
+        networkType: NetworkType.currentNetworkType.toString(),
       ));
     } finally {
       mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
@@ -76,6 +79,7 @@ class HotWalletSigningService {
         addressTypeName: addressTypeName,
         accountIndex: accountIndex,
         expectedExtendedPublicKey: expectedExtendedPublicKey,
+        networkType: NetworkType.currentNetworkType.toString(),
       ));
     } finally {
       mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
@@ -86,6 +90,7 @@ class HotWalletSigningService {
 }
 
 bool _validateHotWalletPassphraseInBackground(_HotWalletPassphraseValidationArguments arguments) {
+  NetworkType.setNetworkType(NetworkType.getNetworkType(arguments.networkType));
   SingleSignatureVault? vault;
   try {
     vault = SingleSignatureVault.fromMnemonic(
@@ -103,6 +108,7 @@ bool _validateHotWalletPassphraseInBackground(_HotWalletPassphraseValidationArgu
 }
 
 String _signHotWalletInBackground(_HotWalletSigningArguments arguments) {
+  NetworkType.setNetworkType(NetworkType.getNetworkType(arguments.networkType));
   SingleSignatureVault? vault;
   try {
     final addressType = AddressType.getAddressTypeFromName(arguments.addressTypeName);

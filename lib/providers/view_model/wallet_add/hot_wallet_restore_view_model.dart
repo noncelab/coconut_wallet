@@ -9,7 +9,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:flutter/foundation.dart';
 
-String _deriveDescriptor(({Uint8List mnemonic, Uint8List passphrase}) input) {
+String _deriveDescriptor(({Uint8List mnemonic, Uint8List passphrase, String networkType}) input) {
+  NetworkType.setNetworkType(NetworkType.getNetworkType(input.networkType));
   final seed = Seed.fromMnemonic(input.mnemonic, passphrase: input.passphrase);
   try {
     return SingleSignatureVault.fromSeed(seed).descriptor;
@@ -20,7 +21,8 @@ String _deriveDescriptor(({Uint8List mnemonic, Uint8List passphrase}) input) {
   }
 }
 
-String _deriveMasterFingerprint(({Uint8List mnemonic, Uint8List passphrase}) input) {
+String _deriveMasterFingerprint(({Uint8List mnemonic, Uint8List passphrase, String networkType}) input) {
+  NetworkType.setNetworkType(NetworkType.getNetworkType(input.networkType));
   final seed = Seed.fromMnemonic(input.mnemonic, passphrase: input.passphrase);
   try {
     final vault = SingleSignatureVault.fromSeed(seed);
@@ -232,7 +234,11 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     final mnemonicCopy = Uint8List.fromList(mnemonic);
     final passphraseCopy = Uint8List.fromList(passphrase);
     try {
-      final descriptor = await compute(_deriveDescriptor, (mnemonic: mnemonicCopy, passphrase: passphraseCopy));
+      final descriptor = await compute(_deriveDescriptor, (
+        mnemonic: mnemonicCopy,
+        passphrase: passphraseCopy,
+        networkType: NetworkType.currentNetworkType.toString(),
+      ));
       if (revision != _inputRevision || _disposed) {
         throw StateError('Restore input changed during derivation');
       }
@@ -257,7 +263,11 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     final mnemonicCopy = Uint8List.fromList(mnemonic);
     final passphraseCopy = Uint8List.fromList(passphrase);
     try {
-      return await compute(_deriveMasterFingerprint, (mnemonic: mnemonicCopy, passphrase: passphraseCopy));
+      return await compute(_deriveMasterFingerprint, (
+        mnemonic: mnemonicCopy,
+        passphrase: passphraseCopy,
+        networkType: NetworkType.currentNetworkType.toString(),
+      ));
     } finally {
       mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
       passphraseCopy.fillRange(0, passphraseCopy.length, 0);
@@ -292,7 +302,11 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
         final mnemonicCopy = Uint8List.fromList(mnemonic);
         final passphraseCopy = Uint8List.fromList(passphrase);
         try {
-          descriptor = await compute(_deriveDescriptor, (mnemonic: mnemonicCopy, passphrase: passphraseCopy));
+          descriptor = await compute(_deriveDescriptor, (
+            mnemonic: mnemonicCopy,
+            passphrase: passphraseCopy,
+            networkType: NetworkType.currentNetworkType.toString(),
+          ));
         } finally {
           mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
           passphraseCopy.fillRange(0, passphraseCopy.length, 0);

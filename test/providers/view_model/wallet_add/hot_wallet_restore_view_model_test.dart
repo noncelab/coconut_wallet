@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_restore_view_model.dart';
@@ -117,6 +118,23 @@ void main() {
   });
 
   group('HotWalletRestoreViewModel', () {
+    test('mainnet에서는 mainnet descriptor를 파생한다', () async {
+      NetworkType.setNetworkType(NetworkType.mainnet);
+      final viewModel = HotWalletRestoreViewModel();
+      viewModel.applyWords(0, [...List.filled(11, 'abandon'), 'about']);
+
+      try {
+        final descriptor = await viewModel.deriveDescriptor();
+
+        expect(descriptor, contains('zpub'));
+        expect(descriptor, contains("/84'/0'/0'"));
+        expect(() => SingleSignatureWallet.fromDescriptor(descriptor), returnsNormally);
+      } finally {
+        viewModel.dispose();
+        NetworkType.setNetworkType(NetworkType.testnet);
+      }
+    });
+
     test('validates a complete BIP39 mnemonic', () {
       final viewModel = HotWalletRestoreViewModel();
       viewModel.applyWords(0, [

@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter/foundation.dart';
 
-typedef _PassphraseMatchBytesArguments = ({Uint8List mnemonic, String passphrase, String descriptor});
+typedef _PassphraseMatchBytesArguments =
+    ({Uint8List mnemonic, String passphrase, String descriptor, String networkType});
 
 bool _doesPassphraseMatchDescriptorInBackground(_PassphraseMatchBytesArguments arguments) {
+  NetworkType.setNetworkType(NetworkType.getNetworkType(arguments.networkType));
   return doesPassphraseMatchDescriptor(
     mnemonic: arguments.mnemonic,
     passphrase: arguments.passphrase,
@@ -42,5 +44,6 @@ Future<bool> doesPassphraseMatchDescriptorAsync({
     mnemonic: mnemonic,
     passphrase: passphrase,
     descriptor: descriptor,
+    networkType: NetworkType.currentNetworkType.toString(),
   ));
 }

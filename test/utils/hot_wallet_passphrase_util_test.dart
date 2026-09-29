@@ -9,6 +9,28 @@ void main() {
   const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
   const passphrase = 'coconut-passphrase';
 
+  test('mainnet에서도 background isolate에서 패스프레이즈가 일치한다', () async {
+    NetworkType.setNetworkType(NetworkType.mainnet);
+    final mnemonicBytes = Uint8List.fromList(utf8.encode(mnemonic));
+    final passphraseBytes = Uint8List.fromList(utf8.encode(passphrase));
+    final seed = Seed.fromMnemonic(Uint8List.fromList(mnemonicBytes), passphrase: passphraseBytes);
+    final descriptor = SingleSignatureVault.fromSeed(seed).descriptor;
+    seed.wipe();
+
+    try {
+      expect(
+        await doesPassphraseMatchDescriptorAsync(
+          mnemonic: mnemonicBytes,
+          passphrase: passphrase,
+          descriptor: descriptor,
+        ),
+        isTrue,
+      );
+    } finally {
+      NetworkType.setNetworkType(NetworkType.testnet);
+    }
+  });
+
   test('입력한 패스프레이즈로 기존 descriptor를 재현하면 일치한다', () async {
     final mnemonicBytes = Uint8List.fromList(utf8.encode(mnemonic));
     final passphraseBytes = Uint8List.fromList(utf8.encode(passphrase));

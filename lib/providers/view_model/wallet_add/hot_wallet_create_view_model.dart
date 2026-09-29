@@ -12,7 +12,10 @@ import 'package:flutter/foundation.dart';
 typedef HotWalletMaterial = ({Uint8List mnemonic, String descriptor});
 typedef HotWalletMaterialGenerator = Future<HotWalletMaterial> Function(int mnemonicWordCount, Uint8List passphrase);
 
-HotWalletMaterial _generateHotWalletMaterial(({int mnemonicWordCount, Uint8List passphrase}) input) {
+HotWalletMaterial _generateHotWalletMaterial(
+  ({int mnemonicWordCount, Uint8List passphrase, String networkType}) input,
+) {
+  NetworkType.setNetworkType(NetworkType.getNetworkType(input.networkType));
   final passphrase = input.passphrase;
   final seed = Seed.random(mnemonicLength: input.mnemonicWordCount, passphrase: passphrase);
   try {
@@ -25,7 +28,11 @@ HotWalletMaterial _generateHotWalletMaterial(({int mnemonicWordCount, Uint8List 
 }
 
 Future<HotWalletMaterial> _generateHotWalletMaterialInIsolate(int mnemonicWordCount, Uint8List passphrase) =>
-    compute(_generateHotWalletMaterial, (mnemonicWordCount: mnemonicWordCount, passphrase: passphrase));
+    compute(_generateHotWalletMaterial, (
+      mnemonicWordCount: mnemonicWordCount,
+      passphrase: passphrase,
+      networkType: NetworkType.currentNetworkType.toString(),
+    ));
 
 class HotWalletCreateResult {
   const HotWalletCreateResult({

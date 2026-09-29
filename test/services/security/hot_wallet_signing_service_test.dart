@@ -23,6 +23,42 @@ class _FakeSecretRepository extends Fake implements HotWalletSecretRepository {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('mainnet에서도 background isolate에서 패스프레이즈를 검증한다', () async {
+    NetworkType.setNetworkType(NetworkType.mainnet);
+    const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+    const passphrase = 'correct-passphrase';
+    final mnemonicBytes = Uint8List.fromList(utf8.encode(mnemonic));
+    final passphraseBytes = Uint8List.fromList(utf8.encode(passphrase));
+    final vault = SingleSignatureVault.fromMnemonic(
+      mnemonicBytes,
+      passphrase: passphraseBytes,
+      addressType: AddressType.p2wpkh,
+      accountIndex: 0,
+    );
+    final repository = _FakeSecretRepository(
+      HotWalletPlaintext(mnemonic: Uint8List.fromList(utf8.encode(mnemonic)), passphrase: Uint8List(0)),
+    );
+    final service = HotWalletSigningService(secretRepository: repository);
+
+    try {
+      expect(
+        await service.validatePassphrase(
+          storageKey: 'hot_wallet_secret_mainnet_test',
+          passphrase: Uint8List.fromList(utf8.encode(passphrase)),
+          addressTypeName: AddressType.p2wpkh.name,
+          accountIndex: 0,
+          expectedExtendedPublicKey: vault.keyStore.extendedPublicKey.serialize(),
+        ),
+        isTrue,
+      );
+    } finally {
+      vault.keyStore.wipeSeed();
+      mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
+      passphraseBytes.fillRange(0, passphraseBytes.length, 0);
+      NetworkType.setNetworkType(NetworkType.testnet);
+    }
+  });
+
   test('passphrase 검증 시 Screen에 mnemonic을 노출하지 않고 저장소에서 직접 복호화한다', () async {
     const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
     const passphrase = 'correct-passphrase';
