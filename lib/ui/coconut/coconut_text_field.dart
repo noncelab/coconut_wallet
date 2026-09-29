@@ -330,6 +330,8 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
   }
 
   void _measureAffixes() {
+    if (!mounted) return;
+
     Size nextPrefixSize = const Size(0, 0);
     Size nextSuffixSize = const Size(0, 0);
 

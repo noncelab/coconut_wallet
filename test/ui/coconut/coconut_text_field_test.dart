@@ -55,4 +55,25 @@ void main() {
 
     expect(controller.text, '1x2');
   });
+
+  testWidgets('does not call setState when removed after an input change', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+
+    addTearDown(controller.dispose);
+    addTearDown(focusNode.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Scaffold(body: CoconutTextField(controller: controller, focusNode: focusNode, onChanged: (_) {})),
+      ),
+    );
+
+    controller.text = 'passphrase';
+    await tester.pumpWidget(MaterialApp(theme: buildCoconutThemeData(), home: const Scaffold()));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+  });
 }
