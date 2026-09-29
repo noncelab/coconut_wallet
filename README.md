@@ -36,7 +36,7 @@
 
 Watch-only first, with optional hot wallet support.
 
-- **Supported hardware wallets** — Keystone 3 Pro, Seedsigner, Jade, Coldcard, Krux
+- **Supported hardware wallets** — Keystone 3 Pro, Seedsigner, Jade, Coldcard, Krux, Trezor, BitBox02
 - **Watch-only with offline signing** — Use an offline signing device so private keys never touch an online device
 - **Optional hot wallet** — Create or restore a wallet in the app for a simpler way to get started with Bitcoin
 - **SegWit** — Native SegWit (Bech32) address support
@@ -47,7 +47,7 @@ Watch-only first, with optional hot wallet support.
 - **UTXO management** — Coin control with UTXO locking and tagging
 - **PSBT** — BIP-174 Partially Signed Bitcoin Transactions
 - **Draft transactions** — Save transactions as drafts for later signing or sending
-- **Multilingual** — 한국어, English, 日本語, Español
+- **Multilingual** — 한국어, English, 日本語, Español, Deutsch
 
 ## Architecture
 
