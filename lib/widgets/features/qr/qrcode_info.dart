@@ -14,6 +14,7 @@ class QrCodeInfo extends StatefulWidget {
   final GlobalKey? qrCaptureKey;
   final TextStyle? textStyle;
   final double? qrInternalPadding;
+  final EdgeInsets qrPadding;
   final IQrViewDataHandler? qrViewDataHandler;
 
   const QrCodeInfo({
@@ -27,6 +28,7 @@ class QrCodeInfo extends StatefulWidget {
     this.textStyle,
     this.qrInternalPadding,
     this.qrViewDataHandler,
+    this.qrPadding = const EdgeInsets.all(12),
   });
 
   @override
@@ -48,6 +50,7 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
             qrViewDataHandler: widget.qrViewDataHandler,
             embedWidget: widget.embedWidget,
             qrInternalPadding: widget.qrInternalPadding,
+            qrPadding: widget.qrPadding,
           ),
         ),
         const SizedBox(height: 32),
