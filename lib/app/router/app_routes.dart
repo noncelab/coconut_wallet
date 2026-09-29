@@ -42,15 +42,14 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_organizer_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/renewal_utxo_overview_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_split_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/taproot_wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/renewal_wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/renewal_wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_mnemonic_backup_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/hot_wallet_passphrase_check_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/mnemonic_backup_complete_screen.dart';
@@ -87,11 +86,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
             initialShowOnlyWatchedAddresses: args.initialShowOnlyWatchedAddresses ?? false,
           ),
         ),
-    AppRouteNames.legacyWalletDetail:
-        (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(
-          context,
-          (args) => WalletDetailScreen(id: args.id, entryPoint: args.entryPoint),
-        ),
     AppRouteNames.transactionList:
         (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(
           context,
@@ -100,7 +94,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     AppRouteNames.walletDetail:
         (context) => _buildScreenWithArgs<WalletDetailRouteArgs>(
           context,
-          (args) => RenewalWalletDetailScreen(id: args.id, entryPoint: args.entryPoint),
+          (args) => WalletDetailScreen(id: args.id, entryPoint: args.entryPoint),
         ),
     AppRouteNames.walletBackupData:
         (context) => _buildScreenWithArgs<WalletBackupDataRouteArgs>(
@@ -171,7 +165,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     AppRouteNames.walletInfo:
         (context) => _buildLoadingScreenWithArgs<WalletInfoRouteArgs>(
           context,
-          (args) => RenewalWalletInfoScreen(
+          (args) => WalletInfoScreen(
             id: args.id,
             walletType: args.walletType,
             entryPoint: args.entryPoint,
@@ -202,10 +196,8 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     AppRouteNames.utxoList:
         (context) => _buildLoadingScreenWithArgs<UtxoListRouteArgs>(context, (args) => UtxoListScreen(id: args.id)),
     AppRouteNames.utxoOverview:
-        (context) => _buildLoadingScreenWithArgs<UtxoOverviewRouteArgs>(
-          context,
-          (args) => RenewalUtxoOverviewScreen(id: args.id),
-        ),
+        (context) =>
+            _buildLoadingScreenWithArgs<UtxoOverviewRouteArgs>(context, (args) => UtxoOverviewScreen(id: args.id)),
     AppRouteNames.utxoDetail:
         (context) => _buildLoadingScreenWithArgs<UtxoDetailRouteArgs>(
           context,

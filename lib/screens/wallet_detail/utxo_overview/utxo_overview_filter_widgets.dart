@@ -2,19 +2,19 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/renewal_utxo_list_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_overview_view_model.dart';
 import 'package:coconut_wallet/widgets/features/utxo/header/utxo_list_dropdown_button.dart';
 import 'package:flutter/material.dart';
 
-class RenewalUtxoListFilterHeader extends StatelessWidget {
-  const RenewalUtxoListFilterHeader({
+class UtxoListFilterHeader extends StatelessWidget {
+  const UtxoListFilterHeader({
     super.key,
     required this.viewModel,
     required this.dropdownKey,
     required this.onTapDropdown,
   });
 
-  final RenewalUtxoListViewModel viewModel;
+  final UtxoOverviewViewModel viewModel;
   final GlobalKey dropdownKey;
   final VoidCallback onTapDropdown;
 
@@ -83,8 +83,8 @@ class RenewalUtxoListFilterHeader extends StatelessWidget {
   }
 }
 
-class RenewalUtxoGroupingTabBar extends StatelessWidget {
-  const RenewalUtxoGroupingTabBar({super.key, required this.isByAmount, required this.onSelected});
+class UtxoGroupingTabBar extends StatelessWidget {
+  const UtxoGroupingTabBar({super.key, required this.isByAmount, required this.onSelected});
 
   final bool isByAmount;
   final ValueChanged<int> onSelected;

@@ -33,7 +33,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/renewal_utxo_list_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_overview_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
@@ -685,7 +685,7 @@ class UtxoList extends StatefulWidget {
     this.onSettingLockChanged,
     this.emptyStateText,
     this.emptyStateTextStyle,
-    this.renewalViewModel,
+    this.viewModel,
   });
 
   final int walletId;
@@ -696,7 +696,7 @@ class UtxoList extends StatefulWidget {
   final ValueChanged<bool>? onSettingLockChanged;
   final String? emptyStateText;
   final TextStyle? emptyStateTextStyle;
-  final RenewalUtxoListViewModel? renewalViewModel;
+  final UtxoOverviewViewModel? viewModel;
 
   @override
   State<UtxoList> createState() => _UtxoListState();
@@ -724,11 +724,11 @@ class _UtxoListState extends State<UtxoList> {
   Widget build(BuildContext context) {
     double bottomInset = MediaQuery.of(context).padding.bottom;
 
-    final renewalViewModel = widget.renewalViewModel;
-    if (renewalViewModel != null) {
+    final viewModel = widget.viewModel;
+    if (viewModel != null) {
       return ListenableBuilder(
-        listenable: renewalViewModel,
-        builder: (_, __) => _buildList(renewalViewModel.utxoList, renewalViewModel.activeUtxoTagName, bottomInset),
+        listenable: viewModel,
+        builder: (_, __) => _buildList(viewModel.utxoList, viewModel.activeUtxoTagName, bottomInset),
       );
     }
 
@@ -940,32 +940,32 @@ class _UtxoListState extends State<UtxoList> {
   }
 
   Future<int> _setUtxoLockStatus(List<String> ids, bool lock) {
-    return widget.renewalViewModel?.setUtxoLockStatus(ids, lock) ??
+    return widget.viewModel?.setUtxoLockStatus(ids, lock) ??
         context.read<UtxoListViewModel>().setUtxoLockStatus(ids, lock);
   }
 
   void _addSelectUtxo(UtxoState utxo) {
-    final renewalViewModel = widget.renewalViewModel;
-    if (renewalViewModel != null) {
-      renewalViewModel.addSelectUtxo(utxo);
+    final viewModel = widget.viewModel;
+    if (viewModel != null) {
+      viewModel.addSelectUtxo(utxo);
       return;
     }
     context.read<UtxoListViewModel>().addSelectUtxo(utxo);
   }
 
   void _removeSelectUtxo(UtxoState utxo) {
-    final renewalViewModel = widget.renewalViewModel;
-    if (renewalViewModel != null) {
-      renewalViewModel.removeSelectUtxo(utxo);
+    final viewModel = widget.viewModel;
+    if (viewModel != null) {
+      viewModel.removeSelectUtxo(utxo);
       return;
     }
     context.read<UtxoListViewModel>().removeSelectUtxo(utxo);
   }
 
   void _refetchFromDB() {
-    final renewalViewModel = widget.renewalViewModel;
-    if (renewalViewModel != null) {
-      renewalViewModel.refetchFromDB();
+    final viewModel = widget.viewModel;
+    if (viewModel != null) {
+      viewModel.refetchFromDB();
       return;
     }
     context.read<UtxoListViewModel>().refetchFromDB();

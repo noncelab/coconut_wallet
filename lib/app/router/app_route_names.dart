@@ -48,8 +48,7 @@ class AppRouteNames {
   static const String utxoTag = '/utxo-tag';
   static const String walletAddScanner = '/wallet-add-scanner';
   static const String walletBackupData = '/wallet-backup-data';
-  static const String legacyWalletDetail = '/wallet-detail';
-  static const String walletDetail = '/renewal-wallet-detail';
+  static const String walletDetail = '/wallet-detail';
   static const String walletHomeEdit = '/wallet-home-edit';
   static const String walletInfo = '/wallet-info';
   static const String walletList = '/wallet-list';

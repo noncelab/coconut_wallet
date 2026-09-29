@@ -50,7 +50,7 @@ import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_security_warning_policy.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';

@@ -11,10 +11,10 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutPopup;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -26,7 +26,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/renewal_utxo_list_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_scroll_rail.dart';
@@ -37,49 +37,42 @@ import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_filter_bar.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_summary_chart.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_tag_chart.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/renewal_utxo_overview_filter_widgets.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/renewal_utxo_overview_header.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
-import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
-import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
-import 'package:coconut_wallet/widgets/features/utxo/dropdown/utxo_filter_dropdown.dart';
 
-import 'package:flutter/cupertino.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-class RenewalUtxoOverviewScreen extends StatefulWidget {
-  final int id;
-  const RenewalUtxoOverviewScreen({super.key, required this.id});
+class LegacyUtxoOverviewScreen extends StatefulWidget {
+  final int id; // wallet id
+  const LegacyUtxoOverviewScreen({super.key, required this.id});
 
   @override
-  State<RenewalUtxoOverviewScreen> createState() => _RenewalUtxoOverviewScreenState();
+  State<LegacyUtxoOverviewScreen> createState() => _LegacyUtxoOverviewScreenState();
 }
 
-class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
-  late RenewalUtxoListViewModel viewModel;
+class _LegacyUtxoOverviewScreenState extends State<LegacyUtxoOverviewScreen> {
+  late UtxoListViewModel viewModel;
   BitcoinUnit _currentUnit = BitcoinUnit.btc;
 
   late List<UtxoBucket> _buckets;
-  late String _utxoDataKey;
 
-  final _headerScrollController = ScrollController();
-  ScrollController? _contentScrollController;
+  final _scrollController = ScrollController();
   final _activeIndex = ValueNotifier<int>(0);
   final _activeBucketY = ValueNotifier<double>(0);
 
+  final GlobalKey _appBarKey = GlobalKey();
   final GlobalKey _scrollRailKey = GlobalKey();
-  final GlobalKey _listOrderDropdownKey = GlobalKey();
-  bool _isListOrderDropdownVisible = false;
-  double _listOrderDropdownTop = 0;
 
   int get _dustThreshold => viewModel.walletType.addressType.dustThreshold;
 
-  bool _isSnappingHeader = false;
-  bool _isSwitchingPrimaryTab = false;
-  final ValueNotifier<double> _collapseProgress = ValueNotifier<double>(0);
+  bool _isByAmount = true;
+  int _lockFilterIndex = 0; // 0: 사용 가능, 1: 사용 잠김
+  int _viewModeIndex = 0; // 0: 리스트(카드/코인), 1: 그리드
+  bool _isSelectionMode = false;
+  final Set<String> _selectedUtxoIds = {};
+  bool _selectionBarExiting = false;
+  final int _lastLockFilterForBar = 0;
 
   static const double _filterBarBaseHeight = 58;
   static const double _selectionSummaryRowHeight = 40;
@@ -95,7 +88,18 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
   final _restoredStateListenable = ValueNotifier<({int bucket, int card})?>(null);
 
   List<UtxoBucket> _computeFilteredBuckets() {
-    return viewModel.filterBuckets(_buckets, showLocked: viewModel.lockFilterIndex == 1);
+    final showAvailable = _lockFilterIndex == 0;
+    return _buckets
+        .map(
+          (b) => UtxoBucket(
+            label: b.label,
+            minSats: b.minSats,
+            maxSats: b.maxSats,
+            utxos: b.utxos.where((u) => showAvailable ? !u.isLocked : u.isLocked).toList(),
+          ),
+        )
+        .where((b) => b.utxos.isNotEmpty)
+        .toList();
   }
 
   void _updateFilteredBuckets({bool preserveUiState = false}) {
@@ -111,7 +115,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
   }
 
   void _refreshBucketsFromViewModel() {
-    _buckets = viewModel.buildBuckets();
+    _buckets = bucketize(viewModel.utxoList, dustThreshold: _dustThreshold);
     final preserving = _restoreUtxoId != null;
     _updateFilteredBuckets(preserveUiState: preserving);
     _restoreStateAfterReturn();
@@ -123,7 +127,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
     _restoreUtxoId = null;
     _restoreScrollOffset = null;
     if (utxoId == null) return;
-    if (!viewModel.isByAmount || viewModel.viewModeIndex != 0) return;
+    if (!_isByAmount || _viewModeIndex != 0) return;
 
     _isRestoringState = true;
     final bucketIdx = _filteredBuckets.indexWhere((b) => b.utxos.any((u) => u.utxoId == utxoId));
@@ -136,14 +140,13 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        final controller = _contentScrollController;
-        if (controller != null && controller.hasClients) {
-          final pos = controller.position;
+        if (_scrollController.hasClients) {
+          final pos = _scrollController.position;
           final targetOffset =
               scrollOffset != null
                   ? scrollOffset.clamp(pos.minScrollExtent, pos.maxScrollExtent)
                   : _scrollOffsetForBucket(bucketIdx, pos);
-          controller.jumpTo(targetOffset);
+          _scrollController.jumpTo(targetOffset);
         }
         setState(() {}); // 스크롤 후 리스트 rebuild 유도
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -172,7 +175,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
   void initState() {
     super.initState();
 
-    viewModel = RenewalUtxoListViewModel(
+    viewModel = UtxoListViewModel(
       widget.id,
       context.read<WalletProvider>(),
       context.read<TransactionProvider>(),
@@ -184,12 +187,11 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
       context.read<NodeProvider>().getWalletStateStream(widget.id),
     );
 
-    _buckets = viewModel.buildBuckets();
-    _utxoDataKey = viewModel.utxoDataKey;
+    _buckets = bucketize(viewModel.utxoList, dustThreshold: _dustThreshold);
     _updateFilteredBuckets();
 
     viewModel.addListener(_onViewModelChanged);
-    _headerScrollController.addListener(_handleHeaderScroll);
+    _scrollController.addListener(_updateActiveBucket);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateActiveBucket();
     });
@@ -197,37 +199,32 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
 
   double get _effectiveFilterBarHeight =>
       _shouldShowAmountSelectionSummary ? _filterBarExpandedHeight : _filterBarBaseHeight;
-  double get _effectiveTagSelectionBarHeight => viewModel.isSelectionMode ? _selectionSummaryRowHeight : 0;
+  double get _effectiveTagSelectionBarHeight => _isSelectionMode ? _filterBarBaseHeight : 0;
 
-  bool get _shouldShowAmountSelectionSummary =>
-      viewModel.isByAmount && viewModel.viewModeIndex == 1 && viewModel.isSelectionMode;
+  bool get _shouldShowAmountSelectionSummary => _isByAmount && _viewModeIndex == 1 && _isSelectionMode;
 
   void _exitSelectionMode() {
     if (!mounted) return;
     setState(() {
-      viewModel.isSelectionMode = false;
-      viewModel.selectedUtxoIds.clear();
-      viewModel.selectionBarExiting = false;
+      _isSelectionMode = false;
+      _selectedUtxoIds.clear();
+      _selectionBarExiting = false;
     });
   }
 
   int get _selectedTotalSats {
-    return viewModel.getUtxoAmountByIds(viewModel.selectedUtxoIds);
+    return viewModel.utxoList
+        .where((u) => _selectedUtxoIds.contains(u.utxoId))
+        .fold<int>(0, (sum, u) => sum + u.amount);
   }
 
   void _onViewModelChanged() {
-    if (!mounted) return;
-    setState(() {
-      final nextDataKey = viewModel.utxoDataKey;
-      if (_utxoDataKey == nextDataKey) return;
-      _utxoDataKey = nextDataKey;
-      _refreshBucketsFromViewModel();
-    });
+    if (mounted) setState(() => _refreshBucketsFromViewModel());
   }
 
   Future<void> _navigateToUtxoDetail(UtxoState utxo) async {
     _restoreUtxoId = utxo.utxoId;
-    _restoreScrollOffset = _contentScrollController?.hasClients == true ? _contentScrollController!.offset : null;
+    _restoreScrollOffset = _scrollController.hasClients ? _scrollController.offset : null;
 
     await Navigator.pushNamed(
       context,
@@ -246,239 +243,66 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
   @override
   void dispose() {
     viewModel.removeListener(_onViewModelChanged);
-    _contentScrollController?.removeListener(_updateActiveBucket);
-    _headerScrollController.removeListener(_handleHeaderScroll);
-    _headerScrollController.dispose();
+    _scrollController.removeListener(_updateActiveBucket);
+    _scrollController.dispose();
     _activeIndex.dispose();
     _activeBucketY.dispose();
-    _collapseProgress.dispose();
     _restoredStateListenable.dispose();
     super.dispose();
   }
 
-  static const double _collapseExtent = 96;
-
-  void _handleHeaderScroll() {
-    if (!_headerScrollController.hasClients) return;
-    final next = (_headerScrollController.offset / _collapseExtent).clamp(0.0, 1.0);
-    if ((next - _collapseProgress.value).abs() > 0.002) {
-      _collapseProgress.value = next;
-    }
-  }
-
-  bool _handleScrollEnd(ScrollEndNotification notification) {
-    if (!_headerScrollController.hasClients || _isSnappingHeader || notification.depth != 0) {
-      return false;
-    }
-    final offset = _headerScrollController.offset;
-    if (offset <= 0 || offset >= _collapseExtent) return false;
-    final target = offset < _collapseExtent * 0.7 ? 0.0 : _collapseExtent;
-    _isSnappingHeader = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || !_headerScrollController.hasClients) {
-        _isSnappingHeader = false;
-        return;
-      }
-      HapticFeedback.selectionClick();
-      try {
-        await _headerScrollController.animateTo(
-          target,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOutCubic,
-        );
-      } finally {
-        _isSnappingHeader = false;
-      }
-    });
-    return false;
-  }
-
-  Future<void> _selectPrimaryTab(int index) async {
-    final selectOverview = index == 0;
-    if (_isSwitchingPrimaryTab || selectOverview == viewModel.isOverviewTab) {
-      return;
-    }
-
-    _isSwitchingPrimaryTab = true;
-    if (mounted) {
-      setState(() {
-        viewModel.isOverviewTab = selectOverview;
-        _isListOrderDropdownVisible = false;
-        viewModel.isSelectionMode = false;
-        viewModel.selectedUtxoIds.clear();
-      });
-    }
-
-    await WidgetsBinding.instance.endOfFrame;
-    if (mounted && _headerScrollController.hasClients && _headerScrollController.offset > 0) {
-      _isSnappingHeader = true;
-      final duration = Duration(milliseconds: (280 + _headerScrollController.offset * 0.8).round().clamp(320, 420));
-      try {
-        await _headerScrollController.animateTo(0, duration: duration, curve: Curves.easeInOutCubic);
-      } finally {
-        _isSnappingHeader = false;
-      }
-    }
-    _isSwitchingPrimaryTab = false;
-  }
-
-  SliverPersistentHeader _buildMorphingHeader() {
-    final totalSats = viewModel.utxoList.fold<int>(0, (sum, utxo) => sum + utxo.amount);
-    return SliverPersistentHeader(
-      pinned: true,
-      delegate: RenewalUtxoHeaderDelegate(
-        topPadding: MediaQuery.paddingOf(context).top,
-        totalBalance: formatUtxoAmountForDisplay(totalSats, _currentUnit, dustThreshold: _dustThreshold),
-        fiatPrice: viewModel.fiatPriceString,
-        bottomBar:
-            viewModel.isOverviewTab
-                ? RenewalUtxoGroupingTabBar(isByAmount: viewModel.isByAmount, onSelected: _selectGroupingTab)
-                : RenewalUtxoListFilterHeader(
-                  viewModel: viewModel,
-                  dropdownKey: _listOrderDropdownKey,
-                  onTapDropdown: _toggleListOrderDropdown,
-                ),
-        isOverviewSelected: viewModel.isOverviewTab,
-        onBackPressed: () => Navigator.pop(context),
-        onTabChanged: _selectPrimaryTab,
-        refreshButton: ListenableBuilder(
-          listenable: viewModel,
-          builder: (context, _) {
-            return WalletRefreshIndicator(isRefreshing: viewModel.isRefreshing);
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return CoconutAppBar.build(
+      context: context,
+      entireWidgetKey: _appBarKey,
+      backgroundColor: context.coconutColors.background,
+      customTitle: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 260),
+        child: CoconutSegmentedControl(
+          selectedColor: context.coconutColors.segmentedControlSelected,
+          segmentedControlContainerColor: context.coconutColors.segmentedControlBackground,
+          selectedTextColor: context.coconutColors.segmentedControlSelectedText,
+          unselectedTextColor: context.coconutColors.segmentedControlUnselectedText,
+          isSelected: [_isByAmount, !_isByAmount],
+          onPressed: (index) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _isByAmount = index == 0;
+                  _isSelectionMode = false;
+                  _selectedUtxoIds.clear();
+                  _selectionBarExiting = false;
+                });
+              }
+            });
           },
+          labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          children: [Text(t.utxo_overview_screen.by_amount), Text(t.utxo_overview_screen.by_tag)],
         ),
       ),
+      titlePadding: const EdgeInsets.symmetric(horizontal: 16),
+      onBackPressed: () => Navigator.pop(context),
     );
-  }
-
-  void _selectGroupingTab(int index) {
-    setState(() {
-      viewModel.isByAmount = index == 0;
-      viewModel.isSelectionMode = false;
-      viewModel.selectedUtxoIds.clear();
-      viewModel.selectionBarExiting = false;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<RenewalUtxoListViewModel>.value(
-      value: viewModel,
-      child: Scaffold(
-        backgroundColor: context.coconutColors.background,
-        body: Stack(
-          children: [
-            Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: (event) {
-                if (_isListOrderDropdownVisible && !_isInsideListOrderButton(event.position)) {
-                  setState(() => _isListOrderDropdownVisible = false);
-                }
-              },
-              child: NotificationListener<ScrollEndNotification>(
-                onNotification: _handleScrollEnd,
-                child: NestedScrollView(
-                  controller: _headerScrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  headerSliverBuilder: (context, innerBoxIsScrolled) => [_buildMorphingHeader()],
-                  body: Builder(
-                    builder: (innerContext) {
-                      _bindContentScrollController(innerContext);
-                      return Consumer<UtxoTagProvider>(
-                        builder: (context, tagProvider, _) {
-                          final utxoTagList = tagProvider.getUtxoTagList(widget.id);
-                          if (!viewModel.isOverviewTab) {
-                            return _buildUtxoListBody();
-                          }
-                          return viewModel.isByAmount ? _buildAmountViewBody() : _buildTagViewBody(utxoTagList);
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-            if (_isListOrderDropdownVisible)
-              UtxoOrderDropdown(
-                isVisible: true,
-                positionTop: _listOrderDropdownTop,
-                activeOption: viewModel.activeUtxoOrder,
-                isSelectionMode: false,
-                onOptionSelected: (order) {
-                  setState(() => _isListOrderDropdownVisible = false);
-                  viewModel.updateUtxoFilter(order as UtxoOrder);
-                },
-              ),
-          ],
-        ),
+    return Scaffold(
+      backgroundColor: context.coconutColors.background,
+      appBar: _buildAppBar(context),
+      body: Consumer<UtxoTagProvider>(
+        builder: (context, tagProvider, _) {
+          final utxoTagList = tagProvider.getUtxoTagList(widget.id);
+          return _isByAmount ? _buildAmountViewBody() : _buildTagViewBody(utxoTagList);
+        },
       ),
     );
-  }
-
-  Widget _buildUtxoListBody() {
-    return CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      slivers: [
-        CupertinoSliverRefreshControl(
-          onRefresh: viewModel.refresh,
-          refreshTriggerPullDistance: 80,
-          builder: (_, _, _, _, _) => const SizedBox.shrink(),
-        ),
-        UtxoList(
-          renewalViewModel: viewModel,
-          walletId: widget.id,
-          currentUnit: _currentUnit,
-          emptyStateText:
-              viewModel.activeUtxoTagName == t.utxo_detail_screen.utxo_locked
-                  ? t.utxo_overview_screen.no_locked_utxos
-                  : viewModel.activeUtxoTagName == t.change
-                  ? t.utxo_overview_screen.no_change_utxos
-                  : null,
-          emptyStateTextStyle: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-          isSelectionMode: false,
-          onRemoveDropdown: () {},
-          onSettingLockChanged: (_) {},
-          onFirstBuildCompleted: () {},
-        ),
-      ],
-    );
-  }
-
-  void _toggleListOrderDropdown() {
-    if (_isListOrderDropdownVisible) {
-      setState(() => _isListOrderDropdownVisible = false);
-      return;
-    }
-
-    final renderBox = _listOrderDropdownKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final position = renderBox.localToGlobal(Offset.zero);
-    setState(() {
-      _listOrderDropdownTop = position.dy + renderBox.size.height + 8;
-      _isListOrderDropdownVisible = true;
-    });
-  }
-
-  bool _isInsideListOrderButton(Offset globalPosition) {
-    final renderBox = _listOrderDropdownKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return false;
-    return (renderBox.localToGlobal(Offset.zero) & renderBox.size).contains(globalPosition);
-  }
-
-  void _bindContentScrollController(BuildContext context) {
-    final controller = PrimaryScrollController.maybeOf(context);
-    if (controller == null || identical(controller, _contentScrollController)) {
-      return;
-    }
-    _contentScrollController?.removeListener(_updateActiveBucket);
-    _contentScrollController = controller;
-    controller.addListener(_updateActiveBucket);
   }
 
   Widget _buildAmountViewBody() {
     return Stack(
       children: [
-        if (viewModel.viewModeIndex == 0 && _filteredBuckets.length > 1)
+        if (_viewModeIndex == 0 && _filteredBuckets.length > 1)
           Positioned(
             left: -8,
             top: 0,
@@ -487,22 +311,17 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
             child: UtxoBucketScrollRail(
               key: _scrollRailKey,
               buckets: _filteredBuckets,
-              scrollController: _contentScrollController!,
+              scrollController: _scrollController,
               activeIndexListenable: _activeIndex,
               activeBucketY: _activeBucketY,
             ),
           ),
         CustomScrollView(
+          controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            CupertinoSliverRefreshControl(
-              onRefresh: viewModel.refresh,
-              refreshTriggerPullDistance: 80,
-              builder: (_, _, _, _, _) => const SizedBox.shrink(),
-            ),
             SliverToBoxAdapter(
               child: UtxoSummaryChart(
-                height: UtxoSummaryChart.estimatedHeight,
                 buckets: _buckets,
                 totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
                 coinCount: viewModel.utxoList.length,
@@ -526,52 +345,38 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
                   );
                 },
                 hasReusedAddresses: _reusedAddresses.isNotEmpty,
-                showBalanceHeader: false,
               ),
             ),
             SliverPersistentHeader(
               pinned: true,
               delegate: UtxoAmountStickyFilterBarDelegate(
                 height: _effectiveFilterBarHeight,
-                selectedCount: viewModel.selectedUtxoIds.length,
+                selectedCount: _selectedUtxoIds.length,
                 selectedTotalSats: _selectedTotalSats,
                 currentUnit: _currentUnit,
                 dustThreshold: _dustThreshold,
-                viewModeIndex: viewModel.viewModeIndex,
-                lockFilterIndex: viewModel.lockFilterIndex,
-                isSelectionMode: viewModel.isSelectionMode,
+                viewModeIndex: _viewModeIndex,
+                lockFilterIndex: _lockFilterIndex,
+                isSelectionMode: _isSelectionMode,
                 onViewModeSelected: (index) {
                   setState(() {
-                    viewModel.viewModeIndex = index;
-                    if (!viewModel.isSelectionMode) return;
-                    viewModel.isSelectionMode = false;
-                    viewModel.selectedUtxoIds.clear();
-                    viewModel.selectionBarExiting = false;
+                    _viewModeIndex = index;
+                    if (!_isSelectionMode) return;
+                    _isSelectionMode = false;
+                    _selectedUtxoIds.clear();
+                    _selectionBarExiting = false;
                   });
                 },
                 onLockFilterSelected: (index) {
                   setState(() {
-                    viewModel.lockFilterIndex = index;
+                    _lockFilterIndex = index;
                     _updateFilteredBuckets();
                   });
                 },
                 onExitSelectionMode: _exitSelectionMode,
               ),
             ),
-            if (_filteredBuckets.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Text(
-                    viewModel.lockFilterIndex == 0
-                        ? t.utxo_overview_screen.no_available_utxos
-                        : t.utxo_overview_screen.no_locked_utxos,
-                    textAlign: TextAlign.center,
-                    style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                  ),
-                ),
-              )
-            else if (viewModel.viewModeIndex == 0)
+            if (_viewModeIndex == 0)
               SliverPadding(
                 padding: const EdgeInsets.only(left: 38),
                 sliver: SliverList.builder(
@@ -588,12 +393,12 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
                         dustThreshold: _dustThreshold,
                         activeIndexListenable: _activeIndex,
                         restoredStateListenable: _restoredStateListenable,
-                        isSelectionMode: viewModel.isSelectionMode,
-                        selectedUtxoIds: viewModel.selectedUtxoIds,
+                        isSelectionMode: _isSelectionMode,
+                        selectedUtxoIds: _selectedUtxoIds,
                         reusedAddresses: _reusedAddresses,
                         suspiciousUtxoIds: _suspiciousUtxoIds,
                         onTapUtxo: (u) {
-                          if (viewModel.isSelectionMode) {
+                          if (_isSelectionMode) {
                             if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
                               CoconutToast.showToast(
                                 context: context,
@@ -603,10 +408,10 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
                               return;
                             }
                             setState(() {
-                              if (viewModel.selectedUtxoIds.contains(u.utxoId)) {
-                                viewModel.selectedUtxoIds.remove(u.utxoId);
+                              if (_selectedUtxoIds.contains(u.utxoId)) {
+                                _selectedUtxoIds.remove(u.utxoId);
                               } else {
-                                viewModel.selectedUtxoIds.add(u.utxoId);
+                                _selectedUtxoIds.add(u.utxoId);
                               }
                             });
                           } else {
@@ -623,9 +428,9 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
                             return;
                           }
                           setState(() {
-                            viewModel.viewModeIndex = 1;
-                            viewModel.isSelectionMode = true;
-                            viewModel.selectedUtxoIds.add(u.utxoId);
+                            _viewModeIndex = 1;
+                            _isSelectionMode = true;
+                            _selectedUtxoIds.add(u.utxoId);
                           });
                         },
                         setActiveIndex: (index) => _activeIndex.value = index,
@@ -640,8 +445,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
           ],
         ),
         BottomActionBarSlide(
-          isVisible:
-              (viewModel.isSelectionMode && viewModel.selectedUtxoIds.isNotEmpty) || viewModel.selectionBarExiting,
+          isVisible: (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting,
           child: _buildSelectionBottomBar(),
         ),
       ],
@@ -653,8 +457,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
       children: [
         _buildTagView(utxoTagList),
         BottomActionBarSlide(
-          isVisible:
-              (viewModel.isSelectionMode && viewModel.selectedUtxoIds.isNotEmpty) || viewModel.selectionBarExiting,
+          isVisible: (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting,
           child: _buildSelectionBottomBar(),
         ),
       ],
@@ -665,31 +468,24 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
     return CustomScrollView(
       clipBehavior: Clip.none,
       slivers: [
-        CupertinoSliverRefreshControl(
-          onRefresh: viewModel.refresh,
-          refreshTriggerPullDistance: 80,
-          builder: (_, _, _, _, _) => const SizedBox.shrink(),
-        ),
         SliverToBoxAdapter(
           child: UtxoTagChart(
-            height: UtxoSummaryChart.estimatedHeight,
             utxoList: viewModel.utxoList,
             utxoTagList: utxoTagList,
             currentUnit: _currentUnit,
             dustThreshold: _dustThreshold,
             onBalanceTap: _toggleUnit,
-            showBalanceHeader: false,
           ),
         ),
         SliverPersistentHeader(
           pinned: true,
           delegate: UtxoTagSelectionBarDelegate(
             height: _effectiveTagSelectionBarHeight,
-            selectedCount: viewModel.selectedUtxoIds.length,
+            selectedCount: _selectedUtxoIds.length,
             selectedTotalSats: _selectedTotalSats,
             currentUnit: _currentUnit,
             dustThreshold: _dustThreshold,
-            isSelectionMode: viewModel.isSelectionMode,
+            isSelectionMode: _isSelectionMode,
             onExitSelectionMode: () {
               _exitSelectionMode();
             },
@@ -702,21 +498,21 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
             utxoTagList: utxoTagList,
             currentUnit: _currentUnit,
             dustThreshold: _dustThreshold,
-            selectedUtxoIds: viewModel.selectedUtxoIds,
+            selectedUtxoIds: _selectedUtxoIds,
             reusedAddresses: _reusedAddresses,
             suspiciousUtxoIds: _suspiciousUtxoIds,
-            isSelectionMode: viewModel.isSelectionMode,
+            isSelectionMode: _isSelectionMode,
             onUtxoTap: (u) {
-              if (viewModel.isSelectionMode) {
+              if (_isSelectionMode) {
                 if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
                   CoconutToast.showToast(context: context, text: t.utxo_list_screen.pending_utxo, isVisibleIcon: false);
                   return;
                 }
                 setState(() {
-                  if (viewModel.selectedUtxoIds.contains(u.utxoId)) {
-                    viewModel.selectedUtxoIds.remove(u.utxoId);
+                  if (_selectedUtxoIds.contains(u.utxoId)) {
+                    _selectedUtxoIds.remove(u.utxoId);
                   } else {
-                    viewModel.selectedUtxoIds.add(u.utxoId);
+                    _selectedUtxoIds.add(u.utxoId);
                   }
                 });
               } else {
@@ -729,8 +525,8 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
                 return;
               }
               setState(() {
-                viewModel.isSelectionMode = true;
-                viewModel.selectedUtxoIds.add(u.utxoId);
+                _isSelectionMode = true;
+                _selectedUtxoIds.add(u.utxoId);
               });
             },
           ),
@@ -741,15 +537,15 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
   }
 
   Widget _buildSelectionBottomBar() {
-    final showBar = viewModel.selectedUtxoIds.isNotEmpty || viewModel.selectionBarExiting;
+    final showBar = _selectedUtxoIds.isNotEmpty || _selectionBarExiting;
     if (!showBar) return const SizedBox.shrink();
 
-    final lockFilter = viewModel.selectionBarExiting ? viewModel.lastLockFilterForBar : viewModel.lockFilterIndex;
+    final lockFilter = _selectionBarExiting ? _lastLockFilterForBar : _lockFilterIndex;
     final isLockedFilter = lockFilter == 1;
 
     return BottomActionBar(
       child:
-          viewModel.isByAmount
+          _isByAmount
               ? (isLockedFilter
                   ? BottomActionButton(
                     iconPath: CommonSecurityIconPath.unlock,
@@ -761,7 +557,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
                   : Builder(
                     builder: (context) {
                       final selectedUtxos =
-                          viewModel.utxoList.where((u) => viewModel.selectedUtxoIds.contains(u.utxoId)).toList();
+                          viewModel.utxoList.where((u) => _selectedUtxoIds.contains(u.utxoId)).toList();
                       final hasLockedUtxo = selectedUtxos.any((u) => u.status == UtxoStatus.locked);
                       return Row(
                         children: [
@@ -794,7 +590,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
   }
 
   Widget _buildTagViewSelectionButtons() {
-    final selectedUtxos = viewModel.utxoList.where((u) => viewModel.selectedUtxoIds.contains(u.utxoId)).toList();
+    final selectedUtxos = viewModel.utxoList.where((u) => _selectedUtxoIds.contains(u.utxoId)).toList();
     final hasLockedUtxo = selectedUtxos.any((u) => u.status == UtxoStatus.locked);
 
     return Row(
@@ -836,33 +632,36 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
   void _onTagViewSendPressed(List<UtxoState> selectedUtxos) {
     if (selectedUtxos.isEmpty) return;
     setState(() {
-      viewModel.isSelectionMode = false;
-      viewModel.selectedUtxoIds.clear();
+      _isSelectionMode = false;
+      _selectedUtxoIds.clear();
     });
     Navigator.pushNamed(
       context,
       AppRouteNames.send,
       arguments: SendRouteArgs(
         id: widget.id,
-        sendEntryPoint: SendEntryPoint.renewalWalletDetail,
+        sendEntryPoint: SendEntryPoint.walletDetail,
         selectedUtxoList: selectedUtxos,
       ),
     );
   }
 
   List<String> _getCurrentTagsForUtxo(String utxoId) {
-    return viewModel.getCurrentTagNames(utxoId);
+    final utxo = viewModel.utxoList.where((u) => u.utxoId == utxoId).firstOrNull;
+    return utxo?.tags?.map((tag) => tag.name).toList() ?? [];
   }
 
   Future<void> _showTagApplyBottomSheet() async {
-    if (viewModel.selectedUtxoIds.isEmpty) return;
+    if (_selectedUtxoIds.isEmpty) return;
 
-    final selectedUtxoIds = viewModel.selectedUtxoIds.toList();
-    final result = await showModalBottomSheet<TagApplyResult>(
+    final selectedUtxoIds = _selectedUtxoIds.toList();
+    final result = await CommonBottomSheets.showBottomSheet_100<TagApplyResult>(
       context: context,
-      isScrollControlled: true,
+      screenName: AnalyticsScreenNames.utxoOverviewTagApplySheet,
+      isDismissible: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
+      child: TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
     );
 
     if (result == null) return;
@@ -876,8 +675,8 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
         mode == UtxoTagApplyEditMode.delete) {
       viewModel.refetchFromDB();
       setState(() {
-        viewModel.selectedUtxoIds.clear();
-        viewModel.isSelectionMode = false;
+        _selectedUtxoIds.clear();
+        _isSelectionMode = false;
       });
       return;
     }
@@ -894,8 +693,8 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
 
       viewModel.refetchFromDB();
       setState(() {
-        viewModel.selectedUtxoIds.clear();
-        viewModel.isSelectionMode = false;
+        _selectedUtxoIds.clear();
+        _isSelectionMode = false;
       });
 
       if (mounted) {
@@ -910,27 +709,23 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
   }
 
   Future<void> _updateSelectedUtxosLock({required bool lock}) async {
-    if (viewModel.selectedUtxoIds.isEmpty) return;
-    final ids = viewModel.selectedUtxoIds.toList();
+    if (_selectedUtxoIds.isEmpty) return;
+    final ids = _selectedUtxoIds.toList();
     final selectedCount = ids.length;
     try {
       final changedCount = await viewModel.setUtxoLockStatus(ids, lock);
       if (mounted) {
         setState(() {
-          viewModel.selectedUtxoIds.clear();
-          viewModel.isSelectionMode = false;
-          viewModel.selectionBarExiting = false;
+          _selectedUtxoIds.clear();
+          _isSelectionMode = false;
+          _selectionBarExiting = false;
           _refreshBucketsFromViewModel();
         });
       }
       if (!mounted) return;
 
       // 이 문맥에서는 selectedCount, changedCount가 같은 상태만 존재함
-      final toastText = viewModel.buildLockToastMessage(
-        lock: lock,
-        selectedCount: selectedCount,
-        changedCount: changedCount,
-      );
+      final toastText = _buildLockToastMessage(lock: lock, selectedCount: selectedCount, changedCount: changedCount);
 
       if (changedCount == 0) {
         // 정상 동작에서 이 토스트는 나타나지 않아야함.
@@ -954,24 +749,41 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
     }
   }
 
+  String _buildLockToastMessage({required bool lock, required int selectedCount, required int changedCount}) {
+    if (changedCount == 0) {
+      if (selectedCount == 1) {
+        return lock ? t.utxo_detail_screen.utxo_already_locked : t.utxo_detail_screen.utxo_already_unlocked;
+      }
+      return lock ? t.utxo_detail_screen.utxo_all_already_locked : t.utxo_detail_screen.utxo_all_already_unlocked;
+    }
+
+    if (changedCount == 1) {
+      return lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg;
+    }
+
+    return lock
+        ? t.utxo_detail_screen.utxo_locked_count_toast_msg(count: changedCount)
+        : t.utxo_detail_screen.utxo_unlocked_count_toast_msg(count: changedCount);
+  }
+
   void _onSendPressed() {
-    if (viewModel.selectedUtxoIds.isEmpty) return;
-    final selectedUtxos = viewModel.getUtxosByIds(viewModel.selectedUtxoIds);
+    if (_selectedUtxoIds.isEmpty) return;
+    final selectedUtxos = viewModel.utxoList.where((u) => _selectedUtxoIds.contains(u.utxoId)).toList();
     final hasLockedUtxo = selectedUtxos.any((u) => u.status == UtxoStatus.locked);
     if (hasLockedUtxo) {
       CoconutToast.showToast(context: context, text: t.utxo_list_screen.send_locked_utxo, isVisibleIcon: true);
       return;
     }
     setState(() {
-      viewModel.isSelectionMode = false;
-      viewModel.selectedUtxoIds.clear();
+      _isSelectionMode = false;
+      _selectedUtxoIds.clear();
     });
     Navigator.pushNamed(
       context,
       AppRouteNames.send,
       arguments: SendRouteArgs(
         id: widget.id,
-        sendEntryPoint: SendEntryPoint.renewalWalletDetail,
+        sendEntryPoint: SendEntryPoint.walletDetail,
         selectedUtxoList: selectedUtxos,
       ),
     );
@@ -979,9 +791,17 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
 
   static const double _gridMaxCoinExtent = 100.0;
 
-  Set<String> get _reusedAddresses => viewModel.reusedAddresses;
+  Set<String> get _reusedAddresses {
+    final addressCounts = <String, int>{};
+    for (final u in viewModel.utxoList) {
+      addressCounts[u.to] = (addressCounts[u.to] ?? 0) + 1;
+    }
+    return addressCounts.entries.where((e) => e.value > 1).map((e) => e.key).toSet();
+  }
 
-  Set<String> get _suspiciousUtxoIds => viewModel.suspiciousUtxoIds;
+  Set<String> get _suspiciousUtxoIds {
+    return viewModel.utxoList.where((u) => viewModel.isUtxoSuspicious(u)).map((u) => u.utxoId).toSet();
+  }
 
   Widget _buildGridSliver(BitcoinUnit currentUnit) {
     final utxos = _filteredBuckets.expand((b) => b.utxos).toList();
@@ -1001,7 +821,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
         itemCount: utxos.length,
         itemBuilder: (context, index) {
           final utxo = utxos[index];
-          final isSelected = viewModel.selectedUtxoIds.contains(utxo.utxoId);
+          final isSelected = _selectedUtxoIds.contains(utxo.utxoId);
           return LayoutBuilder(
             builder: (context, constraints) {
               final size = constraints.maxWidth < constraints.maxHeight ? constraints.maxWidth : constraints.maxHeight;
@@ -1012,13 +832,13 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
                   compact: true,
                   isFocused: true,
                   isSelected: isSelected,
-                  isSelectionMode: viewModel.isSelectionMode,
+                  isSelectionMode: _isSelectionMode,
                   currentUnit: currentUnit,
                   dustThreshold: _dustThreshold,
                   isAddressReused: _reusedAddresses.contains(utxo.to),
                   isSuspiciousDust: _suspiciousUtxoIds.contains(utxo.utxoId),
                   onTap: () {
-                    if (viewModel.isSelectionMode) {
+                    if (_isSelectionMode) {
                       if (utxo.status == UtxoStatus.outgoing || utxo.status == UtxoStatus.incoming) {
                         CoconutToast.showToast(
                           context: context,
@@ -1028,10 +848,10 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
                         return;
                       }
                       setState(() {
-                        if (viewModel.selectedUtxoIds.contains(utxo.utxoId)) {
-                          viewModel.selectedUtxoIds.remove(utxo.utxoId);
+                        if (_selectedUtxoIds.contains(utxo.utxoId)) {
+                          _selectedUtxoIds.remove(utxo.utxoId);
                         } else {
-                          viewModel.selectedUtxoIds.add(utxo.utxoId);
+                          _selectedUtxoIds.add(utxo.utxoId);
                         }
                       });
                     } else {
@@ -1048,8 +868,8 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
                       return;
                     }
                     setState(() {
-                      viewModel.isSelectionMode = true;
-                      viewModel.selectedUtxoIds.add(utxo.utxoId);
+                      _isSelectionMode = true;
+                      _selectedUtxoIds.add(utxo.utxoId);
                     });
                   },
                 ),
@@ -1070,18 +890,14 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
       _selectionBarTopPadding + BottomActionButton.horizontalHeight + _selectionBarInnerBottomPadding;
 
   double _selectionBarBottomPadding(BuildContext context) {
-    final showBar =
-        (viewModel.isSelectionMode && viewModel.selectedUtxoIds.isNotEmpty) || viewModel.selectionBarExiting;
+    final showBar = (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting;
     if (!showBar) return _baseBottomPadding;
     final bottomInset = MediaQuery.of(context).padding.bottom;
     return _baseBottomPadding + _selectionBarContentHeight + bottomInset * 2;
   }
 
   void _updateActiveBucket() {
-    final controller = _contentScrollController;
-    if (!mounted || controller == null || !controller.hasClients || _isRestoringState) {
-      return;
-    }
+    if (!mounted || !_scrollController.hasClients || _isRestoringState) return;
 
     final count = _filteredBuckets.length;
     if (count == 0) return;
@@ -1091,7 +907,7 @@ class _RenewalUtxoOverviewScreenState extends State<RenewalUtxoOverviewScreen> {
       return;
     }
 
-    final pos = controller.position;
+    final pos = _scrollController.position;
     final minExtent = pos.minScrollExtent;
     final maxExtent = pos.maxScrollExtent;
     final pixels = pos.pixels;

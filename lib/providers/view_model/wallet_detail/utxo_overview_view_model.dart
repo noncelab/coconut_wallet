@@ -23,7 +23,7 @@ import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
-class RenewalUtxoListViewModel extends ChangeNotifier {
+class UtxoOverviewViewModel extends ChangeNotifier {
   // Defendencies
   late final WalletProvider _walletProvider;
   late final TransactionProvider _txProvider;
@@ -111,7 +111,7 @@ class RenewalUtxoListViewModel extends ChangeNotifier {
   }
 
   // Constructor
-  RenewalUtxoListViewModel(
+  UtxoOverviewViewModel(
     this._walletId,
     this._walletProvider,
     this._txProvider,

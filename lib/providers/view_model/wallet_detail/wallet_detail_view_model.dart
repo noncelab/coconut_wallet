@@ -1,319 +1,156 @@
 import 'dart:async';
 
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/node/wallet_fetch_progress.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/constants/security_warning_constants.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
-import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/price_provider.dart';
-import 'package:coconut_wallet/services/model/error/default_error_response.dart';
-import 'package:coconut_wallet/services/model/request/faucet_request.dart';
-import 'package:coconut_wallet/services/model/response/faucet_response.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/utils/logger.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:coconut_wallet/services/faucet_service.dart';
+import 'package:coconut_wallet/services/model/request/faucet_request.dart';
+import 'package:coconut_wallet/services/model/response/faucet_response.dart';
+import 'package:coconut_wallet/services/model/error/default_error_response.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:flutter/foundation.dart';
 
 class WalletDetailViewModel extends ChangeNotifier {
-  static const int kMaxFaucetRequestCount = 3;
+  static const int recentTransactionLimit = 3;
+  static const _minimumRefreshIndicatorDuration = Duration(milliseconds: 700);
+
   final int _walletId;
   final WalletProvider _walletProvider;
-  final TransactionProvider _txProvider;
-  final ConnectivityProvider _connectProvider;
-  final PriceProvider _priceProvider;
-  final PreferenceProvider _preferenceProvider;
-  final NodeProvider _nodeProvider;
-  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-  late final Stream<WalletUpdateInfo> _syncWalletStateStream;
-  late final Stream<NodeSyncState> _nodeSyncStateStream;
-  late final Stream<WalletFetchProgress> _fetchProgressStream;
-  StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
-  StreamSubscription<NodeSyncState>? _nodeSyncStateSubscription;
-  StreamSubscription<WalletFetchProgress>? _fetchProgressSubscription;
-
-  late WalletItemBase _walletListBaseItem;
-  late WalletType _walletType;
-  late WalletAddress _receiveAddress;
-
-  bool _faucetTooltipVisible = false;
-
-  /// Faucet
+  final TransactionProvider _transactionProvider;
+  final SharedPrefsRepository _sharedPrefs;
+  late WalletItemBase _wallet;
   final Faucet _faucetService = Faucet();
-  late FaucetRecord _faucetRecord;
-
-  String _walletName = '';
-
-  bool _isRequesting = false;
-
-  bool _isManualUtxoSelectionMode = false;
-  bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
-
-  // 상태 변화 확인용
-  late WalletUpdateInfo _prevWalletUpdateInfo;
-
-  // balance 애니메이션을 위한 이전 잔액을 담는 변수
-  late int _prevBalance;
-
-  int get prevBalance => _prevBalance;
-  late bool _isWalletSyncing;
-  bool get isWalletSyncing => _isWalletSyncing && networkStatus == NetworkStatus.online;
+  late final StreamSubscription<WalletUpdateInfo> _walletUpdateSubscription;
+  late final StreamSubscription<NodeSyncState> _nodeSyncStateSubscription;
+  WalletUpdateInfo? _walletUpdateInfo;
   late NodeSyncState _nodeSyncState;
-  NetworkStatus get networkStatus {
-    if (_connectProvider.isInternetOff) {
-      return NetworkStatus.offline;
-    }
-
-    if (_nodeSyncState == NodeSyncState.failed) {
-      return NetworkStatus.connectionFailed;
-    }
-
-    return NetworkStatus.online;
-  }
-
-  late int _balance;
-  int get balance => _balance;
-
-  int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
-  int get availableUtxoCount => _walletProvider.getUtxoListByStatus(_walletId, UtxoStatus.unspent).length;
-
-  int _receivingAmount = 0;
-  int _sendingAmount = 0;
-  int get receivingAmount => _receivingAmount;
-  int get sendingAmount => _sendingAmount;
+  bool _isRequestingFaucet = false;
+  late bool _isWalletSyncing;
+  bool _isRefreshing = false;
+  BitcoinUnit _currentUnit;
+  final Set<WalletDetailSecurityWarningType> _dismissedWarningsThisSession = {};
+  WalletDetailSecurityWarningType? _nextWarningAfterDismissal;
+  bool _isDisposed = false;
 
   WalletDetailViewModel(
     this._walletId,
     this._walletProvider,
-    this._txProvider,
-    this._connectProvider,
-    this._priceProvider,
-    this._preferenceProvider,
-    this._nodeProvider,
-  ) : _syncWalletStateStream = _nodeProvider.getWalletStateStream(_walletId),
-      _nodeSyncStateStream = _nodeProvider.syncStateStream,
-      _fetchProgressStream = _nodeProvider.getWalletFetchProgressStream(_walletId) {
-    // 지갑 상세 초기화
-    final walletBaseItem = _walletProvider.getWalletById(_walletId);
-    _walletListBaseItem = walletBaseItem;
-    _walletType = walletBaseItem.walletType;
-    _txProvider.initTxList(_walletId);
-
-    // 지갑 업데이트
-    _prevWalletUpdateInfo = WalletUpdateInfo(_walletId);
-    _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdateInfoChanged);
-    _nodeSyncStateSubscription = _nodeSyncStateStream.listen(_onNodeSyncStateChanged);
-    _fetchProgressSubscription = _fetchProgressStream.listen(_onFetchProgressChanged);
-    _nodeSyncState = NodeSyncState.syncing;
-    _isWalletSyncing = false;
-    _balance = _getBalance();
-    _isManualUtxoSelectionMode = _preferenceProvider.isManualUtxoSelectionMode;
-
-    // WalletProvider 변경 감지 리스너
-    _walletProvider.addListener(_onWalletProviderChanged);
-
-    // UpbitConnectModel 변경 감지 리스너
-    _priceProvider.addListener(_updateBitcoinPrice);
-
-    // TransactionProvider 변경 감지 리스너
-    _txProvider.addListener(_onTransactionProviderChanged);
-
-    _setPendingAmount();
-    _prevBalance = balance;
-    // debugPrint('prev :: $_prevBalance');
-
-    _setReceiveAddress();
-    _walletName = walletBaseItem.name.length > 10 ? '${walletBaseItem.name.substring(0, 7)}...' : walletBaseItem.name;
-    // Faucet
-    if (NetworkType.currentNetworkType.isTestnet) {
-      _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
-      _checkFaucetRecord();
-      showFaucetTooltip();
-    }
+    this._transactionProvider,
+    NodeProvider nodeProvider, {
+    required BitcoinUnit initialUnit,
+    SharedPrefsRepository? sharedPrefs,
+  }) : _currentUnit = initialUnit,
+       _sharedPrefs = sharedPrefs ?? SharedPrefsRepository() {
+    _wallet = _walletProvider.getWalletById(_walletId);
+    _walletUpdateInfo = nodeProvider.state.registeredWallets[_walletId];
+    _nodeSyncState = nodeProvider.state.nodeSyncState;
+    _isWalletSyncing = _calculateIsWalletSyncing();
+    _transactionProvider.initTxList(_walletId);
+    _walletProvider.addListener(_handleWalletChanged);
+    _transactionProvider.addListener(_handleTransactionChanged);
+    _walletUpdateSubscription = nodeProvider.getWalletStateStream(_walletId).listen(_handleWalletUpdate);
+    _nodeSyncStateSubscription = nodeProvider.syncStateStream.listen(_handleNodeSyncState);
   }
-
-  void _setReceiveAddress() {
-    _receiveAddress = _walletProvider.getReceiveAddress(_walletId);
-    Logger.log('--> 리시브주소: ${_receiveAddress.address}');
-  }
-
-  bool get faucetTooltipVisible => _faucetTooltipVisible;
-
-  bool get isRequesting => _isRequesting;
-
-  String get derivationPath => _receiveAddress.derivationPath;
-  String get receiveAddressIndex => _receiveAddress.derivationPath.split('/').last;
-  String get receiveAddress => _receiveAddress.address;
-
-  List<TransactionRecord> get txList => _txProvider.txList;
 
   int get walletId => _walletId;
-  WalletItemBase get walletListBaseItem => _walletListBaseItem;
-  String get walletName => _walletName;
-  WalletProvider? get walletProvider => _walletProvider;
-  WalletType get walletType => _walletType;
-  bool get isNetworkOff => _connectProvider.isInternetOff;
-  bool get isMultisigWallet => _walletListBaseItem is MultisigWalletItem;
-  String? get masterFingerprint {
-    switch (_walletListBaseItem.walletType) {
-      case WalletType.multiSignature:
-      case WalletType.taproot:
-        return null;
-      case WalletType.singleSignature:
-        return (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
-    }
+  WalletProvider get walletProvider => _walletProvider;
+  WalletItemBase get wallet => _wallet;
+  int get balance => _walletProvider.getWalletBalance(_walletId).total;
+  int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
+  int? get targetSats => _sharedPrefs.getWalletTargetSats(_walletId);
+  bool get isTargetDisabled => _sharedPrefs.isWalletTargetDisabled(_walletId);
+  bool get shouldShowTargetSuggestion {
+    if (targetSats != null) return false;
+    final hiddenUntil = _sharedPrefs.getInt(SharedPrefKeys.walletTargetSuggestionHiddenUntil(_walletId));
+    return hiddenUntil == 0 || DateTime.now().millisecondsSinceEpoch >= hiddenUntil;
   }
 
-  String _fiatPriceString = '';
-
-  String get fiatPriceString => _fiatPriceString;
-
-  bool isTransactionSuspicious(TransactionRecord tx) => _walletProvider.isTransactionSuspicious(tx);
-
-  // todo: 상태를 반환해주도록 수정되면 좋겠음.
-  Future<void> refreshWallet() async {
-    _balance = _getBalance();
-    _setReceiveAddress();
-    _txProvider.initTxList(_walletId);
-    unawaited(_nodeProvider.syncDormantAddresses(_walletListBaseItem));
-    notifyListeners();
+  List<TransactionRecord> get transactions => List.unmodifiable(_transactionProvider.txList);
+  List<TransactionRecord> get recentTransactions =>
+      List.unmodifiable(_transactionProvider.txList.take(recentTransactionLimit));
+  bool get hasTransactions => _transactionProvider.txList.isNotEmpty;
+  bool get isRequestingFaucet => _isRequestingFaucet;
+  bool get isWalletSyncing => _isWalletSyncing;
+  bool get isRefreshing => _isRefreshing;
+  BitcoinUnit get currentUnit => _currentUnit;
+  String get receiveAddress => _walletProvider.getReceiveAddress(_walletId).address;
+  String get receiveAddressIndex => _walletProvider.getReceiveAddress(_walletId).derivationPath.split('/').last;
+  double get targetProgress {
+    final target = targetSats;
+    if (target == null || target == 0) return 0;
+    final progress = balance / target;
+    return progress < 0 ? 0 : progress;
   }
 
-  Future<void> reconnectIfNeeded() => _nodeProvider.reconnectIfNeeded();
+  bool get isTargetReached => targetSats != null && balance >= targetSats!;
+  bool get isTargetExceeded => targetSats != null && balance > targetSats!;
+  int get targetExcessSats => isTargetExceeded ? balance - targetSats! : 0;
 
-  void _updateBitcoinPrice() {
-    _fiatPriceString = _priceProvider.getFiatPrice(_balance);
-    notifyListeners();
+  String get targetProgressPercent {
+    final target = targetSats;
+    if (target == null || target <= 0) return '0';
+    final currentBalance = balance;
+    if (currentBalance <= 0) return '0';
+
+    // 소수점 둘째 자리부터 버려 목표 달성 전에 100%로 표시되지 않도록 한다.
+    final tenths = currentBalance * 1000 ~/ target;
+    final whole = tenths ~/ 10;
+    final fraction = tenths % 10;
+    return fraction == 0 ? '$whole' : '$whole.$fraction';
   }
 
-  void _onTransactionProviderChanged() {
-    _setPendingAmount();
-    notifyListeners();
-  }
-
-  void updateWalletName() {
-    final updatedName = _walletProvider.getWalletById(_walletId).name;
-    _walletName = updatedName;
-    notifyListeners();
-  }
-
-  int _getBalance() {
-    return _walletProvider.getWalletBalance(_walletId).total;
-  }
-
-  // balance, transaction만 고려
-  void _onWalletUpdateInfoChanged(WalletUpdateInfo newInfo) {
-    // balance/transaction/utxo 중 하나라도 완료로 바뀌면 잔액과 tx 목록을 함께 새로고침
-    final balanceCompleted =
-        _prevWalletUpdateInfo.balance != WalletSyncState.completed && newInfo.balance == WalletSyncState.completed;
-    final txCompleted =
-        _prevWalletUpdateInfo.transaction != WalletSyncState.completed &&
-        newInfo.transaction == WalletSyncState.completed;
-    final utxoCompleted =
-        _prevWalletUpdateInfo.utxo != WalletSyncState.completed && newInfo.utxo == WalletSyncState.completed;
-    final anyCompleted = balanceCompleted || txCompleted || utxoCompleted;
-
-    // balance
-    if (anyCompleted) {
-      _balance = _getBalance();
-      _setReceiveAddress();
-      notifyListeners();
-      Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.: $_balance');
-    }
-    // transaction
-    if (anyCompleted) {
-      _txProvider.initTxList(_walletId);
-      _setReceiveAddress();
-      notifyListeners();
-      Logger.log('--> 지갑$_walletId의 TX를 업데이트했습니다.: ${_txProvider.txList.length}');
+  /// 현재 잔액에서 거래를 역산해 만든 목표 달성률의 시간순 지점입니다.
+  List<double> get targetProgressHistory {
+    final target = targetSats;
+    final currentProgress = targetProgress;
+    if (target == null || target <= 0 || _transactionProvider.txList.isEmpty) {
+      return [0, currentProgress];
     }
 
-    _setPendingAmount();
-    _prevWalletUpdateInfo = newInfo;
-  }
-
-  // 실제로 처리해야 할 트랜잭션 fetch 요청 수(dispatched)와 끝난 수(completed)를 직접 세서
-  // "업데이트 중"을 판단한다. syncing/completed 이진 상태만 보면 대량 배치 작업과 라이브 이벤트
-  // 1건을 구분할 수 없어(둘 다 그냥 syncing→completed 한 번으로 보임) 깜빡임이 생겼는데,
-  // dispatched > completed(진짜 outstanding한 요청이 있는지)를 직접 세면 임의의 디바운스
-  // 타이머 없이도 정확하게 판단된다.
-  void _onFetchProgressChanged(WalletFetchProgress progress) {
-    final isSyncing = progress.isFetching;
-    if (_isWalletSyncing == isSyncing) return;
-    _isWalletSyncing = isSyncing;
-    Logger.log('--> 지갑$_walletId loading ui: $_isWalletSyncing으로 변경 (${progress.completed}/${progress.dispatched})');
-    notifyListeners();
-  }
-
-  void _onNodeSyncStateChanged(NodeSyncState newState) {
-    _nodeSyncState = newState;
-    notifyListeners();
-  }
-
-  void _setPendingAmount() {
-    int sending = 0;
-    int receiving = 0;
-
-    for (var tx in _txProvider.txList) {
-      if (tx.blockHeight == 0) {
-        switch (tx.transactionType) {
-          case TransactionType.sent:
-          case TransactionType.self:
-            sending += tx.amount.abs();
-            break;
-          case TransactionType.received:
-            receiving += tx.amount;
-            break;
-          default:
-            break;
-        }
+    final newestFirst = [..._transactionProvider.txList]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    var historicalBalance = balance;
+    final newestFirstBalances = <int>[historicalBalance];
+    for (final transaction in newestFirst) {
+      switch (transaction.transactionType) {
+        case TransactionType.received:
+          historicalBalance -= transaction.amount.abs();
+          break;
+        case TransactionType.sent:
+        case TransactionType.self:
+          historicalBalance += transaction.amount.abs();
+          break;
+        case TransactionType.unknown:
+          continue;
       }
+      historicalBalance = historicalBalance.clamp(0, 1 << 62);
+      newestFirstBalances.add(historicalBalance);
     }
 
-    _sendingAmount = sending;
-    _receivingAmount = receiving;
+    return newestFirstBalances.reversed
+        .map((value) => (value / target).clamp(0.0, double.infinity))
+        .toList(growable: false);
+  }
+
+  void toggleUnit() {
+    _currentUnit = _currentUnit.next;
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    _syncWalletStateSubscription?.cancel();
-    _nodeSyncStateSubscription?.cancel();
-    _fetchProgressSubscription?.cancel();
-    _walletProvider.removeListener(_onWalletProviderChanged);
-    _priceProvider.removeListener(_updateBitcoinPrice);
-    _txProvider.removeListener(_onTransactionProviderChanged);
-    super.dispose();
-  }
-
-  void _onWalletProviderChanged() {
-    if (!_walletProvider.walletItemList.any((w) => w.id == _walletId)) {
-      return;
-    }
-    _walletListBaseItem = _walletProvider.getWalletById(_walletId);
-    _txProvider.initTxList(_walletId);
-    notifyListeners();
-  }
-
-  // ----------> Faucet 메소드 시작
-  void removeFaucetTooltip() {
-    _faucetTooltipVisible = false;
-    notifyListeners();
-  }
-
-  Future<void> requestTestBitcoin(String address, double requestAmount, Function(bool, String) onResult) async {
-    _isRequesting = true;
+  Future<void> requestTestBitcoin(
+    String address,
+    double requestAmount,
+    void Function(bool success, String message) onResult,
+  ) async {
+    _isRequestingFaucet = true;
     notifyListeners();
     try {
       final response = await _faucetService.getTestCoin(FaucetRequest(address: address, amount: requestAmount));
@@ -325,53 +162,139 @@ class WalletDetailViewModel extends ChangeNotifier {
       } else {
         onResult(false, t.faucet_failed);
       }
-    } catch (e) {
-      Logger.error(e);
-      // Error handling
+    } catch (_) {
       onResult(false, t.faucet_failed);
     } finally {
-      _isRequesting = false;
-      _setReceiveAddress();
+      _isRequestingFaucet = false;
       notifyListeners();
     }
   }
 
-  /// Faucet methods
-  void showFaucetTooltip() async {
-    final faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
-    if (faucetHistory.count < 3 && txList.isEmpty) {
-      _faucetTooltipVisible = true;
+  void _updateFaucetRecord() {
+    var record = _sharedPrefs.getFaucetHistoryWithId(_walletId);
+    if (!record.isToday) {
+      record = FaucetRecord(id: _walletId, dateTime: DateTime.now().millisecondsSinceEpoch, count: 0);
     }
+    _sharedPrefs.saveFaucetHistory(
+      record.copyWith(dateTime: DateTime.now().millisecondsSinceEpoch, count: record.count + 1),
+    );
+  }
+
+  Future<void> refresh() async {
+    if (_isRefreshing || _isDisposed) return;
+
+    _isRefreshing = true;
+    notifyListeners();
+    final stopwatch = Stopwatch()..start();
+    try {
+      _transactionProvider.initTxList(_walletId);
+      notifyListeners();
+    } finally {
+      final remaining = _minimumRefreshIndicatorDuration - stopwatch.elapsed;
+      if (remaining > Duration.zero) {
+        await Future<void>.delayed(remaining);
+      }
+      if (!_isDisposed) {
+        _isRefreshing = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  WalletDetailSecurityWarningType? getSecurityWarningType({required bool isAppLockEnabled}) {
+    if (!wallet.hasLocalKey || balance <= 0) return null;
+    if (!(wallet.hotWalletMetadata?.backupVerified ?? false) &&
+        canShowSecurityWarning(WalletDetailSecurityWarningType.unbackedHotWallet)) {
+      return WalletDetailSecurityWarningType.unbackedHotWallet;
+    }
+    if (!isAppLockEnabled && canShowSecurityWarning(WalletDetailSecurityWarningType.appLock)) {
+      return WalletDetailSecurityWarningType.appLock;
+    }
+    return null;
+  }
+
+  bool canShowSecurityWarning(WalletDetailSecurityWarningType type) {
+    if (_dismissedWarningsThisSession.contains(type)) return false;
+    final dismissedAt = _sharedPrefs.getInt(type.dismissedAtKey);
+    return dismissedAt == 0 ||
+        DateTime.now().millisecondsSinceEpoch - dismissedAt >= kSecurityWarningDismissDuration.inMilliseconds;
+  }
+
+  bool shouldUseShortWarningDelay(WalletDetailSecurityWarningType type) => _nextWarningAfterDismissal == type;
+
+  Future<void> dismissSecurityWarning(
+    WalletDetailSecurityWarningType type, {
+    required bool showNextWarning,
+  }) async {
+    _dismissedWarningsThisSession.add(type);
+    await _sharedPrefs.setInt(type.dismissedAtKey, DateTime.now().millisecondsSinceEpoch);
+    if (_isDisposed) return;
+    _nextWarningAfterDismissal = showNextWarning ? WalletDetailSecurityWarningType.appLock : null;
     notifyListeners();
   }
 
-  void _checkFaucetRecord() {
-    _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
-    if (!_faucetRecord.isToday) {
-      // 오늘 처음 요청
-      _initFaucetRecord();
-      _saveFaucetRecordToSharedPrefs();
-      return;
+  void reloadWalletMetadata() => notifyListeners();
+
+  void _handleWalletChanged() {
+    final index = _walletProvider.walletItemList.indexWhere((wallet) => wallet.id == _walletId);
+    if (index == -1) return;
+
+    _wallet = _walletProvider.walletItemList[index];
+    notifyListeners();
+  }
+
+  void _handleTransactionChanged() => notifyListeners();
+
+  void _handleWalletUpdate(WalletUpdateInfo updateInfo) {
+    _walletUpdateInfo = updateInfo;
+    _updateWalletSyncingState();
+    if (updateInfo.transaction == WalletSyncState.completed) {
+      _transactionProvider.initTxList(_walletId);
     }
   }
 
-  void _initFaucetRecord() {
-    _faucetRecord = FaucetRecord(id: _walletId, dateTime: DateTime.now().millisecondsSinceEpoch, count: 0);
+  void _handleNodeSyncState(NodeSyncState nodeSyncState) {
+    _nodeSyncState = nodeSyncState;
+    _updateWalletSyncingState();
   }
 
-  void _saveFaucetRecordToSharedPrefs() {
-    Logger.log('_checkFaucetHistory(): $_faucetRecord');
-    _sharedPrefs.saveFaucetHistory(_faucetRecord);
+  bool _calculateIsWalletSyncing() {
+    if (_nodeSyncState == NodeSyncState.completed || _nodeSyncState == NodeSyncState.failed) {
+      return false;
+    }
+
+    final walletUpdateInfo = _walletUpdateInfo;
+    if (walletUpdateInfo == null) {
+      return _nodeSyncState == NodeSyncState.init || _nodeSyncState == NodeSyncState.syncing;
+    }
+
+    return walletUpdateInfo.balance != WalletSyncState.completed ||
+        walletUpdateInfo.transaction != WalletSyncState.completed;
   }
 
-  void _updateFaucetRecord() {
-    _checkFaucetRecord();
-
-    int count = _faucetRecord.count;
-    int dateTime = DateTime.now().millisecondsSinceEpoch;
-    _faucetRecord = _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
-    _saveFaucetRecordToSharedPrefs();
+  void _updateWalletSyncingState() {
+    final isWalletSyncing = _calculateIsWalletSyncing();
+    if (_isWalletSyncing == isWalletSyncing || _isDisposed) return;
+    _isWalletSyncing = isWalletSyncing;
+    notifyListeners();
   }
 
-  // <------ Faucet 메소드 끝
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _walletUpdateSubscription.cancel();
+    _nodeSyncStateSubscription.cancel();
+    _walletProvider.removeListener(_handleWalletChanged);
+    _transactionProvider.removeListener(_handleTransactionChanged);
+    super.dispose();
+  }
+}
+
+enum WalletDetailSecurityWarningType { unbackedHotWallet, appLock }
+
+extension on WalletDetailSecurityWarningType {
+  String get dismissedAtKey => switch (this) {
+    WalletDetailSecurityWarningType.unbackedHotWallet => SharedPrefKeys.kUnbackedHotWalletWarningDismissedAt,
+    WalletDetailSecurityWarningType.appLock => SharedPrefKeys.kAppLockWarningDismissedAt,
+  };
 }

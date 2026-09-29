@@ -3,8 +3,8 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 
-class RenewalUtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const RenewalUtxoHeaderDelegate({
+class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const UtxoHeaderDelegate({
     required this.topPadding,
     required this.totalBalance,
     required this.fiatPrice,
@@ -115,7 +115,7 @@ class RenewalUtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant RenewalUtxoHeaderDelegate oldDelegate) =>
+  bool shouldRebuild(covariant UtxoHeaderDelegate oldDelegate) =>
       totalBalance != oldDelegate.totalBalance ||
       fiatPrice != oldDelegate.fiatPrice ||
       bottomBar != oldDelegate.bottomBar ||

@@ -30,7 +30,7 @@ import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/mnemonic_input_section.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/passphrase_options_section.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/seed_qr_input_section.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';

@@ -1,57 +1,53 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'dart:io';
-import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
-
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
-        CoconutToolTip,
-        CoconutTooltipType,
-        CoconutTooltipState,
+        CoconutPopup,
         CoconutToast,
         CoconutToastLevel,
-        CoconutPopup;
-import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
-import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
-import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+        CoconutToolTip,
+        CoconutTooltipState,
+        CoconutTooltipType;
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/constants/lottie_path.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
-import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/utils/wallet_util.dart';
+import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
+import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
+import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/buttons/bottom_action_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
-import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
-import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
-import 'package:coconut_wallet/widgets/features/wallet/header/transaction_list_header.dart';
-import 'package:coconut_wallet/widgets/features/wallet/header/wallet_detail_sticky_header.dart';
+import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/positioned_card_close_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/features/wallet/tooltip/faucet_tooltip.dart';
+import 'package:coconut_wallet/widgets/features/home/card/home_alert_card.dart';
+import 'package:coconut_wallet/widgets/features/transaction/card/transaction_item_card.dart';
+import 'package:coconut_wallet/widgets/features/wallet/badge/wallet_type_badge.dart';
+import 'package:coconut_wallet/widgets/features/wallet/amount/wallet_balance_sync_shimmer.dart';
+import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_refresh_icon.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-import 'package:tuple/tuple.dart';
 
 class WalletDetailScreen extends StatefulWidget {
   final int id;
@@ -63,634 +59,626 @@ class WalletDetailScreen extends StatefulWidget {
   State<WalletDetailScreen> createState() => _WalletDetailScreenState();
 }
 
-class _WalletDetailScreenState extends State<WalletDetailScreen> {
-  bool _isPullToRefreshing = false;
-  late BitcoinUnit _currentUnit;
-  late WalletDetailViewModel _viewModel;
+class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProviderStateMixin {
+  static const _nextWarningDelay = Duration(milliseconds: 400);
+  late final WalletDetailViewModel _viewModel;
+  final ValueNotifier<bool> _bottomActionButtonsExpandedNotifier = ValueNotifier<bool>(true);
+  bool? _pendingBottomActionButtonsExpanded;
+  bool _isBottomActionButtonsUpdateScheduled = false;
+  late final bool _playTargetFireworksOnEntry;
+  late final AnimationController _fireworksController;
+  late final AnimationController _fireworksFadeController;
+  bool _hasStartedFireworks = false;
 
-  final ValueNotifier<bool> _bottomActionBarVisibleNotifier = ValueNotifier<bool>(true);
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = WalletDetailViewModel(
+      widget.id,
+      context.read<WalletProvider>(),
+      context.read<TransactionProvider>(),
+      context.read<NodeProvider>(),
+      initialUnit: context.read<PreferenceProvider>().currentUnit,
+    );
+    _playTargetFireworksOnEntry = _viewModel.isTargetReached;
+    _fireworksController = AnimationController(vsync: this);
+    _fireworksFadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+  }
+
+  @override
+  void dispose() {
+    _bottomActionButtonsExpandedNotifier.dispose();
+    _fireworksController.dispose();
+    _fireworksFadeController.dispose();
+    _viewModel.dispose();
+    super.dispose();
+  }
+
+  Future<void> _playFireworksTwice(Duration duration) async {
+    if (_hasStartedFireworks) return;
+    _hasStartedFireworks = true;
+    _fireworksController.duration = duration;
+
+    try {
+      await _fireworksController.forward(from: 0).orCancel;
+      await _fireworksController.forward(from: 0).orCancel;
+      await _fireworksFadeController.forward(from: 0).orCancel;
+    } on TickerCanceled {
+      // 화면이 닫히며 컨트롤러가 dispose된 경우 재생을 종료한다.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => _viewModel,
-      child: PopScope(
-        canPop: true,
-        onPopInvokedWithResult: (didPop, _) {
-          _viewModel.removeFaucetTooltip();
-        },
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque, // 빈 영역도 감지 가능
-          child: Stack(
-            children: [
-              Scaffold(
-                backgroundColor: context.coconutColors.background,
-                appBar: _buildAppBar(context),
-                body: NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification is ScrollStartNotification || notification is ScrollUpdateNotification) {
-                      if (_bottomActionBarVisibleNotifier.value) {
-                        _bottomActionBarVisibleNotifier.value = false;
-                      }
-                    } else if (notification is ScrollEndNotification) {
-                      if (!_bottomActionBarVisibleNotifier.value) {
-                        _bottomActionBarVisibleNotifier.value = true;
-                      }
-                    }
-                    return false;
-                  },
-                  child: CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    controller: _scrollController,
-                    slivers: [
-                      CupertinoSliverRefreshControl(onRefresh: () async => _onRefresh()),
-                      SliverToBoxAdapter(
-                        child: Selector<WalletDetailViewModel, Tuple5<AnimatedBalanceData, String, int, int, bool>>(
-                          selector:
-                              (_, viewModel) => Tuple5(
-                                AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
-                                viewModel.fiatPriceString,
-                                viewModel.sendingAmount,
-                                viewModel.receivingAmount,
-                                viewModel.isWalletSyncing,
-                              ),
-                          builder: (_, data, __) {
-                            return TransactionListHeader(
-                              key: _headerWidgetKey,
-                              animatedBalanceData: data.item1,
-                              currentUnit: _currentUnit,
-                              fiatPrice: data.item2,
-                              sendingAmount: data.item3,
-                              receivingAmount: data.item4,
-                              isRefreshing: _isPullToRefreshing || data.item5,
-                              onPressedUnitToggle: _toggleUnit,
-                            );
-                          },
-                        ),
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
+      child: Scaffold(
+        backgroundColor: context.coconutColors.background,
+        appBar: _buildAppBar(context),
+        body: Stack(
+          children: [
+            NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollStartNotification || notification is ScrollUpdateNotification) {
+                  _scheduleBottomActionButtonsExpanded(false);
+                } else if (notification is ScrollEndNotification) {
+                  _scheduleBottomActionButtonsExpanded(true);
+                }
+                return false;
+              },
+              child: CupertinoScrollbar(
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    Selector<WalletDetailViewModel, bool>(
+                      selector: (_, viewModel) => viewModel.isWalletSyncing,
+                      builder:
+                          (_, isWalletSyncing, _) =>
+                              isWalletSyncing
+                                  ? const SliverToBoxAdapter(child: SizedBox.shrink())
+                                  : CupertinoSliverRefreshControl(
+                                    onRefresh: _viewModel.refresh,
+                                    refreshTriggerPullDistance: 80,
+                                    builder: (_, _, _, _, _) => const SizedBox.shrink(),
+                                  ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 150),
+                      sliver: SliverList.list(
+                        children: [
+                          _buildBalanceHeader(),
+                          CoconutLayout.spacing_500h,
+                          _buildSecurityWarning(),
+                          _buildTargetCard(),
+                          CoconutLayout.spacing_500h,
+                          _buildRecentTransactions(),
+                          CoconutLayout.spacing_500h,
+                          _buildUtxoSection(),
+                          CoconutLayout.spacing_2500h,
+                        ],
                       ),
-                      _buildTxListLabel(),
-                      TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
-
-                      SliverToBoxAdapter(child: SizedBox(height: 35 + MediaQuery.of(context).padding.bottom)),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-              _buildStickyHeader(),
-              Selector<WalletDetailViewModel, bool>(
-                selector: (_, viewModel) => viewModel.faucetTooltipVisible,
-                builder: (_, isFaucetTooltipVisible, __) {
-                  return _buildFaucetTooltip(isFaucetTooltipVisible);
-                },
-              ),
-              _buildbottomActionBar(),
-            ],
-          ),
+            ),
+            _buildBottomActionBar(),
+          ],
         ),
       ),
     );
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    final hasUnacknowledgedBackupUpdate = context.select<WalletProvider, bool>(
-      (walletProvider) => walletProvider.walletIdsWithUnacknowledgedOlderToAfterBackupUpdate.contains(widget.id),
-    );
-
     return CoconutAppBar.build(
-      // FIXME: CDN 백버튼 및 닫기 버튼 지정할 수 있어야 함.
-      // 예: iconColor: context.coconutColors.iconPrimary,
-      entireWidgetKey: _appBarKey,
-      backgroundColor: context.coconutColors.background,
-      title: '',
       context: context,
+      title: '',
+      customTitle:
+          _viewModel.wallet.hasLocalKey
+              ? const WalletTypeBadge(
+                isHotWallet: true,
+                iconSize: 12,
+                padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                textStyle: CoconutTypography.body3_12,
+              )
+              : null,
+      backgroundColor: context.coconutColors.background,
       actionButtonList: [
+        ListenableBuilder(
+          listenable: _viewModel,
+          builder: (context, _) => WalletRefreshIndicator(isRefreshing: _viewModel.isRefreshing),
+        ),
         if (NetworkType.currentNetworkType.isTestnet)
           CoconutAppBarActionButton(
-            buttonKey: _faucetIconKey,
-            onPressed: _onFaucetIconPressed,
+            onPressed: _openFaucetRequest,
             icon: SvgPicture.asset(
+              width: 20,
+              height: 20,
               FeatureUtxoIconPath.faucet,
-              width: 18,
-              height: 18,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
           ),
         CoconutAppBarActionButton(
-          onPressed: () => _navigateToUtxoList(context),
+          onPressed: _openWalletInfo,
           icon: SvgPicture.asset(
-            FeatureWalletIconPath.coins,
-            width: 18,
-            height: 18,
+            FeatureSettingsIconPath.settings,
+            width: 20,
+            height: 20,
             colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-          ),
-        ),
-        CoconutAppBarActionButton(
-          onPressed: () => _navigateToWalletInfo(context),
-          icon: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              SvgPicture.asset(
-                FeatureWalletIconPath.walletOutlined,
-                width: 18,
-                height: 18,
-                colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-              ),
-              if (hasUnacknowledgedBackupUpdate)
-                Positioned(
-                  top: -2,
-                  right: -6,
-                  child: Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(color: CoconutColors.hotPink, shape: BoxShape.circle),
-                  ),
-                ),
-            ],
           ),
         ),
       ],
     );
   }
 
-  void _navigateToUtxoList(BuildContext context) {
-    Navigator.pushNamed(context, AppRouteNames.utxoList, arguments: UtxoListRouteArgs(id: widget.id));
-  }
-
-  void _navigateToWalletInfo(BuildContext context) async {
-    await Navigator.pushNamed(
-      context,
-      AppRouteNames.walletInfo,
-      arguments: WalletInfoRouteArgs(id: widget.id, walletType: _viewModel.walletType, entryPoint: widget.entryPoint),
-    );
-
-    _viewModel.updateWalletName();
-  }
-
-  void _onRefresh() async {
-    _isPullToRefreshing = true;
-    try {
-      if (!_checkStateAndShowToast()) {
-        return;
-      }
-      _viewModel.refreshWallet();
-    } finally {
-      _isPullToRefreshing = false;
-    }
-  }
-
-  Widget _buildStickyHeader() {
-    return ValueListenableBuilder<bool>(
-      valueListenable: _stickyHeaderVisibleNotifier,
-      builder: (context, isVisible, child) {
-        return Selector<WalletDetailViewModel, Tuple2<AnimatedBalanceData, String>>(
-          selector:
-              (_, viewModel) =>
-                  Tuple2(AnimatedBalanceData(viewModel.balance, viewModel.prevBalance), viewModel.fiatPriceString),
-          builder: (context, data, child) {
-            return TransactionDetailStickyHeader(
-              widgetKey: _stickyHeaderWidgetKey,
-              height: _appBarSize.height,
-              isVisible: isVisible,
-              currentUnit: _currentUnit,
-              animatedBalanceData: data.item1,
-              fiatPrice: data.item2,
-            );
-          },
+  Widget _buildBalanceHeader() {
+    return Consumer<WalletDetailViewModel>(
+      builder: (context, viewModel, _) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: viewModel.toggleUnit,
+          child: Column(
+            children: [
+              FiatPrice(satoshiAmount: viewModel.balance),
+              CoconutLayout.spacing_100h,
+              WalletBalanceSyncShimmer(
+                isRefreshing: viewModel.isRefreshing || viewModel.isWalletSyncing,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: BitcoinAmountUnit(
+                    currentUnit: viewModel.currentUnit,
+                    unitStyle: CoconutTypography.heading4_18_Number.setColor(context.coconutColors.primaryText),
+                    child: AnimatedBalance(
+                      prevValue: viewModel.balance,
+                      value: viewModel.balance,
+                      currentUnit: viewModel.currentUnit,
+                      textStyle: CoconutTypography.heading2_28_NumberBold.setColor(context.coconutColors.primaryText),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildTxListLabel() {
-    return SliverToBoxAdapter(
-      child: Selector<WalletDetailViewModel, Tuple2<int, bool>>(
-        selector: (_, viewModel) => Tuple2(viewModel.txList.length, viewModel.isWalletSyncing),
-        builder: (_, data, __) {
-          final txCount = data.item1;
-          final isWalletSyncing = data.item2;
+  Widget _buildSecurityWarning() {
+    final isAppLockEnabled = context.watch<AuthProvider>().isAuthEnabled;
+    return Consumer<WalletDetailViewModel>(
+      builder: (context, viewModel, _) {
+        final warningType = viewModel.getSecurityWarningType(isAppLockEnabled: isAppLockEnabled);
+        if (warningType == null) return const SizedBox.shrink();
 
-          return Padding(
-            key: _txListLabelWidgetKey,
-            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
-            child: SizedBox(
-              height: 32,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+        final isMnemonicWarning = warningType == WalletDetailSecurityWarningType.unbackedHotWallet;
+        final iconColor =
+            isMnemonicWarning ? context.coconutColors.iconOnDanger : context.coconutColors.appLockWarningForeground;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: HomeAlertCard.security(
+            key: ValueKey(warningType),
+            type: isMnemonicWarning ? HomeAlertCardType.mnemonicBackup : HomeAlertCardType.appLock,
+            showDelay:
+                viewModel.shouldUseShortWarningDelay(warningType) ? _nextWarningDelay : const Duration(seconds: 1),
+            title:
+                isMnemonicWarning
+                    ? t.wallet_home_screen.unbacked_hot_wallet_warning.title
+                    : t.wallet_home_screen.app_lock_warning.title,
+            description:
+                isMnemonicWarning
+                    ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
+                    : t.wallet_home_screen.app_lock_warning.description,
+            onTap: isMnemonicWarning ? _openMnemonicBackup : _openAppLockSettings,
+            onClosed:
+                () => viewModel.dismissSecurityWarning(
+                  warningType,
+                  showNextWarning:
+                      isMnemonicWarning &&
+                      !isAppLockEnabled &&
+                      viewModel.canShowSecurityWarning(WalletDetailSecurityWarningType.appLock),
+                ),
+            icon: SvgPicture.asset(
+              isMnemonicWarning ? CommonStateIconPath.triangleWarning : CommonStateIconPath.shieldWarning,
+              width: 20,
+              height: 20,
+              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTargetCard() {
+    return Consumer<WalletDetailViewModel>(
+      builder: (context, viewModel, _) {
+        final target = viewModel.targetSats;
+        final isTargetReached = viewModel.isTargetReached;
+        final isTargetExceeded = viewModel.isTargetExceeded;
+        if (target == null && (viewModel.isTargetDisabled || !viewModel.shouldShowTargetSuggestion)) {
+          return const SizedBox.shrink();
+        }
+
+        return ShrinkAnimationButton(
+          key: ValueKey(target == null),
+          onPressed: () => _openWalletInfo(showTargetSetting: target == null),
+          defaultColor: context.coconutColors.surface,
+          pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+          pressedOverlayOpacity: target == null ? context.coconutColors.surfacePressOverlayOpacity : 0,
+          animationEndValue: target == null ? 0.97 : 1,
+          isActive: target == null,
+          borderRadius: CoconutStyles.radius_200,
+          child: Stack(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  22,
+                  HomeAlertCard.contentPadding.top,
+                  target == null ? PositionedCardArrowButton.contentRightInset : 22,
+                  HomeAlertCard.contentPadding.bottom,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              t.tx_list,
-                              style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
-                            ),
+                        Expanded(
+                          child: Text(
+                            target == null
+                                ? 'Stay humble, stack sats!'
+                                : isTargetReached
+                                ? t.wallet_info_screen.target_exceeded_title
+                                : t.wallet_info_screen.target_progress_title,
+                            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
                           ),
                         ),
-                        CoconutLayout.spacing_100w,
-                        if (txCount > 0)
+                        if (target != null && !isTargetReached)
                           Text(
-                            t.total_item_count(count: txCount),
-                            style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
+                            '${viewModel.targetProgressPercent}%',
+                            style: CoconutTypography.body1_16_NumberBold.setColor(context.coconutColors.iconPrimary),
                           ),
                       ],
+                    ),
+                    if (target == null) ...[
+                      CoconutLayout.spacing_150h,
+                      Text(
+                        t.wallet_info_screen.target_not_set_secondary,
+                        style: CoconutTypography.body2_14_NumberBold.setColor(context.coconutColors.secondaryText),
+                      ),
+                    ] else ...[
+                      if (isTargetExceeded) ...[
+                        CoconutLayout.spacing_100h,
+                        Builder(
+                          builder: (context) {
+                            final amount = viewModel.currentUnit.displayBitcoinAmount(
+                              viewModel.targetExcessSats,
+                              withUnit: true,
+                            );
+                            final message = t.wallet_info_screen.target_exceeded_secondary(amount: amount);
+                            final amountStart = message.indexOf(amount);
+                            final baseStyle = CoconutTypography.body3_12_Number.setColor(
+                              context.coconutColors.secondaryText,
+                            );
+
+                            return Text.rich(
+                              TextSpan(
+                                style: baseStyle,
+                                children: [
+                                  TextSpan(text: message.substring(0, amountStart)),
+                                  TextSpan(text: amount, style: baseStyle.setColor(context.coconutColors.primary)),
+                                  TextSpan(text: message.substring(amountStart + amount.length)),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                      CoconutLayout.spacing_300h,
+                      _TargetProgressChart(
+                        progress: viewModel.targetProgress,
+                        history: viewModel.targetProgressHistory,
+                        targetLabel:
+                            '${t.wallet_info_screen.target} ${viewModel.currentUnit.displayBitcoinAmount(target, withUnit: true)}',
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (target == null)
+                PositionedCardArrowButton(
+                  onPressed: () => _openWalletInfo(showTargetSetting: true),
+                  color: context.coconutColors.iconSecondary,
+                  iconSize: 12,
+                ),
+              if (_playTargetFireworksOnEntry && isTargetReached)
+                Positioned(
+                  top: -12,
+                  right: 4,
+                  child: IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: _fireworksFadeController,
+                      builder: (context, child) {
+                        return Opacity(opacity: 1 - _fireworksFadeController.value, child: child);
+                      },
+                      child: Lottie.asset(
+                        CommonLottiePath.fireworks,
+                        controller: _fireworksController,
+                        width: 112,
+                        height: 96,
+                        fit: BoxFit.contain,
+                        repeat: false,
+                        onLoaded: (composition) => _playFireworksTwice(composition.duration),
+                      ),
                     ),
                   ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-                  if (isWalletSyncing)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: InlineLoadingIndicator(
-                            padding: EdgeInsets.zero,
-                            color: context.coconutColors.primary,
-                            radius: 8,
+  Widget _buildRecentTransactions() {
+    return Consumer<WalletDetailViewModel>(
+      builder: (context, viewModel, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SectionHeader(
+              title: t.wallet_detail_screen.recent_transactions,
+              actionLabel: t.wallet_detail_screen.view_all,
+              actionEnabled: viewModel.hasTransactions,
+              onAction: _openTransactionList,
+            ),
+            CoconutLayout.spacing_200h,
+            if (!viewModel.hasTransactions)
+              Container(
+                width: MediaQuery.sizeOf(context).width,
+                padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (viewModel.isWalletSyncing)
+                      WalletBalanceSyncShimmer(
+                        isRefreshing: true,
+                        child: Text(
+                          t.tx_loading,
+                          textAlign: TextAlign.center,
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                        ),
+                      )
+                    else ...[
+                      SvgPicture.asset(
+                        CommonStateIconPath.leafFall,
+                        colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
+                      ),
+                      CoconutLayout.spacing_200w,
+                      Flexible(
+                        child: Text(
+                          t.wallet_detail_screen.never_used_wallet,
+                          textAlign: TextAlign.center,
+                          style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              )
+            else
+              ...viewModel.recentTransactions.indexed.map(
+                (entry) => _AnimatedRecentTransactionCard(
+                  key: ValueKey(entry.$2.transactionHash),
+                  delay: Duration(milliseconds: entry.$1 * 100),
+                  padding: EdgeInsets.only(bottom: entry.$1 == viewModel.recentTransactions.length - 1 ? 0 : 8),
+                  child: TransactionItemCard(
+                    tx: entry.$2,
+                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                    borderRadius: CoconutStyles.radius_200,
+                    currentUnit: viewModel.currentUnit,
+                    id: widget.id,
+                    onPressed: () => _openTransaction(entry.$2),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildUtxoSection() {
+    return Consumer<WalletDetailViewModel>(
+      builder: (context, viewModel, _) {
+        final hasUtxo = viewModel.utxoCount > 0;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t.wallet_detail_screen.utxo_count(count: viewModel.utxoCount),
+              style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
+            ),
+            CoconutLayout.spacing_200h,
+            Container(
+              decoration: BoxDecoration(
+                color: context.coconutColors.surface,
+                borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _UtxoAction(
+                      iconPath: CommonMenuIconPath.grid,
+                      label: t.wallet_detail_screen.utxo_overview,
+                      description: t.wallet_detail_screen.utxo_overview_description,
+                      iconPadding: const EdgeInsets.all(2),
+                      isEnabled: hasUtxo,
+                      onTap:
+                          () => Navigator.pushNamed(
+                            context,
+                            AppRouteNames.utxoOverview,
+                            arguments: UtxoOverviewRouteArgs(id: widget.id),
                           ),
-                        ),
-                        CoconutLayout.spacing_100w,
-                        Text(
-                          t.status_updating,
-                          style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.primary),
-                        ),
-                      ],
                     ),
+                  ),
+                  Expanded(
+                    child: _UtxoAction(
+                      iconPath: FeatureUtxoIconPath.splitUtxo,
+                      label: t.wallet_detail_screen.utxo_organize,
+                      description: t.wallet_detail_screen.utxo_organize_description,
+                      iconPadding: EdgeInsets.zero,
+                      isEnabled: hasUtxo,
+                      onTap:
+                          () => Navigator.pushNamed(
+                            context,
+                            AppRouteNames.utxoOrganizer,
+                            arguments: UtxoOrganizerRouteArgs(id: widget.id),
+                          ),
+                    ),
+                  ),
                 ],
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  // 스크롤 시 sticky header 렌더링을 위한 상태 변수들
-  final ScrollController _scrollController = ScrollController();
-  OverlayEntry? _statusBarTapOverlayEntry;
-
-  final GlobalKey _appBarKey = GlobalKey();
-  Size _appBarSize = const Size(0, 0);
-  double _topPadding = 0;
-
-  final GlobalKey _faucetIconKey = GlobalKey();
-  Size _faucetIconSize = const Size(0, 0);
-  Offset _faucetIconPosition = Offset.zero;
-
-  final GlobalKey _headerWidgetKey = GlobalKey();
-
-  final GlobalKey _stickyHeaderWidgetKey = GlobalKey();
-  RenderBox? _stickyHeaderRenderBox;
-  final ValueNotifier<bool> _stickyHeaderVisibleNotifier = ValueNotifier<bool>(false);
-
-  final GlobalKey _txListLabelWidgetKey = GlobalKey();
-
-  static const double _stickyHeaderScrollThresholdOffset = 45;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentUnit = context.read<PreferenceProvider>().currentUnit;
-    _viewModel = WalletDetailViewModel(
-      widget.id,
-      Provider.of<WalletProvider>(context, listen: false),
-      Provider.of<TransactionProvider>(context, listen: false),
-      Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<PriceProvider>(context, listen: false),
-      Provider.of<PreferenceProvider>(context, listen: false),
-      Provider.of<NodeProvider>(context, listen: false),
-    );
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Size topSelectorWidgetSize = const Size(0, 0);
-      Size positionedTopWidgetSize = const Size(0, 0);
-
-      if (_appBarKey.currentContext != null) {
-        final appBarRenderBox = _appBarKey.currentContext?.findRenderObject() as RenderBox;
-        _appBarSize = appBarRenderBox.size;
-      }
-
-      if (_headerWidgetKey.currentContext != null) {
-        final headerWidgetRenderBox = _headerWidgetKey.currentContext?.findRenderObject() as RenderBox;
-        topSelectorWidgetSize = headerWidgetRenderBox.size;
-      }
-
-      if (_faucetIconKey.currentContext != null) {
-        final faucetRenderBox = _faucetIconKey.currentContext?.findRenderObject() as RenderBox;
-        _faucetIconPosition = faucetRenderBox.localToGlobal(Offset.zero);
-        _faucetIconSize = faucetRenderBox.size;
-      }
-
-      if (_stickyHeaderWidgetKey.currentContext != null) {
-        final positionedTopWidgetRenderBox = _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
-        positionedTopWidgetSize = positionedTopWidgetRenderBox.size; // 거래내역 - Utxo 리스트 위젯 영역
-      }
-
-      setState(() {
-        _topPadding = topSelectorWidgetSize.height - positionedTopWidgetSize.height;
-      });
-
-      _scrollController.addListener(() {
-        if (_scrollController.offset > _topPadding + _stickyHeaderScrollThresholdOffset) {
-          if (!_isPullToRefreshing) {
-            _stickyHeaderVisibleNotifier.value = true;
-            _stickyHeaderRenderBox ??= _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
-          }
-        } else {
-          if (!_isPullToRefreshing) {
-            _stickyHeaderVisibleNotifier.value = false;
-          }
-        }
-      });
-    });
-
-    if (Platform.isIOS) {
-      _enableStatusBarTapScroll();
-    }
-  }
-
-  @override
-  void dispose() {
-    _statusBarTapOverlayEntry?.remove();
-    _statusBarTapOverlayEntry = null;
-    _scrollController.dispose();
-    _stickyHeaderVisibleNotifier.dispose();
-    _bottomActionBarVisibleNotifier.dispose();
-    super.dispose();
-  }
-
-  void _enableStatusBarTapScroll() {
-    if (_statusBarTapOverlayEntry != null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _statusBarTapOverlayEntry = OverlayEntry(
-        builder:
-            (context) => Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: MediaQuery.of(context).padding.top,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                },
-              ),
-            ),
-      );
-
-      final overlayState = Overlay.of(context);
-      overlayState.insert(_statusBarTapOverlayEntry!);
-    });
-  }
-
-  bool _checkStateAndShowToast() {
-    if (_viewModel.isNetworkOff) {
-      CoconutToast.showToast(
-        context: context,
-        isVisibleIcon: true,
-        iconPath: CommonStateIconPath.triangleWarning,
-        text: ErrorCodes.networkError.message,
-        level: CoconutToastLevel.warning,
-      );
-      return false;
-    }
-
-    if (_viewModel.networkStatus == NetworkStatus.connectionFailed) {
-      _viewModel.reconnectIfNeeded();
-      CoconutToast.showToast(
-        context: context,
-        isVisibleIcon: true,
-        iconPath: CommonStateIconPath.triangleWarning,
-        text: t.errors.electrum_connection_failed,
-        level: CoconutToastLevel.warning,
-      );
-      return false;
-    }
-
-    if (_viewModel.isWalletSyncing) {
-      _showInfoToast(context, t.toast.fetching_onchain_data);
-      return false;
-    }
-
-    return true;
-  }
-
-  /// MFP(master fingerprint)가 누락된 싱글시그 지갑이면 안내 다이얼로그를 띄우고 true를 반환.
-  /// 호출부에서는 true일 때 이후 동작을 중단해야 한다.
-  bool _showNoMfpDialogIfNeeded() {
-    if (!_viewModel.isMultisigWallet &&
-        (_viewModel.masterFingerprint == WalletAddService.masterFingerprintPlaceholder ||
-            isWalletWithoutMfp(_viewModel.walletListBaseItem))) {
-      showNoMfpDialog(context, () {
-        Navigator.of(context).pop();
-        Navigator.pushNamed(
-          context,
-          AppRouteNames.walletInfo,
-          arguments: WalletInfoRouteArgs(
-            id: widget.id,
-            walletType: _viewModel.walletType,
-            entryPoint: widget.entryPoint,
-            showMfpInput: true,
-          ),
+          ],
         );
-      });
-      return true;
-    }
-    return false;
-  }
-
-  void _onTapMerge({required bool canMerge, required int availableUtxoCount}) {
-    if (!canMerge) {
-      _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
-      return;
-    }
-    if (availableUtxoCount < 2) {
-      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
-      return;
-    }
-    if (_showNoMfpDialogIfNeeded()) return;
-    if (!_checkStateAndShowToast()) return;
-    Navigator.pushNamed(
-      context,
-      AppRouteNames.mergeUtxos,
-      arguments: UtxoMergeRouteArgs(id: widget.id, isActive: true),
+      },
     );
   }
 
-  void _onTapSplit({required bool canSplit, required int availableUtxoCount}) {
-    if (!canSplit) {
-      _showInfoToast(context, t.toast.split_utxo_unavailable_description);
-      return;
-    }
-    if (availableUtxoCount < 1) {
-      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
-      return;
-    }
-    if (_showNoMfpDialogIfNeeded()) return;
-    if (!_checkStateAndShowToast()) return;
-    Navigator.pushNamed(context, AppRouteNames.splitUtxo, arguments: UtxoSplitRouteArgs(id: widget.id, isActive: true));
-  }
-
-  void _onTapReceive() {
-    Navigator.of(context).pushNamed(AppRouteNames.receiveAddress, arguments: ReceiveAddressRouteArgs(id: widget.id));
-  }
-
-  Future<void> _onTapSend() async {
-    if (_showNoMfpDialogIfNeeded()) return;
-    if (!_checkStateAndShowToast()) return;
-
-    final isManualUtxoSelection = _viewModel.isManualUtxoSelectionMode;
-
-    if (!isManualUtxoSelection) {
-      Navigator.pushNamed(
-        context,
-        AppRouteNames.send,
-        arguments: SendRouteArgs(id: _viewModel.walletId, sendEntryPoint: SendEntryPoint.walletDetail),
-      );
-      return;
-    }
-
-    final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
-      context: context,
-      screenName: AnalyticsScreenNames.walletDetailSelectUtxoSheet,
-      minChildSize: 0.6,
-      maxChildSize: 0.9,
-      initialChildSize: 0.9,
-      childBuilder:
-          (scrollController) => UtxoSelectionScreen(
-            selectedUtxoList: const <UtxoState>[],
-            walletId: _viewModel.walletId,
-            currentUnit: context.read<PreferenceProvider>().currentUnit,
-            scrollController: scrollController,
-            showSkipButton: true,
-          ),
-    );
-
-    if (!mounted || result == null) return;
-
-    Navigator.pushNamed(
-      context,
-      AppRouteNames.send,
-      arguments: SendRouteArgs(
-        id: _viewModel.walletId,
-        sendEntryPoint: SendEntryPoint.walletDetail,
-        selectedUtxoList: List<UtxoState>.from(result),
-      ),
-    );
-  }
-
-  void _toggleUnit() {
-    setState(() {
-      _currentUnit = _currentUnit.next;
-    });
-  }
-
-  // Faucet 메서드
-  Widget _buildFaucetTooltip(bool isVisible) {
-    return FaucetTooltip(
-      text: t.tooltip.faucet,
-      isVisible: isVisible,
-      width: MediaQuery.of(context).size.width,
-      iconPosition: _faucetIconPosition,
-      iconSize: _faucetIconSize,
-      onTapRemove: _viewModel.removeFaucetTooltip,
-    );
-  }
-
-  Widget _buildbottomActionBar() {
-    return Selector<WalletDetailViewModel, Tuple2<int, int>>(
-      selector: (_, viewModel) => Tuple2(viewModel.utxoCount, viewModel.availableUtxoCount),
-      builder: (_, data, __) {
-        final int utxoCount = data.item1;
-        final int availableUtxoCount = data.item2;
-
-        final bool canMerge = utxoCount > 1;
-        final bool canSplit = utxoCount > 0;
-
-        return ValueListenableBuilder<bool>(
-          valueListenable: _bottomActionBarVisibleNotifier,
-          builder: (context, isVisible, child) {
-            return BottomActionBarSlide(
-              isVisible: isVisible,
-              child: BottomActionBar(
+  Widget _buildBottomActionBar() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _bottomActionButtonsExpandedNotifier,
+      builder: (context, isExpanded, _) {
+        return Positioned.fill(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: BottomActionBar(
+              child: AnimatedSlide(
+                offset: isExpanded ? Offset.zero : const Offset(0, 0.35),
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
                 child: Row(
                   children: [
                     Expanded(
-                      child: Opacity(
-                        opacity: canMerge ? 1.0 : 0.3,
-                        child: _buildBottomActionBarButton(
-                          iconPath: FeatureUtxoIconPath.mergeUtxos,
-                          label: t.merge_utxos,
-                          onTap: () => _onTapMerge(canMerge: canMerge, availableUtxoCount: availableUtxoCount),
+                      child: AnimatedScale(
+                        scale: isExpanded ? 1 : 0.8,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        child: BottomActionButton(
+                          iconPath: FeatureTransactionIconPath.receivePlane,
+                          label: t.receive,
+                          onTap:
+                              () => Navigator.pushNamed(
+                                context,
+                                AppRouteNames.receiveAddress,
+                                arguments: ReceiveAddressRouteArgs(id: widget.id),
+                              ),
+                          buttonLayout: BottomActionButtonLayout.horizontal,
+                          textStyle: CoconutTypography.body2_14_Bold,
                         ),
                       ),
                     ),
                     Expanded(
-                      child: Opacity(
-                        opacity: canSplit ? 1.0 : 0.3,
-                        child: _buildBottomActionBarButton(
-                          iconPath: FeatureUtxoIconPath.splitUtxo,
-                          label: t.split_utxo,
-                          onTap: () => _onTapSplit(canSplit: canSplit, availableUtxoCount: availableUtxoCount),
+                      child: AnimatedScale(
+                        scale: isExpanded ? 1 : 0.8,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        child: BottomActionButton(
+                          iconPath: FeatureTransactionIconPath.sendPlane,
+                          label: t.send,
+                          onTap:
+                              () => Navigator.pushNamed(
+                                context,
+                                AppRouteNames.send,
+                                arguments: SendRouteArgs(id: widget.id, sendEntryPoint: SendEntryPoint.walletDetail),
+                              ),
+                          buttonLayout: BottomActionButtonLayout.horizontal,
+                          textStyle: CoconutTypography.body2_14_Bold,
                         ),
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildBottomActionBarButton(
-                        iconPath: FeatureTransactionIconPath.receivePlane,
-                        label: t.receive,
-                        onTap: _onTapReceive,
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildBottomActionBarButton(
-                        iconPath: FeatureTransactionIconPath.sendPlane,
-                        label: t.send,
-                        onTap: _onTapSend,
                       ),
                     ),
                   ],
                 ),
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );
   }
 
-  void _showInfoToast(BuildContext context, String text) {
-    CoconutToast.showToast(
+  void _scheduleBottomActionButtonsExpanded(bool isExpanded) {
+    _pendingBottomActionButtonsExpanded = isExpanded;
+    if (_isBottomActionButtonsUpdateScheduled) return;
+
+    _isBottomActionButtonsUpdateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isBottomActionButtonsUpdateScheduled = false;
+      if (!mounted) return;
+
+      final pendingValue = _pendingBottomActionButtonsExpanded;
+      _pendingBottomActionButtonsExpanded = null;
+      if (pendingValue != null && _bottomActionButtonsExpandedNotifier.value != pendingValue) {
+        _bottomActionButtonsExpandedNotifier.value = pendingValue;
+      }
+    });
+  }
+
+  void _openTransaction(TransactionRecord transaction) {
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.transactionDetail,
+      arguments: TransactionDetailRouteArgs(id: widget.id, txHash: transaction.transactionHash),
+    );
+  }
+
+  void _openTransactionList() {
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.transactionList,
+      arguments: WalletDetailRouteArgs(id: widget.id, entryPoint: widget.entryPoint),
+    );
+  }
+
+  Future<void> _openWalletInfo({bool showTargetSetting = false}) async {
+    await Navigator.pushNamed(
+      context,
+      AppRouteNames.walletInfo,
+      arguments: WalletInfoRouteArgs(
+        id: widget.id,
+        walletType: _viewModel.wallet.walletType,
+        entryPoint: widget.entryPoint,
+        showTargetSetting: showTargetSetting,
+      ),
+    );
+    if (mounted) _viewModel.reloadWalletMetadata();
+  }
+
+  void _openMnemonicBackup() {
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.walletInfo,
+      arguments: WalletInfoRouteArgs(
+        id: widget.id,
+        walletType: _viewModel.wallet.walletType,
+        entryPoint: widget.entryPoint,
+        highlightMnemonicBackup: true,
+      ),
+    );
+  }
+
+  void _openAppLockSettings() {
+    CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
-      isVisibleIcon: true,
-      iconPath: CommonStateIconPath.circleInfo,
-      text: text,
-      level: CoconutToastLevel.info,
+      screenName: AnalyticsScreenNames.walletDetailAppSettingsSheet,
+      child: const AppSettingsScreen(),
+      heightRatio: 0.9,
     );
   }
 
-  Widget _buildBottomActionBarButton({required String iconPath, required String label, required VoidCallback onTap}) {
-    return BottomActionButton(
-      iconPath: iconPath,
-      label: label,
-      onTap: onTap,
-      buttonLayout: BottomActionButtonLayout.vertical,
-      iconSize: 24,
-      spacing: 4,
-      textStyle: CoconutTypography.body3_12.setColor(context.coconutColors.primaryText),
-    );
-  }
-
-  void _onFaucetIconPressed() async {
-    _viewModel.removeFaucetTooltip();
-    if (!_checkStateAndShowToast()) {
-      return;
-    }
+  Future<void> _openFaucetRequest() async {
     await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       screenName: AnalyticsScreenNames.walletDetailFaucetSheet,
@@ -699,243 +687,414 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         walletData: {
           'wallet_id': _viewModel.walletId,
           'wallet_address': _viewModel.receiveAddress,
-          'wallet_name': _viewModel.walletName,
+          'wallet_name': _viewModel.wallet.name,
           'wallet_index': _viewModel.receiveAddressIndex,
         },
-        isRequesting: _viewModel.isRequesting,
+        isRequesting: _viewModel.isRequestingFaucet,
         onRequest: (address, requestAmount) {
-          if (_viewModel.isRequesting) return;
-
+          if (_viewModel.isRequestingFaucet) return;
           _viewModel.requestTestBitcoin(address, requestAmount, (success, message) {
+            if (!mounted) return;
             if (success) {
               Navigator.pop(context);
               vibrateLight();
-              CoconutToast.showToast(isVisibleIcon: true, context: context, text: message);
-            } else {
-              vibrateMedium();
-              CoconutToast.showToast(
-                context: context,
-                isVisibleIcon: true,
-                iconPath: CommonStateIconPath.triangleWarning,
-                text: message,
-                level: CoconutToastLevel.warning,
-              );
+              CoconutToast.showToast(context: context, text: message, isVisibleIcon: true);
+              return;
             }
+            vibrateMedium();
+            CoconutToast.showToast(
+              context: context,
+              text: message,
+              isVisibleIcon: true,
+              iconPath: CommonStateIconPath.triangleWarning,
+              level: CoconutToastLevel.warning,
+            );
           });
         },
-        walletProvider: _viewModel.walletProvider!,
-        walletItem: _viewModel.walletListBaseItem,
+        walletProvider: _viewModel.walletProvider,
+        walletItem: _viewModel.wallet,
       ),
     );
   }
 }
 
-class TransactionList extends StatefulWidget {
-  const TransactionList({super.key, required BitcoinUnit currentUnit, required this.walldtId})
-    : _currentUnit = currentUnit;
+class _TargetProgressChart extends StatelessWidget {
+  static const _painterTop = 14.0;
 
-  final BitcoinUnit _currentUnit;
-  final int walldtId;
+  final double progress;
+  final List<double> history;
+  final String targetLabel;
+
+  const _TargetProgressChart({required this.progress, required this.history, required this.targetLabel});
 
   @override
-  State<TransactionList> createState() => _TransactionListState();
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 108,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final goalLineY = _TargetProgressChartPainter.calculateGoalLineY(
+            height: constraints.maxHeight - _painterTop,
+            values: history,
+            progress: progress,
+          );
+          const targetLabelHeight = 16.0;
+          const targetLabelGap = 4.0;
+          final targetLabelTop = (_painterTop + goalLineY - targetLabelHeight - targetLabelGap).clamp(
+            0.0,
+            double.infinity,
+          );
+
+          return Stack(
+            children: [
+              Positioned.fill(
+                top: _painterTop,
+                child: CustomPaint(
+                  painter: _TargetProgressChartPainter(
+                    values: history,
+                    progress: progress,
+                    guideColor: context.coconutColors.dividerStrong,
+                    inactiveColor: context.coconutColors.dividerStrong,
+                    gradientStartColor: context.coconutColors.targetProgressGradientStart,
+                    gradientEndColor: context.coconutColors.targetProgressGradientEnd,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: targetLabelTop,
+                left: 0,
+                child: Text(
+                  targetLabel,
+                  style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }
 
-class _TransactionListState extends State<TransactionList> {
-  final List<TransactionRecord> _displayedTxList = [];
-  final GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
-  final Duration _duration = const Duration(milliseconds: 1200);
-  bool _isUpdatingTxList = false;
-  List<TransactionRecord>? _pendingTxList;
+class _TargetProgressChartPainter extends CustomPainter {
+  static const defaultGoalLineY = 16.0;
+  static const _topInset = 2.0;
+  static const _bottomInset = 4.0;
+
+  final List<double> values;
+  final double progress;
+  final Color guideColor;
+  final Color inactiveColor;
+  final Color gradientStartColor;
+  final Color gradientEndColor;
+
+  const _TargetProgressChartPainter({
+    required this.values,
+    required this.progress,
+    required this.guideColor,
+    required this.inactiveColor,
+    required this.gradientStartColor,
+    required this.gradientEndColor,
+  });
+
+  static double calculateGoalLineY({required double height, required List<double> values, required double progress}) {
+    final bottomY = height - _bottomInset;
+    var maxValue = progress;
+    for (final value in values) {
+      if (value > maxValue) maxValue = value;
+    }
+    return maxValue <= 1 ? defaultGoalLineY : bottomY - (bottomY - _topInset) / (maxValue * 1.08);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const horizontalInset = 2.0;
+    final bottomY = size.height - _bottomInset;
+    final safeValues = values.length < 2 ? <double>[0, progress] : values;
+    final goalLineY = calculateGoalLineY(height: size.height, values: safeValues, progress: progress);
+    final unitHeight = bottomY - goalLineY;
+
+    final dashPaint =
+        Paint()
+          ..color = guideColor
+          ..strokeWidth = 1.5
+          ..strokeCap = StrokeCap.round;
+    for (double x = horizontalInset; x < size.width; x += 9) {
+      canvas.drawLine(Offset(x, goalLineY), Offset((x + 4).clamp(0, size.width), goalLineY), dashPaint);
+    }
+
+    final points = <Offset>[];
+    for (var index = 0; index < safeValues.length; index++) {
+      final x = horizontalInset + (size.width - horizontalInset * 2) * index / (safeValues.length - 1);
+      final value = safeValues[index].clamp(0.0, double.infinity);
+      final y = bottomY - value * unitHeight;
+      points.add(Offset(x, y.clamp(_topInset, bottomY)));
+    }
+
+    final linePath = _buildSmoothPath(points, topY: _topInset, bottomY: bottomY);
+
+    final gradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [gradientStartColor, gradientEndColor],
+    );
+    final isNotStarted = progress <= 0;
+    final shaderRect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final fillPath =
+        Path.from(linePath)
+          ..lineTo(points.last.dx, size.height)
+          ..lineTo(points.first.dx, size.height)
+          ..close();
+    if (!isNotStarted) {
+      canvas.saveLayer(shaderRect, Paint());
+      canvas.drawPath(
+        fillPath,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: gradient.colors.map((color) => color.withValues(alpha: 0.46)).toList(),
+          ).createShader(shaderRect),
+      );
+      canvas.drawRect(
+        shaderRect,
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Color(0xE6FFFFFF), Colors.transparent],
+            stops: [0, 0.3, 1],
+          ).createShader(shaderRect)
+          ..blendMode = BlendMode.dstIn,
+      );
+      canvas.restore();
+    }
+    final linePaint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round;
+    if (isNotStarted) {
+      linePaint
+        ..color = inactiveColor
+        ..strokeWidth = 2;
+    } else {
+      linePaint.shader = gradient.createShader(shaderRect);
+    }
+    canvas.drawPath(linePath, linePaint);
+
+    final end = points.last;
+    if (isNotStarted) {
+      return;
+    }
+    canvas.drawCircle(
+      end,
+      10,
+      Paint()
+        ..color = gradient.colors.last.withValues(alpha: 0.75)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+    canvas.drawCircle(end, 3, Paint()..color = gradient.colors.last.withValues(alpha: 0.3));
+    canvas.drawCircle(end, 2, Paint()..color = Colors.white);
+  }
+
+  Path _buildSmoothPath(List<Offset> points, {required double topY, required double bottomY}) {
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    if (points.length == 2) {
+      final start = points.first;
+      final end = points.last;
+      final controlX = (start.dx + end.dx) / 2;
+      return path..cubicTo(controlX, start.dy, controlX, end.dy, end.dx, end.dy);
+    }
+
+    const tension = 0.18;
+    for (var index = 0; index < points.length - 1; index++) {
+      final previous = index == 0 ? points[index] : points[index - 1];
+      final start = points[index];
+      final end = points[index + 1];
+      final next = index + 2 < points.length ? points[index + 2] : end;
+      final firstControl = Offset(
+        start.dx + (end.dx - previous.dx) * tension,
+        (start.dy + (end.dy - previous.dy) * tension).clamp(topY, bottomY),
+      );
+      final secondControl = Offset(
+        end.dx - (next.dx - start.dx) * tension,
+        (end.dy - (next.dy - start.dy) * tension).clamp(topY, bottomY),
+      );
+      path.cubicTo(firstControl.dx, firstControl.dy, secondControl.dx, secondControl.dy, end.dx, end.dy);
+    }
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(covariant _TargetProgressChartPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.guideColor != guideColor ||
+        oldDelegate.inactiveColor != inactiveColor ||
+        oldDelegate.gradientStartColor != gradientStartColor ||
+        oldDelegate.gradientEndColor != gradientEndColor ||
+        !listEquals(oldDelegate.values, values);
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String actionLabel;
+  final bool actionEnabled;
+  final VoidCallback onAction;
+
+  const _SectionHeader({
+    required this.title,
+    required this.actionLabel,
+    required this.actionEnabled,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)),
+        ),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: actionEnabled ? onAction : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            child: Row(
+              children: [
+                Text(
+                  actionLabel,
+                  style: CoconutTypography.body3_12.setColor(
+                    actionEnabled ? context.coconutColors.secondaryText : context.coconutColors.mutedText,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SvgPicture.asset(
+                  CommonNavigationIconPath.arrowRight,
+                  colorFilter: ColorFilter.mode(
+                    actionEnabled ? context.coconutColors.iconSecondary : context.coconutColors.iconDisabled,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AnimatedRecentTransactionCard extends StatefulWidget {
+  const _AnimatedRecentTransactionCard({super.key, required this.child, required this.padding, required this.delay});
+
+  final Widget child;
+  final EdgeInsets padding;
+  final Duration delay;
+
+  @override
+  State<_AnimatedRecentTransactionCard> createState() => _AnimatedRecentTransactionCardState();
+}
+
+class _AnimatedRecentTransactionCardState extends State<_AnimatedRecentTransactionCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+    _startAnimation();
+  }
+
+  Future<void> _startAnimation() async {
+    if (widget.delay > Duration.zero) await Future<void>.delayed(widget.delay);
+    if (mounted) _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Selector<WalletDetailViewModel, Tuple2<List<TransactionRecord>, bool>>(
-      selector: (_, viewModel) => Tuple2(viewModel.txList, viewModel.isWalletSyncing),
-      builder: (_, data, __) {
-        final txList = data.item1;
-        final isWalletSyncing = data.item2;
-        if (!listEquals(_displayedTxList, txList) || !_deepEquals(_displayedTxList, txList)) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scheduleTransactionListUpdate(txList);
-          });
-        }
-        if (txList.isNotEmpty) return _buildSliverAnimatedList(_displayedTxList);
-        return _buildEmptyState(isWalletSyncing ? t.tx_loading : t.tx_not_found);
-      },
+    return SlideTransition(
+      position: AnimationUtil.buildSlideInAnimation(_controller),
+      child: Padding(padding: widget.padding, child: widget.child),
     );
   }
+}
 
-  // 내부 필드가 변경된 경우 감지(memo, amount, blockHeight 등)
-  bool _deepEquals(List<TransactionRecord> a, List<TransactionRecord> b) {
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i].contentHashCode != b[i].contentHashCode) {
-        return false;
-      }
-    }
-    return true;
-  }
+class _UtxoAction extends StatelessWidget {
+  final String iconPath;
+  final String label;
+  final String description;
+  final VoidCallback onTap;
+  final bool isEnabled;
+  final EdgeInsetsGeometry iconPadding;
 
-  void _scheduleTransactionListUpdate(List<TransactionRecord> txList) {
-    _pendingTxList = txList;
-    if (_isUpdatingTxList) return;
-    _runPendingTxListUpdates();
-  }
+  const _UtxoAction({
+    required this.iconPath,
+    required this.label,
+    required this.description,
+    required this.onTap,
+    this.isEnabled = true,
+    this.iconPadding = EdgeInsets.zero,
+  });
 
-  Future<void> _runPendingTxListUpdates() async {
-    _isUpdatingTxList = true;
-    while (_pendingTxList != null) {
-      final next = _pendingTxList!;
-      _pendingTxList = null;
-      await _handleTransactionListUpdate(next);
-    }
-    _isUpdatingTxList = false;
-  }
-
-  Future<void> _handleTransactionListUpdate(List<TransactionRecord> txList) async {
-    final isFirstLoad = _displayedTxList.isEmpty && txList.isNotEmpty;
-
-    const Duration animationDuration = Duration(milliseconds: 100);
-    final oldTxMap = {for (var tx in _displayedTxList) tx.transactionHash: tx};
-    final newTxMap = {for (var tx in txList) tx.transactionHash: tx};
-
-    final List<int> insertedIndexes = [];
-    final List<int> removedIndexes = [];
-
-    for (int i = 0; i < txList.length; i++) {
-      if (!oldTxMap.containsKey(txList[i].transactionHash)) {
-        insertedIndexes.add(i);
-      }
-    }
-
-    for (int i = 0; i < _displayedTxList.length; i++) {
-      if (!newTxMap.containsKey(_displayedTxList[i].transactionHash)) {
-        removedIndexes.add(i);
-      }
-    }
-
-    // 동일 트랜잭션의 내용만 바뀐 경우(예: 컨펌으로 blockHeight 변경) 감지 후 교체
-    final List<String> updatedHashes = [];
-    for (final tx in txList) {
-      final oldTx = oldTxMap[tx.transactionHash];
-      if (oldTx != null && oldTx.contentHashCode != tx.contentHashCode) {
-        updatedHashes.add(tx.transactionHash);
-      }
-    }
-    if (updatedHashes.isNotEmpty) {
-      setState(() {
-        for (final hash in updatedHashes) {
-          final index = _displayedTxList.indexWhere((tx) => tx.transactionHash == hash);
-          if (index != -1) {
-            _displayedTxList[index] = newTxMap[hash]!;
-          }
-        }
-      });
-    }
-
-    // insertItem/removeItem 호출 한 건마다 _displayedTxList도 그 한 건만 반영한다.
-    // 한 번에 통째로 교체하면 SliverAnimatedList가 추적하는 개수와 어긋나 assertion 발생
-
-    // 마지막 인덱스부터 삭제 (index shift 문제 방지)
-    for (var index in removedIndexes.reversed) {
-      await Future.delayed(animationDuration);
-      final removedTx = _displayedTxList.removeAt(index);
-      _txListKey.currentState?.removeItem(
-        index,
-        (context, animation) => _buildRemoveTransactionItem(removedTx, animation),
-        duration: _duration,
-      );
-    }
-
-    // 삽입된 인덱스 순서대로 추가
-    for (var index in insertedIndexes) {
-      if (isFirstLoad) {
-        await Future.delayed(animationDuration);
-      }
-      _displayedTxList.insert(index, txList[index]);
-      _txListKey.currentState?.insertItem(index, duration: _duration);
-    }
-  }
-
-  Widget _buildSliverAnimatedList(List<TransactionRecord> txList) {
-    return SliverAnimatedList(
-      key: _txListKey,
-      initialItemCount: txList.length,
-      itemBuilder: (context, index, animation) {
-        return index < txList.length
-            ? _buildTransactionItem(txList[index], animation, txList.length - 1 == index)
-            : const SizedBox();
-      },
-    );
-  }
-
-  Widget _buildTransactionItem(TransactionRecord tx, Animation<double> animation, bool isLastItem) {
-    return Column(
-      children: [
-        SlideTransition(
-          position: AnimationUtil.buildSlideInAnimation(animation),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: TransactionItemCard(
-              key: Key(tx.transactionHash),
-              tx: tx,
-              currentUnit: widget._currentUnit,
-              id: widget.walldtId,
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  AppRouteNames.transactionDetail,
-                  arguments: TransactionDetailRouteArgs(id: widget.walldtId, txHash: tx.transactionHash),
-                );
-              },
-            ),
-          ),
-        ),
-        isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
-      ],
-    );
-  }
-
-  Widget _buildRemoveTransactionItem(TransactionRecord tx, Animation<double> animation) {
-    var offsetAnimation = AnimationUtil.buildSlideOutAnimation(animation);
-
-    return FadeTransition(
-      opacity: animation,
-      child: SlideTransition(
-        position: offsetAnimation,
+  @override
+  Widget build(BuildContext context) {
+    final disabledColor = context.coconutColors.iconDisabled;
+    return Semantics(
+      button: true,
+      enabled: isEnabled,
+      child: ShrinkAnimationButton(
+        onPressed: onTap,
+        isActive: isEnabled,
+        pressedOverlayColor: context.coconutColors.surfacePressOverlay,
+        pressedOverlayOpacity: context.coconutColors.surfacePressOverlayOpacity,
+        borderRadius: 12,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: TransactionItemCard(
-            key: Key(tx.transactionHash),
-            tx: tx,
-            currentUnit: widget._currentUnit,
-            id: widget.walldtId,
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                AppRouteNames.transactionDetail,
-                arguments: TransactionDetailRouteArgs(id: widget.walldtId, txHash: tx.transactionHash),
-              );
-            },
+          padding: const EdgeInsets.only(top: 20, bottom: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox.square(
+                dimension: 24,
+                child: Padding(
+                  padding: iconPadding,
+                  child: SvgPicture.asset(
+                    iconPath,
+                    colorFilter: ColorFilter.mode(
+                      isEnabled ? context.coconutColors.iconPrimary : disabledColor,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              ),
+              CoconutLayout.spacing_100h,
+              Text(
+                label,
+                style: CoconutTypography.body3_12.setColor(
+                  isEnabled ? context.coconutColors.primaryText : disabledColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: CoconutTypography.body3_12.setColor(
+                  isEnabled ? context.coconutColors.tertiaryText : disabledColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(String message) {
-    return SliverFillRemaining(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 80),
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: Text(message, style: CoconutTypography.body1_16.setColor(context.coconutColors.primaryText)),
         ),
       ),
     );

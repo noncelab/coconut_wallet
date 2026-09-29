@@ -61,7 +61,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
@@ -258,15 +258,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           final navigator = Navigator.of(context);
           navigator.pop(); // 다이얼로그 닫기
           final walletId = widget.walletId!;
-          final isFromWalletScreen =
-              widget.sendEntryPoint == SendEntryPoint.walletDetail ||
-              widget.sendEntryPoint == SendEntryPoint.renewalWalletDetail;
+          final isFromWalletScreen = widget.sendEntryPoint == SendEntryPoint.walletDetail;
 
           if (isFromWalletScreen) {
             navigator.pop(); // SendScreen 닫기
-            if (widget.sendEntryPoint == SendEntryPoint.walletDetail) {
-              navigator.pop(); // WalletDetailScreen 닫기 → RenewalWalletDetailScreen으로 복귀
-            }
             navigator.pushNamed(
               AppRouteNames.walletInfo,
               arguments: WalletInfoRouteArgs(

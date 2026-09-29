@@ -25,7 +25,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
@@ -54,7 +54,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   bool _isPullToRefreshing = false;
   bool _isSnappingHeader = false;
   late BitcoinUnit _currentUnit;
-  late WalletDetailViewModel _viewModel;
+  late TransactionListViewModel _viewModel;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +74,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     controller: _scrollController,
                     slivers: [
-                      Selector<WalletDetailViewModel, Tuple5<AnimatedBalanceData, String, int, int, bool>>(
+                      Selector<TransactionListViewModel, Tuple5<AnimatedBalanceData, String, int, int, bool>>(
                         selector:
                             (_, viewModel) => Tuple5(
                               AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
@@ -101,7 +101,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                           );
                         },
                       ),
-                      Selector<WalletDetailViewModel, bool>(
+                      Selector<TransactionListViewModel, bool>(
                         selector: (_, viewModel) => viewModel.isWalletSyncing,
                         builder:
                             (_, isWalletSyncing, _) =>
@@ -150,7 +150,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   Widget _buildTxListLabel() {
     return SliverToBoxAdapter(
-      child: Selector<WalletDetailViewModel, Tuple2<int, bool>>(
+      child: Selector<TransactionListViewModel, Tuple2<int, bool>>(
         selector: (_, viewModel) => Tuple2(viewModel.txList.length, viewModel.isWalletSyncing),
         builder: (_, data, __) {
           final txCount = data.item1;
@@ -260,7 +260,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   void initState() {
     super.initState();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
-    _viewModel = WalletDetailViewModel(
+    _viewModel = TransactionListViewModel(
       widget.id,
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
@@ -493,7 +493,7 @@ class _TransactionListState extends State<TransactionList> {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<WalletDetailViewModel, Tuple2<List<TransactionRecord>, bool>>(
+    return Selector<TransactionListViewModel, Tuple2<List<TransactionRecord>, bool>>(
       selector: (_, viewModel) => Tuple2(viewModel.txList, viewModel.isWalletSyncing),
       builder: (_, data, __) {
         final txList = data.item1;

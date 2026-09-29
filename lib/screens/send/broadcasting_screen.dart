@@ -159,8 +159,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
                 ),
           ),
           switch (_viewModel.sendEntryPoint) {
-            SendEntryPoint.renewalWalletDetail => ModalRoute.withName(AppRouteNames.walletDetail),
-            SendEntryPoint.walletDetail => ModalRoute.withName(AppRouteNames.legacyWalletDetail),
+            SendEntryPoint.walletDetail => ModalRoute.withName(AppRouteNames.walletDetail),
             SendEntryPoint.transactionDetail => ModalRoute.withName(AppRouteNames.transactionDetail),
             SendEntryPoint.home || null => (route) => route.isFirst,
           },
