@@ -1448,6 +1448,7 @@ alert:
   tag_apply:
     title: "タグ適用"
     description: "既存 UTXOのタグを新しいUTXOにも適用しますか？"
+    selection_count: "$count個選択（最大5個）"
     btn_apply: "適用する"
     btn_without_tags: "スキップ"
   tx_detail:

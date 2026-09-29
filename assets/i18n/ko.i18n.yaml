@@ -1466,6 +1466,7 @@ alert:
   tag_apply:
     title: "태그 적용"
     description: "기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?"
+    selection_count: "$count개 선택 (최대 5개)"
     btn_apply: "적용하기"
     btn_without_tags: "건너뛰기"
   tx_detail:

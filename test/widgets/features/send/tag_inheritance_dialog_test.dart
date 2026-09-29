@@ -12,6 +12,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  Finder selectionCount(int count) => find.byWidgetPredicate(
+    (widget) => widget is Text && widget.semanticsLabel == t.alert.tag_apply.selection_count(count: count),
+  );
+
   List<UtxoTag> tags(int count, {bool longNames = false}) => List.generate(
     count,
     (index) => UtxoTag(
@@ -127,14 +131,14 @@ void main() {
   testWidgets('more than five start empty, cap selection at five, and allow replacing a choice', (tester) async {
     List<String>? result;
     await openDialog(tester, tags(6), (value) => result = value);
-    expect(find.text('0 / 5'), findsOneWidget);
+    expect(selectionCount(0), findsOneWidget);
     final apply = find.widgetWithText(TextButton, t.alert.tag_apply.btn_apply);
     expect(tester.widget<TextButton>(apply).onPressed, isNull);
     for (var index = 0; index < 6; index++) {
       await tester.tap(find.byKey(ValueKey('tag-$index')));
       await tester.pump();
     }
-    expect(find.text('5 / 5'), findsOneWidget);
+    expect(selectionCount(5), findsOneWidget);
     expect(tester.widget<CoconutChip>(find.byKey(const ValueKey('tag-5'))).isSelected, isFalse);
     await tester.tap(find.byKey(const ValueKey('tag-0')));
     await tester.pump();
@@ -240,7 +244,7 @@ void main() {
     semantics.dispose();
     await tester.tap(find.byKey(const ValueKey('tag-5')));
     await tester.pumpAndSettle();
-    expect(find.text('1 / 5'), findsOneWidget);
+    expect(selectionCount(1), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -260,7 +264,7 @@ void main() {
         await tester.tap(find.byKey(ValueKey('tag-$index')));
         await tester.pump();
       }
-      expect(find.text('5 / 5'), findsOneWidget);
+      expect(selectionCount(5), findsOneWidget);
       expect(tester.takeException(), isNull);
       await capture(tester, 'picker-five-${variant.name}-375');
     });
@@ -278,7 +282,7 @@ void main() {
       await tester.scrollUntilVisible(find.byKey(const ValueKey('tag-8')), 150);
       await tester.tap(find.byKey(const ValueKey('tag-8')));
       await tester.pumpAndSettle();
-      expect(find.text('1 / 5'), findsOneWidget);
+      expect(selectionCount(1), findsOneWidget);
       expect(tester.takeException(), isNull);
       await capture(tester, 'dialog-${variant.name}-320');
     });

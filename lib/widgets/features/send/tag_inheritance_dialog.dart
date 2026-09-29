@@ -66,8 +66,8 @@ class _TagInheritanceDialogState extends State<TagInheritanceDialog> {
                     ),
                     CoconutLayout.spacing_300h,
                     Text(
-                      keepKoreanWordsTogether(t.tag_bottom_sheet.max_tag_count),
-                      semanticsLabel: t.tag_bottom_sheet.max_tag_count,
+                      keepKoreanWordsTogether(t.alert.tag_apply.selection_count(count: _selectedIds.length)),
+                      semanticsLabel: t.alert.tag_apply.selection_count(count: _selectedIds.length),
                       textAlign: TextAlign.center,
                       style: CoconutTypography.body2_14.setColor(colors.secondaryText),
                     ),
@@ -116,8 +116,6 @@ class _TagInheritanceDialogState extends State<TagInheritanceDialog> {
               ),
             ),
             CoconutLayout.spacing_300h,
-            Text('${_selectedIds.length} / 5', style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
-            CoconutLayout.spacing_200h,
             OverflowBar(
               alignment: MainAxisAlignment.spaceEvenly,
               children: [

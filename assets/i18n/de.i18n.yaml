@@ -1399,6 +1399,7 @@ alert:
   tag_apply:
     title: "Tag anwenden"
     description: "Möchten Sie das Tag von einem vorhandenen UTXO auf ein neues UTXO anwenden?"
+    selection_count: "$count ausgewählt (max. 5)"
     btn_apply: "Anwenden"
     btn_without_tags: "Überspringen"
   tx_detail:

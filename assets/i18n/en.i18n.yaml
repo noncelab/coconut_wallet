@@ -1460,6 +1460,7 @@ alert:
   tag_apply:
     title: "Apply Tag"
     description: "Do you want to apply the tag from existing UTXO to new UTXO?"
+    selection_count: "$count selected (max. 5)"
     btn_apply: "Apply"
     btn_without_tags: "Skip"
   tx_detail:

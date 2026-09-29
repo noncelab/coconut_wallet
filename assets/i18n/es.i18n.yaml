@@ -1451,6 +1451,7 @@ alert:
   tag_apply:
     title: "Aplicar etiqueta"
     description: "¿Quieres aplicar la etiqueta de UTXO existente a la nueva UTXO?"
+    selection_count: "Selección: $count (máx. 5)"
     btn_apply: "Aplicar"
     btn_without_tags: "Omitir"
   tx_detail:
