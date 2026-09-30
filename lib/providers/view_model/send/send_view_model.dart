@@ -964,6 +964,12 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   // 마지막 수신자의 전송 금액을 확인한다. (전송 금액 - 예상 수수료 <= dust)
   // _isFeeSubtractedFromSendAmount가 true일 때만 체크되어야 함
   void _updateLastAmountErrorIfInsufficient() {
+    // 모두 보내기는 금액 계산 단계에서 수수료와 dust 검사를 완료한다.
+    if (_isMaxMode || !_isFeeSubtractedFromSendAmount) {
+      _isLastAmountInsufficient = AmountError.none;
+      return;
+    }
+
     if (!_isFeeSubtractedFromSendAmount) {
       if (_isLastAmountInsufficient.isError) {
         _isLastAmountInsufficient = AmountError.none;
