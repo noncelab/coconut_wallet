@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_create_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/utils/nfkd_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeSecretRepository extends Fake implements HotWalletSecretRepository {
@@ -115,6 +116,30 @@ void main() {
         viewModel.dispose();
         NetworkType.setNetworkType(NetworkType.testnet);
       }
+    });
+
+    test('비ASCII 패스프레이즈를 NFKD로 정규화해 파생하고 저장한다', () async {
+      const passphrase = '코코넛-Café-①';
+      final secretRepository = _FakeSecretRepository();
+      final walletProvider = _FakeWalletProvider();
+      final viewModel = HotWalletCreateViewModel(walletProvider, secretRepository: secretRepository);
+
+      final result = await viewModel.createWallet(
+        walletName: 'NFKD Hot Wallet',
+        colorIndex: 0,
+        iconIndex: 0,
+        mnemonicWordCount: 12,
+        passphrase: passphrase,
+        enterPassphraseWhenSigning: false,
+      );
+      final expected = NfkdUtil.encodeNfkd(passphrase);
+
+      expect(secretRepository.passphrase, expected);
+      expect(result.passphrase, expected);
+
+      expected.fillRange(0, expected.length, 0);
+      result.clearSensitiveBytes();
+      viewModel.dispose();
     });
 
     for (final wordCount in [12, 24]) {

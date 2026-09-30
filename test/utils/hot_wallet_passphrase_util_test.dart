@@ -3,11 +3,40 @@ import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/utils/hot_wallet_passphrase_util.dart';
+import 'package:coconut_wallet/utils/nfkd_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
   const passphrase = 'coconut-passphrase';
+
+  test('시드 생성 실패 시에도 호출자 원본은 보존한다', () async {
+    final input = Uint8List.fromList(utf8.encode('invalid mnemonic'));
+    final snapshot = Uint8List.fromList(input);
+    expect(() => doesPassphraseMatchDescriptor(mnemonic: input, passphrase: '코코넛', descriptor: ''), throwsA(anything));
+    expect(input, snapshot);
+    await expectLater(
+      doesPassphraseMatchDescriptorAsync(mnemonic: input, passphrase: '코코넛', descriptor: ''),
+      throwsA(anything),
+    );
+    expect(input, snapshot);
+  });
+
+  test('한글 패스프레이즈를 NFKD로 정규화하면 알려진 mainnet 주소와 일치한다', () {
+    NetworkType.setNetworkType(NetworkType.mainnet);
+    final mnemonicBytes = Uint8List.fromList(utf8.encode(mnemonic));
+    final passphraseBytes = NfkdUtil.encodeNfkd('비밀번호');
+    final vault = SingleSignatureVault.fromMnemonic(mnemonicBytes, passphrase: passphraseBytes);
+
+    try {
+      expect(vault.getAddress(0), 'bc1qzj0wnpwr2udza2a0at0t8nvvfpytzz9sa88ppd');
+    } finally {
+      vault.keyStore.wipeSeed();
+      mnemonicBytes.fillRange(0, mnemonicBytes.length, 0);
+      passphraseBytes.fillRange(0, passphraseBytes.length, 0);
+      NetworkType.setNetworkType(NetworkType.testnet);
+    }
+  });
 
   test('mainnet에서도 background isolate에서 패스프레이즈가 일치한다', () async {
     NetworkType.setNetworkType(NetworkType.mainnet);

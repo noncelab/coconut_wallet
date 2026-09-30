@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/utils/nfkd_util.dart';
 import 'package:flutter/foundation.dart';
 
 typedef HotWalletSigningRequest =
@@ -41,11 +42,18 @@ class HotWalletSigningService {
 
   Future<String> sign(HotWalletSigningRequest request) async {
     final plaintext = await _secretRepository.unlockAfterAuthentication(request.storageKey);
-    // compute로 isolate에 복사 전달되는 인자와는 별개로, 메인 isolate에 남는
-    // 전달용 사본도 사용 후 명시적으로 지운다.
-    final mnemonicCopy = Uint8List.fromList(plaintext.mnemonic);
-    final passphraseCopy = Uint8List.fromList(request.passphrase ?? plaintext.passphrase);
+    Uint8List? mnemonicCopy;
+    Uint8List? passphraseCopy;
     try {
+      // compute로 isolate에 복사 전달되는 인자와는 별개로, 메인 isolate에 남는
+      // 전달용 사본도 사용 후 명시적으로 지운다.
+      mnemonicCopy = Uint8List.fromList(plaintext.mnemonic);
+      // 저장된 패스프레이즈는 생성·복원 시 이미 NFKD로 정규화되어 있다.
+      // 불필요하게 String으로 디코딩하지 않고 복사해, 지울 수 없는 평문 String 생성을 피한다.
+      passphraseCopy =
+          request.passphrase != null
+              ? NfkdUtil.normalizeNfkdUtf8(request.passphrase!)
+              : Uint8List.fromList(plaintext.passphrase);
       return await compute(_signHotWalletInBackground, (
         mnemonic: mnemonicCopy,
         passphrase: passphraseCopy,
@@ -56,8 +64,8 @@ class HotWalletSigningService {
         networkType: NetworkType.currentNetworkType.toString(),
       ));
     } finally {
-      mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
-      passphraseCopy.fillRange(0, passphraseCopy.length, 0);
+      mnemonicCopy?.fillRange(0, mnemonicCopy.length, 0);
+      passphraseCopy?.fillRange(0, passphraseCopy.length, 0);
       plaintext.wipe();
     }
   }
@@ -70,9 +78,11 @@ class HotWalletSigningService {
     required String expectedExtendedPublicKey,
   }) async {
     final plaintext = await _secretRepository.unlockAfterAuthentication(storageKey);
-    final mnemonicCopy = Uint8List.fromList(plaintext.mnemonic);
-    final passphraseCopy = Uint8List.fromList(passphrase);
+    Uint8List? mnemonicCopy;
+    Uint8List? passphraseCopy;
     try {
+      mnemonicCopy = Uint8List.fromList(plaintext.mnemonic);
+      passphraseCopy = NfkdUtil.normalizeNfkdUtf8(passphrase);
       return await compute(_validateHotWalletPassphraseInBackground, (
         mnemonic: mnemonicCopy,
         passphrase: passphraseCopy,
@@ -82,17 +92,17 @@ class HotWalletSigningService {
         networkType: NetworkType.currentNetworkType.toString(),
       ));
     } finally {
-      mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
-      passphraseCopy.fillRange(0, passphraseCopy.length, 0);
+      mnemonicCopy?.fillRange(0, mnemonicCopy.length, 0);
+      passphraseCopy?.fillRange(0, passphraseCopy.length, 0);
       plaintext.wipe();
     }
   }
 }
 
 bool _validateHotWalletPassphraseInBackground(_HotWalletPassphraseValidationArguments arguments) {
-  NetworkType.setNetworkType(NetworkType.getNetworkType(arguments.networkType));
   SingleSignatureVault? vault;
   try {
+    NetworkType.setNetworkType(NetworkType.getNetworkType(arguments.networkType));
     vault = SingleSignatureVault.fromMnemonic(
       arguments.mnemonic,
       passphrase: arguments.passphrase,
@@ -108,9 +118,9 @@ bool _validateHotWalletPassphraseInBackground(_HotWalletPassphraseValidationArgu
 }
 
 String _signHotWalletInBackground(_HotWalletSigningArguments arguments) {
-  NetworkType.setNetworkType(NetworkType.getNetworkType(arguments.networkType));
   SingleSignatureVault? vault;
   try {
+    NetworkType.setNetworkType(NetworkType.getNetworkType(arguments.networkType));
     final addressType = AddressType.getAddressTypeFromName(arguments.addressTypeName);
     vault = SingleSignatureVault.fromMnemonic(
       arguments.mnemonic,

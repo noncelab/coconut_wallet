@@ -117,6 +117,23 @@ void main() {
     vm.dispose();
   });
 
+  test('조합형과 NFKD 분해형 패스프레이즈로 같은 descriptor를 파생한다', () async {
+    final composed = HotWalletRestoreViewModel();
+    final decomposed = HotWalletRestoreViewModel();
+    final words = [...List.filled(11, 'abandon'), 'about'];
+    composed.applyWords(0, words);
+    decomposed.applyWords(0, words);
+    composed.setUsePassphrase(true);
+    decomposed.setUsePassphrase(true);
+    composed.setPassphrase('코코넛-Café');
+    decomposed.setPassphrase('\u110F\u1169\u110F\u1169\u1102\u1165\u11BA-Cafe\u0301');
+
+    expect(await composed.deriveDescriptor(), await decomposed.deriveDescriptor());
+
+    composed.dispose();
+    decomposed.dispose();
+  });
+
   group('HotWalletRestoreViewModel', () {
     test('mainnet에서는 mainnet descriptor를 파생한다', () async {
       NetworkType.setNetworkType(NetworkType.mainnet);

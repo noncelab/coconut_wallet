@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
@@ -7,6 +5,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/utils/nfkd_util.dart';
 import 'package:flutter/foundation.dart';
 
 typedef HotWalletMaterial = ({Uint8List mnemonic, String descriptor});
@@ -15,14 +14,15 @@ typedef HotWalletMaterialGenerator = Future<HotWalletMaterial> Function(int mnem
 HotWalletMaterial _generateHotWalletMaterial(
   ({int mnemonicWordCount, Uint8List passphrase, String networkType}) input,
 ) {
-  NetworkType.setNetworkType(NetworkType.getNetworkType(input.networkType));
   final passphrase = input.passphrase;
-  final seed = Seed.random(mnemonicLength: input.mnemonicWordCount, passphrase: passphrase);
+  Seed? seed;
   try {
+    NetworkType.setNetworkType(NetworkType.getNetworkType(input.networkType));
+    seed = Seed.random(mnemonicLength: input.mnemonicWordCount, passphrase: passphrase);
     final vault = SingleSignatureVault.fromSeed(seed);
     return (mnemonic: Uint8List.fromList(seed.mnemonic), descriptor: vault.descriptor);
   } finally {
-    seed.wipe();
+    seed?.wipe();
     passphrase.fillRange(0, passphrase.length, 0);
   }
 }
@@ -96,15 +96,16 @@ class HotWalletCreateViewModel extends ChangeNotifier {
       throw const WalletNameConflictException();
     }
 
+    final storageKey = _secretRepository.newSecretStorageKey();
     _isCreating = true;
     if (!_disposed) notifyListeners();
 
-    final passphraseBytes = Uint8List.fromList(utf8.encode(passphrase));
+    var passphraseBytes = Uint8List(0);
     Uint8List? mnemonic;
-    final storageKey = _secretRepository.newSecretStorageKey();
     var secretCleanupHandledUnderLock = false;
 
     try {
+      passphraseBytes = NfkdUtil.encodeNfkd(passphrase);
       final generatorPassphrase = Uint8List.fromList(passphraseBytes);
       final HotWalletMaterial material;
       try {

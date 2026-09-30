@@ -7,24 +7,27 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/utils/nfkd_util.dart';
 import 'package:flutter/foundation.dart';
 
 String _deriveDescriptor(({Uint8List mnemonic, Uint8List passphrase, String networkType}) input) {
-  NetworkType.setNetworkType(NetworkType.getNetworkType(input.networkType));
-  final seed = Seed.fromMnemonic(input.mnemonic, passphrase: input.passphrase);
+  Seed? seed;
   try {
+    NetworkType.setNetworkType(NetworkType.getNetworkType(input.networkType));
+    seed = Seed.fromMnemonic(input.mnemonic, passphrase: input.passphrase);
     return SingleSignatureVault.fromSeed(seed).descriptor;
   } finally {
-    seed.wipe();
+    seed?.wipe();
     input.mnemonic.fillRange(0, input.mnemonic.length, 0);
     input.passphrase.fillRange(0, input.passphrase.length, 0);
   }
 }
 
 String _deriveMasterFingerprint(({Uint8List mnemonic, Uint8List passphrase, String networkType}) input) {
-  NetworkType.setNetworkType(NetworkType.getNetworkType(input.networkType));
-  final seed = Seed.fromMnemonic(input.mnemonic, passphrase: input.passphrase);
+  Seed? seed;
   try {
+    NetworkType.setNetworkType(NetworkType.getNetworkType(input.networkType));
+    seed = Seed.fromMnemonic(input.mnemonic, passphrase: input.passphrase);
     final vault = SingleSignatureVault.fromSeed(seed);
     try {
       return vault.keyStore.masterFingerprint;
@@ -32,7 +35,7 @@ String _deriveMasterFingerprint(({Uint8List mnemonic, Uint8List passphrase, Stri
       vault.keyStore.wipeSeed();
     }
   } finally {
-    seed.wipe();
+    seed?.wipe();
     input.mnemonic.fillRange(0, input.mnemonic.length, 0);
     input.passphrase.fillRange(0, input.passphrase.length, 0);
   }
@@ -230,13 +233,12 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
       throw StateError('Invalid restore input');
     }
     final mnemonic = _copyMnemonic();
-    final passphrase = Uint8List.fromList(utf8.encode(_usePassphrase ? _passphrase : ''));
-    final mnemonicCopy = Uint8List.fromList(mnemonic);
-    final passphraseCopy = Uint8List.fromList(passphrase);
+    var passphrase = Uint8List(0);
     try {
+      passphrase = NfkdUtil.encodeNfkd(_usePassphrase ? _passphrase : '');
       final descriptor = await compute(_deriveDescriptor, (
-        mnemonic: mnemonicCopy,
-        passphrase: passphraseCopy,
+        mnemonic: mnemonic,
+        passphrase: passphrase,
         networkType: NetworkType.currentNetworkType.toString(),
       ));
       if (revision != _inputRevision || _disposed) {
@@ -247,8 +249,6 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
       _notifySafely();
       return descriptor;
     } finally {
-      mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
-      passphraseCopy.fillRange(0, passphraseCopy.length, 0);
       mnemonic.fillRange(0, mnemonic.length, 0);
       passphrase.fillRange(0, passphrase.length, 0);
     }
@@ -259,18 +259,15 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
       throw StateError('Invalid Seed QR input');
     }
     final mnemonic = _copyMnemonic();
-    final passphrase = Uint8List.fromList(utf8.encode(_usePassphrase ? _passphrase : ''));
-    final mnemonicCopy = Uint8List.fromList(mnemonic);
-    final passphraseCopy = Uint8List.fromList(passphrase);
+    var passphrase = Uint8List(0);
     try {
+      passphrase = NfkdUtil.encodeNfkd(_usePassphrase ? _passphrase : '');
       return await compute(_deriveMasterFingerprint, (
-        mnemonic: mnemonicCopy,
-        passphrase: passphraseCopy,
+        mnemonic: mnemonic,
+        passphrase: passphrase,
         networkType: NetworkType.currentNetworkType.toString(),
       ));
     } finally {
-      mnemonicCopy.fillRange(0, mnemonicCopy.length, 0);
-      passphraseCopy.fillRange(0, passphraseCopy.length, 0);
       mnemonic.fillRange(0, mnemonic.length, 0);
       passphrase.fillRange(0, passphrase.length, 0);
     }
@@ -287,14 +284,16 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     if (!isMnemonicValid || !isPassphraseValid || _isRestoring) {
       throw StateError('Invalid restore input');
     }
+    final storageKey = _secretRepository.newSecretStorageKey();
     _isRestoring = true;
     _notifySafely();
 
-    final mnemonic = _copyMnemonic();
-    final passphrase = Uint8List.fromList(utf8.encode(_usePassphrase ? _passphrase : ''));
-    final storageKey = _secretRepository.newSecretStorageKey();
+    var mnemonic = Uint8List(0);
+    var passphrase = Uint8List(0);
     var secretCleanupHandledUnderLock = false;
     try {
+      mnemonic = _copyMnemonic();
+      passphrase = NfkdUtil.encodeNfkd(_usePassphrase ? _passphrase : '');
       final String descriptor;
       if (derivedDescriptor != null) {
         descriptor = derivedDescriptor;
