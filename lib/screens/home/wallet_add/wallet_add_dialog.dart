@@ -245,16 +245,18 @@ class WalletAddDialog extends StatelessWidget {
   }
 
   Future<void> _openHotWalletScreen(BuildContext context, String routeName) async {
-    if (!await _ensureDevicePasscodeIsSet(context) || !context.mounted) return;
+    final isRestore = routeName == AppRouteNames.hotWalletRestore;
+    context.read<AnalyticsService>().logHotWalletActionSelected(isRestore: isRestore);
+    if (!await _ensureDevicePasscodeIsSet(context, isRestore: isRestore) || !context.mounted) return;
 
-    context.read<AnalyticsService>().logHotWalletFlowEntered(isRestore: routeName == AppRouteNames.hotWalletRestore);
     final navigator = Navigator.of(context);
     navigator.pop();
     navigator.pushNamed(routeName);
   }
 
-  Future<bool> _ensureDevicePasscodeIsSet(BuildContext context) async {
+  Future<bool> _ensureDevicePasscodeIsSet(BuildContext context, {required bool isRestore}) async {
     final authProvider = context.read<AuthProvider>();
+    final analyticsService = context.read<AnalyticsService>();
     final isDevicePasscodeSet = await authProvider.isDevicePasscodeSet();
     if (!context.mounted) return false;
     if (isDevicePasscodeSet) return true;
@@ -272,6 +274,7 @@ class WalletAddDialog extends StatelessWidget {
         await authProvider.openDeviceSecuritySettings();
       },
     );
+    analyticsService.logHotWalletAddBlocked(isRestore: isRestore);
     return false;
   }
 

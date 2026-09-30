@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -322,9 +323,9 @@ class NodeProvider extends ChangeNotifier {
           if (result.isFailure) {
             Logger.error('NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}');
             _stateManager?.setNodeSyncStateToFailed();
-            _analyticsService?.logWalletAddSyncFailed();
+            _analyticsService?.logWalletAddSyncFailed(AnalyticsWalletType.of(wallet));
           } else {
-            _analyticsService?.logWalletAddSyncCompleted();
+            _analyticsService?.logWalletAddSyncCompleted(AnalyticsWalletType.of(wallet));
           }
         });
       }

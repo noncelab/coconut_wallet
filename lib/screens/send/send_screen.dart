@@ -1,9 +1,11 @@
+import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/send_analytics.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 
@@ -75,6 +77,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
@@ -1112,6 +1115,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) return;
                 if (mounted) {
                   _viewModel.saveSendInfo();
+                  final selectedWallet = _viewModel.selectedWalletItem;
+                  if (selectedWallet != null) {
+                    context.read<AnalyticsService>().logSendStarted(
+                      walletType: AnalyticsWalletType.of(selectedWallet),
+                      entryPoint: context.read<SendInfoProvider>().resolvedAnalyticsEntryPoint,
+                    );
+                  }
                   if (isHotWallet) {
                     _startHotWalletSigning();
                     return;

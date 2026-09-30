@@ -13,6 +13,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/wallet_detail_analytics.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -47,6 +48,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 
 const String kEntryPointWalletList = AppRouteNames.walletList;
@@ -697,6 +699,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
         final sats = UnitUtil.convertBitcoinToSatoshi(btc);
         if (sats > 0) {
+          parentContext.read<AnalyticsService>().logTargetAmountSaved();
           viewModel.setTargetSats(sats);
           return;
         }

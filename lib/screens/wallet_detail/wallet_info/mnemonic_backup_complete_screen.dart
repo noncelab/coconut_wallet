@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/backup_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
@@ -8,6 +9,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -104,7 +106,12 @@ class _MnemonicBackupCompleteScreenState extends State<MnemonicBackupCompleteScr
 
   Future<void> _complete(bool isAppLockSet) async {
     if (widget.walletId != null) {
-      await context.read<WalletProvider>().updateHotWalletBackupVerified(widget.walletId!, backupVerified: true);
+      final walletProvider = context.read<WalletProvider>();
+      final analyticsService = context.read<AnalyticsService>();
+      await walletProvider.updateHotWalletBackupVerified(widget.walletId!, backupVerified: true);
+      analyticsService.logBackupCompleted(
+        walletProvider.walletItemList.where((w) => w.id == widget.walletId).firstOrNull?.hotWalletMetadata?.createdAt,
+      );
       if (!mounted) return;
     }
 

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
@@ -687,6 +688,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       if (_splitResult != null && _splitResult!.isSuccess) {
         clearSendInfo();
         _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
+        _sendInfoProvider.setAnalyticsEntryPoint(SendAnalyticsEntryPoint.utxoSplit);
         _sendInfoProvider.setWalletId(_wallet.id);
         _sendInfoProvider.setTransaction(_splitResult!.transaction!);
         _sendInfoProvider.setIsMultisig(_wallet.walletType == WalletType.multiSignature);

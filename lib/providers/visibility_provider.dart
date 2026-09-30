@@ -21,6 +21,9 @@ class VisibilityProvider extends ChangeNotifier {
   late int _walletCount;
   int get walletCount => _walletCount;
 
+  late String? _lastRunAppVersion;
+  String? get lastRunAppVersion => _lastRunAppVersion;
+
   @override
   void dispose() {
     _isDisposed = true;
@@ -30,11 +33,18 @@ class VisibilityProvider extends ChangeNotifier {
   VisibilityProvider() {
     _hasLaunchedBefore = _sharedPrefs.getBool(SharedPrefKeys.kHasLaunchedBefore);
     _walletCount = _sharedPrefs.getInt(SharedPrefKeys.kWalletCount);
+    final lastRunAppVersion = _sharedPrefs.getString(SharedPrefKeys.kLastRunAppVersion);
+    _lastRunAppVersion = lastRunAppVersion.isEmpty ? null : lastRunAppVersion;
   }
 
   Future<void> setHasLaunchedBefore() async {
     await _secureStorageService.deleteAll();
     await _sharedPrefs.setBool(SharedPrefKeys.kHasLaunchedBefore, true);
+  }
+
+  Future<void> setLastRunAppVersion(String version) async {
+    _lastRunAppVersion = version;
+    await _sharedPrefs.setString(SharedPrefKeys.kLastRunAppVersion, version);
   }
 
   Future<void> setWalletCount(int count) async {

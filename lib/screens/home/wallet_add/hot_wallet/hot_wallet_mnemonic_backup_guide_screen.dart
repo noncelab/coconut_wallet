@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
+import 'package:coconut_wallet/analytics/backup_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:typed_data';
@@ -12,6 +14,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_unlock_service.dart';
 import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -65,11 +68,13 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
   bool _isPreparationDescriptionVisible = false;
   bool _isPreparationContentVisible = false;
   bool _isStageTransitioning = false;
+  late final AnalyticsService _analyticsService;
 
   @override
   void initState() {
     super.initState();
     _lottieController = AnimationController(vsync: this);
+    _analyticsService = context.read<AnalyticsService>();
     if (!widget.showWalletCreatedIntro) {
       _isIntroVisible = false;
       _isBackupStageVisible = true;
@@ -468,7 +473,7 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
               ),
             if (_isBottomButtonVisible)
               FixedBottomButton(
-                onButtonClicked: _isBackupPreparationStage ? _startMnemonicBackupFlow : _showBackupPreparation,
+                onButtonClicked: _isBackupPreparationStage ? _startMnemonicBackupFlow : _onBackupPressed,
                 text: _isBackupPreparationStage ? strings.backup_start : strings.backup_title,
                 subWidget:
                     _isBackupPreparationStage ? null : CoconutUnderlinedButton(onTap: _finish, text: strings.skip),
@@ -535,6 +540,13 @@ class _HotWalletMnemonicBackupGuideScreenState extends State<HotWalletMnemonicBa
       // (await Navigator.pushNamed 완료 후) wipe한다.
       plaintext?.wipe();
     }
+  }
+
+  void _onBackupPressed() {
+    if (widget.showWalletCreatedIntro) {
+      _analyticsService.logBackupPromptTapped(BackupPromptLocation.postCreate);
+    }
+    _showBackupPreparation();
   }
 
   Future<void> _showBackupPreparation() async {

@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
 import 'package:flutter/material.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 
 const Color kNativeSplashBackgroundColor = Color(0xFF121416);
@@ -64,6 +65,7 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
     _viewModel = StartViewModel(
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<AuthProvider>(context, listen: false),
+      Provider.of<AnalyticsService>(context, listen: false),
     );
 
     _initialize();

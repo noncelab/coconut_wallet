@@ -3,9 +3,11 @@ import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -88,6 +90,20 @@ class BroadcastingViewModel extends ChangeNotifier {
   AddressType? get walletAddressType => _walletBase?.addressType;
   WalletBase get _wallet => _walletBase!;
   int? get walletId => _walletId;
+  WalletItemBase? get walletItem {
+    final walletId = _walletId ?? _sendInfoProvider.walletId;
+    if (walletId == null) return null;
+    return _walletProvider.walletItemList.where((wallet) => wallet.id == walletId).firstOrNull;
+  }
+
+  bool get hasSentBefore {
+    final walletId = _walletId ?? _sendInfoProvider.walletId;
+    if (walletId == null) return false;
+    return _walletProvider
+        .getTransactionRecordList(walletId)
+        .any((tx) => tx.transactionType == TransactionType.sent || tx.transactionType == TransactionType.self);
+  }
+
   SendEntryPoint? get sendEntryPoint => _sendInfoProvider.sendEntryPoint;
   FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
 

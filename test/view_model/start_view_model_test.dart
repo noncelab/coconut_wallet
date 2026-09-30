@@ -2,6 +2,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/app_version_service.dart';
 import 'package:coconut_wallet/services/model/response/app_version_response.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -48,6 +49,7 @@ void main() {
       final viewModel = StartViewModel(
         FakeVisibilityProvider(),
         FakeAuthProvider(),
+        AnalyticsService(null, true),
         appVersionRepository: FakeAppVersion(
           delay: const Duration(milliseconds: 50),
           response: AppVersionResponse(latestVersion: '2.0.0'),
@@ -63,6 +65,7 @@ void main() {
       final viewModel = StartViewModel(
         FakeVisibilityProvider(),
         FakeAuthProvider(),
+        AnalyticsService(null, true),
         appVersionRepository: FakeAppVersion(
           delay: Duration.zero,
           response: AppVersionResponse(latestVersion: '2.0.0'),
@@ -78,6 +81,7 @@ void main() {
       final viewModel = StartViewModel(
         FakeVisibilityProvider(),
         FakeAuthProvider(),
+        AnalyticsService(null, true),
         appVersionRepository: FakeAppVersion(
           delay: Duration.zero,
           response: AppVersionResponse(latestVersion: '1.2.3'),
@@ -93,6 +97,7 @@ void main() {
       final viewModel = StartViewModel(
         FakeVisibilityProvider(),
         FakeAuthProvider(),
+        AnalyticsService(null, true),
         appVersionRepository: FakeAppVersion(delay: Duration.zero, shouldThrow: true),
       );
 

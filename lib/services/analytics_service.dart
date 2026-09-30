@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 part 'model/request/analytics_request_types.dart';
@@ -55,17 +56,28 @@ class AnalyticsService {
   }
 
   /// 커스텀 이벤트 로깅
+  ///
+  /// [parameters]의 `bool` 값은 `'true'` / `'false'` 문자열로 바뀌어 전송된다.
   Future<void> logEvent({required String eventName, Map<String, Object>? parameters}) async {
     if (_isAnalyticsDisabled) return;
 
     try {
-      final combinedParameters = <String, Object>{...?parameters};
+      final combinedParameters = normalizeParameters(parameters);
 
       await _analytics?.logEvent(name: eventName, parameters: combinedParameters);
     } catch (e) {
       // 에러 발생 시 조용히 처리 (Analytics 실패가 앱 동작에 영향을 주지 않도록)
       Logger.error('Analytics error: $e');
     }
+  }
+
+  /// 파이어베이스 애널리틱스는 파라미터 값으로 문자열과 숫자만 받으므로 `bool` 값을 문자열로 바꾼다.
+  @visibleForTesting
+  static Map<String, Object> normalizeParameters(Map<String, Object>? parameters) {
+    return {
+      for (final entry in (parameters ?? const <String, Object>{}).entries)
+        entry.key: entry.value is bool ? ((entry.value as bool) ? 'true' : 'false') : entry.value,
+    };
   }
 
   /// 사용자 속성 설정

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:ui';
@@ -27,6 +28,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_restore_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/mnemonic_input_section.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/passphrase_options_section.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/seed_qr_input_section.dart';
@@ -159,6 +161,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
   int _masterFingerprintRequestId = 0;
   int _fieldScrollRequestId = 0;
   late final String _suggestedName;
+  late final AnalyticsService _analyticsService;
 
   String get _walletName => _nameController.text.trim().isEmpty ? _suggestedName : _nameController.text.trim();
 
@@ -170,6 +173,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
   @override
   void initState() {
     super.initState();
+    _analyticsService = context.read<AnalyticsService>();
     WidgetsBinding.instance.addObserver(this);
     _suggestedName = _generateSuggestedName();
     for (var index = 0; index < _wordFocusNodes.length; index++) {
@@ -1321,6 +1325,10 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
         walletName: walletName,
         derivedDescriptor: descriptor,
         watchOnlyWalletIdToConvert: removeWatchOnly ? duplicateWatchOnly?.id : null,
+      );
+      _analyticsService.logHotWalletAddCompleted(
+        isRestore: true,
+        isConverted: removeWatchOnly && duplicateWatchOnly != null,
       );
       if (!mounted) return;
       vibrateMedium();

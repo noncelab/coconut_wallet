@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
+import 'package:coconut_wallet/analytics/wallet_resync_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
@@ -24,6 +26,7 @@ import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 
 const double _kStatusIconSlotHeight = 64;
@@ -227,10 +230,18 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
 
     final nodeProvider = context.read<NodeProvider>();
     final walletProvider = context.read<WalletProvider>();
+    final analyticsService = context.read<AnalyticsService>();
     final walletItem = walletProvider.getWalletById(widget.id);
 
+    final analyticsWalletType = AnalyticsWalletType.of(walletItem);
+    analyticsService.logWalletResyncStarted(analyticsWalletType);
     final result = await nodeProvider.resyncWallet(walletItem);
     _isRunning = false;
+    if (result.isSuccess) {
+      analyticsService.logWalletResyncCompleted(analyticsWalletType);
+    } else {
+      analyticsService.logWalletResyncFailed(analyticsWalletType);
+    }
 
     _isStarting = false;
     if (!mounted) return;
