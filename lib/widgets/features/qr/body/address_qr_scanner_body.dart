@@ -1,12 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/utils/app_settings_util.dart';
-import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
+import 'package:coconut_wallet/widgets/features/qr/camera_permission_dialog.dart';
 import 'package:coconut_wallet/widgets/features/qr/overlay/scanner_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:provider/provider.dart';
 
 class AddressQrScannerBody extends StatefulWidget {
   final Key qrKey;
@@ -67,7 +64,7 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
                   _isShowedCameraPermissionDialog = true;
                   WidgetsBinding.instance.addPostFrameCallback((_) async {
                     if (!mounted) return;
-                    await _showCameraPermissionDialog(context);
+                    await showCameraPermissionDialog(context);
                     if (!context.mounted) return;
                     Navigator.pop(context);
                   });
@@ -91,19 +88,6 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
             ),
           ],
         );
-      },
-    );
-  }
-
-  Future<void> _showCameraPermissionDialog(BuildContext context) async {
-    await showConfirmDialog(
-      context,
-      context.read<PreferenceProvider>().language,
-      t.coconut_qr_scanner.camera_error.title,
-      t.coconut_qr_scanner.camera_error.need_camera_permission,
-      rightButtonText: t.go_to_settings,
-      onTapRight: () {
-        openAppSettings();
       },
     );
   }
