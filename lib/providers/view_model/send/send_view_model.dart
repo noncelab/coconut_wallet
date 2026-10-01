@@ -970,13 +970,6 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       return;
     }
 
-    if (!_isFeeSubtractedFromSendAmount) {
-      if (_isLastAmountInsufficient.isError) {
-        _isLastAmountInsufficient = AmountError.none;
-      }
-      return;
-    }
-
     if (_recipientList[lastIndex].amount.isNotEmpty) {
       double amount = double.parse(_recipientList[lastIndex].amount);
       int estimatedFeeInSats = _estimatedFee ?? 0;
