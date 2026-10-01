@@ -1267,6 +1267,7 @@ errors:
   network_disconnected: "Netzwerk getrennt"
   network_not_found: "Netzwerk ist nicht verbunden!"
   electrum_connection_failed: "Verbindung zum Electrum-Server nicht möglich"
+  electrum_connection_restored: "Mit dem Electrum-Server verbunden"
   vpn_connected: "Bitte überprüfen Sie Ihren VPN-Verbindungsstatus"
   insufficient_balance: "Unzureichendes Guthaben."
   fee_selection_error:

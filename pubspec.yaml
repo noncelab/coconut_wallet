@@ -96,7 +96,7 @@ dependencies:
   coconut_design_system: #0.11.0
     git:
       url: https://github.com/noncelab/coconut_design_system.git
-      ref: fix/check-box
+      ref: 8c1409ede3fa096a81466e8582f1cae1fc8f542b # fix/check-box + success colors
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
