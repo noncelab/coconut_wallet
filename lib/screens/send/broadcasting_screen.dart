@@ -37,6 +37,7 @@ import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/common/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
+import 'package:coconut_wallet/widgets/features/send/tag_inheritance_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -53,6 +54,7 @@ class BroadcastingScreen extends StatefulWidget {
 class _BroadcastingScreenState extends State<BroadcastingScreen> {
   late BroadcastingViewModel _viewModel;
   late BitcoinUnit _currentUnit;
+  bool _isBroadcasting = false;
 
   String get confirmText => _currentUnit.displayBitcoinAmount(_viewModel.amount);
 
@@ -69,12 +71,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     }
   }
 
-  void broadcast() async {
+  Future<void> broadcast({required List<String> inheritedTagIds}) async {
     if (context.loaderOverlay.visible) return;
     _setOverlayLoading(true);
     await Future.delayed(const Duration(seconds: 1));
     try {
-      Result<String> result = await _viewModel.broadcast();
+      if (!mounted) return;
+      Result<String> result = await _viewModel.broadcast(inheritedTagIds: inheritedTagIds);
+      if (!mounted) return;
       _setOverlayLoading(false);
 
       if (result.isFailure) {
@@ -95,10 +99,23 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
       if (result.isSuccess) {
         vibrateLight();
-        await _viewModel.updateTagsOfUsedUtxos();
-        await _viewModel.deleteDraftsIfNeeded();
+        try {
+          await _viewModel.deleteDraftsIfNeeded();
+        } catch (e) {
+          Logger.error('Transaction sent, but draft cleanup failed: $e');
+        }
 
         if (!mounted) return;
+
+        if (_viewModel.tagInheritanceFailed) {
+          await showInfoDialog(
+            context,
+            context.read<PreferenceProvider>().language,
+            t.broadcasting_complete_screen.complete,
+            t.broadcasting_screen.dialog.tag_apply_failed,
+          );
+          if (!mounted) return;
+        }
 
         Navigator.pushNamedAndRemoveUntil(
           context,
@@ -114,6 +131,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       }
     } catch (e) {
       Logger.error(">>>>> broadcast error: $e");
+      if (!mounted) return;
       _setOverlayLoading(false);
       String message = e.toString();
       if (e.toString().contains('min relay fee not met')) {
@@ -259,23 +277,49 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     );
   }
 
-  void _onBroadcastButtonClicked(BroadcastingViewModel viewModel) async {
-    if (viewModel.isNetworkOn == false) {
-      CoconutToast.showToast(
-        context: context,
-        isVisibleIcon: true,
-        iconPath: CommonStateIconPath.triangleWarning,
-        text: ErrorCodes.networkError.message,
-        level: CoconutToastLevel.warning,
+  Future<void> _onBroadcastButtonClicked(BroadcastingViewModel viewModel) async {
+    if (_isBroadcasting || context.loaderOverlay.visible || !viewModel.isInitDone) return;
+    _isBroadcasting = true;
+    try {
+      if (viewModel.isNetworkOn == false) {
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: CommonStateIconPath.triangleWarning,
+          text: ErrorCodes.networkError.message,
+          level: CoconutToastLevel.warning,
+        );
+        return;
+      }
+      if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
+        await TransactionUtil.showTransactionConfirmedDialog(context);
+        return;
+      }
+      final candidates = viewModel.prepareTagInheritance();
+      final inheritedTagIds =
+          candidates.isEmpty
+              ? <String>[]
+              : await showDialog<List<String>>(
+                context: context,
+                builder:
+                    (_) => TagInheritanceDialog(
+                      tags: candidates,
+                      languageCode: context.read<PreferenceProvider>().language,
+                    ),
+              );
+      if (!mounted || inheritedTagIds == null) return;
+      await broadcast(inheritedTagIds: inheritedTagIds);
+    } catch (e) {
+      Logger.error('Preparing tag inheritance failed: $e');
+      if (!mounted) return;
+      showInfoDialog(
+        context,
+        context.read<PreferenceProvider>().language,
+        t.broadcasting_screen.error_popup_title,
+        e.toString(),
       );
-      return;
-    }
-    if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
-      await TransactionUtil.showTransactionConfirmedDialog(context);
-      return;
-    }
-    if (viewModel.isInitDone) {
-      broadcast();
+    } finally {
+      _isBroadcasting = false;
     }
   }
 
