@@ -21,6 +21,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;
@@ -51,6 +52,8 @@ class QrWithCopyTextScreen extends StatefulWidget {
   final bool showQrEmbedImage;
   final Color? backgroundColor;
   final double? qrInternalPadding;
+  final EdgeInsets qrPadding;
+  final TextStyle? textStyle;
 
   const QrWithCopyTextScreen({
     super.key,
@@ -72,6 +75,8 @@ class QrWithCopyTextScreen extends StatefulWidget {
     this.showQrEmbedImage = false,
     this.backgroundColor,
     this.qrInternalPadding,
+    this.qrPadding = const EdgeInsets.all(10),
+    this.textStyle,
   });
 
   @override
@@ -343,6 +348,10 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                   embedWidget: widget.showQrEmbedImage ? const CoconutLogoIcon(size: 16) : null,
                   isAddress: widget.isAddress,
                   qrInternalPadding: widget.qrInternalPadding,
+                  qrPadding: widget.qrPadding,
+                  textStyle: widget.textStyle,
+                  qrViewDataHandler:
+                      _selectedKey == 'Keystone Multisig' ? Utf8BcUrQrViewHandler(displayTextData) : null,
                 ),
               ),
               if (widget.footer != null) widget.footer!,
