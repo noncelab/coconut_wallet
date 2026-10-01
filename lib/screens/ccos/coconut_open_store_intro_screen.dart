@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'dart:math' as math;
 import 'package:flutter/physics.dart';
 
@@ -1323,7 +1324,12 @@ class _StoryScene extends StatelessWidget {
                                 : ContributeSceneBody(
                                   animation: sceneAnimation,
                                   sceneDurationMs: sceneDurationMs,
-                                  onStartPr: () => launchURL(context, CONTRIBUTING_URL),
+                                  onStartPr:
+                                      () => launchURL(
+                                        context,
+                                        CONTRIBUTING_URL,
+                                        destination: ExternalLinkDestination.contributing,
+                                      ),
                                 ),
                       ),
                       const SizedBox(height: 10),

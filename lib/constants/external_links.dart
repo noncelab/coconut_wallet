@@ -9,9 +9,8 @@ const GITHUB_URL_VAULT = 'https://github.com/noncelab/coconut_vault';
 const GITHUB_URL_COCONUT_LIBRARY = 'https://github.com/noncelab/coconut_lib';
 
 /// Terms of service, Policy
-const TERMS_OF_SERVICE_URL = "https://www.noncelab.com/coconut/tos";
-const PRIVACY_POLICY_URL = "https://www.noncelab.com/coconut/privacy";
-const DATA_COLLECTION_URL = "https://www.noncelab.com/coconut/data-collection";
+const TERMS_OF_SERVICE_URL = "https://www.coconut.onl/tos";
+const PRIVACY_POLICY_URL = "https://www.coconut.onl/privacy";
 
 /// Email To Address
 const CONTACT_EMAIL_ADDRESS = 'hello@noncelab.com';

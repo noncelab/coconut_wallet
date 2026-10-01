@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
@@ -769,7 +770,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           context,
           viewModel.explorerUrlFor(BlockExplorerPathType.tx, tx.transactionHash),
           openInApp: true,
-          analyticsValue: viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.tx),
+          destination: ExternalLinkDestination.explorerTx,
         );
       },
       child: CopyTextContainer(
@@ -802,7 +803,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             context,
             _viewModel.explorerUrlFor(BlockExplorerPathType.block, tx.blockHeight.toString()),
             openInApp: true,
-            analyticsValue: _viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.block),
+            destination: ExternalLinkDestination.explorerBlock,
           );
         }
       },

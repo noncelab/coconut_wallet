@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'dart:convert';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
@@ -193,7 +194,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                       borderRadius: 12,
                       onPressed: () {
                         if (link != null) {
-                          launchURL(context, link);
+                          launchURL(context, link, destination: ExternalLinkDestination.crewProfile);
                         }
                       },
                       child: Container(

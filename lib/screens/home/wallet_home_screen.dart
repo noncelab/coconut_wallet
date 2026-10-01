@@ -522,7 +522,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   Navigator.of(context).pop();
                 },
                 onTapRight: () async {
-                  launchURL(context, TUTORIAL_URL);
+                  launchURL(context, TUTORIAL_URL, destination: ExternalLinkDestination.tutorial);
                   Navigator.of(context).pop();
                 },
                 rightButtonColor: context.coconutColors.success,

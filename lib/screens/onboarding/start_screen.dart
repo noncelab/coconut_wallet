@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
@@ -112,7 +113,12 @@ class _StartScreenState extends State<StartScreen> with SingleTickerProviderStat
                 leftButtonText: t.alert.update.btn_do_later,
                 rightButtonText: t.alert.update.btn_update,
                 onTapRight: () async {
-                  await launchURL(context, _viewModel.storeUrl, openInApp: true);
+                  await launchURL(
+                    context,
+                    _viewModel.storeUrl,
+                    destination: ExternalLinkDestination.appStore,
+                    openInApp: true,
+                  );
                   if (!context.mounted) return;
                   Navigator.pop(context, true);
                 },

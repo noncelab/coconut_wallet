@@ -915,7 +915,6 @@ app_info_screen:
   terms_of_service: "Nutzungsbedingungen"
   privacy_policy: "Datenschutzrichtlinie"
   license: "Open-Source-Lizenz"
-  data_collection: "Datenerfassungshinweis"
   version_and_date: "CoconutWallet ver. $version (veröffentlicht am $releasedAt)"
   inquiry: "Anfrageinhalt"
 bip39_list_screen:

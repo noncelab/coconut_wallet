@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -102,7 +103,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                 );
 
                 if (!context.mounted) return;
-                await launchURL(context, emailUri.toString(), analyticsValue: 'mailto:$CONTACT_EMAIL_ADDRESS');
+                await launchURL(context, emailUri.toString(), destination: ExternalLinkDestination.supportEmail);
               } catch (e) {
                 if (context.mounted) {
                   CoconutToast.showToast(
@@ -210,7 +211,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
     return Row(
       children: [
         _buildButton(t.settings_screen.log_viewer_screen.buttons.discord, () {
-          launchURL(context, DISCORD_COCONUT);
+          launchURL(context, DISCORD_COCONUT, destination: ExternalLinkDestination.supportChat);
         }),
         CoconutLayout.spacing_100w,
         _buildButton(t.settings_screen.log_viewer_screen.buttons.copy, () {

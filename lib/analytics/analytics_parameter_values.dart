@@ -1,7 +1,4 @@
 class AnalyticsParameterValues {
-  // 사용자 지정 익스플로러
-  static const String customExplorer = 'CUSTOM_EXPLORER';
-
   // hot_wallet_action
   static const String create = 'create';
   static const String restore = 'restore';
@@ -34,4 +31,27 @@ enum WalletDetailAction {
   txDetail,
   txMore,
   backupBanner,
+}
+
+/// `external_link_destination`: 연 외부 링크의 목적지 분류
+enum ExternalLinkDestination {
+  tutorial('tutorial'),
+  supportChat('support_chat'),
+  supportEmail('support_email'),
+  feedbackChat('feedback_chat'),
+  x('x'),
+  github('github'),
+  contributing('contributing'),
+  termsOfService('terms_of_service'),
+  privacyPolicy('privacy_policy'),
+  license('license'),
+  openSourceLicense('open_source_license'),
+  crewProfile('crew_profile'),
+  appStore('app_store'),
+  explorerTx('explorer_tx'),
+  explorerBlock('explorer_block'),
+  explorerAddress('explorer_address');
+
+  const ExternalLinkDestination(this.value);
+  final String value;
 }
