@@ -21,28 +21,28 @@ void main() {
 
   group('fallbackSanitizedAnalyticsValue - 기본 explorer(mempool.space)', () {
     test('address 경로가 포함된 URL이면 sanitized된 analytics 값을 반환한다', () {
-      final uri = Uri.parse('https://mempool.space/en/address/bc1qxxxxsensitiveaddress');
+      final uri = Uri.parse('https://mempool.space/address/bc1qxxxxsensitiveaddress');
 
       final result = fallbackSanitizedAnalyticsValue(blockExplorerProvider, uri);
 
-      expect(result, 'https://mempool.space/en/address');
+      expect(result, 'https://mempool.space/address');
       expect(result, isNot(contains('bc1qxxxxsensitiveaddress')));
     });
 
     test('tx 경로가 포함된 URL이면 sanitized된 analytics 값을 반환한다', () {
-      final uri = Uri.parse('https://mempool.space/en/tx/deadbeefsensitivehash');
+      final uri = Uri.parse('https://mempool.space/tx/deadbeefsensitivehash');
 
       final result = fallbackSanitizedAnalyticsValue(blockExplorerProvider, uri);
 
-      expect(result, 'https://mempool.space/en/tx');
+      expect(result, 'https://mempool.space/tx');
     });
 
     test('block 경로가 포함된 URL이면 sanitized된 analytics 값을 반환한다', () {
-      final uri = Uri.parse('https://mempool.space/en/block/840000');
+      final uri = Uri.parse('https://mempool.space/block/840000');
 
       final result = fallbackSanitizedAnalyticsValue(blockExplorerProvider, uri);
 
-      expect(result, 'https://mempool.space/en/block');
+      expect(result, 'https://mempool.space/block');
     });
 
     test('explorer host와 다른 URL이면 null을 반환한다', () {
@@ -54,7 +54,7 @@ void main() {
     });
 
     test('explorer host는 같지만 tx/block/address 경로가 아니면 null을 반환한다', () {
-      final uri = Uri.parse('https://mempool.space/en/docs/api');
+      final uri = Uri.parse('https://mempool.space/docs/api');
 
       final result = fallbackSanitizedAnalyticsValue(blockExplorerProvider, uri);
 
@@ -77,7 +77,7 @@ void main() {
     });
 
     test('기본 explorer host의 URL은 더 이상 매칭되지 않는다', () {
-      final uri = Uri.parse('https://mempool.space/en/address/bc1qxxxx');
+      final uri = Uri.parse('https://mempool.space/address/bc1qxxxx');
 
       final result = fallbackSanitizedAnalyticsValue(blockExplorerProvider, uri);
 
