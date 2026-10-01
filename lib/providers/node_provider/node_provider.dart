@@ -42,6 +42,7 @@ class NodeProvider extends ChangeNotifier {
   ElectrumServer _electrumServer;
   final NetworkType _networkType;
   final AnalyticsService? _analyticsService;
+  final bool Function(int walletId)? _hasTransactionHistory;
 
   NodeStateManager? _stateManager;
   StreamSubscription<IsolateStateMessage>? _stateSubscription;
@@ -221,7 +222,9 @@ class NodeProvider extends ChangeNotifier {
     this._walletItemListNotifier,
     this._analyticsService, {
     IsolateManager? isolateManager,
-  }) : _isolateManager = isolateManager ?? IsolateManager() {
+    bool Function(int walletId)? hasTransactionHistory,
+  }) : _isolateManager = isolateManager ?? IsolateManager(),
+       _hasTransactionHistory = hasTransactionHistory {
     Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
 
     _connectivityProvider.addListener(_onConnectivityChanged);
@@ -325,7 +328,10 @@ class NodeProvider extends ChangeNotifier {
             _stateManager?.setNodeSyncStateToFailed();
             _analyticsService?.logWalletAddSyncFailed(AnalyticsWalletType.of(wallet));
           } else {
-            _analyticsService?.logWalletAddSyncCompleted(AnalyticsWalletType.of(wallet));
+            _analyticsService?.logWalletAddSyncCompleted(
+              AnalyticsWalletType.of(wallet),
+              hasHistory: wallet.hasLocalKey ? _hasTransactionHistory?.call(wallet.id) : null,
+            );
           }
         });
       }

@@ -1,5 +1,3 @@
-import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
-import 'package:coconut_wallet/analytics/send_analytics.dart';
 import 'dart:async';
 
 import 'package:coconut_wallet/app/router/app_route_names.dart';
@@ -46,7 +44,6 @@ import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
@@ -114,11 +111,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
     await _prepareBroadcastAnimation();
     if (!mounted) return;
     final lottieAnimation = _runBroadcastLottie();
-    final analyticsService = context.read<AnalyticsService>();
-    final analyticsEntryPoint = context.read<SendInfoProvider>().resolvedAnalyticsEntryPoint;
-    final analyticsWallet = _viewModel.walletItem;
-    final isFirstSend = analyticsWallet?.hasLocalKey == true && !_viewModel.hasSentBefore;
-
     try {
       Result<String> result = await _viewModel.broadcast();
 
@@ -143,14 +135,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> with SingleTick
       }
 
       if (result.isSuccess) {
-        if (analyticsWallet != null) {
-          analyticsService.logSendCompleted(
-            walletType: AnalyticsWalletType.of(analyticsWallet),
-            entryPoint: analyticsEntryPoint,
-            isFirstSend: analyticsWallet.hasLocalKey ? isFirstSend : null,
-            hotWalletCreatedAt: analyticsWallet.hotWalletMetadata?.createdAt,
-          );
-        }
         await _viewModel.updateTagsOfUsedUtxos();
         await _viewModel.deleteDraftsIfNeeded();
         if (!mounted) return;

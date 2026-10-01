@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -14,9 +13,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup;
 import 'package:coconut_wallet/constants/lottie_path.dart';
-import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
-import 'package:coconut_wallet/analytics/send_analytics.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -48,7 +45,6 @@ import 'package:coconut_wallet/widgets/features/send/send_output_detail_card.dar
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:lottie/lottie.dart';
-import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 
 enum _HotWalletSigningStage { idle, authentication, signing, completed, finalReview }
@@ -405,15 +401,6 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
   }
 
   Future<void> _onButtonClicked(SendConfirmViewModel viewModel) async {
-    final entryPoint = context.read<SendInfoProvider>().resolvedAnalyticsEntryPoint;
-    if (entryPoint == SendAnalyticsEntryPoint.utxoSplit ||
-        entryPoint == SendAnalyticsEntryPoint.utxoMerge ||
-        entryPoint == SendAnalyticsEntryPoint.feeBump) {
-      context.read<AnalyticsService>().logSendStarted(
-        walletType: AnalyticsWalletType.of(viewModel.walletItem),
-        entryPoint: entryPoint,
-      );
-    }
     if (viewModel.isHotWallet) {
       await _signHotWallet(viewModel);
       return;

@@ -1326,10 +1326,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
         derivedDescriptor: descriptor,
         watchOnlyWalletIdToConvert: removeWatchOnly ? duplicateWatchOnly?.id : null,
       );
-      _analyticsService.logHotWalletAddCompleted(
-        isRestore: true,
-        isConverted: removeWatchOnly && duplicateWatchOnly != null,
-      );
+      _analyticsService.logHotWalletAddCompleted(isRestore: true);
       if (!mounted) return;
       vibrateMedium();
       setState(() => _isCheckingDuplicate = false);

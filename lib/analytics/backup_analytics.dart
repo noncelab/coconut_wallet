@@ -9,7 +9,7 @@ extension BackupAnalytics on AnalyticsService {
   void logBackupPromptTapped(BackupPromptLocation location) {
     logEvent(
       eventName: AnalyticsEventNames.backupPromptTapped,
-      parameters: {AnalyticsParameterNames.promptLocation: location.name},
+      parameters: {AnalyticsParameterNames.source: location.name},
     );
   }
 

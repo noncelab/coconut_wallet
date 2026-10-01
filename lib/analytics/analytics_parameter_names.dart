@@ -1,23 +1,16 @@
 class AnalyticsParameterNames {
   // 지갑 추가
   static const String walletType = 'wallet_type'; // watchOnly / multisig / inheritance / hotWallet
-  static const String hotWalletAction = 'hot_wallet_action'; // create / restore
+  static const String addMethod = 'add_method'; // create / restore
   static const String walletAddImportSource = 'wallet_add_import_source'; // parameter: enum WalletImportSource
-  static const String entrySource = 'entry_source';
-  static const String isConverted = 'is_converted';
+  static const String hasHistory = 'has_history';
 
   // 공통
+  static const String source = 'source'; // 어디서 눌렀나
   static const String sinceCreatedBucket = 'since_created_bucket';
 
-  // 백업
-  static const String promptLocation = 'prompt_location';
-
-  // 보내기
-  static const String entryPoint = 'entry_point';
-  static const String isFirstSend = 'is_first_send';
-
   // 지갑 상세
-  static const String action = 'action';
+  static const String element = 'element';
 
   // 지갑 필터
   // all / watchOnly(다중서명·상속 포함) / hot, WalletFilter.name 그대로
@@ -29,4 +22,5 @@ class AnalyticsParameterNames {
 
 class AnalyticsUserPropertyNames {
   static const String userCohort = 'user_cohort';
+  static const String hotWalletInUse = 'hot_wallet_in_use';
 }

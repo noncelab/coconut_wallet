@@ -2,7 +2,6 @@ class AnalyticsEventNames {
   // 지갑 추가
   static const String walletAddMenuEntered = 'wallet_add_menu_entered';
   static const String hotWalletActionSelected = 'hot_wallet_action_selected';
-  static const String hotWalletAddBlocked = 'hot_wallet_add_blocked';
   static const String walletAddButtonClicked = 'wallet_add_button_clicked'; // event
   static const String walletAddScreenEntered = 'wallet_add_screen_entered'; // event
   static const String walletAddCompleted = 'wallet_add_completed'; // event
@@ -21,10 +20,6 @@ class AnalyticsEventNames {
   // 핫월렛 백업
   static const String backupPromptTapped = 'backup_prompt_tapped';
   static const String backupCompleted = 'backup_completed';
-
-  // 보내기
-  static const String sendStarted = 'send_started';
-  static const String sendCompleted = 'send_completed';
 
   // 지갑 상세
   static const String walletDetailAction = 'wallet_detail_action';

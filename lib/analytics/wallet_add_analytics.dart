@@ -20,21 +20,14 @@ extension WalletAddAnalytics on AnalyticsService {
   void logHotWalletActionSelected({required bool isRestore}) {
     logEvent(
       eventName: AnalyticsEventNames.hotWalletActionSelected,
-      parameters: {AnalyticsParameterNames.hotWalletAction: _hotWalletAction(isRestore)},
-    );
-  }
-
-  void logHotWalletAddBlocked({required bool isRestore}) {
-    logEvent(
-      eventName: AnalyticsEventNames.hotWalletAddBlocked,
-      parameters: {AnalyticsParameterNames.hotWalletAction: _hotWalletAction(isRestore)},
+      parameters: {AnalyticsParameterNames.addMethod: _addMethod(isRestore)},
     );
   }
 
   void logWalletAddButtonClicked({WalletAddEntrySource? entrySource}) {
     logEvent(
       eventName: AnalyticsEventNames.walletAddButtonClicked,
-      parameters: {if (entrySource != null) AnalyticsParameterNames.entrySource: entrySource.name},
+      parameters: {if (entrySource != null) AnalyticsParameterNames.source: entrySource.name},
     );
   }
 
@@ -52,21 +45,23 @@ extension WalletAddAnalytics on AnalyticsService {
     );
   }
 
-  void logHotWalletAddCompleted({required bool isRestore, bool isConverted = false}) {
+  void logHotWalletAddCompleted({required bool isRestore}) {
     logEvent(
       eventName: AnalyticsEventNames.walletAddCompleted,
       parameters: {
         AnalyticsParameterNames.walletType: AnalyticsWalletType.hotWallet.name,
-        AnalyticsParameterNames.hotWalletAction: _hotWalletAction(isRestore),
-        if (isRestore) AnalyticsParameterNames.isConverted: isConverted,
+        AnalyticsParameterNames.addMethod: _addMethod(isRestore),
       },
     );
   }
 
-  void logWalletAddSyncCompleted(AnalyticsWalletType walletType) {
+  void logWalletAddSyncCompleted(AnalyticsWalletType walletType, {bool? hasHistory}) {
     logEvent(
       eventName: AnalyticsEventNames.walletAddSyncCompleted,
-      parameters: {AnalyticsParameterNames.walletType: walletType.name},
+      parameters: {
+        AnalyticsParameterNames.walletType: walletType.name,
+        if (hasHistory != null) AnalyticsParameterNames.hasHistory: hasHistory,
+      },
     );
   }
 
@@ -77,6 +72,5 @@ extension WalletAddAnalytics on AnalyticsService {
     );
   }
 
-  String _hotWalletAction(bool isRestore) =>
-      isRestore ? AnalyticsParameterValues.restore : AnalyticsParameterValues.create;
+  String _addMethod(bool isRestore) => isRestore ? AnalyticsParameterValues.restore : AnalyticsParameterValues.create;
 }

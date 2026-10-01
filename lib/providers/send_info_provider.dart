@@ -1,5 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 
@@ -19,7 +18,6 @@ class SendInfoProvider {
   WalletImportSource? _walletImportSource;
   int? _unsignedDraftId;
   double? _feeRate;
-  SendAnalyticsEntryPoint? _analyticsEntryPoint;
 
   int? get walletId => _walletId;
   int? get estimatedFee => _estimatedFee;
@@ -33,7 +31,6 @@ class SendInfoProvider {
   WalletImportSource? get walletImportSource => _walletImportSource;
   int? get unsignedDraftId => _unsignedDraftId;
   double? get feeRate => _feeRate;
-  SendAnalyticsEntryPoint? get analyticsEntryPoint => _analyticsEntryPoint;
 
   void setFeeRate(double feeRate) {
     _feeRate = feeRate;
@@ -83,10 +80,6 @@ class SendInfoProvider {
     _sendEntryPoint = sendEntryPoint;
   }
 
-  void setAnalyticsEntryPoint(SendAnalyticsEntryPoint? analyticsEntryPoint) {
-    _analyticsEntryPoint = analyticsEntryPoint;
-  }
-
   void clear() {
     _walletId =
         _estimatedFee =
@@ -97,7 +90,6 @@ class SendInfoProvider {
                             _signedResult =
                                 _sendEntryPoint =
                                     _feeBumpingType = _walletImportSource = _unsignedDraftId = _feeRate = null;
-    _analyticsEntryPoint = null;
   }
 
   Map<String, int>? getRecipientMap() {

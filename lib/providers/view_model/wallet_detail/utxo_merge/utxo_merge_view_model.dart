@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -664,7 +663,6 @@ class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
 
     clearSendInfo();
     _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
-    _sendInfoProvider.setAnalyticsEntryPoint(SendAnalyticsEntryPoint.utxoMerge);
     _sendInfoProvider.setWalletId(_wallet.id);
     _sendInfoProvider.setTransaction(txBuildResult.transaction!);
     _sendInfoProvider.setIsMultisig(_wallet.walletType == WalletType.multiSignature);
