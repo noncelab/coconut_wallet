@@ -9,6 +9,7 @@ import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:coconut_wallet/widgets/features/qr/overlay/scanner_overlay.dart';
+import 'package:coconut_wallet/widgets/features/qr/qr_scanner_view.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
@@ -146,31 +147,22 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        return Stack(
-          children: [
-            MobileScanner(
-              controller: _controller!,
-              onDetect: _onDetect,
-              errorBuilder: (context, error) {
-                if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
-                  _isShowedCameraPermissionDialog = true;
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    if (!context.mounted) return;
-                    await _showCameraPermissionDialog();
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                  });
-                }
-                return Center(child: Text(error.errorCode.message));
-              },
-            ),
-            const ScannerOverlay(),
-            _buildProgressOverlay(context),
-          ],
-        );
+    return QrScannerView(
+      controller: _controller!,
+      onDetect: _onDetect,
+      errorBuilder: (context, error) {
+        if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
+          _isShowedCameraPermissionDialog = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!context.mounted) return;
+            await _showCameraPermissionDialog();
+            if (!context.mounted) return;
+            Navigator.pop(context);
+          });
+        }
+        return Center(child: Text(error.errorCode.message));
       },
+      overlayBuilder: (context, _) => _buildProgressOverlay(context),
     );
   }
 
