@@ -690,13 +690,13 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
     if (mnemonic == null) {
       await _seedQrScannerController?.pauseCamera();
       if (mounted) {
-        await showConfirmDialog(
+        await showInfoDialog(
           context,
           context.read<PreferenceProvider>().language,
           t.wallet_home_screen.hot_wallet_restore.seed_qr_invalid_title,
           t.wallet_home_screen.hot_wallet_restore.seed_qr_invalid,
-          rightButtonText: t.close,
-          onTapRight: () => Navigator.of(context).pop(),
+          buttonText: t.confirm,
+          onTapButton: () => Navigator.of(context).pop(),
         );
       }
       if (mounted && _inputMode == _RestoreInputMode.seedQr) {
@@ -783,9 +783,9 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
         children: [
           CupertinoButton(
             key: _wordCountSelectorKey,
-            minSize: 0,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             onPressed: canClear ? _showClearAllDialog : null,
+            minimumSize: const Size(0, 0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -813,9 +813,9 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
             ),
           ),
           CupertinoButton(
-            minSize: 0,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             onPressed: () => setState(() => _isWordCountDropdownVisible = !_isWordCountDropdownVisible),
+            minimumSize: const Size(0, 0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
