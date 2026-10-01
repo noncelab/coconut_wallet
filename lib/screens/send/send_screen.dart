@@ -301,6 +301,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       });
     }
 
+    if (!_viewModel.isSelectedWalletNull && !isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted) return;
+        _onUtxoSelectionModeButtonPressed();
+      });
+    }
+
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
