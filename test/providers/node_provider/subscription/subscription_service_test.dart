@@ -70,7 +70,14 @@ void main() {
 
       final electrumService = ScriptSyncServiceMock.electrumService;
       final subscribedAddresses = <String>[];
-      when(electrumService.subscribeScript(any, any, onUpdate: anyNamed('onUpdate'))).thenAnswer((invocation) async {
+      when(
+        electrumService.subscribeScriptForWallet(
+          any,
+          any,
+          walletId: anyNamed('walletId'),
+          onUpdate: anyNamed('onUpdate'),
+        ),
+      ).thenAnswer((invocation) async {
         final address = invocation.positionalArguments[1] as String;
         subscribedAddresses.add(address);
         return null;

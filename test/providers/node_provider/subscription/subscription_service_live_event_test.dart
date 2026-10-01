@@ -88,7 +88,14 @@ void main() {
       final electrumService = ScriptSyncServiceMock.electrumService;
       final subscribedAddresses = <String>[];
       final onUpdateCallbacks = <String, Function(String, String?)>{};
-      when(electrumService.subscribeScript(any, any, onUpdate: anyNamed('onUpdate'))).thenAnswer((invocation) async {
+      when(
+        electrumService.subscribeScriptForWallet(
+          any,
+          any,
+          walletId: anyNamed('walletId'),
+          onUpdate: anyNamed('onUpdate'),
+        ),
+      ).thenAnswer((invocation) async {
         final address = invocation.positionalArguments[1] as String;
         final onUpdate = invocation.namedArguments[#onUpdate] as Function(String, String?);
         onUpdateCallbacks[address] = onUpdate;
