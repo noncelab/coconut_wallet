@@ -320,7 +320,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         physics: const AlwaysScrollableScrollPhysics(),
                         semanticChildCount: walletItem.length,
                         slivers: <Widget>[
-                          _buildAppBar(networkStatus,showElectrumReconnected),
+                          _buildAppBar(networkStatus, showElectrumReconnected),
                           if (!shouldShowLoadingIndicator)
                             CupertinoSliverRefreshControl(onRefresh: _onRefresh, refreshTriggerPullDistance: 80),
                           _buildBackupUpdateNotice(viewModel, walletItem),
@@ -2696,7 +2696,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget buildLoadingIndicator(BuildContext context, WalletHomeViewModel viewModel) {
+  Widget _buildLoadingIndicator(BuildContext context, WalletHomeViewModel viewModel) {
     return SliverToBoxAdapter(
       child: AnimatedSwitcher(
         transitionBuilder:
@@ -2717,7 +2717,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget buildDropdownBackdrop() {
+  Widget _buildDropdownBackdrop() {
     return ValueListenableBuilder<bool>(
       valueListenable: _isDropdownMenuVisible,
       builder: (context, isVisible, child) {
@@ -2726,7 +2726,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTap: () {
-                  setDropdownMenuVisiblility(false);
+                  _setDropdownMenuVisiblility(false);
                 },
               ),
             )
@@ -2735,7 +2735,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget buildDropdownMenu() {
+  Widget _buildDropdownMenu() {
     final bool showGlossary = AppLanguage.fromCode(context.read<PreferenceProvider>().language).supportsGlossary;
     return Positioned(
       top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
@@ -2768,7 +2768,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               ],
               thickDividerIndexList: [getThickDividerIndex(showGlossary)],
               onSelected: ((index, selectedText) {
-                setDropdownMenuVisiblility(false);
+                _setDropdownMenuVisiblility(false);
                 handleDropdownSelection(selectedText);
               }),
             ),
@@ -2810,11 +2810,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     return '';
   }
 
-  void setDropdownMenuVisiblility(bool value) {
+  void _setDropdownMenuVisiblility(bool value) {
     _isDropdownMenuVisible.value = value;
   }
 
-  void scrollToIndicator(int index) {
+  void _scrollToIndicator(int index) {
     if (!_pageIndicatorController.hasClients) return;
 
     // 실제 화면 너비를 기반으로 보이는 점 개수 계산
