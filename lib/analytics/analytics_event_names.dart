@@ -1,7 +1,7 @@
 class AnalyticsEventNames {
   // 지갑 추가
   static const String walletAddMenuEntered = 'wallet_add_menu_entered';
-  static const String hotWalletFlowEntered = 'hot_wallet_flow_entered';
+  static const String hotWalletActionSelected = 'hot_wallet_action_selected';
   static const String walletAddButtonClicked = 'wallet_add_button_clicked'; // event
   static const String walletAddScreenEntered = 'wallet_add_screen_entered'; // event
   static const String walletAddCompleted = 'wallet_add_completed'; // event
@@ -16,6 +16,17 @@ class AnalyticsEventNames {
   static const String walletResyncStarted = 'wallet_resync_started';
   static const String walletResyncCompleted = 'wallet_resync_completed';
   static const String walletResyncFailed = 'wallet_resync_failed';
+
+  // 핫월렛 백업
+  static const String backupPromptTapped = 'backup_prompt_tapped';
+  static const String backupCompleted = 'backup_completed';
+
+  // 지갑 상세
+  static const String walletDetailAction = 'wallet_detail_action';
+  static const String targetAmountSaved = 'target_amount_saved';
+
+  // 지갑 필터
+  static const String walletFilterChanged = 'wallet_filter_changed';
 
   // 외부 링크를 여는 이벤트
   static const String externalLinkOpened = 'external_link_opened';

@@ -13,6 +13,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/wallet_detail_analytics.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -47,6 +48,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/trezor_section.
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 
 const String kEntryPointWalletList = AppRouteNames.walletList;
@@ -632,9 +634,21 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   void _showTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
+    if (viewModel.isUpdatingTarget) return;
     final btcString =
         viewModel.targetSats != null ? BalanceFormatUtil.formatSatoshiToBtcInputText(viewModel.targetSats!) : '';
     final parentContext = context;
+
+    void showStorageError() {
+      if (!parentContext.mounted) return;
+      CoconutToast.showToast(
+        context: parentContext,
+        isVisibleIcon: true,
+        iconPath: CommonStateIconPath.triangleWarning,
+        text: t.errors.storage_write_error,
+        level: CoconutToastLevel.warning,
+      );
+    }
 
     SingleTextFieldBottomSheet.show(
       context: context,
@@ -664,9 +678,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         BitcoinUnit.btc.symbol,
         style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
       ),
-      onComplete: (text) {
+      onComplete: (text) async {
+        if (viewModel.isUpdatingTarget) return;
         if (text.isEmpty) {
-          viewModel.removeTargetSats();
+          try {
+            await viewModel.removeTargetSats();
+          } catch (_) {
+            showStorageError();
+          }
           return;
         }
 
@@ -683,21 +702,27 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           }
           return;
         }
-        if (btc == 21_000_000) {
-          vibrateMedium();
-          CoconutToast.showToast(
-            context: parentContext,
-            text: t.wallet_info_screen.target_set_21m,
-            isVisibleIcon: true,
-            iconPath: FeatureWalletIconPath.pie,
-            iconSize: 16,
-            iconRightPadding: 8,
-          );
-        }
-
         final sats = UnitUtil.convertBitcoinToSatoshi(btc);
         if (sats > 0) {
-          viewModel.setTargetSats(sats);
+          final analytics = parentContext.read<AnalyticsService>();
+          try {
+            if (await viewModel.setTargetSats(sats)) {
+              analytics.logTargetAmountSaved();
+              if (btc == 21_000_000 && parentContext.mounted) {
+                vibrateMedium();
+                CoconutToast.showToast(
+                  context: parentContext,
+                  text: t.wallet_info_screen.target_set_21m,
+                  isVisibleIcon: true,
+                  iconPath: FeatureWalletIconPath.pie,
+                  iconSize: 16,
+                  iconRightPadding: 8,
+                );
+              }
+            }
+          } catch (_) {
+            showStorageError();
+          }
           return;
         }
 

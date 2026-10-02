@@ -46,6 +46,7 @@ void main() {
   var hardwareAvailable = true;
   var hardwareDeleteFails = false;
   String? wrapFailureCode;
+  String? unwrapFailureCode;
 
   Uint8List copyBytes(Object? value) => Uint8List.fromList((value! as Uint8List).toList());
 
@@ -70,6 +71,7 @@ void main() {
     hardwareAvailable = true;
     hardwareDeleteFails = false;
     wrapFailureCode = null;
+    unwrapFailureCode = null;
     repository = HotWalletSecretRepository(
       cryptoService: HotWalletCryptoService(random: Random(42)),
       random: Random(43),
@@ -93,6 +95,7 @@ void main() {
             'protection': 'androidStrongBox',
           };
         case 'unwrap':
+          if (unwrapFailureCode != null) throw PlatformException(code: unwrapFailureCode!);
           return copyBytes(osKeys[alias]);
         case 'delete':
           if (hardwareDeleteFails) {
@@ -108,6 +111,33 @@ void main() {
 
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+  });
+
+  test('hardware unlock failure preserves the encrypted secret and does not create fallback keys', () async {
+    const storageKey = 'hot_wallet_secret_locked_hardware';
+    await createSecret(storageKey);
+    final before = await storage.read(key: storageKey);
+    final secret = await readSecret(storageKey);
+    unwrapFailureCode = 'AUTHENTICATION_FAILED';
+
+    await expectLater(repository.unlockAfterAuthentication(storageKey), throwsA(isA<PlatformException>()));
+    expect(await storage.read(key: storageKey), before);
+    expect(await storage.read(key: '${storageKey}_fallback_kek'), isNull);
+    expect(osKeys, contains(secret.deviceWrappedDek.alias));
+    expect(deletedAliases, isEmpty);
+  });
+
+  test('missing fallback key fails closed and preserves the encrypted secret', () async {
+    hardwareAvailable = false;
+    const storageKey = 'hot_wallet_secret_missing_fallback';
+    await createSecret(storageKey);
+    final secret = await readSecret(storageKey);
+    final before = await storage.read(key: storageKey);
+    await storage.delete(key: secret.deviceWrappedDek.alias!);
+
+    await expectLater(repository.unlockAfterAuthentication(storageKey), throwsStateError);
+    expect(await storage.read(key: storageKey), before);
+    expect(await storage.read(key: secret.deviceWrappedDek.alias!), isNull);
   });
 
   test('PIN·생체인증 설정과 무관한 단일 하드웨어 wrapper를 저장한다', () async {

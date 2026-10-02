@@ -47,8 +47,6 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
   String explorerUrlFor(BlockExplorerPathType pathType, String value) =>
       _blockExplorerProvider.explorerUrlFor(pathType, value);
-  String sanitizedExplorerAnalyticsDestination(BlockExplorerPathType pathType) =>
-      _blockExplorerProvider.sanitizedExplorerAnalyticsDestination(pathType);
   bool get isFetchingFromMempool => _isFetchingFromMempool;
   List<UtxoTag> get appliedUtxoTagList => _appliedUtxoTagList;
   String get walletName => _walletProvider.getWalletById(_walletId).name;

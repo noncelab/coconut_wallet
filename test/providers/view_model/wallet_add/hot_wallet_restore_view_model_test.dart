@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -9,6 +10,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_restore_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/utils/nfkd_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeSecretRepository extends Fake implements HotWalletSecretRepository {
@@ -26,6 +28,9 @@ class _GatedWalletProvider extends Fake implements WalletProvider {
   final gate = Completer<void>();
   bool addStarted = false;
   bool? enterPassphraseWhenSigning;
+  bool? backupVerified;
+  int? convertedWalletId;
+  Object? addError;
 
   @override
   Future<T> runHotWalletLifecycleOperation<T>(Future<T> Function() operation) => operation();
@@ -41,7 +46,10 @@ class _GatedWalletProvider extends Fake implements WalletProvider {
   }) async {
     addStarted = true;
     this.enterPassphraseWhenSigning = enterPassphraseWhenSigning;
+    this.backupVerified = backupVerified;
+    convertedWalletId = watchOnlyWalletIdToConvert;
     await gate.future;
+    if (addError != null) throw addError!;
     return SinglesigWalletItem(
       id: 1,
       name: wallet.name,
@@ -50,6 +58,31 @@ class _GatedWalletProvider extends Fake implements WalletProvider {
       descriptor: wallet.descriptor,
     );
   }
+}
+
+class _RecordingSecretRepository extends _FakeSecretRepository {
+  _RecordingSecretRepository({this.createError});
+
+  final Object? createError;
+  int createCalls = 0;
+  int deleteCalls = 0;
+  Uint8List? borrowedMnemonic;
+  Uint8List? borrowedPassphrase;
+  Uint8List? storedMnemonic;
+  Uint8List? storedPassphrase;
+
+  @override
+  Future<void> create({required String storageKey, required Uint8List mnemonic, required Uint8List passphrase}) async {
+    createCalls++;
+    borrowedMnemonic = mnemonic;
+    borrowedPassphrase = passphrase;
+    storedMnemonic = Uint8List.fromList(mnemonic);
+    storedPassphrase = Uint8List.fromList(passphrase);
+    if (createError != null) throw createError!;
+  }
+
+  @override
+  Future<void> delete(String storageKey) async => deleteCalls++;
 }
 
 class _NameValidationWallet extends Fake implements WalletItemBase {
@@ -135,6 +168,91 @@ void main() {
   });
 
   group('HotWalletRestoreViewModel', () {
+    for (final wordCount in [12, 24]) {
+      for (final passphraseAtSigning in [false, true]) {
+        test('restores $wordCount words with correct passphrase storage (input=$passphraseAtSigning)', () async {
+          final secrets = _RecordingSecretRepository();
+          final provider = _GatedWalletProvider()..gate.complete();
+          final model = HotWalletRestoreViewModel(secretRepository: secrets);
+          addTearDown(model.dispose);
+          final words = [...List.filled(wordCount - 1, 'abandon'), wordCount == 12 ? 'about' : 'art'];
+          model.setWordCount(wordCount);
+          model.applyWords(0, words);
+          model.setUsePassphrase(true);
+          model.setPassphrase('Café');
+          model.setEnterPassphraseWhenSigning(passphraseAtSigning);
+
+          final restored = await model.restore(
+            walletProvider: provider,
+            walletName: 'Restored test wallet',
+            watchOnlyWalletIdToConvert: 42,
+          );
+          final normalizedPassphrase = NfkdUtil.encodeNfkd('Café');
+          final mnemonic = Uint8List.fromList(utf8.encode(words.join(' ')));
+          final vault = SingleSignatureVault.fromMnemonic(mnemonic, passphrase: normalizedPassphrase);
+          try {
+            expect(restored.descriptor, vault.descriptor);
+            expect(secrets.storedMnemonic, mnemonic);
+            expect(secrets.storedPassphrase, passphraseAtSigning ? isEmpty : normalizedPassphrase);
+            expect(provider.enterPassphraseWhenSigning, passphraseAtSigning);
+            expect(provider.backupVerified, isTrue);
+            expect(provider.convertedWalletId, 42);
+            expect(secrets.deleteCalls, 0);
+            expect(secrets.borrowedMnemonic, everyElement(0));
+            expect(secrets.borrowedPassphrase, everyElement(0));
+          } finally {
+            vault.keyStore.wipeSeed();
+            mnemonic.fillRange(0, mnemonic.length, 0);
+            normalizedPassphrase.fillRange(0, normalizedPassphrase.length, 0);
+          }
+        });
+      }
+    }
+
+    for (final failSecretWrite in [true, false]) {
+      test('failed restoration cleans secret and resets retry guard (secret=$failSecretWrite)', () async {
+        final failure = StateError('Injected persistence failure');
+        final secrets = _RecordingSecretRepository(createError: failSecretWrite ? failure : null);
+        final provider =
+            _GatedWalletProvider()
+              ..addError = failSecretWrite ? null : failure
+              ..gate.complete();
+        final model = HotWalletRestoreViewModel(secretRepository: secrets);
+        addTearDown(model.dispose);
+        model.applyWords(0, [...List.filled(11, 'abandon'), 'about']);
+        model.setUsePassphrase(true);
+        model.setPassphrase('test-passphrase');
+
+        await expectLater(
+          model.restore(walletProvider: provider, walletName: 'Failed test restore'),
+          throwsA(same(failure)),
+        );
+        expect(secrets.createCalls, 1);
+        expect(secrets.deleteCalls, 1);
+        expect(provider.addStarted, !failSecretWrite);
+        expect(model.isRestoring, isFalse);
+        expect(model.canRestore, isTrue);
+        expect(secrets.borrowedMnemonic, everyElement(0));
+        expect(secrets.borrowedPassphrase, everyElement(0));
+      });
+    }
+
+    test('concurrent restoration cannot create a second secret', () async {
+      final secrets = _RecordingSecretRepository();
+      final provider = _GatedWalletProvider()..gate.complete();
+      final model = HotWalletRestoreViewModel(secretRepository: secrets);
+      addTearDown(model.dispose);
+      model.applyWords(0, [...List.filled(11, 'abandon'), 'about']);
+
+      final first = model.restore(walletProvider: provider, walletName: 'First test restore');
+      await expectLater(
+        model.restore(walletProvider: provider, walletName: 'Duplicate test restore'),
+        throwsStateError,
+      );
+      await first;
+      expect(secrets.createCalls, 1);
+    });
+
     test('mainnet에서는 mainnet descriptor를 파생한다', () async {
       NetworkType.setNetworkType(NetworkType.mainnet);
       final viewModel = HotWalletRestoreViewModel();

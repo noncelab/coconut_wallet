@@ -36,6 +36,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   late final LabelExportViewModel _labelExportViewModel = LabelExportViewModel(walletProvider: _walletProvider);
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
   bool _disposed = false;
+  bool _isUpdatingTarget = false;
 
   late String _walletName;
   late String _extendedPublicKey;
@@ -79,6 +80,7 @@ class WalletInfoViewModel extends ChangeNotifier {
     }
 
     _prevWalletUpdateInfo = WalletUpdateInfo(_walletId);
+    _syncWalletStateSubscription?.cancel();
     _syncWalletStateSubscription = _nodeProvider.getWalletStateStream(_walletId).listen(_onWalletUpdateInfoChanged);
   }
 
@@ -228,16 +230,46 @@ class WalletInfoViewModel extends ChangeNotifier {
   int? get targetSats => _sharedPrefs.getWalletTargetSats(_walletId);
   bool get isTargetDisabled => _sharedPrefs.isWalletTargetDisabled(_walletId);
 
-  Future<void> setTargetSats(int targetSats) async {
-    await _sharedPrefs.setWalletTargetSats(_walletId, targetSats);
-    await _sharedPrefs.setWalletTargetDisabled(_walletId, false);
-    notifyListeners();
-  }
+  bool get isUpdatingTarget => _isUpdatingTarget;
+
+  Future<bool> setTargetSats(int targetSats) => _updateTargetSats(targetSats);
 
   Future<void> removeTargetSats() async {
-    await _sharedPrefs.removeWalletTargetSats(_walletId);
-    await _sharedPrefs.setWalletTargetDisabled(_walletId, true);
-    notifyListeners();
+    await _updateTargetSats(null);
+  }
+
+  Future<bool> _updateTargetSats(int? targetSats) async {
+    if (_isUpdatingTarget) return false;
+    if (targetSats != null && targetSats <= 0) throw ArgumentError('Wallet target must be positive');
+    final previousTarget = this.targetSats;
+    final previousDisabled = isTargetDisabled;
+    _isUpdatingTarget = true;
+    try {
+      // ponytail: errors are rolled back; use one persisted record if target edits need atomic crash recovery.
+      if (targetSats == null) {
+        await _sharedPrefs.removeWalletTargetSats(_walletId);
+      } else {
+        await _sharedPrefs.setWalletTargetSats(_walletId, targetSats);
+      }
+      await _sharedPrefs.setWalletTargetDisabled(_walletId, targetSats == null);
+      _safeNotifyListeners();
+      return true;
+    } catch (_) {
+      if (this.targetSats != previousTarget) {
+        if (previousTarget == null) {
+          await _sharedPrefs.removeWalletTargetSats(_walletId);
+        } else {
+          await _sharedPrefs.setWalletTargetSats(_walletId, previousTarget);
+        }
+      }
+      if (isTargetDisabled != previousDisabled) {
+        await _sharedPrefs.setWalletTargetDisabled(_walletId, previousDisabled);
+      }
+      _safeNotifyListeners();
+      rethrow;
+    } finally {
+      _isUpdatingTarget = false;
+    }
   }
 
   bool get isBitBox02Wallet => _walletItemBase.walletImportSource == WalletImportSource.bitbox02;

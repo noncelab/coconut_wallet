@@ -3,6 +3,7 @@ import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutTextField;
 import 'package:coconut_wallet/core/exceptions/wallet_name_conflict_exception.dart';
@@ -14,6 +15,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_add/hot_wallet_create_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/widgets/wallet_appearance_sheet.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -41,6 +43,7 @@ class HotWalletCreateScreen extends StatefulWidget {
 
 class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   late final HotWalletCreateViewModel _viewModel;
+  late final AnalyticsService _analyticsService;
   late final bool _shouldDisposeViewModel;
   late final TextEditingController _nameController;
   late final String _suggestedWalletName;
@@ -76,6 +79,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
     _shouldDisposeViewModel = widget.viewModel == null;
     _viewModel = widget.viewModel ?? HotWalletCreateViewModel(context.read<WalletProvider>());
     _viewModel.addListener(_handleViewModelChanged);
+    _analyticsService = context.read<AnalyticsService>();
     _suggestedWalletName = _generateDefaultWalletName();
     _nameController = TextEditingController();
     _nameFocusNode.addListener(_handleNameFocusChanged);
@@ -667,6 +671,7 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
         passphrase: _usePassphrase ? _passphraseController.text : '',
         enterPassphraseWhenSigning: enterPassphraseWhenSigning,
       );
+      _analyticsService.logHotWalletAddCompleted(isRestore: false);
 
       if (!mounted) {
         result.clearSensitiveBytes();

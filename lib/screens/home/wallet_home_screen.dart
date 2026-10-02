@@ -6,8 +6,11 @@ import 'dart:math' as math;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/wallet_constants.dart';
 
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/backup_analytics.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/analytics/wallet_detail_analytics.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
@@ -106,6 +109,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   Size _dropdownButtonSize = const Size(0, 0);
   Offset _dropdownButtonPosition = Offset.zero;
   final ValueNotifier<bool> _isDropdownMenuVisible = ValueNotifier(false);
+  late final AnalyticsService _analyticsService;
   bool _showEmptyRecentTransactionWidget = true;
   Timer? _recentTransactionBannerTimer;
   late ScrollController _scrollController;
@@ -353,10 +357,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                                 : t.wallet_home_screen.app_lock_warning.description,
                                         onTap:
                                             securityWarningType == HomeSecurityWarningType.unbackedHotWallet
-                                                ? () => _openWalletInfo(
-                                                  firstUnbackedHotWalletWithBalance!,
-                                                  highlightMnemonicBackup: true,
-                                                )
+                                                ? () {
+                                                  _analyticsService.logBackupPromptTapped(
+                                                    BackupPromptLocation.homeCard,
+                                                  );
+                                                  _openWalletInfo(
+                                                    firstUnbackedHotWalletWithBalance!,
+                                                    highlightMnemonicBackup: true,
+                                                  );
+                                                }
                                                 : _openAppLockSettings,
                                         onClosed:
                                             () => _dismissSecurityWarning(
@@ -481,6 +490,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   void initState() {
     super.initState();
     WalletHomeScreen._currentState = this;
+    _analyticsService = context.read<AnalyticsService>();
 
     _scrollController = ScrollController();
     _carouselController = CarouselSliderController();
@@ -517,7 +527,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   Navigator.of(context).pop();
                 },
                 onTapRight: () async {
-                  launchURL(context, TUTORIAL_URL);
+                  launchURL(context, TUTORIAL_URL, destination: ExternalLinkDestination.tutorial);
                   Navigator.of(context).pop();
                 },
                 rightButtonColor: context.coconutColors.success,
@@ -1309,6 +1319,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         onPageChanged: (index) {
           final filter = filters[index];
           if (_walletFilter == filter) return;
+          if (_walletTransitionTargetIndex == null) {
+            _analyticsService.logWalletFilterChanged(filter);
+          }
           setState(() => _walletFilter = filter);
         },
         itemBuilder: (context, index) {
@@ -1450,6 +1463,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   void selectWalletFilter(WalletFilter filter, List<WalletFilter> filters) async {
     if (_walletFilter == filter || _walletTransitionTargetIndex != null) return;
+    _analyticsService.logWalletFilterChanged(filter);
 
     final targetIndex = filters.indexOf(filter);
     final startIndex = _walletPageController.page?.round() ?? 0;
@@ -1488,7 +1502,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: ShrinkAnimationButton(
-        onPressed: () => _onAddWalletPressed(filter),
+        onPressed: () => _onAddWalletPressed(filter, WalletAddEntrySource.homeEmpty),
         defaultColor: context.coconutColors.homeSurface,
         pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
         pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
@@ -1562,7 +1576,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           pressedOverlayColor: context.coconutColors.homeSurfacePressOverlay,
           pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
           borderRadius: 12,
-          onPressed: () => _onAddWalletPressed(filter),
+          onPressed: () => _onAddWalletPressed(filter, WalletAddEntrySource.homeAddRow),
           child: CustomPaint(
             painter: DashedBorderPainter(
               dashSpace: 4.0,
@@ -2524,32 +2538,32 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  void _onAddWalletPressed([WalletFilter? filter]) {
-    switch (filter ?? _walletFilter) {
+  void _onAddWalletPressed(WalletFilter filter, WalletAddEntrySource entrySource) {
+    switch (filter) {
       case WalletFilter.all:
-        _showAddWalletMenu(WalletAddDialogMode.walletType);
+        _showAddWalletMenu(WalletAddDialogMode.walletType, entrySource);
       case WalletFilter.watchOnly:
-        _showAddWalletMenu(WalletAddDialogMode.watchOnlySource);
+        _showAddWalletMenu(WalletAddDialogMode.watchOnlySource, entrySource);
       case WalletFilter.hot:
-        _showAddWalletMenu(WalletAddDialogMode.hotWalletAction);
+        _showAddWalletMenu(WalletAddDialogMode.hotWalletAction, entrySource);
     }
   }
 
   void _onAppBarAddWalletPressed() {
     switch (context.read<PreferenceProvider>().homeAddWalletOption) {
       case HomeAddWalletOption.all:
-        _showAddWalletMenu(WalletAddDialogMode.walletType);
+        _showAddWalletMenu(WalletAddDialogMode.walletType, WalletAddEntrySource.appBar);
       case HomeAddWalletOption.watchOnly:
-        _showAddWalletMenu(WalletAddDialogMode.watchOnlySource);
+        _showAddWalletMenu(WalletAddDialogMode.watchOnlySource, WalletAddEntrySource.appBar);
       case HomeAddWalletOption.hotWallet:
-        _showAddWalletMenu(WalletAddDialogMode.hotWalletAction);
+        _showAddWalletMenu(WalletAddDialogMode.hotWalletAction, WalletAddEntrySource.appBar);
       case HomeAddWalletOption.hidden:
         break;
     }
   }
 
-  void _showAddWalletMenu(WalletAddDialogMode mode) {
-    context.read<AnalyticsService>().logWalletAddButtonClicked();
+  void _showAddWalletMenu(WalletAddDialogMode mode, [WalletAddEntrySource? entrySource]) {
+    context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: entrySource);
     WalletAddDialog.show(context, mode);
   }
 

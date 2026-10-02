@@ -54,12 +54,7 @@ void main() {
 
       final electrumService = ScriptSyncServiceMock.electrumService;
       when(
-        electrumService.subscribeScriptForWallet(
-          any,
-          any,
-          walletId: anyNamed('walletId'),
-          onUpdate: anyNamed('onUpdate'),
-        ),
+        electrumService.subscribeScriptForWallet(any, any, walletId: wallet.id, onUpdate: anyNamed('onUpdate')),
       ).thenAnswer((_) async => null);
 
       final subscriptionService = SubscriptionService(

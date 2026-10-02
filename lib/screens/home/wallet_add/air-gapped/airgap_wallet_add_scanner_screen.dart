@@ -87,11 +87,15 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   Future<void> _checkClipboard() async {
-    final isContentAvailable = await Clipboard.hasStrings();
-    if (mounted && _clipboardContentAvailable != isContentAvailable) {
-      setState(() {
-        _clipboardContentAvailable = isContentAvailable;
-      });
+    try {
+      final isContentAvailable = await Clipboard.hasStrings();
+      if (mounted && _clipboardContentAvailable != isContentAvailable) {
+        setState(() {
+          _clipboardContentAvailable = isContentAvailable;
+        });
+      }
+    } catch (error) {
+      FileLogger.error(className, '_checkClipboard', 'Clipboard availability check failed: ${error.runtimeType}');
     }
   }
 
@@ -429,42 +433,41 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   void _handleClipboardImport() async {
-    if (_isProcessing) return;
+    if (_isProcessing || !mounted) return;
     _isProcessing = true;
 
-    await controller?.stop();
-    if (!mounted) return;
-
-    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-    final text = clipboardData?.text?.trim();
-
-    if (text == null || text.isEmpty) {
-      await _showErrorDialog(t.alert.wallet_add.add_failed, t.alert.invalid_qr);
-      return;
-    }
-    String? descriptor;
-    String? extendedPublicKey;
     try {
-      if (text.contains('[') && text.contains(']')) {
-        descriptor = DescriptorUtil.normalizeDescriptor(text);
-      } else {
-        ExtendedPublicKey.parse(text);
-        extendedPublicKey = text;
-      }
-    } catch (_) {}
+      await controller?.stop();
+      if (!mounted) return;
 
-    if (descriptor == null && extendedPublicKey == null) {
-      if (mounted) {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      if (!mounted) return;
+      final text = clipboardData?.text?.trim();
+
+      if (text == null || text.isEmpty) {
+        _skipNextFinalizeVibration = true;
+        await _showErrorDialog(t.alert.wallet_add.add_failed, t.alert.invalid_qr);
+        return;
+      }
+      String? descriptor;
+      String? extendedPublicKey;
+      try {
+        if (text.contains('[') && text.contains(']')) {
+          descriptor = DescriptorUtil.normalizeDescriptor(text);
+        } else {
+          ExtendedPublicKey.parse(text);
+          extendedPublicKey = text;
+        }
+      } catch (_) {}
+
+      if (descriptor == null && extendedPublicKey == null) {
+        _skipNextFinalizeVibration = true;
         await _showErrorDialog(
           t.alert.wallet_add.add_failed,
           "${t.wallet_add_scanner_screen.paste.format_error_text} ($text)",
         );
+        return;
       }
-      return;
-    }
-
-    try {
-      if (!mounted) return;
 
       ResultOfSyncFromVault? addResult;
       if (descriptor != null && mounted) {
@@ -672,6 +675,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
   Future<void> _handleAddWalletError(Object e, StackTrace stackTrace) async {
     FileLogger.error(className, '_handleAddWalletError', 'failed: $e', stackTrace);
+    if (!mounted) return;
     vibrateLightDouble();
     if (mounted) {
       _skipNextFinalizeVibration = true;
@@ -691,14 +695,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   void _finalizeAddWallet() {
     FileLogger.log(className, '_finalizeAddWallet', 'finalize');
     _isProcessing = false;
+    if (!mounted) return;
     if (_skipNextFinalizeVibration) {
       _skipNextFinalizeVibration = false;
     } else {
       vibrateMedium();
     }
-    if (mounted) {
-      context.loaderOverlay.hide();
-    }
+    context.loaderOverlay.hide();
   }
 
   /// 에러 팝업이 아직 떠 있는 동안 카메라가 새 QR을 스캔해버리는 레이스 컨디션을 막기 위해,
@@ -755,9 +758,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   Future<void> _showErrorDialog(String title, String description) async {
+    if (!mounted) return;
     const methodName = '_showErrorDialog';
     FileLogger.log(className, methodName, 'Error title: $title');
-    FileLogger.log(className, methodName, 'Error description: $description');
 
     await showDialog<void>(
       context: context,

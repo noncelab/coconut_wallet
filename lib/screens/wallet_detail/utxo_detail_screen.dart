@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
@@ -358,7 +359,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               context,
               _viewModel.explorerUrlFor(BlockExplorerPathType.address, widget.utxo.to),
               openInApp: true,
-              analyticsValue: _viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.address),
+              destination: ExternalLinkDestination.explorerAddress,
             );
           },
           child: Column(
@@ -424,7 +425,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             context,
             _viewModel.explorerUrlFor(BlockExplorerPathType.block, widget.utxo.blockHeight.toString()),
             openInApp: true,
-            analyticsValue: _viewModel.sanitizedExplorerAnalyticsDestination(BlockExplorerPathType.block),
+            destination: ExternalLinkDestination.explorerBlock,
           );
         }
       },

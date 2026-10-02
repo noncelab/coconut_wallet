@@ -50,6 +50,23 @@ void main() {
     second.dek.fillRange(0, second.dek.length, 0);
   });
 
+  for (final field in ['nonce', 'cipherText', 'mac']) {
+    test('유효한 Base64의 $field 변조도 인증 실패로 거부한다', () async {
+      final encrypted = await service.encryptPayload(mnemonic: mnemonic, passphrase: passphrase);
+      final payload = encrypted.encryptedPayload.toJson();
+      final tampered = base64Decode(payload[field]! as String)..[0] ^= 1;
+      payload[field] = base64Encode(tampered);
+      try {
+        await expectLater(
+          service.decryptPayload(_secretWith(EncryptedValue.fromJson(payload)), encrypted.dek),
+          throwsA(isA<SecretBoxAuthenticationError>()),
+        );
+      } finally {
+        encrypted.dek.fillRange(0, encrypted.dek.length, 0);
+      }
+    });
+  }
+
   test('잘못된 DEK로 payload를 복호화할 수 없다', () async {
     final result = await service.encryptPayload(mnemonic: mnemonic, passphrase: passphrase);
     final secret = HotWalletSecret(

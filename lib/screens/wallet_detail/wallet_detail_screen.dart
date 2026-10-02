@@ -10,7 +10,10 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutTooltipState,
         CoconutTooltipType;
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/backup_analytics.dart';
+import 'package:coconut_wallet/analytics/wallet_detail_analytics.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -25,6 +28,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
@@ -69,10 +73,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
   late final AnimationController _fireworksController;
   late final AnimationController _fireworksFadeController;
   bool _hasStartedFireworks = false;
+  late final AnalyticsService _analyticsService;
 
   @override
   void initState() {
     super.initState();
+    _analyticsService = context.read<AnalyticsService>();
     _viewModel = WalletDetailViewModel(
       widget.id,
       context.read<WalletProvider>(),
@@ -199,7 +205,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
             ),
           ),
         CoconutAppBarActionButton(
-          onPressed: _openWalletInfo,
+          onPressed: () {
+            _logAction(WalletDetailAction.walletInfo);
+            _openWalletInfo();
+          },
           icon: SvgPicture.asset(
             FeatureSettingsIconPath.settings,
             width: 20,
@@ -270,7 +279,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                 isMnemonicWarning
                     ? t.wallet_home_screen.unbacked_hot_wallet_warning.description
                     : t.wallet_home_screen.app_lock_warning.description,
-            onTap: isMnemonicWarning ? _openMnemonicBackup : _openAppLockSettings,
+            onTap: isMnemonicWarning ? _onBackupBannerTapped : _openAppLockSettings,
             onClosed:
                 () => viewModel.dismissSecurityWarning(
                   warningType,
@@ -303,7 +312,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
 
         return ShrinkAnimationButton(
           key: ValueKey(target == null),
-          onPressed: () => _openWalletInfo(showTargetSetting: target == null),
+          onPressed: () {
+            _logAction(WalletDetailAction.targetCard);
+            _openWalletInfo(showTargetSetting: target == null);
+          },
           defaultColor: context.coconutColors.surface,
           pressedOverlayColor: context.coconutColors.surfacePressOverlay,
           pressedOverlayOpacity: target == null ? context.coconutColors.surfacePressOverlayOpacity : 0,
@@ -388,7 +400,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
               ),
               if (target == null)
                 PositionedCardArrowButton(
-                  onPressed: () => _openWalletInfo(showTargetSetting: true),
+                  onPressed: () {
+                    _logAction(WalletDetailAction.targetCard);
+                    _openWalletInfo(showTargetSetting: true);
+                  },
                   color: context.coconutColors.iconSecondary,
                   iconSize: 12,
                 ),
@@ -431,7 +446,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
               title: t.wallet_detail_screen.recent_transactions,
               actionLabel: t.wallet_detail_screen.view_all,
               actionEnabled: viewModel.hasTransactions,
-              onAction: _openTransactionList,
+              onAction: () {
+                _logAction(WalletDetailAction.txMore);
+                _openTransactionList();
+              },
             ),
             CoconutLayout.spacing_200h,
             if (!viewModel.hasTransactions)
@@ -479,7 +497,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                     borderRadius: CoconutStyles.radius_200,
                     currentUnit: viewModel.currentUnit,
                     id: widget.id,
-                    onPressed: () => _openTransaction(entry.$2),
+                    onPressed: () {
+                      _logAction(WalletDetailAction.txDetail);
+                      _openTransaction(entry.$2);
+                    },
                   ),
                 ),
               ),
@@ -515,12 +536,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                       description: t.wallet_detail_screen.utxo_overview_description,
                       iconPadding: const EdgeInsets.all(2),
                       isEnabled: hasUtxo,
-                      onTap:
-                          () => Navigator.pushNamed(
-                            context,
-                            AppRouteNames.utxoOverview,
-                            arguments: UtxoOverviewRouteArgs(id: widget.id),
-                          ),
+                      onTap: () {
+                        _logAction(WalletDetailAction.utxoOverview);
+                        Navigator.pushNamed(
+                          context,
+                          AppRouteNames.utxoOverview,
+                          arguments: UtxoOverviewRouteArgs(id: widget.id),
+                        );
+                      },
                     ),
                   ),
                   Expanded(
@@ -530,12 +553,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                       description: t.wallet_detail_screen.utxo_organize_description,
                       iconPadding: EdgeInsets.zero,
                       isEnabled: hasUtxo,
-                      onTap:
-                          () => Navigator.pushNamed(
-                            context,
-                            AppRouteNames.utxoOrganizer,
-                            arguments: UtxoOrganizerRouteArgs(id: widget.id),
-                          ),
+                      onTap: () {
+                        _logAction(WalletDetailAction.utxoOrganize);
+                        Navigator.pushNamed(
+                          context,
+                          AppRouteNames.utxoOrganizer,
+                          arguments: UtxoOrganizerRouteArgs(id: widget.id),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -569,12 +594,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                         child: BottomActionButton(
                           iconPath: FeatureTransactionIconPath.receivePlane,
                           label: t.receive,
-                          onTap:
-                              () => Navigator.pushNamed(
-                                context,
-                                AppRouteNames.receiveAddress,
-                                arguments: ReceiveAddressRouteArgs(id: widget.id),
-                              ),
+                          onTap: () {
+                            _logAction(WalletDetailAction.receive);
+                            Navigator.pushNamed(
+                              context,
+                              AppRouteNames.receiveAddress,
+                              arguments: ReceiveAddressRouteArgs(id: widget.id),
+                            );
+                          },
                           buttonLayout: BottomActionButtonLayout.horizontal,
                           textStyle: CoconutTypography.body2_14_Bold,
                         ),
@@ -588,12 +615,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                         child: BottomActionButton(
                           iconPath: FeatureTransactionIconPath.sendPlane,
                           label: t.send,
-                          onTap:
-                              () => Navigator.pushNamed(
-                                context,
-                                AppRouteNames.send,
-                                arguments: SendRouteArgs(id: widget.id, sendEntryPoint: SendEntryPoint.walletDetail),
-                              ),
+                          onTap: () {
+                            _logAction(WalletDetailAction.send);
+                            Navigator.pushNamed(
+                              context,
+                              AppRouteNames.send,
+                              arguments: SendRouteArgs(id: widget.id, sendEntryPoint: SendEntryPoint.walletDetail),
+                            );
+                          },
                           buttonLayout: BottomActionButtonLayout.horizontal,
                           textStyle: CoconutTypography.body2_14_Bold,
                         ),
@@ -624,6 +653,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
         _bottomActionButtonsExpandedNotifier.value = pendingValue;
       }
     });
+  }
+
+  void _logAction(WalletDetailAction action) {
+    _analyticsService.logWalletDetailAction(action);
+  }
+
+  void _onBackupBannerTapped() {
+    _analyticsService.logBackupPromptTapped(BackupPromptLocation.detailBanner);
+    _logAction(WalletDetailAction.backupBanner);
+    _openMnemonicBackup();
   }
 
   void _openTransaction(TransactionRecord transaction) {

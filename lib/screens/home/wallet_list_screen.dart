@@ -13,6 +13,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutPopup,
         CoconutUnderlinedButton;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/wallet_detail_analytics.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -44,6 +45,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
@@ -818,6 +820,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               ? null
               : () {
                 if (isSelected) return;
+                context.read<AnalyticsService>().logWalletFilterChanged(filter);
                 setState(() => _walletFilter = filter);
               },
       child: AnimatedContainer(

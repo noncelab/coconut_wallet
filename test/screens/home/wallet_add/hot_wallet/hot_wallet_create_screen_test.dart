@@ -16,6 +16,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 
 class _FakeWalletProvider extends Fake implements WalletProvider {
   @override
@@ -107,6 +108,7 @@ void main() {
         providers: [
           InheritedProvider<WalletProvider>.value(value: _FakeWalletProvider()),
           InheritedProvider<PreferenceProvider>.value(value: _FakePreferenceProvider()),
+          Provider<AnalyticsService>.value(value: AnalyticsService(null, true)),
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(),

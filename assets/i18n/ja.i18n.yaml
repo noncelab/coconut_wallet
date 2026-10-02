@@ -970,7 +970,6 @@ app_info_screen:
   terms_of_service: "利用規約"
   privacy_policy: "プライバシーポリシー"
   license: "オープンソースライセンス"
-  data_collection: "データ収集通知"
   version_and_date: "CoconutWallet ver. $version (リリース日: $releasedAt)"
   inquiry: "お問い合わせ内容"
 bip39_list_screen:

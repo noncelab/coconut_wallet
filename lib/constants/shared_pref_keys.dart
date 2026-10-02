@@ -81,6 +81,9 @@ class SharedPrefKeys {
   /// kHasLaunchedBefore 절대 초기화 금지
   static const String kHasLaunchedBefore = 'hasLaunchedBefore';
 
+  /// 마지막으로 실행한 앱 버전, 초기화 금지
+  static const String kLastRunAppVersion = 'LAST_RUN_APP_VERSION';
+
   // Block explorer
   static const String kUseDefaultExplorer = 'USE_DEFAULT_EXPLORER';
   static const String kCustomExplorerUrl = 'CUSTOM_EXPLORER_URL';

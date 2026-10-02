@@ -357,6 +357,11 @@ class FakeSharedPrefsRepository extends Fake implements SharedPrefsRepository {
   }
 
   @override
+  Future<void> removeWalletTargetDisabled(int walletId) async {
+    removedWalletIds.add(walletId);
+  }
+
+  @override
   Future<void> removeFaucetHistory(int id) async {
     removedWalletIds.add(id);
   }
@@ -1272,6 +1277,12 @@ void main() {
   group('WalletProvider - getWatchedAddressCount', () {
     const walletId = 1;
 
+    test('목록에 없거나 삭제된 지갑의 마지막 화면 빌드는 감시 주소를 집계하지 않는다', () async {
+      final provider = await _buildProvider(FakeWalletRepository());
+      expect(provider.getWatchedAddressCount(walletId), 0);
+      provider.dispose();
+    });
+
     test('gap window 밖에서 발견된 활성 사용 주소는 고정 개수(2*gapLimit)에 추가로 더한다', () async {
       final addressRepository =
           FakeAddressRepository()
@@ -1280,9 +1291,8 @@ void main() {
               false: [_activeUsedAddress(50, false)],
               true: <WalletAddress>[],
             };
-      final walletRepo = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem()];
-
-      final provider = await _buildProvider(walletRepo, addressRepository: addressRepository);
+      final walletRepository = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem(id: walletId)];
+      final provider = await _buildProvider(walletRepository, addressRepository: addressRepository);
 
       expect(provider.getWatchedAddressCount(walletId), 2 * kSubscriptionGapLimit + 1);
 
@@ -1300,9 +1310,8 @@ void main() {
               false: [_activeUsedAddress(50, false)],
               true: <WalletAddress>[],
             };
-      final walletRepo = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem()];
-
-      final provider = await _buildProvider(walletRepo, addressRepository: addressRepository);
+      final walletRepository = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem(id: walletId)];
+      final provider = await _buildProvider(walletRepository, addressRepository: addressRepository);
 
       expect(provider.getWatchedAddressCount(walletId), 2 * kSubscriptionGapLimit);
 
@@ -1311,9 +1320,8 @@ void main() {
 
     test('활성 사용 주소가 없으면 고정 개수(2*gapLimit)만 반환한다', () async {
       final addressRepository = FakeAddressRepository()..usedIndexesResult = (-1, -1);
-      final walletRepo = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem()];
-
-      final provider = await _buildProvider(walletRepo, addressRepository: addressRepository);
+      final walletRepository = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem(id: walletId)];
+      final provider = await _buildProvider(walletRepository, addressRepository: addressRepository);
 
       expect(provider.getWatchedAddressCount(walletId), 2 * kSubscriptionGapLimit);
 

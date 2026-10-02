@@ -459,6 +459,7 @@ class _LegacyWalletInfoScreenState extends State<LegacyWalletInfoScreen> {
   }
 
   void _showTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
+    if (viewModel.isUpdatingTarget) return;
     final btcString =
         viewModel.targetSats != null ? BalanceFormatUtil.formatSatoshiToBtcInputText(viewModel.targetSats!) : '';
     final parentContext = context;
@@ -484,7 +485,8 @@ class _LegacyWalletInfoScreenState extends State<LegacyWalletInfoScreen> {
         BitcoinUnit.btc.symbol,
         style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
       ),
-      onComplete: (text) {
+      onComplete: (text) async {
+        if (viewModel.isUpdatingTarget) return;
         final btc = text.toDoubleSafe();
         if (btc == null || btc <= 0) {
           if (text.isNotEmpty) {
@@ -512,7 +514,18 @@ class _LegacyWalletInfoScreenState extends State<LegacyWalletInfoScreen> {
 
         final sats = UnitUtil.convertBitcoinToSatoshi(btc);
         if (sats > 0) {
-          viewModel.setTargetSats(sats);
+          try {
+            await viewModel.setTargetSats(sats);
+          } catch (_) {
+            if (!parentContext.mounted) return;
+            CoconutToast.showToast(
+              context: parentContext,
+              isVisibleIcon: true,
+              iconPath: CommonStateIconPath.triangleWarning,
+              text: t.errors.storage_write_error,
+              level: CoconutToastLevel.warning,
+            );
+          }
           return;
         }
 

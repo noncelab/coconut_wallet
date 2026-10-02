@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -10,7 +11,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
   const NegativeFeedbackScreen({super.key});
 
   Future<void> _runKakaoOpenChat(BuildContext context) async {
-    launchURL(context, 'https://open.kakao.com/me/coconutwallet');
+    launchURL(context, 'https://open.kakao.com/me/coconutwallet', destination: ExternalLinkDestination.feedbackChat);
     AppReviewService.setHasReviewed();
     await _stopGettingFeedback(context);
   }

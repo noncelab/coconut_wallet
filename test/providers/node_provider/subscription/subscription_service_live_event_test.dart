@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
@@ -86,15 +87,22 @@ void main() {
       };
 
       final electrumService = ScriptSyncServiceMock.electrumService;
+      final address55 = wallet.walletBase.getAddress(55, isChange: false);
+      final address75 = wallet.walletBase.getAddress(75, isChange: false);
+      when(electrumService.getBalance(any, any)).thenAnswer((invocation) async {
+        final address = invocation.positionalArguments[1] as String;
+        final confirmed =
+            address == address75
+                ? 2000
+                : (preUsedAddresses.contains(address) ? 1000 : (address == address55 ? 500 : 0));
+        return GetBalanceRes(confirmed: confirmed, unconfirmed: 0);
+      });
+      when(electrumService.getHistory(any, any)).thenAnswer((_) async => <GetTxHistoryRes>[]);
+      when(electrumService.getUnspentList(any, any)).thenAnswer((_) async => <ListUnspentRes>[]);
       final subscribedAddresses = <String>[];
       final onUpdateCallbacks = <String, Function(String, String?)>{};
       when(
-        electrumService.subscribeScriptForWallet(
-          any,
-          any,
-          walletId: anyNamed('walletId'),
-          onUpdate: anyNamed('onUpdate'),
-        ),
+        electrumService.subscribeScriptForWallet(any, any, walletId: wallet.id, onUpdate: anyNamed('onUpdate')),
       ).thenAnswer((invocation) async {
         final address = invocation.positionalArguments[1] as String;
         final onUpdate = invocation.namedArguments[#onUpdate] as Function(String, String?);
@@ -114,9 +122,9 @@ void main() {
       );
 
       // Given: 초기 구독 (섬 75 + 41~60 gap window 포함)
-      await subscriptionService.subscribeWallet(wallet);
+      final result = await subscriptionService.subscribeWallet(wallet);
+      expect(result.isSuccess, true);
 
-      final address75 = wallet.walletBase.getAddress(75, isChange: false);
       expect(subscribedAddresses.contains(address75), isTrue, reason: '섬(75)은 잔액이 있으므로 초기 구독에 포함돼야 한다.');
       for (var i = 61; i <= 95; i++) {
         if (i == 75) continue; // 75는 섬이라 이미 구독돼 있어야 정상
@@ -125,13 +133,15 @@ void main() {
       }
 
       // When: index 55가 실시간으로 사용됨 (Electrum 서버로부터의 push 알림 시뮬레이션)
-      final address55 = wallet.walletBase.getAddress(55, isChange: false);
       final onUpdate55 = onUpdateCallbacks[address55];
       expect(onUpdate55, isNotNull, reason: 'index 55는 초기 gap window(41~60)에 포함되어 있어야 구독돼 있다.');
       onUpdate55!('dummyScriptHash', 'newTipStatusHash');
 
       // 라이브 이벤트 처리(큐 처리 + 1초 인덱싱 지연 + fire-and-forget 확장)가 끝날 때까지 대기
       await Future.delayed(const Duration(seconds: 2));
+      verify(electrumService.getBalance(wallet.walletBase.addressType, address55)).called(1);
+      verify(electrumService.getHistory(wallet.walletBase.addressType, address55)).called(1);
+      verify(electrumService.getUnspentList(wallet.walletBase.addressType, address55)).called(1);
 
       // Then: 섬(75)이 새 baseline이 되었다면, 75 + kSubscriptionGapLimit(20) = 95까지 구독돼야 한다.
       final missingExtendedIndexes = <int>[];

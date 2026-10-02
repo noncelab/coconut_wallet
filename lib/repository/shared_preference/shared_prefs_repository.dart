@@ -149,7 +149,7 @@ class SharedPrefsRepository {
             )
             : {};
     map[walletId.toString()] = targetSats;
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map));
+    await _persistTargetPreference(() => _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map)));
   }
 
   Future<void> removeWalletTargetSats(int walletId) async {
@@ -159,13 +159,23 @@ class SharedPrefsRepository {
       (k, v) => MapEntry(k, v is int ? v : int.parse(v.toString())),
     );
     map.remove(walletId.toString());
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map));
+    await _persistTargetPreference(() => _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map)));
   }
 
   bool isWalletTargetDisabled(int walletId) => getBool(SharedPrefKeys.walletTargetDisabled(walletId));
 
   Future<void> setWalletTargetDisabled(int walletId, bool disabled) async {
-    await setBool(SharedPrefKeys.walletTargetDisabled(walletId), disabled);
+    await _persistTargetPreference(() => _sharedPrefs.setBool(SharedPrefKeys.walletTargetDisabled(walletId), disabled));
+  }
+
+  Future<void> _persistTargetPreference(Future<bool> Function() write) async {
+    try {
+      if (!await write()) throw StateError('Failed to save wallet target');
+    } catch (_) {
+      // SharedPreferences updates its cache before the platform confirms persistence.
+      await _sharedPrefs.reload();
+      rethrow;
+    }
   }
 
   Future<void> removeWalletTargetDisabled(int walletId) async {

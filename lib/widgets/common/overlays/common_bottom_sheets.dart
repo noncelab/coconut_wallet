@@ -3,14 +3,12 @@ import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/bottom_sheet/selectable_list_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:provider/provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 class CommonBottomSheets {
@@ -35,9 +33,9 @@ class CommonBottomSheets {
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
     final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
-    context.read<AnalyticsService>().logScreenView(screenName: screenName);
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(topLeft: Radius.circular(24.0), topRight: Radius.circular(24.0)),
       ),
@@ -160,10 +158,9 @@ class CommonBottomSheets {
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
     final sheetHeight = MediaQuery.of(context).size.height * heightRatio;
-    context.read<AnalyticsService>().logScreenView(screenName: screenName);
-
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -251,9 +248,9 @@ class CommonBottomSheets {
     AnimationController? animationController,
     ShapeBorder? shape,
   }) async {
-    context.read<AnalyticsService>().logScreenView(screenName: screenName);
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       builder: (context) {
         return child; // child screen에서 type <T>를 반환하면 반환됩니다.
       },
@@ -297,10 +294,9 @@ class CommonBottomSheets {
     // initialChildSize가 maxChildSize를 초과하지 않도록 보장
     final finalInitialSize = calculatedInitialSize > maxChildSize ? maxChildSize : calculatedInitialSize;
 
-    context.read<AnalyticsService>().logScreenView(screenName: screenName);
-
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
@@ -503,9 +499,9 @@ class CommonBottomSheets {
     if (maxHeight >= adjustedMinChildSize) {
       adjustedMinChildSize = maxHeight + 0.0001;
     }
-    context.read<AnalyticsService>().logScreenView(screenName: screenName);
     return showModalBottomSheet<T>(
       context: context,
+      routeSettings: RouteSettings(name: screenName),
       builder: (context) {
         return DraggableScrollableSheet(
           expand: expand,

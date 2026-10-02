@@ -245,9 +245,9 @@ class WalletAddDialog extends StatelessWidget {
   }
 
   Future<void> _openHotWalletScreen(BuildContext context, String routeName) async {
+    context.read<AnalyticsService>().logHotWalletActionSelected(isRestore: routeName == AppRouteNames.hotWalletRestore);
     if (!await _ensureDevicePasscodeIsSet(context) || !context.mounted) return;
 
-    context.read<AnalyticsService>().logHotWalletFlowEntered(isRestore: routeName == AppRouteNames.hotWalletRestore);
     final navigator = Navigator.of(context);
     navigator.pop();
     navigator.pushNamed(routeName);
