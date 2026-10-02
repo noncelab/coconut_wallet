@@ -212,7 +212,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           bool,
           Map<int, AnimatedBalanceData>,
           Tuple2<int?, Map<int, dynamic>>,
-          Tuple2<NetworkStatus, String>
+          Tuple3<NetworkStatus, bool, String>
         >
       >(
         selector:
@@ -223,7 +223,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               vm.shouldShowLoadingIndicator,
               vm.walletBalanceMap,
               Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
-              Tuple2(vm.networkStatus, vm.unacknowledgedOlderToAfterBackupUpdateWalletIdsSignature),
+              Tuple3(
+                vm.networkStatus,
+                vm.showElectrumReconnected,
+                vm.unacknowledgedOlderToAfterBackupUpdateWalletIdsSignature,
+              ),
             ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletHomeViewModel>(context, listen: false);
@@ -241,6 +245,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           final walletBalanceMap = data.item5;
           final fakeBalanceData = data.item6;
           final networkStatus = data.item7.item1;
+          final showElectrumReconnected = data.item7.item2;
           final homeFeatures = viewModel.homeFeatures;
           final hasEnabledHomeFeature = homeFeatures.any((feature) => feature.isEnabled);
 
@@ -289,7 +294,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         physics: const AlwaysScrollableScrollPhysics(),
                         semanticChildCount: walletItem.length,
                         slivers: <Widget>[
-                          _buildAppBar(networkStatus),
+                          _buildAppBar(networkStatus, showElectrumReconnected),
                           // pull to refresh시 로딩 인디케이터를 보이기 위함
                           CupertinoSliverRefreshControl(onRefresh: viewModel.onRefresh),
                           _buildBackupUpdateNotice(viewModel, walletItem),
@@ -2123,26 +2128,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  SliverAppBar _buildAppBar(NetworkStatus networkStatus) {
-    final shouldShow = networkStatus != NetworkStatus.online;
-
-    String message;
-    switch (networkStatus) {
-      case NetworkStatus.offline:
-        message = t.errors.network_disconnected;
-        break;
-      case NetworkStatus.connectionFailed:
-        message = t.errors.electrum_connection_failed;
-        break;
-      case NetworkStatus.vpnBlocked:
-        message = t.errors.vpn_connected;
-        break;
-      case NetworkStatus.online:
-        message = '';
-        break;
-    }
-    if (message.isNotEmpty) Logger.log('Error message: $message');
-
+  SliverAppBar _buildAppBar(NetworkStatus networkStatus, bool showElectrumReconnected) {
     return CoconutAppBar.buildHomeAppbar(
       context: context,
       leadingSvgAsset: Transform.translate(
@@ -2156,28 +2142,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           transitionBuilder: (child, animation) {
             return FadeTransition(opacity: animation, child: child);
           },
-          child:
-              shouldShow
-                  ? Row(
-                    key: const ValueKey('error_message'),
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      SvgPicture.asset(FeatureConnectivityIconPath.cloudDisconnected, width: 16),
-                      CoconutLayout.spacing_150w,
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width - 160,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            message,
-                            style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.danger),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                  : const SizedBox.shrink(key: ValueKey('empty')),
+          child: _buildConnectionBanner(networkStatus, showElectrumReconnected),
         ),
       ),
       appTitle: '',
@@ -2206,6 +2171,52 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         ),
       ],
     );
+  }
+
+  Widget _buildConnectionBanner(NetworkStatus networkStatus, bool showElectrumReconnected) {
+    final showingError = networkStatus != NetworkStatus.online;
+    if (!showingError && !showElectrumReconnected) {
+      return const SizedBox.shrink(key: ValueKey('empty'));
+    }
+
+    final restored = !showingError;
+    final message = restored ? t.errors.electrum_connection_restored : _connectionErrorMessage(networkStatus);
+    final color = restored ? context.coconutColors.success : context.coconutColors.danger;
+    if (showingError) Logger.log('Error message: $message');
+
+    return Row(
+      key: ValueKey(restored ? 'reconnected_message' : 'error_message'),
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        SvgPicture.asset(
+          restored ? CommonFormIconPath.circleCheck : FeatureConnectivityIconPath.cloudDisconnected,
+          width: 16,
+          colorFilter: restored ? ColorFilter.mode(color, BlendMode.srcIn) : null,
+        ),
+        CoconutLayout.spacing_150w,
+        SizedBox(
+          width: MediaQuery.of(context).size.width - 160,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(message, style: CoconutTypography.body3_12_Bold.setColor(color)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _connectionErrorMessage(NetworkStatus networkStatus) {
+    switch (networkStatus) {
+      case NetworkStatus.offline:
+        return t.errors.network_disconnected;
+      case NetworkStatus.connectionFailed:
+        return t.errors.electrum_connection_failed;
+      case NetworkStatus.vpnBlocked:
+        return t.errors.vpn_connected;
+      case NetworkStatus.online:
+        return '';
+    }
   }
 
   Widget _buildAppBarIconButton({required Widget icon, required VoidCallback onPressed, Key? key}) {

@@ -32,6 +32,7 @@ import 'package:provider/provider.dart';
 
 class BitBox02ConnectScreen extends StatefulWidget {
   final WalletImportSource importSource;
+  final int? walletId;
 
   /// When non-null, the screen is in "sign flow" mode:
   /// after pairing, the button navigates to /bitbox02-sign instead of adding the wallet.
@@ -43,6 +44,7 @@ class BitBox02ConnectScreen extends StatefulWidget {
   const BitBox02ConnectScreen({
     super.key,
     required this.importSource,
+    this.walletId,
     this.psbtBase64,
     this.walletName,
     this.walletFingerprint,
@@ -345,6 +347,7 @@ class _BitBox02ConnectScreenState extends State<BitBox02ConnectScreen> {
           context,
           AppRouteNames.bitbox02Sign,
           arguments: BitBox02SignRouteArgs(
+            walletId: widget.walletId!,
             psbtBase64: widget.psbtBase64!,
             walletName: widget.walletName ?? '',
             walletFingerprint: widget.walletFingerprint ?? '',

@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/features/qr/adaptive_qr_image.dart';
+import 'package:coconut_wallet/widgets/features/qr/animated_qr/view_data_handler/i_qr_view_data_handler.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,8 @@ class QrCodeInfo extends StatefulWidget {
   final GlobalKey? qrCaptureKey;
   final TextStyle? textStyle;
   final double? qrInternalPadding;
+  final EdgeInsets qrPadding;
+  final IQrViewDataHandler? qrViewDataHandler;
 
   const QrCodeInfo({
     super.key,
@@ -24,6 +27,8 @@ class QrCodeInfo extends StatefulWidget {
     this.qrCaptureKey,
     this.textStyle,
     this.qrInternalPadding,
+    this.qrViewDataHandler,
+    this.qrPadding = const EdgeInsets.all(12),
   });
 
   @override
@@ -40,9 +45,12 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
         RepaintBoundary(
           key: widget.qrCaptureKey,
           child: AdaptiveQrImage(
-            qrData: widget.qrData,
+            key: ValueKey(widget.qrViewDataHandler == null ? 'static-${widget.qrData}' : 'animated-${widget.qrData}'),
+            qrData: widget.qrViewDataHandler == null ? widget.qrData : null,
+            qrViewDataHandler: widget.qrViewDataHandler,
             embedWidget: widget.embedWidget,
             qrInternalPadding: widget.qrInternalPadding,
+            qrPadding: widget.qrPadding,
           ),
         ),
         const SizedBox(height: 32),

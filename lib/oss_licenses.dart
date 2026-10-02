@@ -1586,7 +1586,7 @@ const _clock = Package(
   dependencies: [],
 );
 
-/// coconut_design_system 0.11.0
+/// coconut_design_system 0.11.2
 const _coconut_design_system = Package(
   name: 'coconut_design_system',
   description:
@@ -1594,7 +1594,7 @@ const _coconut_design_system = Package(
   homepage: 'https://www.noncelab.com',
   repository: 'https://github.com/noncelab/coconut_design_system',
   authors: [],
-  version: '0.11.0',
+  version: '0.11.2',
   license: '''MIT License
 
 Copyright 2025 Nonce Lab
