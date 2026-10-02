@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAp
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/app_settings/analytics_collection_setting.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -306,9 +307,14 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
 
                     // 앱 정보 보기
                     _category(t.app_info),
-                    _buildAnimatedButton(
-                      title: t.view_app_info,
-                      onPressed: () => Navigator.pushNamed(context, AppRouteNames.appInfo),
+                    ButtonGroup(
+                      buttons: [
+                        _buildAnimatedButton(
+                          title: t.view_app_info,
+                          onPressed: () => Navigator.pushNamed(context, AppRouteNames.appInfo),
+                        ),
+                        const AnalyticsCollectionSetting(),
+                      ],
                     ),
 
                     const SizedBox(height: 100),

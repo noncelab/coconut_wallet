@@ -48,6 +48,9 @@ class SharedPrefKeys {
   /// Fiat
   static const String kSelectedFiat = 'SELECTED_FIAT';
 
+  /// Firebase Analytics 수집 여부. 비밀번호 초기화 시에도 사용자 선택을 유지합니다.
+  static const String kAnalyticsCollectionEnabled = 'ANALYTICS_COLLECTION_ENABLED';
+
   /// 보내기 화면 수신자 추가 카드 확인 여부
   static const String kHasSeenAddRecipientCard = "HAS_SEEN_ADD_RECIPIENT_CARD";
 
