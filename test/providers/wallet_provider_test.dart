@@ -66,6 +66,8 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   int convertWatchOnlyWalletCallCount = 0;
   late SinglesigWalletItem convertWatchOnlyWalletResult;
   Object? convertWatchOnlyWalletError;
+  int convertHotWalletCallCount = 0;
+  late SinglesigWalletItem convertHotWalletResult;
 
   int addMultisigWalletCallCount = 0;
   late MultisigWalletItem addMultisigWalletResult;
@@ -157,6 +159,15 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   }
 
   @override
+  Future<SinglesigWalletItem> convertHotWalletToWatchOnly(int walletId, WatchOnlyWallet watchOnlyWallet) async {
+    convertHotWalletCallCount++;
+    final index = walletItems.indexWhere((wallet) => wallet.id == walletId);
+    walletItems[index] = convertHotWalletResult;
+    hotWalletMetadata.removeWhere((metadata) => metadata.walletId == walletId);
+    return convertHotWalletResult;
+  }
+
+  @override
   Future<void> updateHotWalletLifecycleState(int walletId, HotWalletLifecycleState state) async {
     lifecycleUpdates.add((walletId, state));
     final index = hotWalletMetadata.indexWhere((metadata) => metadata.walletId == walletId);
@@ -229,6 +240,7 @@ class FakeUtxoRepository extends Fake implements UtxoRepository {}
 
 class FakePreferenceProvider extends Fake implements PreferenceProvider {
   final List<int> removedWalletIds = [];
+  List<int> favoriteWalletIdsValue = [];
   Completer<void>? walletOrderSaveGate;
   Completer<void>? favoriteWalletSaveGate;
   Object? walletOrderSaveError;
@@ -252,13 +264,14 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   }
 
   @override
-  List<int> get favoriteWalletIds => [];
+  List<int> get favoriteWalletIds => favoriteWalletIdsValue;
 
   @override
   Future<void> setFavoriteWalletIds(List<int> ids) async {
     setFavoriteWalletIdsCallCount++;
     await favoriteWalletSaveGate?.future;
     if (favoriteWalletSaveError != null) throw favoriteWalletSaveError!;
+    favoriteWalletIdsValue = List<int>.of(ids);
   }
 
   @override
@@ -269,6 +282,7 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   @override
   Future<void> removeFavoriteWalletId(int walletId) async {
     removedWalletIds.add(walletId);
+    favoriteWalletIdsValue.remove(walletId);
   }
 
   @override
@@ -653,6 +667,78 @@ void main() {
 
       expect(result.result, WalletSyncResult.newWalletAdded);
       expect(walletRepo.lastSinglesigWallet?.name, 'Same Wallet');
+
+      provider.dispose();
+    });
+
+    test('기존 핫월렛 삭제를 선택하면 같은 ID를 유지한 Watch-only로 전환하고 secret을 삭제함', () async {
+      final existingHotWallet = _createSinglesigWalletListItem(name: 'Hot Wallet', isHotWallet: true);
+      final convertedWallet = _createSinglesigWalletListItem(id: existingHotWallet.id, name: 'Watch-only Wallet');
+      final walletRepo =
+          FakeWalletRepository()
+            ..walletItems = [existingHotWallet]
+            ..hotWalletMetadata = [existingHotWallet.hotWalletMetadata!]
+            ..convertHotWalletResult = convertedWallet;
+      final secretRepository = FakeHotWalletSecretRepository({existingHotWallet.hotWalletMetadata!.secureStorageKey});
+      final preferenceProvider = FakePreferenceProvider();
+
+      final provider = await _buildProvider(
+        walletRepo,
+        secretRepository: secretRepository,
+        preferenceProvider: preferenceProvider,
+      );
+      final duplicateResult = await provider.syncFromCoconutVault(
+        _createSinglesigWatchOnlyWallet(name: convertedWallet.name),
+      );
+      final result = await provider.confirmWatchOnlyWalletAddition(duplicateResult, removeExistingHotWallet: true);
+
+      expect(result.result, WalletSyncResult.newWalletAdded);
+      expect(result.walletId, existingHotWallet.id);
+      expect(walletRepo.convertHotWalletCallCount, 1);
+      expect(walletRepo.addSinglesigWalletCallCount, 0);
+      expect(walletRepo.deletedWalletIds, isEmpty);
+      expect(secretRepository.deletedKeys, [existingHotWallet.hotWalletMetadata!.secureStorageKey]);
+      expect(provider.getWalletById(existingHotWallet.id).hasLocalKey, isFalse);
+      expect(preferenceProvider.favoriteWalletIds, [existingHotWallet.id]);
+
+      provider.dispose();
+    });
+
+    test('핫월렛을 Watch-only로 전환할 때 보기 전용 즐겨찾기가 5개면 기존 즐겨찾기를 해제함', () async {
+      final existingHotWallet = _createSinglesigWalletListItem(id: 1, name: 'Hot Wallet', isHotWallet: true);
+      final convertedWallet = _createSinglesigWalletListItem(id: existingHotWallet.id, name: 'Watch-only Wallet');
+      final existingWatchOnlyWallets = List.generate(
+        5,
+        (index) => SinglesigWalletItem(
+          id: index + 2,
+          name: 'Watch-only ${index + 1}',
+          colorIndex: 0,
+          iconIndex: 0,
+          descriptor: SingleSignatureVault.random().descriptor,
+        ),
+      );
+      final walletRepo =
+          FakeWalletRepository()
+            ..walletItems = [existingHotWallet, ...existingWatchOnlyWallets]
+            ..hotWalletMetadata = [existingHotWallet.hotWalletMetadata!]
+            ..convertHotWalletResult = convertedWallet;
+      final secretRepository = FakeHotWalletSecretRepository({existingHotWallet.hotWalletMetadata!.secureStorageKey});
+      final preferenceProvider =
+          FakePreferenceProvider()
+            ..favoriteWalletIdsValue = [existingHotWallet.id, ...existingWatchOnlyWallets.map((wallet) => wallet.id)];
+
+      final provider = await _buildProvider(
+        walletRepo,
+        secretRepository: secretRepository,
+        preferenceProvider: preferenceProvider,
+      );
+      final duplicateResult = await provider.syncFromCoconutVault(
+        _createSinglesigWatchOnlyWallet(name: convertedWallet.name),
+      );
+      await provider.confirmWatchOnlyWalletAddition(duplicateResult, removeExistingHotWallet: true);
+
+      expect(preferenceProvider.favoriteWalletIds, existingWatchOnlyWallets.map((wallet) => wallet.id).toList());
+      expect(preferenceProvider.favoriteWalletIds, hasLength(5));
 
       provider.dispose();
     });

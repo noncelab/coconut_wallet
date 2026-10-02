@@ -558,13 +558,56 @@ class WalletProvider extends ChangeNotifier {
       throw StateError('Pending watch-only wallet information is missing');
     }
 
+    if (removeExistingHotWallet) {
+      return _hotWalletLifecycleLock.synchronized(() async {
+        final resolvedName = resolveWalletNameConflict(
+          desiredName: wallet.name,
+          descriptor: wallet.descriptor,
+          isSingleSig: true,
+          excludeWalletId: existingHotWalletId,
+        );
+        if (resolvedName == null) {
+          return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
+        }
+        final watchOnlyWallet = _copyWithNewName(wallet, resolvedName);
+        final hotWalletMetadata = _walletRepository.getHotWalletMetadata(existingHotWalletId);
+        if (hotWalletMetadata == null) {
+          throw StateError('Hot wallet metadata not found: $existingHotWalletId');
+        }
+
+        final convertedWallet = await _walletRepository.convertHotWalletToWatchOnly(
+          existingHotWalletId,
+          watchOnlyWallet,
+        );
+        await _deleteHotWalletSecretIgnoringFailure(hotWalletMetadata.secureStorageKey);
+
+        final targetIndex = _walletItemList.indexWhere((item) => item.id == existingHotWalletId);
+        if (targetIndex == -1) {
+          _setWalletItemList(await _fetchWalletListFromDB());
+        } else {
+          final updatedWallets = List<WalletItemBase>.of(_walletItemList);
+          updatedWallets[targetIndex] = convertedWallet;
+          _setWalletItemList(updatedWallets);
+        }
+
+        // 기존 핫월렛의 즐겨찾기 상태를 제거한 뒤, 전환된 보기 전용 지갑을
+        // 보기 전용 즐겨찾기 제한(최대 5개)에 맞춰 다시 등록한다.
+        try {
+          await _preferenceProvider.removeFavoriteWalletId(existingHotWalletId);
+          await addToFavoriteWalletsUntilTypeLimit(existingHotWalletId);
+        } catch (error) {
+          Logger.error('Failed to update favorites after hot wallet conversion: $error');
+        }
+        notifyListeners();
+
+        return ResultOfSyncFromVault(result: WalletSyncResult.newWalletAdded, walletId: existingHotWalletId);
+      });
+    }
+
     final result =
         duplicateResult.isCoconutVaultWallet == true
             ? await syncFromCoconutVault(wallet, allowExistingHotWallet: true)
             : await syncFromThirdParty(wallet, allowExistingHotWallet: true);
-    if (removeExistingHotWallet && result.result == WalletSyncResult.newWalletAdded) {
-      await deleteWallet(existingHotWalletId);
-    }
     return result;
   }
 
