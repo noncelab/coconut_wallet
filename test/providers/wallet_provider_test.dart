@@ -32,10 +32,8 @@ const _parentTaprootXpub =
     "tpubDDMbU29QrSafD2Ui4yGv31Xp3PPSMvudreoohYjR8xLTng7hbsjYwUTeRhiKULFqX16M5M8zZh9siw5i6RRyisc6LtWjr1FwBYTiZUGGYJN";
 const _childTaprootXpub =
     "tpubDCp2emt17Ng6ujD8BC6ScL4vfwhN3nAJQ8kCqLjRQHxcFhWt6YK5Ws6UcKD6HgLCZuwU8DryKo7h2gpieLa7Q9YF1AqfL9XiF7349nHaLi8";
-const _inheritanceMiniscript =
-    "and_v(v:pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*),after(500000000))";
-const _oneParentDescriptor =
-    "tr([9B1441E4/86'/1'/0']$_parentTaprootXpub/<0;1>/*,{$_inheritanceMiniscript})#652j50l8";
+const _inheritanceMiniscript = "and_v(v:pk([70C4E9DE/86'/1'/0']$_childTaprootXpub/<0;1>/*),after(500000000))";
+const _oneParentDescriptor = "tr([9B1441E4/86'/1'/0']$_parentTaprootXpub/<0;1>/*,{$_inheritanceMiniscript})#652j50l8";
 
 const _singlesigDescriptor =
     "wpkh([D45AA182/84'/1'/0']vpub5YtEovN9MqeUZxWqdpUKngsiaLCPFY34KpWGQVk9Tjq8G5SYcRFj9s5aCKeAQYGunG7LrFkA5obtH8kPJiv92JtWHfRvnir6PDvhd4p93Pp/<0;1>/*)#rcn2hj6y";
@@ -80,21 +78,14 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   Future<List<WalletItemBase>> getWalletItemList() async => walletItems;
 
   @override
-  List<HotWalletMetadata> getHotWalletMetadataList() =>
-      List.unmodifiable(hotWalletMetadata);
+  List<HotWalletMetadata> getHotWalletMetadataList() => List.unmodifiable(hotWalletMetadata);
 
   @override
   HotWalletMetadata? getHotWalletMetadata(int walletId) =>
-      hotWalletMetadata
-          .where((metadata) => metadata.walletId == walletId)
-          .firstOrNull;
+      hotWalletMetadata.where((metadata) => metadata.walletId == walletId).firstOrNull;
 
   @override
-  bool containsWalletName(
-    String name, {
-    int? excludeWalletId,
-    String? matchingWatchOnlyDescriptor,
-  }) => walletItems.any(
+  bool containsWalletName(String name, {int? excludeWalletId, String? matchingWatchOnlyDescriptor}) => walletItems.any(
     (wallet) =>
         wallet.id != excludeWalletId &&
         wallet.name == name &&
@@ -102,32 +93,23 @@ class FakeWalletRepository extends Fake implements WalletRepository {
             wallet is SinglesigWalletItem &&
             !wallet.hasLocalKey &&
             wallet.walletBase.getAddress(0) ==
-                SingleSignatureWallet.fromDescriptor(
-                  matchingWatchOnlyDescriptor,
-                ).getAddress(0)),
+                SingleSignatureWallet.fromDescriptor(matchingWatchOnlyDescriptor).getAddress(0)),
   );
 
   @override
   bool containsHotWalletDescriptor(String descriptor) => hotWalletMetadata.any(
-    (metadata) => walletItems.any(
-      (wallet) =>
-          wallet.id == metadata.walletId && wallet.descriptor == descriptor,
-    ),
+    (metadata) => walletItems.any((wallet) => wallet.id == metadata.walletId && wallet.descriptor == descriptor),
   );
 
   @override
-  Future<TaprootWalletItem> addTaprootWallet(
-    WatchOnlyWallet watchOnlyWallet,
-  ) async {
+  Future<TaprootWalletItem> addTaprootWallet(WatchOnlyWallet watchOnlyWallet) async {
     addTaprootWalletCallCount++;
     lastTaprootWallet = watchOnlyWallet;
     return addTaprootWalletResult;
   }
 
   @override
-  Future<SinglesigWalletItem> addSinglesigWallet(
-    WatchOnlyWallet watchOnlyWallet,
-  ) async {
+  Future<SinglesigWalletItem> addSinglesigWallet(WatchOnlyWallet watchOnlyWallet) async {
     addSinglesigWalletCallCount++;
     lastSinglesigWallet = watchOnlyWallet;
     return addSinglesigWalletResult;
@@ -171,17 +153,13 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   }) async {
     convertWatchOnlyWalletCallCount++;
     if (convertWatchOnlyWalletError != null) throw convertWatchOnlyWalletError!;
-    walletItems[walletItems.indexWhere((wallet) => wallet.id == walletId)] =
-        convertWatchOnlyWalletResult;
+    walletItems[walletItems.indexWhere((wallet) => wallet.id == walletId)] = convertWatchOnlyWalletResult;
     hotWalletMetadata.add(convertWatchOnlyWalletResult.hotWalletMetadata!);
     return convertWatchOnlyWalletResult;
   }
 
   @override
-  Future<SinglesigWalletItem> convertHotWalletToWatchOnly(
-    int walletId,
-    WatchOnlyWallet watchOnlyWallet,
-  ) async {
+  Future<SinglesigWalletItem> convertHotWalletToWatchOnly(int walletId, WatchOnlyWallet watchOnlyWallet) async {
     convertHotWalletCallCount++;
     final index = walletItems.indexWhere((wallet) => wallet.id == walletId);
     walletItems[index] = convertHotWalletResult;
@@ -190,14 +168,9 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   }
 
   @override
-  Future<void> updateHotWalletLifecycleState(
-    int walletId,
-    HotWalletLifecycleState state,
-  ) async {
+  Future<void> updateHotWalletLifecycleState(int walletId, HotWalletLifecycleState state) async {
     lifecycleUpdates.add((walletId, state));
-    final index = hotWalletMetadata.indexWhere(
-      (metadata) => metadata.walletId == walletId,
-    );
+    final index = hotWalletMetadata.indexWhere((metadata) => metadata.walletId == walletId);
     final current = hotWalletMetadata[index];
     hotWalletMetadata[index] = HotWalletMetadata(
       walletId: current.walletId,
@@ -211,8 +184,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
       lifecycleState: state,
     );
     walletItems.removeWhere((wallet) => wallet.id == walletId);
-    if (state == HotWalletLifecycleState.active &&
-        addHotWalletResult.id == walletId) {
+    if (state == HotWalletLifecycleState.active && addHotWalletResult.id == walletId) {
       walletItems.add(addHotWalletResult);
     }
   }
@@ -226,9 +198,7 @@ class FakeWalletRepository extends Fake implements WalletRepository {
   }
 
   @override
-  Future<MultisigWalletItem> addMultisigWallet(
-    WatchOnlyWallet watchOnlyWallet,
-  ) async {
+  Future<MultisigWalletItem> addMultisigWallet(WatchOnlyWallet watchOnlyWallet) async {
     addMultisigWalletCallCount++;
     return addMultisigWalletResult;
   }
@@ -246,9 +216,7 @@ class FakeAddressRepository extends Fake implements AddressRepository {
   int ensureAddressesInitCallCount = 0;
 
   @override
-  Future<void> ensureAddressesInit({
-    required WalletItemBase walletItemBase,
-  }) async {
+  Future<void> ensureAddressesInit({required WalletItemBase walletItemBase}) async {
     ensureAddressesInitCallCount++;
     if (error != null) throw error!;
   }
@@ -260,20 +228,11 @@ class FakeAddressRepository extends Fake implements AddressRepository {
   (int, int) getUsedIndexes(int walletId) => usedIndexesResult;
 
   @override
-  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) =>
-      activeUsedAddressesResult[isChange] ?? [];
+  List<WalletAddress> getActiveUsedAddresses(int walletId, bool isChange) => activeUsedAddressesResult[isChange] ?? [];
 }
 
-WalletAddress _activeUsedAddress(int index, bool isChange) => WalletAddress(
-  'addr_$index',
-  'm/0/$index',
-  index,
-  isChange,
-  true,
-  1000,
-  0,
-  1000,
-);
+WalletAddress _activeUsedAddress(int index, bool isChange) =>
+    WalletAddress('addr_$index', 'm/0/$index', index, isChange, true, 1000, 0, 1000);
 
 class FakeTransactionRepository extends Fake implements TransactionRepository {}
 
@@ -289,9 +248,7 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   int setWalletOrderCallCount = 0;
   int setFavoriteWalletIdsCallCount = 0;
   @override
-  Future<void> setWalletPreferences(
-    List<WalletItemBase> walletItemList,
-  ) async {}
+  Future<void> setWalletPreferences(List<WalletItemBase> walletItemList) async {}
 
   @override
   bool get isFakeBalanceActive => false;
@@ -354,8 +311,7 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   void removeListener(VoidCallback listener) {}
 }
 
-class FakeHotWalletSecretRepository extends Fake
-    implements HotWalletSecretRepository {
+class FakeHotWalletSecretRepository extends Fake implements HotWalletSecretRepository {
   final Set<String> storedKeys;
   final List<String> deletedKeys = [];
   Completer<void>? getKeysGate;
@@ -364,8 +320,7 @@ class FakeHotWalletSecretRepository extends Fake
   int cleanupAliasesCallCount = 0;
   Set<String>? lastAliasCleanupReferencedKeys;
 
-  FakeHotWalletSecretRepository([Set<String>? storedKeys])
-    : storedKeys = storedKeys ?? {};
+  FakeHotWalletSecretRepository([Set<String>? storedKeys]) : storedKeys = storedKeys ?? {};
 
   @override
   Future<bool> contains(String storageKey) async {
@@ -387,9 +342,7 @@ class FakeHotWalletSecretRepository extends Fake
   }
 
   @override
-  Future<void> cleanupOrphanHardwareAliases(
-    Set<String> referencedStorageKeys,
-  ) async {
+  Future<void> cleanupOrphanHardwareAliases(Set<String> referencedStorageKeys) async {
     cleanupAliasesCallCount++;
     lastAliasCleanupReferencedKeys = Set<String>.of(referencedStorageKeys);
   }
@@ -559,10 +512,7 @@ TaprootWalletItem _createTaprootWalletListItem({
     descriptor: _oneParentDescriptor,
     keyPathSeedInfos: [_parentTaprootXpub],
     scriptPathSeedInfos: [
-      TaprootScriptPathSeedInfo(
-        miniscript: _inheritanceMiniscript,
-        extendedPublicKeys: [_childTaprootXpub],
-      ),
+      TaprootScriptPathSeedInfo(miniscript: _inheritanceMiniscript, extendedPublicKeys: [_childTaprootXpub]),
     ],
   );
 }
@@ -582,8 +532,7 @@ Future<WalletProvider> _buildProvider(
     walletRepository,
     (_) async {},
     preferenceProvider ?? FakePreferenceProvider(),
-    hotWalletSecretRepository:
-        secretRepository ?? FakeHotWalletSecretRepository(),
+    hotWalletSecretRepository: secretRepository ?? FakeHotWalletSecretRepository(),
     sharedPrefsRepository: sharedPrefsRepository ?? FakeSharedPrefsRepository(),
   );
   // 생성자 내 _loadWalletListFromDB().then(...) 완료 대기
@@ -612,9 +561,7 @@ void main() {
 
       final provider = await _buildProvider(walletRepo);
 
-      final result = await provider.syncFromCoconutVault(
-        _createTaprootWatchOnlyWallet(createdAt: createdAt),
-      );
+      final result = await provider.syncFromCoconutVault(_createTaprootWatchOnlyWallet(createdAt: createdAt));
 
       expect(result.result, WalletSyncResult.newWalletAdded);
       expect(walletRepo.addTaprootWalletCallCount, 1);
@@ -629,9 +576,7 @@ void main() {
 
       final provider = await _buildProvider(walletRepo);
 
-      final result = await provider.syncFromCoconutVault(
-        _createTaprootWatchOnlyWallet(),
-      );
+      final result = await provider.syncFromCoconutVault(_createTaprootWatchOnlyWallet());
 
       expect(result.result, WalletSyncResult.existingWalletNoUpdate);
       expect(walletRepo.addTaprootWalletCallCount, 0);
@@ -639,25 +584,20 @@ void main() {
       provider.dispose();
     });
 
-    test(
-      '기존 지갑 이름 변경 시 updateWalletUI 호출 및 existingWalletUpdated 반환',
-      () async {
-        final existingItem = _createTaprootWalletListItem(name: 'Old Name');
-        final walletRepo = FakeWalletRepository()..walletItems = [existingItem];
+    test('기존 지갑 이름 변경 시 updateWalletUI 호출 및 existingWalletUpdated 반환', () async {
+      final existingItem = _createTaprootWalletListItem(name: 'Old Name');
+      final walletRepo = FakeWalletRepository()..walletItems = [existingItem];
 
-        final provider = await _buildProvider(walletRepo);
+      final provider = await _buildProvider(walletRepo);
 
-        final result = await provider.syncFromCoconutVault(
-          _createTaprootWatchOnlyWallet(name: 'New Name'),
-        );
+      final result = await provider.syncFromCoconutVault(_createTaprootWatchOnlyWallet(name: 'New Name'));
 
-        expect(result.result, WalletSyncResult.existingWalletUpdated);
-        expect(walletRepo.updateWalletUICallCount, 1);
-        expect(walletRepo.addTaprootWalletCallCount, 0);
+      expect(result.result, WalletSyncResult.existingWalletUpdated);
+      expect(walletRepo.updateWalletUICallCount, 1);
+      expect(walletRepo.addTaprootWalletCallCount, 0);
 
-        provider.dispose();
-      },
-    );
+      provider.dispose();
+    });
 
     test('다른 지갑과 이름 충돌 시 existingName 반환', () async {
       final existingItem = _createSinglesigWalletListItem(name: 'Shared Name');
@@ -665,9 +605,7 @@ void main() {
 
       final provider = await _buildProvider(walletRepo);
 
-      final result = await provider.syncFromCoconutVault(
-        _createTaprootWatchOnlyWallet(name: 'Shared Name'),
-      );
+      final result = await provider.syncFromCoconutVault(_createTaprootWatchOnlyWallet(name: 'Shared Name'));
 
       expect(result.result, WalletSyncResult.existingName);
       expect(walletRepo.addTaprootWalletCallCount, 0);
@@ -686,9 +624,7 @@ void main() {
 
       final provider = await _buildProvider(walletRepo);
 
-      final result = await provider.syncFromCoconutVault(
-        _createSinglesigWatchOnlyWallet(),
-      );
+      final result = await provider.syncFromCoconutVault(_createSinglesigWatchOnlyWallet());
 
       expect(result.result, WalletSyncResult.newWalletAdded);
       expect(walletRepo.addSinglesigWalletCallCount, 1);
@@ -702,9 +638,7 @@ void main() {
 
       final provider = await _buildProvider(walletRepo);
 
-      final result = await provider.syncFromCoconutVault(
-        _createSinglesigWatchOnlyWallet(),
-      );
+      final result = await provider.syncFromCoconutVault(_createSinglesigWatchOnlyWallet());
 
       expect(result.result, WalletSyncResult.existingWalletNoUpdate);
       expect(walletRepo.addSinglesigWalletCallCount, 0);
@@ -713,20 +647,12 @@ void main() {
     });
 
     test('같은 descriptor의 핫월렛이 있으면 Watch-only 지갑을 추가하지 않고 알림 결과를 반환함', () async {
-      final existingHotWallet = _createSinglesigWalletListItem(
-        isHotWallet: true,
-      );
-      final walletRepo =
-          FakeWalletRepository()..walletItems = [existingHotWallet];
-      walletRepo.addSinglesigWalletResult = _createSinglesigWalletListItem(
-        id: 2,
-        name: 'My Wallet Account 0',
-      );
+      final existingHotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo = FakeWalletRepository()..walletItems = [existingHotWallet];
+      walletRepo.addSinglesigWalletResult = _createSinglesigWalletListItem(id: 2, name: 'My Wallet Account 0');
 
       final provider = await _buildProvider(walletRepo);
-      final result = await provider.syncFromCoconutVault(
-        _createSinglesigWatchOnlyWallet(),
-      );
+      final result = await provider.syncFromCoconutVault(_createSinglesigWatchOnlyWallet());
 
       expect(result.result, WalletSyncResult.existingWalletDifferentType);
       expect(result.walletId, existingHotWallet.id);
@@ -735,53 +661,30 @@ void main() {
       provider.dispose();
     });
 
-    test(
-      '같은 이름과 descriptor의 핫월렛 옆에 Watch-only를 추가해도 계정 번호를 이름에 붙이지 않음',
-      () async {
-        final existingHotWallet = _createSinglesigWalletListItem(
-          name: 'Same Wallet',
-          isHotWallet: true,
-        );
-        final walletRepo =
-            FakeWalletRepository()..walletItems = [existingHotWallet];
-        walletRepo.addSinglesigWalletResult = _createSinglesigWalletListItem(
-          id: 2,
-          name: 'Same Wallet',
-        );
+    test('같은 이름과 descriptor의 핫월렛 옆에 Watch-only를 추가해도 계정 번호를 이름에 붙이지 않음', () async {
+      final existingHotWallet = _createSinglesigWalletListItem(name: 'Same Wallet', isHotWallet: true);
+      final walletRepo = FakeWalletRepository()..walletItems = [existingHotWallet];
+      walletRepo.addSinglesigWalletResult = _createSinglesigWalletListItem(id: 2, name: 'Same Wallet');
 
-        final provider = await _buildProvider(walletRepo);
-        final duplicateResult = await provider.syncFromCoconutVault(
-          _createSinglesigWatchOnlyWallet(name: 'Same Wallet'),
-        );
-        final result = await provider.confirmWatchOnlyWalletAddition(
-          duplicateResult,
-          removeExistingHotWallet: false,
-        );
+      final provider = await _buildProvider(walletRepo);
+      final duplicateResult = await provider.syncFromCoconutVault(_createSinglesigWatchOnlyWallet(name: 'Same Wallet'));
+      final result = await provider.confirmWatchOnlyWalletAddition(duplicateResult, removeExistingHotWallet: false);
 
-        expect(result.result, WalletSyncResult.newWalletAdded);
-        expect(walletRepo.lastSinglesigWallet?.name, 'Same Wallet');
+      expect(result.result, WalletSyncResult.newWalletAdded);
+      expect(walletRepo.lastSinglesigWallet?.name, 'Same Wallet');
 
-        provider.dispose();
-      },
-    );
+      provider.dispose();
+    });
 
     test('기존 핫월렛 삭제를 선택하면 같은 ID를 유지한 Watch-only로 전환하고 secret을 삭제함', () async {
-      final existingHotWallet = _createSinglesigWalletListItem(
-        name: 'Hot Wallet',
-        isHotWallet: true,
-      );
-      final convertedWallet = _createSinglesigWalletListItem(
-        id: existingHotWallet.id,
-        name: 'Watch-only Wallet',
-      );
+      final existingHotWallet = _createSinglesigWalletListItem(name: 'Hot Wallet', isHotWallet: true);
+      final convertedWallet = _createSinglesigWalletListItem(id: existingHotWallet.id, name: 'Watch-only Wallet');
       final walletRepo =
           FakeWalletRepository()
             ..walletItems = [existingHotWallet]
             ..hotWalletMetadata = [existingHotWallet.hotWalletMetadata!]
             ..convertHotWalletResult = convertedWallet;
-      final secretRepository = FakeHotWalletSecretRepository({
-        existingHotWallet.hotWalletMetadata!.secureStorageKey,
-      });
+      final secretRepository = FakeHotWalletSecretRepository({existingHotWallet.hotWalletMetadata!.secureStorageKey});
       final preferenceProvider = FakePreferenceProvider();
 
       final provider = await _buildProvider(
@@ -792,19 +695,14 @@ void main() {
       final duplicateResult = await provider.syncFromCoconutVault(
         _createSinglesigWatchOnlyWallet(name: convertedWallet.name),
       );
-      final result = await provider.confirmWatchOnlyWalletAddition(
-        duplicateResult,
-        removeExistingHotWallet: true,
-      );
+      final result = await provider.confirmWatchOnlyWalletAddition(duplicateResult, removeExistingHotWallet: true);
 
       expect(result.result, WalletSyncResult.newWalletAdded);
       expect(result.walletId, existingHotWallet.id);
       expect(walletRepo.convertHotWalletCallCount, 1);
       expect(walletRepo.addSinglesigWalletCallCount, 0);
       expect(walletRepo.deletedWalletIds, isEmpty);
-      expect(secretRepository.deletedKeys, [
-        existingHotWallet.hotWalletMetadata!.secureStorageKey,
-      ]);
+      expect(secretRepository.deletedKeys, [existingHotWallet.hotWalletMetadata!.secureStorageKey]);
       expect(provider.getWalletById(existingHotWallet.id).hasLocalKey, isFalse);
       expect(preferenceProvider.favoriteWalletIds, [existingHotWallet.id]);
 
@@ -812,15 +710,8 @@ void main() {
     });
 
     test('핫월렛을 Watch-only로 전환할 때 보기 전용 즐겨찾기가 5개면 기존 즐겨찾기를 해제함', () async {
-      final existingHotWallet = _createSinglesigWalletListItem(
-        id: 1,
-        name: 'Hot Wallet',
-        isHotWallet: true,
-      );
-      final convertedWallet = _createSinglesigWalletListItem(
-        id: existingHotWallet.id,
-        name: 'Watch-only Wallet',
-      );
+      final existingHotWallet = _createSinglesigWalletListItem(id: 1, name: 'Hot Wallet', isHotWallet: true);
+      final convertedWallet = _createSinglesigWalletListItem(id: existingHotWallet.id, name: 'Watch-only Wallet');
       final existingWatchOnlyWallets = List.generate(
         5,
         (index) => SinglesigWalletItem(
@@ -836,15 +727,10 @@ void main() {
             ..walletItems = [existingHotWallet, ...existingWatchOnlyWallets]
             ..hotWalletMetadata = [existingHotWallet.hotWalletMetadata!]
             ..convertHotWalletResult = convertedWallet;
-      final secretRepository = FakeHotWalletSecretRepository({
-        existingHotWallet.hotWalletMetadata!.secureStorageKey,
-      });
+      final secretRepository = FakeHotWalletSecretRepository({existingHotWallet.hotWalletMetadata!.secureStorageKey});
       final preferenceProvider =
           FakePreferenceProvider()
-            ..favoriteWalletIdsValue = [
-              existingHotWallet.id,
-              ...existingWatchOnlyWallets.map((wallet) => wallet.id),
-            ];
+            ..favoriteWalletIdsValue = [existingHotWallet.id, ...existingWatchOnlyWallets.map((wallet) => wallet.id)];
 
       final provider = await _buildProvider(
         walletRepo,
@@ -854,75 +740,48 @@ void main() {
       final duplicateResult = await provider.syncFromCoconutVault(
         _createSinglesigWatchOnlyWallet(name: convertedWallet.name),
       );
-      await provider.confirmWatchOnlyWalletAddition(
-        duplicateResult,
-        removeExistingHotWallet: true,
-      );
+      await provider.confirmWatchOnlyWalletAddition(duplicateResult, removeExistingHotWallet: true);
 
-      expect(
-        preferenceProvider.favoriteWalletIds,
-        existingWatchOnlyWallets.map((wallet) => wallet.id).toList(),
-      );
+      expect(preferenceProvider.favoriteWalletIds, existingWatchOnlyWallets.map((wallet) => wallet.id).toList());
       expect(preferenceProvider.favoriteWalletIds, hasLength(5));
 
       provider.dispose();
     });
 
-    test(
-      '기존 지갑 이름 변경 시 updateWalletUI 호출 및 existingWalletUpdated 반환',
-      () async {
-        final existingItem = _createSinglesigWalletListItem(name: 'Old Name');
-        final walletRepo = FakeWalletRepository()..walletItems = [existingItem];
+    test('기존 지갑 이름 변경 시 updateWalletUI 호출 및 existingWalletUpdated 반환', () async {
+      final existingItem = _createSinglesigWalletListItem(name: 'Old Name');
+      final walletRepo = FakeWalletRepository()..walletItems = [existingItem];
 
-        final provider = await _buildProvider(walletRepo);
+      final provider = await _buildProvider(walletRepo);
 
-        final result = await provider.syncFromCoconutVault(
-          _createSinglesigWatchOnlyWallet(name: 'New Name'),
-        );
+      final result = await provider.syncFromCoconutVault(_createSinglesigWatchOnlyWallet(name: 'New Name'));
 
-        expect(result.result, WalletSyncResult.existingWalletUpdated);
-        expect(walletRepo.updateWalletUICallCount, 1);
-        expect(walletRepo.addSinglesigWalletCallCount, 0);
+      expect(result.result, WalletSyncResult.existingWalletUpdated);
+      expect(walletRepo.updateWalletUICallCount, 1);
+      expect(walletRepo.addSinglesigWalletCallCount, 0);
 
-        provider.dispose();
-      },
-    );
+      provider.dispose();
+    });
 
-    test(
-      '같은 descriptor의 핫월렛과 Watch-only가 함께 있어도 기존 Watch-only 정보를 먼저 갱신함',
-      () async {
-        final existingHotWallet = _createSinglesigWalletListItem(
-          id: 1,
-          name: 'Hot Wallet',
-          isHotWallet: true,
-        );
-        final existingWatchOnly = _createSinglesigWalletListItem(
-          id: 2,
-          name: 'Old Watch-only',
-        );
-        final walletRepo =
-            FakeWalletRepository()
-              ..walletItems = [existingHotWallet, existingWatchOnly];
+    test('같은 descriptor의 핫월렛과 Watch-only가 함께 있어도 기존 Watch-only 정보를 먼저 갱신함', () async {
+      final existingHotWallet = _createSinglesigWalletListItem(id: 1, name: 'Hot Wallet', isHotWallet: true);
+      final existingWatchOnly = _createSinglesigWalletListItem(id: 2, name: 'Old Watch-only');
+      final walletRepo = FakeWalletRepository()..walletItems = [existingHotWallet, existingWatchOnly];
 
-        final provider = await _buildProvider(walletRepo);
+      final provider = await _buildProvider(walletRepo);
 
-        final result = await provider.syncFromCoconutVault(
-          _createSinglesigWatchOnlyWallet(
-            name: 'Updated Watch-only',
-            colorIndex: 1,
-            iconIndex: 1,
-          ),
-        );
+      final result = await provider.syncFromCoconutVault(
+        _createSinglesigWatchOnlyWallet(name: 'Updated Watch-only', colorIndex: 1, iconIndex: 1),
+      );
 
-        expect(result.result, WalletSyncResult.existingWalletUpdated);
-        expect(result.walletId, existingWatchOnly.id);
-        expect(walletRepo.updateWalletUICallCount, 1);
-        expect(walletRepo.addSinglesigWalletCallCount, 0);
-        expect(walletRepo.deletedWalletIds, isEmpty);
+      expect(result.result, WalletSyncResult.existingWalletUpdated);
+      expect(result.walletId, existingWatchOnly.id);
+      expect(walletRepo.updateWalletUICallCount, 1);
+      expect(walletRepo.addSinglesigWalletCallCount, 0);
+      expect(walletRepo.deletedWalletIds, isEmpty);
 
-        provider.dispose();
-      },
-    );
+      provider.dispose();
+    });
 
     test('이름 충돌 + 다른 MFP(다른 기기) → existingName 반환', () async {
       // MFP가 D45AA182인 기존 지갑
@@ -934,10 +793,7 @@ void main() {
       // 완전히 다른 MFP를 가진 새 지갑 (random 생성)
       final differentDescriptor = SingleSignatureVault.random().descriptor;
       final result = await provider.syncFromCoconutVault(
-        _createSinglesigWatchOnlyWallet(
-          name: 'My Wallet',
-          descriptor: differentDescriptor,
-        ),
+        _createSinglesigWatchOnlyWallet(name: 'My Wallet', descriptor: differentDescriptor),
       );
 
       expect(result.result, WalletSyncResult.existingName);
@@ -946,93 +802,69 @@ void main() {
       provider.dispose();
     });
 
-    test(
-      '이름 충돌 + 같은 MFP + 다른 account → 자동 이름 생성 후 newWalletAdded 반환',
-      () async {
-        // 같은 seed에서 account 0, 1 각각 생성 → MFP 동일, 주소 상이
-        final seed = Seed.random();
-        final account0Descriptor =
-            SingleSignatureVault.fromSeed(seed, accountIndex: 0).descriptor;
-        final account1Descriptor =
-            SingleSignatureVault.fromSeed(seed, accountIndex: 1).descriptor;
+    test('이름 충돌 + 같은 MFP + 다른 account → 자동 이름 생성 후 newWalletAdded 반환', () async {
+      // 같은 seed에서 account 0, 1 각각 생성 → MFP 동일, 주소 상이
+      final seed = Seed.random();
+      final account0Descriptor = SingleSignatureVault.fromSeed(seed, accountIndex: 0).descriptor;
+      final account1Descriptor = SingleSignatureVault.fromSeed(seed, accountIndex: 1).descriptor;
 
-        final existingItem = SinglesigWalletItem(
-          id: 1,
-          name: 'My Wallet',
-          colorIndex: 0,
-          iconIndex: 0,
-          descriptor: account0Descriptor,
-        );
-        final walletRepo = FakeWalletRepository()..walletItems = [existingItem];
-        walletRepo.addSinglesigWalletResult = SinglesigWalletItem(
-          id: 2,
-          name: 'My Wallet Account 1',
-          colorIndex: 0,
-          iconIndex: 0,
-          descriptor: account1Descriptor,
-        );
+      final existingItem = SinglesigWalletItem(
+        id: 1,
+        name: 'My Wallet',
+        colorIndex: 0,
+        iconIndex: 0,
+        descriptor: account0Descriptor,
+      );
+      final walletRepo = FakeWalletRepository()..walletItems = [existingItem];
+      walletRepo.addSinglesigWalletResult = SinglesigWalletItem(
+        id: 2,
+        name: 'My Wallet Account 1',
+        colorIndex: 0,
+        iconIndex: 0,
+        descriptor: account1Descriptor,
+      );
 
-        final provider = await _buildProvider(walletRepo);
+      final provider = await _buildProvider(walletRepo);
 
-        final result = await provider.syncFromCoconutVault(
-          _createSinglesigWatchOnlyWallet(
-            name: 'My Wallet',
-            descriptor: account1Descriptor,
-          ),
-        );
+      final result = await provider.syncFromCoconutVault(
+        _createSinglesigWatchOnlyWallet(name: 'My Wallet', descriptor: account1Descriptor),
+      );
 
-        expect(result.result, WalletSyncResult.newWalletAdded);
-        expect(walletRepo.addSinglesigWalletCallCount, 1);
-        // 이름 충돌이 자동 해소되었음을 확인 (existingName이 아님)
+      expect(result.result, WalletSyncResult.newWalletAdded);
+      expect(walletRepo.addSinglesigWalletCallCount, 1);
+      // 이름 충돌이 자동 해소되었음을 확인 (existingName이 아님)
 
-        provider.dispose();
-      },
-    );
+      provider.dispose();
+    });
   });
 
   group('WalletProvider - 핫월렛', () {
-    test(
-      'SecureStorage reconciliation을 기다리지 않고 Realm의 active 지갑을 먼저 로드함',
-      () async {
-        final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
-        final walletRepo =
-            FakeWalletRepository()
-              ..walletItems = [hotWallet]
-              ..hotWalletMetadata = [_createHotWalletMetadata()];
-        final secretRepository = FakeHotWalletSecretRepository({
-          'local_wallet_seed_1',
-        })..getKeysGate = Completer<void>();
-
-        final provider = await _buildProvider(
-          walletRepo,
-          secretRepository: secretRepository,
-        );
-
-        expect(provider.walletLoadState, WalletLoadState.loadCompleted);
-        expect(provider.walletItemList, [hotWallet]);
-        expect(secretRepository.getKeysCallCount, 1);
-        expect(secretRepository.containsCallCount, 0);
-
-        secretRepository.getKeysGate!.complete();
-        for (var i = 0; i < 5; i++) {
-          await Future<void>.delayed(Duration.zero);
-        }
-        provider.dispose();
-      },
-    );
-
-    test('시작 시 reconciliation과 핫월렛 등록을 동시에 실행하지 않음', () async {
+    test('SecureStorage reconciliation을 기다리지 않고 Realm의 active 지갑을 먼저 로드함', () async {
+      final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
       final walletRepo =
           FakeWalletRepository()
-            ..addHotWalletResult = _createSinglesigWalletListItem(
-              isHotWallet: true,
-            );
-      final secretRepository =
-          FakeHotWalletSecretRepository()..getKeysGate = Completer<void>();
-      final provider = await _buildProvider(
-        walletRepo,
-        secretRepository: secretRepository,
-      );
+            ..walletItems = [hotWallet]
+            ..hotWalletMetadata = [_createHotWalletMetadata()];
+      final secretRepository = FakeHotWalletSecretRepository({'local_wallet_seed_1'})..getKeysGate = Completer<void>();
+
+      final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
+
+      expect(provider.walletLoadState, WalletLoadState.loadCompleted);
+      expect(provider.walletItemList, [hotWallet]);
+      expect(secretRepository.getKeysCallCount, 1);
+      expect(secretRepository.containsCallCount, 0);
+
+      secretRepository.getKeysGate!.complete();
+      for (var i = 0; i < 5; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      provider.dispose();
+    });
+
+    test('시작 시 reconciliation과 핫월렛 등록을 동시에 실행하지 않음', () async {
+      final walletRepo = FakeWalletRepository()..addHotWalletResult = _createSinglesigWalletListItem(isHotWallet: true);
+      final secretRepository = FakeHotWalletSecretRepository()..getKeysGate = Completer<void>();
+      final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
 
       final addFuture = provider.addHotWallet(
         _createSinglesigWatchOnlyWallet(),
@@ -1072,8 +904,7 @@ void main() {
 
     test('같은 descriptor의 Watch-only 지갑이 있어도 핫월렛을 별도로 추가함', () async {
       final existingWatchOnly = _createSinglesigWalletListItem();
-      final walletRepo =
-          FakeWalletRepository()..walletItems = [existingWatchOnly];
+      final walletRepo = FakeWalletRepository()..walletItems = [existingWatchOnly];
       walletRepo.addHotWalletResult = _createSinglesigWalletListItem(
         id: 2,
         name: existingWatchOnly.name,
@@ -1092,24 +923,15 @@ void main() {
       expect(walletRepo.lastHotWallet?.name, existingWatchOnly.name);
       expect(result.hasLocalKey, isTrue);
       expect(walletRepo.addHotWalletCallCount, 1);
-      expect(walletRepo.lifecycleUpdates, [
-        (2, HotWalletLifecycleState.active),
-      ]);
+      expect(walletRepo.lifecycleUpdates, [(2, HotWalletLifecycleState.active)]);
       expect(provider.walletItemList, hasLength(2));
 
       provider.dispose();
     });
 
     test('기존 Watch-only 삭제를 선택하면 같은 ID의 핫월렛으로 전환함', () async {
-      final existingWatchOnly = _createSinglesigWalletListItem(
-        id: 7,
-        name: 'Existing Watch-only',
-      );
-      final convertedWallet = _createSinglesigWalletListItem(
-        id: 7,
-        name: 'Existing Watch-only',
-        isHotWallet: true,
-      );
+      final existingWatchOnly = _createSinglesigWalletListItem(id: 7, name: 'Existing Watch-only');
+      final convertedWallet = _createSinglesigWalletListItem(id: 7, name: 'Existing Watch-only', isHotWallet: true);
       final walletRepo =
           FakeWalletRepository()
             ..walletItems = [existingWatchOnly]
@@ -1148,19 +970,13 @@ void main() {
     });
 
     test('Watch-only 전환이 실패하면 이미 저장된 secret을 정리함', () async {
-      final existingWatchOnly = _createSinglesigWalletListItem(
-        id: 7,
-        name: 'Existing Watch-only',
-      );
+      final existingWatchOnly = _createSinglesigWalletListItem(id: 7, name: 'Existing Watch-only');
       final walletRepo =
           FakeWalletRepository()
             ..walletItems = [existingWatchOnly]
             ..convertWatchOnlyWalletError = StateError('descriptor mismatch');
       final secretRepository = FakeHotWalletSecretRepository();
-      final provider = await _buildProvider(
-        walletRepo,
-        secretRepository: secretRepository,
-      );
+      final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
       // ViewModel이 addHotWallet 호출 전에 secret을 먼저 저장해 두는 상황을 재현한다.
       secretRepository.storedKeys.add('local_wallet_seed_converted');
 
@@ -1184,19 +1000,12 @@ void main() {
     });
 
     test('핫월렛 생성 완료 전에 지갑 순서와 즐겨찾기 저장을 모두 기다림', () async {
-      final walletRepo =
-          FakeWalletRepository()
-            ..addHotWalletResult = _createSinglesigWalletListItem(
-              isHotWallet: true,
-            );
+      final walletRepo = FakeWalletRepository()..addHotWalletResult = _createSinglesigWalletListItem(isHotWallet: true);
       final preferenceProvider =
           FakePreferenceProvider()
             ..walletOrderSaveGate = Completer<void>()
             ..favoriteWalletSaveGate = Completer<void>();
-      final provider = await _buildProvider(
-        walletRepo,
-        preferenceProvider: preferenceProvider,
-      );
+      final provider = await _buildProvider(walletRepo, preferenceProvider: preferenceProvider);
       var creationCompleted = false;
 
       final creationFuture = provider
@@ -1211,8 +1020,7 @@ void main() {
             creationCompleted = true;
             return wallet;
           });
-      while (preferenceProvider.setWalletOrderCallCount == 0 ||
-          preferenceProvider.setFavoriteWalletIdsCallCount == 0) {
+      while (preferenceProvider.setWalletOrderCallCount == 0 || preferenceProvider.setFavoriteWalletIdsCallCount == 0) {
         await Future<void>.delayed(Duration.zero);
       }
 
@@ -1227,11 +1035,8 @@ void main() {
 
     test('활성화 후 환경설정 저장이 실패해도 사용 가능한 지갑과 secret을 유지함', () async {
       final activeWallet = _createSinglesigWalletListItem(isHotWallet: true);
-      final walletRepo =
-          FakeWalletRepository()..addHotWalletResult = activeWallet;
-      final preferenceProvider =
-          FakePreferenceProvider()
-            ..walletOrderSaveError = StateError('preference failed');
+      final walletRepo = FakeWalletRepository()..addHotWalletResult = activeWallet;
+      final preferenceProvider = FakePreferenceProvider()..walletOrderSaveError = StateError('preference failed');
       final secretRepository = FakeHotWalletSecretRepository();
       final provider = await _buildProvider(
         walletRepo,
@@ -1250,9 +1055,7 @@ void main() {
 
       expect(result.id, activeWallet.id);
       expect(provider.walletItemList, [activeWallet]);
-      expect(walletRepo.lifecycleUpdates, [
-        (activeWallet.id, HotWalletLifecycleState.active),
-      ]);
+      expect(walletRepo.lifecycleUpdates, [(activeWallet.id, HotWalletLifecycleState.active)]);
       expect(secretRepository.storedKeys, {'hot_wallet_secret_preferences'});
       expect(secretRepository.deletedKeys, isEmpty);
 
@@ -1260,11 +1063,8 @@ void main() {
     });
 
     test('이미 같은 핫월렛이 있으면 중복 추가하지 않음', () async {
-      final existingHotWallet = _createSinglesigWalletListItem(
-        isHotWallet: true,
-      );
-      final walletRepo =
-          FakeWalletRepository()..walletItems = [existingHotWallet];
+      final existingHotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo = FakeWalletRepository()..walletItems = [existingHotWallet];
 
       final provider = await _buildProvider(walletRepo);
 
@@ -1285,17 +1085,11 @@ void main() {
 
     test('주소 초기화가 실패하면 creating metadata와 secret을 모두 정리함', () async {
       final walletRepo = FakeWalletRepository();
-      walletRepo.addHotWalletResult = _createSinglesigWalletListItem(
-        isHotWallet: true,
-      );
-      final secretRepository = FakeHotWalletSecretRepository({
-        'local_wallet_seed_new',
-      });
+      walletRepo.addHotWalletResult = _createSinglesigWalletListItem(isHotWallet: true);
+      final secretRepository = FakeHotWalletSecretRepository({'local_wallet_seed_new'});
       final provider = await _buildProvider(
         walletRepo,
-        addressRepository: FakeAddressRepository(
-          error: StateError('address init failed'),
-        ),
+        addressRepository: FakeAddressRepository(error: StateError('address init failed')),
         secretRepository: secretRepository,
       );
 
@@ -1321,14 +1115,8 @@ void main() {
     test('앱 시작 시 creating 지갑과 연결된 secret·설정을 정리함', () async {
       final walletRepo =
           FakeWalletRepository()
-            ..hotWalletMetadata = [
-              _createHotWalletMetadata(
-                lifecycleState: HotWalletLifecycleState.creating,
-              ),
-            ];
-      final secretRepository = FakeHotWalletSecretRepository({
-        'local_wallet_seed_1',
-      });
+            ..hotWalletMetadata = [_createHotWalletMetadata(lifecycleState: HotWalletLifecycleState.creating)];
+      final secretRepository = FakeHotWalletSecretRepository({'local_wallet_seed_1'});
       final preferenceProvider = FakePreferenceProvider();
       final sharedPrefsRepository = FakeSharedPrefsRepository();
 
@@ -1348,63 +1136,43 @@ void main() {
       provider.dispose();
     });
 
-    test(
-      'active metadata에 연결된 secret이 없으면 recoveryRequired로 변경하고 목록에서 제외함',
-      () async {
-        final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
-        final walletRepo =
-            FakeWalletRepository()
-              ..walletItems = [hotWallet]
-              ..hotWalletMetadata = [_createHotWalletMetadata()];
+    test('active metadata에 연결된 secret이 없으면 recoveryRequired로 변경하고 목록에서 제외함', () async {
+      final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo =
+          FakeWalletRepository()
+            ..walletItems = [hotWallet]
+            ..hotWalletMetadata = [_createHotWalletMetadata()];
 
-        final provider = await _buildProvider(walletRepo);
+      final provider = await _buildProvider(walletRepo);
 
-        expect(provider.walletItemList, isEmpty);
-        expect(
-          walletRepo.hotWalletMetadata.single.lifecycleState,
-          HotWalletLifecycleState.recoveryRequired,
-        );
+      expect(provider.walletItemList, isEmpty);
+      expect(walletRepo.hotWalletMetadata.single.lifecycleState, HotWalletLifecycleState.recoveryRequired);
 
-        provider.dispose();
-      },
-    );
+      provider.dispose();
+    });
 
     test('recoveryRequired 지갑의 secret이 복구되면 active로 복귀시키고 목록에 포함함', () async {
       final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
       final walletRepo =
           FakeWalletRepository()
             ..addHotWalletResult = hotWallet
-            ..hotWalletMetadata = [
-              _createHotWalletMetadata(
-                lifecycleState: HotWalletLifecycleState.recoveryRequired,
-              ),
-            ];
+            ..hotWalletMetadata = [_createHotWalletMetadata(lifecycleState: HotWalletLifecycleState.recoveryRequired)];
 
       final provider = await _buildProvider(
         walletRepo,
-        secretRepository: FakeHotWalletSecretRepository({
-          'local_wallet_seed_1',
-        }),
+        secretRepository: FakeHotWalletSecretRepository({'local_wallet_seed_1'}),
       );
 
-      expect(
-        walletRepo.hotWalletMetadata.single.lifecycleState,
-        HotWalletLifecycleState.active,
-      );
+      expect(walletRepo.hotWalletMetadata.single.lifecycleState, HotWalletLifecycleState.active);
       expect(provider.walletItemList, [hotWallet]);
 
       provider.dispose();
     });
 
     test('앱 시작 시 Realm에서 참조하지 않는 orphan secret을 정리함', () async {
-      final secretRepository = FakeHotWalletSecretRepository({
-        'hot_wallet_secret_orphan',
-      });
+      final secretRepository = FakeHotWalletSecretRepository({'hot_wallet_secret_orphan'});
 
-      final provider = await _buildProvider(
-        FakeWalletRepository(),
-        secretRepository: secretRepository,
-      );
+      final provider = await _buildProvider(FakeWalletRepository(), secretRepository: secretRepository);
 
       expect(secretRepository.storedKeys, isEmpty);
       expect(secretRepository.deletedKeys, ['hot_wallet_secret_orphan']);
@@ -1412,37 +1180,23 @@ void main() {
       provider.dispose();
     });
 
-    test(
-      '앱 시작 시 현재 Realm metadata가 참조하는 key를 기준으로 orphan alias 정리를 요청함',
-      () async {
-        final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
-        final walletRepo =
-            FakeWalletRepository()
-              ..walletItems = [hotWallet]
-              ..hotWalletMetadata = [_createHotWalletMetadata()];
-        final secretRepository = FakeHotWalletSecretRepository({
-          'local_wallet_seed_1',
-        });
+    test('앱 시작 시 현재 Realm metadata가 참조하는 key를 기준으로 orphan alias 정리를 요청함', () async {
+      final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
+      final walletRepo =
+          FakeWalletRepository()
+            ..walletItems = [hotWallet]
+            ..hotWalletMetadata = [_createHotWalletMetadata()];
+      final secretRepository = FakeHotWalletSecretRepository({'local_wallet_seed_1'});
 
-        final provider = await _buildProvider(
-          walletRepo,
-          secretRepository: secretRepository,
-        );
-        for (
-          var i = 0;
-          i < 5 && secretRepository.cleanupAliasesCallCount == 0;
-          i++
-        ) {
-          await Future<void>.delayed(Duration.zero);
-        }
+      final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
+      for (var i = 0; i < 5 && secretRepository.cleanupAliasesCallCount == 0; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
 
-        expect(secretRepository.cleanupAliasesCallCount, 1);
-        expect(secretRepository.lastAliasCleanupReferencedKeys, {
-          'local_wallet_seed_1',
-        });
-        provider.dispose();
-      },
-    );
+      expect(secretRepository.cleanupAliasesCallCount, 1);
+      expect(secretRepository.lastAliasCleanupReferencedKeys, {'local_wallet_seed_1'});
+      provider.dispose();
+    });
 
     test('삭제 중 Realm 삭제가 실패하면 deleting 상태로 숨기고 다음 시작에서 정리함', () async {
       final hotWallet = _createSinglesigWalletListItem(isHotWallet: true);
@@ -1451,30 +1205,19 @@ void main() {
             ..addHotWalletResult = hotWallet
             ..walletItems = [hotWallet]
             ..hotWalletMetadata = [_createHotWalletMetadata()];
-      final secretRepository = FakeHotWalletSecretRepository({
-        'local_wallet_seed_1',
-      });
-      final provider = await _buildProvider(
-        walletRepo,
-        secretRepository: secretRepository,
-      );
+      final secretRepository = FakeHotWalletSecretRepository({'local_wallet_seed_1'});
+      final provider = await _buildProvider(walletRepo, secretRepository: secretRepository);
       walletRepo.deleteError = StateError('realm delete failed');
 
       await expectLater(provider.deleteWallet(1), throwsA(isA<StateError>()));
 
-      expect(
-        walletRepo.hotWalletMetadata.single.lifecycleState,
-        HotWalletLifecycleState.deleting,
-      );
+      expect(walletRepo.hotWalletMetadata.single.lifecycleState, HotWalletLifecycleState.deleting);
       expect(provider.walletItemList, isEmpty);
       expect(secretRepository.storedKeys, {'local_wallet_seed_1'});
       provider.dispose();
 
       walletRepo.deleteError = null;
-      final restartedProvider = await _buildProvider(
-        walletRepo,
-        secretRepository: secretRepository,
-      );
+      final restartedProvider = await _buildProvider(walletRepo, secretRepository: secretRepository);
 
       expect(walletRepo.hotWalletMetadata, isEmpty);
       expect(secretRepository.storedKeys, isEmpty);
@@ -1494,9 +1237,7 @@ void main() {
 
       final provider = await _buildProvider(walletRepo);
 
-      final result = await provider.syncFromCoconutVault(
-        _createMultisigWatchOnlyWallet(),
-      );
+      final result = await provider.syncFromCoconutVault(_createMultisigWatchOnlyWallet());
 
       expect(result.result, WalletSyncResult.newWalletAdded);
       expect(walletRepo.addMultisigWalletCallCount, 1);
@@ -1510,9 +1251,7 @@ void main() {
 
       final provider = await _buildProvider(walletRepo);
 
-      final result = await provider.syncFromCoconutVault(
-        _createMultisigWatchOnlyWallet(),
-      );
+      final result = await provider.syncFromCoconutVault(_createMultisigWatchOnlyWallet());
 
       expect(result.result, WalletSyncResult.existingWalletNoUpdate);
       expect(walletRepo.addMultisigWalletCallCount, 0);
@@ -1526,9 +1265,7 @@ void main() {
 
       final provider = await _buildProvider(walletRepo);
 
-      final result = await provider.syncFromCoconutVault(
-        _createMultisigWatchOnlyWallet(name: 'Shared Name'),
-      );
+      final result = await provider.syncFromCoconutVault(_createMultisigWatchOnlyWallet(name: 'Shared Name'));
 
       expect(result.result, WalletSyncResult.existingName);
       expect(walletRepo.addMultisigWalletCallCount, 0);
@@ -1554,18 +1291,10 @@ void main() {
               false: [_activeUsedAddress(50, false)],
               true: <WalletAddress>[],
             };
-      final walletRepository =
-          FakeWalletRepository()
-            ..walletItems = [_createSinglesigWalletListItem(id: walletId)];
-      final provider = await _buildProvider(
-        walletRepository,
-        addressRepository: addressRepository,
-      );
+      final walletRepository = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem(id: walletId)];
+      final provider = await _buildProvider(walletRepository, addressRepository: addressRepository);
 
-      expect(
-        provider.getWatchedAddressCount(walletId),
-        2 * kSubscriptionGapLimit + 1,
-      );
+      expect(provider.getWatchedAddressCount(walletId), 2 * kSubscriptionGapLimit + 1);
 
       provider.dispose();
     });
@@ -1581,37 +1310,20 @@ void main() {
               false: [_activeUsedAddress(50, false)],
               true: <WalletAddress>[],
             };
-      final walletRepository =
-          FakeWalletRepository()
-            ..walletItems = [_createSinglesigWalletListItem(id: walletId)];
-      final provider = await _buildProvider(
-        walletRepository,
-        addressRepository: addressRepository,
-      );
+      final walletRepository = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem(id: walletId)];
+      final provider = await _buildProvider(walletRepository, addressRepository: addressRepository);
 
-      expect(
-        provider.getWatchedAddressCount(walletId),
-        2 * kSubscriptionGapLimit,
-      );
+      expect(provider.getWatchedAddressCount(walletId), 2 * kSubscriptionGapLimit);
 
       provider.dispose();
     });
 
     test('활성 사용 주소가 없으면 고정 개수(2*gapLimit)만 반환한다', () async {
-      final addressRepository =
-          FakeAddressRepository()..usedIndexesResult = (-1, -1);
-      final walletRepository =
-          FakeWalletRepository()
-            ..walletItems = [_createSinglesigWalletListItem(id: walletId)];
-      final provider = await _buildProvider(
-        walletRepository,
-        addressRepository: addressRepository,
-      );
+      final addressRepository = FakeAddressRepository()..usedIndexesResult = (-1, -1);
+      final walletRepository = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem(id: walletId)];
+      final provider = await _buildProvider(walletRepository, addressRepository: addressRepository);
 
-      expect(
-        provider.getWatchedAddressCount(walletId),
-        2 * kSubscriptionGapLimit,
-      );
+      expect(provider.getWatchedAddressCount(walletId), 2 * kSubscriptionGapLimit);
 
       provider.dispose();
     });

@@ -32,23 +32,11 @@ void main() {
     });
 
     test('섬(75)이 gap 안으로 들어오면 75+gapLimit까지 구독 윈도우가 확장돼야 한다', () async {
-      final wallet = WalletMock.createSingleSigWalletItem(
-        id: walletId,
-        name: 'island_wallet',
-      );
+      final wallet = WalletMock.createSingleSigWalletItem(id: walletId, name: 'island_wallet');
 
-      final sharedPrefsRepository =
-          SharedPrefsRepository()
-            ..setSharedPreferencesForTest(MockSharedPreferences());
-      when(
-        sharedPrefsRepository.getInt(SharedPrefKeys.kNextIdField),
-      ).thenAnswer((_) => wallet.id);
-      when(
-        sharedPrefsRepository.setInt(
-          SharedPrefKeys.kNextIdField,
-          wallet.id + 1,
-        ),
-      ).thenAnswer((_) async => true);
+      final sharedPrefsRepository = SharedPrefsRepository()..setSharedPreferencesForTest(MockSharedPreferences());
+      when(sharedPrefsRepository.getInt(SharedPrefKeys.kNextIdField)).thenAnswer((_) => wallet.id);
+      when(sharedPrefsRepository.setInt(SharedPrefKeys.kNextIdField, wallet.id + 1)).thenAnswer((_) async => true);
 
       await ScriptSyncServiceMock.walletRepository.addSinglesigWallet(
         WatchOnlyWallet(
@@ -65,12 +53,7 @@ void main() {
       final addressRepository = ScriptSyncServiceMock.addressRepository;
       await addressRepository.ensureAddressesInit(walletItemBase: wallet);
       // 섬(75)과, 그 이후 재확장될 gap window(76~95)까지 주소를 미리 만들어둔다.
-      await addressRepository.ensureAddressesExist(
-        walletItemBase: wallet,
-        cursor: 0,
-        count: 120,
-        isChange: false,
-      );
+      await addressRepository.ensureAddressesExist(walletItemBase: wallet, cursor: 0, count: 120, isChange: false);
 
       // 35~40: 연속 사용 구간(잔액 있음)
       for (var i = 35; i <= 40; i++) {
@@ -92,19 +75,14 @@ void main() {
       );
 
       // usedIndex를 40으로 확정(DB에도 반영)
-      await addressRepository.updateWalletUsedIndex(
-        wallet,
-        40,
-        isChange: false,
-      );
+      await addressRepository.updateWalletUsedIndex(wallet, 40, isChange: false);
       wallet.receiveUsedIndex = 40;
 
       // 실제 Electrum 서버라면, 이미 사용 이력이 있는 주소는 구독 시점에 바로 non-null 상태를
       // 응답으로 돌려준다. 이 응답이 있어야 subscribedScriptMap에 status!=null로 기록되어
       // _scanAndSubscribeRange가 "이미 사용된 주소"로 인식한다(35~40, 75).
       final preUsedAddresses = <String>{
-        for (var i = 35; i <= 40; i++)
-          wallet.walletBase.getAddress(i, isChange: false),
+        for (var i = 35; i <= 40; i++) wallet.walletBase.getAddress(i, isChange: false),
         wallet.walletBase.getAddress(75, isChange: false),
       };
 
@@ -116,42 +94,25 @@ void main() {
         final confirmed =
             address == address75
                 ? 2000
-                : (preUsedAddresses.contains(address)
-                    ? 1000
-                    : (address == address55 ? 500 : 0));
+                : (preUsedAddresses.contains(address) ? 1000 : (address == address55 ? 500 : 0));
         return GetBalanceRes(confirmed: confirmed, unconfirmed: 0);
       });
-      when(
-        electrumService.getHistory(any, any),
-      ).thenAnswer((_) async => <GetTxHistoryRes>[]);
-      when(
-        electrumService.getUnspentList(any, any),
-      ).thenAnswer((_) async => <ListUnspentRes>[]);
+      when(electrumService.getHistory(any, any)).thenAnswer((_) async => <GetTxHistoryRes>[]);
+      when(electrumService.getUnspentList(any, any)).thenAnswer((_) async => <ListUnspentRes>[]);
       final subscribedAddresses = <String>[];
       final onUpdateCallbacks = <String, Function(String, String?)>{};
       when(
-        electrumService.subscribeScriptForWallet(
-          any,
-          any,
-          walletId: wallet.id,
-          onUpdate: anyNamed('onUpdate'),
-        ),
+        electrumService.subscribeScriptForWallet(any, any, walletId: wallet.id, onUpdate: anyNamed('onUpdate')),
       ).thenAnswer((invocation) async {
         final address = invocation.positionalArguments[1] as String;
-        final onUpdate =
-            invocation.namedArguments[#onUpdate] as Function(String, String?);
+        final onUpdate = invocation.namedArguments[#onUpdate] as Function(String, String?);
         onUpdateCallbacks[address] = onUpdate;
         subscribedAddresses.add(address);
-        return preUsedAddresses.contains(address)
-            ? 'initial_status_$address'
-            : null;
+        return preUsedAddresses.contains(address) ? 'initial_status_$address' : null;
       });
 
-      final scriptSyncService =
-          ScriptSyncServiceMock.createMockScriptSyncService();
-      final subscriptionRepository = SubscriptionRepository(
-        ScriptSyncServiceMock.realmManager!,
-      );
+      final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
+      final subscriptionRepository = SubscriptionRepository(ScriptSyncServiceMock.realmManager!);
       final subscriptionService = SubscriptionService(
         electrumService,
         ScriptSyncServiceMock.stateManager,
@@ -164,44 +125,23 @@ void main() {
       final result = await subscriptionService.subscribeWallet(wallet);
       expect(result.isSuccess, true);
 
-      expect(
-        subscribedAddresses.contains(address75),
-        isTrue,
-        reason: '섬(75)은 잔액이 있으므로 초기 구독에 포함돼야 한다.',
-      );
+      expect(subscribedAddresses.contains(address75), isTrue, reason: '섬(75)은 잔액이 있으므로 초기 구독에 포함돼야 한다.');
       for (var i = 61; i <= 95; i++) {
         if (i == 75) continue; // 75는 섬이라 이미 구독돼 있어야 정상
         final address = wallet.walletBase.getAddress(i, isChange: false);
-        expect(
-          subscribedAddresses.contains(address),
-          isFalse,
-          reason: 'index $i는 아직 gap window 밖이라 구독되면 안 된다.',
-        );
+        expect(subscribedAddresses.contains(address), isFalse, reason: 'index $i는 아직 gap window 밖이라 구독되면 안 된다.');
       }
 
       // When: index 55가 실시간으로 사용됨 (Electrum 서버로부터의 push 알림 시뮬레이션)
       final onUpdate55 = onUpdateCallbacks[address55];
-      expect(
-        onUpdate55,
-        isNotNull,
-        reason: 'index 55는 초기 gap window(41~60)에 포함되어 있어야 구독돼 있다.',
-      );
+      expect(onUpdate55, isNotNull, reason: 'index 55는 초기 gap window(41~60)에 포함되어 있어야 구독돼 있다.');
       onUpdate55!('dummyScriptHash', 'newTipStatusHash');
 
       // 라이브 이벤트 처리(큐 처리 + 1초 인덱싱 지연 + fire-and-forget 확장)가 끝날 때까지 대기
       await Future.delayed(const Duration(seconds: 2));
-      verify(
-        electrumService.getBalance(wallet.walletBase.addressType, address55),
-      ).called(1);
-      verify(
-        electrumService.getHistory(wallet.walletBase.addressType, address55),
-      ).called(1);
-      verify(
-        electrumService.getUnspentList(
-          wallet.walletBase.addressType,
-          address55,
-        ),
-      ).called(1);
+      verify(electrumService.getBalance(wallet.walletBase.addressType, address55)).called(1);
+      verify(electrumService.getHistory(wallet.walletBase.addressType, address55)).called(1);
+      verify(electrumService.getUnspentList(wallet.walletBase.addressType, address55)).called(1);
 
       // Then: 섬(75)이 새 baseline이 되었다면, 75 + kSubscriptionGapLimit(20) = 95까지 구독돼야 한다.
       final missingExtendedIndexes = <int>[];
@@ -213,13 +153,8 @@ void main() {
       }
 
       // Then: 영속화된 usedReceiveIndex / 다음 수신 주소 index도 확인한다.
-      final (persistedReceiveUsedIndex, _) = addressRepository.getUsedIndexes(
-        wallet.id,
-      );
-      final nextReceiveAddress = addressRepository.getReceiveAddress(
-        wallet.id,
-        wallet: wallet.walletBase,
-      );
+      final (persistedReceiveUsedIndex, _) = addressRepository.getUsedIndexes(wallet.id);
+      final nextReceiveAddress = addressRepository.getReceiveAddress(wallet.id, wallet: wallet.walletBase);
 
       // 결과를 출력해서(테스트 로그) 실제 동작을 눈으로도 확인할 수 있게 한다.
       // ignore: avoid_print
@@ -229,23 +164,14 @@ void main() {
         '다음 수신 주소 index: ${nextReceiveAddress.index}',
       );
 
-      expect(
-        missingExtendedIndexes,
-        isEmpty,
-        reason: '섬 흡수 후 gap window가 75 기준으로 재확장되어야 한다(현재 버그로 실패 예상).',
-      );
-      expect(
-        persistedReceiveUsedIndex,
-        75,
-        reason: '영속화된 usedReceiveIndex가 섬 발견을 반영해 75여야 한다(현재 버그로 실패 예상).',
-      );
+      expect(missingExtendedIndexes, isEmpty, reason: '섬 흡수 후 gap window가 75 기준으로 재확장되어야 한다(현재 버그로 실패 예상).');
+      expect(persistedReceiveUsedIndex, 75, reason: '영속화된 usedReceiveIndex가 섬 발견을 반영해 75여야 한다(현재 버그로 실패 예상).');
 
       // 안전성 체크: island의 다음 index(76)나 그 이상을 "다음 수신 주소"로 성급하게 보여주면 안 된다.
       expect(
         nextReceiveAddress.index,
         lessThanOrEqualTo(76),
-        reason:
-            '아직 사용 여부가 확인되지 않은 56~74 구간을 건너뛰고 island 다음(76 초과) 주소를 보여주면 안 된다.',
+        reason: '아직 사용 여부가 확인되지 않은 56~74 구간을 건너뛰고 island 다음(76 초과) 주소를 보여주면 안 된다.',
       );
     });
   });
