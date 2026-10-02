@@ -9,11 +9,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class TrezorTransportSelectScreen extends StatelessWidget {
+  final int? walletId;
   final String? psbtBase64;
   final String? walletName;
   final String? walletFingerprint;
 
-  const TrezorTransportSelectScreen({super.key, this.psbtBase64, this.walletName, this.walletFingerprint});
+  const TrezorTransportSelectScreen({
+    super.key,
+    this.walletId,
+    this.psbtBase64,
+    this.walletName,
+    this.walletFingerprint,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +69,7 @@ class TrezorTransportSelectScreen extends StatelessWidget {
       context,
       AppRouteNames.trezorBleConnect,
       arguments: TrezorBleConnectRouteArgs(
+        walletId: walletId,
         psbtBase64: psbtBase64,
         walletName: walletName,
         walletFingerprint: walletFingerprint,
@@ -75,6 +83,7 @@ class TrezorTransportSelectScreen extends StatelessWidget {
       context,
       AppRouteNames.trezorUsbConnect,
       arguments: TrezorUsbConnectRouteArgs(
+        walletId: walletId,
         psbtBase64: psbtBase64,
         walletName: walletName,
         walletFingerprint: walletFingerprint,

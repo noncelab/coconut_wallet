@@ -215,6 +215,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
       context,
       AppRouteNames.bitbox02Sign,
       arguments: BitBox02SignRouteArgs(
+        walletId: viewModel.walletId,
         psbtBase64: viewModel.txWaitingForSign!,
         walletName: viewModel.walletName,
         walletFingerprint: viewModel.walletFingerprint,
@@ -236,6 +237,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
       BitBox02Navigator.showConnectScreen(
         context: context,
         screenName: AnalyticsScreenNames.sendConfirmConnectBitbox02Sheet,
+        walletId: viewModel.walletId,
         psbtBase64: viewModel.txWaitingForSign,
         walletName: viewModel.walletName,
         walletFingerprint: viewModel.walletFingerprint,
@@ -250,6 +252,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
       context,
       AppRouteNames.trezorSign,
       arguments: TrezorSignRouteArgs(
+        walletId: viewModel.walletId,
         psbtBase64: viewModel.txWaitingForSign!,
         walletName: viewModel.walletName,
         walletFingerprint: viewModel.walletFingerprint,
@@ -273,6 +276,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
     } else {
       TrezorNavigator.showConnectScreen(
         context: context,
+        walletId: viewModel.walletId,
         psbtBase64: viewModel.txWaitingForSign,
         walletName: viewModel.walletName,
         walletFingerprint: viewModel.walletFingerprint,
