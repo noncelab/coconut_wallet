@@ -634,9 +634,21 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   void _showTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
+    if (viewModel.isUpdatingTarget) return;
     final btcString =
         viewModel.targetSats != null ? BalanceFormatUtil.formatSatoshiToBtcInputText(viewModel.targetSats!) : '';
     final parentContext = context;
+
+    void showStorageError() {
+      if (!parentContext.mounted) return;
+      CoconutToast.showToast(
+        context: parentContext,
+        isVisibleIcon: true,
+        iconPath: CommonStateIconPath.triangleWarning,
+        text: t.errors.storage_write_error,
+        level: CoconutToastLevel.warning,
+      );
+    }
 
     SingleTextFieldBottomSheet.show(
       context: context,
@@ -666,9 +678,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         BitcoinUnit.btc.symbol,
         style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
       ),
-      onComplete: (text) {
+      onComplete: (text) async {
+        if (viewModel.isUpdatingTarget) return;
         if (text.isEmpty) {
-          viewModel.removeTargetSats();
+          try {
+            await viewModel.removeTargetSats();
+          } catch (_) {
+            showStorageError();
+          }
           return;
         }
 
@@ -685,22 +702,27 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           }
           return;
         }
-        if (btc == 21_000_000) {
-          vibrateMedium();
-          CoconutToast.showToast(
-            context: parentContext,
-            text: t.wallet_info_screen.target_set_21m,
-            isVisibleIcon: true,
-            iconPath: FeatureWalletIconPath.pie,
-            iconSize: 16,
-            iconRightPadding: 8,
-          );
-        }
-
         final sats = UnitUtil.convertBitcoinToSatoshi(btc);
         if (sats > 0) {
-          parentContext.read<AnalyticsService>().logTargetAmountSaved();
-          viewModel.setTargetSats(sats);
+          final analytics = parentContext.read<AnalyticsService>();
+          try {
+            if (await viewModel.setTargetSats(sats)) {
+              analytics.logTargetAmountSaved();
+              if (btc == 21_000_000 && parentContext.mounted) {
+                vibrateMedium();
+                CoconutToast.showToast(
+                  context: parentContext,
+                  text: t.wallet_info_screen.target_set_21m,
+                  isVisibleIcon: true,
+                  iconPath: FeatureWalletIconPath.pie,
+                  iconSize: 16,
+                  iconRightPadding: 8,
+                );
+              }
+            }
+          } catch (_) {
+            showStorageError();
+          }
           return;
         }
 

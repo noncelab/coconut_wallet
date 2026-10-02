@@ -1071,6 +1071,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             currentUnit: context.read<PreferenceProvider>().currentUnit,
             scrollController: scrollController,
             showSkipButton: true,
+            backgroundColor: context.coconutColors.surfaceBottomSheet,
           ),
     );
 

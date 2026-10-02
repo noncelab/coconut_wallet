@@ -11,22 +11,18 @@ part 'model/request/analytics_request_types.dart';
 class AnalyticsService {
   final FirebaseAnalytics? _analytics;
   final bool _isAnalyticsDisabled;
-
-  bool _isInitialized = false;
+  late final Future<void> _initialization;
 
   AnalyticsService(this._analytics, this._isAnalyticsDisabled) {
-    if (_isAnalyticsDisabled) return;
-    _initializeDefaultParameters();
+    _initialization =
+        _isAnalyticsDisabled || _analytics == null ? Future<void>.value() : _initializeDefaultParameters();
   }
 
   /// 기본 이벤트 파라미터 초기화
   Future<void> _initializeDefaultParameters() async {
-    if (_isInitialized) return;
-
     try {
       final commonParams = await _getCommonParameters();
       await _analytics?.setDefaultEventParameters(commonParams.toMap());
-      _isInitialized = true;
     } catch (e) {
       Logger.error('Analytics initialization error: $e');
     }
@@ -49,6 +45,7 @@ class AnalyticsService {
     if (_isAnalyticsDisabled) return;
 
     try {
+      await _initialization;
       await _analytics?.logScreenView(screenName: screenName);
     } catch (e) {
       Logger.error('Analytics screen_view error: $e');
@@ -64,6 +61,7 @@ class AnalyticsService {
     try {
       final combinedParameters = normalizeParameters(parameters);
 
+      await _initialization;
       await _analytics?.logEvent(name: eventName, parameters: combinedParameters);
     } catch (e) {
       // 에러 발생 시 조용히 처리 (Analytics 실패가 앱 동작에 영향을 주지 않도록)

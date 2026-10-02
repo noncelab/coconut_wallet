@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/core/transaction/hardware_wallet_psbt_summary.dart';
+import 'package:coconut_wallet/core/transaction/unsigned_psbt_summary.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _TestWallet extends WalletBase {
@@ -39,15 +39,17 @@ void main() {
       (output) => output.bip32Derivations.any((derivation) => derivation.path.split('/').reversed.skip(1).first == '1'),
     );
 
-    final summary = HardwareWalletPsbtSummary.parse(
-      psbtBase64: psbtBase64,
-      wallet: _TestWallet(changeOutput.outAddress),
-    );
+    final summary = UnsignedPsbtSummary.parse(psbtBase64: psbtBase64, wallet: _TestWallet(changeOutput.outAddress));
 
     expect(summary.amount, 10000);
     expect(summary.fee, 141);
     expect(summary.totalCost, 10141);
     expect(summary.recipientAddresses, hasLength(1));
     expect(summary.recipientAddresses, isNot(contains(changeOutput.outAddress)));
+  });
+
+  test('tryParse는 파싱 실패 시 null을 반환한다', () {
+    final result = UnsignedPsbtSummary.tryParse(psbtBase64: 'not-a-psbt', wallet: _TestWallet(''));
+    expect(result, isNull);
   });
 }

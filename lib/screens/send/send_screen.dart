@@ -301,6 +301,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       });
     }
 
+    if (!_viewModel.isSelectedWalletNull && !isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted) return;
+        _onUtxoSelectionModeButtonPressed();
+      });
+    }
+
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -1512,62 +1519,59 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       children: [
         Expanded(child: _buildFeeRowLabel(t.send_screen.fee_rate)),
         Expanded(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
+          child: Align(
             alignment: Alignment.centerRight,
-            child: IntrinsicWidth(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 75),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: MediaQuery(
-                    data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                    child: CoconutTextField(
-                      placeholderColor: context.coconutColors.border,
-                      textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                      textInputFormatter: const [RateInputFormatter()],
-                      enableInteractiveSelection: false,
-                      textAlign: TextAlign.end,
-                      controller: _feeRateController,
-                      focusNode: _feeRateFocusNode,
-                      backgroundColor: context.coconutColors.background,
-                      onEditingComplete: () {
-                        _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
-                        FocusScope.of(context).unfocus();
-                      },
-                      height: 30,
-                      padding: const EdgeInsets.only(left: 12, right: 2),
-                      onChanged: (text) {
-                        final normalizedText = normalizeNumTextForNumParsing(text);
-                        final isTooLow = _viewModel.handleFeeRateChanged(normalizedText, (formattedText) {
-                          final displayText = _formatDecimalTextForDisplay(formattedText);
-                          _feeRateController.text = displayText;
-                          _viewModel.setFeeRateText(formattedText);
-                        });
-                        if (isTooLow) {
-                          CoconutToast.showToast(
-                            context: context,
-                            isVisibleIcon: true,
-                            text: t.send_screen.fee_rate_too_low,
-                            seconds: 1,
-                          );
-                        }
-                      },
-                      maxLines: 1,
-                      fontFamily: 'SpaceGrotesk',
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      borderRadius: 8,
-                      suffix: Align(
-                        alignment: Alignment.center,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: Text(
-                            t.send_screen.fee_rate_suffix,
-                            style: CoconutTypography.body2_14_NumberBold.copyWith(
-                              color: context.coconutColors.primaryText,
-                              height: 1.0,
-                            ),
+            child: SizedBox(
+              width: 100,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                  child: CoconutTextField(
+                    placeholderColor: context.coconutColors.border,
+                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                    textInputFormatter: const [RateInputFormatter()],
+                    enableInteractiveSelection: false,
+                    textAlign: TextAlign.end,
+                    controller: _feeRateController,
+                    focusNode: _feeRateFocusNode,
+                    backgroundColor: context.coconutColors.background,
+                    onEditingComplete: () {
+                      _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
+                      FocusScope.of(context).unfocus();
+                    },
+                    height: 30,
+                    padding: const EdgeInsets.only(left: 0),
+                    onChanged: (text) {
+                      final normalizedText = normalizeNumTextForNumParsing(text);
+                      final isTooLow = _viewModel.handleFeeRateChanged(normalizedText, (formattedText) {
+                        final displayText = _formatDecimalTextForDisplay(formattedText);
+                        _feeRateController.text = displayText;
+                        _viewModel.setFeeRateText(formattedText);
+                      });
+                      if (isTooLow) {
+                        CoconutToast.showToast(
+                          context: context,
+                          isVisibleIcon: true,
+                          text: t.send_screen.fee_rate_too_low,
+                          seconds: 1,
+                        );
+                      }
+                    },
+                    maxLines: 1,
+                    fontFamily: 'SpaceGrotesk',
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    borderRadius: 8,
+                    suffix: Align(
+                      alignment: Alignment.center,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Text(
+                          t.send_screen.fee_rate_suffix,
+                          style: CoconutTypography.body2_14_NumberBold.copyWith(
+                            color: context.coconutColors.primaryText,
+                            height: 1.0,
                           ),
                         ),
                       ),

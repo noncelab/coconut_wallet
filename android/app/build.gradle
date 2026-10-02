@@ -83,7 +83,7 @@ android {
 
     defaultConfig {
         applicationId "onl.coconut.wallet"
-        minSdkVersion 23
+        minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

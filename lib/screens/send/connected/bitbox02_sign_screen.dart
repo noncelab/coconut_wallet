@@ -2,7 +2,6 @@ import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutUnderlinedButton;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
-import 'package:coconut_wallet/core/transaction/hardware_wallet_psbt_summary.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -16,6 +15,8 @@ import 'package:coconut_wallet/services/hardware_wallet/bitbox02_navigator.dart'
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/loading/loading_indicator.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/core/transaction/unsigned_psbt_summary.dart';
+import 'package:coconut_wallet/widgets/features/send/unsigned_psbt_summary_card.dart';
 import 'package:coconut_wallet/widgets/features/wallet/trezor/trezor_connect_shared_widgets.dart';
 
 import 'package:flutter/material.dart';
@@ -130,89 +131,17 @@ class _BitBox02SignScreenState extends State<BitBox02SignScreen> with SingleTick
   }
 
   Widget _buildTransactionSummaryCard() {
-    final summary = _parsePsbtSummary();
+    final wallet = context.read<WalletProvider>().getWalletById(widget.walletId).walletBase;
+    final summary = UnsignedPsbtSummary.tryParse(psbtBase64: widget.psbtBase64, wallet: wallet);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4.0),
-          child: Text(
-            t.bitbox02_sign_screen.tx_card.title,
-            style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.left,
-          ),
-        ),
-        CoconutLayout.spacing_300h,
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.coconutColors.surface,
-            borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-          ),
-          child: Column(
-            children: [
-              if (summary != null) ...[
-                _buildDetailRow(
-                  t.bitbox02_sign_screen.tx_card.send,
-                  _currentUnit.displayBitcoinAmount(summary.amount, withUnit: true),
-                ),
-                CoconutLayout.spacing_300h,
-                if (summary.recipientAddresses.isNotEmpty)
-                  _buildDetailRow(t.bitbox02_sign_screen.tx_card.to, summary.recipientAddresses.join('\n')),
-                CoconutLayout.spacing_300h,
-                _buildDetailRow(
-                  t.bitbox02_sign_screen.tx_card.fee,
-                  _currentUnit.displayBitcoinAmount(summary.fee, withUnit: true),
-                ),
-                CoconutLayout.spacing_300h,
-                _buildDetailRow(
-                  t.bitbox02_sign_screen.tx_card.total_cost,
-                  _currentUnit.displayBitcoinAmount(summary.totalCost, withUnit: true),
-                ),
-              ] else ...[
-                _buildDetailRow(
-                  t.bitbox02_sign_screen.tx_card.send,
-                  _currentUnit.isPrefixSymbol ? '${_currentUnit.symbol} --' : '-- ${_currentUnit.symbol}',
-                ),
-                _buildDetailRow(
-                  t.bitbox02_sign_screen.tx_card.fee,
-                  _currentUnit.isPrefixSymbol ? '${_currentUnit.symbol} --' : '-- ${_currentUnit.symbol}',
-                ),
-              ],
-            ],
-          ),
-        ),
-        CoconutLayout.spacing_300h,
-      ],
-    );
-  }
-
-  HardwareWalletPsbtSummary? _parsePsbtSummary() {
-    try {
-      final wallet = context.read<WalletProvider>().getWalletById(widget.walletId).walletBase;
-      return HardwareWalletPsbtSummary.parse(psbtBase64: widget.psbtBase64, wallet: wallet);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(label, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: CoconutTypography.body3_12_NumberBold.setColor(context.coconutColors.primaryText),
-            textAlign: TextAlign.right,
-          ),
-        ),
-      ],
+    return UnsignedPsbtSummaryCard(
+      summary: summary,
+      currentUnit: _currentUnit,
+      title: t.bitbox02_sign_screen.tx_card.title,
+      sendLabel: t.bitbox02_sign_screen.tx_card.send,
+      toLabel: t.bitbox02_sign_screen.tx_card.to,
+      feeLabel: t.bitbox02_sign_screen.tx_card.fee,
+      totalCostLabel: t.bitbox02_sign_screen.tx_card.total_cost,
     );
   }
 

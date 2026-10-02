@@ -55,6 +55,9 @@ class NodeProvider extends ChangeNotifier {
   bool _isPendingInitialization = false;
   bool _hasConnectionError = false;
   bool _isServerChanging = false;
+  bool _isDisposed = false;
+  Set<int> _knownWalletIds = {};
+  final Map<int, Object> _newWalletSubscriptions = {};
 
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
   final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
@@ -156,6 +159,7 @@ class NodeProvider extends ChangeNotifier {
     }
 
     await _updateCurrentBlock();
+    if (!isInitialized) return;
     _blockUpdateTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (!isInitialized) return;
       _updateCurrentBlock();
@@ -173,6 +177,7 @@ class NodeProvider extends ChangeNotifier {
     if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted) return;
 
     final Result<BlockTimestamp> result = await getLatestBlock();
+    if (!isInitialized) return;
     if (result.isSuccess && result.value.height > 0) {
       if (_hasConnectionError) {
         _setConnectionError(false);
@@ -204,7 +209,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
-  bool get isInitialized => _initCompleter?.isCompleted ?? false;
+  bool get isInitialized => !_isDisposed && (_initCompleter?.isCompleted ?? false);
   String get host => _electrumServer.host;
   int get port => _electrumServer.port;
   bool get ssl => _electrumServer.ssl;
@@ -227,6 +232,8 @@ class NodeProvider extends ChangeNotifier {
        _hasTransactionHistory = hasTransactionHistory {
     Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
 
+    _knownWalletIds = _walletItemListNotifier.value.map((wallet) => wallet.id).toSet();
+    _isWalletLoaded = _walletLoadStateNotifier.value == WalletLoadState.loadCompleted;
     _connectivityProvider.addListener(_onConnectivityChanged);
     _walletLoadStateNotifier.addListener(_onWalletLoadStateChanged);
     _walletItemListNotifier.addListener(_onWalletItemListChanged);
@@ -235,6 +242,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   void _setConnectionError(bool value) {
+    if (_isDisposed) return;
     if (_hasConnectionError != value) {
       _hasConnectionError = value;
       notifyListeners();
@@ -287,6 +295,7 @@ class NodeProvider extends ChangeNotifier {
   void _subscribeInitialWallets() {
     _isFirstInitialization = false;
     subscribeWallets().then((result) async {
+      if (_isDisposed) return;
       if (result.isFailure) {
         Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
         _stateManager?.setNodeSyncStateToFailed();
@@ -303,38 +312,51 @@ class NodeProvider extends ChangeNotifier {
 
   /// WalletItemList 변경 감지 및 처리
   void _onWalletItemListChanged() {
-    if (_isFirstInitialization) {
-      // 최초 실행 시에는 _subscribeInitialWallets에서 처리
-      return;
-    }
-
     final currentWallets = _walletItemListNotifier.value;
+    final currentWalletIds = currentWallets.map((wallet) => wallet.id).toSet();
+    final addedWalletIds = currentWalletIds.difference(_knownWalletIds);
+    _knownWalletIds = currentWalletIds;
+    _newWalletSubscriptions.removeWhere((id, _) => !currentWalletIds.contains(id));
+
+    // 최초 DB 로드는 기존 지갑의 기준 목록이며, 네트워크 초기화 여부와는 무관하다.
+    if (!_isWalletLoaded) return;
+
     final registeredWallets = state.registeredWallets.keys.toList();
 
     // 삭제된 지갑 찾기
     for (final walletId in registeredWallets) {
-      if (!currentWallets.any((wallet) => wallet.id == walletId)) {
+      if (!currentWalletIds.contains(walletId)) {
         _stateManager?.unregisterWalletUpdateState(walletId);
       }
     }
 
-    // 새로 추가된 지갑 찾기
+    // 구독 상태는 재연결 때 초기화되므로 실제 목록에 추가된 ID로만 판정한다.
     for (final wallet in currentWallets) {
-      if (!registeredWallets.contains(wallet.id)) {
-        // 새로운 지갑 발견
-        subscribeWallet(wallet).then((result) {
-          if (result.isFailure) {
-            Logger.error('NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}');
-            _stateManager?.setNodeSyncStateToFailed();
-            _analyticsService?.logWalletAddSyncFailed(AnalyticsWalletType.of(wallet));
-          } else {
-            _analyticsService?.logWalletAddSyncCompleted(
-              AnalyticsWalletType.of(wallet),
-              hasHistory: wallet.hasLocalKey ? _hasTransactionHistory?.call(wallet.id) : null,
-            );
-          }
-        });
+      if (addedWalletIds.contains(wallet.id)) {
+        unawaited(_subscribeNewWallet(wallet));
       }
+    }
+  }
+
+  Future<void> _subscribeNewWallet(WalletItemBase wallet) async {
+    if (_newWalletSubscriptions.containsKey(wallet.id)) return;
+    final subscription = Object();
+    _newWalletSubscriptions[wallet.id] = subscription;
+    final walletType = AnalyticsWalletType.of(wallet);
+    final result = await subscribeWallet(wallet);
+
+    // 삭제/동일 ID 재사용/종료 이후 이전 요청의 결과를 새 지갑 결과로 기록하지 않는다.
+    if (_newWalletSubscriptions[wallet.id] != subscription) return;
+    _newWalletSubscriptions.remove(wallet.id);
+    if (result.isFailure) {
+      Logger.error('NodeProvider: 신규 지갑 구독 실패 (code=${result.error.code})');
+      _stateManager?.setNodeSyncStateToFailed();
+      _analyticsService?.logWalletAddSyncFailed(walletType);
+    } else {
+      _analyticsService?.logWalletAddSyncCompleted(
+        walletType,
+        hasHistory: walletType == AnalyticsWalletType.hotWallet ? _hasTransactionHistory?.call(wallet.id) : null,
+      );
     }
   }
 
@@ -360,9 +382,12 @@ class NodeProvider extends ChangeNotifier {
       }
     }
     _initCompleter = Completer<void>();
+    // 실제 initialize()의 Future는 오류를 전달하며, 이 내부 대기용 Future의 취소만 미수신 상태로 남지 않게 한다.
+    _initCompleter!.future.ignore();
   }
 
   Future<void> initialize() async {
+    if (_isDisposed) return;
     final hasInternet = _connectivityProvider.isInternetOn;
 
     if (!hasInternet) {
@@ -386,6 +411,7 @@ class NodeProvider extends ChangeNotifier {
       }
     }
 
+    if (_isDisposed) return;
     _isInitializing = true;
     _isPendingInitialization = false;
     _setConnectionError(false); // 초기화 시작 시 에러 상태 리셋
@@ -394,6 +420,10 @@ class NodeProvider extends ChangeNotifier {
       _createNewCompleter();
       _createStateManager();
       await _isolateManager.initialize(host, port, ssl, _networkType, pinnedCertFingerprint);
+      if (_isDisposed) {
+        await _isolateManager.closeIsolate();
+        return;
+      }
       unawaited(_recordCurrentServerGenesisHash());
 
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
@@ -410,6 +440,7 @@ class NodeProvider extends ChangeNotifier {
         _startBlockUpdates();
       }
     } catch (e) {
+      if (_isDisposed) return;
       Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
 
       // 연결 에러 플래그 설정 (notifyListeners 호출됨)
@@ -430,7 +461,7 @@ class NodeProvider extends ChangeNotifier {
       rethrow;
     } finally {
       _isInitializing = false;
-      notifyListeners();
+      if (!_isDisposed) notifyListeners();
     }
   }
 
@@ -440,6 +471,7 @@ class NodeProvider extends ChangeNotifier {
       _stateSubscription = null;
       _stateSubscription = _isolateManager.stateStream.listen(
         (message) {
+          if (_isDisposed) return;
           if (_stateManager == null) {
             Logger.log('NodeProvider: StateManager가 초기화되지 않았습니다.');
             return;
@@ -456,6 +488,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> subscribeWallets() async {
+    if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
     if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted || _connectivityProvider.isInternetOff) {
       return Result.success(false);
     }
@@ -470,6 +503,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> subscribeWallet(WalletItemBase walletItem) async {
+    if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
     return _isolateManager.subscribeWallet(walletItem);
   }
 
@@ -588,6 +622,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> reconnect() async {
+    if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');
@@ -607,8 +642,10 @@ class NodeProvider extends ChangeNotifier {
       Logger.log('NodeProvider: Starting reconnect');
       if (isInitialized) {
         await closeConnection();
+        if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
       }
       await initialize();
+      if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
       _setConnectionError(false);
 
       final walletLoadState = _walletLoadStateNotifier.value;
@@ -617,6 +654,7 @@ class NodeProvider extends ChangeNotifier {
       if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isNotEmpty) {
         Logger.log('NodeProvider: Wallet Loaded & Wallet Items is Not Empty, start subscribing');
         final result = await subscribeWallets();
+        if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
         notifyListeners();
 
         if (result.isSuccess) {
@@ -645,6 +683,7 @@ class NodeProvider extends ChangeNotifier {
         return Result.success(true);
       }
     } catch (e) {
+      if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
       Logger.error('NodeProvider: Reconnect failed: $e');
       _setConnectionError(true);
       _stateManager?.setNodeSyncStateToFailed();
@@ -690,7 +729,7 @@ class NodeProvider extends ChangeNotifier {
       _initCompleter = null;
       _stateManager = null;
 
-      notifyListeners();
+      if (!_isDisposed) notifyListeners();
       Logger.log('NodeProvider: Connection closed successfully');
     } catch (e) {
       Logger.error('NodeProvider: 연결 종료 중 오류 발생: $e');
@@ -849,8 +888,10 @@ class NodeProvider extends ChangeNotifier {
   /// 일렉트럼 서버 설정 화면에서 사용자가 후보를 고르는 동안 연결/해제가 반복되지 않도록,
   /// 실제 반영은 화면을 벗어나는 시점에 [applyServerChange]로 한 번만 수행한다.
   Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
+    if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
     try {
       final chainCheckResult = await _verifyChainCompatibility(electrumServer);
+      if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
       if (chainCheckResult.isFailure) {
         notifyListeners();
         return Result.failure(chainCheckResult.error);
@@ -863,6 +904,7 @@ class NodeProvider extends ChangeNotifier {
       notifyListeners();
       return Result.success(true);
     } catch (e) {
+      if (_isDisposed) return Result.failure(ErrorCodes.nodeConnectionError);
       Logger.error('NodeProvider: 서버 엔드포인트 교체 실패: $e');
       notifyListeners();
       return Result.failure(ErrorCodes.networkError);
@@ -893,6 +935,8 @@ class NodeProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
+    _newWalletSubscriptions.clear();
     _connectivityProvider.removeListener(_onConnectivityChanged);
     _walletLoadStateNotifier.removeListener(_onWalletLoadStateChanged);
     _walletItemListNotifier.removeListener(_onWalletItemListChanged);
