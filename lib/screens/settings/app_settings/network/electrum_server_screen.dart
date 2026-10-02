@@ -798,7 +798,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           return SvgPicture.asset(
             CommonFormIconPath.circleCheck,
             height: 20,
-            colorFilter: ColorFilter.mode(CoconutColors.colorPalette[3], BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(context.coconutColors.success, BlendMode.srcIn),
           );
         }
       default:

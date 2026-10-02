@@ -818,6 +818,7 @@ broadcasting_screen:
     already_saved_draft: "すでに追加されたトランザクションです。"
   dialog:
     send_unavailable: "送信不可"
+    tag_apply_failed: "送信は完了しましたが、タグを適用できませんでした。UTXO一覧でタグを確認してください。"
 send_address_screen:
   text1: "QRをスキャンまたは\nコピーしたアドレスを貼り付け"
   text2: "アドレスQRコードをスキャンしてください"
@@ -1556,6 +1557,7 @@ errors:
   network_disconnected: "ネットワークが切断されました"
   network_not_found: "ネットワークが接続されていません！"
   electrum_connection_failed: "Electrumサーバーに接続できません"
+  electrum_connection_restored: "Electrumサーバーに接続しました"
   vpn_connected: "VPN接続状態を確認してください"
   insufficient_balance: "残高が不足しています。"
   fee_selection_error:
@@ -1691,7 +1693,9 @@ alert:
   tag_apply:
     title: "タグ適用"
     description: "既存 UTXOのタグを新しいUTXOにも適用しますか？"
+    selection_count: "$count個選択（最大5個）"
     btn_apply: "適用する"
+    btn_without_tags: "スキップ"
   tx_detail:
     fetch_failed: "トランザクション取得に失敗しました"
     fetch_failed_description: "しばらく待ってからもう一度お試しください"

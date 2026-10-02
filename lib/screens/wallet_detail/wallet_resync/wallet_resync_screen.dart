@@ -560,7 +560,7 @@ class _WalletResyncScreenState extends State<WalletResyncScreen> {
         return SvgPicture.asset(
           CommonFormIconPath.circleCheck,
           height: 20,
-          colorFilter: ColorFilter.mode(CoconutColors.colorPalette[3], BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(context.coconutColors.success, BlendMode.srcIn),
         );
       case NodeConnectionStatus.waiting:
         return const SizedBox.shrink();

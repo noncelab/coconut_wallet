@@ -10,11 +10,10 @@ const Gradient kCoconutMainnetLogoGradient = LinearGradient(
   colors: [Color(0xFF54C8F0), Color(0xFF8A61FF)],
 );
 
-/// 성공 / 경고 / 실패(또는 위험)을 나타내는 공통 시맨틱 색상입니다.
+/// 경고 / 실패(또는 위험)을 나타내는 공통 시맨틱 색상입니다.
 ///
 /// 특정 배경 위에서 가독성이 떨어지는 경우에만 테마별로 다른 값으로 조정하고,
 /// 그 외에는 이 기본값을 그대로 사용합니다.
-const Color kCoconutSuccess = ds.CoconutColors.green;
 const Color kCoconutWarning = ds.CoconutColors.warningYellow;
 const Color kCoconutDanger = ds.CoconutColors.hotPink;
 const Color kCoconutWarningCard = ds.CoconutColors.warningAmber;
@@ -498,7 +497,7 @@ class CoconutColors {
       iconButtonHighlight: ds.CoconutColors.gray850,
       warning: kCoconutWarning,
       danger: kCoconutDanger,
-      success: kCoconutSuccess,
+      success: ds.CoconutColors.successOnDark,
       appLockWarningBackground: kCoconutWarningCard,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
@@ -648,7 +647,7 @@ class CoconutColors {
       iconButtonHighlight: ds.CoconutColors.gray400,
       warning: kCoconutWarning,
       danger: kCoconutDanger,
-      success: kCoconutSuccess,
+      success: ds.CoconutColors.successOnLight,
       appLockWarningBackground: kCoconutWarningCard,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
@@ -816,7 +815,7 @@ class CoconutColors {
       iconButtonHighlight: dim,
       warning: kCoconutWarning,
       danger: kCoconutDanger,
-      success: palmGreen, // 코코넛 과육 테마 배경에서 기본 success 색보다 잘 보이는 조정값
+      success: ds.CoconutColors.successOnLight,
       appLockWarningBackground: kCoconutWarningCard,
       appLockWarningForeground: kCoconutAppLockWarningForeground,
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,

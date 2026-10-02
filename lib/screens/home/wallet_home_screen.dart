@@ -228,7 +228,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           bool,
           Map<int, AnimatedBalanceData>,
           Tuple2<int?, Map<int, dynamic>>,
-          Tuple2<NetworkStatus, String>
+          Tuple3<NetworkStatus, bool, String>
         >
       >(
         selector:
@@ -239,7 +239,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               vm.shouldShowLoadingIndicator,
               vm.walletBalanceMap,
               Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
-              Tuple2(vm.networkStatus, vm.unacknowledgedOlderToAfterBackupUpdateWalletIdsSignature),
+              Tuple3(
+                vm.networkStatus,
+                vm.showElectrumReconnected,
+                vm.unacknowledgedOlderToAfterBackupUpdateWalletIdsSignature,
+              ),
             ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletHomeViewModel>(context, listen: false);
@@ -253,6 +257,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           final walletBalanceMap = data.item5;
           final fakeBalanceData = data.item6;
           final networkStatus = data.item7.item1;
+          final showElectrumReconnected = data.item7.item2;
           final homeFeatures = viewModel.homeFeatures;
           final hasEnabledHomeFeature = homeFeatures.any((feature) => feature.isEnabled);
           final securityWarningState = viewModel.securityWarningState(
@@ -311,7 +316,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         physics: const AlwaysScrollableScrollPhysics(),
                         semanticChildCount: walletItem.length,
                         slivers: <Widget>[
-                          _buildAppBar(networkStatus),
+                          _buildAppBar(networkStatus,showElectrumReconnected),
                           if (!shouldShowLoadingIndicator)
                             CupertinoSliverRefreshControl(onRefresh: _onRefresh, refreshTriggerPullDistance: 80),
                           _buildBackupUpdateNotice(viewModel, walletItem),
@@ -2548,7 +2553,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     WalletAddDialog.show(context, mode);
   }
 
-  SliverAppBar _buildAppBar(NetworkStatus networkStatus) {
+  SliverAppBar _buildAppBar(NetworkStatus networkStatus, bool showElectrumReconnected) {
     final shouldShow = networkStatus != NetworkStatus.online;
     final homeAddWalletOption = context.read<PreferenceProvider>().homeAddWalletOption;
     final addWalletIconPath = switch (homeAddWalletOption) {
@@ -2588,28 +2593,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           transitionBuilder: (child, animation) {
             return FadeTransition(opacity: animation, child: child);
           },
-          child:
-              shouldShow
-                  ? Row(
-                    key: const ValueKey('error_message'),
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      SvgPicture.asset(FeatureConnectivityIconPath.cloudDisconnected, width: 16),
-                      CoconutLayout.spacing_150w,
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width - 160,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            message,
-                            style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.danger),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                  : const SizedBox.shrink(key: ValueKey('empty')),
+          child: _buildConnectionBanner(networkStatus, showElectrumReconnected),
         ),
       ),
       appTitle: '',
@@ -2643,6 +2627,52 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
+  Widget _buildConnectionBanner(NetworkStatus networkStatus, bool showElectrumReconnected) {
+    final showingError = networkStatus != NetworkStatus.online;
+    if (!showingError && !showElectrumReconnected) {
+      return const SizedBox.shrink(key: ValueKey('empty'));
+    }
+
+    final restored = !showingError;
+    final message = restored ? t.errors.electrum_connection_restored : connectionErrorMessage(networkStatus);
+    final color = restored ? context.coconutColors.success : context.coconutColors.danger;
+    if (showingError) Logger.log('Error message: $message');
+
+    return Row(
+      key: ValueKey(restored ? 'reconnected_message' : 'error_message'),
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        SvgPicture.asset(
+          restored ? CommonFormIconPath.circleCheck : FeatureConnectivityIconPath.cloudDisconnected,
+          width: 16,
+          colorFilter: restored ? ColorFilter.mode(color, BlendMode.srcIn) : null,
+        ),
+        CoconutLayout.spacing_150w,
+        SizedBox(
+          width: MediaQuery.of(context).size.width - 160,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(message, style: CoconutTypography.body3_12_Bold.setColor(color)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String connectionErrorMessage(NetworkStatus networkStatus) {
+    switch (networkStatus) {
+      case NetworkStatus.offline:
+        return t.errors.network_disconnected;
+      case NetworkStatus.connectionFailed:
+        return t.errors.electrum_connection_failed;
+      case NetworkStatus.vpnBlocked:
+        return t.errors.vpn_connected;
+      case NetworkStatus.online:
+        return '';
+    }
+  }
+
   Widget buildAppBarIconButton({required Widget icon, required VoidCallback onPressed, Key? key}) {
     return CoconutAppBarActionButton(
       buttonKey: key,
@@ -2652,7 +2682,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildLoadingIndicator(BuildContext context, WalletHomeViewModel viewModel) {
+  Widget buildLoadingIndicator(BuildContext context, WalletHomeViewModel viewModel) {
     return SliverToBoxAdapter(
       child: AnimatedSwitcher(
         transitionBuilder:
@@ -2673,7 +2703,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildDropdownBackdrop() {
+  Widget buildDropdownBackdrop() {
     return ValueListenableBuilder<bool>(
       valueListenable: _isDropdownMenuVisible,
       builder: (context, isVisible, child) {
@@ -2682,7 +2712,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTap: () {
-                  _setDropdownMenuVisiblility(false);
+                  setDropdownMenuVisiblility(false);
                 },
               ),
             )
@@ -2691,7 +2721,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildDropdownMenu() {
+  Widget buildDropdownMenu() {
     final bool showGlossary = AppLanguage.fromCode(context.read<PreferenceProvider>().language).supportsGlossary;
     return Positioned(
       top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
@@ -2724,7 +2754,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               ],
               thickDividerIndexList: [getThickDividerIndex(showGlossary)],
               onSelected: ((index, selectedText) {
-                _setDropdownMenuVisiblility(false);
+                setDropdownMenuVisiblility(false);
                 handleDropdownSelection(selectedText);
               }),
             ),
@@ -2766,11 +2796,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     return '';
   }
 
-  void _setDropdownMenuVisiblility(bool value) {
+  void setDropdownMenuVisiblility(bool value) {
     _isDropdownMenuVisible.value = value;
   }
 
-  void _scrollToIndicator(int index) {
+  void scrollToIndicator(int index) {
     if (!_pageIndicatorController.hasClients) return;
 
     // 실제 화면 너비를 기반으로 보이는 점 개수 계산
