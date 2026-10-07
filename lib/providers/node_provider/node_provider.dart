@@ -2,7 +2,6 @@ import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/analytics/wallet_sync_analytics.dart';
@@ -581,7 +580,6 @@ class NodeProvider extends ChangeNotifier {
     final result = await _isolateManager.broadcast(signedTx);
     if (result.isFailure) {
       Logger.error('NodeProvider.broadcast: failed code=${result.error.code} message=${result.error.message}');
-      FileLogger.logBroadcast('NodeProvider failure code=${result.error.code}');
     }
     return result;
   }

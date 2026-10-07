@@ -104,7 +104,6 @@ view: "View"
 network: "Network"
 electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
-log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
 name: "Name"
 account: "Account"
@@ -1045,22 +1044,6 @@ settings_screen:
       connecting: "Checking address..."
       connected: "Address verified"
       failed: "Address not found!"
-  log_viewer_screen:
-    log_description_1: "If you encounter any problems, please press the [Share] button and send it via email or contact us on Discord"
-    log_description_2: "The information shared will only be used for problem resolution and will be discarded immediately after the problem is resolved."
-    log_target: "[Logging Target]"
-    log_target_description_1: "For symptom verification and problem resolution, we are logging information when adding the Keystone 3 Pro wallet. Some devices may encounter problems, so logging is in progress to verify this."
-    log_target_description_2: "Logs the cause of broadcast failure stages."
-    clear_log: "Clear Log"
-    clear_log_description: "Are you sure to clear log?"
-    email_subject: "[Coconut Wallet] Debug Log"
-    email_body: "Situation: (Please briefly describe the situation where the problem occurred)"
-    email_error_msg: "Unable to open email app. Please copy the log and post it on the Discord channel."
-    buttons:
-      discord: "Go to Discord"
-      copy: "Copy Log"
-      toast:
-        copy_success: "Log copied successfully."
 
 address_list_screen:
   wallet_name: "$name's Address"

@@ -105,7 +105,6 @@ view: "Ver"
 network: "Red"
 electrum_server: "Servidor Electrum"
 block_explorer: "Explorador"
-log_viewer: "Visor de registros"
 go_to_settings: "Ir a ajustes"
 name: "Nombre"
 account: "Cuenta"
@@ -1036,22 +1035,6 @@ settings_screen:
       connecting: "Verificando dirección..."
       connected: "Dirección verificada"
       failed: "¡Dirección no encontrada!"
-  log_viewer_screen:
-    log_description_1: "Si encuentras algún problema, presiona el botón [Compartir] y envíalo vía email o contacta con nosotros en Discord."
-    log_description_2: "La información compartida solo se usará para la resolución de problemas y se descartará inmediatamente después de resolver el problema."
-    log_target: "[Objetivo de registro]"
-    log_target_description_1: "Para la verificación de síntomas y resolución de problemas, estamos registrando información cuando agregamos la billetera Keystone 3 Pro. Algunos dispositivos pueden enfrentar problemas, por lo que el registro está en progreso para verificar esto."  
-    log_target_description_2: "Registra la causa de las fases de error en el broadcast."
-    clear_log: "Limpiar registro"
-    clear_log_description: "¿Estás seguro de querer limpiar el registro?"
-    email_subject: "[Coconut Wallet] Registro de depuración"
-    email_body: "Situación: (Por favor, describe brevemente la situación en la que ocurrió el problema)"
-    email_error_msg: "No se puede abrir la aplicación de correo electrónico. Por favor, copie el registro y publíquelo en el canal de Discord."
-    buttons:
-      discord: "Ir a Discord"
-      copy: "Copiar registro"
-      toast:
-        copy_success: "Registro copiado correctamente."
 
 address_list_screen:
   wallet_name: "Dirección de $name"

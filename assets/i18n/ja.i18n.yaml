@@ -104,7 +104,6 @@ view: "表示"
 network: "ネットワーク"
 electrum_server: "Electrum Server"
 block_explorer: "ブロックエクスプローラー"
-log_viewer: "ログビューアー"
 go_to_settings: "設定を開く"
 name: "名前"
 account: "アカウント"
@@ -1032,22 +1031,6 @@ settings_screen:
       connecting: "アドレスを確認中..."
       connected: "アドレス確認済み"
       failed: "アドレスが見つかりません！"
-  log_viewer_screen:
-    log_description_1: "問題が発生した場合は、[共有]ボタンを押してメールで送信するか、Discordでお問い合わせください。"
-    log_description_2: "共有される情報は問題解決のためのみに使用され、問題解決後すぐに破棄されます。"
-    log_target: "[ログ対象]"
-    log_target_description_1: "症状確認と問題解決のため、Keystone 3 Proウォレット追加時に情報をログしています。一部のデバイスで問題が発生する可能性があるため、これを確認するためのログを取得中です。"
-    log_target_description_2: "ブロードキャスト失敗段階の原因をログします。"
-    clear_log: "ログをクリア"
-    clear_log_description: "ログをクリアしてもよろしいですか？"
-    email_subject: "[Coconut Wallet] デバッグログ"
-    email_body: "状況: （問題が発生した状況を簡潔に説明してください）"
-    email_error_msg: "メールアプリを開けません。ログをコピーしてDiscordチャンネルに投稿してください。"
-    buttons:
-      discord: "Discordへ"
-      copy: "ログをコピー"
-      toast:
-        copy_success: "ログをコピーしました。"
 
 address_list_screen:
   wallet_name: "$nameのアドレス"

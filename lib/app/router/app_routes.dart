@@ -17,7 +17,6 @@ import 'package:coconut_wallet/screens/settings/app_settings/about/app_info_scre
 import 'package:coconut_wallet/screens/settings/app_settings/about/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/block_explorer_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/network/electrum_server_screen.dart';
-import 'package:coconut_wallet/screens/settings/app_settings/tools/log_viewer_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
@@ -67,7 +66,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     AppRouteNames.negativeFeedback: (context) => const NegativeFeedbackScreen(),
     AppRouteNames.mnemonicWordList: (context) => const Bip39ListScreen(),
     AppRouteNames.coconutCrew: (context) => const CoconutCrewScreen(),
-    AppRouteNames.logViewer: (context) => const LogViewerScreen(),
     AppRouteNames.electrumServer: (context) => const ElectrumServerScreen(),
     AppRouteNames.blockExplorer: (context) => const BlockExplorerScreen(),
     AppRouteNames.broadcasting:

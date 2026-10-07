@@ -5,7 +5,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/type_converter_utils.dart';
 import 'package:ur/ur.dart';
@@ -68,16 +67,12 @@ class WalletAddService {
     try {
       final cborBytes = ur.cbor;
       final decodedCbor = cbor.decode(cborBytes); // TODO: cborBytes == decodedCbor (?)
-      FileLogger.log(className, methodName, 'cbor.decode completed');
       Map<dynamic, dynamic> cborMap = decodedCbor as Map<dynamic, dynamic>;
-      FileLogger.log(className, methodName, 'decodedCbor converted to cborMap');
       Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
-      FileLogger.log(className, methodName, 'convertKeysToString completed $jsonCompatibleMap');
       final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
-      FileLogger.log(className, methodName, 'SingleSignatureWallet.fromCryptoAccountPayload');
       return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
-    } catch (e, stackTrace) {
-      FileLogger.error(className, methodName, 'failed: $e', stackTrace);
+    } catch (e) {
+      Logger.error('$className.$methodName failed: ${e.runtimeType}');
       rethrow;
     }
   }
@@ -96,17 +91,14 @@ class WalletAddService {
       if (decodedCbor is! List<int>) {
         throw 'Unexpected UR bytes payload type: ${decodedCbor.runtimeType}';
       }
-      FileLogger.log(className, methodName, 'cbor.decode completed');
       final decodedText = utf8.decode(decodedCbor);
       final json = jsonDecode(decodedText);
       if (json is! Map<String, dynamic>) {
         throw 'Unexpected UR bytes json type: ${json.runtimeType}';
       }
-      FileLogger.log(className, methodName, 'jsonDecode completed, keys: ${json.keys.toList()}');
-      FileLogger.log(className, methodName, 'raw json: ${jsonEncode(json)}');
       return createWalletFromJson(json: json, name: name, walletImportSource: walletImportSource);
-    } catch (e, stackTrace) {
-      FileLogger.error(className, methodName, 'failed: $e', stackTrace);
+    } catch (e) {
+      Logger.error('$className.$methodName failed: ${e.runtimeType}');
       rethrow;
     }
   }
@@ -165,7 +157,7 @@ class WalletAddService {
       }
     } catch (e) {
       // descriptor 파싱 실패 시 xpub으로 지갑 생성
-      Logger.error('Descriptor parsing failed, using xpub: $e');
+      Logger.error('Descriptor parsing failed, using xpub: ${e.runtimeType}');
     }
 
     // xpub으로 지갑 생성 (fallback)

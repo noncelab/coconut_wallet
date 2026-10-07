@@ -273,12 +273,6 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                         isVerticalSubtitle: true,
                         onPressed: () => _showLabelsManagementScreen(context),
                       ),
-                      _buildAnimatedButton(
-                        title: t.log_viewer,
-                        onPressed: () {
-                          Navigator.pushNamed(context, AppRouteNames.logViewer);
-                        },
-                      ),
                     ],
                   ),
 

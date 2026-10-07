@@ -3,7 +3,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/composed_scan_data_handler.dart';
@@ -26,9 +26,6 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   late final IQrScanDataHandler _qrDataHandler;
 
   WalletAddScannerViewModel(this._walletImportSource, this._walletProvider, this._preferenceProvider) {
-    const methodName = 'constructor';
-    FileLogger.log(className, methodName, 'WalletAddScannerViewModel created for ${_walletImportSource.name}');
-
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
         _qrDataHandler = CoconutWalletAddQrScanDataHandler();
@@ -74,12 +71,6 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   }) async {
     const methodName = 'addWallet';
 
-    FileLogger.log(
-      className,
-      methodName,
-      'addWallet called with ${_walletImportSource.name} additionInfo type: ${additionInfo.runtimeType}',
-    );
-
     try {
       if (additionInfo is WatchOnlyWallet) {
         return _addCoconutVaultWallet(additionInfo);
@@ -97,8 +88,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         return _addBbQrWallet(_walletImportSource, additionInfo);
       }
       throw 'Unknown additionInfo type: ${additionInfo.runtimeType}';
-    } catch (e, stackTrace) {
-      FileLogger.error(className, methodName, 'addWallet failed: $e', stackTrace);
+    } catch (e) {
+      Logger.error('$className.$methodName: addWallet failed: ${e.runtimeType}');
       rethrow;
     }
   }
