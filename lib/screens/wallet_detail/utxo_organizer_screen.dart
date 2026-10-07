@@ -1,4 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_merge/utxo_merge_screen.dart';
@@ -15,9 +19,18 @@ class UtxoOrganizerScreen extends StatefulWidget {
   State<UtxoOrganizerScreen> createState() => _UtxoOrganizerScreenState();
 }
 
-class _UtxoOrganizerScreenState extends State<UtxoOrganizerScreen> {
+class _UtxoOrganizerScreenState extends State<UtxoOrganizerScreen> with SelfLoggedScreenView<UtxoOrganizerScreen> {
   int _selectedIndex = 0;
   bool _hasVisitedSplit = false;
+
+  @override
+  String get analyticsScreenName => AppRouteNames.utxoOrganizer;
+
+  @override
+  Map<String, Object> get analyticsParameters => {
+    AnalyticsParameterNames.segment:
+        (_selectedIndex == 0 ? UtxoOrganizerSegment.merge : UtxoOrganizerSegment.split).name,
+  };
 
   void _selectTab(int index) {
     if (_selectedIndex == index) return;
@@ -25,6 +38,7 @@ class _UtxoOrganizerScreenState extends State<UtxoOrganizerScreen> {
       _selectedIndex = index;
       if (index == 1) _hasVisitedSplit = true;
     });
+    logScreenViewIfChanged();
   }
 
   @override

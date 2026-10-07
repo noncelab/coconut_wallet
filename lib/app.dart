@@ -77,7 +77,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         AppEntryFlow.main => AnalyticsScreenNames.walletHome,
       };
     }
-    return settings.name;
+    return analyticsRouteScreenName(settings);
   }
 
   Future<void> _saveMigratedWalletIds() async {

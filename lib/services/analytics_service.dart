@@ -41,12 +41,24 @@ class AnalyticsService {
     );
   }
 
-  Future<void> logScreenView({required String screenName}) async {
+  String? _lastScreenName;
+  Map<String, Object> _lastScreenParameters = const {};
+
+  /// Whether the last screen_view sent, also by pages that log their own (SelfLoggedScreenView), had this name and
+  /// these parameters: the same name with another segment counts as a new screen_view.
+  bool isLastScreenView(String screenName, [Map<String, Object>? parameters]) =>
+      screenName == _lastScreenName && mapEquals(normalizeParameters(parameters), _lastScreenParameters);
+
+  /// [parameters] are normalized like [logEvent]'s.
+  Future<void> logScreenView({required String screenName, Map<String, Object>? parameters}) async {
+    final normalized = normalizeParameters(parameters);
+    _lastScreenName = screenName;
+    _lastScreenParameters = normalized;
     if (_isAnalyticsDisabled) return;
 
     try {
       await _initialization;
-      await _analytics?.logScreenView(screenName: screenName);
+      await _analytics?.logScreenView(screenName: screenName, parameters: normalized.isEmpty ? null : normalized);
     } catch (e) {
       Logger.error('Analytics screen_view error: $e');
     }
