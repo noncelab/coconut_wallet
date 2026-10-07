@@ -303,7 +303,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
     if (!_viewModel.isSelectedWalletNull && !isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
       Future.delayed(const Duration(milliseconds: 500), () {
-        if (!mounted) return;
+        // b17c6f22: 진입 시 UTXO 선택 시트는 수동 선택 모드이고 고른 UTXO가 없을 때만 띄움(미리 고른 진입·초안 복원 포함)
+        if (!mounted || _viewModel.isUtxoSelectionAuto || _viewModel.selectedUtxoList.isNotEmpty) return;
         _onUtxoSelectionModeButtonPressed();
       });
     }
