@@ -52,6 +52,7 @@ class AnalyticsScreenNames {
   static const String splitUtxoSelectUtxosSheet = 'split-utxo-select-utxos-sheet';
   static const String splitUtxoSelectMethodSheet = 'split-utxo-select-method-sheet';
   static const String receiveAddressSelectWalletSheet = 'receive-address-select-wallet-sheet';
+  static const String homeShortcutSelectWalletSheet = 'home-shortcut-select-wallet-sheet';
   static const String receiveAddressSetAmountSheet = 'receive-address-set-amount-sheet';
   static const String qrDetailSetAmountSheet = 'qr-detail-set-amount-sheet';
   static const String walletDetailSelectUtxoSheet = 'wallet-detail-select-utxo-sheet';

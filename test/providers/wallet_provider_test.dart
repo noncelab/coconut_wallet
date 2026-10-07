@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/wallet/wallet_lifecycle_event.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
@@ -550,6 +551,52 @@ Future<WalletProvider> _buildProvider(
 // ─────────────────────────────────────────────
 
 void main() {
+  group('WalletProvider - lifecycleEvents', () {
+    test('initial load from DB does not emit events', () async {
+      final walletRepo = FakeWalletRepository()..walletItems = [_createSinglesigWalletListItem(name: 'A')];
+      final events = <WalletLifecycleEvent>[];
+
+      final provider = WalletProvider(
+        FakeAddressRepository(),
+        FakeTransactionRepository(),
+        FakeUtxoRepository(),
+        walletRepo,
+        (_) async {},
+        FakePreferenceProvider(),
+        hotWalletSecretRepository: FakeHotWalletSecretRepository(),
+        sharedPrefsRepository: FakeSharedPrefsRepository(),
+      );
+      final subscription = provider.lifecycleEvents.listen(events.add);
+      while (provider.walletLoadState != WalletLoadState.loadCompleted) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      for (var i = 0; i < 20; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      expect(events, isEmpty);
+
+      await subscription.cancel();
+      provider.dispose();
+    });
+
+    test('deleting a wallet emits WalletRemoved for that wallet', () async {
+      final wallet = _createSinglesigWalletListItem(name: 'A');
+      final walletRepo = FakeWalletRepository()..walletItems = [wallet];
+      final provider = await _buildProvider(walletRepo);
+      final events = <WalletLifecycleEvent>[];
+      final subscription = provider.lifecycleEvents.listen(events.add);
+
+      await provider.deleteWallet(wallet.id);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events.whereType<WalletRemoved>().map((e) => e.walletId), [wallet.id]);
+
+      await subscription.cancel();
+      provider.dispose();
+    });
+  });
+
   // ───────────────────────────────────────────
   // 탭루트
   // ───────────────────────────────────────────

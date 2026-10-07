@@ -5,6 +5,8 @@ import 'package:coconut_wallet/app/providers/app_providers.dart';
 import 'package:coconut_wallet/app/router/app_routes.dart';
 import 'package:coconut_wallet/app/theme/app_cupertino_theme.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/constants/new_home_flag.dart';
+import 'package:coconut_wallet/screens/home/home_screen.dart';
 import 'package:coconut_wallet/services/hardware_wallet/bitbox02_connectivity_service.dart';
 import 'package:coconut_wallet/services/hardware_wallet/trezor_connectivity_service.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -139,7 +141,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   _appEntryFlow == AppEntryFlow.splash
                       ? StartScreen(onComplete: _completeSplash)
                       : _appEntryFlow == AppEntryFlow.main
-                      ? const WalletHomeScreen()
+                      ? (kUseNewHome ? const HomeScreen() : const WalletHomeScreen())
                       : CustomLoadingOverlay(
                         child: PinCheckScreen(
                           appEntrance: true,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/wallet/wallet_lifecycle_event.dart';
 import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/constants/wallet_constants.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -63,9 +64,27 @@ class WalletProvider extends ChangeNotifier {
   late final ValueNotifier<List<WalletItemBase>> walletItemListNotifier;
   late final ValueNotifier<BlockTimestamp?> currentBlockHeightNotifier;
 
+  final _lifecycleEventController = StreamController<WalletLifecycleEvent>.broadcast();
+  Stream<WalletLifecycleEvent> get lifecycleEvents => _lifecycleEventController.stream;
+  Map<int, WalletSnapshot> _walletSnapshots = {};
+
   void _setWalletItemList(List<WalletItemBase> value) {
     _walletItemList = value;
     walletItemListNotifier.value = value;
+    _publishLifecycleEvents(value);
+  }
+
+  void _publishLifecycleEvents(List<WalletItemBase> wallets) {
+    final snapshots = snapshotWallets(wallets);
+    final events =
+        _walletLoadState == WalletLoadState.loadCompleted
+            ? diffWalletSnapshots(_walletSnapshots, snapshots)
+            : const <WalletLifecycleEvent>[];
+    _walletSnapshots = snapshots;
+    if (_lifecycleEventController.isClosed) return;
+    for (final event in events) {
+      _lifecycleEventController.add(event);
+    }
   }
 
   WalletProvider(
@@ -1305,6 +1324,7 @@ class WalletProvider extends ChangeNotifier {
     walletLoadStateNotifier.dispose();
     walletItemListNotifier.dispose();
     currentBlockHeightNotifier.dispose();
+    _lifecycleEventController.close();
     super.dispose();
   }
 }
