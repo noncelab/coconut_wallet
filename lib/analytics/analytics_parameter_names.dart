@@ -19,7 +19,7 @@ class AnalyticsParameterNames {
   // 외부 링크
   static const String externalLinkDestination = 'external_link_destination';
 
-  // 화면 (screen_view): 탭이 있는 화면에서 보이는 탭, UtxoOrganizerSegment.name
+  // 화면 (screen_view): 탭이 있는 화면에서 보이는 탭, UtxoOrganizerSegment / UtxoOverviewSegment .name
   static const String segment = 'segment';
 }
 

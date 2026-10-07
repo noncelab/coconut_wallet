@@ -36,6 +36,9 @@ enum WalletDetailAction {
 /// `segment` (screen_view `/utxo-organizer`): 정리하기 화면에서 보이는 탭 (합치기 / 나누기)
 enum UtxoOrganizerSegment { merge, split }
 
+/// `segment` (screen_view `/utxo-overview`): 한눈에 보기 화면에서 보이는 탭 (개요 / 목록)
+enum UtxoOverviewSegment { overview, list }
+
 /// `external_link_destination`: 연 외부 링크의 목적지 분류
 enum ExternalLinkDestination {
   tutorial('tutorial'),

@@ -9,7 +9,10 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToast,
         CoconutToastLevel,
         CoconutPopup;
+import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
+import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
@@ -58,8 +61,17 @@ class UtxoOverviewScreen extends StatefulWidget {
   State<UtxoOverviewScreen> createState() => _UtxoOverviewScreenState();
 }
 
-class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
+class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLoggedScreenView<UtxoOverviewScreen> {
   late UtxoOverviewViewModel viewModel;
+
+  @override
+  String get analyticsScreenName => AppRouteNames.utxoOverview;
+
+  @override
+  Map<String, Object> get analyticsParameters => {
+    AnalyticsParameterNames.segment:
+        (viewModel.isOverviewTab ? UtxoOverviewSegment.overview : UtxoOverviewSegment.list).name,
+  };
   BitcoinUnit _currentUnit = BitcoinUnit.btc;
 
   late List<UtxoBucket> _buckets;
@@ -307,6 +319,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
         viewModel.isSelectionMode = false;
         viewModel.selectedUtxoIds.clear();
       });
+      logScreenViewIfChanged();
     }
 
     await WidgetsBinding.instance.endOfFrame;

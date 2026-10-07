@@ -6,8 +6,9 @@ import 'package:provider/provider.dart';
 
 /// Named pages that log their own screen_view, like the unnamed CCOS pages
 /// (coconut_open_store_first_pow_scene.dart): the observer leaves them out and the page mixes in
-/// [SelfLoggedScreenView] to log its name with the visible segment (utxo_organizer_screen.dart).
-const analyticsSelfLoggedRouteNames = {AppRouteNames.utxoOrganizer};
+/// [SelfLoggedScreenView] to log its name with the visible segment (utxo_organizer_screen.dart,
+/// utxo_overview_screen.dart).
+const analyticsSelfLoggedRouteNames = {AppRouteNames.utxoOrganizer, AppRouteNames.utxoOverview};
 
 /// The screen name the observer reports for [settings]: its route name, unless the page logs its own.
 String? analyticsRouteScreenName(RouteSettings settings) =>
