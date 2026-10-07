@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
@@ -45,6 +46,13 @@ class WalletAddDialog extends StatelessWidget {
     }
     await showGeneralDialog<void>(
       context: context,
+      routeSettings: RouteSettings(
+        name: switch (mode) {
+          WalletAddDialogMode.walletType => AnalyticsScreenNames.walletHomeAddWalletTypeSheet,
+          WalletAddDialogMode.watchOnlySource => AnalyticsScreenNames.walletHomeAddWatchOnlySourceSheet,
+          WalletAddDialogMode.hotWalletAction => AnalyticsScreenNames.walletHomeAddHotWalletActionSheet,
+        },
+      ),
       barrierDismissible: true,
       barrierLabel: 'Dismiss',
       barrierColor: context.coconutColors.surface.withValues(alpha: 0.5),
@@ -236,12 +244,14 @@ class WalletAddDialog extends StatelessWidget {
 
   void _showMode(BuildContext context, WalletAddDialogMode nextMode) {
     final navigator = Navigator.of(context);
-    navigator.pop();
+    // pop보다 먼저 등록한다. pop이 등록하는 화면 기록 콜백(AnalyticsScreenObserver)이 다음 시트를 보고,
+    // 두 시트 사이에 wallet-home이 기록되지 않는다.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (navigator.mounted) {
         WalletAddDialog.show(navigator.context, nextMode);
       }
     });
+    navigator.pop();
   }
 
   Future<void> _openHotWalletScreen(BuildContext context, String routeName) async {

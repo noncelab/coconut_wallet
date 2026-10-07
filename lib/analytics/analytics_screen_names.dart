@@ -20,6 +20,10 @@ class AnalyticsScreenNames {
   static const String walletHomeDeleteWalletAuthSheet = 'wallet-home-delete-wallet-auth-sheet';
   static const String walletHomeEditWalletSheet = 'wallet-home-edit-wallet-sheet';
   static const String walletHomeEditAddWalletOptionSheet = 'wallet-home-edit-add-wallet-option-sheet';
+  // 홈 지갑 추가 탑시트 (wallet_add_dialog.dart, WalletAddDialogMode별)
+  static const String walletHomeAddWalletTypeSheet = 'wallet-home-add-wallet-type-sheet';
+  static const String walletHomeAddWatchOnlySourceSheet = 'wallet-home-add-watch-only-source-sheet';
+  static const String walletHomeAddHotWalletActionSheet = 'wallet-home-add-hot-wallet-action-sheet';
   static const String walletListPinCheckSheet = 'wallet-list-pin-check-sheet';
   static const String walletListSettingsSheet = 'wallet-list-settings-sheet';
   static const String walletListItemOptionsSheet = 'wallet-list-item-options-sheet';
