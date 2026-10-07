@@ -17,6 +17,7 @@ class AdaptiveQrImage extends StatelessWidget {
     this.embedWidget,
     this.showFrame = true,
     this.qrInternalPadding,
+    this.qrPadding = const EdgeInsets.all(12),
   });
 
   final String? qrData;
@@ -25,6 +26,7 @@ class AdaptiveQrImage extends StatelessWidget {
   final Widget? embedWidget;
   final bool showFrame;
   final double? qrInternalPadding;
+  final EdgeInsets qrPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +48,7 @@ class AdaptiveQrImage extends StatelessWidget {
                   QrImageView(
                     data: qrData!,
                     size: qrSize,
+                    padding: qrPadding,
                     backgroundColor: CoconutColors.white,
                     errorCorrectionLevel: QrErrorCorrectLevel.H,
                   ),
@@ -79,6 +82,7 @@ class AdaptiveQrImage extends StatelessWidget {
                 qrViewDataHandler: qrViewDataHandler!,
                 qrScanDensity: qrDensity ?? QrScanDensity.normal,
                 qrSize: qrSize,
+                qrPadding: qrPadding,
               ),
             ),
           );

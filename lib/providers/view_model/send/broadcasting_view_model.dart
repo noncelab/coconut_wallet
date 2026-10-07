@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/taproot_wallet_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -55,6 +57,9 @@ class BroadcastingViewModel extends ChangeNotifier {
   final List<int> _changeOutputAmounts = [];
   final List<BroadcastingOutputDetailItem> _outputDetailItems = [];
   final List<int> _outputIndexesToMyAddress = [];
+  final List<String> _tagSourceUtxoIds = [];
+  List<UtxoTag>? _inheritanceTags;
+  bool _tagInheritanceFailed = false;
   Transaction? _signedTx;
   int? _savedDraftId;
 
@@ -95,6 +100,43 @@ class BroadcastingViewModel extends ChangeNotifier {
   Transaction? get signedTx => _signedTx;
   bool get isFromSignedDraft => _signedDraftId != null;
   bool get isAlreadySaved => isFromSignedDraft || _savedDraftId != null;
+  bool get tagInheritanceFailed => _tagInheritanceFailed;
+
+  List<UtxoTag> prepareTagInheritance() {
+    if (!_isInitDone) throw StateError('Transaction is not ready');
+    if (_inheritanceTags != null) return _inheritanceTags!;
+
+    final sourceIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toSet();
+    final replacedHashes = <String>{};
+    for (final sourceId in sourceIds) {
+      final input = _utxoRepository.getUtxoState(_walletId!, sourceId);
+      final spentBy = input?.spentByTransactionHash;
+      if (input?.status != UtxoStatus.outgoing || spentBy == null || spentBy == _signedTx!.transactionHash) continue;
+      final previous = _txProvider.getTransactionRecord(_walletId!, spentBy);
+      if (previous != null && previous.blockHeight < 1) replacedHashes.add(spentBy);
+    }
+
+    final result = _utxoRepository.getUtxoTags(_walletId!);
+    if (result.isFailure) throw result.error;
+    final tags = result.value;
+    // A broadcast can have tag links before sync creates the predecessor's output rows.
+    for (final tag in tags) {
+      for (final id in tag.utxoIdList ?? <String>[]) {
+        if (id.length > 64 &&
+            replacedHashes.contains(id.substring(0, 64)) &&
+            RegExp(r'^\d+$').hasMatch(id.substring(64))) {
+          sourceIds.add(id);
+        }
+      }
+    }
+    _tagSourceUtxoIds.addAll(sourceIds);
+    _inheritanceTags = List.unmodifiable(
+      _outputIndexesToMyAddress.isEmpty
+          ? <UtxoTag>[]
+          : tags.where((tag) => tag.utxoIdList?.any(sourceIds.contains) == true),
+    );
+    return _inheritanceTags!;
+  }
 
   bool get isTaprootScriptPathWallet {
     final walletId = _sendInfoProvider.walletId;
@@ -114,13 +156,36 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// - `1302` [ErrorCodes.broadcastError]: isolate 내부 Electrum broadcast RPC 실패(메시지에 상세 포함 가능)
   ///
   /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이며, [FileLogger]에는 브로드캐스트 전용로 일부만 남김.
-  Future<Result<String>> broadcast() async {
+  Future<Result<String>> broadcast({required List<String> inheritedTagIds}) async {
+    final candidates = prepareTagInheritance().map((tag) => tag.id).toSet();
+    final selectedIds = inheritedTagIds.toSet();
+    if (selectedIds.length > 5 || !candidates.containsAll(selectedIds)) {
+      throw ArgumentError('Invalid inherited tag selection');
+    }
+    _tagInheritanceFailed = false;
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final isConnected = await isElectrumServerConnected();
     if (!isConnected) {
       await _nodeProvider.reconnect();
     }
-    return _nodeProvider.broadcast(_signedTx!);
+    final result = await _nodeProvider.broadcast(_signedTx!);
+    if (result.isFailure) return result;
+
+    try {
+      final applied = await _utxoRepository.applyInheritedTags(
+        _walletId!,
+        sourceUtxoIds: _tagSourceUtxoIds,
+        targetUtxoIds: _outputIndexesToMyAddress.map((index) => getUtxoId(_signedTx!.transactionHash, index)).toList(),
+        tagIds: selectedIds.toList(),
+      );
+      if (applied.isFailure) throw applied.error;
+      _tagProvider.notifyTagsChanged();
+    } catch (e) {
+      // The node already accepted this transaction; a local tag error must not invite a resend.
+      _tagInheritanceFailed = true;
+      Logger.error('Transaction sent, but tag inheritance failed: $e');
+    }
+    return result;
   }
 
   Future<bool> isElectrumServerConnected() async {
@@ -202,6 +267,13 @@ class BroadcastingViewModel extends ChangeNotifier {
         rethrow;
       }
     }
+    _outputIndexesToMyAddress.clear();
+    for (var i = 0; i < _signedTx!.outputs.length; i++) {
+      if (originalPsbt.outputs[i].isOwnedBy(_wallet) ||
+          _walletProvider.containsAddress(_walletId!, _signedTx!.outputs[i].getAddress())) {
+        _outputIndexesToMyAddress.add(i);
+      }
+    }
     // input UTXO 유효성 검증 (단, feeBumping일 때는 제외)
     final inputUtxoIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
     final (_, excludedUtxoStatus) =
@@ -255,10 +327,8 @@ class BroadcastingViewModel extends ChangeNotifier {
         outputsToOther.add(outputs[i]);
       } else if (outputs[i].isChange(_wallet)) {
         outputToMyChangeAddress.add(outputs[i]);
-        _outputIndexesToMyAddress.add(i);
       } else {
         outputToMyReceivingAddress.add(outputs[i]);
-        _outputIndexesToMyAddress.add(i);
       }
     }
 
@@ -350,15 +420,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   // pending상태였던 Tx가 confirmed 되었는지 조회
   bool hasTransactionConfirmed() {
     return _txProvider.hasTransactionConfirmed(walletId!, _txProvider.transaction!.transactionHash);
-  }
-
-  Future<void> updateTagsOfUsedUtxos() async {
-    try {
-      await _tagProvider.applyTagsToNewUtxos(_walletId!, _signedTx!.transactionHash, _outputIndexesToMyAddress);
-    } catch (e) {
-      Logger.error(e.toString());
-      // ignore
-    }
   }
 
   bool _hasAllInputsBip32Derivation(Psbt psbt) {

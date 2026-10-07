@@ -13,6 +13,7 @@ class BitBox02Navigator {
   static Future<T?> showConnectScreen<T>({
     required BuildContext context,
     required String screenName,
+    int? walletId,
     String? psbtBase64,
     String? walletName,
     String? walletFingerprint,
@@ -24,6 +25,7 @@ class BitBox02Navigator {
       screenName: screenName,
       child: BitBox02ConnectScreen(
         importSource: WalletImportSource.bitbox02,
+        walletId: walletId,
         psbtBase64: psbtBase64,
         walletName: walletName,
         walletFingerprint: walletFingerprint,

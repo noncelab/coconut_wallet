@@ -290,7 +290,7 @@ class TransactionSyncService {
       await _transactionRepository.markAsRbfReplaced(walletId, rbfCpfpResult.outgoingRbfInfoMap);
       await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
         walletId,
-        rbfCpfpResult.outgoingRbfInfoMap.keys.toSet(),
+        rbfCpfpResult.outgoingRbfInfoMap.values.map((rbf) => rbf.previousTransactionHash).toSet(),
       );
     }
 
