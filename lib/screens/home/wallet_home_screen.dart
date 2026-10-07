@@ -88,7 +88,7 @@ class WalletHomeScreen extends StatefulWidget {
   static CcosOpenStoreIntro get _openStoreIntro => CcosOpenStoreContentSource.intro;
 
   /// P2P 등 외부에서 홈의 "지갑 추가" 바텀시트를 띄울 때 호출.
-  static void openAddWalletIfActive() => _currentState?._showAddWalletMenu(WalletAddDialogMode.walletType);
+  static void openAddWalletIfActive() => _currentState?._showAddWalletTopSheet(WalletAddDialogMode.walletType);
 
   static _WalletHomeScreenState? _currentState;
 
@@ -1173,7 +1173,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           pressedOverlayOpacity: context.coconutColors.homeSurfacePressOverlayOpacity,
           borderRadius: 12,
           onPressed:
-              () => _onAddWalletPressed(
+              () => _onSectionAddWalletPressed(
                 filter,
                 isEmpty ? WalletAddEntrySource.homeEmpty : WalletAddEntrySource.homeAddRow,
               ),
@@ -2139,33 +2139,38 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  void _onAddWalletPressed(WalletFilter filter, WalletAddEntrySource entrySource) {
+  void _onSectionAddWalletPressed(WalletFilter filter, WalletAddEntrySource entrySource) {
     switch (filter) {
       case WalletFilter.all:
-        _showAddWalletMenu(WalletAddDialogMode.walletType, entrySource);
+        _showAddWalletBottomSheet(WalletAddDialogMode.walletType, entrySource);
       case WalletFilter.watchOnly:
-        _showAddWalletMenu(WalletAddDialogMode.watchOnlySource, entrySource);
+        _showAddWalletBottomSheet(WalletAddDialogMode.watchOnlySource, entrySource);
       case WalletFilter.hot:
-        _showAddWalletMenu(WalletAddDialogMode.hotWalletAction, entrySource);
+        _showAddWalletBottomSheet(WalletAddDialogMode.hotWalletAction, entrySource);
     }
   }
 
   void _onAppBarAddWalletPressed() {
     switch (context.read<PreferenceProvider>().homeAddWalletOption) {
       case HomeAddWalletOption.all:
-        _showAddWalletMenu(WalletAddDialogMode.walletType, WalletAddEntrySource.appBar);
+        _showAddWalletTopSheet(WalletAddDialogMode.walletType, WalletAddEntrySource.appBar);
       case HomeAddWalletOption.watchOnly:
-        _showAddWalletMenu(WalletAddDialogMode.watchOnlySource, WalletAddEntrySource.appBar);
+        _showAddWalletTopSheet(WalletAddDialogMode.watchOnlySource, WalletAddEntrySource.appBar);
       case HomeAddWalletOption.hotWallet:
-        _showAddWalletMenu(WalletAddDialogMode.hotWalletAction, WalletAddEntrySource.appBar);
+        _showAddWalletTopSheet(WalletAddDialogMode.hotWalletAction, WalletAddEntrySource.appBar);
       case HomeAddWalletOption.hidden:
         break;
     }
   }
 
-  void _showAddWalletMenu(WalletAddDialogMode mode, [WalletAddEntrySource? entrySource]) {
+  void _showAddWalletTopSheet(WalletAddDialogMode mode, [WalletAddEntrySource? entrySource]) {
     context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: entrySource);
-    WalletAddDialog.show(context, mode);
+    WalletAddDialog.showTopSheet(context, mode);
+  }
+
+  void _showAddWalletBottomSheet(WalletAddDialogMode mode, WalletAddEntrySource entrySource) {
+    context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: entrySource);
+    WalletAddDialog.showBottomSheet(context, mode);
   }
 
   SliverAppBar _buildAppBar(NetworkStatus networkStatus, bool showElectrumReconnected) {
