@@ -1,11 +1,11 @@
 import 'package:coconut_wallet/config/number_format_config.dart';
-import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('IntFormatting Extension Tests (en, groupingSeparator: ",")', () {
-    setUp(() => NumberFormatConfig.instance.update(AppLanguage.en.code));
+  group('IntFormatting Extension Tests (dotDecimal, groupingSeparator: ",")', () {
+    setUp(() => NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal));
 
     test('toThousandsSeparatedString formats zero correctly', () {
       expect(0.toThousandsSeparatedString(), '0');
@@ -38,8 +38,8 @@ void main() {
     });
   });
 
-  group('IntFormatting Extension Tests (de, groupingSeparator: ".")', () {
-    setUp(() => NumberFormatConfig.instance.update(AppLanguage.es.code));
+  group('IntFormatting Extension Tests (commaDecimal, groupingSeparator: ".")', () {
+    setUp(() => NumberFormatConfig.instance.applyPreset(NumberFormatPreset.commaDecimal));
 
     test('toThousandsSeparatedString formats by locale', () {
       expect(1234567.toThousandsSeparatedString(), '1.234.567');

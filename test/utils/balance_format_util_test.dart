@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/config/number_format_config.dart';
-import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -114,9 +115,9 @@ void main() {
     });
 
     test('satoshiToReadableBitcoin - locale에 맞는 구분자 사용', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(123456000), '1.2345 6000');
-      NumberFormatConfig.instance.update(AppLanguage.es.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.commaDecimal);
 
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(123456000), '1,2345 6000');
       expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(100000000000), '1.000');
@@ -125,10 +126,30 @@ void main() {
         '1.000,0000 0000',
       );
     });
+
+    test('satoshiToReadableBitcoin - swiss preset 구분자 사용', () {
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.swiss);
+      expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(123456000), '1.2345 6000');
+      expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(100000000000), '1’000');
+      expect(
+        BalanceFormatUtil.formatSatoshiToReadableBitcoin(100000000000, forceEightDecimals: true),
+        '1’000.0000 0000',
+      );
+    });
+
+    test('satoshiToReadableBitcoin - frenchSpace preset 구분자 사용', () {
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.frenchSpace);
+      expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(123456000), '1,2345 6000');
+      expect(BalanceFormatUtil.formatSatoshiToReadableBitcoin(100000000000), '1 000');
+      expect(
+        BalanceFormatUtil.formatSatoshiToReadableBitcoin(100000000000, forceEightDecimals: true),
+        '1 000,0000 0000',
+      );
+    });
   });
 
   group('BalanceFormatUtil.satoshiToReadableBitcoin', () {
-    setUpAll(() => NumberFormatConfig.instance.update(AppLanguage.en.code));
+    setUpAll(() => NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal));
     test('음수, btc 단위에서 정수 부분이 0', () {
       String result = BalanceFormatUtil.formatSatoshiToReadableBitcoin(-25800142);
       expect(result, '-0.2580 0142');
@@ -239,12 +260,12 @@ void main() {
 
   group('BalanceFormatUtil.parseAmountTextToSats', () {
     test('BTC 입력값을 앱 언어 별 소수/천단위 구분자 기준으로 파싱한다', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       expect(
         BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '1,234.56'),
         123456000000,
       );
-      NumberFormatConfig.instance.update(AppLanguage.es.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.commaDecimal);
       expect(
         BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '1.234,56'),
         123456000000,
@@ -252,16 +273,29 @@ void main() {
       expect(BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '0,001'), 100000);
       expect(BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '0,005'), 500000);
     });
+
+    test('BTC 입력값을 swiss/frenchSpace preset 구분자 기준으로 파싱한다', () {
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.swiss);
+      expect(
+        BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '1’234.56'),
+        123456000000,
+      );
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.frenchSpace);
+      expect(
+        BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: '1 234,56'),
+        123456000000,
+      );
+    });
   });
 
   group('BalanceFormatUtil.formatSatsToBip21InputText', () {
     test('BTC 초기 표시값에 앱 언어 별 소수/천단위 구분자를 사용한다', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       expect(
         BalanceFormatUtil.formatSatsToBip21InputText(currentUnit: BitcoinUnit.btc, initialAmountSats: 123456000),
         '1.23456',
       );
-      NumberFormatConfig.instance.update(AppLanguage.es.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.commaDecimal);
       expect(
         BalanceFormatUtil.formatSatsToBip21InputText(currentUnit: BitcoinUnit.btc, initialAmountSats: 123456000),
         '1,23456',
@@ -270,6 +304,43 @@ void main() {
         BalanceFormatUtil.formatSatsToBip21InputText(currentUnit: BitcoinUnit.btc, initialAmountSats: 100000000000),
         '1.000',
       );
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.frenchSpace);
+      expect(
+        BalanceFormatUtil.formatSatsToBip21InputText(currentUnit: BitcoinUnit.btc, initialAmountSats: 123456000),
+        '1,23456',
+      );
+    });
+  });
+
+  group('표시 → 파싱 round-trip', () {
+    // BIP21 금액 바텀싯, 목표 설정, 가짜 잔액 등이 사용하는 경로:
+    // format(표시 포맷)으로 만든 문자열을 parse로 되돌렀을 때 원래 sats가 나와야 한다.
+    test('BTC 단위: 모든 preset에서 formatSatoshiToBtcInputText → parseAmountTextToSats', () {
+      for (final preset in NumberFormatPreset.values) {
+        NumberFormatConfig.instance.applyPreset(preset);
+        for (final sats in [1, 100000000, 123456000, 100000000000, 2100000000000000]) {
+          final text = BalanceFormatUtil.formatSatoshiToBtcInputText(sats);
+          expect(
+            BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.btc, inputText: text),
+            sats,
+            reason: 'preset: ${preset.name}, text: "$text"',
+          );
+        }
+      }
+    });
+
+    test('sats 단위: 모든 preset에서 toThousandsSeparatedString → parseAmountTextToSats', () {
+      for (final preset in NumberFormatPreset.values) {
+        NumberFormatConfig.instance.applyPreset(preset);
+        for (final sats in [1, 123456000, 100000000000]) {
+          final text = sats.toThousandsSeparatedString();
+          expect(
+            BalanceFormatUtil.parseAmountTextToSats(currentUnit: BitcoinUnit.sats, inputText: text),
+            sats,
+            reason: 'preset: ${preset.name}, text: "$text"',
+          );
+        }
+      }
     });
   });
 

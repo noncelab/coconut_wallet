@@ -210,6 +210,25 @@ class SatoshiAmountInputFormatter extends TextInputFormatter {
   }
 }
 
+/// display 포맷의 금액 텍스트(previous → current)를 비교해 사용자의 키 입력을 추론한다.
+///
+/// grouping separator는 표시용으로 자동 삽입되는 문자이므로 비교 전에 제거한다.
+/// 문자열 중간 삽입/삭제는 없다고 가정하고 꼬리 기준으로 diff한다.
+/// - 문자가 삽입된 경우: 삽입된 문자(열) 반환 (로케일 소수점 구분자 포함 가능, 예: ',')
+/// - 문자가 삭제된 경우: '<' 반환
+/// - 변화가 없는 경우: null 반환
+String? resolveAmountKeyInput(String previous, String current) {
+  final groupingSep = NumberFormatConfig.instance.groupingSeparator;
+  final currentStripped = current.replaceAll(groupingSep, '');
+  final previousStripped = previous.replaceAll(groupingSep, '');
+  if (currentStripped.length > previousStripped.length) {
+    return currentStripped.substring(previousStripped.length);
+  } else if (currentStripped.length < previousStripped.length) {
+    return '<';
+  }
+  return null;
+}
+
 String _insertedText(TextEditingValue oldValue, TextEditingValue newValue) {
   if (newValue.text.length <= oldValue.text.length) return '';
 

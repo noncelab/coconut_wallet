@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/config/number_format_config.dart';
-import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,8 +7,15 @@ import 'package:intl/intl.dart';
 
 void main() {
   group('BtcAmountInputFormatter', () {
-    TextEditingValue format(String text, {String decimalSeparator = '.', String groupingSeparator = ','}) {
-      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
+    TextEditingValue format(
+      String text, {
+      String decimalSeparator = '.',
+      String groupingSeparator = ',',
+      NumberFormatPreset? preset,
+    }) {
+      NumberFormatConfig.instance.applyPreset(
+        preset ?? (decimalSeparator == ',' ? NumberFormatPreset.commaDecimal : NumberFormatPreset.dotDecimal),
+      );
       const formatter = BtcAmountInputFormatter();
       return formatter.formatEditUpdate(
         const TextEditingValue(),
@@ -17,8 +24,15 @@ void main() {
     }
 
     // 실제 키 입력을 한 글자씩 시뮬레이션: 이전 상태에서 다음 상태로 연속 호출
-    List<String> typeSequence(List<String> inputs, {String decimalSeparator = '.', String groupingSeparator = ','}) {
-      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
+    List<String> typeSequence(
+      List<String> inputs, {
+      String decimalSeparator = '.',
+      String groupingSeparator = ',',
+      NumberFormatPreset? preset,
+    }) {
+      NumberFormatConfig.instance.applyPreset(
+        preset ?? (decimalSeparator == ',' ? NumberFormatPreset.commaDecimal : NumberFormatPreset.dotDecimal),
+      );
       const formatter = BtcAmountInputFormatter();
       var current = const TextEditingValue();
       final results = <String>[];
@@ -133,7 +147,7 @@ void main() {
     });
 
     test('CASE1: decimalSep=dot, 쉼표 입력 시 소수점 없으면 마침표로 변환', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       // 소수점 없는 상태에서 쉼표 → 마침표 변환
       expect(format(',').text, '0.');
 
@@ -150,7 +164,7 @@ void main() {
     });
 
     test('CASE2: decimalSep=comma, 마침표 입력 시 소수점 없으면 쉼표로 변환', () {
-      NumberFormatConfig.instance.update(AppLanguage.es.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.commaDecimal);
       // 소수점 없는 상태에서 마침표 → 쉼표 변환
       expect(format('.', decimalSeparator: ',', groupingSeparator: '.').text, '0,');
 
@@ -167,7 +181,7 @@ void main() {
     });
 
     test('rejects multiple decimal separators', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       const oldValue = TextEditingValue(text: '0.1', selection: TextSelection.collapsed(offset: 3));
       const newValue = TextEditingValue(text: '0.1.', selection: TextSelection.collapsed(offset: 4));
       const formatter = BtcAmountInputFormatter();
@@ -180,11 +194,36 @@ void main() {
       expect(format('0.5').text, '0.5');
       expect(format('00.5').text, '0.5');
     });
+
+    test('입력 시 groupingSeparator 자동 삽입/제거 (swiss, groupingSep=\u2019)', () {
+      final seq = typeSequence(['1', '2', '3', '4', '5', '<', '<'], preset: NumberFormatPreset.swiss);
+      expect(seq, ['1', '12', '123', '1’234', '12’345', '1’234', '123']);
+    });
+
+    test('입력 시 groupingSeparator 자동 삽입/제거 (frenchSpace, groupingSep=" ")', () {
+      final seq = typeSequence(['1', '2', '3', '4', '5', '<', '<'], preset: NumberFormatPreset.frenchSpace);
+      expect(seq, ['1', '12', '123', '1 234', '12 345', '1 234', '123']);
+    });
+
+    test('소수점 입력 후 추가 입력 (frenchSpace, decimalSep=,)', () {
+      final seq = typeSequence(['1', '0', '0', '0', ',', '5'], preset: NumberFormatPreset.frenchSpace);
+      expect(seq, ['1', '10', '100', '1 000', '1 000,', '1 000,5']);
+    });
+
+    test('groupingSeparator 직접 입력은 거부 (swiss: \u2019, frenchSpace: " ")', () {
+      final seq = typeSequence(['1', '2', '3', '4', '’', '5'], preset: NumberFormatPreset.swiss);
+      expect(seq, ['1', '12', '123', '1’234', '1’234', '12’345']);
+
+      final seqFr = typeSequence(['1', '2', '3', '4', ' ', '5'], preset: NumberFormatPreset.frenchSpace);
+      expect(seqFr, ['1', '12', '123', '1 234', '1 234', '12 345']);
+    });
   });
 
   group('RateInputFormatter', () {
     TextEditingValue format(String text, {String decimalSeparator = '.'}) {
-      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(
+        decimalSeparator == ',' ? NumberFormatPreset.commaDecimal : NumberFormatPreset.dotDecimal,
+      );
       const formatter = RateInputFormatter();
       return formatter.formatEditUpdate(
         const TextEditingValue(),
@@ -193,7 +232,9 @@ void main() {
     }
 
     List<String> typeSequence(List<String> inputs, {String decimalSeparator = '.'}) {
-      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(
+        decimalSeparator == ',' ? NumberFormatPreset.commaDecimal : NumberFormatPreset.dotDecimal,
+      );
       const formatter = RateInputFormatter();
       var current = const TextEditingValue();
       final results = <String>[];
@@ -244,7 +285,7 @@ void main() {
     });
 
     test('소수점 중복 입력 거부', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       const formatter = RateInputFormatter();
       const before = TextEditingValue(text: '1.5', selection: TextSelection.collapsed(offset: 3));
       const addingDot = TextEditingValue(text: '1.5.', selection: TextSelection.collapsed(offset: 4));
@@ -252,7 +293,7 @@ void main() {
     });
 
     test('소수 3자리 이상 거부', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       const formatter = RateInputFormatter();
       const before = TextEditingValue(text: '1.12', selection: TextSelection.collapsed(offset: 4));
       const addingDigit = TextEditingValue(text: '1.123', selection: TextSelection.collapsed(offset: 5));
@@ -265,7 +306,7 @@ void main() {
     });
 
     test('정수 9자리 이상 거부', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       const formatter = RateInputFormatter();
       const before = TextEditingValue(text: '99999999', selection: TextSelection.collapsed(offset: 8));
       const addingDigit = TextEditingValue(text: '999999999', selection: TextSelection.collapsed(offset: 9));
@@ -280,7 +321,7 @@ void main() {
     });
 
     test('정수부/소수부 최대 자리수를 지정할 수 있다', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       const formatter = RateInputFormatter(integerPlaces: 2, decimalPlaces: 1);
 
       const valid = TextEditingValue(text: '99.9', selection: TextSelection.collapsed(offset: 4));
@@ -311,7 +352,7 @@ void main() {
     });
 
     test('숫자가 아닌 문자 입력 거부', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       const formatter = RateInputFormatter();
       const before = TextEditingValue(text: '1', selection: TextSelection.collapsed(offset: 1));
       const addingAlpha = TextEditingValue(text: '1a', selection: TextSelection.collapsed(offset: 2));
@@ -321,7 +362,9 @@ void main() {
 
   group('FiatAmountInputFormatter', () {
     TextEditingValue format(String text, {required int decimalPlaces, String decimalSeparator = '.'}) {
-      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(
+        decimalSeparator == ',' ? NumberFormatPreset.commaDecimal : NumberFormatPreset.dotDecimal,
+      );
       final formatter = FiatAmountInputFormatter(decimalPlaces: decimalPlaces);
       return formatter.formatEditUpdate(
         const TextEditingValue(),
@@ -330,7 +373,9 @@ void main() {
     }
 
     List<String> typeSequence(List<String> inputs, {required int decimalPlaces, String decimalSeparator = '.'}) {
-      NumberFormatConfig.instance.update(decimalSeparator == ',' ? AppLanguage.es.code : AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(
+        decimalSeparator == ',' ? NumberFormatPreset.commaDecimal : NumberFormatPreset.dotDecimal,
+      );
       final formatter = FiatAmountInputFormatter(decimalPlaces: decimalPlaces);
       var current = const TextEditingValue();
       final results = <String>[];
@@ -359,7 +404,7 @@ void main() {
     });
 
     test('decimalPlaces=2를 초과하는 소수 자리 입력은 거부한다', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       const formatter = FiatAmountInputFormatter(decimalPlaces: 2);
       const before = TextEditingValue(text: '50.25', selection: TextSelection.collapsed(offset: 5));
       const addingDigit = TextEditingValue(text: '50.255', selection: TextSelection.collapsed(offset: 6));
@@ -367,7 +412,7 @@ void main() {
     });
 
     test('KRW처럼 decimalPlaces=0인 경우 소수점 입력 자체를 거부한다', () {
-      NumberFormatConfig.instance.update(AppLanguage.en.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
       const formatter = FiatAmountInputFormatter(decimalPlaces: 0);
       const before = TextEditingValue(text: '50000', selection: TextSelection.collapsed(offset: 5));
       const addingDot = TextEditingValue(text: '50000.', selection: TextSelection.collapsed(offset: 6));
@@ -386,7 +431,7 @@ void main() {
 
   group('SatoshiAmountInputFormatter', () {
     test('keeps cursor at the end when locale grouping separator is dot', () {
-      NumberFormatConfig.instance.update(AppLanguage.es.code);
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.commaDecimal);
       const formatter = SatoshiAmountInputFormatter();
       const oldValue = TextEditingValue(text: '123', selection: TextSelection.collapsed(offset: 3));
       const newValue = TextEditingValue(text: '1234', selection: TextSelection.collapsed(offset: 4));
@@ -395,6 +440,50 @@ void main() {
 
       expect(result.text, '1.234');
       expect(result.selection.baseOffset, result.text.length);
+    });
+
+    test('formats with swiss/frenchSpace grouping separators', () {
+      const formatter = SatoshiAmountInputFormatter();
+      const oldValue = TextEditingValue(text: '123', selection: TextSelection.collapsed(offset: 3));
+      const newValue = TextEditingValue(text: '1234', selection: TextSelection.collapsed(offset: 4));
+
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.swiss);
+      expect(formatter.formatEditUpdate(oldValue, newValue).text, '1’234');
+
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.frenchSpace);
+      expect(formatter.formatEditUpdate(oldValue, newValue).text, '1 234');
+    });
+  });
+
+  group('resolveAmountKeyInput', () {
+    test('dotDecimal: grouping "," 제거 후 삽입/삭제 문자를 추론한다', () {
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
+      expect(resolveAmountKeyInput('123', '1,234'), '4');
+      expect(resolveAmountKeyInput('1,234', '1,234.5'), '.5');
+      expect(resolveAmountKeyInput('1,234', '123'), '<');
+      expect(resolveAmountKeyInput('1,234', '1,234'), isNull);
+    });
+
+    test('commaDecimal: grouping "." 제거 후 삽입/삭제 문자를 추론한다', () {
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.commaDecimal);
+      expect(resolveAmountKeyInput('123', '1.234'), '4');
+      expect(resolveAmountKeyInput('1.234', '1.234,'), ',');
+      expect(resolveAmountKeyInput('1.234,5', '1.234,'), '<');
+      expect(resolveAmountKeyInput('1.234,5', '1.234,5'), isNull);
+    });
+
+    test('swiss: grouping "\u2019" 제거 후 삽입/삭제 문자를 추론한다', () {
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.swiss);
+      expect(resolveAmountKeyInput('123', '1’234'), '4');
+      expect(resolveAmountKeyInput('1’234', '1’234.'), '.');
+      expect(resolveAmountKeyInput('1’234.5', '1’234.'), '<');
+    });
+
+    test('frenchSpace: grouping " " 제거 후 삽입/삭제 문자를 추론한다', () {
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.frenchSpace);
+      expect(resolveAmountKeyInput('123', '1 234'), '4');
+      expect(resolveAmountKeyInput('1 234', '1 234,'), ',');
+      expect(resolveAmountKeyInput('1 234,5', '1 234,'), '<');
     });
   });
 }
