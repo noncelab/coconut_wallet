@@ -6,6 +6,7 @@ import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
@@ -19,6 +20,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
+import 'package:intl/intl.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
@@ -69,6 +71,10 @@ class PreferenceProvider extends ChangeNotifier {
   /// 언어 설정
   late String _language;
   String get language => _language;
+
+  /// 숫자 형식 프리셋
+  late NumberFormatPreset _numberFormatPreset;
+  NumberFormatPreset get numberFormatPreset => _numberFormatPreset;
 
   /// UTXO 수동선택 모드 여부
   late bool _isManualUtxoSelectionMode;
@@ -152,6 +158,7 @@ class PreferenceProvider extends ChangeNotifier {
     // 통화 설정 초기화
     _initializeFiat();
     _initializeLanguageFromSystem();
+    _initializeNumberFormatFromLocale();
 
     _electrumServerProvider.addListener(notifyListeners);
     _blockExplorerProvider.addListener(notifyListeners);
@@ -232,11 +239,36 @@ class PreferenceProvider extends ChangeNotifier {
     try {
       Logger.log('Applying language setting: $_language');
       LocaleSettings.setLocaleSync(resolveAppLocale(_language));
-      NumberFormatConfig.instance.update(_language);
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
       Logger.log('Language initialization failed: $e');
     }
+  }
+
+  /// OS locale을 기반으로 숫자 포맷 preset을 초기화합니다.
+  /// 이미 저장된 값이 있으면 해당 값을 사용하고, 없으면 시스템 locale에서 유추하여 저장합니다.
+  void _initializeNumberFormatFromLocale() {
+    NumberFormatPreset preset;
+
+    if (_sharedPrefs.isContainsKey(SharedPrefKeys.kNumberFormatPreset)) {
+      preset = NumberFormatPreset.fromCode(_sharedPrefs.getString(SharedPrefKeys.kNumberFormatPreset));
+    } else {
+      final locale = PlatformDispatcher.instance.locale;
+      final localeName = Intl.canonicalizedLocale(locale.toLanguageTag());
+      preset = NumberFormatPreset.fromLocale(localeName);
+      _sharedPrefs.setString(SharedPrefKeys.kNumberFormatPreset, preset.name);
+    }
+
+    _numberFormatPreset = preset;
+    NumberFormatConfig.instance.applyPreset(preset);
+  }
+
+  /// 설정 화면에서 사용자가 숫자 포맷 preset을 변경할 때 사용합니다.
+  Future<void> changeNumberFormatPreset(NumberFormatPreset preset) async {
+    _numberFormatPreset = preset;
+    await _sharedPrefs.setString(SharedPrefKeys.kNumberFormatPreset, preset.name);
+    NumberFormatConfig.instance.applyPreset(preset);
+    notifyListeners();
   }
 
   /// 홈 화면 잔액 숨기기

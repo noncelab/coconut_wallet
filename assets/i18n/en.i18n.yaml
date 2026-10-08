@@ -797,6 +797,7 @@ settings_screen:
   change_password: "Change Password"
   fiat: "Fiat"
   language: "Language"
+  number_format: "Number Format"
   utxo_manual_selection: "UTXO Manual Selection"
   utxo_manual_selection_description: "Select UTXOs manually for sending"
   import_labels: "Import Notes"
@@ -1522,6 +1523,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+
+number_format_bottom_sheet:
+  title: "Number Format"
 
 estimated_fee_bottom_sheet:
   title: "Estimated Fee"
