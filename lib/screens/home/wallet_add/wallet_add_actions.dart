@@ -6,6 +6,7 @@ import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
@@ -72,6 +73,26 @@ abstract final class WalletAddActions {
       },
     );
     return false;
+  }
+
+  /// 지갑 추가 흐름에 쌓이는 화면. 지갑을 추가하고 나면 이 화면들을 걷어 내 뒤로 가도 다시 나오지 않게 한다.
+  static const flowRouteNames = {
+    WalletAddScreen.routeName,
+    WalletAddScreen.sourcesRouteName,
+    AppRouteNames.walletAddScanner,
+    AppRouteNames.bitbox02Connect,
+    AppRouteNames.trezorTransportSelect,
+    AppRouteNames.trezorBleConnect,
+    AppRouteNames.trezorUsbConnect,
+  };
+
+  /// 추가한 지갑 화면으로 가면서 지갑 추가 흐름 화면을 모두 걷어 낸다.
+  static Future<void> finishWithWalletDetail(BuildContext context, WalletDetailRouteArgs arguments) {
+    return Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRouteNames.walletDetail,
+      (route) => !flowRouteNames.contains(route.settings.name),
+      arguments: arguments,
+    );
   }
 
   static String hotWalletRoute({required bool restore}) =>

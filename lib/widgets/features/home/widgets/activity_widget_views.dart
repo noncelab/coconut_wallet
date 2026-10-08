@@ -252,7 +252,7 @@ class TransactionActivityView extends StatelessWidget {
     this.detailed = false,
   });
 
-  static const double detailedChartHeight = 120;
+  static const double detailedChartHeight = 84;
 
   @override
   Widget build(BuildContext context) {
@@ -342,7 +342,7 @@ class TransactionActivityView extends StatelessWidget {
           Container(
             key: const Key('transaction-activity-summary'),
             padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(color: HomeCardSurface.of(context), borderRadius: BorderRadius.circular(20)),
             child: legend(),
           ),
         ],
@@ -517,7 +517,7 @@ class SavingsGoalView extends StatelessWidget {
                     FractionallySizedBox(
                       key: const Key('goal-progress-fill'),
                       widthFactor: goal.progress,
-                      child: DecoratedBox(
+                      child: Container(
                         decoration: BoxDecoration(color: colors.success, borderRadius: BorderRadius.circular(4)),
                       ),
                     ),
@@ -526,10 +526,7 @@ class SavingsGoalView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              '${(goal.progress * 100).toStringAsFixed(1)}%',
-              style: CoconutTypography.caption_10_NumberBold.copyWith(color: colors.primaryText),
-            ),
+            Text(goal.percentText, style: CoconutTypography.caption_10_NumberBold.copyWith(color: colors.primaryText)),
           ],
         ],
       ),

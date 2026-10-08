@@ -161,4 +161,32 @@ void main() {
   test('matching ignores case and spaces', () {
     expect(registry.search('p i n').first.item.id, FeatureIds.appSettings);
   });
+
+  test('labels, sub-feature labels and search words follow the app language after it changes', () {
+    final registry = FeatureRegistry.builtin();
+    addTearDown(() => LocaleSettings.setLocale(AppLocale.ko));
+
+    LocaleSettings.setLocale(AppLocale.ko);
+    expect(registry.byId(FeatureIds.send)!.label(), t.feature_registry.send);
+    expect(registry.search('송금').first.item.id, FeatureIds.send);
+
+    LocaleSettings.setLocale(AppLocale.en);
+    expect(registry.byId(FeatureIds.send)!.label(), 'Send');
+    expect(registry.byId('${FeatureIds.walletDetail}.delete')!.label(), 'Delete wallet');
+    expect(registry.search('withdraw').first.item.id, FeatureIds.send);
+    expect(registry.search('recovery phrase').first.matchedPath.last, 'Back up mnemonic');
+    expect(registry.search('xpub'), isNotEmpty);
+  });
+
+  test('every language has search words and a label for every sub-feature', () {
+    final registry = FeatureRegistry.builtin();
+    addTearDown(() => LocaleSettings.setLocale(AppLocale.ko));
+    for (final locale in AppLocale.values) {
+      LocaleSettings.setLocale(locale);
+      for (final item in registry.all.where((item) => item.localizedKeywords != null)) {
+        expect(item.localizedKeywords!(), isNotEmpty, reason: '${locale.languageCode} ${item.id}');
+        expect(item.label().trim(), isNotEmpty, reason: '${locale.languageCode} ${item.id}');
+      }
+    }
+  });
 }

@@ -77,7 +77,7 @@ class FeatureRegistry {
 
   static int _itemScore(FeatureItem item, String query) {
     var best = _textScore(item.label(), query);
-    for (final keyword in item.keywords) {
+    for (final keyword in [...item.keywords, ...?item.localizedKeywords?.call()]) {
       final score = _textScore(keyword, query);
       if (score > best) best = score;
     }

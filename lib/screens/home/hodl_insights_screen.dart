@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutColors, CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
@@ -20,7 +24,12 @@ import 'package:provider/provider.dart';
 
 /// 호들 인사이트: 잔액 추이, 목표, 지갑별 잔액, UTXO 요약, 거래 활동을 한 화면에서 기간을 바꿔 가며 본다.
 class HodlInsightsScreen extends StatefulWidget {
-  const HodlInsightsScreen({super.key});
+  static const transitionDuration = Duration(milliseconds: 480);
+
+  /// 잔액 위젯에서 열면 그 위젯 카드가 총 잔액 카드로 날아오며 바뀐다.
+  final Object? balanceHeroTag;
+
+  const HodlInsightsScreen({super.key, this.balanceHeroTag});
 
   /// 홈 위젯이나 모든 기능에서 연다. 위젯에서 열면 그 위젯의 지갑 범위와 기간으로 시작한다.
   static Future<void> open(
@@ -29,22 +38,34 @@ class HodlInsightsScreen extends StatefulWidget {
     HomeWidgetPeriod balancePeriod = HomeWidgetPeriod.week,
     HomeWidgetPeriod activityPeriod = HomeWidgetPeriod.week,
     HodlInsightsSection section = HodlInsightsSection.balance,
+    Object? balanceHeroTag,
   }) {
     final data = context.read<HomeWidgetsViewModel>().withoutFakeBalance();
+    Widget page(BuildContext _) => ChangeNotifierProvider(
+      create:
+          (_) => HodlInsightsViewModel(
+            data,
+            initialSection: section,
+            walletIds: walletIds,
+            balancePeriod: balancePeriod,
+            activityPeriod: activityPeriod,
+          ),
+      child: HodlInsightsScreen(balanceHeroTag: balanceHeroTag),
+    );
+    const settings = RouteSettings(name: '/hodl-insights');
+    if (balanceHeroTag == null) {
+      return Navigator.of(context).push(CupertinoPageRoute(settings: settings, builder: page));
+    }
     return Navigator.of(context).push(
-      CupertinoPageRoute(
-        settings: const RouteSettings(name: '/hodl-insights'),
-        builder:
-            (_) => ChangeNotifierProvider(
-              create:
-                  (_) => HodlInsightsViewModel(
-                    data,
-                    initialSection: section,
-                    walletIds: walletIds,
-                    balancePeriod: balancePeriod,
-                    activityPeriod: activityPeriod,
-                  ),
-              child: const HodlInsightsScreen(),
+      PageRouteBuilder(
+        settings: settings,
+        transitionDuration: transitionDuration,
+        reverseTransitionDuration: transitionDuration,
+        pageBuilder: (context, _, __) => page(context),
+        transitionsBuilder:
+            (_, animation, __, child) => FadeTransition(
+              opacity: CurvedAnimation(parent: animation, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
+              child: child,
             ),
       ),
     );
@@ -137,44 +158,84 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                 ? const _NoWalletsView()
                 : SingleChildScrollView(
                   key: const Key('hodl-insights-list'),
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _section(HodlInsightsSection.balance, child: _BalanceCard(viewModel: viewModel)),
-                      CoconutLayout.spacing_400h,
-                      _section(
-                        HodlInsightsSection.goal,
-                        child: _GoalCard(viewModel: viewModel, onSetGoal: () => _openSettings(context, viewModel)),
-                      ),
-                      _section(
-                        HodlInsightsSection.balanceByWallet,
-                        title: _SectionTitle(t.home_widgets.balance_by_wallet),
-                        child: SizedBox(
-                          height: 200,
-                          child: BalanceByWalletView(
-                            shares: viewModel.balanceShares(t.home_widgets.others),
-                            total: _btcAmount(viewModel, viewModel.balance),
-                            amountText: (sats) => _btcNumber(viewModel, sats),
-                          ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _section(
+                              HodlInsightsSection.balance,
+                              child:
+                                  widget.balanceHeroTag == null
+                                      ? _BalanceCard(viewModel: viewModel)
+                                      : Hero(
+                                        tag: widget.balanceHeroTag!,
+                                        flightShuttleBuilder: _cardShuttle,
+                                        child: _BalanceCard(viewModel: viewModel),
+                                      ),
+                            ),
+                            CoconutLayout.spacing_400h,
+                            _section(
+                              HodlInsightsSection.goal,
+                              child: _GoalCard(
+                                viewModel: viewModel,
+                                onSetGoal: () => _openSettings(context, viewModel),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      _section(
-                        HodlInsightsSection.utxo,
-                        title: _SectionTitle(t.hodl_insights.utxo_summary),
-                        child: _UtxoSummaryCard(viewModel: viewModel),
-                      ),
-                      _section(
-                        HodlInsightsSection.activity,
-                        title: _SectionTitle(
-                          t.hodl_insights.transaction_activity,
-                          trailing: _PeriodChips(
-                            key: const Key('hodl-insights-activity-periods'),
-                            selected: viewModel.activityPeriod,
-                            onSelected: viewModel.selectActivityPeriod,
+                      _LowerBand(
+                        children: [
+                          _section(
+                            HodlInsightsSection.balanceByWallet,
+                            title: _SectionTitle(t.home_widgets.balance_by_wallet, top: 10),
+                            child: SizedBox(
+                              height: 200,
+                              child: _OpenProgress(
+                                progress: 1,
+                                builder:
+                                    (context, reveal) => BalanceByWalletView(
+                                      key: const Key('hodl-insights-balance-by-wallet'),
+                                      shares: viewModel.balanceShares(t.home_widgets.others),
+                                      total: _btcAmount(viewModel, viewModel.balance),
+                                      amountText: (sats) => _btcNumber(viewModel, sats),
+                                      reveal: reveal,
+                                    ),
+                              ),
+                            ),
                           ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _section(
+                              HodlInsightsSection.utxo,
+                              title: _SectionTitle(t.hodl_insights.utxo_summary, top: 0),
+                              child: _UtxoSummaryCard(viewModel: viewModel),
+                            ),
+                            _section(
+                              HodlInsightsSection.activity,
+                              title: _SectionTitle(
+                                t.hodl_insights.transaction_activity,
+                                top: _sectionGap,
+                                trailing: _PeriodChips(
+                                  key: const Key('hodl-insights-activity-periods'),
+                                  selected: viewModel.activityPeriod,
+                                  onSelected: viewModel.selectActivityPeriod,
+                                ),
+                              ),
+                              child: _ActivityCard(viewModel: viewModel),
+                            ),
+                          ],
                         ),
-                        child: _ActivityCard(viewModel: viewModel),
                       ),
                     ],
                   ),
@@ -182,6 +243,46 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
       ),
     );
   }
+}
+
+/// 지갑별 잔액 · UTXO 요약 · 거래 활동 사이: 위 카드 아래에서 다음 제목 글자까지
+const _sectionGap = 40.0;
+
+/// 홈 위젯 카드와 인사이트 카드가 날아가는 동안 내용을 겹쳐 바꾼다. 두 카드는 제 크기로 그린 뒤 폭에 맞춰 줄이고 넘치는 아래는 자른다.
+Widget _cardShuttle(
+  BuildContext flightContext,
+  Animation<double> animation,
+  HeroFlightDirection direction,
+  BuildContext fromHeroContext,
+  BuildContext toHeroContext,
+) {
+  final push = direction == HeroFlightDirection.push;
+  final widgetContext = push ? fromHeroContext : toHeroContext;
+  final cardContext = push ? toHeroContext : fromHeroContext;
+  final progress = CurvedAnimation(
+    parent: ModalRoute.of(cardContext)?.animation ?? animation,
+    curve: const Interval(0.15, 0.85),
+  );
+  Widget sized(BuildContext heroContext) {
+    final size = (heroContext.findRenderObject() as RenderBox?)?.size ?? Size.zero;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: FittedBox(
+        fit: BoxFit.fitWidth,
+        alignment: Alignment.topCenter,
+        clipBehavior: Clip.hardEdge,
+        child: SizedBox.fromSize(size: size, child: (heroContext.widget as Hero).child),
+      ),
+    );
+  }
+
+  return Stack(
+    fit: StackFit.expand,
+    children: [
+      FadeTransition(opacity: ReverseAnimation(progress), child: sized(widgetContext)),
+      FadeTransition(opacity: progress, child: sized(cardContext)),
+    ],
+  );
 }
 
 String _btcNumber(HodlInsightsViewModel viewModel, int sats) => viewModel.data.unit.displayBitcoinAmount(sats);
@@ -310,6 +411,131 @@ class _NoWalletsView extends StatelessWidget {
   }
 }
 
+/// 지갑별 잔액 구역: 회색 띠가 카드 중간부터 천천히 옅어져 UTXO 요약 제목에서 끝난다. 띠 위 카드는 바탕색으로 뒤집는다.
+class _LowerBand extends StatelessWidget {
+  /// 카드 아래 띠의 끝 여백. 띠는 카드 중간부터 천천히 옅어져 이 여백 끝에서 사라진다.
+  static const _fadeHeight = _sectionGap;
+
+  final List<Widget> children;
+
+  const _LowerBand({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final surface = colors.homeSurface;
+    return Container(
+      key: const Key('hodl-insights-lower-band'),
+      margin: const EdgeInsets.only(top: 24),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, _fadeHeight),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [surface, surface, surface.withValues(alpha: 0.55), surface.withValues(alpha: 0)],
+          stops: const [0, 0.45, 0.8, 1],
+        ),
+      ),
+      child: HomeCardSurface(
+        color: colors.homeBackground,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+      ),
+    );
+  }
+}
+
+/// 잔액 그래프. 손가락을 올리거나 끌면 그 날의 잔액과 날짜를 보여 준다.
+class _BalanceChart extends StatefulWidget {
+  final HodlInsightsViewModel viewModel;
+
+  const _BalanceChart({required this.viewModel});
+
+  @override
+  State<_BalanceChart> createState() => _BalanceChartState();
+}
+
+class _BalanceChartState extends State<_BalanceChart> {
+  int? _selected;
+
+  void _select(Offset position, double width, int count) {
+    if (count < 2 || width <= 0) return;
+    final index = (position.dx.clamp(0.0, width) / width * (count - 1)).round();
+    if (index != _selected) setState(() => _selected = index);
+  }
+
+  void _clear() {
+    if (_selected != null) setState(() => _selected = null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final viewModel = widget.viewModel;
+    final values = viewModel.chartBalances;
+    final days = viewModel.chartBalanceDays;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.biggest;
+        final selected = _selected != null && _selected! < values.length && _selected! < days.length ? _selected : null;
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (details) => _select(details.localPosition, size.width, values.length),
+          onTapUp: (_) => _clear(),
+          onTapCancel: _clear,
+          onHorizontalDragStart: (details) => _select(details.localPosition, size.width, values.length),
+          onHorizontalDragUpdate: (details) => _select(details.localPosition, size.width, values.length),
+          onHorizontalDragEnd: (_) => _clear(),
+          onHorizontalDragCancel: _clear,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(child: HomeSparkline(values: values, selectedIndex: selected)),
+              if (selected != null)
+                Builder(
+                  builder: (context) {
+                    final point = HomeSparkline.pointOf(values, selected, size);
+                    const labelWidth = 150.0;
+                    final left =
+                        (point.dx - labelWidth / 2).clamp(0.0, math.max(0.0, size.width - labelWidth)).toDouble();
+                    final day = days[selected];
+                    return Positioned(
+                      left: left,
+                      top: -36,
+                      width: labelWidth,
+                      child: Container(
+                        key: const Key('hodl-insights-balance-readout'),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: colors.homeBackground, borderRadius: BorderRadius.circular(8)),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                _btcText(viewModel, values[selected].toInt()),
+                                style: CoconutTypography.body3_12_NumberBold.copyWith(color: colors.primaryText),
+                              ),
+                            ),
+                            Text(
+                              viewModel.chartUsesMonths
+                                  ? '${formatHomeMonth(day)} ${day.year}'
+                                  : formatHomeShortDate(day),
+                              style: CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _InsightCard extends StatelessWidget {
   final Widget child;
 
@@ -319,7 +545,7 @@ class _InsightCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: context.coconutColors.homeSurface, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: HomeCardSurface.of(context), borderRadius: BorderRadius.circular(20)),
       child: child,
     );
   }
@@ -328,14 +554,16 @@ class _InsightCard extends StatelessWidget {
 class _SectionTitle extends StatelessWidget {
   final String text;
   final Widget? trailing;
+  final double top;
 
-  const _SectionTitle(this.text, {this.trailing});
+  const _SectionTitle(this.text, {this.trailing, this.top = 32});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 32, 0, 12),
+      padding: EdgeInsets.fromLTRB(4, top, 0, 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Text(
@@ -393,7 +621,10 @@ class _PeriodChips extends StatelessWidget {
 
 class _BalanceCard extends StatelessWidget {
   /// 총 잔액 라벨, 잔액, 환산액 사이 간격
-  static const _rowGap = 4.0;
+  static const _rowGap = 0.0;
+
+  /// 줄 위아래 여백을 줄여 세 줄을 촘촘하게 붙인다.
+  static const _lineHeight = 1.15;
 
   final HodlInsightsViewModel viewModel;
 
@@ -404,7 +635,7 @@ class _BalanceCard extends StatelessWidget {
     final colors = context.coconutColors;
     final data = viewModel.data;
     final delta = viewModel.changeSats;
-    final deltaColor = homePriceColorOf(context, delta.sign.toDouble(), neutral: colors.secondaryText);
+    final deltaColor = homePriceColorOf(context, delta.sign.toDouble(), neutral: colors.primaryText);
     final days = viewModel.chartDays;
     final rate = viewModel.changeRate;
     final rateColor = homePriceColorOf(context, rate, neutral: colors.tertiaryText);
@@ -422,7 +653,10 @@ class _BalanceCard extends StatelessWidget {
                   child: Text(
                     t.hodl_insights.total_balance,
                     key: const Key('hodl-insights-total-label'),
-                    style: CoconutTypography.body2_14.copyWith(color: colors.primaryText, fontWeight: FontWeight.w400),
+                    style: CoconutTypography.body3_12.copyWith(
+                      color: colors.secondaryText,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                 ),
               ),
@@ -436,12 +670,12 @@ class _BalanceCard extends StatelessWidget {
           const SizedBox(height: _rowGap),
           LayoutBuilder(
             builder: (context, constraints) {
-              final rateStyle = CoconutTypography.body3_12_Number.copyWith(color: rateColor);
+              final rateStyle = CoconutTypography.body3_12_Number.copyWith(color: rateColor, height: _lineHeight);
               final rateText = hasChange ? formatHomeRate(rate) : '–';
               final rateWidth = measureHomeText(context, rateText, rateStyle) + (hasChange ? 14 + 2 : 0);
               final amount = _btcAmount(viewModel, viewModel.balance);
-              final numberStyle = CoconutTypography.heading2_28_NumberBold;
-              final unitStyle = CoconutTypography.heading4_18_Number;
+              final numberStyle = CoconutTypography.heading3_21_NumberBold.copyWith(height: _lineHeight);
+              final unitStyle = CoconutTypography.body1_16_Number.copyWith(height: _lineHeight);
               final available = constraints.maxWidth - rateWidth - 12 - 1;
               var scale = 1.0;
               TextStyle scaled(TextStyle style) => style.copyWith(fontSize: style.fontSize! * scale);
@@ -488,22 +722,22 @@ class _BalanceCard extends StatelessWidget {
                   key: const Key('hodl-insights-balance-fiat'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: CoconutTypography.body2_14_Number.copyWith(color: colors.secondaryText),
+                  style: CoconutTypography.body2_14_Number.copyWith(color: colors.secondaryText, height: _lineHeight),
                 ),
               ),
               CoconutLayout.spacing_300w,
               Text(
                 '${delta >= 0 ? '+' : '-'} ${_btcText(viewModel, delta.abs())}',
                 key: const Key('hodl-insights-balance-delta'),
-                style: CoconutTypography.body3_12_Number.copyWith(color: deltaColor),
+                style: CoconutTypography.body3_12_Number.copyWith(color: deltaColor, height: _lineHeight),
               ),
             ],
           ),
           CoconutLayout.spacing_500h,
           SizedBox(
             key: const Key('hodl-insights-balance-chart'),
-            height: 140,
-            child: HomeSparkline(values: viewModel.chartBalances),
+            height: 88,
+            child: _BalanceChart(viewModel: viewModel),
           ),
           CoconutLayout.spacing_200h,
           Row(
@@ -526,6 +760,78 @@ class _BalanceCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 화면을 열 때 차오르는 값(목표 막대, 지갑별 잔액 도넛). 화면이 다 열린 뒤 잠깐 쉬었다가 0에서 천천히 차오르고, 값이 바뀌면 지금 값에서 이어서 움직인다.
+class _OpenProgress extends StatefulWidget {
+  static const fillDuration = Duration(milliseconds: 1600);
+  static const startDelay = Duration(milliseconds: 250);
+
+  final double progress;
+  final Widget Function(BuildContext context, double progress) builder;
+
+  const _OpenProgress({required this.progress, required this.builder});
+
+  @override
+  State<_OpenProgress> createState() => _OpenProgressState();
+}
+
+class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(vsync: this, duration: _OpenProgress.fillDuration);
+  late final Animation<double> _curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+  double _from = 0;
+  late double _to = widget.progress;
+  Animation<double>? _route;
+  Timer? _start;
+
+  double get _value => _from + (_to - _from) * _curve.value;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_route != null) return;
+    final route = ModalRoute.of(context)?.animation ?? kAlwaysCompleteAnimation;
+    _route = route;
+    if (route.isCompleted) {
+      _scheduleStart();
+    } else {
+      route.addStatusListener(_onRouteStatus);
+    }
+  }
+
+  void _onRouteStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _route?.removeStatusListener(_onRouteStatus);
+    _scheduleStart();
+  }
+
+  void _scheduleStart() {
+    _start = Timer(_OpenProgress.startDelay, () {
+      if (mounted) _controller.forward(from: 0);
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _OpenProgress oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.progress == _to) return;
+    _from = _value;
+    _to = widget.progress;
+    if (_start?.isActive ?? false) return;
+    _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _start?.cancel();
+    _route?.removeStatusListener(_onRouteStatus);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      AnimatedBuilder(animation: _controller, builder: (context, _) => widget.builder(context, _value));
 }
 
 class _GoalCard extends StatelessWidget {
@@ -578,34 +884,55 @@ class _GoalCard extends StatelessWidget {
               ),
             ),
             CoconutLayout.spacing_200h,
-            Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: SizedBox(
-                      height: 12,
-                      child: Stack(
+            Builder(
+              builder: (context) {
+                final percentStyle = CoconutTypography.heading4_18_NumberBold.copyWith(
+                  color: colors.primaryText,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                );
+                return _OpenProgress(
+                  progress: goal.ratio,
+                  builder:
+                      (context, ratio) => Row(
                         children: [
-                          Container(color: colors.surfaceMuted),
-                          FractionallySizedBox(
-                            key: const Key('goal-progress-fill'),
-                            widthFactor: goal.progress,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(color: colors.success, borderRadius: BorderRadius.circular(6)),
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: SizedBox(
+                                height: 12,
+                                child: Stack(
+                                  children: [
+                                    Container(color: colors.surfaceMuted),
+                                    FractionallySizedBox(
+                                      key: const Key('goal-progress-fill'),
+                                      widthFactor: ratio.clamp(0.0, 1.0),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: colors.success,
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          CoconutLayout.spacing_400w,
+                          SizedBox(
+                            width: measureHomeText(context, goal.percentText, percentStyle) + 1,
+                            child: Text(
+                              formatGoalPercent(ratio),
+                              key: const Key('goal-progress-percent'),
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              style: percentStyle,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ),
-                CoconutLayout.spacing_400w,
-                Text(
-                  '${(goal.progress * 100).toStringAsFixed(1)}%',
-                  style: CoconutTypography.heading4_18_NumberBold.copyWith(color: colors.primaryText),
-                ),
-              ],
+                );
+              },
             ),
           ],
         ],
@@ -629,109 +956,121 @@ class _UtxoSummaryCard extends StatelessWidget {
     final total = buckets.total;
     final bucketColors = [for (final color in viewModel.data.utxoBucketColors) legibleOn(color, colors.homeSurface)];
     return _InsightCard(
-      child: Column(
-        key: const Key('hodl-insights-utxo'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            t.hodl_insights.total_utxos(count: total),
-            style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText),
-          ),
-          CoconutLayout.spacing_300h,
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              height: 12,
-              child:
-                  total == 0
-                      ? Container(color: colors.surfaceMuted)
-                      : Row(
-                        children: [
-                          for (var i = 0; i < buckets.counts.length; i++)
-                            if (buckets.counts[i] > 0)
-                              Expanded(
-                                flex: buckets.counts[i],
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 1),
-                                  color: bucketColors[i],
-                                ),
-                              ),
-                        ],
-                      ),
-            ),
-          ),
-          CoconutLayout.spacing_200h,
-          for (var i = 0; i < buckets.counts.length; i++) ...[
-            if (i > 0) Divider(height: 1, color: colors.divider),
-            Padding(
-              key: ValueKey('hodl-insights-utxo-row-$i'),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(color: bucketColors[i], shape: BoxShape.circle),
-                  ),
-                  CoconutLayout.spacing_200w,
-                  Expanded(
-                    flex: 4,
-                    child: FittedBox(
-                      key: ValueKey('hodl-insights-utxo-label-$i'),
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '${bucketLabels[i]} BTC',
-                        maxLines: 1,
-                        style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: _columnGap),
-                  Expanded(
-                    flex: 2,
-                    child: FittedBox(
-                      key: ValueKey('hodl-insights-utxo-count-$i'),
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        t.hodl_insights.utxo_count(count: buckets.counts[i]),
-                        maxLines: 1,
-                        style: CoconutTypography.body3_12_Number.copyWith(color: colors.primaryText),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: _columnGap),
-                  Expanded(
-                    flex: 2,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        '${total == 0 ? 0 : (buckets.counts[i] * 100 / total).toStringAsFixed(1)}%',
-                        maxLines: 1,
-                        style: CoconutTypography.body3_12_Number.copyWith(color: colors.primaryText),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: _columnGap),
-                  Expanded(
-                    flex: 4,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        buckets.amounts.length > i ? _btcText(viewModel, buckets.amounts[i]) : '-',
-                        maxLines: 1,
-                        style: CoconutTypography.body3_12_Number.copyWith(color: colors.primaryText),
-                      ),
-                    ),
-                  ),
-                ],
+      child: _OpenProgress(
+        progress: 1,
+        builder: (context, shown) {
+          int counted(int value) => (value * shown).round();
+          return Column(
+            key: const Key('hodl-insights-utxo'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t.hodl_insights.total_utxos(count: counted(total)),
+                key: const Key('hodl-insights-utxo-total'),
+                style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText),
               ),
-            ),
-          ],
-        ],
+              CoconutLayout.spacing_300h,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(
+                  height: 12,
+                  child: ColoredBox(
+                    color: colors.surfaceMuted,
+                    child:
+                        total == 0
+                            ? const SizedBox.expand()
+                            : LayoutBuilder(
+                              builder:
+                                  (context, constraints) => Row(
+                                    children: [
+                                      for (var i = 0; i < buckets.counts.length; i++)
+                                        if (buckets.counts[i] > 0)
+                                          Container(
+                                            key: ValueKey('hodl-insights-utxo-segment-$i'),
+                                            width: constraints.maxWidth * buckets.counts[i] / total * shown,
+                                            padding: const EdgeInsets.symmetric(horizontal: 1),
+                                            child: ColoredBox(color: bucketColors[i]),
+                                          ),
+                                    ],
+                                  ),
+                            ),
+                  ),
+                ),
+              ),
+              CoconutLayout.spacing_200h,
+              for (var i = 0; i < buckets.counts.length; i++) ...[
+                if (i > 0) Divider(height: 1, color: colors.divider),
+                Padding(
+                  key: ValueKey('hodl-insights-utxo-row-$i'),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(color: bucketColors[i], shape: BoxShape.circle),
+                      ),
+                      CoconutLayout.spacing_200w,
+                      Expanded(
+                        flex: 4,
+                        child: FittedBox(
+                          key: ValueKey('hodl-insights-utxo-label-$i'),
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${bucketLabels[i]} BTC',
+                            maxLines: 1,
+                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: _columnGap),
+                      Expanded(
+                        flex: 2,
+                        child: FittedBox(
+                          key: ValueKey('hodl-insights-utxo-count-$i'),
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            t.hodl_insights.utxo_count(count: counted(buckets.counts[i])),
+                            maxLines: 1,
+                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.primaryText),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: _columnGap),
+                      Expanded(
+                        flex: 2,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '${total == 0 ? 0 : (buckets.counts[i] * 100 / total * shown).toStringAsFixed(1)}%',
+                            maxLines: 1,
+                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.primaryText),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: _columnGap),
+                      Expanded(
+                        flex: 4,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            buckets.amounts.length > i ? _btcText(viewModel, counted(buckets.amounts[i])) : '-',
+                            maxLines: 1,
+                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.primaryText),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -754,9 +1093,11 @@ class _ActivityCard extends StatelessWidget {
         rangeEnd: DateTime.now(),
         monthly: bars.monthly,
         amountTexts: [
-          '+ ${_btcNumber(viewModel, totals.receivedSats)}',
-          '- ${_btcNumber(viewModel, totals.sentSats)}',
-          '${t.hodl_insights.fee} ${_btcNumber(viewModel, totals.organizedFeeSats)}',
+          totals.receivedSats == 0 ? '-' : '+ ${_btcNumber(viewModel, totals.receivedSats)}',
+          totals.sentSats == 0 ? '-' : '- ${_btcNumber(viewModel, totals.sentSats)}',
+          totals.organizedFeeSats == 0
+              ? '-'
+              : '${t.hodl_insights.fee} ${_btcNumber(viewModel, totals.organizedFeeSats)}',
         ],
       ),
     );

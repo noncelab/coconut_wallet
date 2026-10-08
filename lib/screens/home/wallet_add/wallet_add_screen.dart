@@ -13,18 +13,21 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 /// 지갑 추가 방법 고르기. 보기 전용(에어갭·연결형)과 핫월렛(새로 만들기·가져오기)
 class WalletAddScreen extends StatelessWidget {
+  static const routeName = '/wallet-add';
+  static const sourcesRouteName = '/wallet-add-sources';
+
   const WalletAddScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    return Navigator.of(context).push(
-      CupertinoPageRoute(settings: const RouteSettings(name: '/wallet-add'), builder: (_) => const WalletAddScreen()),
-    );
+    return Navigator.of(
+      context,
+    ).push(CupertinoPageRoute(settings: const RouteSettings(name: routeName), builder: (_) => const WalletAddScreen()));
   }
 
   void _openSources(BuildContext context, String title, List<WalletAddSourceSection> sections) {
     Navigator.of(context).push(
       CupertinoPageRoute(
-        settings: const RouteSettings(name: '/wallet-add-sources'),
+        settings: const RouteSettings(name: sourcesRouteName),
         builder: (_) => WalletAddSourcesScreen(title: title, sections: sections),
       ),
     );

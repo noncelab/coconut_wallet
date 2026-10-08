@@ -17,6 +17,9 @@ class FeatureItem {
   final String? iconPath;
   final double iconScale;
   final List<String> keywords;
+
+  /// 지금 언어의 검색어. 언어를 바꾸면 바뀌므로 찾을 때마다 읽는다. [keywords]는 언어와 상관없는 말(PIN, xpub 등)
+  final List<String> Function()? localizedKeywords;
   final String? parentId;
   final FeatureContext context;
   final bool Function(WalletItemBase wallet)? isWalletSupported;
@@ -33,6 +36,7 @@ class FeatureItem {
     this.iconPath,
     this.iconScale = 1,
     this.keywords = const [],
+    this.localizedKeywords,
     this.parentId,
     this.context = FeatureContext.none,
     this.isWalletSupported,

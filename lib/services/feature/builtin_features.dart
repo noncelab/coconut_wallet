@@ -53,9 +53,27 @@ const allFeaturesOrder = [
   FeatureIds.walletAddHot,
 ];
 
-FeatureItem _sub(String parentId, String id, List<String> keywords) {
-  return FeatureItem(id: '$parentId.$id', label: () => keywords.first, keywords: keywords, parentId: parentId);
+FeatureItem _sub(
+  String parentId,
+  String id, {
+  required String Function() label,
+  required String Function() search,
+  List<String> keywords = const [],
+}) {
+  return FeatureItem(
+    id: '$parentId.$id',
+    label: label,
+    keywords: keywords,
+    localizedKeywords: () => _keywords(search()),
+    parentId: parentId,
+  );
 }
+
+/// 번역 파일의 쉼표로 구분한 검색어
+List<String> _keywords(String text) => [
+  for (final keyword in text.split(','))
+    if (keyword.trim().isNotEmpty) keyword.trim(),
+];
 
 Future<void> _openWalletAdd(BuildContext context, WalletAddDialogMode mode) {
   context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.feature);
@@ -66,15 +84,19 @@ Future<void> _push(BuildContext context, String route, [Object? arguments]) {
   return Navigator.pushNamed(context, route, arguments: arguments);
 }
 
+/// 언어를 바꾸면 [t]가 새 번역으로 바뀌므로, 라벨은 부를 때마다 지금 번역에서 읽는다.
+TranslationsFeatureRegistryKo get _labels => t.feature_registry;
+TranslationsFeatureSearchKo get _search => t.feature_search;
+TranslationsFeatureSubLabelsKo get _subLabels => t.feature_sub_labels;
+
 List<FeatureItem> builtinFeatures() {
-  final labels = t.feature_registry;
   return [
     FeatureItem(
       id: FeatureIds.appSettings,
       category: FeatureCategory.settings,
-      label: () => labels.app_settings,
+      label: () => _labels.app_settings,
       iconPath: FeatureSettingsIconPath.settings,
-      keywords: ['settings', '설정'],
+      localizedKeywords: () => _keywords(_search.app_settings),
       launch:
           (context, _) => Navigator.of(context).push(
             CupertinoPageRoute(
@@ -83,90 +105,190 @@ List<FeatureItem> builtinFeatures() {
             ),
           ),
     ),
-    _sub(FeatureIds.appSettings, 'pin', ['비밀번호 설정하기', 'PIN', '핀', '암호', '잠금', '앱 잠금', 'app lock']),
-    _sub(FeatureIds.appSettings, 'biometrics', ['생체 인증 사용하기', '지문', '얼굴 인식', 'Face ID', 'biometrics']),
-    _sub(FeatureIds.appSettings, 'pin_change', ['비밀번호 바꾸기', 'PIN 변경', '암호 변경']),
-    _sub(FeatureIds.appSettings, 'unit', ['비트코인 단위', 'BTC', 'sats', '사토시', 'BIP177', 'unit']),
-    _sub(FeatureIds.appSettings, 'fiat', ['법정 화폐', '통화', '원화', 'KRW', 'USD', 'JPY', 'EUR', 'currency']),
-    _sub(FeatureIds.appSettings, 'language', ['언어', '한국어', 'English', '日本語', 'Español', 'Deutsch', 'language']),
-    _sub(FeatureIds.appSettings, 'theme', ['테마', '다크 모드', '라이트 모드', '화면 모드', 'theme']),
-    _sub(FeatureIds.appSettings, 'utxo_selection', ['UTXO 수동 선택', '코인 선택', '코인 컨트롤', 'coin control']),
-    _sub(FeatureIds.appSettings, 'electrum', ['일렉트럼 서버', '노드', '서버', 'electrum', 'SSL', '포트']),
-    _sub(FeatureIds.appSettings, 'explorer', ['블록 익스플로러', 'mempool', '멤풀', 'explorer']),
-    _sub(FeatureIds.appSettings, 'log_viewer', ['로그 뷰어', '로그', '오류 보고']),
-    _sub(FeatureIds.appSettings, 'app_info', ['앱 정보 보기', '버전', 'version', '문의', '라이선스', '약관', '개인정보']),
+    _sub(
+      FeatureIds.appSettings,
+      'pin',
+      label: () => _subLabels.app_settings_pin,
+      search: () => _search.app_settings_pin,
+      keywords: const ['PIN'],
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'biometrics',
+      label: () => _subLabels.app_settings_biometrics,
+      search: () => _search.app_settings_biometrics,
+      keywords: const ['Face ID'],
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'pin_change',
+      label: () => _subLabels.app_settings_pin_change,
+      search: () => _search.app_settings_pin_change,
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'unit',
+      label: () => _subLabels.app_settings_unit,
+      search: () => _search.app_settings_unit,
+      keywords: const ['BTC', 'sats', 'BIP177'],
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'fiat',
+      label: () => _subLabels.app_settings_fiat,
+      search: () => _search.app_settings_fiat,
+      keywords: const ['KRW', 'USD', 'JPY', 'EUR'],
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'language',
+      label: () => _subLabels.app_settings_language,
+      search: () => _search.app_settings_language,
+      keywords: const ['한국어', 'English', '日本語', 'Español', 'Deutsch'],
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'theme',
+      label: () => _subLabels.app_settings_theme,
+      search: () => _search.app_settings_theme,
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'utxo_selection',
+      label: () => _subLabels.app_settings_utxo_selection,
+      search: () => _search.app_settings_utxo_selection,
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'electrum',
+      label: () => _subLabels.app_settings_electrum,
+      search: () => _search.app_settings_electrum,
+      keywords: const ['Electrum', 'SSL'],
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'explorer',
+      label: () => _subLabels.app_settings_explorer,
+      search: () => _search.app_settings_explorer,
+      keywords: const ['mempool'],
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'log_viewer',
+      label: () => _subLabels.app_settings_log_viewer,
+      search: () => _search.app_settings_log_viewer,
+    ),
+    _sub(
+      FeatureIds.appSettings,
+      'app_info',
+      label: () => _subLabels.app_settings_app_info,
+      search: () => _search.app_settings_app_info,
+    ),
     FeatureItem(
       id: FeatureIds.walletAddWatchOnly,
       category: FeatureCategory.wallet,
-      label: () => labels.wallet_add_watch_only,
-      shortLabel: () => labels.wallet_add_watch_only_short,
+      label: () => _labels.wallet_add_watch_only,
+      shortLabel: () => _labels.wallet_add_watch_only_short,
       iconPath: FeatureWalletIconPath.walletAddWatchOnly,
-      keywords: ['add wallet', 'watch-only', '지갑 추가', '보기 전용', '콜드월렛', '하드웨어 지갑'],
+      localizedKeywords: () => _keywords(_search.wallet_add_watch_only),
       shortcutEligible: true,
       launch: (context, _) => _openWalletAdd(context, WalletAddDialogMode.watchOnlySource),
     ),
-    _sub(FeatureIds.walletAddWatchOnly, 'devices', [
-      '하드웨어 지갑 연결',
-      'vault',
-      '볼트',
-      'keystone',
-      'seedsigner',
-      'jade',
-      'coldcard',
-      'krux',
-      'passport',
-      'trezor',
-      'bitbox',
-    ]),
-    _sub(FeatureIds.walletAddWatchOnly, 'manual', ['직접 입력', 'xpub', 'zpub', '디스크립터']),
+    _sub(
+      FeatureIds.walletAddWatchOnly,
+      'devices',
+      label: () => _subLabels.wallet_add_watch_only_devices,
+      search: () => _search.wallet_add_watch_only_devices,
+      keywords: const [
+        'Coconut Vault',
+        'Keystone',
+        'SeedSigner',
+        'Jade',
+        'Coldcard',
+        'Krux',
+        'Passport',
+        'Trezor',
+        'BitBox',
+      ],
+    ),
+    _sub(
+      FeatureIds.walletAddWatchOnly,
+      'manual',
+      label: () => _subLabels.wallet_add_watch_only_manual,
+      search: () => _search.wallet_add_watch_only_manual,
+      keywords: const ['xpub', 'zpub'],
+    ),
     FeatureItem(
       id: FeatureIds.walletAddHot,
       category: FeatureCategory.wallet,
-      label: () => labels.wallet_add_hot,
-      shortLabel: () => labels.wallet_add_hot_short,
+      label: () => _labels.wallet_add_hot,
+      shortLabel: () => _labels.wallet_add_hot_short,
       iconPath: FeatureShortcutIconPath.walletAddHot,
-      keywords: ['add wallet', 'hot wallet', '지갑 추가', '핫월렛', '핫 월렛', '소프트웨어 지갑', '모바일 지갑'],
+      localizedKeywords: () => _keywords(_search.wallet_add_hot),
       shortcutEligible: true,
       launch: (context, _) => _openWalletAdd(context, WalletAddDialogMode.hotWalletAction),
     ),
-    _sub(FeatureIds.walletAddHot, 'create', ['새 지갑 만들기', '지갑 생성', '새 니모닉', '시드 생성', '12단어', '24단어']),
-    _sub(FeatureIds.walletAddHot, 'restore', ['지갑 복원하기', '복구', '니모닉 복원', '시드 복원', 'SeedQR']),
+    _sub(
+      FeatureIds.walletAddHot,
+      'create',
+      label: () => _subLabels.wallet_add_hot_create,
+      search: () => _search.wallet_add_hot_create,
+    ),
+    _sub(
+      FeatureIds.walletAddHot,
+      'restore',
+      label: () => _subLabels.wallet_add_hot_restore,
+      search: () => _search.wallet_add_hot_restore,
+      keywords: const ['SeedQR'],
+    ),
     FeatureItem(
       id: FeatureIds.myWallets,
       category: FeatureCategory.wallet,
-      label: () => labels.my_wallets,
+      label: () => _labels.my_wallets,
       iconPath: FeatureShortcutIconPath.myWallets,
       shortcutEligible: true,
-      launch: (context, _) => WalletStackListScreen.open(context, kind: WalletStackKind.all, title: labels.my_wallets),
+      launch: (context, _) => WalletStackListScreen.open(context, kind: WalletStackKind.all, title: _labels.my_wallets),
     ),
     FeatureItem(
       id: FeatureIds.transactionDraft,
       category: FeatureCategory.transactions,
-      label: () => labels.transaction_draft,
-      shortLabel: () => labels.transaction_draft_short,
+      label: () => _labels.transaction_draft,
+      shortLabel: () => _labels.transaction_draft_short,
       iconPath: FeatureShortcutIconPath.transactionDraft,
       shortcutEligible: true,
       launch: (context, _) => _push(context, AppRouteNames.transactionDraft, const TransactionDraftRouteArgs()),
     ),
-    _sub(FeatureIds.transactionDraft, 'signed', ['서명 완료', '서명된 거래', '전송 대기']),
-    _sub(FeatureIds.transactionDraft, 'unsigned', ['서명 전', '초안', '작성 중인 거래']),
+    _sub(
+      FeatureIds.transactionDraft,
+      'signed',
+      label: () => _subLabels.transaction_draft_signed,
+      search: () => _search.transaction_draft_signed,
+    ),
+    _sub(
+      FeatureIds.transactionDraft,
+      'unsigned',
+      label: () => _subLabels.transaction_draft_unsigned,
+      search: () => _search.transaction_draft_unsigned,
+    ),
     FeatureItem(
       id: FeatureIds.calculator,
       category: FeatureCategory.tools,
-      label: () => labels.calculator,
+      label: () => _labels.calculator,
       iconPath: FeatureShortcutIconPath.calculator,
-      keywords: ['P2P', '개인 간 거래', '환산', '시세', '프리미엄'],
+      keywords: const ['P2P'],
+      localizedKeywords: () => _keywords(_search.calculator),
       shortcutEligible: true,
       launch: (context, _) => _push(context, AppRouteNames.p2pCalculator),
     ),
     FeatureItem(
       id: FeatureIds.labelManagement,
       category: FeatureCategory.tools,
-      label: () => labels.label_management,
-      shortLabel: () => labels.label_management_short,
+      label: () => _labels.label_management,
+      shortLabel: () => _labels.label_management_short,
       iconPath: FeatureShortcutIconPath.labelManagement,
       shortcutEligible: true,
-      keywords: ['라벨', 'BIP329', '메모 백업', '가져오기', '내보내기'],
+      keywords: const ['BIP329'],
+      localizedKeywords: () => _keywords(_search.label_management),
       launch:
           (context, _) => _push(
             context,
@@ -177,20 +299,21 @@ List<FeatureItem> builtinFeatures() {
     FeatureItem(
       id: FeatureIds.mnemonicWordList,
       category: FeatureCategory.tools,
-      label: () => labels.mnemonic_word_list,
-      shortLabel: () => labels.mnemonic_word_list_short,
+      label: () => _labels.mnemonic_word_list,
+      shortLabel: () => _labels.mnemonic_word_list_short,
       iconPath: FeatureShortcutIconPath.mnemonicWordList,
       shortcutEligible: true,
-      keywords: ['BIP39', '시드 단어', '단어 목록'],
+      keywords: const ['BIP39'],
+      localizedKeywords: () => _keywords(_search.mnemonic_word_list),
       launch: (context, _) => _push(context, AppRouteNames.mnemonicWordList),
     ),
     FeatureItem(
       id: FeatureIds.glossary,
       category: FeatureCategory.tools,
-      label: () => labels.glossary,
+      label: () => _labels.glossary,
       iconPath: FeatureShortcutIconPath.glossary,
       shortcutEligible: true,
-      keywords: ['용어', '사전', '뜻'],
+      localizedKeywords: () => _keywords(_search.glossary),
       launch:
           (context, _) => Navigator.of(context).push(
             CupertinoPageRoute(
@@ -202,37 +325,38 @@ List<FeatureItem> builtinFeatures() {
     FeatureItem(
       id: FeatureIds.hodlInsights,
       category: FeatureCategory.tools,
-      label: () => labels.hodl_insights,
-      shortLabel: () => labels.hodl_insights_short,
+      label: () => _labels.hodl_insights,
+      shortLabel: () => _labels.hodl_insights_short,
       iconPath: FeatureWalletIconPath.pie,
       shortcutEligible: true,
-      keywords: ['인사이트', '통계', '분석', '잔액 추이', 'insights'],
+      localizedKeywords: () => _keywords(_search.hodl_insights),
       launch: (context, _) => HodlInsightsScreen.open(context),
     ),
     FeatureItem(
       id: FeatureIds.tutorial,
       category: FeatureCategory.tools,
-      label: () => labels.tutorial,
+      label: () => _labels.tutorial,
       iconPath: FeatureShortcutIconPath.tutorial,
-      keywords: ['사용법', '도움말', '가이드', 'guide'],
+      localizedKeywords: () => _keywords(_search.tutorial),
       launch:
           (context, _) =>
               launchURL(context, TUTORIAL_URL, destination: ExternalLinkDestination.tutorial, openInApp: true),
     ),
     FeatureItem(
       id: FeatureIds.openStore,
-      label: () => labels.open_store,
-      shortLabel: () => labels.open_store_short,
+      label: () => _labels.open_store,
+      shortLabel: () => _labels.open_store_short,
       iconPath: BrandIconPath.coconutPlanet,
-      keywords: ['CCOS', '스토어', '확장 기능', '코코넛 테마'],
+      keywords: const ['CCOS'],
+      localizedKeywords: () => _keywords(_search.open_store),
       launch: (context, _) => openCoconutOpenStoreIntroScreen(context),
     ),
     FeatureItem(
       id: FeatureIds.walletDetail,
       category: FeatureCategory.wallet,
-      label: () => labels.wallet_detail,
+      label: () => _labels.wallet_detail,
       iconPath: FeatureShortcutIconPath.walletDetail,
-      keywords: ['지갑', '잔액', '지갑 홈', '지갑 정보', '지갑 설정'],
+      localizedKeywords: () => _keywords(_search.wallet_detail),
       context: FeatureContext.wallet,
       launch:
           (context, wallet) => _push(
@@ -244,9 +368,10 @@ List<FeatureItem> builtinFeatures() {
     FeatureItem(
       id: FeatureIds.receive,
       category: FeatureCategory.transactions,
-      label: () => labels.receive,
+      label: () => _labels.receive,
       iconPath: FeatureTransactionIconPath.receivePlane,
-      keywords: ['입금', '수신', '받는 주소', 'QR', 'BIP21'],
+      keywords: const ['QR', 'BIP21'],
+      localizedKeywords: () => _keywords(_search.receive),
       context: FeatureContext.wallet,
       shortcutEligible: true,
       launch:
@@ -255,9 +380,9 @@ List<FeatureItem> builtinFeatures() {
     FeatureItem(
       id: FeatureIds.send,
       category: FeatureCategory.transactions,
-      label: () => labels.send,
+      label: () => _labels.send,
       iconPath: FeatureShortcutIconPath.send,
-      keywords: ['송금', '출금', '전송', '모두 보내기', '수수료율', 'fee'],
+      localizedKeywords: () => _keywords(_search.send),
       context: FeatureContext.wallet,
       shortcutEligible: true,
       launch:
@@ -267,9 +392,10 @@ List<FeatureItem> builtinFeatures() {
     FeatureItem(
       id: FeatureIds.transactions,
       category: FeatureCategory.transactions,
-      label: () => labels.transactions,
+      label: () => _labels.transactions,
       iconPath: FeatureShortcutIconPath.transactions,
-      keywords: ['내역', '히스토리', '트랜잭션 목록', 'txid', 'RBF', 'CPFP', '거래 메모'],
+      keywords: const ['txid', 'RBF', 'CPFP'],
+      localizedKeywords: () => _keywords(_search.transactions),
       context: FeatureContext.wallet,
       launch:
           (context, wallet) => _push(
@@ -281,9 +407,10 @@ List<FeatureItem> builtinFeatures() {
     FeatureItem(
       id: FeatureIds.utxoOverview,
       category: FeatureCategory.utxo,
-      label: () => labels.utxo_overview,
+      label: () => _labels.utxo_overview,
       iconPath: FeatureShortcutIconPath.utxos,
-      keywords: ['UTXO', '코인', '모아보기', 'UTXO 분석', '코인 분포', '사용 잠금', 'freeze', '잔돈'],
+      keywords: const ['UTXO'],
+      localizedKeywords: () => _keywords(_search.utxo_overview),
       context: FeatureContext.wallet,
       shortcutEligible: true,
       launch: (context, wallet) => _push(context, AppRouteNames.utxoOverview, UtxoOverviewRouteArgs(id: wallet!.id)),
@@ -291,10 +418,11 @@ List<FeatureItem> builtinFeatures() {
     FeatureItem(
       id: FeatureIds.utxoOrganizer,
       category: FeatureCategory.utxo,
-      label: () => labels.utxo_organizer,
-      shortLabel: () => labels.utxo_organizer_short,
+      label: () => _labels.utxo_organizer,
+      shortLabel: () => _labels.utxo_organizer_short,
       iconPath: FeatureUtxoIconPath.mergeUtxos,
-      keywords: ['합치기', '통합', 'consolidation', '나누기', '분할', 'split', 'dust'],
+      keywords: const ['dust'],
+      localizedKeywords: () => _keywords(_search.utxo_organizer),
       context: FeatureContext.wallet,
       shortcutEligible: true,
       launch: (context, wallet) => _push(context, AppRouteNames.utxoOrganizer, UtxoOrganizerRouteArgs(id: wallet!.id)),
@@ -302,34 +430,97 @@ List<FeatureItem> builtinFeatures() {
     FeatureItem(
       id: FeatureIds.addresses,
       category: FeatureCategory.wallet,
-      label: () => labels.addresses,
+      label: () => _labels.addresses,
       iconPath: FeatureWalletIconPath.bc1,
-      keywords: ['주소 목록', '전체 주소'],
+      localizedKeywords: () => _keywords(_search.addresses),
       context: FeatureContext.wallet,
       shortcutEligible: true,
       launch: (context, wallet) => _push(context, AppRouteNames.addressList, AddressListRouteArgs(id: wallet!.id)),
     ),
-    _sub(FeatureIds.addresses, 'search', ['주소 검색', '내 주소 확인', '주소 찾기']),
-    _sub(FeatureIds.addresses, 'unused', ['사용 전 주소만 보기', '미사용 주소', '새 주소']),
-    _sub(FeatureIds.addresses, 'watched', ['모니터링 중인 주소만 보기', '감시 주소', '구독 주소']),
+    _sub(
+      FeatureIds.addresses,
+      'search',
+      label: () => _subLabels.addresses_search,
+      search: () => _search.addresses_search,
+    ),
+    _sub(
+      FeatureIds.addresses,
+      'unused',
+      label: () => _subLabels.addresses_unused,
+      search: () => _search.addresses_unused,
+    ),
+    _sub(
+      FeatureIds.addresses,
+      'watched',
+      label: () => _subLabels.addresses_watched,
+      search: () => _search.addresses_watched,
+    ),
     FeatureItem(
       id: FeatureIds.utxoTags,
       category: FeatureCategory.utxo,
-      label: () => labels.utxo_tags,
+      label: () => _labels.utxo_tags,
       iconPath: FeatureTagIconPath.tag,
-      keywords: ['태그', '라벨', '태그 추가', '태그 색상'],
+      localizedKeywords: () => _keywords(_search.utxo_tags),
       context: FeatureContext.wallet,
       shortcutEligible: true,
       launch: (context, wallet) => _push(context, AppRouteNames.utxoTag, UtxoTagCrudRouteArgs(id: wallet!.id)),
     ),
-    _sub(FeatureIds.walletDetail, 'rename', ['지갑 이름 편집', '이름 변경', '아이콘', '색상']),
-    _sub(FeatureIds.walletDetail, 'mfp', ['마스터 핑거프린트 입력', 'MFP', '핑거프린트']),
-    _sub(FeatureIds.walletDetail, 'mnemonic_backup', ['니모닉 백업', '백업', '니모닉 보기', '시드 백업', '복구 문구']),
-    _sub(FeatureIds.walletDetail, 'passphrase', ['패스프레이즈 확인하기', '패스프레이즈', 'passphrase']),
-    _sub(FeatureIds.walletDetail, 'xpub', ['확장 공개키', 'xpub', 'zpub', '공개키']),
-    _sub(FeatureIds.walletDetail, 'bsms', ['지갑 백업 데이터 보기', 'BSMS', '디스크립터 내보내기']),
-    _sub(FeatureIds.walletDetail, 'target', ['목표 수량', '목표', '저축 목표']),
-    _sub(FeatureIds.walletDetail, 'resync', ['지갑 재동기화', '재동기화', '다시 불러오기', '잔액 오류']),
-    _sub(FeatureIds.walletDetail, 'delete', ['지갑 삭제하기', '삭제', '지우기']),
+    _sub(
+      FeatureIds.walletDetail,
+      'rename',
+      label: () => _subLabels.wallet_detail_rename,
+      search: () => _search.wallet_detail_rename,
+    ),
+    _sub(
+      FeatureIds.walletDetail,
+      'mfp',
+      label: () => _subLabels.wallet_detail_mfp,
+      search: () => _search.wallet_detail_mfp,
+      keywords: const ['MFP'],
+    ),
+    _sub(
+      FeatureIds.walletDetail,
+      'mnemonic_backup',
+      label: () => _subLabels.wallet_detail_mnemonic_backup,
+      search: () => _search.wallet_detail_mnemonic_backup,
+    ),
+    _sub(
+      FeatureIds.walletDetail,
+      'passphrase',
+      label: () => _subLabels.wallet_detail_passphrase,
+      search: () => _search.wallet_detail_passphrase,
+    ),
+    _sub(
+      FeatureIds.walletDetail,
+      'xpub',
+      label: () => _subLabels.wallet_detail_xpub,
+      search: () => _search.wallet_detail_xpub,
+      keywords: const ['xpub', 'zpub'],
+    ),
+    _sub(
+      FeatureIds.walletDetail,
+      'bsms',
+      label: () => _subLabels.wallet_detail_bsms,
+      search: () => _search.wallet_detail_bsms,
+      keywords: const ['BSMS'],
+    ),
+    _sub(
+      FeatureIds.walletDetail,
+      'target',
+      label: () => _subLabels.wallet_detail_target,
+      search: () => _search.wallet_detail_target,
+    ),
+    _sub(
+      FeatureIds.walletDetail,
+      'resync',
+      label: () => _subLabels.wallet_detail_resync,
+      search: () => _search.wallet_detail_resync,
+    ),
+    _sub(
+      FeatureIds.walletDetail,
+      'delete',
+      label: () => _subLabels.wallet_detail_delete,
+      search: () => _search.wallet_detail_delete,
+    ),
   ];
 }

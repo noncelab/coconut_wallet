@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -69,5 +71,36 @@ void main() {
     expect(airGapped, lessThan(keystone));
     expect(keystone, lessThan(connected));
     expect(connected, lessThan(trezor));
+  });
+
+  testWidgets('after a watch-only wallet is added, going back skips the wallet add screens', (tester) async {
+    final navigatorKey = GlobalKey<NavigatorState>();
+    Route<void> page(RouteSettings settings) =>
+        MaterialPageRoute(settings: settings, builder: (_) => Scaffold(body: Text(settings.name ?? 'home')));
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        theme: buildCoconutThemeData(),
+        onGenerateRoute: page,
+        home: const Text('home'),
+      ),
+    );
+    final navigator = navigatorKey.currentState!;
+    navigator.pushNamed(WalletAddScreen.routeName);
+    navigator.pushNamed(WalletAddScreen.sourcesRouteName);
+    navigator.pushNamed(AppRouteNames.walletAddScanner);
+    await tester.pumpAndSettle();
+
+    WalletAddActions.finishWithWalletDetail(
+      tester.element(find.text(AppRouteNames.walletAddScanner)),
+      const WalletDetailRouteArgs(id: 1, entryPoint: 'test'),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(AppRouteNames.walletDetail), findsOneWidget);
+
+    navigator.pop();
+    await tester.pumpAndSettle();
+    expect(find.text('home'), findsOneWidget);
+    expect(navigator.canPop(), isFalse);
   });
 }

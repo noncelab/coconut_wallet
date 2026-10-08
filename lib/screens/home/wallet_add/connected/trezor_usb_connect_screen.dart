@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
@@ -155,10 +156,9 @@ class _TrezorUsbConnectScreenState extends State<TrezorUsbConnectScreen> {
       if (!mounted || result == null) return;
       if (result.result == WalletSyncResult.newWalletAdded && result.walletId != null) {
         context.read<AnalyticsService>().logWalletAddCompleted(WalletImportSource.trezor);
-        Navigator.pushReplacementNamed(
+        WalletAddActions.finishWithWalletDetail(
           context,
-          AppRouteNames.walletDetail,
-          arguments: WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
+          WalletDetailRouteArgs(id: result.walletId!, entryPoint: kEntryPointWalletHome),
         );
         return;
       }

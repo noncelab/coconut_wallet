@@ -276,12 +276,16 @@ class BalanceByWalletView extends StatelessWidget {
   final String Function(int sats) amountText;
   final VoidCallback? onPressed;
 
+  /// 도넛이 차오른 정도(0~1). 호들 인사이트에서 화면을 열 때 차오르게 한다.
+  final double reveal;
+
   const BalanceByWalletView({
     super.key,
     required this.shares,
     required this.total,
     required this.amountText,
     this.onPressed,
+    this.reveal = 1,
   });
 
   static Color colorOf(BuildContext context, HomeBalanceShare share) =>
@@ -307,6 +311,7 @@ class BalanceByWalletView extends StatelessWidget {
                   [for (final share in shares) colorOf(context, share)],
                   colors.surfaceMuted,
                   strokeRatio: 0.2,
+                  reveal: reveal,
                 ),
                 child: Center(
                   child: Padding(
@@ -409,7 +414,10 @@ class _DonutPainter extends CustomPainter {
   final Color emptyColor;
   final double strokeRatio;
 
-  _DonutPainter(this.values, this.colors, this.emptyColor, {this.strokeRatio = 0.14});
+  /// 0이면 빈 고리, 1이면 다 그린 고리. 위에서부터 시계 방향으로 차오른다.
+  final double reveal;
+
+  _DonutPainter(this.values, this.colors, this.emptyColor, {this.strokeRatio = 0.14, this.reveal = 1});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -425,18 +433,35 @@ class _DonutPainter extends CustomPainter {
       for (var i = 0; i < values.length; i++)
         if (values[i] > 0) i,
     ];
-    if (total <= 0 || visible.length == 1) {
-      canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = total <= 0 ? emptyColor : colors[visible.single]);
+    final shown = reveal.clamp(0.0, 1.0);
+    if (shown < 1) canvas.drawArc(rect, 0, math.pi * 2, false, Paint.from(paint)..color = emptyColor);
+    if (total <= 0) {
+      canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = emptyColor);
+      return;
+    }
+    if (visible.length == 1) {
+      if (shown >= 1) {
+        canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = colors[visible.single]);
+      } else if (shown > 0) {
+        paint.strokeCap = StrokeCap.round;
+        canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * shown, false, paint..color = colors[visible.single]);
+      }
       return;
     }
     paint.strokeCap = StrokeCap.round;
     final capAngle = (stroke / 2) / radius;
     final gapAngle = (stroke * 0.35) / radius;
-    var start = -math.pi / 2;
+    final limit = math.pi * 2 * shown;
+    var start = 0.0;
     for (final i in visible) {
       final sweep = math.pi * 2 * values[i] / total;
-      final drawn = math.max(0.0001, sweep - capAngle * 2 - gapAngle);
-      canvas.drawArc(rect, start + capAngle + gapAngle / 2, drawn, false, paint..color = colors[i]);
+      final drawn = math.min(
+        math.max(0.0001, sweep - capAngle * 2 - gapAngle),
+        limit - start - capAngle - gapAngle / 2,
+      );
+      if (drawn > 0) {
+        canvas.drawArc(rect, -math.pi / 2 + start + capAngle + gapAngle / 2, drawn, false, paint..color = colors[i]);
+      }
       start += sweep;
     }
   }

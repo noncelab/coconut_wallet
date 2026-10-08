@@ -125,12 +125,13 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
     final wallets = viewModel.wallets;
     final routeAnimation = ModalRoute.of(context)?.animation ?? kAlwaysCompleteAnimation;
     final fan = CurvedAnimation(parent: routeAnimation, curve: Curves.easeOutCubic);
+    final topInset = MediaQuery.paddingOf(context).top + kToolbarHeight;
     return Scaffold(
       backgroundColor: colors.background,
+      extendBodyBehindAppBar: true,
       appBar: CoconutAppBar.build(
         context: context,
         title: widget.title,
-        backgroundColor: colors.background,
         actionButtonList: [
           CupertinoButton(
             key: const Key('wallet-stack-list-add'),
@@ -145,10 +146,10 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
-            final height = constraints.maxHeight;
+            final height = constraints.maxHeight - topInset;
             final extent = math.min(width * (1 - _cardLeftRatio), height * 0.46);
             final cardLeft = width * _cardLeftRatio;
-            final centerY = height * 0.4;
+            final centerY = topInset + height * 0.4;
             final cardRect = Rect.fromLTWH(cardLeft, centerY - extent / 2, extent, extent);
             final count = wallets.length + 1;
             return GestureDetector(

@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 import 'dart:io';
@@ -584,10 +584,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
             widget.onNewWalletAdded!(addResult);
           }
           if (mounted) {
-            Navigator.pushReplacementNamed(
+            WalletAddActions.finishWithWalletDetail(
               context,
-              AppRouteNames.walletDetail,
-              arguments: WalletDetailRouteArgs(id: addResult.walletId!, entryPoint: kEntryPointWalletHome),
+              WalletDetailRouteArgs(id: addResult.walletId!, entryPoint: kEntryPointWalletHome),
             );
           }
           break;

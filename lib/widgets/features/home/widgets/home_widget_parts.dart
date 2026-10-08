@@ -141,6 +141,19 @@ class HomeWidgetSkeleton extends StatelessWidget {
   }
 }
 
+/// 이 아래 카드의 바탕색을 바꾼다. 카드가 회색 띠 위에 놓일 때 흰 카드로 뒤집는 데 쓴다.
+class HomeCardSurface extends InheritedWidget {
+  final Color color;
+
+  const HomeCardSurface({super.key, required this.color, required super.child});
+
+  static Color of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<HomeCardSurface>()?.color ?? context.coconutColors.homeSurface;
+
+  @override
+  bool updateShouldNotify(HomeCardSurface oldWidget) => oldWidget.color != color;
+}
+
 class HomeWidgetCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onPressed;
@@ -151,15 +164,16 @@ class HomeWidgetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final surface = HomeCardSurface.of(context);
     final content = SizedBox.expand(child: Padding(padding: padding, child: child));
     if (onPressed == null) {
       return DecoratedBox(
-        decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(20)),
         child: content,
       );
     }
     return ShrinkAnimationButton(
-      defaultColor: colors.homeSurface,
+      defaultColor: surface,
       pressedOverlayColor: colors.homeSurfacePressOverlay,
       pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
       borderRadius: 20,
@@ -276,19 +290,14 @@ class HomeTrendChange extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final rate = this.rate;
-    final arrowStyle = CoconutTypography.body3_12_Number.copyWith(color: colors.tertiaryText);
+    final color = homePriceColorOf(context, rate, neutral: colors.tertiaryText);
+    final arrowStyle = CoconutTypography.body3_12_Number.copyWith(color: color);
     final rateStyle = CoconutTypography.caption_10_Number.copyWith(
-      color: colors.tertiaryText,
+      color: color,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
     final hasChange = rate != null && rate != 0;
-    final arrow =
-        hasChange
-            ? Text(
-              rate > 0 ? '↑' : '↓',
-              style: arrowStyle.copyWith(color: homePriceColorOf(context, rate, neutral: colors.tertiaryText)),
-            )
-            : null;
+    final arrow = hasChange ? Text(rate > 0 ? '↑' : '↓', style: arrowStyle) : null;
     final percent = Text(hasChange ? formatHomeRateCompact(rate) : '–', maxLines: 1, style: rateStyle);
     final group = Row(
       mainAxisSize: MainAxisSize.min,
@@ -310,7 +319,20 @@ class HomeSparkline extends StatelessWidget {
   final Color? color;
   final double strokeWidth;
 
-  const HomeSparkline({super.key, required this.values, this.color, this.strokeWidth = 2});
+  /// 손가락으로 짚은 점. 세로 안내선과 점을 그린다.
+  final int? selectedIndex;
+
+  const HomeSparkline({super.key, required this.values, this.color, this.strokeWidth = 2, this.selectedIndex});
+
+  /// [index]번째 값이 [size] 안에서 그려지는 위치
+  static Offset pointOf(List<num> values, int index, Size size, {double strokeWidth = 2}) {
+    final doubles = [for (final value in values) value.toDouble()];
+    final minValue = doubles.reduce(math.min);
+    final range = doubles.reduce(math.max) - minValue;
+    final x = values.length < 2 ? size.width / 2 : size.width * index / (values.length - 1);
+    final ratio = range == 0 ? 0.5 : (doubles[index] - minValue) / range;
+    return Offset(x, strokeWidth + (size.height - strokeWidth * 2) * (1 - ratio));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -319,6 +341,8 @@ class HomeSparkline extends StatelessWidget {
         [for (final value in values) value.toDouble()],
         color ?? context.coconutColors.homeChartLine,
         strokeWidth,
+        selectedIndex: selectedIndex,
+        guideColor: context.coconutColors.tertiaryText,
       ),
       size: Size.infinite,
     );
@@ -377,7 +401,10 @@ class _SparklinePainter extends CustomPainter {
   final Color color;
   final double strokeWidth;
 
-  _SparklinePainter(this.values, this.color, this.strokeWidth);
+  final int? selectedIndex;
+  final Color? guideColor;
+
+  _SparklinePainter(this.values, this.color, this.strokeWidth, {this.selectedIndex, this.guideColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -411,11 +438,26 @@ class _SparklinePainter extends CustomPainter {
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round,
     );
+    final selected = selectedIndex;
+    if (selected != null && selected >= 0 && selected < values.length) {
+      final at = points[selected];
+      canvas.drawLine(
+        Offset(at.dx, 0),
+        Offset(at.dx, size.height),
+        Paint()
+          ..color = (guideColor ?? color).withValues(alpha: 0.6)
+          ..strokeWidth = 1,
+      );
+      canvas.drawCircle(at, strokeWidth * 2.5, Paint()..color = color);
+    }
   }
 
   @override
   bool shouldRepaint(_SparklinePainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth || !_sameValues(oldDelegate.values, values);
+      oldDelegate.color != color ||
+      oldDelegate.strokeWidth != strokeWidth ||
+      oldDelegate.selectedIndex != selectedIndex ||
+      !_sameValues(oldDelegate.values, values);
 
   static bool _sameValues(List<double> a, List<double> b) {
     if (a.length != b.length) return false;

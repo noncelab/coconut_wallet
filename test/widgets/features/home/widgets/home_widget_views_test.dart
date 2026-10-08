@@ -686,6 +686,25 @@ void main() {
     );
     expect(find.text('25.0%'), findsOneWidget);
     expect(find.byKey(const Key('savings-goal-icon')), findsOneWidget);
+    final fill = tester.getRect(find.byKey(const Key('goal-progress-fill')));
+    expect(fill.height, 8);
+
+    await _pump(
+      tester,
+      _small,
+      const SavingsGoalView(goal: HomeSavingsGoal(balance: 100000000, target: 100000000), amountText: _btc),
+    );
+    final full = tester.getRect(find.byKey(const Key('goal-progress-fill')));
+    expect(full.height, 8);
+    expect(full.width, closeTo(fill.width * 4, 1));
+
+    await _pump(
+      tester,
+      _small,
+      const SavingsGoalView(goal: HomeSavingsGoal(balance: 150000000, target: 100000000), amountText: _btc),
+    );
+    expect(find.text('150.0%'), findsOneWidget);
+    expect(tester.getRect(find.byKey(const Key('goal-progress-fill'))).width, closeTo(full.width, 1));
 
     await _pump(tester, _small, const SavingsGoalView(goal: null, amountText: _btc));
     expect(find.byKey(const Key('savings-goal-empty')), findsOneWidget);

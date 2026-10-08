@@ -97,5 +97,13 @@ class HomeSavingsGoal {
 
   const HomeSavingsGoal({required this.balance, required this.target});
 
-  double get progress => target <= 0 ? 0 : (balance / target).clamp(0, 1).toDouble();
+  /// 막대를 채울 비율(최대 1)
+  double get progress => ratio.clamp(0, 1).toDouble();
+
+  /// 실제 달성 비율. 초과 달성이면 1보다 크다.
+  double get ratio => target <= 0 ? 0 : balance / target;
+
+  String get percentText => formatGoalPercent(ratio);
 }
+
+String formatGoalPercent(double ratio) => '${(ratio * 100).toStringAsFixed(1)}%';

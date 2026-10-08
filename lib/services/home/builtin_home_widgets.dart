@@ -36,6 +36,9 @@ class BuiltinHomeWidget extends HomeItemDefinition {
   /// 누르면 여는 화면. 없으면 누를 수 없는 정보 위젯이다.
   final void Function(BuildContext context, HomeItem item)? onTap;
 
+  /// 누르면 호들 인사이트 총 잔액 카드로 이어지는 전환을 쓴다.
+  final bool flyToInsightsBalance;
+
   BuiltinHomeWidget({
     required super.id,
     HomeSpan? span,
@@ -45,6 +48,7 @@ class BuiltinHomeWidget extends HomeItemDefinition {
     required this.builder,
     this.isLoading = _walletDataLoading,
     this.onTap,
+    this.flyToInsightsBalance = false,
     super.settings,
   }) : super(kind: HomeItemKind.widget, supportedSpans: spans ?? [span!], needsConfigureBeforeAdd: !settings.isEmpty);
 
@@ -57,7 +61,8 @@ class BuiltinHomeWidget extends HomeItemDefinition {
     if (isLoading(viewModel, _settingsOf(item))) {
       return HomeWidgetSkeleton(wide: item.span == HomeSpan.wide);
     }
-    final view = builder(context, viewModel, item);
+    final built = builder(context, viewModel, item);
+    final view = flyToInsightsBalance ? Hero(tag: insightsBalanceHeroTag(item.id), child: built) : built;
     final onTap = this.onTap;
     if (onTap == null) return view;
     return HomeWidgetPressable(
@@ -85,11 +90,15 @@ List<FiatCode> _fiatsOf(HomeWidgetsViewModel viewModel, HomeWidgetSettings setti
     (settings.fiats ?? fiatsWithDefaultFirst(viewModel.fiat)).take(max).toList();
 
 /// 누른 위젯의 지갑 범위·기간으로 인사이트를 열고, 그 위젯에 해당하는 구역으로 이동한다.
+/// 잔액 위젯과 호들 인사이트 총 잔액 카드를 잇는 Hero 태그
+Object insightsBalanceHeroTag(String itemId) => ('insights-balance', itemId);
+
 void Function(BuildContext context, HomeItem item) _openInsights(HodlInsightsSection section) => (context, item) {
   final settings = _settingsOf(item);
   final period = settings.period ?? HomeWidgetPeriod.week;
   HodlInsightsScreen.open(
     context,
+    balanceHeroTag: section == HodlInsightsSection.balance ? insightsBalanceHeroTag(item.id) : null,
     walletIds: settings.walletIds,
     balancePeriod: section == HodlInsightsSection.balance ? period : HomeWidgetPeriod.week,
     activityPeriod: section == HodlInsightsSection.activity ? period : HomeWidgetPeriod.week,
@@ -157,6 +166,7 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
   BuiltinHomeWidget(
     id: HomeItemIds.bitcoinBalanceTrend,
     onTap: _openInsights(HodlInsightsSection.balance),
+    flyToInsightsBalance: true,
     spans: const [HomeSpan.small, HomeSpan.wide],
     category: HomeItemCategory.balance,
     settings: const HomeWidgetSettingsSpec(

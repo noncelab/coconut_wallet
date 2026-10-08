@@ -31,6 +31,7 @@ import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_widget_views.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -811,6 +812,144 @@ void main() {
       expect(find.byKey(const Key('wallet-onboarding-add')), findsOneWidget);
       expect(find.byKey(const Key('hodl-insights-settings')), findsNothing);
       expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('touching the balance chart shows that day\'s balance until the finger lifts', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights);
+      await tester.pump(const Duration(milliseconds: 300));
+      final chart = find.byKey(const Key('hodl-insights-balance-chart'));
+
+      final gesture = await tester.startGesture(tester.getCenter(chart));
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
+      await gesture.moveBy(const Offset(60, 0));
+      await gesture.moveBy(const Offset(60, 0));
+      await tester.pump();
+      expect(find.byKey(const Key('hodl-insights-balance-readout')), findsOneWidget);
+
+      await gesture.up();
+      await tester.pump();
+      expect(find.byKey(const Key('hodl-insights-balance-readout')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('balance by wallet sits on a fading band with an inverted card; later cards keep their color', (
+      tester,
+    ) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights);
+      await tester.pump(const Duration(milliseconds: 300));
+      final colors = tester.element(find.byKey(const Key('hodl-insights-list'))).coconutColors;
+
+      final band = find.byKey(const Key('hodl-insights-lower-band'));
+      expect(band, findsOneWidget);
+      expect(
+        find.descendant(of: band, matching: find.byKey(const ValueKey('hodl-insights-highlight-balanceByWallet'))),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: band, matching: find.byKey(const ValueKey('hodl-insights-highlight-goal'))),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: band, matching: find.byKey(const ValueKey('hodl-insights-highlight-utxo'))),
+        findsNothing,
+      );
+      final summary = tester.widget<Container>(find.byKey(const Key('transaction-activity-summary')));
+      expect((summary.decoration! as BoxDecoration).color, colors.homeSurface);
+      await _close(tester);
+    });
+
+    testWidgets('balance by wallet, UTXO summary and activity are spaced evenly', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights);
+      await tester.pump(const Duration(milliseconds: 300));
+      Rect rect(Finder finder) => tester.getRect(finder);
+
+      final first =
+          rect(find.text(t.hodl_insights.utxo_summary)).top -
+          rect(find.byKey(const ValueKey('hodl-insights-highlight-balanceByWallet'))).bottom;
+      final second =
+          rect(find.text(t.hodl_insights.transaction_activity)).top -
+          rect(find.byKey(const ValueKey('hodl-insights-highlight-utxo'))).bottom;
+      expect(first, closeTo(second, 0.5));
+      await _close(tester);
+    });
+
+    testWidgets('the goal bar, wallet donut and UTXO summary count up from zero when the screen opens', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights);
+      await tester.pump();
+      double width() => tester.getSize(find.byKey(const Key('goal-progress-fill'))).width;
+      expect(tester.widget<BalanceByWalletView>(find.byKey(const Key('hodl-insights-balance-by-wallet'))).reveal, 0);
+      expect(find.text(t.hodl_insights.total_utxos(count: 0)), findsOneWidget);
+
+      final start = width();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(width(), start, reason: 'waits a moment before filling');
+      await tester.pump(const Duration(milliseconds: 600));
+      final middle = width();
+      await tester.pump(const Duration(seconds: 2));
+      final end = width();
+
+      expect(start, 0);
+      expect(start, lessThan(middle));
+      expect(
+        tester.widget<BalanceByWalletView>(find.byKey(const Key('hodl-insights-balance-by-wallet'))).reveal,
+        greaterThan(0),
+      );
+      expect(middle, lessThan(end));
+      expect(find.text(t.hodl_insights.total_utxos(count: 2)), findsOneWidget);
+      expect(end, greaterThan(0));
+      await _close(tester);
+    });
+
+    testWidgets('the balance trend widget flies into the total balance card and back', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        size: const Size(400, 800),
+        screen: (viewModel) {
+          final definition = viewModel.registry.byId(HomeItemIds.bitcoinBalanceTrend)!;
+          return Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 352,
+                height: 172,
+                child: Builder(
+                  builder:
+                      (context) => definition.build(
+                        context,
+                        const HomeItem(
+                          id: 'trend',
+                          definitionId: HomeItemIds.bitcoinBalanceTrend,
+                          kind: HomeItemKind.widget,
+                          order: 0,
+                          span: HomeSpan.wide,
+                        ),
+                      ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byKey(const ValueKey('home-widget-tap-trend')));
+      await tester.pump();
+      await tester.pump(HodlInsightsScreen.transitionDuration ~/ 2);
+      expect(tester.takeException(), isNull);
+      await tester.pump(HodlInsightsScreen.transitionDuration);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byKey(const Key('hodl-insights-balance')), findsOneWidget);
+
+      Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
+      await tester.pump();
+      await tester.pump(HodlInsightsScreen.transitionDuration ~/ 2);
+      await tester.pump(HodlInsightsScreen.transitionDuration);
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('home-widget-tap-trend')), findsOneWidget);
       await _close(tester);
     });
 

@@ -75,6 +75,10 @@ class HodlInsightsViewModel extends ChangeNotifier {
   /// 그래프에 그릴 잔액. 첫날과 오늘은 항상 포함한다
   List<int> get chartBalances => sampleEvenly(_dailyBalances, maxChartPoints);
 
+  /// [chartBalances]의 각 점이 가리키는 날
+  List<DateTime> get chartBalanceDays =>
+      sampleEvenly(HomeWidgetMath.lastDays(DateTime.now(), balanceDays), maxChartPoints);
+
   /// 그래프 아래 날짜 7개
   List<DateTime> get chartDays {
     final days = HomeWidgetMath.lastDays(DateTime.now(), balanceDays);
