@@ -411,7 +411,6 @@ home_presets:
   applied: "'$name' 프리셋을 적용했어요"
   undo: "되돌리기"
 all_features:
-  title: "모든 기능"
   search_placeholder: "기능 검색"
   no_results: "찾는 기능이 없어요"
   recent: "최근 사용"

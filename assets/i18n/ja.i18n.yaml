@@ -250,12 +250,12 @@ hodl_insights:
 wallet_onboarding:
   add_first_wallet: "最初のウォレットを追加"
   subtitle: "ウォレットを追加するとすぐに使えます"
-  receive: "アドレスを作ってビットコインを受け取れます"
-  send: "ビットコインを安全に送れます"
+  receive: "アドレスを伝えてビットコインを受け取れます"
+  send: "トランザクションを作ってビットコインを送れます"
   organize: "残高を構成するUTXOを整理できます"
   insights: "残高推移と目標をひと目で確認できます"
 wallet_add_screen:
-  title: "どの方法でウォレットを追加しますか？"
+  title: "どんなウォレットを追加しますか？"
   subtitle: "目的に合った方法を選んでください"
   watch_only_description: "秘密鍵なしでビットコインを見守れます"
   air_gapped: "エアギャップ"
@@ -410,7 +410,6 @@ home_presets:
   applied: "「$name」プリセットを適用しました"
   undo: "元に戻す"
 all_features:
-  title: "すべての機能"
   search_placeholder: "機能を検索"
   no_results: "該当する機能がありません"
   recent: "最近使った機能"

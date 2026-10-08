@@ -5,7 +5,6 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:flutter/material.dart';
@@ -230,8 +229,6 @@ String formatHomeDateTime(DateTime time, DateTime now) {
   final isToday = time.year == now.year && time.month == now.month && time.day == now.day;
   return isToday ? '${t.home_widgets.today} $hhmm' : '${formatHomeShortDate(time)} $hhmm';
 }
-
-int fiatAmountOf(int sats, int price) => FiatUtil.calculateFiatAmount(sats, price);
 
 class HomeAmount {
   final String number;

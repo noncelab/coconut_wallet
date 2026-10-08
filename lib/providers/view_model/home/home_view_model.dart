@@ -209,9 +209,6 @@ class HomeViewModel extends ChangeNotifier {
 
   List<WalletItemBase> get wallets => _wallets();
 
-  bool get hasWalletShortcutsOnHome =>
-      _configuration.items.any((item) => registry.byId(item.definitionId)?.requiresWalletContext ?? false);
-
   ShortcutWalletContext? walletContextWithoutAsking() => _walletContextWithoutAsking(shortcutWalletContext);
 
   ShortcutWalletContext? _walletContextWithoutAsking(ShortcutWalletContext current) {

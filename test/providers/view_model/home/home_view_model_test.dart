@@ -164,7 +164,6 @@ void main() {
       );
 
       expect(viewModel.shortcutWalletContext, const ShortcutWalletContext.wallet(3));
-      expect(viewModel.hasWalletShortcutsOnHome, isTrue);
     });
   });
 

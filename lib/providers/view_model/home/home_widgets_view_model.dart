@@ -196,22 +196,6 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     });
   }
 
-  /// 각 날의 잔액 × 그날 종가. 오늘은 현재 시세. 과거 종가가 없는 통화는 현재 시세로 대신한다.
-  List<int>? dailyFiatValues(FiatCode fiatCode, {List<int>? walletIds, int days = defaultDays}) {
-    final price = priceOf(fiatCode);
-    if (price == null) return null;
-    final balances = dailyBalances(walletIds: walletIds, days: days);
-    final closes = _closesOf(fiatCode) ?? const [];
-    return [
-      for (var i = 0; i < days; i++)
-        () {
-          final closeIndex = closes.length - (days - 1 - i);
-          final dayPrice = i == days - 1 || closeIndex < 0 || closeIndex >= closes.length ? price : closes[closeIndex];
-          return FiatUtil.calculateFiatAmount(balances[i], dayPrice.round());
-        }(),
-    ];
-  }
-
   static const recentTransactionLimit = 3;
 
   /// 기간과 상관없이 가장 최근 거래부터 [recentTransactionLimit]개. 아직 확인되지 않은 거래가 먼저 온다.

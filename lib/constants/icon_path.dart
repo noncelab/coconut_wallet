@@ -199,7 +199,6 @@ abstract final class FeatureWalletIconPath {
   static const String walletAddConnected = 'assets/svg/features/wallet/wallet-add-connected.svg';
   static const String walletAddCreate = 'assets/svg/features/wallet/wallet-add-create.svg';
   static const String walletAddImport = 'assets/svg/features/wallet/wallet-add-import.svg';
-  static const String walletInfo = 'assets/svg/features/wallet/wallet-info.svg';
   static const String walletOutlined = 'assets/svg/features/wallet/wallet-outlined.svg';
   static const String watchOnlyEyes = 'assets/svg/features/wallet/watch-only-eyes.svg';
 }
