@@ -899,6 +899,15 @@ void main() {
       );
       expect(middle, lessThan(end));
       expect(find.text(t.hodl_insights.total_utxos(count: 2)), findsOneWidget);
+      final segments = find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith('hodl-insights-utxo-segment-'),
+      );
+      expect(segments, findsWidgets);
+      for (var i = 0; i < segments.evaluate().length; i++) {
+        expect(tester.getSize(segments.at(i)).height, 12);
+      }
       expect(end, greaterThan(0));
       await _close(tester);
     });

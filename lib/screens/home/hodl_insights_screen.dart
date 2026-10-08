@@ -982,6 +982,7 @@ class _UtxoSummaryCard extends StatelessWidget {
                             : LayoutBuilder(
                               builder:
                                   (context, constraints) => Row(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
                                       for (var i = 0; i < buckets.counts.length; i++)
                                         if (buckets.counts[i] > 0)
