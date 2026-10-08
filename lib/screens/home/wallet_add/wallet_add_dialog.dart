@@ -162,7 +162,7 @@ class WalletAddDialog extends StatelessWidget {
       children: switch (mode) {
         WalletAddDialogMode.walletType => [
           _WalletActionButton(
-            iconPath: FeatureWalletIconPath.walletEyes,
+            iconPath: FeatureWalletIconPath.walletAddWatchOnly,
             title: t.wallet_home_screen.wallet_type_selection.watch_only.title,
             description: t.wallet_home_screen.wallet_type_selection.watch_only.description,
             onPressed: () => _showMode(context, WalletAddDialogMode.watchOnlySource),
@@ -215,12 +215,12 @@ class WalletAddDialog extends StatelessWidget {
         ],
         WalletAddDialogMode.hotWalletAction => [
           _WalletActionButton(
-            iconPath: FeatureWalletIconPath.walletAddHot,
+            iconPath: FeatureWalletIconPath.walletAddCreate,
             title: t.wallet_home_screen.hot_wallet_add.create.title,
             onPressed: () => _openHotWalletScreen(context, AppRouteNames.hotWalletCreate),
           ),
           _WalletActionButton(
-            iconPath: FeatureWalletIconPath.walletImportHot,
+            iconPath: FeatureWalletIconPath.walletAddImport,
             title: t.wallet_home_screen.hot_wallet_add.restore.title,
             onPressed: () => _openHotWalletScreen(context, AppRouteNames.hotWalletRestore),
           ),
@@ -323,6 +323,7 @@ class _WalletActionButton extends StatelessWidget {
             SvgPicture.asset(
               iconPath,
               width: 24,
+              height: 24,
               colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
             ),
             CoconutLayout.spacing_400w,

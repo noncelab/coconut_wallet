@@ -1,3 +1,6 @@
+import 'package:provider/provider.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -8,6 +11,8 @@ import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../mock/wallet_mock.dart';
 
 Future<void> _pump(WidgetTester tester) async {
   tester.view.physicalSize = const Size(390, 844);
@@ -103,4 +108,41 @@ void main() {
     expect(find.text('home'), findsOneWidget);
     expect(navigator.canPop(), isFalse);
   });
+
+  for (final hasWallet in [false, true]) {
+    testWidgets('the add wallet button opens ${hasWallet ? 'the top sheet' : 'the wallet add page'} '
+        'when there ${hasWallet ? 'is a wallet' : 'are no wallets'}', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ChangeNotifierProvider<WalletProvider>.value(
+          value: _Wallets(hasWallet ? [WalletMock.createSingleSigWalletItem(id: 1)] : const []),
+          child: MaterialApp(
+            theme: buildCoconutThemeData(),
+            home: Builder(
+              builder:
+                  (context) =>
+                      TextButton(onPressed: () => WalletAddScreen.openByWalletCount(context), child: const Text('add')),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('add'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('wallet-add-screen')), hasWallet ? findsNothing : findsOneWidget);
+      expect(find.byKey(const Key('wallet-add-dialog-title')), hasWallet ? findsOneWidget : findsNothing);
+    });
+  }
+}
+
+class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
+  final List<WalletItemBase> wallets;
+
+  _Wallets(this.wallets);
+
+  @override
+  List<WalletItemBase> get walletItemList => wallets;
 }

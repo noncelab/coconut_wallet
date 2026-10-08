@@ -342,10 +342,8 @@ class HomeViewModel extends ChangeNotifier {
 
   void restore(HomeConfiguration configuration) => _apply(configuration);
 
-  final Map<String, ({HomeConfiguration before, HomeConfiguration after})> _resizeHistory = {};
-
-  /// 위젯 크기를 바꾼다. 키울 때는 그 항목부터 뒤 항목을 순서대로 다시 채우고 앞 항목은 그대로 둔다.
-  /// 키운 뒤 다른 편집 없이 다시 줄이면 키우기 전 배치로 되돌린다.
+  /// 위젯 크기를 바꾼다. 키우든 줄이든 앞 항목은 그대로 두고, 그 항목부터 뒤 항목을 순서대로 다시 채운다.
+  /// 그래서 키우면 뒤 항목이 밀려나고, 줄이면 생긴 빈칸을 뒤 항목이 당겨 와 채운다.
   void resizeItem(String id, HomeSpan span) {
     final items = _configuration.items;
     final index = items.indexWhere((item) => item.id == id);
@@ -353,19 +351,13 @@ class HomeViewModel extends ChangeNotifier {
     final item = items[index];
     final definition = registry.byId(item.definitionId);
     if (item.span == span || definition == null || !definition.supportedSpans.contains(span)) return;
-    final history = _resizeHistory.remove(id);
-    if (history != null && history.after == _configuration) {
-      _apply(history.before);
-      return;
-    }
-    final growing = span.width * span.height > item.span.width * item.span.height;
     final before = _configuration;
     _apply(
       HomeConfiguration(
         version: before.version,
         items: [
           for (final (i, other) in items.indexed)
-            if (i < index || (!growing && i > index))
+            if (i < index)
               other
             else
               HomeItem(
@@ -374,17 +366,13 @@ class HomeViewModel extends ChangeNotifier {
                 kind: other.kind,
                 order: other.order,
                 span: i == index ? span : other.span,
-                position:
-                    (!growing || i == index) && other.position != null
-                        ? HomeGridLayout.anchorForSpan(other.position!, span)
-                        : null,
+                position: i == 0 && other.position != null ? HomeGridLayout.anchorForSpan(other.position!, span) : null,
                 configuration: other.configuration,
               ),
         ],
         shortcutWalletContext: before.shortcutWalletContext,
       ),
     );
-    if (growing) _resizeHistory[id] = (before: before, after: _configuration);
   }
 
   void removeDefinition(HomeItemDefinition definition) {

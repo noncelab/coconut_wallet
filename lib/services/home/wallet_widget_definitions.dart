@@ -113,12 +113,12 @@ class WalletStackDefinition extends HomeItemDefinition {
   }
 }
 
-/// 모든 지갑이면 지갑 추가 화면을 열고, 한 종류면 그 종류의 추가 시트를 연다.
+/// 모든 지갑이면 지갑 수에 따라 지갑 추가 화면이나 탑 시트를 열고, 한 종류면 그 종류의 추가 시트를 연다.
 void openWalletAddFor(BuildContext context, WalletStackKind kind) {
   context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.homeEmpty);
   switch (kind) {
     case WalletStackKind.all:
-      WalletAddScreen.open(context);
+      WalletAddScreen.openByWalletCount(context);
     case WalletStackKind.hot:
       WalletAddDialog.show(context, WalletAddDialogMode.hotWalletAction);
     case WalletStackKind.watchOnly:

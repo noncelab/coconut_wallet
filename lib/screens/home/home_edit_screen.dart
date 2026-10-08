@@ -197,7 +197,6 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
               decoration: BoxDecoration(
                 color: colors.homeSurface,
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [BoxShadow(color: colors.homeWidgetShadow, blurRadius: 16, offset: const Offset(0, 4))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

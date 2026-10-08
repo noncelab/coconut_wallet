@@ -1,3 +1,6 @@
+import 'package:flutter/cupertino.dart';
+import 'package:coconut_wallet/services/feature/feature_launcher.dart';
+import 'package:coconut_wallet/model/feature/feature_item.dart';
 import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -60,5 +63,37 @@ void main() {
     await tester.pumpAndSettle();
     expect(_icon(CommonNavigationIconPath.arrowBack), findsWidgets);
     expect(_icon(CommonActionIconPath.close), findsNothing);
+  });
+
+  testWidgets('a named route launched through the feature launcher in a CupertinoApp shows a close button', (
+    tester,
+  ) async {
+    late BuildContext home;
+    await tester.pumpWidget(
+      CupertinoApp(
+        theme: const CupertinoThemeData(),
+        navigatorObservers: [FeatureEntryRoutes.instance],
+        localizationsDelegates: const [DefaultMaterialLocalizations.delegate, DefaultWidgetsLocalizations.delegate],
+        routes: {'/memo': (_) => Theme(data: buildCoconutThemeData(), child: _page('memo'))},
+        home: Builder(
+          builder: (context) {
+            home = context;
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+
+    final feature = FeatureItem(
+      id: 'memo',
+      label: () => 'memo',
+      launch: (context, _) => Navigator.pushNamed(context, '/memo'),
+    );
+    FeatureLauncher(wallets: () => const [], pickWallet: (_, __) async => null).launch(home, feature);
+    await tester.pumpAndSettle();
+
+    expect(find.text('memo'), findsOneWidget);
+    expect(_icon(CommonActionIconPath.close), findsWidgets);
+    expect(_icon(CommonNavigationIconPath.arrowBack), findsNothing);
   });
 }

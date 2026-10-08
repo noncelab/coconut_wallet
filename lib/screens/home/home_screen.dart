@@ -156,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openAddWallet(BuildContext context) {
     context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.appBar);
     _viewModel.dismissAddWalletHint();
-    WalletAddScreen.open(context);
+    WalletAddScreen.openByWalletCount(context);
   }
 
   Future<void> _openHomeEdit(BuildContext context) async {

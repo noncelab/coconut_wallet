@@ -216,10 +216,10 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     final Offset childGlobalPosition = childRenderBox.localToGlobal(Offset.zero);
     final Size childSize = childRenderBox.size;
     final highlightedRect = Rect.fromLTWH(
-      childGlobalPosition.dx - childSize.width * 0.025,
-      childGlobalPosition.dy - childSize.height * 0.025,
-      childSize.width * 1.05,
-      childSize.height * 1.05,
+      childGlobalPosition.dx - _expandedGrowth,
+      childGlobalPosition.dy - _expandedGrowth,
+      childSize.width + _expandedGrowth * 2,
+      childSize.height + _expandedGrowth * 2,
     ).inflate(widget.useGlassOverlay ? 6 : 0);
 
     if (widget.useGlassOverlay) {
@@ -289,8 +289,11 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                     child: AnimatedBuilder(
                       animation: _menuAnimationController,
                       builder:
-                          (_, child) =>
-                              Transform.scale(scale: _computeChildScale(), alignment: Alignment.center, child: child),
+                          (_, child) => Transform(
+                            alignment: Alignment.center,
+                            transform: _childTransform(childSize),
+                            child: child,
+                          ),
                       child: RawImage(image: _capturedChildImage, fit: BoxFit.fill),
                     ),
                   ),
@@ -304,14 +307,21 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     // 메뉴의 예상 크기를 계산 (실제 RenderBox에 의존하지 않음)
+                    // 어느 언어에서든 라벨이 잘리지 않도록, 최대 폭은 화면 폭(좌우 16 여백)까지 늘린다.
                     const double minMenuWidth = 180;
-                    const double maxMenuWidth = 220;
+                    final double maxMenuWidth = math.max(minMenuWidth, constraints.maxWidth - 32);
                     double maxTitleHeight = 0;
+                    // Text는 기기의 굵은 글씨 설정을 따라 굵게 그리므로 폭도 같은 굵기로 잰다.
+                    final measureStyle =
+                        MediaQuery.boldTextOf(context)
+                            ? _titleStyle.merge(const TextStyle(fontWeight: FontWeight.bold))
+                            : _titleStyle;
                     final maxTitleWidth = widget.menuItems.fold<double>(0, (maxWidth, item) {
                       final textPainter = TextPainter(
-                        text: TextSpan(text: item.title, style: CoconutTypography.body2_14),
+                        text: TextSpan(text: item.title, style: measureStyle),
                         textDirection: Directionality.of(context),
                         textScaler: MediaQuery.textScalerOf(context),
+                        locale: Localizations.maybeLocaleOf(context),
                         maxLines: 1,
                       )..layout();
                       maxTitleHeight = math.max(maxTitleHeight, textPainter.height);
@@ -321,22 +331,31 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                     _menuItemHeight = itemHeight;
                     // 바깥 패딩 8 + 아이템 패딩 32 + 아이콘 + 아이콘/텍스트 간격 8
                     final double menuWidth =
-                        (maxTitleWidth + 48 + widget.menuIconSize).clamp(minMenuWidth, maxMenuWidth).toDouble();
+                        (maxTitleWidth.ceilToDouble() + 8 + 48 + widget.menuIconSize)
+                            .clamp(minMenuWidth, maxMenuWidth)
+                            .toDouble();
                     final double menuHeight = widget.menuItems.length * itemHeight + 16 + _headerHeight;
                     final Size menuSize = Size(menuWidth, menuHeight);
                     bool isAboveChild = false;
 
                     // 기본 위치: child의 위쪽에 메뉴를 표시
-                    double top = childGlobalPosition.dy - menuSize.height - widget.spacing;
+                    // 커진 child의 가장자리에 맞춘다. child는 사방으로 [_expandedGrowth]만큼 커진다.
+                    final grown = Rect.fromLTWH(
+                      childGlobalPosition.dx - _expandedGrowth,
+                      childGlobalPosition.dy - _expandedGrowth,
+                      childSize.width + _expandedGrowth * 2,
+                      childSize.height + _expandedGrowth * 2,
+                    );
+                    double top = grown.top - menuSize.height - widget.spacing;
                     double left =
                         widget.alignMenuToChildLeft
-                            ? childGlobalPosition.dx
+                            ? grown.left
                             : widget.alignMenuToChildRight
-                            ? childGlobalPosition.dx + childSize.width - menuSize.width
-                            : childGlobalPosition.dx + childSize.width / 2 - menuSize.width / 2;
+                            ? grown.right - menuSize.width
+                            : grown.center.dx - menuSize.width / 2;
 
                     // 세로 방향: 기본은 "위"로 띄우고, 위에 공간이 부족하면 "아래"로 표시
-                    final belowTop = childGlobalPosition.dy + childSize.height + widget.spacing;
+                    final belowTop = grown.bottom + widget.spacing;
                     final fitsBelow =
                         belowTop + menuSize.height <= screenSize.height - MediaQuery.paddingOf(context).bottom;
                     if (widget.preferMenuBelow && (fitsBelow || top < 0)) {
@@ -344,7 +363,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                       isAboveChild = false;
                     } else if (top < 0) {
                       // 위에 충분한 공간이 없으므로 아래로 표시
-                      top = childGlobalPosition.dy + childSize.height + widget.spacing;
+                      top = grown.bottom + widget.spacing;
                       isAboveChild = false;
 
                       // 아래로 띄웠을 때 화면을 넘치면 화면 안으로 클램프
@@ -377,6 +396,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                               return Transform.scale(scale: scale, alignment: alignment, child: child);
                             },
                             child: SizedBox(
+                              key: const Key('long-pressed-menu-box'),
                               width: menuWidth,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
@@ -447,12 +467,12 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                                       Flexible(
                                                         child: Text(
                                                           widget.menuItems[index].title,
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow.ellipsis,
-                                                          style: CoconutTypography.body2_14.setColor(
-                                                            widget.menuItems[index].isDanger
-                                                                ? context.coconutColors.danger
-                                                                : context.coconutColors.primaryText,
+                                                          softWrap: true,
+                                                          style: _titleStyle.copyWith(
+                                                            color:
+                                                                widget.menuItems[index].isDanger
+                                                                    ? context.coconutColors.danger
+                                                                    : context.coconutColors.primaryText,
                                                           ),
                                                         ),
                                                       ),
@@ -558,7 +578,8 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
         child: AnimatedBuilder(
           animation: Listenable.merge([_menuAnimationController, _shakeController, _closeButtonController]),
           builder: (context, child) {
-            final scale = _computeChildScale();
+            final box = _childKey.currentContext?.findRenderObject() as RenderBox?;
+            final transform = _childTransform(box != null && box.hasSize ? box.size : Size.zero);
 
             // 전체 카드(메뉴+child)가 살짝 기울어지는 애니메이션
             double angle = 0;
@@ -570,8 +591,9 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
 
             return Transform.rotate(
               angle: angle,
-              child: Transform.scale(
-                scale: scale,
+              child: Transform(
+                alignment: Alignment.center,
+                transform: transform,
                 child: Stack(
                   children: [
                     child!,
@@ -620,24 +642,20 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     );
   }
 
-  double _computeChildScale() {
-    // 메뉴가 떠 있지 않으면 항상 1.0 유지
-    if (_overlayEntry == null) {
-      return 1.0;
-    }
+  /// 길게 눌렀을 때 child가 사방으로 커지는 거리. 크기와 상관없이 모든 위젯·바로가기가 같은 만큼 커진다.
+  static const double _expandedGrowth = 4;
 
+  /// 0이면 원래 크기, 1이면 다 커진 상태
+  double _expansion() {
+    if (_overlayEntry == null) return 0;
     final t = _menuAnimationController.value;
+    return _isClosing ? 1 - t : t;
+  }
 
-    const double baseScale = 1.0;
-    const double expandedScale = 1.05; // 5% 확장
-
-    if (_isClosing) {
-      // 닫힐 때: 1.1 -> 1.0
-      return expandedScale + (baseScale - expandedScale) * t;
-    } else {
-      // 열릴 때: 1.0 -> 1.1
-      return baseScale + (expandedScale - baseScale) * t;
-    }
+  Matrix4 _childTransform(Size size) {
+    final grow = _expandedGrowth * 2 * _expansion();
+    if (grow == 0 || size.isEmpty) return Matrix4.identity();
+    return Matrix4.diagonal3Values((size.width + grow) / size.width, (size.height + grow) / size.height, 1);
   }
 }
 
@@ -667,6 +685,9 @@ class _DimExceptRectPainter extends CustomPainter {
     return oldDelegate.highlightRect != highlightRect;
   }
 }
+
+/// 메뉴 라벨 스타일. 폭을 잴 때와 그릴 때 똑같이 쓰도록 주변 스타일을 물려받지 않는다.
+final TextStyle _titleStyle = CoconutTypography.body2_14.copyWith(inherit: false);
 
 class LongPressedMenuItem {
   final String title;

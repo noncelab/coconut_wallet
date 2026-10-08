@@ -436,7 +436,7 @@ feature_registry:
   transaction_draft: "Transacciones temporales"
   transaction_draft_short: "Temporales"
   calculator: "Calculadora"
-  label_management: "Gestión de notas"
+  label_management: "Gestionar notas"
   label_management_short: "Notas"
   mnemonic_word_list: "Lista de palabras"
   mnemonic_word_list_short: "Palabras"

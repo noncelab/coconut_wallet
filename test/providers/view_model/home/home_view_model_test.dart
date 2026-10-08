@@ -409,34 +409,39 @@ void main() {
       expect(positions(viewModel)['c'], const HomeGridPosition(0, 4));
     });
 
-    test('shrinking right after growing puts the home back exactly as it was', () async {
+    test('shrinking pulls the items after it up into the space it leaves', () async {
       final viewModel = await homeWith([
-        widget('a', 'w', 0, const HomeGridPosition(0, 0)),
-        widget('stack', HomeItemIds.watchOnlyWalletStack, 1, const HomeGridPosition(2, 0)),
-        _shortcut('c', FeatureIds.receive, 2).copyWith(position: const HomeGridPosition(3, 2)),
+        widget(
+          'stack',
+          HomeItemIds.watchOnlyWalletStack,
+          0,
+          const HomeGridPosition(0, 0),
+        ).copyWith(span: HomeSpan.wide),
+        widget('b', 'w', 1, const HomeGridPosition(0, 2)),
+        _shortcut('c', FeatureIds.receive, 2).copyWith(position: const HomeGridPosition(2, 2)),
       ]);
-      final before = viewModel.configuration;
-
-      viewModel.resizeItem('stack', HomeSpan.wide);
-      viewModel.resizeItem('stack', HomeSpan.small);
-
-      expect(viewModel.configuration, before);
-    });
-
-    test('shrinking after another edit only changes the size and keeps the rest in place', () async {
-      final viewModel = await homeWith([
-        widget('stack', HomeItemIds.watchOnlyWalletStack, 0, const HomeGridPosition(0, 0)),
-        _shortcut('c', FeatureIds.receive, 1).copyWith(position: const HomeGridPosition(0, 2)),
-      ]);
-      viewModel.resizeItem('stack', HomeSpan.wide);
-      viewModel.moveToCell('c', const HomeGridPosition(3, 2));
-      final moved = positions(viewModel)['c'];
 
       viewModel.resizeItem('stack', HomeSpan.small);
 
       expect(viewModel.configuration.items.first.span, HomeSpan.small);
       expect(positions(viewModel)['stack'], const HomeGridPosition(0, 0));
-      expect(positions(viewModel)['c'], moved);
+      expect(positions(viewModel)['b'], const HomeGridPosition(2, 0));
+      expect(positions(viewModel)['c'], const HomeGridPosition(0, 2));
+    });
+
+    test('growing then shrinking follows the same rule both ways and leaves earlier items alone', () async {
+      final viewModel = await homeWith([
+        widget('a', 'w', 0, const HomeGridPosition(0, 0)),
+        widget('stack', HomeItemIds.watchOnlyWalletStack, 1, const HomeGridPosition(2, 0)),
+        _shortcut('c', FeatureIds.receive, 2).copyWith(position: const HomeGridPosition(0, 2)),
+      ]);
+
+      viewModel.resizeItem('stack', HomeSpan.wide);
+      viewModel.resizeItem('stack', HomeSpan.small);
+
+      expect(positions(viewModel)['a'], const HomeGridPosition(0, 0));
+      expect(positions(viewModel)['stack'], const HomeGridPosition(2, 0));
+      expect(positions(viewModel)['c'], const HomeGridPosition(0, 2));
     });
 
     test('a size the widget does not support is ignored', () async {

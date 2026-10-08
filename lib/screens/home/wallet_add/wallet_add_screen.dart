@@ -1,4 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
+import 'package:provider/provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -17,6 +20,12 @@ class WalletAddScreen extends StatelessWidget {
   static const sourcesRouteName = '/wallet-add-sources';
 
   const WalletAddScreen({super.key});
+
+  /// 지갑이 하나도 없으면 이 화면을 열고, 이미 지갑이 있으면 기존 지갑 추가 탑 시트를 연다.
+  static Future<void> openByWalletCount(BuildContext context) {
+    if (context.read<WalletProvider>().walletItemList.isEmpty) return open(context);
+    return WalletAddDialog.show(context, WalletAddDialogMode.walletType);
+  }
 
   static Future<void> open(BuildContext context) {
     return Navigator.of(
