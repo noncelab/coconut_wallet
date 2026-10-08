@@ -32,7 +32,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_scr
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
-import 'package:coconut_wallet/utils/file_logger.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/wallet_sync_result_util.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/coconut_qr_scanner.dart';
@@ -95,7 +95,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         });
       }
     } catch (error) {
-      FileLogger.error(className, '_checkClipboard', 'Clipboard availability check failed: ${error.runtimeType}');
+      Logger.error('$className._checkClipboard: Clipboard availability check failed: ${error.runtimeType}');
     }
   }
 
@@ -537,8 +537,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
   Future<void> _onCompletedScanning(dynamic additionInfo) async {
     const methodName = '_onCompletedScanning';
-    FileLogger.log(className, methodName, 'additionInfo type: ${additionInfo.runtimeType}');
-
     if (_isProcessing || _isCompletedScanLocked) return;
     _isProcessing = true;
     _isCompletedScanLocked = true;
@@ -549,7 +547,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       try {
         await controller?.stop();
       } catch (error) {
-        FileLogger.error(className, methodName, 'Failed to stop scanner after completion: $error');
+        Logger.error('$className.$methodName: Failed to stop scanner after completion: ${error.runtimeType}');
       }
 
       String? mfp;
@@ -571,8 +569,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   Future<void> _handleAddWalletResult(ResultOfSyncFromVault addResult) async {
-    FileLogger.log(className, '_handleAddWalletResult', 'result: ${addResult.result.name}');
-
     if (!mounted) return;
 
     switch (addResult.result) {
@@ -674,7 +670,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   Future<void> _handleAddWalletError(Object e, StackTrace stackTrace) async {
-    FileLogger.error(className, '_handleAddWalletError', 'failed: $e', stackTrace);
+    Logger.error('$className._handleAddWalletError: failed: ${e.runtimeType}');
     if (!mounted) return;
     vibrateLightDouble();
     if (mounted) {
@@ -693,7 +689,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   void _finalizeAddWallet() {
-    FileLogger.log(className, '_finalizeAddWallet', 'finalize');
     _isProcessing = false;
     if (!mounted) return;
     if (_skipNextFinalizeVibration) {
@@ -716,11 +711,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
   void _onFailedScanning(String message, String? scannedData) async {
     const methodName = '_onFailedScanning';
-    FileLogger.error(
-      className,
-      methodName,
-      '_onFailedScanning called with message: $message${scannedData != null ? " data: $scannedData" : null}',
-    );
+    Logger.error('$className.$methodName: scan failed; scannedDataPresent=${scannedData != null}');
 
     if (_isProcessing) {
       return;
@@ -730,10 +721,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     String errorMessage;
     if (message == CoconutQrScanner.qrFormatErrorMessage) {
       errorMessage = '${t.alert.invalid_qr}${scannedData != null ? "\ndata: $scannedData" : null}';
-      FileLogger.error(className, methodName, 'QR format error detected');
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
-      FileLogger.error(className, methodName, 'Non-QR format error detected');
     }
 
     await showDialog(
@@ -745,7 +734,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           description: errorMessage,
           rightButtonText: t.OK,
           onTapRight: () {
-            FileLogger.log(className, methodName, 'Error dialog confirmed');
             Navigator.pop(dialogContext);
           },
         );
@@ -759,9 +747,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
   Future<void> _showErrorDialog(String title, String description) async {
     if (!mounted) return;
-    const methodName = '_showErrorDialog';
-    FileLogger.log(className, methodName, 'Error title: $title');
-
     await showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {

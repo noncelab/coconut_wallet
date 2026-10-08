@@ -160,7 +160,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// - `1300` [ErrorCodes.nodeUnknown]: 메인 isolate 브리지의 기타 예외, 또는 isolate가 `Result`가 아닌 `Exception`을 보낸 경우(`IsolateController` 최상위 catch 등)
   /// - `1302` [ErrorCodes.broadcastError]: isolate 내부 Electrum broadcast RPC 실패(메시지에 상세 포함 가능)
   ///
-  /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이며, [FileLogger]에는 브로드캐스트 전용로 일부만 남김.
+  /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이다.
   Future<Result<String>> broadcast({required List<String> inheritedTagIds}) async {
     final candidates = prepareTagInheritance().map((tag) => tag.id).toSet();
     final selectedIds = inheritedTagIds.toSet();

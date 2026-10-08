@@ -104,7 +104,6 @@ view: "Ansehen"
 network: "Netzwerk"
 electrum_server: "Electrum-Server"
 block_explorer: "Block-Explorer"
-log_viewer: "Log-Viewer"
 go_to_settings: "Zu den Einstellungen"
 name: "Name"
 account: "Konto"
@@ -984,22 +983,6 @@ settings_screen:
       connecting: "Überprüfe Adresse..."
       connected: "Adresse verifiziert"
       failed: "Adresse nicht gefunden!"
-  log_viewer_screen:
-    log_description_1: "Wenn Probleme auftreten, drücken Sie bitte die [Teilen]-Taste und senden Sie es per E-Mail oder kontaktieren Sie uns auf Discord"
-    log_description_2: "Die geteilten Informationen werden nur zur Problemlösung verwendet und sofort nach Lösung des Problems verworfen."
-    log_target: "[Protokollierungsziel]"
-    log_target_description_1: "Zur Symptomüberprüfung und Problemlösung protokollieren wir Informationen beim Hinzufügen der Keystone 3 Pro-Wallet. Einige Geräte können auf Probleme stoßen, daher wird die Protokollierung fortgesetzt, um dies zu überprüfen."
-    log_target_description_2: "Protokolliert die Ursache von Broadcast-Fehlerphasen."
-    clear_log: "Protokoll löschen"
-    clear_log_description: "Sind Sie sicher, dass Sie das Protokoll löschen möchten?"
-    email_subject: "[Coconut Wallet] Debug-Protokoll"
-    email_body: "Situation: (Bitte beschreiben Sie kurz die Situation, in der das Problem aufgetreten ist)"
-    email_error_msg: "E-Mail-App kann nicht geöffnet werden. Bitte kopieren Sie das Protokoll und posten Sie es im Discord-Kanal."
-    buttons:
-      discord: "Zu Discord gehen"
-      copy: "Protokoll kopieren"
-      toast:
-        copy_success: "Protokoll erfolgreich kopiert."
 
 address_list_screen:
   wallet_name: "Adresse von $name"

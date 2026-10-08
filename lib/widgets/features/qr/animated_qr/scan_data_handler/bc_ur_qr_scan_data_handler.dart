@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/features/qr/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
@@ -53,10 +52,6 @@ class BcUrQrScanDataHandler implements IFragmentedQrScanDataHandler {
       _urDecoder.expectedType = _currentUrType!.value;
     }
 
-    if (_currentUrType == UrType.cryptoAccount || _currentUrType == UrType.accountDescriptor) {
-      FileLogger.log('BcUrQrScanDataHandler', 'joinData', data);
-    }
-    Logger.log('--> [QR] joinData: $data');
     final receivePartResult = _urDecoder.receivePart(data);
     if (!receivePartResult && validateFormat(data)) {
       final sequenceValidationResult = validateSequenceLength(data);
