@@ -346,6 +346,9 @@ feature_sub_labels:
   wallet_detail_target: "Goal amount"
   wallet_detail_resync: "Resync wallet"
   wallet_detail_delete: "Delete wallet"
+all_features_hint:
+  title: "More on the side"
+  description: "Swipe home to the left to see every feature"
 wallet_stack_list:
   utxos: "UTXOs"
   last_transaction: "Last Transaction"

@@ -29,6 +29,8 @@ class HomeViewModel extends ChangeNotifier {
   final void Function()? _onAddWalletHintDismissed;
   late final ValueNotifier<bool> _noWallets = ValueNotifier(_wallets().isEmpty);
   bool _addWalletHintDismissed;
+  final void Function()? _onAllFeaturesHintDismissed;
+  bool _allFeaturesHintDismissed;
   bool _addWalletHintReminded = false;
   int _addWalletHintNudges = 0;
 
@@ -43,7 +45,11 @@ class HomeViewModel extends ChangeNotifier {
     Listenable? walletListChanges,
     bool addWalletHintDismissed = false,
     void Function()? onAddWalletHintDismissed,
+    bool allFeaturesHintDismissed = false,
+    void Function()? onAllFeaturesHintDismissed,
   }) : _repository = repository,
+       _allFeaturesHintDismissed = allFeaturesHintDismissed,
+       _onAllFeaturesHintDismissed = onAllFeaturesHintDismissed,
        _walletListChanges = walletListChanges,
        _addWalletHintDismissed = addWalletHintDismissed,
        _onAddWalletHintDismissed = onAddWalletHintDismissed,
@@ -80,6 +86,16 @@ class HomeViewModel extends ChangeNotifier {
   void remindAddWallet() {
     _addWalletHintReminded = true;
     _addWalletHintNudges++;
+    notifyListeners();
+  }
+
+  /// 홈을 옆으로 밀면 All Features가 나온다는 말풍선. 지갑 추가 말풍선이 떠 있지 않을 때, All Features를 한 번도 열지 않았으면 보인다.
+  bool get showsAllFeaturesHint => !_allFeaturesHintDismissed && !showsAddWalletHint;
+
+  void dismissAllFeaturesHint() {
+    if (_allFeaturesHintDismissed) return;
+    _allFeaturesHintDismissed = true;
+    _onAllFeaturesHintDismissed?.call();
     notifyListeners();
   }
 

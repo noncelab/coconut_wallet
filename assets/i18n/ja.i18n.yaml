@@ -345,6 +345,9 @@ feature_sub_labels:
   wallet_detail_target: "目標数量"
   wallet_detail_resync: "ウォレット再同期"
   wallet_detail_delete: "ウォレットを削除"
+all_features_hint:
+  title: "すべての機能は横にあります"
+  description: "ホームを左にスワイプするとすべての機能が見られます"
 wallet_stack_list:
   utxos: "UTXO"
   last_transaction: "最終取引"

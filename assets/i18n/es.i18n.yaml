@@ -347,6 +347,9 @@ feature_sub_labels:
   wallet_detail_target: "Cantidad objetivo"
   wallet_detail_resync: "Resincronizar billetera"
   wallet_detail_delete: "Eliminar billetera"
+all_features_hint:
+  title: "Más funciones al lado"
+  description: "Desliza la pantalla de inicio a la izquierda para ver todas las funciones"
 wallet_stack_list:
   utxos: "UTXOs"
   last_transaction: "Última transacción"

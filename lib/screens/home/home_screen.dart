@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutAppBar, CoconutTypography;
+import 'package:coconut_wallet/widgets/features/home/all_features_hint.dart';
 import 'package:coconut_wallet/widgets/features/home/add_wallet_hint.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
@@ -58,6 +60,31 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _addWalletHintRightOverhang = 52.0;
 
   final LayerLink _addWalletButtonLink = LayerLink();
+  final GlobalKey<HomeCubePagerState> _pagerKey = GlobalKey();
+
+  /// All Features 말풍선이 보이는 동안 홈을 살짝 밀어 보인다. 처음엔 곧바로, 그다음엔 [_peekInterval]마다,
+  /// 앱을 켤 때마다 최대 [_peekLimit]번. 사용자가 홈을 만지고 있으면 그 차례는 건너뛴다.
+  static const _peekDelay = Duration(milliseconds: 900);
+  static const _peekInterval = Duration(seconds: 7);
+  static const _peekLimit = 3;
+  Timer? _peekTimer;
+  int _peeks = 0;
+  DateTime _lastTouch = DateTime.fromMillisecondsSinceEpoch(0);
+
+  void _startPeeking() {
+    if (_peekTimer != null || _peeks >= _peekLimit) return;
+    _peekTimer = Timer(_peeks == 0 ? _peekDelay : _peekInterval, () async {
+      _peekTimer = null;
+      if (!mounted || !_viewModel.showsAllFeaturesHint) return;
+      final idle = DateTime.now().difference(_lastTouch) > const Duration(seconds: 2);
+      if (!_viewModel.isArranging && idle) {
+        _peeks++;
+        await _pagerKey.currentState?.peek();
+      }
+      if (mounted) _startPeeking();
+    });
+  }
+
   late final HomeViewModel _viewModel;
   late final HomeWidgetsViewModel _widgetsViewModel;
 
@@ -72,6 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
       walletListChanges: context.read<WalletProvider>().walletItemListNotifier,
       addWalletHintDismissed: SharedPrefsRepository().getBool(SharedPrefKeys.kAddWalletHintDismissed),
       onAddWalletHintDismissed: () => SharedPrefsRepository().setBool(SharedPrefKeys.kAddWalletHintDismissed, true),
+      allFeaturesHintDismissed: SharedPrefsRepository().getBool(SharedPrefKeys.kAllFeaturesHintDismissed),
+      onAllFeaturesHintDismissed: () => SharedPrefsRepository().setBool(SharedPrefKeys.kAllFeaturesHintDismissed, true),
     );
     _widgetsViewModel = HomeWidgetsViewModel(
       walletProvider: context.read<WalletProvider>(),
@@ -87,6 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _peekTimer?.cancel();
     _widgetsViewModel.dispose();
     _viewModel.dispose();
     super.dispose();
@@ -222,7 +252,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPopInvokedWithResult: (didPop, _) {
                   if (!didPop) _viewModel.finishArranging();
                 },
-                child: HomeCubePager(swipeEnabled: !arranging, home: child!, allFeaturesBuilder: _buildAllFeatures),
+                child: HomeCubePager(
+                  key: _pagerKey,
+                  swipeEnabled: !arranging,
+                  home: child!,
+                  allFeaturesBuilder: _buildAllFeatures,
+                  onPageChanged: (page) {
+                    if (page == 1) _viewModel.dismissAllFeaturesHint();
+                  },
+                ),
               ),
           child: _buildHome(context),
         ),
@@ -246,9 +284,30 @@ class _HomeScreenState extends State<HomeScreen> {
   );
 
   Widget _buildHome(BuildContext context) {
+    return Listener(onPointerDown: (_) => _lastTouch = DateTime.now(), child: _buildHomeLayers(context));
+  }
+
+  Widget _buildHomeLayers(BuildContext context) {
     return Stack(
       children: [
         _buildHomeScroll(context),
+        Consumer<HomeViewModel>(
+          builder: (context, viewModel, _) {
+            if (!viewModel.showsAllFeaturesHint || viewModel.isArranging) return const SizedBox.shrink();
+            _startPeeking();
+            return Positioned(
+              right: 8,
+              top: MediaQuery.sizeOf(context).height * 0.42,
+              child: AllFeaturesHint(
+                onOpen: () {
+                  viewModel.dismissAllFeaturesHint();
+                  _pagerKey.currentState?.showAllFeatures();
+                },
+                onClose: viewModel.dismissAllFeaturesHint,
+              ),
+            );
+          },
+        ),
         Consumer<HomeViewModel>(
           builder:
               (context, viewModel, _) =>

@@ -307,6 +307,31 @@ void main() {
       expect(viewModel.showsAddWalletHint, isFalse);
     });
 
+    test('the All Features hint waits for the add wallet hint and goes away for good once dismissed', () async {
+      await repository.save(HomeConfiguration(items: const []));
+      final walletList = ValueNotifier<List<WalletItemBase>>(const []);
+      var saved = 0;
+      final viewModel = HomeViewModel(
+        repository: repository,
+        wallets: () => walletList.value,
+        onShortcutTap: (_, __) {},
+        walletListChanges: walletList,
+        onAllFeaturesHintDismissed: () => saved++,
+      );
+      addTearDown(viewModel.dispose);
+
+      expect(viewModel.showsAddWalletHint, isTrue);
+      expect(viewModel.showsAllFeaturesHint, isFalse);
+
+      walletList.value = [WalletMock.createSingleSigWalletItem(id: 1)];
+      expect(viewModel.showsAllFeaturesHint, isTrue);
+
+      viewModel.dismissAllFeaturesHint();
+      viewModel.dismissAllFeaturesHint();
+      expect(viewModel.showsAllFeaturesHint, isFalse);
+      expect(saved, 1);
+    });
+
     test('a hint closed before stays closed on the next launch', () async {
       await repository.save(HomeConfiguration(items: const []));
       final viewModel = HomeViewModel(
