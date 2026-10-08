@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/utils/mfp_format.dart';
 import 'package:coconut_wallet/utils/wallet_visual_style_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart' show kHomeWidgetHeaderHeight;
 import 'package:coconut_wallet/widgets/features/wallet/icon/wallet_icon_small.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -15,6 +16,8 @@ import 'package:flutter_svg/svg.dart';
 enum WalletCardSize { small, wide }
 
 class WalletCard extends StatelessWidget {
+  static const glyphOpacity = 0.4;
+
   final WalletItemBase wallet;
   final WalletAppearance appearance;
   final WalletCardSize size;
@@ -53,14 +56,14 @@ class WalletCard extends StatelessWidget {
     );
     if (onPressed == null) {
       return DecoratedBox(
-        decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(20)),
         child: SizedBox.expand(child: content),
       );
     }
     return ShrinkAnimationButton(
-      defaultColor: colors.surface,
-      pressedOverlayColor: colors.surfacePressOverlay,
-      pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
+      defaultColor: colors.homeSurface,
+      pressedOverlayColor: colors.homeSurfacePressOverlay,
+      pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
       borderRadius: 20,
       onPressed: onPressed!,
       child: SizedBox.expand(child: content),
@@ -78,12 +81,15 @@ class WalletCard extends StatelessWidget {
 
   Widget _buildGlyph(BuildContext context) {
     final isHot = wallet.hasLocalKey;
-    return SvgPicture.asset(
-      isHot ? FeatureWalletIconPath.hotWalletFire : FeatureWalletIconPath.watchOnlyEyes,
-      key: Key(isHot ? 'wallet-card-glyph-hot' : 'wallet-card-glyph-watch-only'),
-      width: 18,
-      height: 18,
-      colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+    return Opacity(
+      opacity: glyphOpacity,
+      child: SvgPicture.asset(
+        isHot ? FeatureWalletIconPath.hotWalletFire : FeatureWalletIconPath.watchOnlyEyes,
+        key: Key(isHot ? 'wallet-card-glyph-hot' : 'wallet-card-glyph-watch-only'),
+        width: 18,
+        height: 18,
+        colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+      ),
     );
   }
 
@@ -154,18 +160,66 @@ class WalletCard extends StatelessWidget {
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [_buildIcon(), const Spacer(), if (statusBadge != null) statusBadge!],
+          children: [
+            _buildIcon(),
+            const SizedBox(width: 8),
+            Expanded(
+              child:
+                  secondaryText == null
+                      ? const SizedBox.shrink()
+                      : Container(
+                        height: kHomeWidgetHeaderHeight,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          secondaryText!,
+                          key: const Key('wallet-card-secondary'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: CoconutTypography.body3_12_Bold.copyWith(
+                            color: context.coconutColors.primaryText,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+            ),
+            if (statusBadge != null) ...[const SizedBox(width: 4), statusBadge!],
+          ],
         ),
-        const Spacer(),
-        if (secondaryText != null)
-          Text(
-            secondaryText!,
-            key: const Key('wallet-card-secondary'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: CoconutTypography.body3_12.copyWith(color: context.coconutColors.secondaryText),
+        if (balanceDisplay != null) ...[
+          const Spacer(flex: 3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              balanceDisplay!,
+              key: const Key('wallet-card-balance'),
+              style: CoconutTypography.heading4_18_NumberBold.copyWith(color: context.coconutColors.primaryText),
+            ),
           ),
-        Row(children: [Expanded(child: _buildName(context)), _buildGlyph(context)]),
+          const Spacer(flex: 2),
+        ] else
+          const Spacer(),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildName(context),
+                  if (walletMasterFingerprint(wallet) case final mfp?)
+                    Text(
+                      formatMfp(mfp),
+                      key: const Key('wallet-card-mfp'),
+                      style: CoconutTypography.body3_12_Number.copyWith(color: context.coconutColors.secondaryText),
+                    ),
+                ],
+              ),
+            ),
+            _buildGlyph(context),
+          ],
+        ),
       ],
     );
   }

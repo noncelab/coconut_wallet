@@ -10,7 +10,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Def extends HomeItemDefinition {
-  _Def(String id) : super(id: id, kind: HomeItemKind.widget, supportedSpans: const [HomeSpan.small], category: 't');
+  _Def(String id)
+    : super(
+        id: id,
+        kind: HomeItemKind.widget,
+        supportedSpans: const [HomeSpan.small],
+        category: HomeItemCategory.wallets,
+      );
 
   @override
   Widget build(BuildContext context, HomeItem item) => const SizedBox();

@@ -132,6 +132,9 @@ flutter:
   assets:
     - assets/files/glossary_details_ko.json
     - assets/files/glossary_details_ja.json
+    - assets/files/glossary_details_en.json
+    - assets/files/glossary_details_es.json
+    - assets/files/glossary_details_de.json
     - assets/files/coconut_crew.json
     - assets/files/LICENSE
     - assets/files/CONTRIBUTING.md
@@ -148,12 +151,14 @@ flutter:
     - assets/svg/common/visibility/
     - assets/svg/features/connectivity/
     - assets/svg/features/settings/
+    - assets/svg/features/shortcuts/
     - assets/svg/features/tags/
     - assets/svg/features/taproot/
     - assets/svg/features/transaction/
     - assets/svg/features/transaction/fee-rate/
     - assets/svg/features/utxo/
     - assets/svg/features/wallet/
+    - assets/svg/features/widgets/
     - assets/svg/wallet-catalog/custom-icons/
     - assets/svg/wallet-catalog/hardware-wallets/
     - assets/svg/wallet-catalog/import-formats/

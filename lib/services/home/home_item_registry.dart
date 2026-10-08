@@ -19,7 +19,7 @@ class ShortcutDefinition extends HomeItemDefinition {
         id: HomeItemIds.shortcut(feature.id),
         kind: HomeItemKind.shortcut,
         supportedSpans: const [HomeSpan.shortcut],
-        category: 'shortcut',
+        category: HomeItemCategory.shortcut,
         requiresWalletContext: feature.context == FeatureContext.wallet,
       );
 
@@ -32,7 +32,7 @@ class ShortcutDefinition extends HomeItemDefinition {
     final iconPath = feature.iconPath;
     return DecoratedBox(
       key: ValueKey('shortcut-background-${feature.id}'),
-      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(16)),
       child: SizedBox.expand(
         child: CupertinoButton(
           padding: const EdgeInsets.all(4),

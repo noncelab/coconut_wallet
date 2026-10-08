@@ -5,6 +5,9 @@ enum FeatureContext { none, wallet }
 
 enum FeatureSource { builtin, ccos }
 
+/// All Features에서 이 순서로 묶어 보여 준다. safety는 epic3 이후 보여준다.
+enum FeatureCategory { wallet, transactions, utxo, tools, safety, settings }
+
 typedef FeatureLaunch = Future<void> Function(BuildContext context, WalletItemBase? wallet);
 
 class FeatureItem {
@@ -20,6 +23,7 @@ class FeatureItem {
   final bool Function(BuildContext context)? isAvailable;
   final bool shortcutEligible;
   final FeatureSource source;
+  final FeatureCategory? category;
   final FeatureLaunch? launch;
 
   const FeatureItem({
@@ -35,6 +39,7 @@ class FeatureItem {
     this.isAvailable,
     this.shortcutEligible = false,
     this.source = FeatureSource.builtin,
+    this.category,
     this.launch,
   });
 

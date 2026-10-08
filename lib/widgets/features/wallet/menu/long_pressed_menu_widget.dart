@@ -42,6 +42,19 @@ class LongPressedMenuWidget extends StatefulWidget {
   /// 메뉴에 사용할 고정 배경색. null이면 기존 glass 배경을 사용한다.
   final Color? menuBackgroundColor;
 
+  /// 메뉴를 child 아래에 먼저 띄울지 여부. 아래에 공간이 없으면 위에 띄운다.
+  final bool preferMenuBelow;
+
+  /// 메뉴의 왼쪽 끝을 child의 왼쪽 끝에 맞출지 여부
+  final bool alignMenuToChildLeft;
+
+  /// 메뉴 항목 아이콘 크기
+  final double menuIconSize;
+
+  /// 메뉴 항목 위에 붙는 머리 영역(예: 위젯 크기 고르기). 인자로 메뉴를 닫는 함수를 받는다.
+  final Widget Function(VoidCallback close)? menuHeaderBuilder;
+  final double menuHeaderHeight;
+
   const LongPressedMenuWidget({
     super.key,
     required this.child,
@@ -54,6 +67,11 @@ class LongPressedMenuWidget extends StatefulWidget {
     this.useGlassOverlay = false,
     this.alignMenuToChildRight = false,
     this.menuBackgroundColor,
+    this.preferMenuBelow = false,
+    this.alignMenuToChildLeft = false,
+    this.menuIconSize = 16,
+    this.menuHeaderBuilder,
+    this.menuHeaderHeight = 0,
   });
 
   @override
@@ -150,6 +168,8 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
     _closeButtonController.dispose();
     super.dispose();
   }
+
+  double get _headerHeight => widget.menuHeaderBuilder == null ? 0 : widget.menuHeaderHeight;
 
   void _removeOverlay() {
     _overlayEntry?.remove();
@@ -297,23 +317,32 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                       maxTitleHeight = math.max(maxTitleHeight, textPainter.height);
                       return math.max(maxWidth, textPainter.width);
                     });
-                    final itemHeight = math.max(16.0, maxTitleHeight) + 24;
+                    final itemHeight = math.max(widget.menuIconSize, maxTitleHeight) + 24;
                     _menuItemHeight = itemHeight;
-                    // 바깥 패딩 8 + 아이템 패딩 32 + 아이콘 16 + 아이콘/텍스트 간격 8
-                    final double menuWidth = (maxTitleWidth + 64).clamp(minMenuWidth, maxMenuWidth).toDouble();
-                    final double menuHeight = widget.menuItems.length * itemHeight + 16;
+                    // 바깥 패딩 8 + 아이템 패딩 32 + 아이콘 + 아이콘/텍스트 간격 8
+                    final double menuWidth =
+                        (maxTitleWidth + 48 + widget.menuIconSize).clamp(minMenuWidth, maxMenuWidth).toDouble();
+                    final double menuHeight = widget.menuItems.length * itemHeight + 16 + _headerHeight;
                     final Size menuSize = Size(menuWidth, menuHeight);
                     bool isAboveChild = false;
 
                     // 기본 위치: child의 위쪽에 메뉴를 표시
                     double top = childGlobalPosition.dy - menuSize.height - widget.spacing;
                     double left =
-                        widget.alignMenuToChildRight
+                        widget.alignMenuToChildLeft
+                            ? childGlobalPosition.dx
+                            : widget.alignMenuToChildRight
                             ? childGlobalPosition.dx + childSize.width - menuSize.width
                             : childGlobalPosition.dx + childSize.width / 2 - menuSize.width / 2;
 
                     // 세로 방향: 기본은 "위"로 띄우고, 위에 공간이 부족하면 "아래"로 표시
-                    if (top < 0) {
+                    final belowTop = childGlobalPosition.dy + childSize.height + widget.spacing;
+                    final fitsBelow =
+                        belowTop + menuSize.height <= screenSize.height - MediaQuery.paddingOf(context).bottom;
+                    if (widget.preferMenuBelow && (fitsBelow || top < 0)) {
+                      top = fitsBelow ? belowTop : math.max(0, screenSize.height - 100 - menuSize.height);
+                      isAboveChild = false;
+                    } else if (top < 0) {
                       // 위에 충분한 공간이 없으므로 아래로 표시
                       top = childGlobalPosition.dy + childSize.height + widget.spacing;
                       isAboveChild = false;
@@ -374,58 +403,65 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.stretch,
                                           mainAxisSize: MainAxisSize.min,
-                                          children: List.generate(
-                                            widget.menuItems.length,
-                                            (index) => Semantics(
-                                              button: true,
-                                              label: widget.menuItems[index].title,
-                                              onTap: () {
-                                                _startHideAnimation();
-                                                widget.menuItems[index].onSelected();
-                                              },
-                                              child: AnimatedContainer(
-                                                duration: const Duration(milliseconds: 80),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      _hoveredMenuIndex == index
-                                                          ? context.coconutColors.primaryText.withValues(alpha: 0.12)
-                                                          : Colors.transparent,
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.start,
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    SvgPicture.asset(
-                                                      widget.menuItems[index].iconPath,
-                                                      width: 16,
-                                                      height: 16,
-                                                      colorFilter: ColorFilter.mode(
-                                                        widget.menuItems[index].isDanger
-                                                            ? context.coconutColors.danger
-                                                            : context.coconutColors.iconPrimary,
-                                                        BlendMode.srcIn,
-                                                      ),
-                                                    ),
-                                                    CoconutLayout.spacing_200w,
-                                                    Flexible(
-                                                      child: Text(
-                                                        widget.menuItems[index].title,
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
-                                                        style: CoconutTypography.body2_14.setColor(
+                                          children: [
+                                            if (widget.menuHeaderBuilder != null)
+                                              SizedBox(
+                                                height: widget.menuHeaderHeight,
+                                                child: widget.menuHeaderBuilder!(_startHideAnimation),
+                                              ),
+                                            ...List.generate(
+                                              widget.menuItems.length,
+                                              (index) => Semantics(
+                                                button: true,
+                                                label: widget.menuItems[index].title,
+                                                onTap: () {
+                                                  _startHideAnimation();
+                                                  widget.menuItems[index].onSelected();
+                                                },
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(milliseconds: 80),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        _hoveredMenuIndex == index
+                                                            ? context.coconutColors.primaryText.withValues(alpha: 0.12)
+                                                            : Colors.transparent,
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      SvgPicture.asset(
+                                                        widget.menuItems[index].iconPath,
+                                                        width: widget.menuIconSize,
+                                                        height: widget.menuIconSize,
+                                                        colorFilter: ColorFilter.mode(
                                                           widget.menuItems[index].isDanger
                                                               ? context.coconutColors.danger
-                                                              : context.coconutColors.primaryText,
+                                                              : context.coconutColors.iconPrimary,
+                                                          BlendMode.srcIn,
                                                         ),
                                                       ),
-                                                    ),
-                                                  ],
+                                                      CoconutLayout.spacing_200w,
+                                                      Flexible(
+                                                        child: Text(
+                                                          widget.menuItems[index].title,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: CoconutTypography.body2_14.setColor(
+                                                            widget.menuItems[index].isDanger
+                                                                ? context.coconutColors.danger
+                                                                : context.coconutColors.primaryText,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -483,7 +519,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
 
     int? nextIndex;
     if (menuRect.contains(globalPosition)) {
-      final localY = globalPosition.dy - menuRect.top - 8;
+      final localY = globalPosition.dy - menuRect.top - 8 - _headerHeight;
       if (localY >= 0) {
         final index = (localY / _menuItemHeight).floor();
         if (index >= 0 && index < widget.menuItems.length) nextIndex = index;

@@ -32,9 +32,7 @@ import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:provider/provider.dart';
 
 class AppSettingsScreen extends StatefulWidget {
-  final bool isBottomSheet;
-
-  const AppSettingsScreen({super.key, this.isBottomSheet = true});
+  const AppSettingsScreen({super.key});
 
   @override
   State<AppSettingsScreen> createState() => _AppSettingsScreen();
@@ -59,7 +57,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
           final colors = context.coconutColors;
           return Scaffold(
             backgroundColor: colors.background,
-            appBar: CoconutAppBar.build(title: t.app_settings, context: context, isBottom: widget.isBottomSheet),
+            appBar: CoconutAppBar.build(title: t.app_settings, context: context, isBottom: true),
             body: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
@@ -213,7 +211,7 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                               CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
                                 screenName: AnalyticsScreenNames.appSettingsThemeSheet,
-                                heightRatio: 0.4,
+                                heightRatio: 0.5,
                                 child: const ThemeBottomSheet(),
                               );
                             },

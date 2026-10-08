@@ -25,11 +25,13 @@ abstract final class CommonActionIconPath {
   static const String close = 'assets/svg/common/actions/close.svg';
   static const String closeBold = 'assets/svg/common/actions/close-bold.svg';
   static const String closeSmall = 'assets/svg/common/actions/close-small.svg';
+  static const String command = 'assets/svg/common/actions/command.svg';
   static const String copy = 'assets/svg/common/actions/copy.svg';
   static const String delete = 'assets/svg/common/actions/delete.svg';
   static const String download = 'assets/svg/common/actions/download.svg';
   static const String editOutlined = 'assets/svg/common/actions/edit-outlined.svg';
   static const String editOutlinedSmall = 'assets/svg/common/actions/edit-outlined-small.svg';
+  static const String editHome = 'assets/svg/common/actions/edit-home.svg';
   static const String eraser = 'assets/svg/common/actions/eraser.svg';
   static const String export = 'assets/svg/common/actions/export.svg';
   static const String movableButton = 'assets/svg/common/actions/movable-button.svg';
@@ -132,6 +134,21 @@ abstract final class FeatureSettingsIconPath {
   static const String widget = 'assets/svg/features/settings/widget.svg';
 }
 
+abstract final class FeatureShortcutIconPath {
+  static const String calculator = 'assets/svg/features/shortcuts/calculator.svg';
+  static const String transactionDraft = 'assets/svg/features/shortcuts/draft.svg';
+  static const String walletAddHot = 'assets/svg/features/shortcuts/wallet-add-hot.svg';
+  static const String glossary = 'assets/svg/features/shortcuts/font.svg';
+  static const String labelManagement = 'assets/svg/features/shortcuts/label.svg';
+  static const String mnemonicWordList = 'assets/svg/features/shortcuts/wordlist.svg';
+  static const String myWallets = 'assets/svg/features/shortcuts/wallet.svg';
+  static const String utxos = 'assets/svg/features/shortcuts/utxos.svg';
+  static const String send = 'assets/svg/features/shortcuts/send.svg';
+  static const String tutorial = 'assets/svg/features/shortcuts/book-open.svg';
+  static const String walletDetail = 'assets/svg/features/shortcuts/wallet-open.svg';
+  static const String transactions = 'assets/svg/features/shortcuts/list.svg';
+}
+
 abstract final class FeatureTagIconPath {
   static const String tag = 'assets/svg/features/tags/tag.svg';
 }
@@ -175,12 +192,18 @@ abstract final class FeatureWalletIconPath {
   static const String piggyBank = 'assets/svg/features/wallet/piggy-bank.svg';
   static const String wallet = 'assets/svg/features/wallet/wallet.svg';
   static const String walletAddDefault = 'assets/svg/features/wallet/wallet-add-default.svg';
+  static const String walletAddWatchOnly = 'assets/svg/features/wallet/wallet-add-watchonly.svg';
   static const String walletAddHot = 'assets/svg/features/wallet/wallet-add-hot.svg';
   static const String walletEyes = 'assets/svg/features/wallet/wallet-eyes.svg';
   static const String walletImportHot = 'assets/svg/features/wallet/wallet-import-hot.svg';
   static const String walletInfo = 'assets/svg/features/wallet/wallet-info.svg';
   static const String walletOutlined = 'assets/svg/features/wallet/wallet-outlined.svg';
   static const String watchOnlyEyes = 'assets/svg/features/wallet/watch-only-eyes.svg';
+}
+
+abstract final class FeatureWidgetIconPath {
+  static const String bullseyeArrow = 'assets/svg/features/widgets/bullseye-arrow.svg';
+  static const String coinStack = 'assets/svg/features/widgets/coin-stack.svg';
 }
 
 abstract final class ThirdPartyWalletTypeIconPath {

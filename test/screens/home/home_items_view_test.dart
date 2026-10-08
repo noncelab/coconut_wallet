@@ -6,12 +6,16 @@ import 'package:coconut_wallet/model/home/home_item_ids.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
 import 'package:coconut_wallet/services/home/home_grid_layout.dart';
 import 'package:coconut_wallet/services/home/home_item_registry.dart';
+import 'package:coconut_wallet/widgets/features/wallet/menu/long_pressed_menu_widget.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show MaterialApp;
 import 'package:flutter_test/flutter_test.dart';
 
 class _LabelDefinition extends HomeItemDefinition {
   _LabelDefinition(String id, HomeItemKind kind, HomeSpan span)
-    : super(id: id, kind: kind, supportedSpans: [span], category: 'test');
+    : super(id: id, kind: kind, supportedSpans: [span], category: HomeItemCategory.wallets);
 
   @override
   Widget build(BuildContext context, HomeItem item) => Text('built:$id');
@@ -408,7 +412,7 @@ void main() {
 
   testWidgets('items whose definition is not registered are skipped without error', (tester) async {
     final configuration = HomeConfiguration(
-      items: [_item('x', HomeItemIds.safetyStatus, HomeItemKind.widget, 0, HomeSpan.wide)],
+      items: [_item('x', HomeItemIds.safetyStatusWide, HomeItemKind.widget, 0, HomeSpan.wide)],
     );
 
     await tester.pumpWidget(
@@ -1320,4 +1324,206 @@ void main() {
 
     expect(movedTo, const HomeGridPosition(0, 7));
   });
+
+  group('home menu', () {
+    final registry =
+        HomeItemRegistry()
+          ..register(_LabelDefinition('small', HomeItemKind.widget, HomeSpan.small))
+          ..register(_LabelDefinition('shortcut', HomeItemKind.shortcut, HomeSpan.shortcut));
+    final configuration = HomeConfiguration(
+      items: [
+        _item('a', 'small', HomeItemKind.widget, 0, HomeSpan.small),
+        _item('b', 'shortcut', HomeItemKind.shortcut, 1, HomeSpan.shortcut),
+      ],
+    );
+
+    Future<void> pumpGrid(
+      WidgetTester tester, {
+      bool isArranging = false,
+      void Function(String id, HomeGridPosition position)? onMoveToCell,
+      VoidCallback? onArrangeDone,
+      void Function(HomeItem item)? onRemove,
+      List<String>? selected,
+    }) {
+      return tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(),
+          home: Center(
+            child: SizedBox(
+              width: 4 * HomeItemsView.cell + 3 * HomeItemsView.gap,
+              child: HomeItemsView(
+                configuration: configuration,
+                registry: registry,
+                onMoveToCell: onMoveToCell ?? (_, __) {},
+                menuItemsOf:
+                    (item) => [
+                      LongPressedMenuItem(
+                        title: 'move ${item.id}',
+                        iconPath: CommonActionIconPath.editHome,
+                        onSelected: () => selected?.add(item.id),
+                      ),
+                    ],
+                isArranging: isArranging,
+                onArrangeDone: onArrangeDone,
+                onRemove: onRemove,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('a long press opens the menu instead of dragging', (tester) async {
+      var moved = false;
+      await pumpGrid(tester, onMoveToCell: (_, __) => moved = true);
+
+      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-a'))));
+      await tester.pump(const Duration(milliseconds: 600));
+      await gesture.moveBy(const Offset(0, 200));
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('move a'), findsOneWidget);
+      expect(moved, isFalse);
+      final item = tester.getRect(find.byKey(const ValueKey('home-item-a')));
+      final menuText = tester.getRect(find.text('move a'));
+      expect(menuText.top, greaterThan(item.bottom));
+      expect(menuText.left, lessThan(item.left + 60));
+      final menus = tester.widgetList<LongPressedMenuWidget>(find.byType(LongPressedMenuWidget)).toList();
+      expect(menus[0].alignMenuToChildLeft && !menus[0].alignMenuToChildRight, isTrue);
+      expect(menus[1].alignMenuToChildRight && !menus[1].alignMenuToChildLeft, isTrue);
+      expect(
+        find.byWidgetPredicate((w) => w is LongPressedMenuWidget && w.useGlassOverlay && w.preferMenuBelow),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('while arranging, every item shakes with a remove button, drags right away, and a tap ends it', (
+      tester,
+    ) async {
+      HomeGridPosition? target;
+      final removed = <String>[];
+      var done = 0;
+      await pumpGrid(
+        tester,
+        isArranging: true,
+        onMoveToCell: (id, position) => target = position,
+        onArrangeDone: () => done++,
+        onRemove: (item) => removed.add(item.id),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final menus = tester.widgetList<LongPressedMenuWidget>(find.byType(LongPressedMenuWidget));
+      expect(menus.length, 2);
+
+      for (final id in ['a', 'b']) {
+        final card = tester.getRect(find.byKey(ValueKey('home-item-content-$id')));
+        final badge = tester.getRect(find.byKey(ValueKey('home-item-remove-$id')));
+        expect(badge.center.dx, closeTo(card.left + 4, 1), reason: id);
+        expect(badge.center.dy, closeTo(card.top + 4, 1), reason: id);
+        expect(
+          find.ancestor(of: find.byKey(ValueKey('home-item-remove-$id')), matching: find.byType(Transform)),
+          findsWidgets,
+          reason: id,
+        );
+      }
+      await tester.tap(find.byKey(const ValueKey('home-item-remove-b')));
+      expect(removed, ['b']);
+      expect(done, 0);
+
+      final surface = tester.getTopLeft(find.byKey(const ValueKey('home-grid-surface')));
+      final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-b'))));
+      await gesture.moveTo(
+        surface +
+            const Offset(
+              3 * (HomeItemsView.cell + HomeItemsView.gap) + HomeItemsView.cell / 2,
+              2 * (HomeItemsView.cell + HomeItemsView.gap) + HomeItemsView.cell / 2,
+            ),
+      );
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+      expect(target, const HomeGridPosition(3, 2));
+
+      await tester.tap(find.byKey(const ValueKey('home-item-a')), warnIfMissed: false);
+      expect(done, 1);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets('arranging ends by itself after ten seconds without input', (tester) async {
+      var done = 0;
+      await pumpGrid(tester, isArranging: true, onArrangeDone: () => done++, onRemove: (_) {});
+      await tester.pump(const Duration(seconds: 9));
+      await tester.drag(find.byKey(const ValueKey('home-item-a')), const Offset(0, 30));
+      await tester.pump(const Duration(seconds: 9));
+      expect(done, 0);
+      await tester.pump(const Duration(seconds: 2));
+      expect(done, 1);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+  });
+
+  testWidgets('a widget with two sizes shows a size picker at the top of its menu', (tester) async {
+    final registry =
+        HomeItemRegistry()
+          ..register(_ResizableDefinition())
+          ..register(_LabelDefinition('fixed', HomeItemKind.widget, HomeSpan.small));
+    final resized = <String>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Center(
+          child: SizedBox(
+            width: 4 * HomeItemsView.cell + 3 * HomeItemsView.gap,
+            child: HomeItemsView(
+              configuration: HomeConfiguration(
+                items: [
+                  _item('stack', 'resizable', HomeItemKind.widget, 0, HomeSpan.small),
+                  _item('fixed', 'fixed', HomeItemKind.widget, 1, HomeSpan.small),
+                ],
+              ),
+              registry: registry,
+              onMoveToCell: (_, __) {},
+              menuItemsOf:
+                  (item) => [
+                    LongPressedMenuItem(
+                      title: 'remove ${item.id}',
+                      iconPath: CommonActionIconPath.editHome,
+                      onSelected: () {},
+                    ),
+                  ],
+              onResize: (item, span) => resized.add('${item.id}:${span.toJson()}'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.longPress(find.byKey(const ValueKey('home-item-stack')));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const ValueKey('home-item-size-stack-2x2')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('home-item-size-stack-4x2')));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(resized, ['stack:4x2']);
+    expect(find.text('remove stack'), findsNothing);
+  });
+}
+
+class _ResizableDefinition extends HomeItemDefinition {
+  _ResizableDefinition()
+    : super(
+        id: 'resizable',
+        kind: HomeItemKind.widget,
+        supportedSpans: const [HomeSpan.small, HomeSpan.wide],
+        category: HomeItemCategory.wallets,
+      );
+
+  @override
+  Widget build(BuildContext context, HomeItem item) => Text('built:$id');
 }

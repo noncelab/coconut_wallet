@@ -30,4 +30,7 @@ class AnalyticsEventNames {
 
   // 외부 링크를 여는 이벤트
   static const String externalLinkOpened = 'external_link_opened';
+
+  // 새 홈 편집(Edit Home)을 나갈 때 한 번
+  static const String homeEditCompleted = 'home_edit_completed';
 }

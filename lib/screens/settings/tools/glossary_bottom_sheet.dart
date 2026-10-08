@@ -40,11 +40,15 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
     setState(() {
       termDetails = json.decode(detailsContent);
       termList = termDetails.keys.toList();
-      termList.sort();
       if (_language == AppLanguage.ko.code) {
+        termList.sort();
         groupedTermList = groupByInitialsKo(termList);
       } else if (_language == AppLanguage.ja.code) {
+        termList.sort();
         groupedTermList = groupByInitialsJa(termList);
+      } else {
+        termList.sort((a, b) => _latinSortKey(a).compareTo(_latinSortKey(b)));
+        groupedTermList = groupByInitialsLatin(termList);
       }
     });
   }
@@ -143,6 +147,33 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
 
     // 그 외(한자/기호 등)
     return 'その他';
+  }
+
+  static const _accents = {
+    'á': 'a',
+    'à': 'a',
+    'ä': 'a',
+    'é': 'e',
+    'è': 'e',
+    'í': 'i',
+    'ó': 'o',
+    'ö': 'o',
+    'ú': 'u',
+    'ü': 'u',
+    'ñ': 'n',
+  };
+
+  String _latinSortKey(String term) => term.toLowerCase().split('').map((char) => _accents[char] ?? char).join();
+
+  /// 영어·스페인어·독일어: 첫 글자(악센트 제거) 알파벳, 숫자는 0-9
+  Map<String, List<String>> groupByInitialsLatin(List<String> terms) {
+    final grouped = <String, List<String>>{};
+    for (final term in terms) {
+      final first = _latinSortKey(term).isEmpty ? '' : _latinSortKey(term)[0];
+      final initial = RegExp(r'[0-9]').hasMatch(first) ? '0-9' : first.toUpperCase();
+      (grouped[initial] ??= []).add(term);
+    }
+    return grouped;
   }
 
   Map<String, List<String>> groupByInitialsJa(List<String> terms) {

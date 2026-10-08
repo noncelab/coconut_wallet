@@ -8,7 +8,10 @@ class HomeCubePager extends StatefulWidget {
   final Widget home;
   final Widget Function(VoidCallback showHome) allFeaturesBuilder;
 
-  const HomeCubePager({super.key, required this.home, required this.allFeaturesBuilder});
+  /// 홈 화면 편집 중에는 가로로 넘겨도 All Features로 가지 않는다
+  final bool swipeEnabled;
+
+  const HomeCubePager({super.key, required this.home, required this.allFeaturesBuilder, this.swipeEnabled = true});
 
   @override
   State<HomeCubePager> createState() => _HomeCubePagerState();
@@ -57,7 +60,7 @@ class _HomeCubePagerState extends State<HomeCubePager> {
       child: PageView(
         key: const Key('home-cube-pager'),
         controller: _controller,
-        physics: const ClampingScrollPhysics(),
+        physics: widget.swipeEnabled ? const ClampingScrollPhysics() : const NeverScrollableScrollPhysics(),
         onPageChanged: (page) => setState(() => _page = page),
         children: [
           _face(0, KeyedSubtree(key: const Key('home-cube-home'), child: widget.home)),

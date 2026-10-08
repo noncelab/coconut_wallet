@@ -14,8 +14,8 @@ enum AnalyticsUserCohort {
   final String value;
 }
 
-/// `source` (wallet_add_button_clicked): 지갑 추가를 시작한 홈 버튼 (앱바 + 버튼 / 지갑 목록 아래 추가 행 / 지갑이 없을 때 추가 카드)
-enum WalletAddEntrySource { appBar, homeAddRow, homeEmpty }
+/// `source` (wallet_add_button_clicked): 지갑 추가를 시작한 홈 버튼 (앱바 + 버튼 / 지갑 목록 아래 추가 행 / 지갑이 없을 때 추가 카드 / 새 홈의 바로가기·모든 기능)
+enum WalletAddEntrySource { appBar, homeAddRow, homeEmpty, feature }
 
 /// `source` (backup_prompt_tapped): 백업하러 들어오며 누른 안내 (생성 직후 안내 / 홈 경고 카드 / 지갑 상세 배너)
 enum BackupPromptLocation { postCreate, homeCard, detailBanner }

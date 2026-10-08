@@ -28,7 +28,6 @@ import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
-import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -2736,7 +2735,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildDropdownMenu() {
-    final bool showGlossary = AppLanguage.fromCode(context.read<PreferenceProvider>().language).supportsGlossary;
     return Positioned(
       top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
       right: 20,
@@ -2755,7 +2753,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   groupTitle: t.tool,
                   items: [
                     CoconutPulldownMenuItem(title: t.transaction_draft.title),
-                    if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
+                    CoconutPulldownMenuItem(title: t.glossary),
                     CoconutPulldownMenuItem(title: t.utility.p2p_calculator.calculator),
                     CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
                     CoconutPulldownMenuItem(title: t.tutorial),
@@ -2766,7 +2764,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 CoconutPulldownMenuItem(title: t.app_settings),
                 // CoconutPulldownMenuItem(title: t.view_app_info),
               ],
-              thickDividerIndexList: [getThickDividerIndex(showGlossary)],
+              thickDividerIndexList: const [4],
               onSelected: ((index, selectedText) {
                 _setDropdownMenuVisiblility(false);
                 handleDropdownSelection(selectedText);
@@ -2776,14 +2774,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         },
       ),
     );
-  }
-
-  /// 용어집 표시 여부에 따른 Thick Divider 인덱스 계산
-  /// CoconutPulldownMenuGroup이 끝나는 지점의 인덱스를 반환
-  int getThickDividerIndex(bool showGlossary) {
-    // 테스트넷/메인넷 공통: 임시저장(0) + 용어집(1) + P2P계산기(2) + 니모닉(3) + 튜토리얼(4) → 그룹 끝 인덱스 4
-    // 테스트넷/메인넷 공통 (용어집 없음): 임시저장(0) + P2P계산기(1) + 니모닉(2) + 튜토리얼(3) → 그룹 끝 인덱스 3
-    return showGlossary ? 4 : 3;
   }
 
   /// 드롭다운 선택 처리 (selectedText 기반)

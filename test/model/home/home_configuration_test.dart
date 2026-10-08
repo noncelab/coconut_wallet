@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _Def extends HomeItemDefinition {
   _Def(String id, List<HomeSpan> spans)
-    : super(id: id, kind: HomeItemKind.widget, supportedSpans: spans, category: 'test');
+    : super(id: id, kind: HomeItemKind.widget, supportedSpans: spans, category: HomeItemCategory.wallets);
 
   @override
   Widget build(BuildContext context, HomeItem item) => const SizedBox();
@@ -71,7 +71,7 @@ void main() {
   });
 
   test('normalize keeps items whose definition is not registered yet', () {
-    final config = HomeConfiguration(items: [_widget('a', HomeItemIds.safetyStatus, 0, HomeSpan.wide)]);
+    final config = HomeConfiguration(items: [_widget('a', HomeItemIds.safetyStatusWide, 0, HomeSpan.wide)]);
 
     expect(config.normalize(HomeItemRegistry().byId).items, hasLength(1));
   });
@@ -150,7 +150,7 @@ class _MultiDef extends HomeItemDefinition {
         id: 'multi',
         kind: HomeItemKind.widget,
         supportedSpans: const [HomeSpan.small, HomeSpan.wide],
-        category: 'test',
+        category: HomeItemCategory.wallets,
         allowsMultipleInstances: true,
       );
 

@@ -58,6 +58,7 @@ class SharedPrefKeys {
 
   /// 지갑별 목표 수량 (sats) - Map<walletId, targetSats> JSON
   static const String kWalletTargetSatsMap = "WALLET_TARGET_SATS_MAP";
+  static const String kAllFeaturesRecentIds = "ALL_FEATURES_RECENT_IDS"; // All Features 최근 사용 기능(쉼표 구분)
 
   /// 목표 수량 미설정 안내 카드 숨김 만료일 (지갑별)
   static String walletTargetSuggestionHiddenUntil(int walletId) => 'WALLET_TARGET_SUGGESTION_HIDDEN_UNTIL_$walletId';
@@ -120,6 +121,7 @@ class SharedPrefKeys {
     kFavoriteWalletIds,
     kExcludedFromTotalBalanceWalletIds,
     kWalletTargetSatsMap,
+    kAllFeaturesRecentIds,
     kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
   ];
 

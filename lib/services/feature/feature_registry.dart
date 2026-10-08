@@ -2,7 +2,7 @@ import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/services/feature/builtin_features.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 
-export 'package:coconut_wallet/services/feature/builtin_features.dart' show FeatureIds;
+export 'package:coconut_wallet/services/feature/builtin_features.dart' show FeatureIds, allFeaturesOrder;
 
 class FeatureSearchResult {
   final FeatureItem item;

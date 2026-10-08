@@ -331,7 +331,12 @@ class WalletAddDialog extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                t.wallet_add_scanner_screen.add_wallet,
+                switch (mode) {
+                  WalletAddDialogMode.walletType => t.wallet_add_scanner_screen.add_wallet,
+                  WalletAddDialogMode.hotWalletAction => t.feature_registry.wallet_add_hot,
+                  WalletAddDialogMode.watchOnlySource => t.feature_registry.wallet_add_watch_only,
+                },
+                key: const Key('wallet-add-dialog-title'),
                 style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
               ),
               const Spacer(),

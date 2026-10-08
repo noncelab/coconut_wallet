@@ -71,13 +71,35 @@ void main() {
     expect(find.byKey(const Key('wallet-card-balance')), findsOneWidget);
   });
 
-  testWidgets('small card hides the balance and shows the secondary text', (tester) async {
+  testWidgets('small card without a balance shows the secondary text', (tester) async {
     final wallet = WalletMock.createSingleSigWalletItem();
-    await _pump(tester, wallet, WalletCardSize.small, balance: '0.1234 5678 BTC', secondary: '2 days ago');
+    await _pump(tester, wallet, WalletCardSize.small, secondary: '2 days ago');
 
     expect(find.byKey(const Key('wallet-card-balance')), findsNothing);
     expect(find.text('2 days ago'), findsOneWidget);
     expect(find.text(wallet.name), findsOneWidget);
+    final mfp = find.byKey(const Key('wallet-card-mfp'));
+    expect(mfp, findsOneWidget);
+    expect(tester.widget<Text>(mfp).data, matches(RegExp(r'^[0-9A-F]{4} [0-9A-F]{4}$')));
+    expect(tester.getRect(mfp).top, greaterThanOrEqualTo(tester.getRect(find.text(wallet.name)).bottom));
+
+    final secondary = tester.getRect(find.text('2 days ago'));
+    final card = tester.getRect(find.byType(WalletCard));
+    final name = tester.getRect(find.text(wallet.name));
+    expect(secondary.top, lessThan(name.top));
+    expect(secondary.top - card.top, lessThan(card.height / 3));
+    expect(card.right - secondary.right, lessThan(20));
+  });
+
+  testWidgets('a small card given a balance shows it between the header and the name, as in the wallet wheel', (
+    tester,
+  ) async {
+    final wallet = WalletMock.createSingleSigWalletItem();
+    await _pump(tester, wallet, WalletCardSize.small, balance: '0.1234 5678 BTC', secondary: '2 days ago');
+
+    final balance = tester.getRect(find.byKey(const Key('wallet-card-balance')));
+    expect(balance.top, greaterThan(tester.getRect(find.text('2 days ago')).bottom));
+    expect(balance.bottom, lessThan(tester.getRect(find.text(wallet.name)).top));
   });
 
   testWidgets('watch-only wallet shows the watch-only glyph', (tester) async {
@@ -85,6 +107,10 @@ void main() {
 
     expect(find.byKey(const Key('wallet-card-glyph-watch-only')), findsOneWidget);
     expect(find.byKey(const Key('wallet-card-glyph-hot')), findsNothing);
+    final glyphOpacity = tester.widget<Opacity>(
+      find.ancestor(of: find.byKey(const Key('wallet-card-glyph-watch-only')), matching: find.byType(Opacity)).first,
+    );
+    expect(glyphOpacity.opacity, WalletCard.glyphOpacity);
   });
 
   testWidgets('hot wallet shows the hot glyph', (tester) async {

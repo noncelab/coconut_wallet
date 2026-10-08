@@ -20,6 +20,11 @@ const Color kCoconutWarningCard = ds.CoconutColors.warningAmber;
 const Color kCoconutAppLockWarningForeground = ds.CoconutColors.black;
 const Color kCoconutUnbackedWarningForeground = ds.CoconutColors.white;
 
+/// 시세·금액의 상승/하락 색상입니다.
+/// 상승은 비트코인을 상징하는 주황, 하락은 그에 대비되는 초록을 사용합니다.
+const Color kCoconutPriceUp = Color(0xFFE64A19);
+const Color kCoconutPriceDown = Color(0xFF35C759);
+
 /// 탭루트 지갑 정보 화면에서 부모 키/자식 키를 구분하는 고정 색상입니다.
 ///
 /// 사용자가 "부모 = 보라, 자식 = 파랑"으로 역할을 색으로 학습하므로,
@@ -121,6 +126,10 @@ class CoconutColors {
   /// 구분선
   final Color divider;
   final Color dividerStrong;
+
+  /// 시세·금액 상승/하락
+  final Color priceUp;
+  final Color priceDown;
 
   /// 목표 진행 그래프의 시작/끝 그라디언트 색상
   final Color targetProgressGradientStart;
@@ -261,6 +270,12 @@ class CoconutColors {
   /// 홈 화면 요소가 눌렸을 때 기본으로 사용할 overlay 강도
   final double homeSurfacePressOverlayOpacity;
 
+  /// 홈 위젯의 추이 그래프 선
+  final Color homeChartLine;
+
+  /// Edit Home 위젯 미리보기 그림자. 어두운 테마에서는 밝은 번짐으로 카드를 띄운다.
+  final Color homeWidgetShadow;
+
   /// utxo 오버뷰 화면 요소
   final Color utxoOverviewChartSurface;
   final double utxoOverviewChartUnselectedOverlayOpacity;
@@ -356,6 +371,8 @@ class CoconutColors {
     required this.unbackedWarningForeground,
     required this.divider,
     required this.dividerStrong,
+    required this.priceUp,
+    required this.priceDown,
     required this.targetProgressGradientStart,
     required this.targetProgressGradientEnd,
     required this.brandAccentBackground,
@@ -427,6 +444,8 @@ class CoconutColors {
     required this.homeSurface,
     required this.homeSurfacePressOverlay,
     required this.homeSurfacePressOverlayOpacity,
+    required this.homeChartLine,
+    required this.homeWidgetShadow,
     required this.utxoOverviewChartSurface,
     required this.utxoOverviewChartUnselectedOverlayOpacity,
     required this.utxoOverviewCoinSurface,
@@ -503,6 +522,8 @@ class CoconutColors {
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: ds.CoconutColors.gray800,
       dividerStrong: ds.CoconutColors.gray700,
+      priceUp: kCoconutPriceUp,
+      priceDown: kCoconutPriceDown,
       targetProgressGradientStart: const Color(0xFF8CD5FF),
       targetProgressGradientEnd: const Color(0xFF7775FF),
 
@@ -576,6 +597,8 @@ class CoconutColors {
       homeSurface: ds.CoconutColors.gray850,
       homeSurfacePressOverlay: ds.CoconutColors.gray800,
       homeSurfacePressOverlayOpacity: 0.5,
+      homeChartLine: kCoconutPriceUp,
+      homeWidgetShadow: const Color.fromARGB(12, 255, 255, 255),
       utxoOverviewChartSurface: ds.CoconutColors.gray800,
       utxoOverviewChartUnselectedOverlayOpacity: 0.6,
       utxoOverviewCoinSurface: ds.CoconutColors.gray900,
@@ -653,6 +676,8 @@ class CoconutColors {
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: ds.CoconutColors.gray200,
       dividerStrong: ds.CoconutColors.gray300,
+      priceUp: kCoconutPriceUp,
+      priceDown: kCoconutPriceDown,
       targetProgressGradientStart: const Color(0xFF329DDA),
       targetProgressGradientEnd: ds.CoconutColors.purple,
 
@@ -727,6 +752,8 @@ class CoconutColors {
       homeSurface: ds.CoconutColors.white,
       homeSurfacePressOverlay: ds.CoconutColors.gray700,
       homeSurfacePressOverlayOpacity: 0.2,
+      homeChartLine: kCoconutPriceUp,
+      homeWidgetShadow: ds.CoconutColors.gray600.withValues(alpha: 0.3),
       utxoOverviewChartSurface: ds.CoconutColors.white,
       utxoOverviewChartUnselectedOverlayOpacity: 0.6,
       utxoOverviewCoinSurface: ds.CoconutColors.white,
@@ -821,6 +848,8 @@ class CoconutColors {
       unbackedWarningForeground: kCoconutUnbackedWarningForeground,
       divider: lagoon.withAlpha(30),
       dividerStrong: lagoon.withAlpha(60),
+      priceUp: kCoconutPriceUp,
+      priceDown: kCoconutPriceDown,
       targetProgressGradientStart: lagoonDeep,
       targetProgressGradientEnd: palmGreen,
 
@@ -894,6 +923,8 @@ class CoconutColors {
       homeSurface: cream,
       homeSurfacePressOverlay: golenSun,
       homeSurfacePressOverlayOpacity: 0.2,
+      homeChartLine: kCoconutPriceUp,
+      homeWidgetShadow: huskDeep.withValues(alpha: 0.18),
       utxoOverviewChartSurface: shell,
       utxoOverviewChartUnselectedOverlayOpacity: 0.32,
       utxoOverviewCoinSurface: shell,

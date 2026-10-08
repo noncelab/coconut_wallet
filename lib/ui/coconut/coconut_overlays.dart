@@ -143,6 +143,8 @@ class CoconutToast {
     Color? textColor,
     String? iconPath,
     CoconutToastLevel level = CoconutToastLevel.info,
+    String? actionText,
+    VoidCallback? onAction,
   }) {
     if (removePrevToast && _currentToastOverlay != null) {
       try {
@@ -181,6 +183,8 @@ class CoconutToast {
                   textStyle: textStyle,
                   textPadding: textPadding,
                   level: level,
+                  actionText: actionText,
+                  onAction: onAction,
                   onDismiss: () {
                     overlayEntry.remove();
                     _currentToastOverlay = null;
@@ -245,10 +249,14 @@ class _CoconutToastWidget extends StatefulWidget {
     this.borderColor,
     this.textColor,
     this.iconPath,
+    this.actionText,
+    this.onAction,
   });
 
   final BuildContext context;
   final String text;
+  final String? actionText;
+  final VoidCallback? onAction;
   final bool isVisibleIcon;
   final int duration;
   final VoidCallback onDismiss;
@@ -367,6 +375,7 @@ class _CoconutToastWidgetState extends State<_CoconutToastWidget> with SingleTic
                     else
                       SizedBox(height: widget.iconSize),
                     Flexible(
+                      fit: widget.actionText == null ? FlexFit.loose : FlexFit.tight,
                       child: Text(
                         widget.text,
                         style: widget.textStyle.copyWith(
@@ -376,6 +385,27 @@ class _CoconutToastWidgetState extends State<_CoconutToastWidget> with SingleTic
                         ),
                       ),
                     ),
+                    if (widget.actionText != null)
+                      GestureDetector(
+                        key: const Key('coconut-toast-action'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          widget.onAction?.call();
+                          _startFadeOut();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 12),
+                          child: Text(
+                            widget.actionText!,
+                            style: widget.textStyle.copyWith(
+                              decoration: TextDecoration.none,
+                              fontWeight: FontWeight.w700,
+                              color: widget.textColor ?? colors.primaryText,
+                              leadingDistribution: TextLeadingDistribution.even,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
