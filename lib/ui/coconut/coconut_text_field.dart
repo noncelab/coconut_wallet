@@ -121,6 +121,7 @@ class CoconutTextField extends StatefulWidget {
   final bool autocorrect;
   final bool enableSuggestions;
   final bool enabled;
+  final bool readOnly;
   final bool unfocusOnTapOutside;
   final TextOverflow? textOverflow;
   final List<FontFeature>? fontFeatures;
@@ -135,6 +136,7 @@ class CoconutTextField extends StatefulWidget {
     required this.focusNode,
     required this.onChanged,
     this.onEditingComplete,
+    this.readOnly = false,
     this.padding,
     this.activeColor,
     this.cursorColor,
@@ -600,6 +602,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                 onEditingComplete: widget.onEditingComplete,
                 onTapOutside: widget.unfocusOnTapOutside ? (_) => widget.focusNode.unfocus() : null,
                 enabled: widget.enabled,
+                readOnly: widget.readOnly,
               ),
               Positioned.fill(
                 child: IgnorePointer(

@@ -20,6 +20,9 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/send_screen.dart';
+import 'package:coconut_wallet/widgets/features/send/vault_receiving_address_field.dart';
+import 'package:coconut_wallet/providers/view_model/send/send_view_model.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -56,6 +59,14 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   WalletAddress getReceiveAddress(int walletId) => _address(0, false);
   @override
   WalletAddress getChangeAddress(int walletId) => _address(1, true);
+  @override
+  Future<List<WalletAddress>> getWalletAddressList(
+    WalletItemBase wallet,
+    int cursor,
+    int count,
+    bool isChange,
+    bool showOnlyUnusedAddresses,
+  ) async => List.generate(3, (index) => _address(index, false));
   @override
   List<UtxoState> getUtxoList(int walletId) => const [];
   @override
@@ -112,6 +123,7 @@ void main() {
     required bool manualMode,
     bool withSelectedUtxos = false,
     int? transactionDraftId,
+    bool vaultEntry = false,
   }) async {
     final vault = SingleSignatureVault.fromEntropy(Uint8List(16));
     final wallet = SinglesigWalletItem(id: 1, name: 'Test', colorIndex: 0, iconIndex: 0, descriptor: vault.descriptor);
@@ -151,6 +163,8 @@ void main() {
           home: LoaderOverlay(
             child: SendScreen(
               walletId: 1,
+              isMoveToVault: vaultEntry,
+              receivingVaultWalletId: vaultEntry ? 1 : null,
               sendEntryPoint: SendEntryPoint.walletDetail,
               selectedUtxoList: selectedUtxos,
               transactionDraftId: transactionDraftId,
@@ -163,6 +177,43 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800)); // the sheet opens 500 ms after entry
     await tester.pump(const Duration(milliseconds: 500));
     final opened = pushes.names.contains(AnalyticsScreenNames.sendSelectUtxoSheet);
+    if (vaultEntry) {
+      final fieldFinder = find.byType(VaultReceivingAddressField);
+      final field = tester.widget<VaultReceivingAddressField>(fieldFinder);
+      expect(field.address, vault.getAddress(0));
+      final viewModel = tester.element(fieldFinder).read<SendViewModel>();
+      expect(viewModel.recipientList.first.address, vault.getAddress(0));
+      await tester.tap(fieldFinder);
+      await tester.pump();
+      expect(find.text(t.send_screen.vault_addresses(name: 'Test')), findsOneWidget);
+      expect(find.text(t.view_more), findsNothing);
+      expect(viewModel.showAddressBoard, isTrue);
+      await tester.tap(find.text(shortenAddress(vault.getAddress(1), head: 12, tail: 14)));
+      await tester.pump();
+      await tester.pump(); // address selection updates the view model after the frame
+      expect(tester.widget<VaultReceivingAddressField>(fieldFinder).address, vault.getAddress(1));
+      expect(viewModel.recipientList.first.address, vault.getAddress(1));
+      expect(viewModel.showAddressBoard, isFalse);
+      tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(1);
+      await tester.pump();
+      await tester.tap(find.text(t.send_screen.add_recipient));
+      await tester.pump();
+      await tester.pump();
+      viewModel.setAmountText(10000, 1);
+      viewModel.validateAllFieldsOnFocusLost();
+      await tester.tap(find.byType(VaultReceivingAddressField).hitTestable());
+      await tester.pump();
+      expect(find.text(shortenAddress(vault.getAddress(1), head: 12, tail: 14)), findsNothing);
+      expect(find.text(shortenAddress(vault.getAddress(0), head: 12, tail: 14)), findsOneWidget);
+      await tester.tap(find.text(shortenAddress(vault.getAddress(0), head: 12, tail: 14)));
+      await tester.pump();
+      await tester.pump();
+      expect(viewModel.recipientList[1].address, vault.getAddress(0));
+      expect(viewModel.recipientList[1].amount, '10000');
+      expect(viewModel.recipientList[1].addressError.isNotError, isTrue);
+      expect(viewModel.validRecipientList, contains(viewModel.recipientList[1]));
+      expect(viewModel.showFeeBoard, isTrue);
+    }
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 1));
     return opened;
@@ -170,6 +221,9 @@ void main() {
 
   testWidgets('automatic UTXO selection does not open the UTXO selection sheet on entry', (tester) async {
     expect(await opensUtxoSelectionSheetOnEntry(tester, manualMode: false), isFalse);
+  });
+  testWidgets('vault entry prefills a read-only recipient and opens the vault address board', (tester) async {
+    expect(await opensUtxoSelectionSheetOnEntry(tester, manualMode: false, vaultEntry: true), isFalse);
   });
 
   testWidgets('manual UTXO selection entered with chosen UTXOs does not open the sheet again', (tester) async {
