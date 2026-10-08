@@ -25,6 +25,10 @@ const Color kCoconutUnbackedWarningForeground = ds.CoconutColors.white;
 const Color kCoconutPriceUp = Color(0xFFE64A19);
 const Color kCoconutPriceDown = Color(0xFF35C759);
 
+/// 가이드 말풍선. 테마와 상관없이 같은 파랑 위에 흰 글자
+const Color kCoconutGuideBubbleBackground = Color(0xFF4A77F1);
+const Color kCoconutGuideBubblePrimaryText = ds.CoconutColors.white;
+
 /// 탭루트 지갑 정보 화면에서 부모 키/자식 키를 구분하는 고정 색상입니다.
 ///
 /// 사용자가 "부모 = 보라, 자식 = 파랑"으로 역할을 색으로 학습하므로,
@@ -334,6 +338,10 @@ class CoconutColors {
   final Color faucetPopoverBackground;
   final Color faucetPopoverText;
 
+  /// 가이드 말풍선(예: 홈 지갑 추가 안내)
+  final Color guideBubbleBackground;
+  final Color guideBubblePrimaryText;
+
   const CoconutColors({
     required this.mainnetLogoGradient,
     required this.regtestLogo,
@@ -482,6 +490,8 @@ class CoconutColors {
     required this.qrScannerProgressBarFill,
     required this.faucetPopoverBackground,
     required this.faucetPopoverText,
+    required this.guideBubbleBackground,
+    required this.guideBubblePrimaryText,
   });
 
   factory CoconutColors.dark() {
@@ -635,6 +645,8 @@ class CoconutColors {
       qrScannerProgressBarFill: ds.CoconutColors.black,
       faucetPopoverBackground: const Color.fromRGBO(179, 240, 255, 1),
       faucetPopoverText: ds.CoconutColors.gray900,
+      guideBubbleBackground: kCoconutGuideBubbleBackground,
+      guideBubblePrimaryText: kCoconutGuideBubblePrimaryText,
     );
   }
 
@@ -790,6 +802,8 @@ class CoconutColors {
       qrScannerProgressBarFill: ds.CoconutColors.black,
       faucetPopoverBackground: const Color.fromRGBO(179, 240, 255, 1),
       faucetPopoverText: ds.CoconutColors.gray900,
+      guideBubbleBackground: kCoconutGuideBubbleBackground,
+      guideBubblePrimaryText: kCoconutGuideBubblePrimaryText,
     );
   }
 
@@ -961,6 +975,8 @@ class CoconutColors {
       qrScannerProgressBarFill: huskDeep,
       faucetPopoverBackground: seefoam,
       faucetPopoverText: huskDeep,
+      guideBubbleBackground: kCoconutGuideBubbleBackground,
+      guideBubblePrimaryText: kCoconutGuideBubblePrimaryText,
     );
   }
 }

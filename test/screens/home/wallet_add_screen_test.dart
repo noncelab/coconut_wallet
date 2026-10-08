@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,8 +18,8 @@ void main() {
   testWidgets('offers watch-only (air-gapped, connected) and hot wallet (create, import) choices', (tester) async {
     await _pump(tester);
 
-    expect(find.text(t.wallet_add_screen.title), findsOneWidget);
-    expect(find.text(t.wallet_add_screen.subtitle), findsOneWidget);
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.wallet_add_screen.title)), findsOneWidget);
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.wallet_add_screen.subtitle)), findsOneWidget);
     for (final key in [
       'wallet-add-air-gapped',
       'wallet-add-connected',

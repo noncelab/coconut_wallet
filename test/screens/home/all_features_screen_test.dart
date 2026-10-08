@@ -104,4 +104,27 @@ void main() {
     await pump(tester);
     expect(find.text(t.all_features.recent), findsNothing);
   });
+
+  testWidgets('dimmed features stay tappable and are drawn faded', (tester) async {
+    final launched = <String>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Scaffold(
+          body: AllFeaturesScreen(
+            registry: registry,
+            isDimmed: (feature) => feature.id == 'send',
+            onLaunch: (_, feature) => launched.add(feature.id),
+          ),
+        ),
+      ),
+    );
+
+    final send = find.ancestor(of: find.text('Send'), matching: find.byType(Opacity));
+    expect(tester.widget<Opacity>(send.first).opacity, lessThan(1));
+    expect(find.ancestor(of: find.text('Settings'), matching: find.byType(Opacity)), findsNothing);
+
+    await tester.tap(find.text('Send'));
+    expect(launched, ['send']);
+  });
 }

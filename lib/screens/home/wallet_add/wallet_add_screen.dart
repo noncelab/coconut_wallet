@@ -6,6 +6,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -54,9 +55,15 @@ class WalletAddScreen extends StatelessWidget {
           key: const Key('wallet-add-screen'),
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
-            Text(copy.title, style: CoconutTypography.heading3_21_Bold.copyWith(color: colors.primaryText)),
-            CoconutLayout.spacing_200h,
-            Text(copy.subtitle, style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText)),
+            Text(
+              TextUtils.preventLineBreakInsideWords(copy.title),
+              style: CoconutTypography.heading3_21_Bold.copyWith(color: colors.primaryText),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              TextUtils.preventLineBreakInsideWords(copy.subtitle),
+              style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
+            ),
             CoconutLayout.spacing_600h,
             _OptionGroup(
               iconPath: FeatureWalletIconPath.walletAddWatchOnly,
@@ -153,7 +160,10 @@ class _OptionGroup extends StatelessWidget {
               children: [
                 Text(title, style: CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText)),
                 const SizedBox(height: 2),
-                Text(description, style: CoconutTypography.body3_12.copyWith(color: colors.primaryText)),
+                Text(
+                  TextUtils.preventLineBreakInsideWords(description),
+                  style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
+                ),
               ],
             ),
           ),

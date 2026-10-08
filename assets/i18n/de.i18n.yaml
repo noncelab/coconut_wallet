@@ -262,6 +262,10 @@ wallet_add_screen:
   air_gapped: "Air-gapped"
   connected: "Verbunden"
   hot_description: "Erstelle eine neue Wallet oder importiere sie mit einer Wiederherstellungsphrase"
+add_wallet_hint:
+  title: "Erste Wallet hinzufügen?"
+  description: "Füge eine Wallet hinzu, um alle Funktionen zu nutzen."
+  needs_wallet: "Füge zuerst eine Wallet hinzu"
 wallet_stack_list:
   utxos: "UTXOs"
   last_transaction: "Letzte Transaktion"

@@ -12,6 +12,9 @@ import 'package:provider/provider.dart';
 class AllFeaturesScreen extends StatefulWidget {
   final FeatureRegistry registry;
   final bool Function(FeatureItem feature)? isAvailable;
+
+  /// 흐리게 보여 줄 기능(예: 지갑이 없을 때 지갑이 필요한 기능). 누르면 [onLaunch]가 안내한다.
+  final bool Function(FeatureItem feature)? isDimmed;
   final void Function(BuildContext context, FeatureItem feature) onLaunch;
   final List<String> recentIds;
   final void Function(List<String> ids)? saveRecentIds;
@@ -21,6 +24,7 @@ class AllFeaturesScreen extends StatefulWidget {
     required this.registry,
     required this.onLaunch,
     this.isAvailable,
+    this.isDimmed,
     this.recentIds = const [],
     this.saveRecentIds,
   });
@@ -221,7 +225,12 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
     );
   }
 
-  Widget _buildRecentTile(FeatureItem feature) {
+  Widget _dimmed(FeatureItem feature, Widget child) =>
+      widget.isDimmed?.call(feature) ?? false ? Opacity(opacity: 0.35, child: child) : child;
+
+  Widget _buildRecentTile(FeatureItem feature) => _dimmed(feature, _recentTile(feature));
+
+  Widget _recentTile(FeatureItem feature) {
     final colors = context.coconutColors;
     final iconPath = feature.iconPath;
     return GestureDetector(
@@ -258,7 +267,9 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
     );
   }
 
-  Widget _buildRow(AllFeaturesEntry entry) {
+  Widget _buildRow(AllFeaturesEntry entry) => _dimmed(entry.item, _row(entry));
+
+  Widget _row(AllFeaturesEntry entry) {
     final colors = context.coconutColors;
     final feature = entry.item;
     final iconPath = feature.iconPath;

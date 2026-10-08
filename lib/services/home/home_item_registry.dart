@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
@@ -14,7 +15,10 @@ class ShortcutDefinition extends HomeItemDefinition {
   final FeatureItem feature;
   final ShortcutTap? onTap;
 
-  ShortcutDefinition(this.feature, {this.onTap})
+  /// 지갑이 없으면 true. 지갑이 필요한 바로가기는 이때 흐리게 보인다(눌림은 [onTap]이 처리한다).
+  final ValueListenable<bool>? noWallets;
+
+  ShortcutDefinition(this.feature, {this.onTap, this.noWallets})
     : super(
         id: HomeItemIds.shortcut(feature.id),
         kind: HomeItemKind.shortcut,
@@ -28,6 +32,21 @@ class ShortcutDefinition extends HomeItemDefinition {
 
   @override
   Widget build(BuildContext context, HomeItem item) {
+    final noWallets = this.noWallets;
+    if (noWallets == null || !requiresWalletContext) return _build(context);
+    return ValueListenableBuilder<bool>(
+      valueListenable: noWallets,
+      builder:
+          (context, disabled, child) => Opacity(
+            key: ValueKey('shortcut-${feature.id}-${disabled ? 'disabled' : 'enabled'}'),
+            opacity: disabled ? 0.35 : 1,
+            child: child,
+          ),
+      child: _build(context),
+    );
+  }
+
+  Widget _build(BuildContext context) {
     final colors = context.coconutColors;
     final iconPath = feature.iconPath;
     return DecoratedBox(
@@ -88,9 +107,9 @@ class HomeItemRegistry {
     _definitions[definition.id] = definition;
   }
 
-  void registerShortcuts(FeatureRegistry features, {ShortcutTap? onTap}) {
+  void registerShortcuts(FeatureRegistry features, {ShortcutTap? onTap, ValueListenable<bool>? noWallets}) {
     for (final feature in features.shortcutEligible) {
-      register(ShortcutDefinition(feature, onTap: onTap));
+      register(ShortcutDefinition(feature, onTap: onTap, noWallets: noWallets));
     }
   }
 }

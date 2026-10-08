@@ -33,6 +33,7 @@ import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -797,7 +798,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byKey(const Key('hodl-insights-no-wallets')), findsOneWidget);
-      expect(find.text(t.hodl_insights.empty.title), findsOneWidget);
+      expect(find.text(TextUtils.preventLineBreakInsideWords(t.hodl_insights.empty.title)), findsOneWidget);
       for (final title in [
         t.hodl_insights.empty.balance_title,
         t.hodl_insights.empty.goal_title,

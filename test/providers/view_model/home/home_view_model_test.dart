@@ -277,6 +277,50 @@ void main() {
     });
   });
 
+  group('no wallets', () {
+    test('wallet shortcuts are dimmed and the add wallet hint shows until it is closed', () async {
+      await repository.save(HomeConfiguration(items: const []));
+      final walletList = ValueNotifier<List<WalletItemBase>>(const []);
+      var saved = 0;
+      final viewModel = HomeViewModel(
+        repository: repository,
+        wallets: () => walletList.value,
+        onShortcutTap: (_, __) {},
+        walletListChanges: walletList,
+        onAddWalletHintDismissed: () => saved++,
+      );
+      addTearDown(viewModel.dispose);
+
+      expect(viewModel.noWallets.value, isTrue);
+      expect(viewModel.showsAddWalletHint, isTrue);
+
+      viewModel.dismissAddWalletHint();
+      expect(viewModel.showsAddWalletHint, isFalse);
+      expect(saved, 1);
+
+      viewModel.remindAddWallet();
+      expect(viewModel.showsAddWalletHint, isTrue);
+      expect(viewModel.addWalletHintNudges, 1);
+
+      walletList.value = [WalletMock.createSingleSigWalletItem(id: 1)];
+      expect(viewModel.noWallets.value, isFalse);
+      expect(viewModel.showsAddWalletHint, isFalse);
+    });
+
+    test('a hint closed before stays closed on the next launch', () async {
+      await repository.save(HomeConfiguration(items: const []));
+      final viewModel = HomeViewModel(
+        repository: repository,
+        wallets: () => const [],
+        onShortcutTap: (_, __) {},
+        addWalletHintDismissed: true,
+      );
+      addTearDown(viewModel.dispose);
+
+      expect(viewModel.showsAddWalletHint, isFalse);
+    });
+  });
+
   test('addable shortcuts leave out those on home and those not available now', () async {
     await repository.save(HomeConfiguration(items: [_shortcut('a', FeatureIds.receive, 0)]));
     final viewModel = HomeViewModel(

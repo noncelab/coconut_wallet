@@ -1,9 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutAppBar, CoconutTypography;
+import 'package:coconut_wallet/widgets/features/home/add_wallet_hint.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
-import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
-import 'package:coconut_wallet/screens/home/wallet_onboarding_screen.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
@@ -53,6 +52,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const _gridBadgeInset = 16.0;
 
+  static const _addWalletButtonSize = 40.0;
+
+  /// 말풍선 오른쪽 끝이 지갑 추가 버튼 오른쪽 끝보다 더 나가는 거리
+  static const _addWalletHintRightOverhang = 52.0;
+
+  final LayerLink _addWalletButtonLink = LayerLink();
   late final HomeViewModel _viewModel;
   late final HomeWidgetsViewModel _widgetsViewModel;
 
@@ -64,6 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
       wallets: () => context.read<WalletProvider>().walletItemList,
       onShortcutTap: _launch,
       isFeatureAvailable: (feature) => feature.isAvailable?.call(context) ?? true,
+      walletListChanges: context.read<WalletProvider>().walletItemListNotifier,
+      addWalletHintDismissed: SharedPrefsRepository().getBool(SharedPrefKeys.kAddWalletHintDismissed),
+      onAddWalletHintDismissed: () => SharedPrefsRepository().setBool(SharedPrefKeys.kAddWalletHintDismissed, true),
     );
     _widgetsViewModel = HomeWidgetsViewModel(
       walletProvider: context.read<WalletProvider>(),
@@ -86,9 +94,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _launch(BuildContext context, FeatureItem feature, {bool useShortcutWallet = true}) {
     if (_viewModel.shouldAddWalletBeforeLaunch(feature)) {
-      FeatureEntryRoutes.instance.launching(
-        () => WalletOnboardingScreen.open(context, feature: feature, registry: _viewModel.features),
-      );
+      if (useShortcutWallet) {
+        _viewModel.remindAddWallet();
+      } else {
+        CoconutToast.showToast(context: context, text: t.add_wallet_hint.needs_wallet);
+      }
       return;
     }
     FeatureLauncher(
@@ -115,6 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openAddWallet(BuildContext context) {
     context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.appBar);
+    _viewModel.dismissAddWalletHint();
     WalletAddScreen.open(context);
   }
 
@@ -219,9 +230,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAllFeatures(VoidCallback showHome) => AllFeaturesScreen(
+  Widget _buildAllFeatures(VoidCallback showHome) => ValueListenableBuilder<bool>(
+    valueListenable: _viewModel.noWallets,
+    builder: (context, noWallets, _) => _buildAllFeaturesScreen(noWallets),
+  );
+
+  Widget _buildAllFeaturesScreen(bool noWallets) => AllFeaturesScreen(
     registry: _viewModel.features,
     isAvailable: (feature) => feature.isAvailable?.call(context) ?? true,
+    isDimmed: (feature) => noWallets && feature.context == FeatureContext.wallet,
     onLaunch: (context, feature) => _launch(context, feature, useShortcutWallet: false),
     recentIds: SharedPrefsRepository().getString(SharedPrefKeys.kAllFeaturesRecentIds).split(',')
       ..removeWhere((id) => id.isEmpty),
@@ -229,6 +246,35 @@ class _HomeScreenState extends State<HomeScreen> {
   );
 
   Widget _buildHome(BuildContext context) {
+    return Stack(
+      children: [
+        _buildHomeScroll(context),
+        Consumer<HomeViewModel>(
+          builder:
+              (context, viewModel, _) =>
+                  !viewModel.showsAddWalletHint || viewModel.isArranging
+                      ? const SizedBox.shrink()
+                      : CompositedTransformFollower(
+                        link: _addWalletButtonLink,
+                        showWhenUnlinked: false,
+                        targetAnchor: Alignment.bottomRight,
+                        followerAnchor: Alignment.topRight,
+                        offset: const Offset(_addWalletHintRightOverhang, 0),
+                        child: Align(
+                          alignment: Alignment.topRight,
+                          child: AddWalletHint(
+                            tailFromRight: _addWalletHintRightOverhang + _addWalletButtonSize / 2,
+                            nudges: viewModel.addWalletHintNudges,
+                            onClose: viewModel.dismissAddWalletHint,
+                          ),
+                        ),
+                      ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHomeScroll(BuildContext context) {
     return CustomScrollView(
       slivers: [
         Builder(builder: _buildAppBar),
@@ -300,15 +346,20 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => _openHomeEdit(context),
             color: iconColor,
           ),
-          CoconutAppBarActionButton(
-            icon: SvgPicture.asset(
-              FeatureWalletIconPath.walletAddDefault,
-              width: 18,
-              height: 18,
-              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+          CompositedTransformTarget(
+            link: _addWalletButtonLink,
+            child: CoconutAppBarActionButton(
+              buttonKey: const Key('home-add-wallet-button'),
+              size: _addWalletButtonSize,
+              icon: SvgPicture.asset(
+                FeatureWalletIconPath.walletAddDefault,
+                width: 18,
+                height: 18,
+                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+              ),
+              onPressed: () => _openAddWallet(context),
+              color: iconColor,
             ),
-            onPressed: () => _openAddWallet(context),
-            color: iconColor,
           ),
           CoconutAppBarActionButton(
             icon: SvgPicture.asset(

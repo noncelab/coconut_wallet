@@ -25,6 +25,12 @@ class HomeViewModel extends ChangeNotifier {
   final bool Function(FeatureItem feature) _isFeatureAvailable;
   late final HomeItemRegistry registry;
   late HomeConfiguration _configuration;
+  final Listenable? _walletListChanges;
+  final void Function()? _onAddWalletHintDismissed;
+  late final ValueNotifier<bool> _noWallets = ValueNotifier(_wallets().isEmpty);
+  bool _addWalletHintDismissed;
+  bool _addWalletHintReminded = false;
+  int _addWalletHintNudges = 0;
 
   HomeViewModel({
     required HomeConfigurationRepository repository,
@@ -34,7 +40,13 @@ class HomeViewModel extends ChangeNotifier {
     List<HomeItemDefinition>? widgetDefinitions,
     List<HomePreset>? presets,
     bool Function(FeatureItem feature)? isFeatureAvailable,
+    Listenable? walletListChanges,
+    bool addWalletHintDismissed = false,
+    void Function()? onAddWalletHintDismissed,
   }) : _repository = repository,
+       _walletListChanges = walletListChanges,
+       _addWalletHintDismissed = addWalletHintDismissed,
+       _onAddWalletHintDismissed = onAddWalletHintDismissed,
        _isFeatureAvailable = isFeatureAvailable ?? ((_) => true),
        _wallets = wallets,
        _presets = presets ?? builtinHomePresets(),
@@ -43,8 +55,48 @@ class HomeViewModel extends ChangeNotifier {
     for (final definition in widgetDefinitions ?? builtinHomeWidgets()) {
       registry.register(definition);
     }
-    registry.registerShortcuts(this.features, onTap: onShortcutTap);
+    registry.registerShortcuts(this.features, onTap: onShortcutTap, noWallets: _noWallets);
     _configuration = _load();
+    _walletListChanges?.addListener(_onWalletListChanged);
+  }
+
+  /// 지갑이 하나도 없으면 true. 지갑이 필요한 바로가기를 흐리게 하고 지갑 추가 말풍선을 띄운다.
+  ValueListenable<bool> get noWallets => _noWallets;
+
+  /// 앱 바 지갑 추가 버튼의 말풍선. 지갑이 없고, 닫지 않았거나 흐린 바로가기를 눌러 다시 부른 경우에 보인다.
+  bool get showsAddWalletHint => _noWallets.value && (!_addWalletHintDismissed || _addWalletHintReminded);
+
+  /// 흐린 바로가기를 누를 때마다 늘어난다. 말풍선이 이 값이 바뀔 때 살짝 흔들린다.
+  int get addWalletHintNudges => _addWalletHintNudges;
+
+  void _onWalletListChanged() {
+    final empty = _wallets().isEmpty;
+    if (_noWallets.value == empty) return;
+    _noWallets.value = empty;
+    if (!empty) _addWalletHintReminded = false;
+    notifyListeners();
+  }
+
+  void remindAddWallet() {
+    _addWalletHintReminded = true;
+    _addWalletHintNudges++;
+    notifyListeners();
+  }
+
+  void dismissAddWalletHint() {
+    _addWalletHintReminded = false;
+    if (!_addWalletHintDismissed) {
+      _addWalletHintDismissed = true;
+      _onAddWalletHintDismissed?.call();
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _walletListChanges?.removeListener(_onWalletListChanged);
+    _noWallets.dispose();
+    super.dispose();
   }
 
   HomeConfiguration get configuration => _configuration;

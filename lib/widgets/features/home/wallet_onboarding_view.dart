@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLa
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -15,6 +16,9 @@ class WalletOnboardingItem {
 
 /// 지갑이 없을 때 지갑을 추가하면 할 수 있는 일을 보여 주고, 첫 지갑 추가로 이끈다.
 class WalletOnboardingView extends StatelessWidget {
+  static const _buttonHeight = 56.0;
+  static const _buttonBottom = 16.0;
+
   final String? heroIconPath;
   final String title;
   final String? subtitle;
@@ -40,12 +44,13 @@ class WalletOnboardingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    return Column(
+    final background = colors.homeBackground;
+    return Stack(
       key: const Key('wallet-onboarding'),
       children: [
-        Expanded(
+        Positioned.fill(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, _buttonHeight + _buttonBottom + 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -67,7 +72,7 @@ class WalletOnboardingView extends StatelessWidget {
                   CoconutLayout.spacing_500h,
                 ],
                 Text(
-                  title,
+                  TextUtils.preventLineBreakInsideWords(title),
                   textAlign: TextAlign.center,
                   style: CoconutTypography.heading3_21_Bold.copyWith(color: colors.primaryText),
                 ),
@@ -100,7 +105,7 @@ class WalletOnboardingView extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  item.description,
+                                  TextUtils.preventLineBreakInsideWords(item.description),
                                   style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),
                                 ),
                               ],
@@ -114,13 +119,34 @@ class WalletOnboardingView extends StatelessWidget {
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: Container(
+              key: const Key('wallet-onboarding-fade'),
+              height: _buttonHeight + _buttonBottom + 50,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [background.withValues(alpha: 0.0), background],
+                  stops: const [0.0, 0.5],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 20,
+          right: 20,
+          bottom: _buttonBottom,
           child: HomeWidgetPressable(
             key: const Key('wallet-onboarding-add'),
             onTap: onAddWallet,
             child: Container(
-              height: 56,
+              height: _buttonHeight,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(16)),
               child: Row(

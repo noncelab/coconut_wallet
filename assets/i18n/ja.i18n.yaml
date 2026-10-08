@@ -261,6 +261,10 @@ wallet_add_screen:
   air_gapped: "エアギャップ"
   connected: "接続型"
   hot_description: "新しいウォレットを作るか、リカバリーフレーズで取り込みます"
+add_wallet_hint:
+  title: "最初のウォレットを追加しましょうか？"
+  description: "ウォレットを追加するとすべての機能を使えます。"
+  needs_wallet: "先にウォレットを追加してください"
 wallet_stack_list:
   utxos: "UTXO"
   last_transaction: "最終取引"

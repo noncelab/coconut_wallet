@@ -263,6 +263,10 @@ wallet_add_screen:
   air_gapped: "Air-gapped"
   connected: "Conectada"
   hot_description: "Crea una billetera nueva o impórtala con una frase de recuperación"
+add_wallet_hint:
+  title: "¿Añadimos tu primera billetera?"
+  description: "Añade una billetera para usar todas las funciones."
+  needs_wallet: "Primero añade una billetera"
 wallet_stack_list:
   utxos: "UTXOs"
   last_transaction: "Última transacción"
