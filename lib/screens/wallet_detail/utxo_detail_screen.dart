@@ -72,7 +72,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   late WalletProvider _walletProvider;
   late BitcoinUnit _currentUnit;
   late Stream<WalletUpdateInfo> _walletSyncStateStream;
-  late StreamSubscription<WalletUpdateInfo>? _walletSyncStateSubscription;
+  StreamSubscription<WalletUpdateInfo>? _walletSyncStateSubscription;
 
   @override
   void initState() {
@@ -96,6 +96,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     super.didChangeDependencies();
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
     _walletSyncStateStream = Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id);
+    _walletSyncStateSubscription?.cancel();
     _walletSyncStateSubscription = _walletSyncStateStream.listen(_onWalletUpdate);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -117,6 +118,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   void _onWalletUpdate(WalletUpdateInfo info) {
+    if (!mounted) return;
     final updatedUtxo = _walletProvider.getUtxoState(widget.id, widget.utxo.utxoId);
     if (updatedUtxo != null) {
       setState(() {
