@@ -644,34 +644,38 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText),
               ),
               const SizedBox(height: 20),
-              Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: context.coconutColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    for (final wallet in ordered.where((wallet) => wallet.hasLocalKey == hasLocalKey))
-                      _getWalletRowItem(
-                        ValueKey(wallet.id),
-                        wallet,
-                        walletBalanceMap[wallet.id] ?? AnimatedBalanceData(0, 0),
-                        false,
-                        false,
-                        _viewModel.favoriteWalletIds.contains(wallet.id),
-                      ),
-                    if (!ordered.any((wallet) => wallet.hasLocalKey == hasLocalKey))
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(
-                          hasLocalKey ? t.wallet_list.empty_hot_wallet : t.wallet_list.empty_watch_only,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
+              if (!ordered.any((wallet) => wallet.hasLocalKey == hasLocalKey))
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Text(
+                      hasLocalKey ? t.wallet_list.empty_hot_wallet : t.wallet_list.empty_watch_only,
+                      textAlign: TextAlign.center,
+                      style: CoconutTypography.body2_14.setColor(context.coconutColors.mutedText),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: context.coconutColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      for (final wallet in ordered.where((wallet) => wallet.hasLocalKey == hasLocalKey))
+                        _getWalletRowItem(
+                          ValueKey(wallet.id),
+                          wallet,
+                          walletBalanceMap[wallet.id] ?? AnimatedBalanceData(0, 0),
+                          false,
+                          false,
+                          _viewModel.favoriteWalletIds.contains(wallet.id),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
             ],
             const SizedBox(height: 40),
           ],

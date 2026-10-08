@@ -595,6 +595,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                         child: BottomActionButton(
                           iconPath: FeatureTransactionIconPath.receivePlane,
                           label: t.receive,
+                          labelMaxLines: null,
                           onTap: () {
                             _logAction(WalletDetailAction.receive);
                             Navigator.pushNamed(
@@ -616,6 +617,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                         child: BottomActionButton(
                           iconPath: FeatureTransactionIconPath.sendPlane,
                           label: t.send,
+                          labelMaxLines: null,
                           onTap: () {
                             _logAction(WalletDetailAction.send);
                             Navigator.pushNamed(
@@ -638,6 +640,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                           child: BottomActionButton(
                             iconPath: FeatureWalletIconPath.vault,
                             label: t.wallet_detail_screen.move_to_vault,
+                            labelMaxLines: null,
                             onTap: _onMoveToVaultPressed,
                             buttonLayout: BottomActionButtonLayout.horizontal,
                             textStyle: CoconutTypography.body2_14_Bold,
