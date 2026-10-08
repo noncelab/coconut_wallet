@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 import 'package:coconut_wallet/model/home/shortcut_wallet_context.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
@@ -63,7 +64,7 @@ class FeatureLauncher {
     if (item.isAvailable != null && !item.isAvailable!(context)) return FeatureLaunchResult.unavailable;
 
     if (item.context == FeatureContext.none) {
-      await launch(context, null);
+      await FeatureEntryRoutes.instance.launching(() => launch(context, null));
       return FeatureLaunchResult.launched;
     }
 
@@ -80,7 +81,7 @@ class FeatureLauncher {
     }
     final wallet = allWallets.firstWhereOrNull((w) => w.id == walletId);
     if (wallet == null || !context.mounted) return FeatureLaunchResult.cancelled;
-    await launch(context, wallet);
+    await FeatureEntryRoutes.instance.launching(() => launch(context, wallet));
     return FeatureLaunchResult.launched;
   }
 }

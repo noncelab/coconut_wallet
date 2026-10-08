@@ -84,6 +84,11 @@ void main() {
       tester.getTopLeft(find.byKey(const Key('all-features-recent'))).dy,
       lessThan(tester.getTopLeft(find.text(t.all_features.categories.transactions)).dy),
     );
+    final search = tester.getRect(find.byKey(const Key('all-features-search')));
+    expect(tester.getTopLeft(find.text(t.all_features.recent)).dy - search.bottom, lessThanOrEqualTo(24));
+    final divider = tester.getRect(find.byKey(const Key('all-features-recent-divider')));
+    expect(divider.top - tester.getRect(find.byKey(const Key('all-features-recent'))).bottom, 20);
+    expect(tester.getTopLeft(find.text(t.all_features.categories.transactions)).dy - divider.bottom, 20);
 
     await tester.tap(find.text('Send'));
     await tester.pump();

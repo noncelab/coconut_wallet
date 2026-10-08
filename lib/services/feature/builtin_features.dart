@@ -12,11 +12,12 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
-import 'package:coconut_wallet/screens/settings/tools/glossary_bottom_sheet.dart';
+import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
+import 'package:coconut_wallet/screens/home/wallet_stack_list_screen.dart';
+import 'package:coconut_wallet/screens/settings/tools/glossary_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
@@ -136,11 +137,8 @@ List<FeatureItem> builtinFeatures() {
       label: () => labels.my_wallets,
       iconPath: FeatureShortcutIconPath.myWallets,
       shortcutEligible: true,
-      launch: (context, _) => _push(context, AppRouteNames.walletList),
+      launch: (context, _) => WalletStackListScreen.open(context, kind: WalletStackKind.all, title: labels.my_wallets),
     ),
-    _sub(FeatureIds.myWallets, 'filter', ['지갑 종류', '필터']),
-    _sub(FeatureIds.myWallets, 'order', ['순서 편집', '순서 변경', '정렬', '지갑 삭제']),
-    _sub(FeatureIds.myWallets, 'primary', ['대표 지갑', '총액에서 제외']),
     FeatureItem(
       id: FeatureIds.transactionDraft,
       category: FeatureCategory.transactions,
@@ -194,11 +192,11 @@ List<FeatureItem> builtinFeatures() {
       shortcutEligible: true,
       keywords: ['용어', '사전', '뜻'],
       launch:
-          (context, _) => CommonBottomSheets.showCustomHeightBottomSheet(
-            context: context,
-            screenName: AnalyticsScreenNames.walletHomeGlossarySheet,
-            child: const GlossaryBottomSheet(),
-            heightRatio: 0.9,
+          (context, _) => Navigator.of(context).push(
+            CupertinoPageRoute(
+              settings: const RouteSettings(name: AnalyticsScreenNames.glossary),
+              builder: (_) => const GlossaryScreen(),
+            ),
           ),
     ),
     FeatureItem(

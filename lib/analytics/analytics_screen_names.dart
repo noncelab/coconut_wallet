@@ -10,6 +10,8 @@ class AnalyticsScreenNames {
   static const String ccosOpenStoreFirstPowFeatureDetail = 'ccos-open-store-first-pow-feature-detail';
   static const String ccosOpenStoreFirstPowDeliveryDetail = 'ccos-open-store-first-pow-delivery-detail';
 
+  static const String glossary = 'glossary';
+
   // 바텀시트 (PopupRoute라 FirebaseAnalyticsObserver의 기본 route is PageRoute 필터에 걸러짐)
   static const String walletHomeGlossarySheet = 'wallet-home-glossary-sheet';
   static const String walletHomeAppSettingsSheet = 'wallet-home-app-settings-sheet';

@@ -217,4 +217,30 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('stack-card-3')), findsOneWidget);
   });
+
+  testWidgets('opened from My Wallets, the wheel shows its title', (tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<WalletProvider>.value(value: _Wallets(_wallets)),
+          ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences()),
+        ],
+        child: MaterialApp(
+          theme: buildCoconutThemeData(),
+          home: Builder(
+            builder:
+                (context) => TextButton(
+                  onPressed: () => WalletStackListScreen.open(context, kind: WalletStackKind.all, title: 'My Wallets'),
+                  child: const Text('open'),
+                ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('My Wallets'), findsOneWidget);
+    expect(find.byKey(const ValueKey('wallet-stack-list-card-1')), findsOneWidget);
+  });
 }

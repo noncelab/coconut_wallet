@@ -166,7 +166,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
       children: [
         if (viewModel.recent case final recent when recent.isNotEmpty) ...[
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 16, 4, 12),
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
             child: Text(t.all_features.recent, style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText)),
           ),
           Row(
@@ -177,11 +177,15 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
                 Expanded(child: i < recent.length ? _buildRecentTile(recent[i]) : const SizedBox.shrink()),
             ],
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Container(key: const Key('all-features-recent-divider'), height: 1, color: colors.divider),
+          ),
         ],
-        for (final (category, entries) in viewModel.sections) ...[
+        for (final (index, (category, entries)) in viewModel.sections.indexed) ...[
           Padding(
             key: ValueKey('all-features-category-${category?.name ?? 'added'}'),
-            padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
+            padding: EdgeInsets.fromLTRB(4, index == 0 ? 0 : 16, 4, 4),
             child: Text(
               _categoryLabel(category),
               style: CoconutTypography.body3_12.copyWith(color: colors.secondaryText),

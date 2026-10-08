@@ -94,7 +94,8 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                 children: [Text(t.home_edit.presets), Text(t.home_edit.widgets), Text(t.home_edit.shortcuts)],
               ),
             ),
-            if (_tab == HomeEditTab.widgets) _buildCategoryChips(viewModel),
+            if (_tab == HomeEditTab.widgets)
+              Align(alignment: Alignment.centerLeft, child: _buildCategoryChips(viewModel)),
             Expanded(
               child: Stack(
                 children: [
@@ -443,14 +444,14 @@ class _CategoryChip extends StatelessWidget {
     return HomeWidgetPressable(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? colors.chipSelectedBackground : colors.chipUnselectedBackground,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
-          style: (selected ? CoconutTypography.body2_14_Bold : CoconutTypography.body2_14).copyWith(
+          style: (selected ? CoconutTypography.body3_12_Bold : CoconutTypography.body3_12).copyWith(
             color: selected ? colors.chipSelectedText : colors.chipUnselectedText,
           ),
         ),

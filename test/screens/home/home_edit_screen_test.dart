@@ -312,6 +312,7 @@ void main() {
     expect(find.byKey(const ValueKey('home-edit-chip-balance')), findsOneWidget);
     expect(find.byKey(const ValueKey('home-edit-chip-hodl')), findsOneWidget);
     expect(find.byKey(const ValueKey('home-edit-chip-wallets')), findsNothing);
+    expect(tester.getTopLeft(find.byKey(const ValueKey('home-edit-chip-all'))).dx, 16);
     expect(
       tester.getRect(find.byKey(const ValueKey('home-edit-chip-all'))).bottom,
       lessThan(tester.getRect(find.byKey(const ValueKey('home-edit-category-balance'))).top),

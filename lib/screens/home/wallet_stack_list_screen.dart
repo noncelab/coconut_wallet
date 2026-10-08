@@ -32,10 +32,16 @@ class WalletStackListScreen extends StatefulWidget {
   final int? initialWalletId;
   final Object Function(int walletId)? heroTagOf;
   final void Function(int walletId)? onFocusWallet;
+  final String title;
 
-  const WalletStackListScreen({super.key, this.initialWalletId, this.heroTagOf, this.onFocusWallet});
+  const WalletStackListScreen({super.key, this.initialWalletId, this.heroTagOf, this.onFocusWallet, this.title = ''});
 
-  static Future<void> open(BuildContext context, {required WalletStackKind kind, WalletStackOpenRequest? request}) {
+  static Future<void> open(
+    BuildContext context, {
+    required WalletStackKind kind,
+    WalletStackOpenRequest? request,
+    String title = '',
+  }) {
     final walletProvider = context.read<WalletProvider>();
     final preferenceProvider = context.read<PreferenceProvider>();
     return Navigator.of(context).push(
@@ -50,6 +56,7 @@ class WalletStackListScreen extends StatefulWidget {
                 initialWalletId: request?.front.id,
                 heroTagOf: request?.heroTagOf,
                 onFocusWallet: request?.showWallet,
+                title: title,
               ),
             ),
         transitionsBuilder:
@@ -122,6 +129,7 @@ class _WalletStackListScreenState extends State<WalletStackListScreen> {
       backgroundColor: colors.background,
       appBar: CoconutAppBar.build(
         context: context,
+        title: widget.title,
         backgroundColor: colors.background,
         actionButtonList: [
           CupertinoButton(

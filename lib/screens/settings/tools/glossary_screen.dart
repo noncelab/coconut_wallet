@@ -13,16 +13,19 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class GlossaryBottomSheet extends StatefulWidget {
+class GlossaryScreen extends StatefulWidget {
   static double gutter = 16;
 
-  const GlossaryBottomSheet({super.key});
+  /// 바텀 시트로 열면 뒤로가기 대신 닫기 버튼을 쓴다.
+  final bool isBottomSheet;
+
+  const GlossaryScreen({super.key, this.isBottomSheet = false});
 
   @override
-  State<GlossaryBottomSheet> createState() => _GlossaryBottomSheetState();
+  State<GlossaryScreen> createState() => _GlossaryScreenState();
 }
 
-class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
+class _GlossaryScreenState extends State<GlossaryScreen> {
   List<String> termList = [];
   Map<String, dynamic> termDetails = {};
   Map<String, List<String>> groupedTermList = {};
@@ -253,9 +256,14 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
     final colors = context.coconutColors;
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: CoconutAppBar.build(title: t.glossary, context: context, onBackPressed: null, isBottom: true),
+      appBar: CoconutAppBar.build(
+        title: t.glossary,
+        context: context,
+        onBackPressed: null,
+        isBottom: widget.isBottomSheet,
+      ),
       body: Padding(
-        padding: EdgeInsets.only(left: GlossaryBottomSheet.gutter, right: GlossaryBottomSheet.gutter, top: 20),
+        padding: EdgeInsets.only(left: GlossaryScreen.gutter, right: GlossaryScreen.gutter, top: 20),
         child: Column(
           children: [
             Expanded(

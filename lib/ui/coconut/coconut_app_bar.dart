@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'dart:io';
 import 'dart:ui';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -64,7 +65,10 @@ class CoconutAppBar {
 
     final leading = _AppBarLeading(
       iconKey: faucetIconKey,
-      assetName: isBottom && !isBackButton ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
+      assetName:
+          (isBottom && !isBackButton) || FeatureEntryRoutes.instance.contains(ModalRoute.of(context))
+              ? CommonActionIconPath.close
+              : CommonNavigationIconPath.arrowBack,
       iconColor: resolvedForegroundColor,
       highlightColor: leadingHighlightColor,
       onPressed: () {
@@ -143,7 +147,10 @@ class CoconutAppBar {
       leading:
           Navigator.canPop(context)
               ? _AppBarLeading(
-                assetName: isBottom ? CommonActionIconPath.close : CommonNavigationIconPath.arrowBack,
+                assetName:
+                    isBottom || FeatureEntryRoutes.instance.contains(ModalRoute.of(context))
+                        ? CommonActionIconPath.close
+                        : CommonNavigationIconPath.arrowBack,
                 iconColor: resolvedForegroundColor,
                 onPressed: () {
                   if (onBackPressed != null) {
@@ -221,6 +228,31 @@ class _AppBarLeading extends StatelessWidget {
             colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 직접 그린 헤더용 뒤로가기 버튼. All Features·바로가기로 연 화면이면 닫기(X) 버튼으로 보여 준다.
+class FeatureAwareBackButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final Color color;
+
+  const FeatureAwareBackButton({super.key, required this.onPressed, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!FeatureEntryRoutes.instance.contains(ModalRoute.of(context))) {
+      return BackButton(onPressed: onPressed, color: color);
+    }
+    return IconButton(
+      key: const Key('feature-aware-close-button'),
+      onPressed: onPressed,
+      icon: SvgPicture.asset(
+        CommonActionIconPath.close,
+        width: 24,
+        height: 24,
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
       ),
     );
   }

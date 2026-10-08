@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
@@ -55,7 +56,7 @@ class UtxoHeaderDelegate extends SliverPersistentHeaderDelegate {
             Positioned(
               left: 4,
               top: topPadding + 4,
-              child: BackButton(onPressed: onBackPressed, color: colors.primaryText),
+              child: FeatureAwareBackButton(onPressed: onBackPressed, color: colors.primaryText),
             ),
             Positioned(right: 4, top: topPadding + 4, child: refreshButton),
             Positioned(

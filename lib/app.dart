@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_observer.dart';
 import 'package:coconut_wallet/app/providers/app_providers.dart';
@@ -128,6 +129,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               },
               navigatorObservers: [
                 routeObserver,
+                FeatureEntryRoutes.instance,
                 if (CoconutWalletApp.kIsFirebaseAnalyticsUsed) _analyticsScreenObserver,
               ],
               localizationsDelegates: const [

@@ -81,7 +81,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
-import 'package:coconut_wallet/screens/settings/tools/glossary_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/tools/glossary_screen.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
 import 'package:collection/collection.dart';
@@ -507,7 +507,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           () => CommonBottomSheets.showCustomHeightBottomSheet(
             context: context,
             screenName: AnalyticsScreenNames.walletHomeGlossarySheet,
-            child: const GlossaryBottomSheet(),
+            child: const GlossaryScreen(isBottomSheet: true),
             heightRatio: 0.9,
           ),
       'p2p_calculator': () => Navigator.pushNamed(context, AppRouteNames.p2pCalculator),

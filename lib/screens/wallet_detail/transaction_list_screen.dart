@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
@@ -430,7 +431,7 @@ class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
           Positioned(
             left: 4,
             top: topPadding + 4,
-            child: BackButton(onPressed: onBackPressed, color: context.coconutColors.primaryText),
+            child: FeatureAwareBackButton(onPressed: onBackPressed, color: context.coconutColors.primaryText),
           ),
           Positioned(right: 4, top: topPadding + 4, child: refreshButton),
           Positioned(
