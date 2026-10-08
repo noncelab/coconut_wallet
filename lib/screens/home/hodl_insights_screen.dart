@@ -6,7 +6,9 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
+import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/widgets/features/home/wallet_onboarding_view.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/utils/legible_color_util.dart';
@@ -114,22 +116,25 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
         backgroundColor: colors.homeBackground,
         title: t.hodl_insights.title,
         actionButtonList: [
-          CupertinoButton(
-            key: const Key('hodl-insights-settings'),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            minimumSize: const Size(40, 40),
-            onPressed: () => _openSettings(context, viewModel),
-            child: SvgPicture.asset(
-              FeatureSettingsIconPath.settings,
-              colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+          if (!viewModel.hasNoWallets)
+            CupertinoButton(
+              key: const Key('hodl-insights-settings'),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: const Size(40, 40),
+              onPressed: () => _openSettings(context, viewModel),
+              child: SvgPicture.asset(
+                FeatureSettingsIconPath.settings,
+                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+              ),
             ),
-          ),
         ],
       ),
       body: SafeArea(
         child:
             viewModel.isLoading
                 ? const Center(child: CircularProgressIndicator())
+                : viewModel.hasNoWallets
+                ? const _NoWalletsView()
                 : SingleChildScrollView(
                   key: const Key('hodl-insights-list'),
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -255,6 +260,52 @@ class _SectionHighlightState extends State<_SectionHighlight> with SingleTickerP
             ),
             child: child,
           ),
+    );
+  }
+}
+
+/// 지갑이 없을 때: 인사이트로 볼 수 있는 것을 소개하고 첫 지갑 추가로 이끈다.
+class _NoWalletsView extends StatelessWidget {
+  const _NoWalletsView();
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = t.hodl_insights.empty;
+    Widget svg(String asset) => WalletOnboardingView.svgIcon(context, asset);
+    return KeyedSubtree(
+      key: const Key('hodl-insights-no-wallets'),
+      child: WalletOnboardingView(
+        heroIconPath: FeatureWalletIconPath.pie,
+        title: copy.title,
+        onAddWallet: () => openWalletAddFor(context, WalletStackKind.all),
+        items: [
+          WalletOnboardingItem(
+            icon: svg(FeatureWidgetIconPath.trendingUp),
+            title: copy.balance_title,
+            description: copy.balance_description,
+          ),
+          WalletOnboardingItem(
+            icon: svg(FeatureWidgetIconPath.bullseyeArrow),
+            title: copy.goal_title,
+            description: copy.goal_description,
+          ),
+          WalletOnboardingItem(
+            icon: svg(FeatureWalletIconPath.pie),
+            title: copy.by_wallet_title,
+            description: copy.by_wallet_description,
+          ),
+          WalletOnboardingItem(
+            icon: svg(FeatureWidgetIconPath.coinStack),
+            title: copy.utxo_title,
+            description: copy.utxo_description,
+          ),
+          WalletOnboardingItem(
+            icon: svg(FeatureWidgetIconPath.chartBar),
+            title: copy.activity_title,
+            description: copy.activity_description,
+          ),
+        ],
+      ),
     );
   }
 }

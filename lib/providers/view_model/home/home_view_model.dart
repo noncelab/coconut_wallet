@@ -75,10 +75,17 @@ class HomeViewModel extends ChangeNotifier {
   HomeConfiguration _load() {
     final saved = _repository.load();
     final usable = saved == null || saved.items.any((item) => item.definitionId == _legacyDummyWidgetId) ? null : saved;
-    final cleaned = usable == null ? defaultConfiguration() : _withoutUnregisteredShortcuts(usable);
+    final cleaned = usable == null ? _firstInstallConfiguration() : _withoutUnregisteredShortcuts(usable);
     final positioned = HomeGridLayout(cleaned.normalize(registry.byId)).positionedConfiguration;
     if (positioned != saved) _repository.save(positioned);
     return positioned;
+  }
+
+  /// 처음 설치하면 기본 프리셋으로 시작한다. 기본 프리셋의 항목이 하나도 등록되지 않았으면 [defaultConfiguration]
+  HomeConfiguration _firstInstallConfiguration() {
+    final preset = _presets.where((preset) => preset.id == defaultPresetId).firstOrNull ?? _presets.firstOrNull;
+    final configuration = preset == null ? null : _presetConfiguration(preset, HomeConfiguration(items: const []));
+    return configuration == null || configuration.items.isEmpty ? defaultConfiguration() : configuration;
   }
 
   HomeConfiguration _withoutUnregisteredShortcuts(HomeConfiguration configuration) {
@@ -137,13 +144,15 @@ class HomeViewModel extends ChangeNotifier {
   bool get hasWalletShortcutsOnHome =>
       _configuration.items.any((item) => registry.byId(item.definitionId)?.requiresWalletContext ?? false);
 
-  ShortcutWalletContext? walletContextWithoutAsking() {
+  ShortcutWalletContext? walletContextWithoutAsking() => _walletContextWithoutAsking(shortcutWalletContext);
+
+  ShortcutWalletContext? _walletContextWithoutAsking(ShortcutWalletContext current) {
     final wallets = _wallets();
     if (wallets.isEmpty) return const ShortcutWalletContext.askEveryTime();
     if (wallets.length == 1) {
-      return shortcutWalletContext.mode == ShortcutWalletMode.askEveryTime
+      return current.mode == ShortcutWalletMode.askEveryTime
           ? ShortcutWalletContext.wallet(wallets.single.id)
-          : shortcutWalletContext;
+          : current;
     }
     return null;
   }
@@ -229,12 +238,14 @@ class HomeViewModel extends ChangeNotifier {
       preset.definitionIds.map(registry.byId).whereType<HomeItemDefinition>().toList();
 
   /// 프리셋을 적용했을 때의 홈 구성(저장 x)
-  HomeConfiguration previewOf(HomePreset preset) {
+  HomeConfiguration previewOf(HomePreset preset) => _presetConfiguration(preset, _configuration);
+
+  HomeConfiguration _presetConfiguration(HomePreset preset, HomeConfiguration base) {
     final definitions = definitionsOf(preset);
     final needsWallet = definitions.any((definition) => definition.requiresWalletContext);
     return HomeGridLayout(
       HomeConfiguration(
-        version: _configuration.version,
+        version: base.version,
         items: [
           for (final (index, definition) in definitions.indexed)
             HomeItem(
@@ -248,8 +259,8 @@ class HomeViewModel extends ChangeNotifier {
         ],
         shortcutWalletContext:
             needsWallet
-                ? walletContextWithoutAsking() ?? _configuration.shortcutWalletContext
-                : _configuration.shortcutWalletContext,
+                ? _walletContextWithoutAsking(base.shortcutWalletContext) ?? base.shortcutWalletContext
+                : base.shortcutWalletContext,
       ),
     ).positionedConfiguration;
   }

@@ -196,6 +196,10 @@ abstract final class FeatureWalletIconPath {
   static const String walletAddHot = 'assets/svg/features/wallet/wallet-add-hot.svg';
   static const String walletEyes = 'assets/svg/features/wallet/wallet-eyes.svg';
   static const String walletImportHot = 'assets/svg/features/wallet/wallet-import-hot.svg';
+  static const String walletAddAirGapped = 'assets/svg/features/wallet/wallet-add-air-gapped.svg';
+  static const String walletAddConnected = 'assets/svg/features/wallet/wallet-add-connected.svg';
+  static const String walletAddCreate = 'assets/svg/features/wallet/wallet-add-create.svg';
+  static const String walletAddImport = 'assets/svg/features/wallet/wallet-add-import.svg';
   static const String walletInfo = 'assets/svg/features/wallet/wallet-info.svg';
   static const String walletOutlined = 'assets/svg/features/wallet/wallet-outlined.svg';
   static const String watchOnlyEyes = 'assets/svg/features/wallet/watch-only-eyes.svg';
@@ -204,6 +208,8 @@ abstract final class FeatureWalletIconPath {
 abstract final class FeatureWidgetIconPath {
   static const String bullseyeArrow = 'assets/svg/features/widgets/bullseye-arrow.svg';
   static const String coinStack = 'assets/svg/features/widgets/coin-stack.svg';
+  static const String trendingUp = 'assets/svg/features/widgets/trending-up.svg';
+  static const String chartBar = 'assets/svg/features/widgets/chart-bar.svg';
 }
 
 abstract final class ThirdPartyWalletTypeIconPath {

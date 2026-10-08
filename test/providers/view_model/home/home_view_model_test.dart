@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/services/home/home_presets.dart';
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_definition.dart';
@@ -55,12 +56,31 @@ void main() {
   );
 
   group('loading', () {
-    test('with nothing saved the default configuration is used and saved', () {
+    test('on first install the default preset is applied and saved', () {
       final viewModel = create();
+      final preset = builtinHomePresets().firstWhere((preset) => preset.id == defaultPresetId);
+
+      final ids = viewModel.configuration.items.map((item) => item.definitionId);
+      expect(ids, [
+        for (final id in preset.definitionIds)
+          if (viewModel.registry.byId(id) != null) id,
+      ]);
+      expect(ids, contains(HomeItemIds.shortcut(FeatureIds.receive)));
+      expect(viewModel.configuration.items.every((item) => item.position != null), isTrue);
+      expect(repository.load(), viewModel.configuration);
+    });
+
+    test('on first install with one wallet, the preset shortcuts use that wallet', () {
+      wallets = [WalletMock.createSingleSigWalletItem(id: 3)];
+
+      expect(create().shortcutWalletContext, const ShortcutWalletContext.wallet(3));
+    });
+
+    test('with no preset items registered, the fallback configuration is used', () {
+      final viewModel = create(presets: const []);
 
       final ids = viewModel.configuration.items.map((item) => item.definitionId);
       expect(ids, [HomeItemIds.watchOnlyWalletStack, HomeItemIds.shortcut(FeatureIds.calculator)]);
-      expect(repository.load(), viewModel.configuration);
     });
 
     test('a saved configuration with old dummy widgets is replaced by the default', () async {
@@ -74,7 +94,7 @@ void main() {
 
       final ids = create().configuration.items.map((item) => item.definitionId);
 
-      expect(ids, contains(HomeItemIds.watchOnlyWalletStack));
+      expect(ids, contains(HomeItemIds.shortcut(FeatureIds.receive)));
       expect(ids, isNot(contains('dummy_widget')));
     });
 

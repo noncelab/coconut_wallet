@@ -1,18 +1,13 @@
-import 'dart:io';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
-import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/auth_provider.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_actions.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/common/dialogs/dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -245,61 +240,18 @@ class WalletAddDialog extends StatelessWidget {
   }
 
   Future<void> _openHotWalletScreen(BuildContext context, String routeName) async {
-    context.read<AnalyticsService>().logHotWalletActionSelected(isRestore: routeName == AppRouteNames.hotWalletRestore);
-    if (!await _ensureDevicePasscodeIsSet(context) || !context.mounted) return;
+    final restore = routeName == AppRouteNames.hotWalletRestore;
+    if (!await WalletAddActions.prepareHotWallet(context, restore: restore) || !context.mounted) return;
 
     final navigator = Navigator.of(context);
     navigator.pop();
     navigator.pushNamed(routeName);
   }
 
-  Future<bool> _ensureDevicePasscodeIsSet(BuildContext context) async {
-    final authProvider = context.read<AuthProvider>();
-    final isDevicePasscodeSet = await authProvider.isDevicePasscodeSet();
-    if (!context.mounted) return false;
-    if (isDevicePasscodeSet) return true;
-
-    await showConfirmDialog(
-      context,
-      context.read<PreferenceProvider>().language,
-      t.wallet_home_screen.hot_wallet_add.device_passcode_required.title,
-      t.wallet_home_screen.hot_wallet_add.device_passcode_required.description,
-      leftButtonText: t.close,
-      rightButtonText: t.go_to_settings,
-      onTapLeft: () => Navigator.pop(context),
-      onTapRight: () async {
-        Navigator.pop(context);
-        await authProvider.openDeviceSecuritySettings();
-      },
-    );
-    return false;
-  }
-
   void _onWalletSelected(BuildContext context, WalletImportSource walletImportSource) {
-    context.read<AnalyticsService>().logWalletAddScreenEntered(walletImportSource);
     final navigator = Navigator.of(context);
     navigator.pop();
-
-    switch (walletImportSource) {
-      case WalletImportSource.bitbox02:
-        navigator.pushNamed(
-          AppRouteNames.bitbox02Connect,
-          arguments: const BitBox02ConnectRouteArgs(importSource: WalletImportSource.bitbox02),
-        );
-        return;
-      case WalletImportSource.trezor:
-        navigator.pushNamed(
-          Platform.isAndroid ? AppRouteNames.trezorTransportSelect : AppRouteNames.trezorBleConnect,
-          arguments: Platform.isAndroid ? const TrezorTransportSelectRouteArgs() : const TrezorBleConnectRouteArgs(),
-        );
-        return;
-      default:
-        navigator.pushNamed(
-          AppRouteNames.walletAddScanner,
-          arguments: WalletAddScannerRouteArgs(walletImportSource: walletImportSource),
-        );
-        return;
-    }
+    WalletAddActions.openSource(context, navigator, walletImportSource);
   }
 
   Widget _buildHeader(BuildContext context) {

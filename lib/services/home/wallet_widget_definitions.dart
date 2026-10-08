@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
@@ -112,13 +113,17 @@ class WalletStackDefinition extends HomeItemDefinition {
   }
 }
 
+/// 모든 지갑이면 지갑 추가 화면을 열고, 한 종류면 그 종류의 추가 시트를 연다.
 void openWalletAddFor(BuildContext context, WalletStackKind kind) {
   context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.homeEmpty);
-  WalletAddDialog.show(context, switch (kind) {
-    WalletStackKind.hot => WalletAddDialogMode.hotWalletAction,
-    WalletStackKind.watchOnly => WalletAddDialogMode.watchOnlySource,
-    WalletStackKind.all => WalletAddDialogMode.walletType,
-  });
+  switch (kind) {
+    case WalletStackKind.all:
+      WalletAddScreen.open(context);
+    case WalletStackKind.hot:
+      WalletAddDialog.show(context, WalletAddDialogMode.hotWalletAction);
+    case WalletStackKind.watchOnly:
+      WalletAddDialog.show(context, WalletAddDialogMode.watchOnlySource);
+  }
 }
 
 List<HomeItemDefinition> walletStackDefinitions() => [

@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutAppBar, CoconutTypography;
+import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
+import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
+import 'package:coconut_wallet/screens/home/wallet_onboarding_screen.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
@@ -25,7 +28,6 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/screens/home/all_features_screen.dart';
 import 'package:coconut_wallet/screens/home/home_edit_screen.dart';
 import 'package:coconut_wallet/screens/home/home_item_configure_sheets.dart';
-import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_dialog.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/feature/feature_launcher.dart';
@@ -84,7 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _launch(BuildContext context, FeatureItem feature, {bool useShortcutWallet = true}) {
     if (_viewModel.shouldAddWalletBeforeLaunch(feature)) {
-      WalletAddDialog.show(context, WalletAddDialogMode.walletType);
+      FeatureEntryRoutes.instance.launching(
+        () => WalletOnboardingScreen.open(context, feature: feature, registry: _viewModel.features),
+      );
       return;
     }
     FeatureLauncher(
@@ -111,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openAddWallet(BuildContext context) {
     context.read<AnalyticsService>().logWalletAddButtonClicked(entrySource: WalletAddEntrySource.appBar);
-    WalletAddDialog.show(context, WalletAddDialogMode.walletType);
+    WalletAddScreen.open(context);
   }
 
   Future<void> _openHomeEdit(BuildContext context) async {

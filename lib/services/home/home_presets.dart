@@ -7,9 +7,12 @@ import 'package:coconut_wallet/services/feature/feature_registry.dart';
 /// Safety Check 기능은 Epic 3에서 등록된다. 등록 전에는 프리셋 적용 때 건너뛴다.
 const safetyCheckFeatureId = 'safety_check';
 
+/// 처음 설치했을 때 적용하는 프리셋
+const defaultPresetId = 'default';
+
 List<HomePreset> builtinHomePresets() => [
   HomePreset(
-    id: 'default',
+    id: defaultPresetId,
     name: () => t.home_presets.default_name,
     description: () => t.home_presets.default_description,
     spans: const {HomeItemIds.bitcoinBalanceTrend: HomeSpan.wide, HomeItemIds.allWalletStack: HomeSpan.small},

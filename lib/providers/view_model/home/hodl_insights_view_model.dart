@@ -43,6 +43,9 @@ class HodlInsightsViewModel extends ChangeNotifier {
   List<int>? get walletIds => _walletIds;
   bool get isLoading => _data.isWalletDataLoading;
 
+  /// 지갑이 하나도 없으면 인사이트 대신 지갑 추가를 권한다.
+  bool get hasNoWallets => !isLoading && _data.wallets.isEmpty;
+
   void selectBalancePeriod(HomeWidgetPeriod period) {
     if (_balancePeriod == period) return;
     _balancePeriod = period;

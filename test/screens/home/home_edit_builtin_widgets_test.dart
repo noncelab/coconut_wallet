@@ -144,6 +144,7 @@ Future<void> _openWidgetsTab(
   bool pricesAvailable = true,
   BitcoinUnit unit = BitcoinUnit.btc,
   Size size = const Size(800, 6000),
+  List<WalletItemBase>? walletList,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -153,7 +154,8 @@ Future<void> _openWidgetsTab(
   final repository = HomeConfigurationRepository(prefs);
   await repository.save(HomeConfiguration(items: const []));
   final now = DateTime.now();
-  final wallets = [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createMultiSigWalletItem(id: 2)];
+  final wallets =
+      walletList ?? [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createMultiSigWalletItem(id: 2)];
   final transactions = [
     TransactionRecord(
       'a',
@@ -788,6 +790,27 @@ void main() {
       for (final definition in builtinHomeWidgets().whereType<BuiltinHomeWidget>()) {
         expect(definition.onTap != null, opening.contains(definition.id), reason: definition.id);
       }
+    });
+
+    testWidgets('with no wallets it introduces the insights and offers to add the first wallet', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights, walletList: const [], size: const Size(390, 844));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byKey(const Key('hodl-insights-no-wallets')), findsOneWidget);
+      expect(find.text(t.hodl_insights.empty.title), findsOneWidget);
+      for (final title in [
+        t.hodl_insights.empty.balance_title,
+        t.hodl_insights.empty.goal_title,
+        t.hodl_insights.empty.by_wallet_title,
+        t.hodl_insights.empty.utxo_title,
+        t.hodl_insights.empty.activity_title,
+      ]) {
+        expect(find.text(title), findsOneWidget);
+      }
+      expect(find.byKey(const Key('wallet-onboarding-add')), findsOneWidget);
+      expect(find.byKey(const Key('hodl-insights-settings')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await _close(tester);
     });
 
     test('a long period is drawn with at most the chart point limit and keeps the first and last day', () {
