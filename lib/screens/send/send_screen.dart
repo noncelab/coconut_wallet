@@ -85,6 +85,8 @@ enum _SendHotWalletSigningStage { idle, authentication, signing, completed, fina
 
 class SendScreen extends StatefulWidget {
   final int? walletId;
+  final bool isMoveToVault;
+  final int? receivingVaultWalletId;
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
   final int? initialSatsFromP2P;
@@ -94,6 +96,8 @@ class SendScreen extends StatefulWidget {
   const SendScreen({
     super.key,
     this.walletId,
+    this.isMoveToVault = false,
+    this.receivingVaultWalletId,
     required this.sendEntryPoint,
     this.transactionDraftId,
     this.initialSatsFromP2P,

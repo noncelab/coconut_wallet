@@ -133,6 +133,8 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           context,
           (args) => SendScreen(
             walletId: args.id,
+            isMoveToVault: args.isMoveToVault,
+            receivingVaultWalletId: args.receivingVaultWalletId,
             sendEntryPoint: args.sendEntryPoint,
             transactionDraftId: args.transactionDraftId,
             initialSatsFromP2P: args.initialSatsFromP2P,

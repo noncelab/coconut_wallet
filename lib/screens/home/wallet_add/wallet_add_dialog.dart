@@ -37,8 +37,15 @@ class WalletAddDialog extends StatelessWidget {
   final Animation<double> animation;
   final WalletAddDialogMode mode;
   final bool isBottomSheet;
+  final bool replaceCurrentRouteOnWalletSelected;
 
-  const WalletAddDialog({super.key, required this.animation, required this.mode, this.isBottomSheet = false});
+  const WalletAddDialog({
+    super.key,
+    required this.animation,
+    required this.mode,
+    this.isBottomSheet = false,
+    this.replaceCurrentRouteOnWalletSelected = false,
+  });
 
   static Future<void> showTopSheet(BuildContext context, WalletAddDialogMode mode) async {
     if (mode != WalletAddDialogMode.walletType) {
@@ -64,7 +71,11 @@ class WalletAddDialog extends StatelessWidget {
     );
   }
 
-  static Future<void> showBottomSheet(BuildContext context, WalletAddDialogMode mode) async {
+  static Future<void> showBottomSheet(
+    BuildContext context,
+    WalletAddDialogMode mode, {
+    bool replaceCurrentRouteOnWalletSelected = false,
+  }) async {
     if (mode != WalletAddDialogMode.walletType) {
       context.read<AnalyticsService>().logWalletAddMenuEntered(
         isHotWallet: mode == WalletAddDialogMode.hotWalletAction,
@@ -81,7 +92,12 @@ class WalletAddDialog extends StatelessWidget {
       showCloseButton: true,
       showDragHandle: true,
       backgroundColor: context.coconutColors.homeBackground,
-      child: WalletAddDialog(animation: const AlwaysStoppedAnimation<double>(1), mode: mode, isBottomSheet: true),
+      child: WalletAddDialog(
+        animation: const AlwaysStoppedAnimation<double>(1),
+        mode: mode,
+        isBottomSheet: true,
+        replaceCurrentRouteOnWalletSelected: replaceCurrentRouteOnWalletSelected,
+      ),
     );
   }
 
@@ -275,7 +291,11 @@ class WalletAddDialog extends StatelessWidget {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (navigator.mounted) {
         if (isBottomSheet) {
-          WalletAddDialog.showBottomSheet(navigator.context, nextMode);
+          WalletAddDialog.showBottomSheet(
+            navigator.context,
+            nextMode,
+            replaceCurrentRouteOnWalletSelected: replaceCurrentRouteOnWalletSelected,
+          );
         } else {
           WalletAddDialog.showTopSheet(navigator.context, nextMode);
         }
@@ -320,21 +340,29 @@ class WalletAddDialog extends StatelessWidget {
     final navigator = Navigator.of(context);
     navigator.pop();
 
+    void openAddScreen(String routeName, {Object? arguments}) {
+      if (replaceCurrentRouteOnWalletSelected) {
+        navigator.pushReplacementNamed(routeName, arguments: arguments);
+      } else {
+        navigator.pushNamed(routeName, arguments: arguments);
+      }
+    }
+
     switch (walletImportSource) {
       case WalletImportSource.bitbox02:
-        navigator.pushNamed(
+        openAddScreen(
           AppRouteNames.bitbox02Connect,
           arguments: const BitBox02ConnectRouteArgs(importSource: WalletImportSource.bitbox02),
         );
         return;
       case WalletImportSource.trezor:
-        navigator.pushNamed(
+        openAddScreen(
           Platform.isAndroid ? AppRouteNames.trezorTransportSelect : AppRouteNames.trezorBleConnect,
           arguments: Platform.isAndroid ? const TrezorTransportSelectRouteArgs() : const TrezorBleConnectRouteArgs(),
         );
         return;
       default:
-        navigator.pushNamed(
+        openAddScreen(
           AppRouteNames.walletAddScanner,
           arguments: WalletAddScannerRouteArgs(walletImportSource: walletImportSource),
         );

@@ -23,6 +23,7 @@ class WalletItemCard extends StatelessWidget {
   final int? fakeBalance;
   final BitcoinUnit currentUnit;
   final Color? backgroundColor;
+  final EdgeInsetsGeometry? contentPadding;
   final Color? pressedOverlayColor;
   final double? pressedOverlayOpacity;
   final bool? isExcludeFromTotalBalance;
@@ -47,6 +48,7 @@ class WalletItemCard extends StatelessWidget {
     this.shrinkContentOnly = false,
     this.fakeBalance,
     this.backgroundColor,
+    this.contentPadding,
     this.pressedOverlayColor,
     this.pressedOverlayOpacity,
     this.shouldWarnUnbackedHotWallet = false,
@@ -124,7 +126,7 @@ class WalletItemCard extends StatelessWidget {
     final hasStarButton = isStarVisible && onTapStar != null;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(hasStarButton ? 0 : 20, 12, isEditMode ? 8 : 20, 12),
+      padding: contentPadding ?? EdgeInsets.fromLTRB(hasStarButton ? 0 : 20, 12, isEditMode ? 8 : 20, 12),
       child: Row(
         children: [
           if (hasStarButton)

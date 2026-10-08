@@ -180,6 +180,7 @@ abstract final class FeatureWalletIconPath {
   static const String walletInfo = 'assets/svg/features/wallet/wallet-info.svg';
   static const String walletOutlined = 'assets/svg/features/wallet/wallet-outlined.svg';
   static const String watchOnlyEyes = 'assets/svg/features/wallet/watch-only-eyes.svg';
+  static const String vault = 'assets/svg/features/wallet/vault.svg'; // 코코넛 볼트 아이콘이 아님. 금고 아이콘
 }
 
 abstract final class ThirdPartyWalletTypeIconPath {

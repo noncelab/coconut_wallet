@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/screens/wallet_detail/move_to_vault_bottom_sheets.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
@@ -628,6 +629,21 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                         ),
                       ),
                     ),
+                    if (_viewModel.wallet.hasLocalKey)
+                      Expanded(
+                        child: AnimatedScale(
+                          scale: isExpanded ? 1 : 0.8,
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          child: BottomActionButton(
+                            iconPath: FeatureWalletIconPath.vault,
+                            label: t.wallet_detail_screen.move_to_vault,
+                            onTap: _onMoveToVaultPressed,
+                            buttonLayout: BottomActionButtonLayout.horizontal,
+                            textStyle: CoconutTypography.body2_14_Bold,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -635,6 +651,79 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
           ),
         );
       },
+    );
+  }
+
+  Future<void> _onMoveToVaultPressed() async {
+    final watchOnlyWallets =
+        context.read<WalletProvider>().walletItemList.where((wallet) => !wallet.hasLocalKey).toList();
+    final destination = resolveMoveToVaultDestination(_viewModel.balance, watchOnlyWallets.length);
+    if (destination == MoveToVaultDestination.send) {
+      _openSendToVault(watchOnlyWallets.single.id);
+      return;
+    }
+
+    if (destination == MoveToVaultDestination.selectWatchOnlyWallet) {
+      final receivingVaultWalletId = await CommonBottomSheets.showCustomHeightBottomSheet<int>(
+        context: context,
+        screenName: AnalyticsScreenNames.walletDetailMoveToVaultSelectWalletSheet,
+        heightRatio: 0.5,
+        childBuilder:
+            (scrollController) => ShowVaultSelectWalletBottomSheet(
+              walletId: widget.id,
+              watchOnlyWallets: watchOnlyWallets,
+              scrollController: scrollController,
+            ),
+      );
+      if (!mounted || receivingVaultWalletId == null) return;
+      _openSendToVault(receivingVaultWalletId);
+      return;
+    }
+
+    final Widget content = switch (destination) {
+      MoveToVaultDestination.noBalance => ShowVaultNoBalanceBottomSheet(walletId: widget.id),
+      MoveToVaultDestination.noWatchOnlyWallet => ShowVaultNoWatchOnlyWalletBottomSheet(walletId: widget.id),
+      MoveToVaultDestination.selectWatchOnlyWallet => ShowVaultSelectWalletBottomSheet(
+        walletId: widget.id,
+        watchOnlyWallets: watchOnlyWallets,
+      ),
+      MoveToVaultDestination.send => throw StateError('Send destination already handled'),
+    };
+    final sheetContent = SafeArea(
+      top: false,
+      child: Padding(padding: const EdgeInsets.only(left: 16, right: 16, bottom: 0), child: content),
+    );
+    CommonBottomSheets.showBottomSheet<int>(
+      context: context,
+      title:
+          destination == MoveToVaultDestination.selectWatchOnlyWallet
+              ? t.wallet_detail_screen.vault_select_receiving_wallet
+              : t.wallet_detail_screen.move_to_vault,
+      screenName: switch (destination) {
+        MoveToVaultDestination.noBalance => AnalyticsScreenNames.walletDetailMoveToVaultNoBalanceSheet,
+        MoveToVaultDestination.noWatchOnlyWallet => AnalyticsScreenNames.walletDetailMoveToVaultNoWatchOnlyWalletSheet,
+        MoveToVaultDestination.selectWatchOnlyWallet => AnalyticsScreenNames.walletDetailMoveToVaultSelectWalletSheet,
+        MoveToVaultDestination.send => throw StateError('Send destination already handled'),
+      },
+      showCloseButton: true,
+      showDragHandle: destination != MoveToVaultDestination.selectWatchOnlyWallet,
+      keyboardBottomPadding: 16,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
+      child: destination == MoveToVaultDestination.selectWatchOnlyWallet ? Flexible(child: sheetContent) : sheetContent,
+    );
+  }
+
+  void _openSendToVault(int receivingVaultWalletId) {
+    _logAction(WalletDetailAction.send);
+    Navigator.pushNamed(
+      context,
+      AppRouteNames.send,
+      arguments: SendRouteArgs(
+        id: widget.id,
+        sendEntryPoint: SendEntryPoint.walletDetail,
+        isMoveToVault: true,
+        receivingVaultWalletId: receivingVaultWalletId,
+      ),
     );
   }
 

@@ -1124,7 +1124,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   ) {
     final visibleWallets = _filteredWallets(filter, wallets);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(top: visibleWallets.isEmpty ? 16 : 0, bottom: 16),
       child: Column(
         children: [
           for (var index = 0; index < visibleWallets.length; index++)
