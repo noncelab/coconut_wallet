@@ -54,6 +54,7 @@ class HomeItemConfigureSheets {
       screenName: '/shortcut-configure-sheet',
       isDismissible: true,
       backgroundColor: context.coconutColors.surfaceBottomSheet,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       child: ShortcutConfigureSheet(
         feature: definition.feature,
         wallets: viewModel.wallets,

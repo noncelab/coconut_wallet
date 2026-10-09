@@ -260,6 +260,7 @@ class CommonBottomSheets {
       isScrollControlled: isScrollControlled,
       enableDrag: enableDrag,
       shape: shape,
+      clipBehavior: shape == null ? Clip.none : Clip.antiAlias,
       useSafeArea: useSafeArea,
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height),
     );

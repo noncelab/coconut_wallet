@@ -19,6 +19,13 @@ class HomeGridLayout {
 
   HomeConfiguration get positionedConfiguration => _withPositions(_positions);
 
+  List<HomeItem> get itemsInVisualOrder => [...configuration.items]..sort((a, b) {
+    final aPosition = _positions[a.id]!;
+    final bPosition = _positions[b.id]!;
+    final rowComparison = aPosition.row.compareTo(bPosition.row);
+    return rowComparison != 0 ? rowComparison : aPosition.column.compareTo(bPosition.column);
+  });
+
   bool canMoveToCell(String id, HomeGridPosition target) {
     final item = _itemsById[id];
     return item != null && _withinBounds(item.span, target);
@@ -57,7 +64,7 @@ class HomeGridLayout {
         _positions[id]!.row > _positions[beforeId]!.row) {
       return moveToCell(id, HomeGridPosition(0, _positions[beforeId]!.row));
     }
-    final ordered = [...configuration.items]..remove(moving);
+    final ordered = itemsInVisualOrder..remove(moving);
     ordered.insert(ordered.indexOf(before), moving);
     final insertionIndex = ordered.indexOf(moving);
     final prefix = ordered.take(insertionIndex).toList();

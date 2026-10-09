@@ -15,6 +15,7 @@ class HomeConfigureSheetLayout extends StatelessWidget {
   final Key buttonKey;
   final bool isButtonActive;
   final VoidCallback onSubmit;
+  final ScrollController? scrollController;
 
   const HomeConfigureSheetLayout({
     super.key,
@@ -26,6 +27,7 @@ class HomeConfigureSheetLayout extends StatelessWidget {
     required this.buttonKey,
     required this.onSubmit,
     this.isButtonActive = true,
+    this.scrollController,
   });
 
   @override
@@ -47,6 +49,7 @@ class HomeConfigureSheetLayout extends StatelessWidget {
           body: Stack(
             children: [
               SingleChildScrollView(
+                controller: scrollController,
                 padding: const EdgeInsets.fromLTRB(0, 16, 0, 140),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

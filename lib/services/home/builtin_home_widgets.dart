@@ -11,6 +11,7 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/services/home/wallet_widget_definitions.dart';
@@ -36,8 +37,8 @@ class BuiltinHomeWidget extends HomeItemDefinition {
   /// 누르면 여는 화면. 없으면 누를 수 없는 정보 위젯이다.
   final void Function(BuildContext context, HomeItem item)? onTap;
 
-  /// 누르면 호들 인사이트 총 잔액 카드로 이어지는 전환을 쓴다.
-  final bool flyToInsightsBalance;
+  /// 누르면 호들 인사이트의 대응 카드로 이어지는 전환을 쓴다.
+  final HodlInsightsSection? flyToInsightsSection;
 
   BuiltinHomeWidget({
     required super.id,
@@ -48,7 +49,7 @@ class BuiltinHomeWidget extends HomeItemDefinition {
     required this.builder,
     this.isLoading = _walletDataLoading,
     this.onTap,
-    this.flyToInsightsBalance = false,
+    this.flyToInsightsSection,
     super.settings,
   }) : super(kind: HomeItemKind.widget, supportedSpans: spans ?? [span!], needsConfigureBeforeAdd: !settings.isEmpty);
 
@@ -58,11 +59,9 @@ class BuiltinHomeWidget extends HomeItemDefinition {
   @override
   Widget build(BuildContext context, HomeItem item) {
     final viewModel = context.watch<HomeWidgetsViewModel>();
-    if (isLoading(viewModel, _settingsOf(item))) {
-      return HomeWidgetSkeleton(wide: item.span == HomeSpan.wide);
-    }
-    final built = builder(context, viewModel, item);
-    final view = flyToInsightsBalance ? Hero(tag: insightsBalanceHeroTag(item.id), child: built) : built;
+    final loading = isLoading(viewModel, _settingsOf(item));
+    final built = loading ? HomeWidgetSkeleton(wide: item.span == HomeSpan.wide) : builder(context, viewModel, item);
+    final view = loading || flyToInsightsSection == null ? built : Hero(tag: insightsHeroTag(item.id), child: built);
     final onTap = this.onTap;
     if (onTap == null) return view;
     return HomeWidgetPressable(
@@ -90,15 +89,15 @@ List<FiatCode> _fiatsOf(HomeWidgetsViewModel viewModel, HomeWidgetSettings setti
     (settings.fiats ?? fiatsWithDefaultFirst(viewModel.fiat)).take(max).toList();
 
 /// 누른 위젯의 지갑 범위·기간으로 인사이트를 열고, 그 위젯에 해당하는 구역으로 이동한다.
-/// 잔액 위젯과 호들 인사이트 총 잔액 카드를 잇는 Hero 태그
-Object insightsBalanceHeroTag(String itemId) => ('insights-balance', itemId);
+/// 홈 위젯과 호들 인사이트의 대응 카드를 잇는 Hero 태그
+Object insightsHeroTag(String itemId) => ('insights-widget', itemId);
 
 void Function(BuildContext context, HomeItem item) _openInsights(HodlInsightsSection section) => (context, item) {
   final settings = _settingsOf(item);
   final period = settings.period ?? HomeWidgetPeriod.week;
   HodlInsightsScreen.open(
     context,
-    balanceHeroTag: section == HodlInsightsSection.balance ? insightsBalanceHeroTag(item.id) : null,
+    heroTag: insightsHeroTag(item.id),
     walletIds: settings.walletIds,
     balancePeriod: section == HodlInsightsSection.balance ? period : HomeWidgetPeriod.week,
     activityPeriod: section == HodlInsightsSection.activity ? period : HomeWidgetPeriod.week,
@@ -166,7 +165,7 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
   BuiltinHomeWidget(
     id: HomeItemIds.bitcoinBalanceTrend,
     onTap: _openInsights(HodlInsightsSection.balance),
-    flyToInsightsBalance: true,
+    flyToInsightsSection: HodlInsightsSection.balance,
     spans: const [HomeSpan.small, HomeSpan.wide],
     category: HomeItemCategory.balance,
     settings: const HomeWidgetSettingsSpec(
@@ -202,7 +201,6 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
   ),
   BuiltinHomeWidget(
     id: HomeItemIds.bitcoinBalanceByFiat,
-    onTap: _openInsights(HodlInsightsSection.balance),
     span: HomeSpan.small,
     category: HomeItemCategory.balance,
     settings: const HomeWidgetSettingsSpec(
@@ -251,7 +249,7 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
       final values = viewModel.dailyPrices(fiat, days: settings.days) ?? const <int>[];
       return FiatPriceTrendView(
         price: _fiatAmount(viewModel.priceOf(fiat), fiat),
-        pairLabel: 'BTC · ${fiat.code}',
+        pairLabel: '${fiat.code} · ${homePeriodLabel(settings.period ?? HomeWidgetPeriod.week)}',
         rate: values.length < 2 ? null : HomeWidgetMath.changeRate(values.first, values.last),
         values: values,
       );
@@ -261,13 +259,13 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
     id: HomeItemIds.fiatValues,
     span: HomeSpan.small,
     category: HomeItemCategory.balance,
-    settings: const HomeWidgetSettingsSpec(currencies: HomeWidgetCurrencyMode.multiple, maxCurrencies: 3),
-    isLoading: (viewModel, settings) => viewModel.isPriceLoading(_fiatsOf(viewModel, settings, 3).first),
+    settings: const HomeWidgetSettingsSpec(currencies: HomeWidgetCurrencyMode.multiple, maxCurrencies: 4),
+    isLoading: (viewModel, settings) => viewModel.isPriceLoading(_fiatsOf(viewModel, settings, 4).first),
     name: () => t.home_widgets.fiat_values,
     builder:
         (context, viewModel, item) => FiatValuesView(
           rows: [
-            for (final fiat in _fiatsOf(viewModel, _settingsOf(item), 3))
+            for (final fiat in _fiatsOf(viewModel, _settingsOf(item), 4))
               HomeFiatRow(
                 fiat: fiat,
                 amountText: formatHomeFiat(viewModel.priceOf(fiat), fiat, withSymbol: false),
@@ -280,6 +278,7 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
   BuiltinHomeWidget(
     id: HomeItemIds.balanceByWallet,
     onTap: _openInsights(HodlInsightsSection.balanceByWallet),
+    flyToInsightsSection: HodlInsightsSection.balanceByWallet,
     span: HomeSpan.wide,
     category: HomeItemCategory.wallets,
     settings: _walletScopeSettings,
@@ -305,16 +304,31 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
           amountText: (sats) => _btc(viewModel, sats),
           now: DateTime.now(),
           onTransactionTap:
-              (walletId) => Navigator.pushNamed(
-                context,
-                AppRouteNames.walletDetail,
-                arguments: WalletDetailRouteArgs(id: walletId, entryPoint: kEntryPointWalletHome),
+              (walletId) => Navigator.of(context).push(
+                PageRouteBuilder<void>(
+                  settings: RouteSettings(
+                    name: AppRouteNames.walletDetail,
+                    arguments: WalletDetailRouteArgs(id: walletId, entryPoint: kEntryPointWalletHome),
+                  ),
+                  transitionDuration: HodlInsightsScreen.transitionDuration,
+                  reverseTransitionDuration: HodlInsightsScreen.transitionDuration,
+                  pageBuilder: (_, __, ___) => WalletDetailScreen(id: walletId, entryPoint: kEntryPointWalletHome),
+                  transitionsBuilder:
+                      (_, animation, __, child) => FadeTransition(
+                        opacity: CurvedAnimation(
+                          parent: animation,
+                          curve: const Interval(0, 0.6, curve: Curves.easeOut),
+                        ),
+                        child: child,
+                      ),
+                ),
               ),
         ),
   ),
   BuiltinHomeWidget(
     id: HomeItemIds.transactionActivity,
     onTap: _openInsights(HodlInsightsSection.activity),
+    flyToInsightsSection: HodlInsightsSection.activity,
     span: HomeSpan.wide,
     category: HomeItemCategory.activities,
     settings: const HomeWidgetSettingsSpec(wallets: true, period: true),
@@ -332,6 +346,7 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
   BuiltinHomeWidget(
     id: HomeItemIds.savingsGoal,
     onTap: _openInsights(HodlInsightsSection.goal),
+    flyToInsightsSection: HodlInsightsSection.goal,
     span: HomeSpan.small,
     category: HomeItemCategory.hodl,
     settings: const HomeWidgetSettingsSpec(wallets: true, goals: true),
@@ -345,6 +360,7 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
   BuiltinHomeWidget(
     id: HomeItemIds.utxoStatus,
     onTap: _openInsights(HodlInsightsSection.utxo),
+    flyToInsightsSection: HodlInsightsSection.utxo,
     span: HomeSpan.small,
     category: HomeItemCategory.hodl,
     settings: _walletScopeSettings,

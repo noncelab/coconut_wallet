@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutAppBar, CoconutTypography;
 import 'package:coconut_wallet/widgets/features/home/all_features_hint.dart';
 import 'package:coconut_wallet/widgets/features/home/add_wallet_hint.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
@@ -34,14 +33,12 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/feature/feature_launcher.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
-import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/features/home/home_connection_status_indicator.dart';
+import 'package:coconut_wallet/widgets/features/home/home_app_bar.dart';
 import 'package:coconut_wallet/widgets/features/home/home_cube_pager.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
 import 'package:coconut_wallet/widgets/features/wallet/menu/long_pressed_menu_widget.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -53,8 +50,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const _gridBadgeInset = 16.0;
-
-  static const _addWalletButtonSize = 40.0;
 
   /// 말풍선 오른쪽 끝이 지갑 추가 버튼 오른쪽 끝보다 더 나가는 거리
   static const _addWalletHintRightOverhang = 52.0;
@@ -322,7 +317,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Align(
                           alignment: Alignment.topRight,
                           child: AddWalletHint(
-                            tailFromRight: _addWalletHintRightOverhang + _addWalletButtonSize / 2,
+                            tailFromRight: _addWalletHintRightOverhang + HomeAppBar.addWalletButtonSize / 2,
                             nudges: viewModel.addWalletHintNudges,
                             onClose: viewModel.dismissAddWalletHint,
                           ),
@@ -373,63 +368,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAppBar(BuildContext context) {
     final status = context.watch<HomeConnectionStatusViewModel>();
-    final iconColor = context.coconutColors.iconPrimary;
     final arranging = context.watch<HomeViewModel>().isArranging;
-    return CoconutAppBar.buildHomeAppbar(
-      context: context,
-      leadingSvgAsset: Transform.translate(
-        offset: const Offset(-8, 2),
-        child: HomeConnectionStatusIndicator(
-          networkStatus: status.networkStatus,
-          showReconnected: status.showElectrumReconnected,
-          isSyncing: status.isSyncing,
-        ),
-      ),
-      appTitle: '',
-      actionButtonList: [
-        if (arranging)
-          CupertinoButton(
-            key: const Key('home-arrange-done'),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            minimumSize: const Size(40, 40),
-            onPressed: _viewModel.finishArranging,
-            child: Text(t.done, style: CoconutTypography.body2_14_Bold.copyWith(color: iconColor)),
-          )
-        else ...[
-          CoconutAppBarActionButton(
-            buttonKey: const Key('home-edit-button'),
-            icon: SvgPicture.asset(
-              CommonActionIconPath.editHome,
-              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-            ),
-            onPressed: () => _openHomeEdit(context),
-            color: iconColor,
-          ),
-          CompositedTransformTarget(
-            link: _addWalletButtonLink,
-            child: CoconutAppBarActionButton(
-              buttonKey: const Key('home-add-wallet-button'),
-              size: _addWalletButtonSize,
-              icon: SvgPicture.asset(
-                FeatureWalletIconPath.walletAddDefault,
-                width: 18,
-                height: 18,
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-              ),
-              onPressed: () => _openAddWallet(context),
-              color: iconColor,
-            ),
-          ),
-          CoconutAppBarActionButton(
-            icon: SvgPicture.asset(
-              FeatureSettingsIconPath.settings,
-              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-            ),
-            onPressed: () => _openAppSettings(context),
-            color: iconColor,
-          ),
-        ],
-      ],
+    return HomeAppBar(
+      networkStatus: status.networkStatus,
+      showReconnected: status.showElectrumReconnected,
+      isSyncing: status.isSyncing,
+      isArranging: arranging,
+      addWalletButtonLink: _addWalletButtonLink,
+      onArrangeDone: _viewModel.finishArranging,
+      onEdit: () => _openHomeEdit(context),
+      onAddWallet: () => _openAddWallet(context),
+      onSettings: () => _openAppSettings(context),
     );
   }
 }

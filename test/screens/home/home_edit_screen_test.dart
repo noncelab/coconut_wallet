@@ -401,6 +401,9 @@ void main() {
     await tester.tap(find.byKey(ValueKey('home-edit-add-$_receiveId')));
     await _settle(tester);
     expect(find.text(t.home_edit.configure_shortcut), findsOneWidget);
+    final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet).last);
+    expect(sheet.shape, const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))));
+    expect(sheet.clipBehavior, Clip.antiAlias);
 
     await tester.tap(find.byKey(const ValueKey('shortcut-configure-wallet-1')));
     await _settle(tester);

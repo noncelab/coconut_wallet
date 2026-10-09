@@ -342,7 +342,7 @@ class HomeViewModel extends ChangeNotifier {
   /// 위젯 크기를 바꾼다. 키우든 줄이든 앞 항목은 그대로 두고, 그 항목부터 뒤 항목을 순서대로 다시 채운다.
   /// 그래서 키우면 뒤 항목이 밀려나고, 줄이면 생긴 빈칸을 뒤 항목이 당겨 와 채운다.
   void resizeItem(String id, HomeSpan span) {
-    final items = _configuration.items;
+    final items = HomeGridLayout(_configuration).itemsInVisualOrder;
     final index = items.indexWhere((item) => item.id == id);
     if (index < 0) return;
     final item = items[index];
@@ -355,13 +355,13 @@ class HomeViewModel extends ChangeNotifier {
         items: [
           for (final (i, other) in items.indexed)
             if (i < index)
-              other
+              other.copyWith(order: i)
             else
               HomeItem(
                 id: other.id,
                 definitionId: other.definitionId,
                 kind: other.kind,
-                order: other.order,
+                order: i,
                 span: i == index ? span : other.span,
                 position: i == 0 && other.position != null ? HomeGridLayout.anchorForSpan(other.position!, span) : null,
                 configuration: other.configuration,

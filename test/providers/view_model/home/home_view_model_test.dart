@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/view_model/home/home_view_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/home_configuration_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
+import 'package:coconut_wallet/services/home/home_grid_layout.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -390,6 +391,45 @@ void main() {
     Map<String, HomeGridPosition?> positions(HomeViewModel viewModel) => {
       for (final item in viewModel.configuration.items) item.id: item.position,
     };
+
+    test('growing the second 2×2 keeps four visible shortcuts together before the following 4×2', () async {
+      final shortcuts = [FeatureIds.receive, FeatureIds.send, FeatureIds.calculator, FeatureIds.glossary];
+      final viewModel = await homeWith([
+        widget('first', 'w', 0, const HomeGridPosition(0, 0)),
+        widget('stack', HomeItemIds.watchOnlyWalletStack, 1, const HomeGridPosition(2, 0)),
+        for (var index = 0; index < 3; index++)
+          _shortcut('shortcut-$index', shortcuts[index], index + 2).copyWith(position: HomeGridPosition(index, 2)),
+        widget('wide', 'w_wide', 5, const HomeGridPosition(0, 3)).copyWith(span: HomeSpan.wide),
+        _shortcut('shortcut-3', shortcuts[3], 6).copyWith(position: const HomeGridPosition(3, 2)),
+      ]);
+
+      final before = HomeGridLayout(viewModel.configuration);
+      expect(before.positionOf('first'), const HomeGridPosition(0, 0));
+      expect(before.positionOf('stack'), const HomeGridPosition(2, 0));
+      for (var index = 0; index < 4; index++) {
+        expect(before.positionOf('shortcut-$index'), HomeGridPosition(index, 2));
+      }
+      expect(before.positionOf('wide'), const HomeGridPosition(0, 3));
+
+      viewModel.resizeItem('stack', HomeSpan.wide);
+
+      final layout = HomeGridLayout(viewModel.configuration);
+      expect(layout.positionOf('first'), const HomeGridPosition(0, 0));
+      expect(layout.positionOf('stack'), const HomeGridPosition(0, 2));
+      for (var index = 0; index < 4; index++) {
+        expect(layout.positionOf('shortcut-$index'), HomeGridPosition(index, 4));
+      }
+      expect(layout.positionOf('wide'), const HomeGridPosition(0, 5));
+      expect(viewModel.configuration.items.map((item) => item.id), [
+        'first',
+        'stack',
+        'shortcut-0',
+        'shortcut-1',
+        'shortcut-2',
+        'shortcut-3',
+        'wide',
+      ]);
+    });
 
     test('growing keeps the order, leaves items before it alone and flows the rest after it', () async {
       final viewModel = await homeWith([

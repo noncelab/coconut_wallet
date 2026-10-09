@@ -53,7 +53,7 @@ class BitcoinBalanceTrendView extends StatelessWidget {
 class FiatPriceTrendView extends StatelessWidget {
   final HomeAmount price;
 
-  /// 아래 줄 왼쪽의 통화 쌍(예: BTC · KRW)
+  /// 아래 줄 왼쪽의 통화와 등락률 기준 기간(예: KRW · 1주)
   final String pairLabel;
 
   /// 기간 동안의 시세 등락률
@@ -82,7 +82,12 @@ class FiatPriceTrendView extends StatelessWidget {
           Expanded(
             child: Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: HomeSparkline(values: values)),
           ),
-          _TrendFooter(valueText: pairLabel, rate: rate, valueColor: context.coconutColors.tertiaryText),
+          _TrendFooter(
+            valueText: pairLabel,
+            rate: rate,
+            valueColor: context.coconutColors.tertiaryText,
+            valueStyle: CoconutTypography.body3_12_Bold,
+          ),
         ],
       ),
     );
@@ -100,8 +105,9 @@ class _TrendFooter extends StatelessWidget {
 
   /// 정하지 않으면 변화율에 따른 상승/하락 색
   final Color? valueColor;
+  final TextStyle? valueStyle;
 
-  const _TrendFooter({required this.valueText, required this.rate, this.valueColor});
+  const _TrendFooter({required this.valueText, required this.rate, this.valueColor, this.valueStyle});
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +124,7 @@ class _TrendFooter extends StatelessWidget {
               child: Text(
                 valueText,
                 maxLines: 1,
-                style: CoconutTypography.body3_12_NumberBold.copyWith(
+                style: (valueStyle ?? CoconutTypography.body3_12_NumberBold).copyWith(
                   color: valueColor ?? homePriceColorOf(context, rate, neutral: context.coconutColors.primaryText),
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),

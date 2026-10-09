@@ -1,3 +1,7 @@
+import 'dart:math' as math;
+
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -24,12 +28,15 @@ import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/screens/home/hodl_insights_screen.dart';
 import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_model.dart';
 import 'package:coconut_wallet/screens/home/home_preset_preview_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info/wallet_info_screen.dart' show kEntryPointWalletHome;
 import 'package:coconut_wallet/services/home/home_presets.dart';
 import 'package:coconut_wallet/services/historical_bitcoin_price_service.dart';
 import 'package:coconut_wallet/services/home/builtin_home_widgets.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/home/configure/home_configure_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/balance_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
@@ -132,6 +139,15 @@ class _History extends Fake implements HistoricalBitcoinPriceService {
 
 HomeWidgetsViewModel? _widgetsViewModel;
 
+class _RouteObserver extends NavigatorObserver {
+  Route<dynamic>? lastPushed;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    lastPushed = route;
+  }
+}
+
 Future<void> _close(WidgetTester tester) async {
   await tester.pumpWidget(const SizedBox());
   _widgetsViewModel?.dispose();
@@ -147,6 +163,7 @@ Future<void> _openWidgetsTab(
   BitcoinUnit unit = BitcoinUnit.btc,
   Size size = const Size(800, 6000),
   List<WalletItemBase>? walletList,
+  NavigatorObserver? routeObserver,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -204,6 +221,7 @@ Future<void> _openWidgetsTab(
       ],
       child: MaterialApp(
         theme: buildCoconutThemeData(),
+        navigatorObservers: [if (routeObserver != null) routeObserver],
         home: screen?.call(homeViewModel) ?? const HomeEditScreen(initialTab: HomeEditTab.widgets),
       ),
     ),
@@ -213,6 +231,46 @@ Future<void> _openWidgetsTab(
 }
 
 void main() {
+  testWidgets('a recent transaction row opens wallet detail with the same fade duration', (tester) async {
+    final routeObserver = _RouteObserver();
+    await _openWidgetsTab(
+      tester,
+      fake: false,
+      routeObserver: routeObserver,
+      size: const Size(400, 800),
+      screen: (viewModel) {
+        final definition = viewModel.registry.byId(HomeItemIds.recentTransactions)!;
+        return Scaffold(
+          body: SizedBox(
+            width: 352,
+            height: 172,
+            child: Builder(
+              builder:
+                  (context) => definition.build(
+                    context,
+                    const HomeItem(
+                      id: 'recent',
+                      definitionId: HomeItemIds.recentTransactions,
+                      kind: HomeItemKind.widget,
+                      order: 0,
+                      span: HomeSpan.wide,
+                    ),
+                  ),
+            ),
+          ),
+        );
+      },
+    );
+
+    await tester.tap(find.byKey(const ValueKey('recent-transactions-row-0')));
+    expect(routeObserver.lastPushed, isA<PageRouteBuilder<void>>());
+    final route = routeObserver.lastPushed! as PageRouteBuilder<void>;
+    expect(route.settings.name, AppRouteNames.walletDetail);
+    expect((route.settings.arguments! as WalletDetailRouteArgs).entryPoint, kEntryPointWalletHome);
+    expect(route.transitionDuration, HodlInsightsScreen.transitionDuration);
+    await _close(tester);
+  });
+
   for (final fake in [false, true]) {
     testWidgets('every built-in widget renders with its title in the widgets tab (fake balance: $fake)', (
       tester,
@@ -345,6 +403,20 @@ void main() {
     });
   }
 
+  testWidgets('default preset cards share their top edge and built-in cards use the same padding', (tester) async {
+    final preset = builtinHomePresets().first;
+    await _openWidgetsTab(tester, fake: false, screen: (_) => HomePresetPreviewScreen(preset: preset));
+
+    final price = tester.getRect(find.byKey(const ValueKey('home-item-preset-default-1')));
+    final utxo = tester.getRect(find.byKey(const ValueKey('home-item-preset-default-2')));
+    expect(price.top, utxo.top);
+    expect(price.bottom, utxo.bottom);
+    for (final card in tester.widgetList<HomeWidgetCard>(find.byType(HomeWidgetCard))) {
+      expect(card.padding, const EdgeInsets.all(16));
+    }
+    await _close(tester);
+  });
+
   group('widget settings', () {
     HomeViewModel homeViewModelOf(WidgetTester tester) =>
         tester.element(find.byType(HomeEditScreen)).read<HomeViewModel>();
@@ -361,6 +433,9 @@ void main() {
       await tapKey(tester, const ValueKey('home-edit-add-${HomeItemIds.bitcoinBalanceByFiat}'));
 
       expect(find.text(t.home_edit.configure_widget), findsOneWidget);
+      final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet).last);
+      expect(sheet.shape, const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))));
+      expect(sheet.clipBehavior, Clip.antiAlias);
       expect(find.text(t.home_edit.configure_widget_description_add), findsOneWidget);
       expect(find.text(t.home_edit.currency_default), findsOneWidget);
       expect(find.byKey(const Key('widget-configure-fake-balance')), findsOneWidget);
@@ -380,6 +455,30 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('fake balance input scrolls to the bottom when the keyboard opens', (tester) async {
+      await _openWidgetsTab(tester, fake: false, size: const Size(400, 800));
+      await tapKey(tester, const ValueKey('home-edit-add-${HomeItemIds.bitcoinBalanceByFiat}'));
+      await tapKey(tester, const Key('widget-configure-fake-balance'));
+
+      final input = find.byKey(const Key('widget-configure-fake-balance-input'));
+      await tester.ensureVisible(input);
+      await tester.tap(input);
+      await tester.pump();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final scrollView = find.descendant(
+        of: find.byType(HomeConfigureSheetLayout),
+        matching: find.byType(SingleChildScrollView),
+      );
+      final scrollController = tester.widget<SingleChildScrollView>(scrollView.first).controller!;
+      expect(scrollController.position.pixels, closeTo(scrollController.position.maxScrollExtent, 0.1));
+      expect(tester.getBottomLeft(input).dy, lessThan(480));
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
     testWidgets('fiat price trend offers only one week and one month, activity offers all four', (tester) async {
       await _openWidgetsTab(tester, fake: false);
       await tapKey(tester, const ValueKey('home-edit-add-${HomeItemIds.fiatPriceTrend}'));
@@ -395,6 +494,24 @@ void main() {
       await tapKey(tester, const Key('widget-configure-submit'));
       expect(homeViewModelOf(tester).configuration.items.single.configuration['period'], 'year');
       expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('fiat price trend shows the period used for its rate', (tester) async {
+      await _openWidgetsTab(tester, fake: false);
+      await tester.pump(const Duration(milliseconds: 300));
+      FiatPriceTrendView trend() => tester.widget<FiatPriceTrendView>(find.byType(FiatPriceTrendView).first);
+
+      expect(trend().pairLabel, 'KRW · ${t.home_edit.periods.week}');
+      final pairLabel = find.descendant(
+        of: find.byType(FiatPriceTrendView).first,
+        matching: find.text('KRW · ${t.home_edit.periods.week}'),
+      );
+      expect(tester.widget<Text>(pairLabel).style?.fontFamily, 'Pretendard');
+      await tapKey(tester, const ValueKey('home-edit-add-${HomeItemIds.fiatPriceTrend}'));
+      await tapKey(tester, const ValueKey('widget-configure-period-month'));
+      await tapKey(tester, const Key('widget-configure-submit'));
+      expect(trend().pairLabel, 'KRW · ${t.home_edit.periods.month}');
       await _close(tester);
     });
 
@@ -464,18 +581,24 @@ void main() {
       await _close(tester);
     });
 
-    testWidgets('fiat values asks only for up to three currencies', (tester) async {
+    testWidgets('fiat values allows and displays all four currencies', (tester) async {
       await _openWidgetsTab(tester, fake: false);
       await tapKey(tester, const ValueKey('home-edit-add-${HomeItemIds.fiatValues}'));
 
       expect(find.byKey(const Key('widget-configure-all-wallets')), findsNothing);
       expect(find.byKey(const Key('widget-configure-fake-balance')), findsNothing);
-      expect(find.text(t.home_edit.currencies_limit(count: 3)), findsOneWidget);
-      await tapKey(tester, const ValueKey('widget-configure-fiat-EUR'));
+      expect(find.text(t.home_edit.currencies_limit(count: 3)), findsNothing);
+      for (final fiat in FiatCode.values) {
+        expect(find.byKey(ValueKey('widget-configure-fiat-${fiat.code}')), findsOneWidget);
+      }
       await tapKey(tester, const Key('widget-configure-submit'));
       expect(homeViewModelOf(tester).configuration.items.single.configuration, {
-        'fiats': ['KRW', 'USD', 'JPY'],
+        'fiats': ['KRW', 'USD', 'JPY', 'EUR'],
       });
+      expect(
+        tester.widget<FiatValuesView>(find.byType(FiatValuesView).first).rows.map((row) => row.fiat),
+        FiatCode.values,
+      );
       await _close(tester);
     });
 
@@ -691,6 +814,28 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('UTXO rows show count with percentage followed by amount', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights);
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.byKey(const Key('hodl-insights-utxo-ranges-unit')), findsOneWidget);
+      expect(find.text(t.hodl_insights.utxo_ranges_unit), findsOneWidget);
+      for (var i = 0; i < 4; i++) {
+        final texts =
+            tester
+                .widgetList<Text>(
+                  find.descendant(of: find.byKey(ValueKey('hodl-insights-utxo-row-$i')), matching: find.byType(Text)),
+                )
+                .toList();
+        expect(texts, hasLength(3));
+        expect(texts[0].data, UtxoStatusView.bucketLabels[i]);
+        expect(texts[1].data, matches(RegExp(r'^\d+ \(\d+\.\d%\)$')));
+        expect(texts[1].style?.fontFamily, 'Pretendard');
+        expect(texts[2].data, isNotEmpty);
+      }
+      await _close(tester);
+    });
+
     testWidgets('the balance rows line up on their baselines with equal gaps and a regular label', (tester) async {
       await _openWidgetsTab(tester, fake: false, screen: insights);
       await tester.pump(const Duration(milliseconds: 300));
@@ -758,7 +903,11 @@ void main() {
               )
               .position;
       expect(position.pixels, greaterThan(0));
-      expect(utxo.top < list.top + 120 || position.pixels == position.maxScrollExtent, isTrue);
+      final section =
+          tester
+              .element(find.byKey(const ValueKey('hodl-insights-highlight-utxo')))
+              .findAncestorWidgetOfExactType<Column>()!;
+      expect((tester.getRect(find.byWidget(section)).center.dy - list.center.dy).abs(), lessThan(10));
       expect(utxo.bottom, lessThanOrEqualTo(list.bottom));
 
       Color overlay() =>
@@ -783,7 +932,6 @@ void main() {
     test('balance, goal, utxo and activity widgets open the insights, others do not', () {
       const opening = {
         HomeItemIds.bitcoinBalanceTrend,
-        HomeItemIds.bitcoinBalanceByFiat,
         HomeItemIds.balanceByWallet,
         HomeItemIds.savingsGoal,
         HomeItemIds.utxoStatus,
@@ -912,6 +1060,45 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('Transaction Activity bars, counts and amounts rise from zero after opening', (tester) async {
+      await _openWidgetsTab(tester, fake: false, screen: insights);
+
+      final barFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith('transaction-activity-bar-'),
+      );
+      double tallestBar() {
+        var height = 0.0;
+        for (var i = 0; i < barFinder.evaluate().length; i++) {
+          height = math.max(height, tester.getSize(barFinder.at(i)).height);
+        }
+        return height;
+      }
+
+      String receivedCount() => tester.widget<Text>(find.byKey(const Key('transaction-activity-count-received'))).data!;
+      String receivedAmount() =>
+          tester.widget<Text>(find.byKey(const Key('transaction-activity-amount-received'))).data!;
+
+      expect(tallestBar(), 0);
+      expect(receivedCount(), '0');
+      final startAmount = receivedAmount();
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tallestBar(), 0, reason: 'starts after a short pause');
+      await tester.pump(const Duration(milliseconds: 600));
+      final middleHeight = tallestBar();
+      expect(middleHeight, greaterThan(0));
+      expect(receivedAmount(), isNot(startAmount));
+
+      await tester.pump(const Duration(seconds: 2));
+      expect(tallestBar(), greaterThan(middleHeight));
+      expect(int.parse(receivedCount()), greaterThan(0));
+      expect(receivedAmount(), isNot(startAmount));
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
     testWidgets('the balance trend widget flies into the total balance card and back', (tester) async {
       await _openWidgetsTab(
         tester,
@@ -961,6 +1148,153 @@ void main() {
       expect(find.byKey(const ValueKey('home-widget-tap-trend')), findsOneWidget);
       await _close(tester);
     });
+
+    testWidgets('bitcoin balance stays informational while its price is loading', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        pricesAvailable: false,
+        size: const Size(400, 800),
+        screen: (viewModel) {
+          final definition = viewModel.registry.byId(HomeItemIds.bitcoinBalanceByFiat)!;
+          return Scaffold(
+            body: SizedBox(
+              width: 172,
+              height: 172,
+              child: Builder(
+                builder:
+                    (context) => definition.build(
+                      context,
+                      const HomeItem(
+                        id: 'loading-balance',
+                        definitionId: HomeItemIds.bitcoinBalanceByFiat,
+                        kind: HomeItemKind.widget,
+                        order: 0,
+                        span: HomeSpan.small,
+                      ),
+                    ),
+              ),
+            ),
+          );
+        },
+      );
+
+      expect(find.byKey(const Key('home-widget-skeleton')), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-widget-tap-loading-balance')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    testWidgets('bitcoin balance stays informational in the editable home grid', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        size: const Size(400, 800),
+        screen:
+            (viewModel) => Scaffold(
+              body: HomeItemsView(
+                configuration: HomeConfiguration(
+                  items: const [
+                    HomeItem(
+                      id: 'balance-grid',
+                      definitionId: HomeItemIds.bitcoinBalanceByFiat,
+                      kind: HomeItemKind.widget,
+                      order: 0,
+                      span: HomeSpan.small,
+                    ),
+                  ],
+                ),
+                registry: viewModel.registry,
+                onMoveToCell: (_, __) {},
+                menuItemsOf: (_) => [],
+              ),
+            ),
+      );
+
+      expect(find.byType(BitcoinBalanceByFiatView), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-widget-tap-balance-grid')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await _close(tester);
+    });
+
+    for (final target in [
+      (
+        HomeItemIds.balanceByWallet,
+        HomeSpan.wide,
+        'hodl-insights-balance-by-wallet',
+        HodlInsightsSection.balanceByWallet,
+      ),
+      (HomeItemIds.transactionActivity, HomeSpan.wide, 'hodl-insights-activity', null),
+      (HomeItemIds.savingsGoal, HomeSpan.small, 'hodl-insights-goal', HodlInsightsSection.goal),
+      (HomeItemIds.utxoStatus, HomeSpan.small, 'hodl-insights-utxo', HodlInsightsSection.utxo),
+    ]) {
+      testWidgets('${target.$1} flies into its insights card and back', (tester) async {
+        await _openWidgetsTab(
+          tester,
+          fake: false,
+          size: const Size(400, 800),
+          screen: (viewModel) {
+            final definition = viewModel.registry.byId(target.$1)!;
+            return Scaffold(
+              body: Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: target.$2 == HomeSpan.wide ? 352 : 172,
+                  height: 172,
+                  child: Builder(
+                    builder:
+                        (context) => definition.build(
+                          context,
+                          HomeItem(
+                            id: 'source',
+                            definitionId: target.$1,
+                            kind: HomeItemKind.widget,
+                            order: 0,
+                            span: target.$2,
+                          ),
+                        ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.byWidgetPredicate((widget) => widget is Hero && widget.tag == insightsHeroTag('source')),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const ValueKey('home-widget-tap-source')));
+        await tester.pump();
+        await tester.pump(HodlInsightsScreen.transitionDuration ~/ 2);
+        expect(tester.takeException(), isNull);
+        final targetRect = tester.getRect(find.byKey(Key(target.$3)));
+        expect(targetRect.top, lessThan(800), reason: '${target.$1}: $targetRect');
+        await tester.pump(HodlInsightsScreen.transitionDuration);
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byKey(Key(target.$3)), findsOneWidget);
+        if (target.$4 case final HodlInsightsSection centeredSection) {
+          final viewportCenter = tester.getRect(find.byKey(const Key('hodl-insights-list'))).center.dy;
+          final highlight = find.byKey(ValueKey('hodl-insights-highlight-${centeredSection.name}'));
+          final section = tester.element(highlight).findAncestorWidgetOfExactType<Column>()!;
+          final sectionCenter = tester.getRect(find.byWidget(section)).center.dy;
+          expect((sectionCenter - viewportCenter).abs(), lessThan(10), reason: '${target.$1} should be centered');
+        }
+        expect(
+          find.byWidgetPredicate((widget) => widget is Hero && widget.tag == insightsHeroTag('source')),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+
+        Navigator.of(tester.element(find.byKey(const Key('hodl-insights-list')))).pop();
+        await tester.pump();
+        await tester.pump(HodlInsightsScreen.transitionDuration);
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const ValueKey('home-widget-tap-source')), findsOneWidget);
+        await _close(tester);
+      });
+    }
 
     test('a long period is drawn with at most the chart point limit and keeps the first and last day', () {
       final values = List.generate(400, (i) => i);

@@ -1,4 +1,3 @@
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutColors;
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_definition.dart';
@@ -299,7 +298,7 @@ void main() {
     expect(
       decorations.where((box) {
         final decoration = box.decoration;
-        return decoration is BoxDecoration && decoration.border?.top.color == CoconutColors.gray500;
+        return decoration is BoxDecoration && decoration.border != null;
       }),
       isEmpty,
     );
@@ -1087,57 +1086,84 @@ void main() {
     expect(target, const HomeGridPosition(1, 0));
   });
 
-  testWidgets('the drop highlight is gray and follows the target radius', (tester) async {
-    final registry =
-        HomeItemRegistry()
-          ..register(_LabelDefinition('widget', HomeItemKind.widget, HomeSpan.small))
-          ..register(_LabelDefinition('shortcut:a', HomeItemKind.shortcut, HomeSpan.shortcut))
-          ..register(_LabelDefinition('shortcut:b', HomeItemKind.shortcut, HomeSpan.shortcut));
-    final configuration = HomeConfiguration(
-      items: [
-        _item('widget', 'widget', HomeItemKind.widget, 0, HomeSpan.small),
-        _item('a', 'shortcut:a', HomeItemKind.shortcut, 1, HomeSpan.shortcut),
-        _item('b', 'shortcut:b', HomeItemKind.shortcut, 2, HomeSpan.shortcut),
-      ],
-    );
+  testWidgets('dragging over an item previews the positions after insertion without a highlight', (tester) async {
+    final configuration = threeItems();
+    String? insertedBefore;
     await tester.pumpWidget(
       CupertinoApp(
-        home: Center(
-          child: SizedBox(
-            width: 4 * HomeItemsView.cell + 3 * HomeItemsView.gap,
-            child: HomeItemsView(configuration: configuration, registry: registry, onInsertBefore: (_, __) {}),
+        home: SingleChildScrollView(
+          child: HomeItemsView(
+            configuration: configuration,
+            registry: threeRegistry(),
+            onInsertBefore: (_, id) => insertedBefore = id,
           ),
         ),
       ),
     );
-
-    BoxDecoration? highlightOf(String id) {
-      final boxes = tester.widgetList<DecoratedBox>(
-        find.descendant(of: find.byKey(ValueKey('home-item-$id')), matching: find.byType(DecoratedBox)),
-      );
-      for (final box in boxes) {
-        final decoration = box.decoration;
-        if (decoration is BoxDecoration && decoration.border != null) return decoration;
-      }
-      return null;
-    }
-
-    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-a'))));
+    final originalA = tester.getTopLeft(find.byKey(const ValueKey('home-item-a')));
+    final originalB = tester.getTopLeft(find.byKey(const ValueKey('home-item-b')));
+    final target = tester.getCenter(find.byKey(const ValueKey('home-item-a')));
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-c'))));
     await tester.pump(const Duration(milliseconds: 600));
-    await gesture.moveTo(tester.getCenter(find.byKey(const ValueKey('home-item-b'))));
+    await gesture.moveTo(target);
     await tester.pump();
-    final shortcutHighlight = highlightOf('b');
-    expect(shortcutHighlight?.border?.top.color, CoconutColors.gray500);
-    expect(shortcutHighlight?.borderRadius, BorderRadius.circular(16));
+    await tester.pump(const Duration(milliseconds: 220));
 
-    await gesture.moveTo(tester.getCenter(find.byKey(const ValueKey('home-item-widget'))));
-    await tester.pump();
-    final widgetHighlight = highlightOf('widget');
-    expect(widgetHighlight?.border?.top.color, CoconutColors.gray500);
-    expect(widgetHighlight?.borderRadius, BorderRadius.circular(20));
+    expect(insertedBefore, isNull);
+    final tweenA = tester.widget<TweenAnimationBuilder<Offset>>(
+      find.ancestor(
+        of: find.byKey(const ValueKey('home-item-a')),
+        matching: find.byType(TweenAnimationBuilder<Offset>),
+      ),
+    );
+    expect(tweenA.tween.end, const Offset(184, 0));
+    expect(tester.getTopLeft(find.byKey(const ValueKey('home-item-a'))), originalB);
+    expect(tester.getTopLeft(find.byKey(const ValueKey('home-item-b'))).dy, greaterThan(originalA.dy));
+    final borders = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).where((box) {
+      final decoration = box.decoration;
+      return decoration is BoxDecoration && decoration.border != null;
+    });
+    expect(borders, isEmpty);
 
     await gesture.up();
     await tester.pumpAndSettle();
+    expect(insertedBefore, 'a');
+    expect(tester.getTopLeft(find.byKey(const ValueKey('home-item-a'))), originalA);
+  });
+
+  testWidgets('the positions shown during a drag match the committed drop', (tester) async {
+    var configuration = threeItems();
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: StatefulBuilder(
+          builder:
+              (context, update) => SingleChildScrollView(
+                child: HomeItemsView(
+                  configuration: configuration,
+                  registry: threeRegistry(),
+                  onInsertBefore: (id, target) {
+                    update(() => configuration = HomeGridLayout(configuration).moveBefore(id, target));
+                  },
+                ),
+              ),
+        ),
+      ),
+    );
+
+    final gesture = await tester.startGesture(tester.getCenter(find.byKey(const ValueKey('home-item-c'))));
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveTo(tester.getCenter(find.byKey(const ValueKey('home-item-a'))));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 220));
+    final preview = {
+      for (final id in ['a', 'b', 'c']) id: tester.getTopLeft(find.byKey(ValueKey('home-item-$id'))),
+    };
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    for (final id in preview.keys) {
+      expect(tester.getTopLeft(find.byKey(ValueKey('home-item-$id'))), preview[id], reason: id);
+    }
   });
 
   testWidgets('dropping below the content lands on the cell under the finger', (tester) async {

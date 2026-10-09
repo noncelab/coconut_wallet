@@ -13,6 +13,7 @@ import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.d
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/wallet/card/wallet_card.dart';
 import 'package:coconut_wallet/model/wallet/wallet_appearance.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,7 +55,7 @@ void main() {
         values: [1, 3, 2, 5, 4, 6, 7],
       ),
     );
-    expect(find.text('↑'), findsOneWidget);
+    expect(find.byKey(const Key('home-trend-rate-up')), findsOneWidget);
     expect(find.text('5%'), findsOneWidget);
     expect(find.text('21.1234 5678 BTC', findRichText: true), findsOneWidget);
 
@@ -76,7 +77,7 @@ void main() {
         values: [5, 4, 6, 3],
       ),
     );
-    expect(find.text('↓'), findsOneWidget);
+    expect(find.byKey(const Key('home-trend-rate-down')), findsOneWidget);
     expect(find.text('5%'), findsOneWidget);
     expect(find.text('₩ 105,111,720', findRichText: true), findsOneWidget);
     expect(find.text('BTC · KRW'), findsOneWidget);
@@ -104,7 +105,7 @@ void main() {
         dayLabels: [for (final day in days) formatHomeShortDate(day)],
       ),
     );
-    expect(find.text('↑'), findsOneWidget);
+    expect(find.byKey(const Key('home-trend-rate-up')), findsOneWidget);
     expect(find.text('5.21%'), findsOneWidget);
     expect(find.text('8/26'), findsOneWidget);
   });
@@ -287,7 +288,7 @@ void main() {
       expect(tester.widget<Text>(find.text(price)).overflow, isNot(TextOverflow.ellipsis));
       return (
         price: tester.getRect(find.text(price)),
-        arrow: tester.getRect(find.textContaining(RegExp('[↑↓]'))),
+        arrow: tester.getRect(find.byKey(Key(rate > 0 ? 'home-trend-rate-up' : 'home-trend-rate-down'))),
         percent: tester.getRect(find.textContaining('%')),
       );
     }
@@ -303,13 +304,12 @@ void main() {
     expect(first.arrow.left - first.price.right, greaterThanOrEqualTo(8));
   });
 
-  testWidgets('the rate is smaller than the arrow', (tester) async {
+  testWidgets('the rate and triangle fit the compact change indicator', (tester) async {
     await _pump(tester, _small, const HomeTrendChange(rate: 0.05));
 
-    expect(
-      tester.widget<Text>(find.text('5%')).style!.fontSize,
-      lessThan(tester.widget<Text>(find.text('↑')).style!.fontSize!),
-    );
+    final arrow = tester.widget<Icon>(find.byKey(const Key('home-trend-rate-up')));
+    expect(arrow.icon, CupertinoIcons.arrowtriangle_up_fill);
+    expect(arrow.size, tester.widget<Text>(find.text('5%')).style!.fontSize);
   });
 
   test('the compact rate drops trailing zeros', () {
@@ -584,6 +584,22 @@ void main() {
     expect(third.bottom, closeTo(card.bottom, 0.5));
     expect(find.byKey(const ValueKey('recent-transactions-row-3')), findsNothing);
     expect(find.byKey(const Key('recent-transactions-waiting')), findsNothing);
+    final firstRow = find.byKey(const ValueKey('recent-transactions-row-0'));
+    final amount = find.descendant(of: firstRow, matching: find.text('+ ${_btc(1000)}'));
+    final status = find.descendant(of: firstRow, matching: find.text(t.status_received));
+    final time = find.descendant(of: firstRow, matching: find.text(formatHomeDateTime(now, now)));
+    final wallet = find.descendant(of: firstRow, matching: find.text('Wallet 0'));
+    final icon = find.descendant(
+      of: firstRow,
+      matching: find.byKey(const ValueKey('recent-transactions-icon-received')),
+    );
+    expect(tester.widget<Text>(time).style?.fontFamily, 'Pretendard');
+    expect(tester.getRect(status).center.dy, closeTo(tester.getRect(amount).center.dy, 0.5));
+    expect(tester.getRect(time).center.dy, closeTo(tester.getRect(wallet).center.dy, 0.5));
+    expect(tester.getRect(status).bottom, lessThan(tester.getRect(time).top));
+    expect(tester.getRect(icon).center.dy, closeTo(tester.getRect(firstRow).center.dy, 0.5));
+    expect(tester.getRect(icon).width, 30);
+    expect(tester.getRect(amount).right, closeTo(tester.getRect(firstRow).right - 12, 0.5));
 
     final pressed = await tester.startGesture(tester.getCenter(find.text('Wallet 1')));
     await tester.pump(const Duration(milliseconds: 150));
@@ -624,6 +640,34 @@ void main() {
     expect(only.height, closeTo((list.height - 2) / 3, 0.5));
     expect(waiting.bottom, closeTo(list.bottom, 0.5));
     expect(find.text(t.home_widgets.waiting_for_transactions), findsOneWidget);
+  });
+
+  testWidgets('recent transactions keep the date and amount visible with a long wallet name', (tester) async {
+    const walletName = 'An exceptionally long wallet name that does not fit in one transaction row';
+    await _pump(
+      tester,
+      _wide,
+      RecentTransactionsView(
+        transactions: [
+          HomeRecentTransaction(
+            walletId: 1,
+            walletName: walletName,
+            amount: 123456789,
+            time: now,
+            type: TransactionType.received,
+          ),
+        ],
+        amountText: _btc,
+        now: now,
+      ),
+    );
+
+    final row = tester.getRect(find.byKey(const ValueKey('recent-transactions-row-0')));
+    final wallet = tester.getRect(find.text(walletName));
+    expect(tester.takeException(), isNull);
+    expect(wallet.right, lessThanOrEqualTo(row.right));
+    expect(find.text(formatHomeDateTime(now, now)), findsOneWidget);
+    expect(find.text('+ ${_btc(123456789)}'), findsOneWidget);
   });
 
   testWidgets('a yearly transaction activity labels each bar with its month', (tester) async {
@@ -762,14 +806,14 @@ void main() {
     await _pump(
       tester,
       _wide,
-      BalanceChangeOverTimeView(
-        balance: const HomeAmount('1.2345', 'BTC'),
+      const BalanceChangeOverTimeView(
+        balance: HomeAmount('1.2345', 'BTC'),
         fiatText: '₩ 123,456,789',
         rate: 0.0521,
         deltaText: '+ 0.0753 BTC',
         deltaSign: 1,
-        values: const [1, 2, 3, 2, 4, 5, 6],
-        dayLabels: const ['1', '2', '3', '4', '5', '6', '7'],
+        values: [1, 2, 3, 2, 4, 5, 6],
+        dayLabels: ['1', '2', '3', '4', '5', '6', '7'],
       ),
     );
     final fiat = tester.getRect(find.byKey(const Key('balance-change-fiat')));

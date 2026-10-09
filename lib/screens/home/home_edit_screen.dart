@@ -176,7 +176,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
   Widget _buildPresetsTab(BuildContext context, HomeViewModel viewModel) {
     final colors = context.coconutColors;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, _contentTop, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, _contentTop, 16, 96),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 8, 4, 20),
@@ -194,10 +194,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
             child: Container(
               key: ValueKey('home-preset-${preset.id}'),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-              decoration: BoxDecoration(
-                color: colors.homeSurface,
-                borderRadius: BorderRadius.circular(24),
-              ),
+              decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(24)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -270,7 +267,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
         final smallWidth = (contentWidth - gap) / 2;
         return ListView(
           key: ValueKey('home-edit-widget-list-${_widgetCategory?.name ?? 'all'}'),
-          padding: const EdgeInsets.fromLTRB(16, _contentTop, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, _contentTop, 16, 48),
           children: [
             for (final (category, definitions) in viewModel.widgetSections)
               if (_widgetCategory == null || _widgetCategory == category) ...[
@@ -418,7 +415,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
       ],
     ];
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, _contentTop, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, _contentTop, 16, 96),
       children: [
         header(t.home_edit.shortcuts_on_home),
         ...rows(onHome),

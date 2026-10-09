@@ -21,7 +21,7 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
   static String errorMessage(NetworkStatus networkStatus) {
     return switch (networkStatus) {
       NetworkStatus.offline => t.errors.network_disconnected,
-      NetworkStatus.connectionFailed => t.errors.electrum_connection_failed,
+      NetworkStatus.connectionFailed => t.home_connection_status.electrum_connection_failed,
       NetworkStatus.vpnBlocked => t.errors.vpn_connected,
       NetworkStatus.online => '',
     };
@@ -50,7 +50,7 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
           width: 16,
           colorFilter: ColorFilter.mode(colors.success, BlendMode.srcIn),
         ),
-        message: t.errors.electrum_connection_restored,
+        message: t.home_connection_status.electrum_connection_restored,
         color: colors.success,
       );
     } else if (isSyncing) {
@@ -89,12 +89,11 @@ class HomeConnectionStatusIndicator extends StatelessWidget {
       children: [
         leading,
         CoconutLayout.spacing_150w,
-        ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width - 160),
+        Flexible(
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(message, style: CoconutTypography.body3_12_Bold.copyWith(color: color)),
+            child: Text(message, maxLines: 1, style: CoconutTypography.body3_12_Bold.copyWith(color: color)),
           ),
         ),
       ],

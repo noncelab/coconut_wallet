@@ -7,7 +7,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -263,6 +263,7 @@ class HomeAmountText extends StatelessWidget {
           children: amount.unit.isEmpty ? [number] : (amount.unitFirst ? [unit, gap, number] : [number, gap, unit]),
         ),
         maxLines: 1,
+        textHeightBehavior: const TextHeightBehavior(applyHeightToFirstAscent: false, applyHeightToLastDescent: false),
       ),
     );
   }
@@ -274,7 +275,7 @@ String formatHomeRateCompact(double rate) {
   return '$trimmed%';
 }
 
-/// 추이 위젯의 변화율: 상승·하락 색 ↑ / ↓ + 회색 비율. 변화가 없거나 값이 없으면 회색 –
+/// 추이 위젯의 변화율: 상승·하락 세모와 비율. 변화가 없거나 값이 없으면 회색 –
 class HomeTrendChange extends StatelessWidget {
   final double? rate;
 
@@ -288,13 +289,20 @@ class HomeTrendChange extends StatelessWidget {
     final colors = context.coconutColors;
     final rate = this.rate;
     final color = homePriceColorOf(context, rate, neutral: colors.tertiaryText);
-    final arrowStyle = CoconutTypography.body3_12_Number.copyWith(color: color);
     final rateStyle = CoconutTypography.caption_10_Number.copyWith(
       color: color,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
     final hasChange = rate != null && rate != 0;
-    final arrow = hasChange ? Text(rate > 0 ? '↑' : '↓', style: arrowStyle) : null;
+    final arrow =
+        hasChange
+            ? Icon(
+              rate > 0 ? CupertinoIcons.arrowtriangle_up_fill : CupertinoIcons.arrowtriangle_down_fill,
+              key: Key(rate > 0 ? 'home-trend-rate-up' : 'home-trend-rate-down'),
+              size: 10,
+              color: color,
+            )
+            : null;
     final percent = Text(hasChange ? formatHomeRateCompact(rate) : '–', maxLines: 1, style: rateStyle);
     final group = Row(
       mainAxisSize: MainAxisSize.min,

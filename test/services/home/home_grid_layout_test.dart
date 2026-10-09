@@ -7,6 +7,66 @@ HomeItem item(String id, int order, HomeSpan span, HomeItemKind kind) =>
     HomeItem(id: id, definitionId: id, kind: kind, order: order, span: span);
 
 void main() {
+  test('moving a 2×2 before another keeps four visually grouped shortcuts ahead of the 4×2', () {
+    final config = HomeConfiguration(
+      items: [
+        const HomeItem(
+          id: 'small',
+          definitionId: 'small',
+          kind: HomeItemKind.widget,
+          order: 0,
+          span: HomeSpan.small,
+          position: HomeGridPosition(0, 0),
+        ),
+        for (final (index, position)
+            in [const HomeGridPosition(2, 0), const HomeGridPosition(3, 0), const HomeGridPosition(2, 1)].indexed)
+          HomeItem(
+            id: 'shortcut-$index',
+            definitionId: 'shortcut-$index',
+            kind: HomeItemKind.shortcut,
+            order: index + 1,
+            span: HomeSpan.shortcut,
+            position: position,
+          ),
+        const HomeItem(
+          id: 'wide',
+          definitionId: 'wide',
+          kind: HomeItemKind.widget,
+          order: 4,
+          span: HomeSpan.wide,
+          position: HomeGridPosition(0, 2),
+        ),
+        const HomeItem(
+          id: 'shortcut-3',
+          definitionId: 'shortcut-3',
+          kind: HomeItemKind.shortcut,
+          order: 5,
+          span: HomeSpan.shortcut,
+          position: HomeGridPosition(3, 1),
+        ),
+        const HomeItem(
+          id: 'other-small',
+          definitionId: 'other-small',
+          kind: HomeItemKind.widget,
+          order: 6,
+          span: HomeSpan.small,
+          position: HomeGridPosition(0, 4),
+        ),
+      ],
+    );
+
+    final moved = HomeGridLayout(config).moveBefore('other-small', 'small');
+    final layout = HomeGridLayout(moved);
+    final wideRow = layout.positionOf('wide')!.row;
+    final shortcutRow = layout.positionOf('shortcut-0')!.row;
+    for (var index = 0; index < 4; index++) {
+      expect(layout.positionOf('shortcut-$index'), HomeGridPosition(index, shortcutRow));
+    }
+    expect(shortcutRow, lessThan(wideRow));
+    final ids = moved.items.map((item) => item.id).toList();
+    expect(ids.indexOf('shortcut-3'), lessThan(ids.indexOf('wide')));
+  });
+
   test('moving a lower shortcut before a 4×2 keeps the 4×2 ahead of the remaining shortcuts', () {
     final config = HomeConfiguration(
       items: [

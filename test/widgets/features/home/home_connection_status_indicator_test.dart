@@ -37,7 +37,7 @@ void main() {
   testWidgets('a connection error shows its message and wins over syncing', (tester) async {
     await _pump(tester, status: NetworkStatus.connectionFailed, syncing: true);
 
-    expect(find.text(t.errors.electrum_connection_failed), findsOneWidget);
+    expect(find.text(t.home_connection_status.electrum_connection_failed), findsOneWidget);
     expect(find.text(t.status_updating), findsNothing);
   });
 
@@ -52,6 +52,43 @@ void main() {
   testWidgets('after recovery the restored message is shown', (tester) async {
     await _pump(tester, reconnected: true);
 
-    expect(find.text(t.errors.electrum_connection_restored), findsOneWidget);
+    expect(find.text(t.home_connection_status.electrum_connection_restored), findsOneWidget);
+  });
+
+  testWidgets('connection messages fit a narrow leading area in every locale', (tester) async {
+    addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+
+    for (final locale in AppLocale.values) {
+      LocaleSettings.setLocaleSync(locale);
+      for (final status in [
+        NetworkStatus.connectionFailed,
+        NetworkStatus.offline,
+        NetworkStatus.vpnBlocked,
+        NetworkStatus.online,
+      ]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: buildCoconutThemeData(),
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: 120,
+                  child: HomeConnectionStatusIndicator(
+                    networkStatus: status,
+                    showReconnected: status == NetworkStatus.online,
+                    isSyncing: false,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(tester.takeException(), isNull, reason: '$locale, $status');
+        expect(tester.getSize(find.byType(HomeConnectionStatusIndicator)).width, lessThanOrEqualTo(120));
+      }
+    }
   });
 }

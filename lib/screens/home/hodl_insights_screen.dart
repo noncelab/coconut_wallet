@@ -26,10 +26,11 @@ import 'package:provider/provider.dart';
 class HodlInsightsScreen extends StatefulWidget {
   static const transitionDuration = Duration(milliseconds: 480);
 
-  /// 잔액 위젯에서 열면 그 위젯 카드가 총 잔액 카드로 날아오며 바뀐다.
-  final Object? balanceHeroTag;
+  /// 홈 위젯에서 열면 해당 인사이트 카드로 날아오며 바뀐다.
+  final Object? heroTag;
+  final HodlInsightsSection? heroSection;
 
-  const HodlInsightsScreen({super.key, this.balanceHeroTag});
+  const HodlInsightsScreen({super.key, this.heroTag, this.heroSection});
 
   /// 홈 위젯이나 모든 기능에서 연다. 위젯에서 열면 그 위젯의 지갑 범위와 기간으로 시작한다.
   static Future<void> open(
@@ -38,7 +39,7 @@ class HodlInsightsScreen extends StatefulWidget {
     HomeWidgetPeriod balancePeriod = HomeWidgetPeriod.week,
     HomeWidgetPeriod activityPeriod = HomeWidgetPeriod.week,
     HodlInsightsSection section = HodlInsightsSection.balance,
-    Object? balanceHeroTag,
+    Object? heroTag,
   }) {
     final data = context.read<HomeWidgetsViewModel>().withoutFakeBalance();
     Widget page(BuildContext _) => ChangeNotifierProvider(
@@ -50,10 +51,10 @@ class HodlInsightsScreen extends StatefulWidget {
             balancePeriod: balancePeriod,
             activityPeriod: activityPeriod,
           ),
-      child: HodlInsightsScreen(balanceHeroTag: balanceHeroTag),
+      child: HodlInsightsScreen(heroTag: heroTag, heroSection: section),
     );
     const settings = RouteSettings(name: '/hodl-insights');
-    if (balanceHeroTag == null) {
+    if (heroTag == null) {
       return Navigator.of(context).push(CupertinoPageRoute(settings: settings, builder: page));
     }
     return Navigator.of(context).push(
@@ -81,21 +82,45 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
   };
   bool _movedToInitialSection = false;
   HodlInsightsSection? _highlighted;
+  double _leadingSpace = 0;
 
   /// 처음 그려진 직후 한 번만, 위젯에서 고른 구역으로 스크롤하고 잠깐 강조한다.
   void _moveToInitialSection(HodlInsightsSection section) {
     if (_movedToInitialSection) return;
     _movedToInitialSection = true;
     if (section == HodlInsightsSection.balance) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final target = _sectionKeys[section]!.currentContext;
-      if (target == null || !mounted) return;
-      await Scrollable.ensureVisible(target, duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
-      if (mounted) setState(() => _highlighted = section);
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _centerInitialSection(section));
+  }
+
+  Future<void> _centerInitialSection(HodlInsightsSection section) async {
+    final target = _sectionKeys[section]!.currentContext;
+    if (target == null || !mounted) return;
+    final scrollable = Scrollable.maybeOf(target);
+    final viewport = scrollable?.context.findRenderObject();
+    final card = target.findRenderObject();
+    if (_leadingSpace == 0 && section != HodlInsightsSection.activity && viewport is RenderBox && card is RenderBox) {
+      final viewportCenter = viewport.localToGlobal(viewport.size.center(Offset.zero)).dy;
+      final cardCenter = card.localToGlobal(card.size.center(Offset.zero)).dy;
+      if (cardCenter < viewportCenter) {
+        setState(() => _leadingSpace = viewportCenter - cardCenter);
+        WidgetsBinding.instance.addPostFrameCallback((_) => _centerInitialSection(section));
+        return;
+      }
+    }
+    await Scrollable.ensureVisible(
+      target,
+      alignment: 0.5,
+      duration: widget.heroTag == null ? const Duration(milliseconds: 350) : Duration.zero,
+      curve: Curves.easeOutCubic,
+    );
+    if (mounted) setState(() => _highlighted = section);
   }
 
   Widget _section(HodlInsightsSection section, {Widget? title, required Widget child}) {
+    final card =
+        widget.heroTag != null && widget.heroSection == section
+            ? Hero(tag: widget.heroTag!, flightShuttleBuilder: _cardShuttle, child: child)
+            : child;
     return Column(
       key: _sectionKeys[section],
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -104,7 +129,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
         _SectionHighlight(
           key: ValueKey('hodl-insights-highlight-${section.name}'),
           active: _highlighted == section,
-          child: child,
+          child: card,
         ),
       ],
     );
@@ -158,7 +183,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                 ? const _NoWalletsView()
                 : SingleChildScrollView(
                   key: const Key('hodl-insights-list'),
-                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 32),
+                  padding: EdgeInsets.fromLTRB(0, 8 + _leadingSpace, 0, 96),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -167,17 +192,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _section(
-                              HodlInsightsSection.balance,
-                              child:
-                                  widget.balanceHeroTag == null
-                                      ? _BalanceCard(viewModel: viewModel)
-                                      : Hero(
-                                        tag: widget.balanceHeroTag!,
-                                        flightShuttleBuilder: _cardShuttle,
-                                        child: _BalanceCard(viewModel: viewModel),
-                                      ),
-                            ),
+                            _section(HodlInsightsSection.balance, child: _BalanceCard(viewModel: viewModel)),
                             CoconutLayout.spacing_400h,
                             _section(
                               HodlInsightsSection.goal,
@@ -960,6 +975,11 @@ class _UtxoSummaryCard extends StatelessWidget {
         progress: 1,
         builder: (context, shown) {
           int counted(int value) => (value * shown).round();
+          String bucketCountText(int index) {
+            final percent = total == 0 ? 0.0 : buckets.counts[index] * 100 / total * shown;
+            return '${counted(buckets.counts[index])} (${percent.toStringAsFixed(1)}%)';
+          }
+
           return Column(
             key: const Key('hodl-insights-utxo'),
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -999,6 +1019,15 @@ class _UtxoSummaryCard extends StatelessWidget {
                 ),
               ),
               CoconutLayout.spacing_200h,
+              Padding(
+                padding: const EdgeInsets.only(left: 18),
+                child: Text(
+                  t.hodl_insights.utxo_ranges_unit,
+                  key: const Key('hodl-insights-utxo-ranges-unit'),
+                  style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
+                ),
+              ),
+              CoconutLayout.spacing_100h,
               for (var i = 0; i < buckets.counts.length; i++) ...[
                 if (i > 0) Divider(height: 1, color: colors.divider),
                 Padding(
@@ -1019,7 +1048,7 @@ class _UtxoSummaryCard extends StatelessWidget {
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            '${bucketLabels[i]} BTC',
+                            bucketLabels[i],
                             maxLines: 1,
                             style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
                           ),
@@ -1027,28 +1056,15 @@ class _UtxoSummaryCard extends StatelessWidget {
                       ),
                       const SizedBox(width: _columnGap),
                       Expanded(
-                        flex: 2,
+                        flex: 4,
                         child: FittedBox(
                           key: ValueKey('hodl-insights-utxo-count-$i'),
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerRight,
                           child: Text(
-                            t.hodl_insights.utxo_count(count: counted(buckets.counts[i])),
+                            bucketCountText(i),
                             maxLines: 1,
-                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.primaryText),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: _columnGap),
-                      Expanded(
-                        flex: 2,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            '${total == 0 ? 0 : (buckets.counts[i] * 100 / total * shown).toStringAsFixed(1)}%',
-                            maxLines: 1,
-                            style: CoconutTypography.body3_12_Number.copyWith(color: colors.primaryText),
+                            style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
                           ),
                         ),
                       ),
@@ -1088,18 +1104,23 @@ class _ActivityCard extends StatelessWidget {
     final totals = viewModel.activityTotals;
     return KeyedSubtree(
       key: const Key('hodl-insights-activity'),
-      child: TransactionActivityView(
-        detailed: true,
-        days: bars.bars,
-        rangeEnd: DateTime.now(),
-        monthly: bars.monthly,
-        amountTexts: [
-          totals.receivedSats == 0 ? '-' : '+ ${_btcNumber(viewModel, totals.receivedSats)}',
-          totals.sentSats == 0 ? '-' : '- ${_btcNumber(viewModel, totals.sentSats)}',
-          totals.organizedFeeSats == 0
-              ? '-'
-              : '${t.hodl_insights.fee} ${_btcNumber(viewModel, totals.organizedFeeSats)}',
-        ],
+      child: _OpenProgress(
+        progress: 1,
+        builder:
+            (context, shown) => TransactionActivityView(
+              detailed: true,
+              reveal: shown,
+              days: bars.bars,
+              rangeEnd: DateTime.now(),
+              monthly: bars.monthly,
+              amountTexts: [
+                totals.receivedSats == 0 ? '-' : '+ ${_btcNumber(viewModel, (totals.receivedSats * shown).round())}',
+                totals.sentSats == 0 ? '-' : '- ${_btcNumber(viewModel, (totals.sentSats * shown).round())}',
+                totals.organizedFeeSats == 0
+                    ? '-'
+                    : '${t.hodl_insights.fee} ${_btcNumber(viewModel, (totals.organizedFeeSats * shown).round())}',
+              ],
+            ),
       ),
     );
   }

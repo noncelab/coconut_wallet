@@ -51,7 +51,6 @@ class RecentTransactionsView extends StatelessWidget {
     final emptyRows = rows - shown.length;
     Widget divider() => Container(margin: const EdgeInsets.symmetric(horizontal: 12), height: 1, color: colors.divider);
     return HomeWidgetCard(
-      padding: const EdgeInsets.all(8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final rowHeight = (constraints.maxHeight - (rows - 1)) / rows;
@@ -118,64 +117,84 @@ class _TransactionRow extends StatelessWidget {
           TransactionType.sent => TransactionStatus.sent,
           _ => TransactionStatus.self,
         };
+    final statusText = switch (status) {
+      TransactionStatus.received => t.status_received,
+      TransactionStatus.receiving => t.status_receiving,
+      TransactionStatus.sent || TransactionStatus.self => t.status_sent,
+      TransactionStatus.sending || TransactionStatus.selfsending => t.status_sending,
+    };
     final row = SizedBox(
       height: height,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
-          children: [
-            TransactionStatusGradientMask(
-              enabled: status == TransactionStatus.self || status == TransactionStatus.selfsending,
-              child: SvgPicture.asset(
-                TransactionUtil.getStatusIconAsset(status),
-                key: ValueKey('recent-transactions-icon-${status.name}'),
-                fit: BoxFit.fill,
-                width: 30,
-                height: 30,
-                colorFilter: ColorFilter.mode(switch (status) {
-                  TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
-                  TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
-                  _ => colors.iconPrimary,
-                }, BlendMode.srcIn),
-              ),
+      child: Row(
+        children: [
+          TransactionStatusGradientMask(
+            enabled: status == TransactionStatus.self || status == TransactionStatus.selfsending,
+            child: SvgPicture.asset(
+              TransactionUtil.getStatusIconAsset(status),
+              key: ValueKey('recent-transactions-icon-${status.name}'),
+              fit: BoxFit.fill,
+              width: 30,
+              height: 30,
+              colorFilter: ColorFilter.mode(switch (status) {
+                TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
+                TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
+                _ => colors.iconPrimary,
+              }, BlendMode.srcIn),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '$sign ${amountText(tx.amount.abs())}',
-                            style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText),
-                          ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        statusText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: CoconutTypography.body3_12.copyWith(color: colors.primaryText),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '$sign ${amountText(tx.amount.abs())}',
+                          style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        formatHomeDateTime(tx.time, now),
-                        style: CoconutTypography.caption_10_Number.copyWith(color: colors.tertiaryText),
+                    ),
+                  ],
+                ),
+
+                Row(
+                  children: [
+                    Text(
+                      formatHomeDateTime(tx.time, now),
+                      style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        tx.walletName,
+                        maxLines: 1,
+                        textAlign: TextAlign.right,
+                        overflow: TextOverflow.ellipsis,
+                        style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
                       ),
-                    ],
-                  ),
-                  Text(
-                    tx.walletName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
     if (onTap == null) return row;
@@ -243,6 +262,9 @@ class TransactionActivityView extends StatelessWidget {
   /// 호들 인사이트용: 기간 글자 없이, 막대는 카드 없이 그리고 요약만 카드에 담는다.
   final bool detailed;
 
+  /// 처음 화면을 열 때 막대와 요약 숫자를 함께 채우는 비율.
+  final double reveal;
+
   const TransactionActivityView({
     super.key,
     required this.days,
@@ -250,6 +272,7 @@ class TransactionActivityView extends StatelessWidget {
     this.monthly = false,
     this.amountTexts,
     this.detailed = false,
+    this.reveal = 1,
   });
 
   static const double detailedChartHeight = 84;
@@ -287,9 +310,27 @@ class TransactionActivityView extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      _Bar(count: day.received, max: maxCount, color: receivedColor),
-                      _Bar(count: day.sent, max: maxCount, color: sentColor),
-                      _Bar(count: day.organized, max: maxCount, color: organizedColor),
+                      _Bar(
+                        count: day.received,
+                        max: maxCount,
+                        color: receivedColor,
+                        reveal: reveal,
+                        barKey: ValueKey('transaction-activity-bar-$index-received'),
+                      ),
+                      _Bar(
+                        count: day.sent,
+                        max: maxCount,
+                        color: sentColor,
+                        reveal: reveal,
+                        barKey: ValueKey('transaction-activity-bar-$index-sent'),
+                      ),
+                      _Bar(
+                        count: day.organized,
+                        max: maxCount,
+                        color: organizedColor,
+                        reveal: reveal,
+                        barKey: ValueKey('transaction-activity-bar-$index-organized'),
+                      ),
                     ],
                   ),
                 ),
@@ -312,11 +353,32 @@ class TransactionActivityView extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Legend(color: receivedColor, label: t.home_widgets.received, count: received, amount: amountTexts?[0]),
+          _Legend(
+            color: receivedColor,
+            label: t.home_widgets.received,
+            count: (received * reveal).round(),
+            amount: amountTexts?[0],
+            countKey: const Key('transaction-activity-count-received'),
+            amountKey: const Key('transaction-activity-amount-received'),
+          ),
           Container(key: const ValueKey('transaction-activity-legend-divider-0'), width: 1, color: colors.divider),
-          _Legend(color: sentColor, label: t.home_widgets.sent, count: sent, amount: amountTexts?[1]),
+          _Legend(
+            color: sentColor,
+            label: t.home_widgets.sent,
+            count: (sent * reveal).round(),
+            amount: amountTexts?[1],
+            countKey: const Key('transaction-activity-count-sent'),
+            amountKey: const Key('transaction-activity-amount-sent'),
+          ),
           Container(key: const ValueKey('transaction-activity-legend-divider-1'), width: 1, color: colors.divider),
-          _Legend(color: organizedColor, label: t.home_widgets.organized, count: organized, amount: amountTexts?[2]),
+          _Legend(
+            color: organizedColor,
+            label: t.home_widgets.organized,
+            count: (organized * reveal).round(),
+            amount: amountTexts?[2],
+            countKey: const Key('transaction-activity-count-organized'),
+            amountKey: const Key('transaction-activity-amount-organized'),
+          ),
         ],
       ),
     );
@@ -399,17 +461,20 @@ class _Bar extends StatelessWidget {
   final int count;
   final int max;
   final Color color;
+  final double reveal;
+  final Key? barKey;
 
-  const _Bar({required this.count, required this.max, required this.color});
+  const _Bar({required this.count, required this.max, required this.color, required this.reveal, this.barKey});
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder:
           (context, constraints) => Container(
+            key: barKey,
             width: _width,
             margin: const EdgeInsets.symmetric(horizontal: _margin),
-            height: count == 0 ? 0 : math.max(2, constraints.maxHeight * count / max),
+            height: count == 0 ? 0 : math.max(2, constraints.maxHeight * count / max) * reveal,
             decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
           ),
     );
@@ -421,8 +486,17 @@ class _Legend extends StatelessWidget {
   final String label;
   final int count;
   final String? amount;
+  final Key? countKey;
+  final Key? amountKey;
 
-  const _Legend({required this.color, required this.label, required this.count, this.amount});
+  const _Legend({
+    required this.color,
+    required this.label,
+    required this.count,
+    this.amount,
+    this.countKey,
+    this.amountKey,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -445,12 +519,17 @@ class _Legend extends StatelessWidget {
               ),
             ],
           ),
-          Text('$count', style: CoconutTypography.body1_16_NumberBold.copyWith(color: colors.primaryText)),
+          Text(
+            '$count',
+            key: countKey,
+            style: CoconutTypography.body1_16_NumberBold.copyWith(color: colors.primaryText),
+          ),
           if (amount != null)
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 amount!,
+                key: amountKey,
                 maxLines: 1,
                 style: CoconutTypography.caption_10_Number.copyWith(color: colors.secondaryText),
               ),

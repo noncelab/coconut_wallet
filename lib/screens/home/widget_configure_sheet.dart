@@ -79,6 +79,7 @@ class WidgetConfigureSheet extends StatefulWidget {
       context: context,
       screenName: '/widget-configure-sheet',
       isDismissible: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       child: WidgetConfigureSheet(
         heading: heading,
         spec: spec,
@@ -122,6 +123,8 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
     return controller;
   });
   final FocusNode _fakeBalanceFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+  double? _lastKeyboardInset;
 
   @override
   void initState() {
@@ -132,12 +135,32 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
       final text = normalizeNumTextForNumParsing(_fakeBalanceController.text);
       _viewModel.setFakeBalance(text.isEmpty ? null : UnitUtil.convertBitcoinStringToSatoshi(text));
     });
+    _fakeBalanceFocusNode.addListener(_scrollToFakeBalanceOnFocus);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    if (_lastKeyboardInset != keyboardInset) {
+      _lastKeyboardInset = keyboardInset;
+      if (keyboardInset > 0) _scrollToFakeBalanceOnFocus();
+    }
+  }
+
+  void _scrollToFakeBalanceOnFocus() {
+    if (!_fakeBalanceFocusNode.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_fakeBalanceFocusNode.hasFocus || !_scrollController.hasClients) return;
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    });
   }
 
   @override
   void dispose() {
     _fakeBalanceController.dispose();
     _fakeBalanceFocusNode.dispose();
+    _scrollController.dispose();
     for (final controller in _targetControllers.values) {
       controller.dispose();
     }
@@ -163,6 +186,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
         builder: (context, viewModel, _) {
           final spec = viewModel.spec;
           return HomeConfigureSheetLayout(
+            scrollController: _scrollController,
             title: widget.title ?? t.home_edit.configure_widget,
             heading: widget.heading,
             description:
