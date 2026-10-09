@@ -197,11 +197,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                 child: Container(
                   key: ValueKey('home-preset-${preset.id}'),
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                  decoration: BoxDecoration(
-                    color: colors.homeSurface,
-                    borderRadius: BorderRadius.circular(24),
-                    border: isCurrent ? Border.all(color: colors.primary) : null,
-                  ),
+                  decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(24)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -217,13 +213,13 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                             Container(
                               key: ValueKey('home-preset-current-${preset.id}'),
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: colors.homeBackground,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                              decoration: BoxDecoration(color: colors.primary, borderRadius: BorderRadius.circular(16)),
                               child: Text(
                                 t.home_presets.current,
-                                style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
+                                style: CoconutTypography.body3_12_Bold.copyWith(
+                                  color: colors.homeBackground,
+                                  height: 1.2,
+                                ),
                               ),
                             ),
                         ],
