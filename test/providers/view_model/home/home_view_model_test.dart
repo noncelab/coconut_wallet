@@ -11,6 +11,7 @@ import 'package:coconut_wallet/repository/shared_preference/home_configuration_r
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:coconut_wallet/services/home/home_grid_layout.dart';
+import 'package:coconut_wallet/services/home/builtin_home_widgets.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -44,19 +45,58 @@ void main() {
     wallets = [];
   });
 
-  HomeViewModel create({List<HomePreset>? presets}) => HomeViewModel(
+  HomeViewModel create({
+    List<HomePreset>? presets,
+    List<HomeItemDefinition>? widgetDefinitions,
+    bool legacyFakeBalanceActive = false,
+    bool legacyBalanceHidden = false,
+  }) => HomeViewModel(
     presets: presets,
     repository: repository,
     wallets: () => wallets,
     onShortcutTap: (_, __) {},
-    widgetDefinitions: [
-      _Widget(),
-      _Widget(id: 'w_wide', span: HomeSpan.wide),
-      _Widget(id: HomeItemIds.watchOnlyWalletStack, spans: [HomeSpan.small, HomeSpan.wide]),
-    ],
+    legacyFakeBalanceActive: legacyFakeBalanceActive,
+    legacyBalanceHidden: legacyBalanceHidden,
+    widgetDefinitions:
+        widgetDefinitions ??
+        [
+          _Widget(),
+          _Widget(id: 'w_wide', span: HomeSpan.wide),
+          _Widget(id: HomeItemIds.watchOnlyWalletStack, spans: [HomeSpan.small, HomeSpan.wide]),
+        ],
   );
 
   group('loading', () {
+    test('legacy hidden balance selects the hide balances preset on first load', () {
+      final viewModel = create(widgetDefinitions: builtinHomeWidgets(), legacyBalanceHidden: true);
+      final preset = builtinHomePresets().firstWhere((preset) => preset.id == 'hide_balances');
+
+      expect(viewModel.currentPresetId, 'hide_balances');
+      expect(viewModel.configuration.items.map((item) => item.definitionId), preset.definitionIds);
+      expect(repository.load(), viewModel.configuration);
+    });
+
+    test('legacy fake balance takes precedence over hidden balance on first load', () {
+      final viewModel = create(
+        widgetDefinitions: builtinHomeWidgets(),
+        legacyFakeBalanceActive: true,
+        legacyBalanceHidden: true,
+      );
+      final preset = builtinHomePresets().firstWhere((preset) => preset.id == defaultPresetId);
+
+      expect(viewModel.currentPresetId, defaultPresetId);
+      expect(viewModel.configuration.items.map((item) => item.definitionId), preset.definitionIds);
+    });
+
+    test('legacy settings do not replace an existing customized home', () async {
+      await repository.save(HomeConfiguration(items: [_shortcut('custom', FeatureIds.receive, 0)]));
+
+      final viewModel = create(widgetDefinitions: builtinHomeWidgets(), legacyBalanceHidden: true);
+
+      expect(viewModel.configuration.items.map((item) => item.id), ['custom']);
+      expect(viewModel.currentPresetId, isNull);
+    });
+
     test('on first install the default preset is applied and saved', () {
       final viewModel = create();
       final preset = builtinHomePresets().firstWhere((preset) => preset.id == defaultPresetId);
@@ -201,6 +241,8 @@ void main() {
 
       final previous = viewModel.applyPreset(preset);
 
+      expect(viewModel.currentPresetId, 'p');
+
       expect(previous, before);
       expect(viewModel.configuration.items.map((item) => item.definitionId), [
         'w_wide',
@@ -212,6 +254,7 @@ void main() {
 
       viewModel.restore(previous);
       expect(viewModel.configuration.items.map((item) => item.id), ['a']);
+      expect(viewModel.currentPresetId, isNull);
     });
 
     test('shortcuts after a 2×2 widget fill the 2×2 space to its right', () async {

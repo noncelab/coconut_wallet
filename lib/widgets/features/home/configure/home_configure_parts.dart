@@ -16,6 +16,7 @@ class HomeConfigureSheetLayout extends StatelessWidget {
   final bool isButtonActive;
   final VoidCallback onSubmit;
   final ScrollController? scrollController;
+  final bool showIntro;
 
   const HomeConfigureSheetLayout({
     super.key,
@@ -28,6 +29,7 @@ class HomeConfigureSheetLayout extends StatelessWidget {
     required this.onSubmit,
     this.isButtonActive = true,
     this.scrollController,
+    this.showIntro = true,
   });
 
   @override
@@ -54,17 +56,21 @@ class HomeConfigureSheetLayout extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(heading, style: CoconutTypography.heading4_18_Bold.copyWith(color: colors.primaryText)),
-                          CoconutLayout.spacing_200h,
-                          Text(description, style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText)),
-                        ],
+                    if (showIntro)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              heading,
+                              style: CoconutTypography.heading4_18_Bold.copyWith(color: colors.primaryText),
+                            ),
+                            CoconutLayout.spacing_200h,
+                            Text(description, style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText)),
+                          ],
+                        ),
                       ),
-                    ),
                     ...children,
                   ],
                 ),

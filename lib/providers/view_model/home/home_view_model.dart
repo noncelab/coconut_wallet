@@ -23,6 +23,8 @@ class HomeViewModel extends ChangeNotifier {
   final FeatureRegistry features;
   final List<HomePreset> _presets;
   final bool Function(FeatureItem feature) _isFeatureAvailable;
+  final bool _legacyFakeBalanceActive;
+  final bool _legacyBalanceHidden;
   late final HomeItemRegistry registry;
   late HomeConfiguration _configuration;
   final Listenable? _walletListChanges;
@@ -42,6 +44,8 @@ class HomeViewModel extends ChangeNotifier {
     List<HomeItemDefinition>? widgetDefinitions,
     List<HomePreset>? presets,
     bool Function(FeatureItem feature)? isFeatureAvailable,
+    bool legacyFakeBalanceActive = false,
+    bool legacyBalanceHidden = false,
     Listenable? walletListChanges,
     bool addWalletHintDismissed = false,
     void Function()? onAddWalletHintDismissed,
@@ -54,6 +58,8 @@ class HomeViewModel extends ChangeNotifier {
        _addWalletHintDismissed = addWalletHintDismissed,
        _onAddWalletHintDismissed = onAddWalletHintDismissed,
        _isFeatureAvailable = isFeatureAvailable ?? ((_) => true),
+       _legacyFakeBalanceActive = legacyFakeBalanceActive,
+       _legacyBalanceHidden = legacyBalanceHidden,
        _wallets = wallets,
        _presets = presets ?? builtinHomePresets(),
        features = features ?? FeatureRegistry.builtin() {
@@ -117,6 +123,25 @@ class HomeViewModel extends ChangeNotifier {
 
   HomeConfiguration get configuration => _configuration;
 
+  /// 현재 배치가 프리셋과 같으면 그 프리셋을 표시한다. 위젯의 개별 설정은 배치에 영향을 주지 않는다.
+  String? get currentPresetId {
+    for (final preset in _presets) {
+      final presetItems = previewOf(preset).items;
+      final currentItems = _configuration.items;
+      if (presetItems.length != currentItems.length) continue;
+      if (IterableZip([presetItems, currentItems]).every((pair) {
+        final expected = pair[0];
+        final actual = pair[1];
+        return expected.definitionId == actual.definitionId &&
+            expected.span == actual.span &&
+            expected.position == actual.position;
+      })) {
+        return preset.id;
+      }
+    }
+    return null;
+  }
+
   ShortcutWalletContext get shortcutWalletContext => _configuration.shortcutWalletContext;
 
   static HomeConfiguration defaultConfiguration() {
@@ -149,9 +174,10 @@ class HomeViewModel extends ChangeNotifier {
     return positioned;
   }
 
-  /// 처음 설치하면 기본 프리셋으로 시작한다. 기본 프리셋의 항목이 하나도 등록되지 않았으면 [defaultConfiguration]
+  /// 저장된 새 홈 구성이 없을 때 이전 잔액 설정을 프리셋으로 옮긴다. 가짜 잔액이 숨김보다 우선한다.
   HomeConfiguration _firstInstallConfiguration() {
-    final preset = _presets.where((preset) => preset.id == defaultPresetId).firstOrNull ?? _presets.firstOrNull;
+    final presetId = !_legacyFakeBalanceActive && _legacyBalanceHidden ? 'hide_balances' : defaultPresetId;
+    final preset = _presets.where((preset) => preset.id == presetId).firstOrNull ?? _presets.firstOrNull;
     final configuration = preset == null ? null : _presetConfiguration(preset, HomeConfiguration(items: const []));
     return configuration == null || configuration.items.isEmpty ? defaultConfiguration() : configuration;
   }

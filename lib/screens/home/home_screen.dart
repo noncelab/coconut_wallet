@@ -27,6 +27,7 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/home/all_features_screen.dart';
 import 'package:coconut_wallet/screens/home/home_edit_screen.dart';
+import 'package:coconut_wallet/screens/home/home_fake_balance_search.dart';
 import 'package:coconut_wallet/screens/home/home_item_configure_sheets.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
@@ -91,6 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
       wallets: () => context.read<WalletProvider>().walletItemList,
       onShortcutTap: _launch,
       isFeatureAvailable: (feature) => feature.isAvailable?.call(context) ?? true,
+      legacyFakeBalanceActive: context.read<PreferenceProvider>().isFakeBalanceActive,
+      legacyBalanceHidden: context.read<PreferenceProvider>().isBalanceHidden,
       walletListChanges: context.read<WalletProvider>().walletItemListNotifier,
       addWalletHintDismissed: SharedPrefsRepository().getBool(SharedPrefKeys.kAddWalletHintDismissed),
       onAddWalletHintDismissed: () => SharedPrefsRepository().setBool(SharedPrefKeys.kAddWalletHintDismissed, true),
@@ -273,6 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
     isAvailable: (feature) => feature.isAvailable?.call(context) ?? true,
     isDimmed: (feature) => noWallets && feature.context == FeatureContext.wallet,
     onLaunch: (context, feature) => _launch(context, feature, useShortcutWallet: false),
+    onFakeBalanceTap: (context) => openFakeBalanceFromSearch(context, _viewModel),
     recentIds: SharedPrefsRepository().getString(SharedPrefKeys.kAllFeaturesRecentIds).split(',')
       ..removeWhere((id) => id.isEmpty),
     saveRecentIds: (ids) => SharedPrefsRepository().setString(SharedPrefKeys.kAllFeaturesRecentIds, ids.join(',')),

@@ -103,6 +103,66 @@ Future<List<HomeConfiguration>> _open(
 }
 
 void main() {
+  testWidgets('marks the preset that matches the current home layout', (tester) async {
+    final preset = HomePreset(
+      id: 'p',
+      name: () => 'Preset P',
+      description: () => 'desc',
+      definitionIds: ['sample_widget'],
+    );
+    await _open(
+      tester,
+      HomeConfiguration(
+        items: const [
+          HomeItem(
+            id: 'custom-id',
+            definitionId: 'sample_widget',
+            kind: HomeItemKind.widget,
+            order: 0,
+            span: HomeSpan.small,
+          ),
+        ],
+      ),
+      presets: [preset],
+    );
+
+    expect(find.byKey(const ValueKey('home-preset-current-p')), findsOneWidget);
+    expect(find.text(t.home_presets.current), findsOneWidget);
+  });
+
+  testWidgets('does not mark a preset after its layout is customized', (tester) async {
+    final preset = HomePreset(
+      id: 'p',
+      name: () => 'Preset P',
+      description: () => 'desc',
+      definitionIds: ['sample_widget'],
+    );
+    await _open(
+      tester,
+      HomeConfiguration(
+        items: [
+          const HomeItem(
+            id: 'widget',
+            definitionId: 'sample_widget',
+            kind: HomeItemKind.widget,
+            order: 0,
+            span: HomeSpan.small,
+          ),
+          HomeItem(
+            id: 'shortcut',
+            definitionId: _calculatorId,
+            kind: HomeItemKind.shortcut,
+            order: 1,
+            span: HomeSpan.shortcut,
+          ),
+        ],
+      ),
+      presets: [preset],
+    );
+
+    expect(find.byKey(const ValueKey('home-preset-current-p')), findsNothing);
+  });
+
   testWidgets('shows the title and three tabs with presets selected first', (tester) async {
     await _open(tester, HomeConfiguration(items: const []));
 

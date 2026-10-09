@@ -2567,7 +2567,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   SliverAppBar _buildAppBar(NetworkStatus networkStatus, bool showElectrumReconnected) {
-    final shouldShow = networkStatus != NetworkStatus.online;
     final homeAddWalletOption = context.read<PreferenceProvider>().homeAddWalletOption;
     final addWalletIconPath = switch (homeAddWalletOption) {
       HomeAddWalletOption.all => FeatureWalletIconPath.walletAddDefault,

@@ -97,4 +97,26 @@ void main() {
     );
     expect(viewModel.recent, hasLength(AllFeaturesViewModel.recentLimit));
   });
+
+  test('an extra feature appears in the list and can be restored from recent IDs', () {
+    final fakeBalance = FeatureItem(
+      id: AllFeaturesViewModel.fakeBalanceRecentId,
+      label: () => 'Fake Balance',
+      category: FeatureCategory.settings,
+    );
+    final viewModel = AllFeaturesViewModel(
+      registry: registry,
+      recentIds: const [AllFeaturesViewModel.fakeBalanceRecentId, 'send'],
+      extraFeature: fakeBalance,
+    );
+
+    expect(
+      viewModel.sections
+          .firstWhere((section) => section.$1 == FeatureCategory.settings)
+          .$2
+          .map((entry) => entry.item.id),
+      contains(AllFeaturesViewModel.fakeBalanceRecentId),
+    );
+    expect(viewModel.recent.map((feature) => feature.id), [AllFeaturesViewModel.fakeBalanceRecentId, 'send']);
+  });
 }

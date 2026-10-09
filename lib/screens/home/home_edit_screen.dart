@@ -188,38 +188,72 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
         ),
         for (final (index, preset) in viewModel.presets.indexed) ...[
           if (index > 0) CoconutLayout.spacing_300h,
-          HomeWidgetPressable(
-            key: ValueKey('home-preset-card-${preset.id}'),
-            onTap: () => _openPresetPreview(viewModel, preset),
-            child: Container(
-              key: ValueKey('home-preset-${preset.id}'),
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-              decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(24)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(preset.name(), style: CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText)),
-                  CoconutLayout.spacing_100h,
-                  Text(preset.description(), style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText)),
-                  CoconutLayout.spacing_300h,
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: CupertinoButton(
-                      key: ValueKey('home-preset-preview-${preset.id}'),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-                      minimumSize: Size.zero,
-                      color: colors.homeBackground,
-                      borderRadius: BorderRadius.circular(10),
-                      onPressed: () => _openPresetPreview(viewModel, preset),
-                      child: Text(
-                        t.home_presets.preview,
-                        style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
-                      ),
-                    ),
+          Builder(
+            builder: (context) {
+              final isCurrent = viewModel.currentPresetId == preset.id;
+              return HomeWidgetPressable(
+                key: ValueKey('home-preset-card-${preset.id}'),
+                onTap: () => _openPresetPreview(viewModel, preset),
+                child: Container(
+                  key: ValueKey('home-preset-${preset.id}'),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                  decoration: BoxDecoration(
+                    color: colors.homeSurface,
+                    borderRadius: BorderRadius.circular(24),
+                    border: isCurrent ? Border.all(color: colors.primary) : null,
                   ),
-                ],
-              ),
-            ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              preset.name(),
+                              style: CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText),
+                            ),
+                          ),
+                          if (isCurrent)
+                            Container(
+                              key: ValueKey('home-preset-current-${preset.id}'),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: colors.homeBackground,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                t.home_presets.current,
+                                style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
+                              ),
+                            ),
+                        ],
+                      ),
+                      CoconutLayout.spacing_100h,
+                      Text(
+                        preset.description(),
+                        style: CoconutTypography.body2_14.copyWith(color: colors.secondaryText),
+                      ),
+                      CoconutLayout.spacing_300h,
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: CupertinoButton(
+                          key: ValueKey('home-preset-preview-${preset.id}'),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                          minimumSize: Size.zero,
+                          color: colors.homeBackground,
+                          borderRadius: BorderRadius.circular(10),
+                          onPressed: () => _openPresetPreview(viewModel, preset),
+                          child: Text(
+                            t.home_presets.preview,
+                            style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ],

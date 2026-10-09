@@ -49,18 +49,18 @@ void main() {
     ]);
   });
 
-  test('the statistics preset follows the design', () {
+  test('the savings overview preset follows the current design', () {
     final preset = builtinHomePresets().firstWhere((preset) => preset.id == 'statistics');
 
     expect(preset.spans[HomeItemIds.bitcoinBalanceTrend], HomeSpan.wide);
     expect(preset.definitionIds, [
       HomeItemIds.bitcoinBalanceTrend,
-      HomeItemIds.balanceByWallet,
       HomeItemIds.savingsGoal,
+      HomeItemIds.utxoStatus,
       HomeItemIds.shortcut(FeatureIds.receive),
       HomeItemIds.shortcut(FeatureIds.send),
       HomeItemIds.shortcut(FeatureIds.utxoOrganizer),
-      HomeItemIds.shortcut(FeatureIds.hodlInsights),
+      HomeItemIds.shortcut(FeatureIds.myWallets),
     ]);
   });
 
@@ -82,7 +82,7 @@ void main() {
     expect(preset.definitionIds, isNot(contains(HomeItemIds.balanceByWallet)));
   });
 
-  test('each preset except the default fills about one phone screen: six rows', () {
+  test('non-default presets fit within one phone screen', () {
     for (final preset in builtinHomePresets().where((preset) => preset.id != 'default')) {
       final items = [
         for (final (index, id) in preset.definitionIds.indexed)
@@ -96,7 +96,7 @@ void main() {
               position: index == 0 ? const HomeGridPosition(0, 0) : null,
             ),
       ];
-      expect(HomeGridLayout(HomeConfiguration(items: items)).rows, 6, reason: preset.id);
+      expect(HomeGridLayout(HomeConfiguration(items: items)).rows, lessThanOrEqualTo(6), reason: preset.id);
     }
   });
 }

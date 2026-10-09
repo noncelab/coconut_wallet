@@ -16,6 +16,7 @@ class AllFeaturesScreen extends StatefulWidget {
   /// 흐리게 보여 줄 기능(예: 지갑이 없을 때 지갑이 필요한 기능). 누르면 [onLaunch]가 안내한다.
   final bool Function(FeatureItem feature)? isDimmed;
   final void Function(BuildContext context, FeatureItem feature) onLaunch;
+  final Future<void> Function(BuildContext context)? onFakeBalanceTap;
   final List<String> recentIds;
   final void Function(List<String> ids)? saveRecentIds;
 
@@ -23,6 +24,7 @@ class AllFeaturesScreen extends StatefulWidget {
     super.key,
     required this.registry,
     required this.onLaunch,
+    this.onFakeBalanceTap,
     this.isAvailable,
     this.isDimmed,
     this.recentIds = const [],
@@ -35,16 +37,27 @@ class AllFeaturesScreen extends StatefulWidget {
 
 class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
   static const _searchVerticalPadding = 14.0;
+  static const _fakeBalanceIconPath = 'assets/svg/features/widgets/fake-balance-mask.svg';
 
   /// 검색 창 아래 그라데이션 높이. 처음 화면에서 내용이 흐려지지 않도록 목록은 [_contentTop]부터 시작한다.
   static const _topFadeHeight = 16.0;
   static const _contentTop = 20.0;
+
+  late final FeatureItem _fakeBalanceFeature = FeatureItem(
+    id: AllFeaturesViewModel.fakeBalanceRecentId,
+    label: () => t.wallet_home_screen.edit.fake_balance.fake_balance_setting,
+    iconPath: _fakeBalanceIconPath,
+    category: FeatureCategory.settings,
+    keywords: const ['decoy balance', '가짜', '페이크'],
+    localizedKeywords: () => t.all_features.fake_balance_search_terms.split(','),
+  );
 
   late final AllFeaturesViewModel _viewModel = AllFeaturesViewModel(
     registry: widget.registry,
     isAvailable: widget.isAvailable,
     recentIds: widget.recentIds,
     saveRecentIds: widget.saveRecentIds,
+    extraFeature: widget.onFakeBalanceTap == null ? null : _fakeBalanceFeature,
   );
   final TextEditingController _controller = TextEditingController();
 
@@ -68,7 +81,11 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
   void _launch(BuildContext context, FeatureItem feature) {
     FocusScope.of(context).unfocus();
     _viewModel.recordLaunch(feature);
-    widget.onLaunch(context, feature);
+    if (feature.id == AllFeaturesViewModel.fakeBalanceRecentId) {
+      widget.onFakeBalanceTap?.call(context);
+    } else {
+      widget.onLaunch(context, feature);
+    }
   }
 
   @override
@@ -274,7 +291,10 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
     final feature = entry.item;
     final iconPath = feature.iconPath;
     return GestureDetector(
-      key: ValueKey('all-features-item-${feature.id}'),
+      key:
+          _viewModel.isSearching && feature.id == AllFeaturesViewModel.fakeBalanceRecentId
+              ? const Key('all-features-fake-balance-result')
+              : ValueKey('all-features-item-${feature.id}'),
       behavior: HitTestBehavior.opaque,
       onTap: () => _launch(context, feature),
       child: Padding(
@@ -307,6 +327,11 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
                       entry.path.join(' › '),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
+                    ),
+                  if (feature.id == AllFeaturesViewModel.fakeBalanceRecentId)
+                    Text(
+                      t.all_features.fake_balance_applies_to_home,
                       style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
                     ),
                 ],

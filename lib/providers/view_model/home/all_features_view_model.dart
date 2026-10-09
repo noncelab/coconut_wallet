@@ -15,6 +15,7 @@ class AllFeaturesEntry {
 /// 검색어가 없으면 분류별 목록, 있으면 검색 결과를 준다.
 class AllFeaturesViewModel extends ChangeNotifier {
   static const recentLimit = 4;
+  static const fakeBalanceRecentId = '__fake_balance__';
 
   final FeatureRegistry _registry;
   final bool Function(FeatureItem feature) _isAvailable;
@@ -28,7 +29,8 @@ class AllFeaturesViewModel extends ChangeNotifier {
     bool Function(FeatureItem feature)? isAvailable,
     List<String> recentIds = const [],
     void Function(List<String> ids)? saveRecentIds,
-  }) : _registry = registry,
+    FeatureItem? extraFeature,
+  }) : _registry = extraFeature == null ? registry : FeatureRegistry([...registry.all, extraFeature]),
        _isAvailable = isAvailable ?? ((_) => true),
        _recentIds = recentIds,
        _saveRecentIds = saveRecentIds;

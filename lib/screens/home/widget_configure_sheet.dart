@@ -34,6 +34,7 @@ class WidgetConfigureSheet extends StatefulWidget {
 
   /// 크기를 고르는 위젯의 미리보기. 시트는 홈 위젯 데이터에 닿지 않으므로 여는 쪽이 만든다.
   final Widget Function(HomeSpan span)? previewBuilder;
+  final bool compactFakeBalance;
 
   const WidgetConfigureSheet({
     super.key,
@@ -45,6 +46,7 @@ class WidgetConfigureSheet extends StatefulWidget {
     this.description,
     this.initialSpan,
     this.previewBuilder,
+    this.compactFakeBalance = false,
   });
 
   static Future<HomeWidgetSettings?> open(
@@ -54,6 +56,7 @@ class WidgetConfigureSheet extends StatefulWidget {
     HomeWidgetSettings? initial,
     HomeSpan? initialSpan,
     Widget Function(HomeSpan span)? previewBuilder,
+    bool compactFakeBalance = false,
   }) => openSettings(
     context,
     heading: definition.displayName(),
@@ -62,6 +65,7 @@ class WidgetConfigureSheet extends StatefulWidget {
     initial: initial,
     initialSpan: initialSpan,
     previewBuilder: previewBuilder,
+    compactFakeBalance: compactFakeBalance,
   );
 
   static Future<HomeWidgetSettings?> openSettings(
@@ -74,6 +78,7 @@ class WidgetConfigureSheet extends StatefulWidget {
     String? description,
     HomeSpan? initialSpan,
     Widget Function(HomeSpan span)? previewBuilder,
+    bool compactFakeBalance = false,
   }) {
     return CommonBottomSheets.showBottomSheet_100<HomeWidgetSettings>(
       context: context,
@@ -89,6 +94,7 @@ class WidgetConfigureSheet extends StatefulWidget {
         description: description,
         initialSpan: initialSpan,
         previewBuilder: previewBuilder,
+        compactFakeBalance: compactFakeBalance,
       ),
     );
   }
@@ -187,6 +193,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
           final spec = viewModel.spec;
           return HomeConfigureSheetLayout(
             scrollController: _scrollController,
+            showIntro: !widget.compactFakeBalance,
             title: widget.title ?? t.home_edit.configure_widget,
             heading: widget.heading,
             description:
@@ -353,7 +360,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
   List<Widget> _buildFakeBalance(WidgetConfigureViewModel viewModel) {
     final colors = context.coconutColors;
     return [
-      HomeConfigureSectionTitle(t.home_edit.balance_display),
+      if (!widget.compactFakeBalance) HomeConfigureSectionTitle(t.home_edit.balance_display),
       SingleButton(
         key: const Key('widget-configure-fake-balance'),
         isVerticalSubtitle: true,

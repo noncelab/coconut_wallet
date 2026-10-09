@@ -1,9 +1,11 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
+import 'package:coconut_wallet/providers/view_model/home/all_features_view_model.dart';
 import 'package:coconut_wallet/screens/home/all_features_screen.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -23,6 +25,100 @@ void main() {
     );
     return launched;
   }
+
+  testWidgets('fake balance search opens its own action in every locale', (tester) async {
+    addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+    var opened = 0;
+    for (final locale in AppLocale.values) {
+      LocaleSettings.setLocaleSync(locale);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildCoconutThemeData(),
+          home: Scaffold(
+            body: AllFeaturesScreen(registry: registry, onLaunch: (_, __) {}, onFakeBalanceTap: (_) async => opened++),
+          ),
+        ),
+      );
+      await tester.enterText(
+        find.byKey(const Key('all-features-search')),
+        t.all_features.fake_balance_search_terms.split(',').first,
+      );
+      await tester.pump();
+
+      expect(find.byKey(const Key('all-features-fake-balance-result')), findsOneWidget, reason: '$locale');
+      expect(find.text(t.all_features.fake_balance_applies_to_home), findsOneWidget, reason: '$locale');
+      for (final alias in ['decoy balance', '가짜', '페이크']) {
+        await tester.enterText(find.byKey(const Key('all-features-search')), alias);
+        await tester.pump();
+        expect(find.byKey(const Key('all-features-fake-balance-result')), findsOneWidget, reason: '$locale: $alias');
+      }
+      await tester.tap(find.byKey(const Key('all-features-fake-balance-result')));
+      expect(opened, locale.index + 1);
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
+
+  testWidgets('fake balance appears in recent use and opens again from there', (tester) async {
+    final saved = <List<String>>[];
+    var opened = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Scaffold(
+          body: AllFeaturesScreen(
+            registry: registry,
+            onLaunch: (_, __) {},
+            onFakeBalanceTap: (_) async => opened++,
+            saveRecentIds: saved.add,
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byKey(const Key('all-features-search')), 'decoy balance');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('all-features-fake-balance-result')));
+    await tester.pump();
+    expect(opened, 1);
+    expect(saved.last, [AllFeaturesViewModel.fakeBalanceRecentId]);
+
+    await tester.tap(find.byKey(const Key('all-features-search-clear')));
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('all-features-recent-${AllFeaturesViewModel.fakeBalanceRecentId}')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('all-features-recent-${AllFeaturesViewModel.fakeBalanceRecentId}')));
+    await tester.pump();
+    expect(opened, 2);
+    expect(saved.last, [AllFeaturesViewModel.fakeBalanceRecentId]);
+  });
+
+  testWidgets('fake balance is listed under Settings with the mask icon', (tester) async {
+    addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+    LocaleSettings.setLocaleSync(AppLocale.en);
+    var opened = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Scaffold(
+          body: AllFeaturesScreen(registry: registry, onLaunch: (_, __) {}, onFakeBalanceTap: (_) async => opened++),
+        ),
+      ),
+    );
+
+    final fakeBalance = find.byKey(const ValueKey('all-features-item-${AllFeaturesViewModel.fakeBalanceRecentId}'));
+    expect(fakeBalance, findsOneWidget);
+    expect(find.text('Fake Balance'), findsOneWidget);
+    expect(find.descendant(of: fakeBalance, matching: find.byType(SvgPicture)), findsOneWidget);
+    expect(
+      tester.getTopLeft(fakeBalance).dy,
+      greaterThan(tester.getTopLeft(find.byKey(const ValueKey('all-features-category-settings'))).dy),
+    );
+    await tester.tap(fakeBalance);
+    expect(opened, 1);
+  });
 
   testWidgets('shows the search field on top and features by category', (tester) async {
     final launched = await pump(tester);

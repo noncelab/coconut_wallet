@@ -52,8 +52,7 @@ List<HomePreset> builtinHomePresets() => [
     description: () => t.home_presets.hide_balances_description,
     spans: const {HomeItemIds.watchOnlyWalletStack: HomeSpan.small, HomeItemIds.hotWalletStack: HomeSpan.small},
     definitionIds: [
-      HomeItemIds.watchOnlyWalletStack,
-      HomeItemIds.hotWalletStack,
+      HomeItemIds.allWalletStack,
       HomeItemIds.transactionActivity,
       HomeItemIds.utxoStatus,
       HomeItemIds.shortcut(FeatureIds.receive),
@@ -89,12 +88,12 @@ List<HomePreset> builtinHomePresets() => [
     spans: const {HomeItemIds.bitcoinBalanceTrend: HomeSpan.wide},
     definitionIds: [
       HomeItemIds.bitcoinBalanceTrend,
-      HomeItemIds.balanceByWallet,
       HomeItemIds.savingsGoal,
+      HomeItemIds.utxoStatus,
       HomeItemIds.shortcut(FeatureIds.receive),
       HomeItemIds.shortcut(FeatureIds.send),
       HomeItemIds.shortcut(FeatureIds.utxoOrganizer),
-      HomeItemIds.shortcut(FeatureIds.hodlInsights),
+      HomeItemIds.shortcut(FeatureIds.myWallets),
     ],
   ),
 ];
