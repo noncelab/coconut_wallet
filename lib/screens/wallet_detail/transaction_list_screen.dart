@@ -582,7 +582,7 @@ class _TransactionListState extends State<TransactionList> {
             ),
           ),
         ),
-        isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
+        isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_100h,
       ],
     );
   }
