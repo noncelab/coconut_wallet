@@ -338,7 +338,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
             children: [
               Padding(
                 padding: EdgeInsets.fromLTRB(
-                  22,
+                  HomeAlertCard.contentPadding.left,
                   HomeAlertCard.contentPadding.top,
                   target == null ? PositionedCardArrowButton.contentRightInset : 22,
                   HomeAlertCard.contentPadding.bottom,
