@@ -158,7 +158,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
           return Padding(
             key: _txListLabelWidgetKey,
-            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 4.0),
             child: SizedBox(
               height: 32,
               child: Row(
@@ -406,7 +406,8 @@ class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
     final balanceTop = topPadding + _toolbarHeight * (1 - easedProgress);
     final balanceHeight = bodyExtent + (_toolbarHeight - bodyExtent) * easedProgress;
     return Material(
-      color: context.coconutColors.background,
+      color: context.coconutColors.background.withValues(alpha: easedProgress),
+      animationDuration: Duration.zero,
       child: Stack(
         clipBehavior: Clip.none,
         fit: StackFit.expand,
@@ -425,6 +426,7 @@ class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
               isRefreshing: isRefreshing,
               onPressedUnitToggle: onPressedUnitToggle,
               collapseProgress: easedProgress,
+              backgroundColor: Colors.transparent,
             ),
           ),
           Positioned(
@@ -433,26 +435,6 @@ class _TransactionListHeaderDelegate extends SliverPersistentHeaderDelegate {
             child: BackButton(onPressed: onBackPressed, color: context.coconutColors.primaryText),
           ),
           Positioned(right: 4, top: topPadding + 4, child: refreshButton),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: -16,
-            height: 16,
-            child: IgnorePointer(
-              child: Opacity(
-                opacity: easedProgress,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [context.coconutColors.background, context.coconutColors.background.withValues(alpha: 0)],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -600,7 +582,7 @@ class _TransactionListState extends State<TransactionList> {
             ),
           ),
         ),
-        isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
+        isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_100h,
       ],
     );
   }

@@ -606,6 +606,7 @@ class _LegacyWalletInfoScreenState extends State<LegacyWalletInfoScreen> {
       child: QrWithCopyTextScreen(
         qrData: extendedPublicKey,
         title: t.extended_public_key,
+        isBottom: true,
         showPulldownMenu: false,
         backgroundColor: context.coconutColors.background,
       ),

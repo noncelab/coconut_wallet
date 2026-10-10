@@ -866,7 +866,7 @@ class WalletProvider extends ChangeNotifier {
     await _addressRepository.ensureAddressesInit(walletItemBase: newItem);
 
     List<WalletItemBase> updatedList = List.from(_walletItemList);
-    updatedList.add(newItem); // 새로 추가된 지갑을 후순으로 변경 -> 대표 지갑 변경되는걸 막기 위함
+    updatedList.add(newItem); // 새로 추가된 지갑은 기존 정렬 순서 뒤에 배치
     _setWalletItemList(updatedList);
 
     await _saveWalletCount(updatedList.length);

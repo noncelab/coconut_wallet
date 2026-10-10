@@ -19,6 +19,7 @@ class TransactionListHeader extends StatefulWidget {
   final bool isRefreshing;
   final void Function() onPressedUnitToggle;
   final double collapseProgress;
+  final Color? backgroundColor;
 
   const TransactionListHeader({
     super.key,
@@ -30,6 +31,7 @@ class TransactionListHeader extends StatefulWidget {
     required this.isRefreshing,
     required this.onPressedUnitToggle,
     this.collapseProgress = 0,
+    this.backgroundColor,
   });
 
   @override
@@ -41,7 +43,7 @@ class _TransactionListHeaderState extends State<TransactionListHeader> {
   Widget build(BuildContext context) {
     final progress = widget.collapseProgress.clamp(0.0, 1.0);
     return ColoredBox(
-      color: context.coconutColors.background,
+      color: widget.backgroundColor ?? context.coconutColors.background,
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16 + 40 * progress),
         child: Column(

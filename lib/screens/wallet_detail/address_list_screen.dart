@@ -259,7 +259,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
         padding: padding,
         child: Row(
           children: [
-            CoconutCheckbox(isSelected: isSelected, onChanged: (_) => onToggle(), width: 14),
+            CoconutCheckbox(
+              isSelected: isSelected,
+              color: context.coconutColors.iconPrimary,
+              unSelectedColor: context.coconutColors.iconPrimary,
+              inactiveColor: context.coconutColors.iconDisabled,
+              onChanged: (_) => onToggle(),
+              width: 14,
+            ),
             CoconutLayout.spacing_150w,
             Expanded(
               child: FittedBox(
@@ -455,7 +462,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
           width: bubbleWidth,
           isBubbleClipperSideLeft: _isSegmentTooltipForReceiving,
           tooltipType: CoconutTooltipType.placement,
-          backgroundColor: context.coconutColors.popoverBackground,
+          backgroundColor: context.coconutColors.popoverBackgroundLight,
+          borderColor: context.coconutColors.popoverBackgroundLight,
           richText: RichText(
             text: TextSpan(
               text: _isSegmentTooltipForReceiving ? t.tooltip.address_receiving : t.tooltip.address_change,
