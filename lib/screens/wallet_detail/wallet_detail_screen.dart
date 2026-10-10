@@ -1123,11 +1123,14 @@ class _SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText)),
         ),
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: actionEnabled ? onAction : null,
+        ShrinkAnimationButton(
+          onPressed: onAction,
+          isActive: actionEnabled,
+          defaultColor: Colors.transparent,
+          disabledColor: Colors.transparent,
+          pressedOverlayOpacity: 0,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 2),
             child: Row(
               children: [
                 Text(
