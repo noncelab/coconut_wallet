@@ -70,6 +70,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
   final ValueNotifier<bool> _bottomActionButtonsExpandedNotifier = ValueNotifier<bool>(true);
   bool? _pendingBottomActionButtonsExpanded;
   bool _isBottomActionButtonsUpdateScheduled = false;
+  final GlobalKey _bottomActionBarKey = GlobalKey();
+  double _bottomActionBarHeight = 0;
+  bool _isBottomActionBarMeasureScheduled = false;
   late final bool _playTargetFireworksOnEntry;
   late final AnimationController _fireworksController;
   late final AnimationController _fireworksFadeController;
@@ -117,6 +120,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
 
   @override
   Widget build(BuildContext context) {
+    _scheduleBottomActionBarMeasurement();
     return ChangeNotifierProvider.value(
       value: _viewModel,
       child: Scaffold(
@@ -149,10 +153,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                                     builder: (_, _, _, _, _) => const SizedBox.shrink(),
                                   ),
                     ),
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 150),
-                      sliver: SliverList.list(
-                        children: [
+                    SliverList.list(
+                      children: [
+                        const SizedBox(height: 20),
+                        for (final child in [
                           _buildBalanceHeader(),
                           CoconutLayout.spacing_500h,
                           _buildSecurityWarning(),
@@ -161,8 +165,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
                           _buildRecentTransactions(),
                           CoconutLayout.spacing_500h,
                           _buildUtxoSection(),
-                          CoconutLayout.spacing_2500h,
-                        ],
+                        ])
+                          Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: child),
+                      ],
+                    ),
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: _bottomActionBarHeight),
+                        child: CoconutLayout.spacing_2500h,
                       ),
                     ),
                   ],
@@ -573,6 +584,20 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
     );
   }
 
+  void _scheduleBottomActionBarMeasurement() {
+    if (_isBottomActionBarMeasureScheduled) return;
+    _isBottomActionBarMeasureScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isBottomActionBarMeasureScheduled = false;
+      if (!mounted) return;
+      final renderBox = _bottomActionBarKey.currentContext?.findRenderObject();
+      if (renderBox is! RenderBox || !renderBox.hasSize) return;
+      final height = renderBox.size.height;
+      if ((_bottomActionBarHeight - height).abs() < 0.5) return;
+      setState(() => _bottomActionBarHeight = height);
+    });
+  }
+
   Widget _buildBottomActionBar() {
     return ValueListenableBuilder<bool>(
       valueListenable: _bottomActionButtonsExpandedNotifier,
@@ -580,74 +605,83 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
         return Positioned.fill(
           child: Align(
             alignment: Alignment.bottomCenter,
-            child: BottomActionBar(
-              child: AnimatedSlide(
-                offset: isExpanded ? Offset.zero : const Offset(0, 0.35),
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: AnimatedScale(
-                        scale: isExpanded ? 1 : 0.8,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                        child: BottomActionButton(
-                          iconPath: FeatureTransactionIconPath.receivePlane,
-                          label: t.receive,
-                          labelMaxLines: null,
-                          onTap: () {
-                            _logAction(WalletDetailAction.receive);
-                            Navigator.pushNamed(
-                              context,
-                              AppRouteNames.receiveAddress,
-                              arguments: ReceiveAddressRouteArgs(id: widget.id),
-                            );
-                          },
-                          buttonLayout: BottomActionButtonLayout.horizontal,
-                          textStyle: CoconutTypography.body2_14_Bold,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: AnimatedScale(
-                        scale: isExpanded ? 1 : 0.8,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                        child: BottomActionButton(
-                          iconPath: FeatureTransactionIconPath.sendPlane,
-                          label: t.send,
-                          labelMaxLines: null,
-                          onTap: () {
-                            _logAction(WalletDetailAction.send);
-                            Navigator.pushNamed(
-                              context,
-                              AppRouteNames.send,
-                              arguments: SendRouteArgs(id: widget.id, sendEntryPoint: SendEntryPoint.walletDetail),
-                            );
-                          },
-                          buttonLayout: BottomActionButtonLayout.horizontal,
-                          textStyle: CoconutTypography.body2_14_Bold,
-                        ),
-                      ),
-                    ),
-                    if (_viewModel.wallet.hasLocalKey)
-                      Expanded(
-                        child: AnimatedScale(
-                          scale: isExpanded ? 1 : 0.8,
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOutCubic,
-                          child: BottomActionButton(
-                            iconPath: FeatureWalletIconPath.vault,
-                            label: t.wallet_detail_screen.move_to_vault,
-                            labelMaxLines: null,
-                            onTap: _onMoveToVaultPressed,
-                            buttonLayout: BottomActionButtonLayout.horizontal,
-                            textStyle: CoconutTypography.body2_14_Bold,
+            child: NotificationListener<SizeChangedLayoutNotification>(
+              onNotification: (_) {
+                _scheduleBottomActionBarMeasurement();
+                return false;
+              },
+              child: SizeChangedLayoutNotifier(
+                key: _bottomActionBarKey,
+                child: BottomActionBar(
+                  child: AnimatedSlide(
+                    offset: isExpanded ? Offset.zero : const Offset(0, 0.35),
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: AnimatedScale(
+                            scale: isExpanded ? 1 : 0.8,
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutCubic,
+                            child: BottomActionButton(
+                              iconPath: FeatureTransactionIconPath.receivePlane,
+                              label: t.receive,
+                              labelMaxLines: null,
+                              onTap: () {
+                                _logAction(WalletDetailAction.receive);
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRouteNames.receiveAddress,
+                                  arguments: ReceiveAddressRouteArgs(id: widget.id),
+                                );
+                              },
+                              buttonLayout: BottomActionButtonLayout.horizontal,
+                              textStyle: CoconutTypography.body2_14_Bold,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                        Expanded(
+                          child: AnimatedScale(
+                            scale: isExpanded ? 1 : 0.8,
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutCubic,
+                            child: BottomActionButton(
+                              iconPath: FeatureTransactionIconPath.sendPlane,
+                              label: t.send,
+                              labelMaxLines: null,
+                              onTap: () {
+                                _logAction(WalletDetailAction.send);
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRouteNames.send,
+                                  arguments: SendRouteArgs(id: widget.id, sendEntryPoint: SendEntryPoint.walletDetail),
+                                );
+                              },
+                              buttonLayout: BottomActionButtonLayout.horizontal,
+                              textStyle: CoconutTypography.body2_14_Bold,
+                            ),
+                          ),
+                        ),
+                        if (_viewModel.wallet.hasLocalKey)
+                          Expanded(
+                            child: AnimatedScale(
+                              scale: isExpanded ? 1 : 0.8,
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOutCubic,
+                              child: BottomActionButton(
+                                iconPath: FeatureWalletIconPath.vault,
+                                label: t.wallet_detail_screen.move_to_vault,
+                                labelMaxLines: null,
+                                onTap: _onMoveToVaultPressed,
+                                buttonLayout: BottomActionButtonLayout.horizontal,
+                                textStyle: CoconutTypography.body2_14_Bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
