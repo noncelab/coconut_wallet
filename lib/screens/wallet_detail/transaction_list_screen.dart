@@ -158,7 +158,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
           return Padding(
             key: _txListLabelWidgetKey,
-            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 4.0),
             child: SizedBox(
               height: 32,
               child: Row(
