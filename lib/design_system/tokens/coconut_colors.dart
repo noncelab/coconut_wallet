@@ -223,6 +223,9 @@ class CoconutColors {
 
   /// 아이콘 탭 시 말풍선 형태로 표시되는 Popover 툴팁
   final Color popoverBackground;
+
+  /// 연한 Popover 배경. 전체 주소 화면의 Tooltip에서 CoconutTheme일 때만 기본 배경보다 밝게 표시한다.
+  final Color popoverBackgroundLight;
   final Color popoverText;
 
   /// 로딩 / 스켈레톤
@@ -411,6 +414,7 @@ class CoconutColors {
     required this.popupBackground,
     required this.dimOverlay,
     required this.popoverBackground,
+    required this.popoverBackgroundLight,
     required this.popoverText,
     required this.surfaceSkeletonBase,
     required this.surfaceSkeletonHighlight,
@@ -559,6 +563,7 @@ class CoconutColors {
       popupBackground: ds.CoconutColors.gray900,
       dimOverlay: ds.CoconutColors.black,
       popoverBackground: ds.CoconutColors.white,
+      popoverBackgroundLight: ds.CoconutColors.white,
       popoverText: ds.CoconutColors.gray900,
       surfaceSkeletonBase: ds.CoconutColors.gray850,
       surfaceSkeletonHighlight: ds.CoconutColors.gray750,
@@ -710,6 +715,7 @@ class CoconutColors {
       popupBackground: ds.CoconutColors.white,
       dimOverlay: const Color(0xFFEEEEEE),
       popoverBackground: ds.CoconutColors.gray850,
+      popoverBackgroundLight: ds.CoconutColors.gray850,
       popoverText: ds.CoconutColors.white,
       surfaceSkeletonBase: ds.CoconutColors.gray200,
       surfaceSkeletonHighlight: ds.CoconutColors.gray100,
@@ -877,6 +883,7 @@ class CoconutColors {
       popupBackground: shell,
       dimOverlay: pulp.withValues(alpha: 0.92),
       popoverBackground: huskDeep,
+      popoverBackgroundLight: const Color.fromARGB(255, 238, 150, 78),
       popoverText: ds.CoconutColors.white,
       surfaceSkeletonBase: cream,
       surfaceSkeletonHighlight: shell,

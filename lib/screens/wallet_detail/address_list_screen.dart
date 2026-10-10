@@ -462,7 +462,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
           width: bubbleWidth,
           isBubbleClipperSideLeft: _isSegmentTooltipForReceiving,
           tooltipType: CoconutTooltipType.placement,
-          backgroundColor: context.coconutColors.popoverBackground,
+          backgroundColor: context.coconutColors.popoverBackgroundLight,
+          borderColor: context.coconutColors.popoverBackgroundLight,
           richText: RichText(
             text: TextSpan(
               text: _isSegmentTooltipForReceiving ? t.tooltip.address_receiving : t.tooltip.address_change,
