@@ -83,11 +83,17 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
   final _activeBucketY = ValueNotifier<double>(0);
 
   final GlobalKey _scrollRailKey = GlobalKey();
+  final GlobalKey _amountChartKey = GlobalKey();
   final GlobalKey _listOrderDropdownKey = GlobalKey();
   bool _isListOrderDropdownVisible = false;
   double _listOrderDropdownTop = 0;
 
   int get _dustThreshold => viewModel.walletType.addressType.dustThreshold;
+
+  double get _amountChartHeight {
+    final box = _amountChartKey.currentContext?.findRenderObject();
+    return box is RenderBox && box.hasSize ? box.size.height : UtxoSummaryChart.estimatedHeight;
+  }
 
   bool _isSnappingHeader = false;
   bool _isSwitchingPrimaryTab = false;
@@ -175,7 +181,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
 
   double _scrollOffsetForBucket(int bucketIdx, ScrollPosition pos) {
     final filterBarH = _effectiveFilterBarHeight;
-    final listStart = UtxoSummaryChart.estimatedHeight + filterBarH;
+    final listStart = _amountChartHeight + filterBarH;
     final target = listStart + bucketIdx * _itemHeight - (pos.viewportDimension - filterBarH) / 2 + _itemHeight / 2;
     return target.clamp(pos.minScrollExtent, pos.maxScrollExtent);
   }
@@ -515,7 +521,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
             ),
             SliverToBoxAdapter(
               child: UtxoSummaryChart(
-                height: UtxoSummaryChart.estimatedHeight,
+                key: _amountChartKey,
                 buckets: _buckets,
                 totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
                 coinCount: viewModel.utxoList.length,
@@ -1110,10 +1116,11 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
     final maxExtent = pos.maxScrollExtent;
     final pixels = pos.pixels;
     final filterBarH = _effectiveFilterBarHeight;
-    final listStart = UtxoSummaryChart.estimatedHeight + filterBarH;
+    final chartHeight = _amountChartHeight;
+    final listStart = chartHeight + filterBarH;
     // 스티키 헤더가 앱바에 붙었을 때(pinned) 리스트 영역은 헤더 아래에서 시작
     final contentCenter =
-        pixels >= UtxoSummaryChart.estimatedHeight
+        pixels >= chartHeight
             ? pixels + filterBarH + (pos.viewportDimension - filterBarH) / 2
             : pixels + pos.viewportDimension / 2;
     final target =
