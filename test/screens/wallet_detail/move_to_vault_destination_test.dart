@@ -15,7 +15,7 @@ void main() {
       expect(resolveMoveToVaultDestination(1, count), MoveToVaultDestination.selectWatchOnlyWallet);
     }
   });
-  test('positive balance with exactly one watch-only wallet opens send', () {
-    expect(resolveMoveToVaultDestination(1, 1), MoveToVaultDestination.send);
+  test('positive balance with exactly one watch-only wallet shows the selection sheet', () {
+    expect(resolveMoveToVaultDestination(1, 1), MoveToVaultDestination.selectWatchOnlyWallet);
   });
 }

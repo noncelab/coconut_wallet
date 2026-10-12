@@ -17,13 +17,12 @@ import 'package:flutter_svg/svg.dart';
 
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 
-enum MoveToVaultDestination { noBalance, noWatchOnlyWallet, selectWatchOnlyWallet, send }
+enum MoveToVaultDestination { noBalance, noWatchOnlyWallet, selectWatchOnlyWallet }
 
 MoveToVaultDestination resolveMoveToVaultDestination(int balance, int watchOnlyWalletCount) {
   if (balance <= 0) return MoveToVaultDestination.noBalance;
   if (watchOnlyWalletCount == 0) return MoveToVaultDestination.noWatchOnlyWallet;
-  if (watchOnlyWalletCount >= 2) return MoveToVaultDestination.selectWatchOnlyWallet;
-  return MoveToVaultDestination.send;
+  return MoveToVaultDestination.selectWatchOnlyWallet;
 }
 
 class ShowVaultNoBalanceBottomSheet extends StatelessWidget {

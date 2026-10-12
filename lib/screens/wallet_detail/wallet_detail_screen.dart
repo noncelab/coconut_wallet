@@ -695,11 +695,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
     final watchOnlyWallets =
         context.read<WalletProvider>().walletItemList.where((wallet) => !wallet.hasLocalKey).toList();
     final destination = resolveMoveToVaultDestination(_viewModel.balance, watchOnlyWallets.length);
-    if (destination == MoveToVaultDestination.send) {
-      _openSendToVault(watchOnlyWallets.single.id);
-      return;
-    }
-
     if (destination == MoveToVaultDestination.selectWatchOnlyWallet) {
       final receivingVaultWalletId = await CommonBottomSheets.showCustomHeightBottomSheet<int>(
         context: context,
@@ -724,7 +719,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
         walletId: widget.id,
         watchOnlyWallets: watchOnlyWallets,
       ),
-      MoveToVaultDestination.send => throw StateError('Send destination already handled'),
     };
     final sheetContent = SafeArea(
       top: false,
@@ -740,7 +734,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
         MoveToVaultDestination.noBalance => AnalyticsScreenNames.walletDetailMoveToVaultNoBalanceSheet,
         MoveToVaultDestination.noWatchOnlyWallet => AnalyticsScreenNames.walletDetailMoveToVaultNoWatchOnlyWalletSheet,
         MoveToVaultDestination.selectWatchOnlyWallet => AnalyticsScreenNames.walletDetailMoveToVaultSelectWalletSheet,
-        MoveToVaultDestination.send => throw StateError('Send destination already handled'),
       },
       showCloseButton: true,
       showDragHandle: destination != MoveToVaultDestination.selectWatchOnlyWallet,
