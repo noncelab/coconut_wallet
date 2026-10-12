@@ -211,7 +211,8 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                               CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
                                 screenName: AnalyticsScreenNames.appSettingsThemeSheet,
-                                heightRatio: 0.4,
+                                heightRatio:
+                                    context.read<PreferenceProvider>().shouldShowOpenStoreIntroCard ? 0.7 : 0.4,
                                 child: const ThemeBottomSheet(),
                               );
                             },

@@ -178,7 +178,12 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
               if (_swipedVariant != null) setState(() => _swipedVariant = null);
             },
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+              padding: EdgeInsets.fromLTRB(
+                Sizes.size16,
+                0,
+                Sizes.size16,
+                MediaQuery.paddingOf(context).bottom + Sizes.size16,
+              ),
               children: [
                 const SizedBox(height: Sizes.size8),
                 _buildOpenStoreIntroCard(context, provider.shouldShowOpenStoreIntroCard),
