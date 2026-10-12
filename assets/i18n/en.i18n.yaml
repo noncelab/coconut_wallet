@@ -759,6 +759,7 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  vault_transfer_description: "Send bitcoin from your hot wallet to a hardware wallet address.\nManage your private keys on a separate device and check your balance in the app."
   utxo_auto_selection: "UTXO Auto-Select"
   select_wallet: "Select Wallet"
   n_utxos(param=count):

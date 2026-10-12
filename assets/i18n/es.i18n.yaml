@@ -759,6 +759,7 @@ broadcasting_complete_screen:
 
 #send screen start ----
 send_screen:
+  vault_transfer_description: "Envía bitcoin de tu billetera caliente a una dirección de billetera de hardware.\nGestiona las claves privadas en un dispositivo separado y consulta el saldo en la aplicación."
   utxo_auto_selection: "Seleccionar UTXO"
   select_wallet: "Seleccionar billetera"
   n_utxos(param=count):

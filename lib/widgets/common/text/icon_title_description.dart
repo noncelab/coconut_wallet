@@ -7,8 +7,15 @@ class IconTitleDescription extends StatelessWidget {
   final String svgIconPath;
   final String title;
   final String description;
+  final Color? iconColor;
 
-  const IconTitleDescription({super.key, required this.svgIconPath, required this.title, required this.description});
+  const IconTitleDescription({
+    super.key,
+    required this.svgIconPath,
+    required this.title,
+    required this.description,
+    this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +42,13 @@ class IconTitleDescription extends StatelessWidget {
               width: iconSize,
               height: firstLineHeight,
               child: Center(
-                child: SvgPicture.asset(svgIconPath, width: iconSize, height: iconSize, fit: BoxFit.contain),
+                child: SvgPicture.asset(
+                  svgIconPath,
+                  width: iconSize,
+                  height: iconSize,
+                  fit: BoxFit.contain,
+                  colorFilter: iconColor != null ? ColorFilter.mode(iconColor!, BlendMode.srcIn) : null,
+                ),
               ),
             ),
             const SizedBox(width: iconTextGap),

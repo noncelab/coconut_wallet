@@ -757,6 +757,7 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  vault_transfer_description: "ホットウォレットのビットコインをハードウェアウォレットのアドレスへ送ります。\n秘密鍵は別のデバイスで管理し、残高はアプリで確認できます。"
   utxo_auto_selection: "UTXO自動選択"
   select_wallet: "ウォレット選択"
   n_utxos(param=count):

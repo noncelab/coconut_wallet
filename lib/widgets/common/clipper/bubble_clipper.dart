@@ -1,5 +1,33 @@
 import 'package:flutter/material.dart';
 
+class CenterTriangleBubbleClipper extends CustomClipper<Path> {
+  final double? arrowPosition;
+
+  CenterTriangleBubbleClipper({this.arrowPosition});
+
+  @override
+  Path getClip(Size size) {
+    final center = (arrowPosition ?? size.width / 2).clamp(24.0, size.width - 24.0);
+    return Path()
+      ..moveTo(15, 15)
+      ..lineTo(center - 9, 15)
+      ..lineTo(center, 5)
+      ..lineTo(center + 9, 15)
+      ..lineTo(size.width - 15, 15)
+      ..quadraticBezierTo(size.width, 15, size.width, 30)
+      ..lineTo(size.width, size.height - 15)
+      ..quadraticBezierTo(size.width, size.height, size.width - 15, size.height)
+      ..lineTo(15, size.height)
+      ..quadraticBezierTo(0, size.height, 0, size.height - 15)
+      ..lineTo(0, 30)
+      ..quadraticBezierTo(0, 15, 15, 15)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CenterTriangleBubbleClipper oldClipper) => oldClipper.arrowPosition != arrowPosition;
+}
+
 class RightTriangleBubbleClipper extends CustomClipper<Path> {
   final double arrowOffset;
 

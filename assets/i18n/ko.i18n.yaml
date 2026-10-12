@@ -758,6 +758,7 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  vault_transfer_description: "핫월렛의 비트코인을 하드월렛 주소로 보냅니다.\n개인 키는 별도 기기에서 관리하고, 잔액은 앱에서 확인할 수 있어요."
   utxo_auto_selection: "UTXO 자동 선택"
   select_wallet: "지갑 선택"
   n_utxos(param=count):

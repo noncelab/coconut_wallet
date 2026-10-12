@@ -758,6 +758,7 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  vault_transfer_description: "Sende Bitcoin aus deiner Hot Wallet an eine Hardware-Wallet-Adresse.\nVerwalte deine privaten Schlüssel auf einem separaten Gerät und prüfe dein Guthaben in der App."
   utxo_auto_selection: "UTXO-Autoauswahl"
   select_wallet: "Wallet auswählen"
   n_utxos(param=count):

@@ -117,6 +117,35 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   final GlobalKey _addressInputFieldKey = GlobalKey();
   double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
 
+  final LayerLink _vaultInfoLink = LayerLink();
+  final GlobalKey _vaultInfoLabelKey = GlobalKey();
+  final GlobalKey _vaultInfoIconKey = GlobalKey();
+  double? _vaultInfoArrowPosition;
+  Timer? _vaultInfoTimer;
+  bool _isVaultInfoVisible = false;
+
+  void _hideVaultInfo() {
+    _vaultInfoTimer?.cancel();
+    if (_isVaultInfoVisible && mounted) setState(() => _isVaultInfoVisible = false);
+  }
+
+  void _toggleVaultInfo() {
+    if (_isVaultInfoVisible) {
+      _hideVaultInfo();
+      return;
+    }
+    final labelBox = _vaultInfoLabelKey.currentContext?.findRenderObject() as RenderBox?;
+    final iconBox = _vaultInfoIconKey.currentContext?.findRenderObject() as RenderBox?;
+    if (labelBox == null || iconBox == null) return;
+    final iconCenter = iconBox.localToGlobal(Offset(iconBox.size.width / 2, iconBox.size.height));
+    setState(() {
+      _vaultInfoArrowPosition = labelBox.globalToLocal(iconCenter).dx;
+      _isVaultInfoVisible = true;
+    });
+    _vaultInfoTimer?.cancel();
+    _vaultInfoTimer = Timer(const Duration(seconds: 5), _hideVaultInfo);
+  }
+
   bool _isDropdownMenuVisible = false;
   bool _hasRetriedRecommendedFees = false;
   bool _isHotWalletSigning = false;
@@ -128,7 +157,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   // 스크롤 범위 연산에 사용하는 값들
   final double kCoconutAppbarHeight = 60;
-  final double kPageViewHeight = 226;
+  // 삭제 버튼이 없는 금고 보내기에서는 하단 예약 공간을 20px 줄입니다.
+  double get kPageViewHeight => widget.isMoveToVault && !_viewModel.isBatchMode ? 206 : 226;
   final double kAddressBoardPosition = 186;
   final double kTooltipHeight = 43;
   final double kTooltipPadding = 5;
@@ -358,6 +388,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _vaultInfoTimer?.cancel();
     _ownAddressCheckTimer?.cancel();
     _hotWalletSignatureController.dispose();
 
@@ -501,6 +532,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           ),
           body: GestureDetector(
             onTap: _clearFocus,
+            onTapDown: (_) => _hideVaultInfo(),
             behavior: HitTestBehavior.translucent,
             child: SizedBox(
               height: MediaQuery.sizeOf(context).height,
@@ -515,24 +547,30 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         children: [
                           SingleChildScrollView(
                             controller: _screenScrollController,
-                            child: Selector<SendViewModel, (bool, bool)>(
+                            child: Selector<SendViewModel, (bool, bool, bool)>(
                               selector:
                                   (_, viewModel) => (
                                     viewModel.showAddressBoard,
                                     viewModel.currentUnit.isBasedOnSatoshi,
+                                    viewModel.isBatchMode,
                                   ),
                               builder: (context, data, child) {
                                 return SizedBox(height: _getScrollableHeight(usableHeight), child: child);
                               },
-                              child: Stack(
-                                children: [
-                                  _buildInvisibleAmountField(),
-                                  _buildCounter(context),
-                                  _buildPageView(context),
-                                  _buildBoard(context),
-                                  if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
-                                    _buildKeyboardToolbar(context),
-                                ],
+                              child: Selector<SendViewModel, bool>(
+                                selector: (_, viewModel) => viewModel.isBatchMode,
+                                builder:
+                                    (context, isBatchMode, child) => Stack(
+                                      children: [
+                                        _buildInvisibleAmountField(),
+                                        _buildCounter(context),
+                                        _buildPageView(context),
+                                        _buildBoard(context),
+                                        if (widget.isMoveToVault) _buildVaultInfoLabel(context),
+                                        if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
+                                          _buildKeyboardToolbar(context),
+                                      ],
+                                    ),
                               ),
                             ),
                           ),
@@ -559,6 +597,35 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       ),
                     ),
                   ),
+                  if (widget.isMoveToVault && _isVaultInfoVisible)
+                    Positioned(
+                      left: 16,
+                      top: 0,
+                      width: MediaQuery.sizeOf(context).width - 16,
+                      child: CompositedTransformFollower(
+                        link: _vaultInfoLink,
+                        showWhenUnlinked: false,
+                        targetAnchor: Alignment.bottomRight,
+                        followerAnchor: Alignment.topRight,
+                        offset: const Offset(16, 0),
+                        child: CoconutToolTip(
+                          width: MediaQuery.sizeOf(context).width - 16,
+                          bubbleArrowPosition: _vaultInfoArrowPosition,
+                          tooltipType: CoconutTooltipType.placement,
+                          backgroundColor: context.coconutColors.popoverBackground,
+                          isPlacementTooltipVisible: true,
+                          onTapRemove: _hideVaultInfo,
+                          richText: RichText(
+                            text: TextSpan(
+                              text: t.send_screen.vault_transfer_description,
+                              style: CoconutTypography.body3_12
+                                  .setColor(context.coconutColors.popoverText)
+                                  .copyWith(height: 1.3),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   if (_hotWalletSigningStage == _SendHotWalletSigningStage.idle) _buildFinalButton(context),
                   if (_hotWalletSigningStage != _SendHotWalletSigningStage.idle) _buildHotWalletSigningOverlay(),
                 ],
@@ -1663,6 +1730,40 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return Text(label, style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText));
   }
 
+  Widget _buildVaultInfoLabel(BuildContext context) {
+    return Positioned(
+      top: 4,
+      left: 16,
+      right: 16,
+      child: CompositedTransformTarget(
+        key: _vaultInfoLabelKey,
+        link: _vaultInfoLink,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _toggleVaultInfo,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                t.wallet_detail_screen.move_to_vault,
+                style: CoconutTypography.body3_12_Bold.setColor(context.coconutColors.secondaryText),
+              ),
+              const SizedBox(width: 2),
+              SvgPicture.asset(
+                CommonStateIconPath.circleInfo,
+                key: _vaultInfoIconKey,
+                width: 16,
+                height: 16,
+                colorFilter: ColorFilter.mode(context.coconutColors.secondaryText, BlendMode.srcIn),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPageView(BuildContext context) {
     return Listener(
       behavior: HitTestBehavior.translucent,
@@ -1674,6 +1775,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         }
       },
       onPointerMove: (_) {
+        _hideVaultInfo();
         if (_isLeftDragGuideViewVisible) {
           setState(() {
             _isLeftDragGuideViewVisible = false;
@@ -1756,7 +1858,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Widget _buildAddRecipientCard() {
     return Padding(
-      padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 25),
+      // 줄어든 페이지 높이는 하단 여백에서 빼서 버튼 높이는 동일하게 유지합니다.
+      padding: EdgeInsets.only(
+        top: 40,
+        left: 16,
+        right: 16,
+        bottom: widget.isMoveToVault && !_viewModel.isBatchMode ? 5 : 25,
+      ),
       child: ShrinkAnimationButton(
         defaultColor: context.coconutColors.surface,
         onPressed: () {
@@ -2077,7 +2185,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           return const SizedBox();
         }
         return Positioned(
-          right: 16,
+          left: 16,
+          top: widget.isMoveToVault ? 4 : null,
           child: Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -2475,7 +2584,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           left: 16,
           right: 16,
           top: !showAddressBoard ? kPageViewHeight : _addressInputFieldBottomDy,
-          child: !showAddressBoard ? _buildFeeBoard(context) : _buildAddressBoard(context),
+          child: !showAddressBoard ? Column(children: [_buildFeeBoard(context)]) : _buildAddressBoard(context),
         );
       },
     );
