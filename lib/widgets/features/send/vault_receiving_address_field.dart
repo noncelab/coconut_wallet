@@ -72,6 +72,7 @@ class _VaultReceivingAddressFieldState extends State<VaultReceivingAddressField>
             focusNode: _focusNode,
             scrollController: _scrollController,
             scrollPhysics: const ClampingScrollPhysics(),
+            showScrollFades: true,
             readOnly: true,
             enableInteractiveSelection: false,
             onChanged: (_) {},

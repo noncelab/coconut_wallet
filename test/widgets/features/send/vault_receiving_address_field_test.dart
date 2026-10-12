@@ -60,6 +60,25 @@ Future<void> _expectUnshadedMargins(WidgetTester tester, CoconutThemeVariant var
   });
 }
 
+void _expectFades(WidgetTester tester, CoconutThemeVariant variant, List<Alignment> edges) {
+  final gradients =
+      tester
+          .widgetList<DecoratedBox>(
+            find.descendant(of: find.byType(VaultReceivingAddressField), matching: find.byType(DecoratedBox)),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .map((decoration) => decoration.gradient)
+          .whereType<LinearGradient>()
+          .toList();
+  expect(gradients.map((gradient) => gradient.end), unorderedEquals(edges));
+  final background = resolveCoconutThemeExtension(variant: variant).colors.background;
+  for (final gradient in gradients) {
+    expect(gradient.colors.last, background);
+    expect(gradient.colors.first, background.withValues(alpha: 0));
+  }
+}
+
 void main() {
   tearDown(() => buildCoconutThemeData());
 
@@ -81,6 +100,7 @@ void main() {
           final editableRect = tester.getRect(find.byType(EditableText));
           expect(editableRect.contains(tester.getCenter(field)), isTrue, reason: 'Editable area: $editableRect');
           await _expectUnshadedMargins(tester, variant);
+          _expectFades(tester, variant, [Alignment.centerRight]);
 
           await tester.drag(field, const Offset(-80, 0));
           await tester.pumpAndSettle();
@@ -88,12 +108,14 @@ void main() {
           expect(scroll.offset, lessThan(scroll.position.maxScrollExtent));
           expect(taps, 0);
           await _expectUnshadedMargins(tester, variant);
+          _expectFades(tester, variant, [Alignment.centerLeft, Alignment.centerRight]);
 
           await tester.drag(field, const Offset(-2000, 0));
           await tester.pumpAndSettle();
           expect(scroll.offset, closeTo(scroll.position.maxScrollExtent, 0.1));
           expect(taps, 0);
           await _expectUnshadedMargins(tester, variant);
+          _expectFades(tester, variant, [Alignment.centerLeft]);
 
           await tester.tap(field);
           await tester.pump();
@@ -143,6 +165,7 @@ void main() {
         );
         expect(editable().controller.text, nextAddress);
         expect(scroll.offset, 0);
+        _expectFades(tester, CoconutThemeVariant.coconutTheme, [Alignment.centerRight]);
         await _pumpField(
           tester,
           platform: platform,
@@ -152,6 +175,7 @@ void main() {
           onTap: selectAddress,
         );
         expect(scroll.position.maxScrollExtent, 0);
+        _expectFades(tester, CoconutThemeVariant.coconutTheme, []);
 
         final semantics = tester.ensureSemantics();
         final node = tester.getSemantics(find.bySemanticsLabel(nextAddress));
