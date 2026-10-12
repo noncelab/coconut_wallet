@@ -3,6 +3,7 @@ class AnalyticsScreenNames {
   static const String splash = 'splash';
   static const String pinCheck = 'pin-check';
   static const String walletHome = 'wallet-home';
+  static const String allFeatures = 'all-features';
 
   // CCOS 오픈 스토어 인트로 내부 화면
   static const String ccosOpenStoreIntro = 'ccos-open-store-intro';
@@ -55,6 +56,9 @@ class AnalyticsScreenNames {
   static const String splitUtxoSelectMethodSheet = 'split-utxo-select-method-sheet';
   static const String receiveAddressSelectWalletSheet = 'receive-address-select-wallet-sheet';
   static const String homeShortcutSelectWalletSheet = 'home-shortcut-select-wallet-sheet';
+  static const String walletAddMenuSheet = 'wallet-add-menu-sheet';
+  static const String walletAddWatchOnlySourcesSheet = 'wallet-add-watch-only-sources-sheet';
+  static const String walletAddHotWalletActionsSheet = 'wallet-add-hot-wallet-actions-sheet';
   static const String receiveAddressSetAmountSheet = 'receive-address-set-amount-sheet';
   static const String qrDetailSetAmountSheet = 'qr-detail-set-amount-sheet';
   static const String walletDetailSelectUtxoSheet = 'wallet-detail-select-utxo-sheet';

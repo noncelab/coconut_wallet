@@ -63,8 +63,8 @@ home_connection_status:
 tx_list: "Transaktionen"
 utxo_list: "UTXO-Liste"
 wallet_id: "Wallet-ID"
-tag_manage: "Tag-Verwaltung"
-tag_manage_label: "Tag-Verwaltung"
+tag_manage: "Tags verwalten"
+tag_manage_label: "Tags verwalten"
 extended_public_key: "Erweiterter öffentlicher Schlüssel"
 tx_memo: "Tx-Memo"
 tx_id: "Tx-ID"
@@ -288,7 +288,7 @@ feature_search:
   utxo_overview: "Coins, Übersicht, UTXO-Analyse, Coin-Verteilung, Einfrieren, Wechselgeld"
   utxo_organizer: "Konsolidieren, Zusammenführen, Aufteilen"
   addresses: "Adressliste, Alle Adressen"
-  utxo_tags: "Tag, Label, Tag hinzufügen, Tag-Farbe"
+  utxo_tags: "Tag, Label, Tag hinzufügen, Tag-Farbe, Tag-Verwaltung"
   app_settings_pin: "Passwort, Sperre, App-Sperre"
   app_settings_biometrics: "Fingerabdruck, Gesichtserkennung"
   app_settings_pin_change: "Passwort ändern"
@@ -457,7 +457,7 @@ feature_registry:
   utxo_organizer: "UTXOs ordnen"
   utxo_organizer_short: "Ordnen"
   addresses: "Adressen"
-  utxo_tags: "Tag-Verwaltung"
+  utxo_tags: "Tags verwalten"
 
 transaction_draft:
   title: "Temporäre Transaktion"
@@ -1432,7 +1432,7 @@ wallet_info_screen:
   mnemonic_backup: "Mnemonik-Backup"
   all_addresses: "Alle Adressen"
   extended_public_key: "Erweiterter öffentlicher Schlüssel"
-  tag_management: "Tag-Verwaltung"
+  tag_management: "Tags verwalten"
   resync_label: "Wallet neu synchronisieren"
   tooltip:
     mfp_placeholder_description: "Dies ist eine mit erweitertem öffentlichen Schlüssel hinzugefügte Wallet\nund der Master-Fingerabdruck wurde nicht eingegeben\ndaher wird er als 00000000 angezeigt."

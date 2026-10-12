@@ -4,12 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 VoidCallback? _showHome;
 
-Future<void> _pump(WidgetTester tester) {
+Future<void> _pump(WidgetTester tester, {ValueChanged<int>? onPageChanged}) {
   return tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
         body: HomeCubePager(
           home: const ColoredBox(color: Colors.white, child: SizedBox.expand(child: Text('home'))),
+          onPageChanged: onPageChanged,
           allFeaturesBuilder: (showHome) {
             _showHome = showHome;
             return const ColoredBox(color: Colors.white, child: SizedBox.expand(child: Text('all features')));
@@ -31,7 +32,8 @@ void main() {
   });
 
   testWidgets('swiping left shows all features and swiping right returns home', (tester) async {
-    await _pump(tester);
+    final changedPages = <int>[];
+    await _pump(tester, onPageChanged: changedPages.add);
 
     await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
     await tester.pumpAndSettle();
@@ -40,6 +42,7 @@ void main() {
     await tester.fling(find.byType(PageView), const Offset(400, 0), 1000);
     await tester.pumpAndSettle();
     expect(_page(tester), 0);
+    expect(changedPages, [1, 0]);
   });
 
   testWidgets('the faces rotate while dragging', (tester) async {

@@ -43,7 +43,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ValueChanged<int>? onPageChanged;
+
+  const HomeScreen({super.key, this.onPageChanged});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -256,6 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   home: child!,
                   allFeaturesBuilder: _buildAllFeatures,
                   onPageChanged: (page) {
+                    widget.onPageChanged?.call(page);
                     if (page == 1) _viewModel.dismissAllFeaturesHint();
                   },
                 ),

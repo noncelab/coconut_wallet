@@ -42,6 +42,7 @@ class CoconutWalletApp extends StatefulWidget {
 class _CoconutWalletAppState extends State<CoconutWalletApp> {
   /// 0 = splash, 1 = main, 2 = pin check
   AppEntryFlow _appEntryFlow = AppEntryFlow.splash;
+  int _homePage = 0;
 
   final RealmManager _realmManager = RealmManager();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
@@ -77,7 +78,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
       return switch (_appEntryFlow) {
         AppEntryFlow.splash => AnalyticsScreenNames.splash,
         AppEntryFlow.pinCheck => AnalyticsScreenNames.pinCheck,
-        AppEntryFlow.main => AnalyticsScreenNames.walletHome,
+        AppEntryFlow.main =>
+          kUseNewHome && _homePage == 1 ? AnalyticsScreenNames.allFeatures : AnalyticsScreenNames.walletHome,
       };
     }
     return settings.name;
@@ -91,10 +93,17 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     await SharedPrefsRepository().addWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate(walletIds);
   }
 
+  void _onHomePageChanged(int page) {
+    if (_homePage == page) return;
+    _homePage = page;
+    _analyticsScreenObserver.refreshScreenName();
+  }
+
   /// startSplash 완료 콜백
   void _completeSplash(AppEntryFlow appEntryFlow) {
     setState(() {
       _appEntryFlow = appEntryFlow;
+      _homePage = 0;
     });
     _analyticsScreenObserver.refreshScreenName();
   }
@@ -143,13 +152,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   _appEntryFlow == AppEntryFlow.splash
                       ? StartScreen(onComplete: _completeSplash)
                       : _appEntryFlow == AppEntryFlow.main
-                      ? (kUseNewHome ? const HomeScreen() : const WalletHomeScreen())
+                      ? (kUseNewHome ? HomeScreen(onPageChanged: _onHomePageChanged) : const WalletHomeScreen())
                       : CustomLoadingOverlay(
                         child: PinCheckScreen(
                           appEntrance: true,
                           onComplete: () {
                             setState(() {
                               _appEntryFlow = AppEntryFlow.main;
+                              _homePage = 0;
                             });
                             _analyticsScreenObserver.refreshScreenName();
                           },

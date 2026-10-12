@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -40,6 +41,13 @@ class WalletAddDialog extends StatelessWidget {
     }
     await showGeneralDialog<void>(
       context: context,
+      routeSettings: RouteSettings(
+        name: switch (mode) {
+          WalletAddDialogMode.walletType => AnalyticsScreenNames.walletAddMenuSheet,
+          WalletAddDialogMode.watchOnlySource => AnalyticsScreenNames.walletAddWatchOnlySourcesSheet,
+          WalletAddDialogMode.hotWalletAction => AnalyticsScreenNames.walletAddHotWalletActionsSheet,
+        },
+      ),
       barrierDismissible: true,
       barrierLabel: 'Dismiss',
       barrierColor: context.coconutColors.surface.withValues(alpha: 0.5),

@@ -63,8 +63,8 @@ home_connection_status:
 tx_list: "Transactions"
 utxo_list: "UTXO List"
 wallet_id: "Wallet ID"
-tag_manage: "Tag Management"
-tag_manage_label: "Tag Management"
+tag_manage: "Manage Tags"
+tag_manage_label: "Manage Tags"
 extended_public_key: "Extended Public Key"
 tx_memo: "Tx Memo"
 tx_id: "Tx ID"
@@ -288,7 +288,7 @@ feature_search:
   utxo_overview: "coins, overview, UTXO analysis, coin distribution, freeze, change"
   utxo_organizer: "consolidation, merge, split"
   addresses: "address list, all addresses"
-  utxo_tags: "tag, label, add tag, tag color"
+  utxo_tags: "tag, label, add tag, tag color, tag management"
   app_settings_pin: "password, lock, app lock"
   app_settings_biometrics: "fingerprint, face recognition, biometrics"
   app_settings_pin_change: "change password"
@@ -457,7 +457,7 @@ feature_registry:
   utxo_organizer: "Organize UTXOs"
   utxo_organizer_short: "Organize"
   addresses: "Addresses"
-  utxo_tags: "Tag Management"
+  utxo_tags: "Manage Tags"
 
 transaction_draft:
   title: "Draft Transaction"
@@ -1493,7 +1493,7 @@ wallet_info_screen:
   mnemonic_backup: "Mnemonic Backup"
   all_addresses: "All Addresses"
   extended_public_key: "Extended Public Key"
-  tag_management: "Tag Management"
+  tag_management: "Manage Tags"
   resync_label: "Wallet Resync"
   tooltip:
     mfp_placeholder_description: "This is a wallet added with extended public key\nand the master fingerprint was not entered\nso it is displayed as 00000000."
