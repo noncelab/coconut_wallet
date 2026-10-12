@@ -526,7 +526,6 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                     final labelStyle = CoconutTypography.body2_14.setColor(context.coconutColors.primaryText);
                     const tilePadding = 14.0;
                     const checkSize = 16.0;
-                    const labelCheckSpacing = 8.0;
                     const labelIconSpacing = 12.0;
                     const iconSize = 32.0;
                     final tiles =
@@ -560,16 +559,18 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: Text(
+                                            _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
+                                            style: labelStyle,
+                                          ),
+                                        ),
+                                        const SizedBox(height: labelIconSpacing),
+                                        const Spacer(),
                                         Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Expanded(
-                                              child: Text(
-                                                _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
-                                                style: labelStyle,
-                                              ),
-                                            ),
-                                            const SizedBox(width: labelCheckSpacing),
                                             AnimatedContainer(
                                               duration: const Duration(milliseconds: 100),
                                               width: checkSize,
@@ -599,11 +600,13 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                                 ),
                                               ),
                                             ),
+                                            SvgPicture.asset(
+                                              widget['icon']!.toString(),
+                                              width: iconSize,
+                                              height: iconSize,
+                                            ),
                                           ],
                                         ),
-                                        const SizedBox(height: labelIconSpacing),
-                                        const Spacer(),
-                                        SvgPicture.asset(widget['icon']!.toString(), width: iconSize, height: iconSize),
                                       ],
                                     ),
                                   ),

@@ -9,6 +9,8 @@ import 'package:coconut_wallet/screens/settings/home_settings/wallet_home_edit_s
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -80,6 +82,11 @@ Future<_Preferences> _pump(WidgetTester tester, double width, double scale, AppL
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    final font = FontLoader('Pretendard')..addFont(rootBundle.load('assets/fonts/Pretendard-Regular.ttf'));
+    await font.load();
+  });
   for (final width in [320.0, 344.0, 414.0]) {
     for (final scale in [1.0, 1.6]) {
       for (final locale in [AppLocale.ko, AppLocale.en, AppLocale.de]) {
@@ -110,13 +117,22 @@ void main() {
                 );
             expect(icon, hasLength(1));
             final iconRect = tester.getRect(find.byWidget(icon.single.widget));
+            if (locale == AppLocale.ko && width >= 344) {
+              final paragraph = tester.renderObject<RenderParagraph>(title);
+              final lines =
+                  paragraph
+                      .getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: label.length))
+                      .map((box) => box.top)
+                      .toSet();
+              expect(lines.length, label == t.wallet_home_screen.edit.category.recent_transactions ? 2 : 1);
+            }
             final textRect = tester.getRect(title);
             final checkRect = tester.getRect(check);
             final tileRect = tester.getRect(tile);
-            expect(textRect.right, lessThanOrEqualTo(checkRect.left - 7.9));
+            expect(textRect.bottom, lessThan(checkRect.top));
             expect(textRect.top, greaterThanOrEqualTo(tileRect.top));
             expect(textRect.bottom, lessThan(iconRect.top));
-            expect(checkRect.bottom, lessThan(iconRect.top));
+            expect(checkRect.right, lessThan(iconRect.left));
             expect(iconRect.left, greaterThanOrEqualTo(tileRect.left));
             expect(iconRect.top, greaterThanOrEqualTo(tileRect.top));
             expect(iconRect.right, lessThanOrEqualTo(tileRect.right));
