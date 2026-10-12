@@ -252,7 +252,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
                                   ? t.send_confirm_screen.passphrase_input_title
                                   : t.sign
                               : t.next,
-                      isActive: !_isLocalSigning,
+                      isActive: viewModel.isTransactionReady && !_isLocalSigning,
                       onButtonClicked: () => _onButtonClicked(viewModel),
                     ),
                   ),
@@ -401,6 +401,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> with SingleTicker
   }
 
   Future<void> _onButtonClicked(SendConfirmViewModel viewModel) async {
+    if (!viewModel.isTransactionReady) return;
+
     if (viewModel.isHotWallet) {
       await _signHotWallet(viewModel);
       return;

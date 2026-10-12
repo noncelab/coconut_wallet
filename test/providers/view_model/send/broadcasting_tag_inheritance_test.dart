@@ -166,6 +166,7 @@ void main() {
 
   String targetId() => getUtxoId(viewModel.signedTx!.transactionHash, 0);
   final inputId = getUtxoId(_inputHash, 0);
+  final realmInputId = getRealmUtxoId(1, _inputHash, 0);
 
   test('normal broadcast persists input tags on a PSBT-owned output and clears only consumed links', () async {
     addTag('savings', inputId);
@@ -226,7 +227,7 @@ void main() {
     final previousOutput = getUtxoId(_previousHash, 1);
     addTag('savings', previousOutput);
     manager.realm.write(() {
-      final input = manager.realm.find<RealmUtxo>(inputId)!;
+      final input = manager.realm.find<RealmUtxo>(realmInputId)!;
       input.status = 'outgoing';
       input.spentByTransactionHash = _previousHash;
     });
@@ -242,7 +243,7 @@ void main() {
   test('confirmed predecessor output tags are not candidates for another transaction', () async {
     addTag('savings', getUtxoId(_previousHash, 1));
     manager.realm.write(() {
-      final input = manager.realm.find<RealmUtxo>(inputId)!;
+      final input = manager.realm.find<RealmUtxo>(realmInputId)!;
       input.status = 'outgoing';
       input.spentByTransactionHash = _previousHash;
     });
@@ -257,7 +258,7 @@ void main() {
     await viewModel.broadcast(inheritedTagIds: ['savings']);
     final originalHash = viewModel.signedTx!.transactionHash;
     manager.realm.write(() {
-      final input = manager.realm.find<RealmUtxo>(inputId)!;
+      final input = manager.realm.find<RealmUtxo>(realmInputId)!;
       input.status = 'outgoing';
       input.spentByTransactionHash = originalHash;
     });
@@ -273,7 +274,7 @@ void main() {
     final extraInputId = getUtxoId(extraHash, 3);
     addTag('salary', extraInputId);
     manager.realm.write(() {
-      manager.realm.find<RealmUtxo>(inputId)!.spentByTransactionHash = firstBumpHash;
+      manager.realm.find<RealmUtxo>(realmInputId)!.spentByTransactionHash = firstBumpHash;
       manager.realm.add(
         UtxoMock.createUnspentRealmUtxo(
           walletId: 1,
@@ -328,7 +329,7 @@ void main() {
     final siblingId = getUtxoId(_inputHash, 1);
     addTag('sibling', siblingId);
     manager.realm.write(() {
-      final input = manager.realm.find<RealmUtxo>(inputId)!;
+      final input = manager.realm.find<RealmUtxo>(realmInputId)!;
       input.status = 'incoming';
       input.blockHeight = 0;
     });
