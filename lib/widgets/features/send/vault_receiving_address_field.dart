@@ -25,6 +25,7 @@ class _VaultReceivingAddressFieldState extends State<VaultReceivingAddressField>
   final _scrollController = ScrollController();
   bool _canScrollLeft = false;
   bool _canScrollRight = false;
+  bool _isPressed = false;
 
   @override
   void initState() {
@@ -75,6 +76,9 @@ class _VaultReceivingAddressFieldState extends State<VaultReceivingAddressField>
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
       child: Container(
         height: 52,
         decoration: BoxDecoration(
@@ -101,7 +105,12 @@ class _VaultReceivingAddressFieldState extends State<VaultReceivingAddressField>
                       widget.address.isEmpty ? widget.placeholder : widget.address,
                       style: CoconutTypography.body2_14.copyWith(
                         height: 1,
-                        color: widget.address.isEmpty ? colors.inputPlaceholder : colors.primaryText,
+                        color:
+                            _isPressed
+                                ? colors.secondaryText
+                                : widget.address.isEmpty
+                                ? colors.inputPlaceholder
+                                : colors.primaryText,
                       ),
                       maxLines: 1,
                     ),
@@ -129,7 +138,7 @@ class _VaultReceivingAddressFieldState extends State<VaultReceivingAddressField>
         child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.black.withValues(alpha: 0.65), Colors.transparent],
+              colors: [context.coconutColors.background, context.coconutColors.background.withValues(alpha: 0)],
               begin: left ? Alignment.centerLeft : Alignment.centerRight,
               end: left ? Alignment.centerRight : Alignment.centerLeft,
             ),
