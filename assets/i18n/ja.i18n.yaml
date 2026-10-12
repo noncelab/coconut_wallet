@@ -784,6 +784,7 @@ settings_screen:
   change_password: "パスワード変更"
   fiat: "法定通貨"
   language: "言語"
+  number_format: "数値形式"
   utxo_manual_selection: "UTXO 数手動選択"
   utxo_manual_selection_description: "送金に使用するUTXOを手動で選択します"
   import_labels: "メモをインポート"
@@ -1510,6 +1511,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+
+number_format_bottom_sheet:
+  title: "数値形式"
 
 estimated_fee_bottom_sheet:
     title: "予想手数料"

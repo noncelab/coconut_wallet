@@ -31,6 +31,7 @@ class AnalyticsScreenNames {
   static const String appSettingsUnitSheet = 'app-settings-unit-sheet';
   static const String appSettingsFiatSheet = 'app-settings-fiat-sheet';
   static const String appSettingsLanguageSheet = 'app-settings-language-sheet';
+  static const String appSettingsNumberFormatSheet = 'app-settings-number-format-sheet';
   static const String appSettingsThemeSheet = 'app-settings-theme-sheet';
   static const String appSettingsPinSetSheet = 'app-settings-pin-set-sheet';
   static const String appSettingsPinCheckSheet = 'app-settings-pin-check-sheet';

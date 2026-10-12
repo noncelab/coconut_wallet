@@ -45,6 +45,9 @@ class SharedPrefKeys {
   /// Language
   static const String kLanguage = 'LANGUAGE';
 
+  /// Number format preset
+  static const String kNumberFormatPreset = 'NUMBER_FORMAT_PRESET';
+
   /// Fiat
   static const String kSelectedFiat = 'SELECTED_FIAT';
 

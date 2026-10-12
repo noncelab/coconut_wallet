@@ -184,7 +184,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             _viewModel.currentUnit.isBasedOnSatoshi
                 ? sats.toString()
                 : UnitUtil.convertSatoshiToBitcoin(sats).toString();
-        _amountController.text = amountText;
+        _amountController.text = _formatDecimalTextForDisplay(amountText);
         _viewModel.setAmountText(sats, 0);
       });
     }
@@ -216,7 +216,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
     _feeRateFocusNode.addListener(
       () => setState(() {
-        _amountController.text = _removeTrailingDot(_amountController.text);
+        _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
       }),
     );
     _amountController.addListener(_amountTextListener);
@@ -391,7 +391,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   void _setDropdownMenuVisiblility(bool isVisible) {
     if (isVisible) {
       _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
-      _amountController.text = _removeTrailingDot(_amountController.text);
+      _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
       FocusManager.instance.primaryFocus?.unfocus();
 
       SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -674,7 +674,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             showCursor: false,
             enableInteractiveSelection: false,
             onEditingComplete: () {
-              _amountController.text = _removeTrailingDot(_amountController.text);
+              _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
               FocusScope.of(context).unfocus();
             },
             keyboardType: TextInputType.numberWithOptions(signed: false, decimal: allowDecimal),
@@ -1987,7 +1987,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             _viewModel.currentUnit.isBasedOnSatoshi
                 ? bip21Data.amount!.toString()
                 : UnitUtil.convertSatoshiToBitcoin(bip21Data.amount!).toString();
-        _amountController.text = amountText;
+        _amountController.text = _formatDecimalTextForDisplay(amountText);
         _viewModel.setAmountText(bip21Data.amount!, index);
       }
       return;
@@ -2029,8 +2029,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   void _onAmountTextUpdate(String text) {
     // 단위변환시 문자열 길이가 달라지므로 viewModel text와 길이를 맞춘다.
-    _previousAmountText = text;
-    _amountController.text = text;
+    // viewModel의 amount는 canonical 포맷('.' 소수점)이므로 display 포맷으로 변환한다.
+    final displayText = _formatDecimalTextForDisplay(text);
+    _previousAmountText = displayText;
+    _amountController.text = displayText;
   }
 
   void _amountTextListener() {
@@ -2044,16 +2046,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
     // 문자가 입력된 경우와 삭제된 경우를 인식한다. (문자열 중간에 입력/삭제 불가)
     // grouping separator(예: ',')가 포함되어 있으므로 제거 후 비교한다.
-    final groupingSep = NumberFormatConfig.instance.groupingSeparator;
-    String currentText = _amountController.text.replaceAll(groupingSep, '');
-    String previousText = _previousAmountText.replaceAll(groupingSep, '');
-    if (currentText.length > previousText.length) {
-      String lastInserted = currentText.substring(previousText.length);
-      _viewModel.onKeyTap(lastInserted);
-    } else if (currentText.length < previousText.length) {
-      _viewModel.onKeyTap('<');
+    final keyInput = resolveAmountKeyInput(_previousAmountText, _amountController.text);
+    if (keyInput != null) {
+      _viewModel.onKeyTap(keyInput);
       // 삭제 버튼을 꾹 누른 경우에 대한 처리
-      if (currentText.isEmpty) {
+      if (keyInput == '<' &&
+          _amountController.text.replaceAll(NumberFormatConfig.instance.groupingSeparator, '').isEmpty) {
         _viewModel.clearAmountText();
       }
     }
@@ -2085,7 +2083,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     focusNode.addListener(
       () => setState(() {
         _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
-        _amountController.text = _removeTrailingDot(_amountController.text);
+        _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
 
         final isOwn = controller.text.length >= 26 && _viewModel.isOwnAddress(controller.text);
         final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
@@ -2153,7 +2151,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   void _clearFocus() {
     _feeRateController.text = _removeTrailingDecimalSeparator(_feeRateController.text);
-    _amountController.text = _removeTrailingDot(_amountController.text);
+    _amountController.text = _removeTrailingDecimalSeparator(_amountController.text);
     FocusManager.instance.primaryFocus?.unfocus();
 
     // setState 변경은 빌드 완료 후 실행
@@ -2169,14 +2167,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     });
   }
 
-  /// 텍스트 끝의 소수점을 제거하는 함수
-  String _removeTrailingDot(String text) {
-    if (text.endsWith('.')) {
-      return text.substring(0, text.length - 1);
-    }
-    return text;
-  }
-
+  /// 텍스트 끝의 소수점 구분자를 제거하는 함수
   String _removeTrailingDecimalSeparator(String text) {
     final decimalSeparator = NumberFormatConfig.instance.decimalSeparator;
     if (text.endsWith(decimalSeparator) || text.endsWith('.')) {
@@ -2231,7 +2222,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     if (recipientListLength > 0) {
       final currentIndex = _viewModel.currentIndex;
       if (currentIndex < recipientListLength) {
-        final amount = _viewModel.recipientList[currentIndex].amount;
+        final amount = _formatDecimalTextForDisplay(_viewModel.recipientList[currentIndex].amount);
         if (_amountController.text != amount) {
           _amountController.removeListener(_amountTextListener);
           _amountController.text = amount;

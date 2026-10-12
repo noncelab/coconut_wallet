@@ -49,8 +49,12 @@ class FakeSendInfoProvider extends Fake implements SendInfoProvider {
 }
 
 class FakePreferenceProvider extends Fake implements PreferenceProvider {
+  final BitcoinUnit unit;
+
+  FakePreferenceProvider({this.unit = BitcoinUnit.sats});
+
   @override
-  BitcoinUnit get currentUnit => BitcoinUnit.sats;
+  BitcoinUnit get currentUnit => unit;
 
   @override
   void addListener(VoidCallback listener) {}
@@ -66,11 +70,11 @@ class FakeUtxoRepository extends Fake implements UtxoRepository {}
 class FakeWalletPreferencesRepository extends Fake implements WalletPreferencesRepository {}
 
 void main() {
-  SendViewModel createViewModel({required FakeWalletProvider walletProvider}) {
+  SendViewModel createViewModel({required FakeWalletProvider walletProvider, BitcoinUnit unit = BitcoinUnit.sats}) {
     return SendViewModel(
       walletProvider,
       FakeSendInfoProvider(),
-      FakePreferenceProvider(),
+      FakePreferenceProvider(unit: unit),
       FakeTransactionDraftRepository(),
       FakeUtxoRepository(),
       true,
@@ -179,6 +183,71 @@ void main() {
         ),
       );
       expect(viewModel.isOwnAddress(address), true);
+    });
+  });
+
+  group('onKeyTap', () {
+    // recipientList[0].amount는 항상 canonical 포맷('.' 소수점, 구분자 없음)으로 유지된다.
+    String amount(SendViewModel vm) => vm.recipientList[0].amount;
+
+    group('sats 단위', () {
+      test('숫자 입력이 이어지고 소수점은 무시된다', () {
+        final viewModel = createViewModel(walletProvider: FakeWalletProvider());
+        viewModel.onKeyTap('1');
+        viewModel.onKeyTap('2');
+        viewModel.onKeyTap('3');
+        expect(amount(viewModel), '123');
+        viewModel.onKeyTap('.');
+        expect(amount(viewModel), '123');
+      });
+
+      test("첫 입력이 '0'이고 그 후 숫자가 오면 0을 대체한다", () {
+        final viewModel = createViewModel(walletProvider: FakeWalletProvider());
+        viewModel.onKeyTap('0');
+        viewModel.onKeyTap('5');
+        expect(amount(viewModel), '5');
+      });
+
+      test("'<' 입력 시 마지막 문자를 삭제한다", () {
+        final viewModel = createViewModel(walletProvider: FakeWalletProvider());
+        viewModel.onKeyTap('1');
+        viewModel.onKeyTap('2');
+        viewModel.onKeyTap('<');
+        expect(amount(viewModel), '1');
+      });
+    });
+
+    group('btc 단위', () {
+      test("빈 상태에서 '.' 입력 시 '0.'이 된다", () {
+        final viewModel = createViewModel(walletProvider: FakeWalletProvider(), unit: BitcoinUnit.btc);
+        viewModel.onKeyTap('.');
+        expect(amount(viewModel), '0.');
+      });
+
+      test("',' 입력은 '.'으로 변환된다 (comma-decimal preset의 소수점)", () {
+        final viewModel = createViewModel(walletProvider: FakeWalletProvider(), unit: BitcoinUnit.btc);
+        viewModel.onKeyTap('1');
+        viewModel.onKeyTap(',');
+        viewModel.onKeyTap('5');
+        expect(amount(viewModel), '1.5');
+      });
+
+      test('소수부는 8자리까지만 허용된다', () {
+        final viewModel = createViewModel(walletProvider: FakeWalletProvider(), unit: BitcoinUnit.btc);
+        for (final c in ['0', '.', '1', '2', '3', '4', '5', '6', '7', '8']) {
+          viewModel.onKeyTap(c);
+        }
+        viewModel.onKeyTap('9');
+        expect(amount(viewModel), '0.12345678');
+      });
+
+      test('소수점은 하나만 입력할 수 있다', () {
+        final viewModel = createViewModel(walletProvider: FakeWalletProvider(), unit: BitcoinUnit.btc);
+        for (final c in ['1', '.', '5', '.', '2']) {
+          viewModel.onKeyTap(c);
+        }
+        expect(amount(viewModel), '1.52');
+      });
     });
   });
 }
