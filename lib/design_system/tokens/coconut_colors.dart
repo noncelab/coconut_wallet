@@ -29,6 +29,9 @@ const Color kCoconutTaprootChild = ds.CoconutColors.sky;
 
 @immutable
 class CoconutColors {
+  /// 코코넛 테마의 lagoon에 흰색을 약 20% 섞은 옅은 색상입니다.
+  static const Color lagoonLight = Color(0xFF8ED9EE);
+
   /// 코코넛 고유 메인넷 로고 그라디언트
   ///
   /// 브랜드 일관성을 위해 가능하면 [kCoconutMainnetLogoGradient]를 유지합니다.
@@ -223,9 +226,6 @@ class CoconutColors {
 
   /// 아이콘 탭 시 말풍선 형태로 표시되는 Popover 툴팁
   final Color popoverBackground;
-
-  /// 연한 Popover 배경. 전체 주소 화면의 Tooltip에서 CoconutTheme일 때만 기본 배경보다 밝게 표시한다.
-  final Color popoverBackgroundLight;
   final Color popoverText;
 
   /// 로딩 / 스켈레톤
@@ -414,7 +414,6 @@ class CoconutColors {
     required this.popupBackground,
     required this.dimOverlay,
     required this.popoverBackground,
-    required this.popoverBackgroundLight,
     required this.popoverText,
     required this.surfaceSkeletonBase,
     required this.surfaceSkeletonHighlight,
@@ -563,7 +562,6 @@ class CoconutColors {
       popupBackground: ds.CoconutColors.gray900,
       dimOverlay: ds.CoconutColors.black,
       popoverBackground: ds.CoconutColors.white,
-      popoverBackgroundLight: ds.CoconutColors.white,
       popoverText: ds.CoconutColors.gray900,
       surfaceSkeletonBase: ds.CoconutColors.gray850,
       surfaceSkeletonHighlight: ds.CoconutColors.gray750,
@@ -715,7 +713,6 @@ class CoconutColors {
       popupBackground: ds.CoconutColors.white,
       dimOverlay: const Color(0xFFEEEEEE),
       popoverBackground: ds.CoconutColors.gray850,
-      popoverBackgroundLight: ds.CoconutColors.gray850,
       popoverText: ds.CoconutColors.white,
       surfaceSkeletonBase: ds.CoconutColors.gray200,
       surfaceSkeletonHighlight: ds.CoconutColors.gray100,
@@ -783,6 +780,7 @@ class CoconutColors {
     const huskSoft = Color(0xFFDFC09A);
     const toast = Color(0xFFC18C55);
     const lagoon = Color(0xFF72CFEA);
+    const lagoonLight = Color(0xFF8ED9EE);
     const lagoonDeep = Color(0xFF4FA8B8);
     const seefoam = Color(0xFF8FD9C5);
     const palmGreen = Color(0xFF7FB96A);
@@ -882,9 +880,8 @@ class CoconutColors {
       tooltipBackground: dim,
       popupBackground: shell,
       dimOverlay: pulp.withValues(alpha: 0.92),
-      popoverBackground: huskDeep,
-      popoverBackgroundLight: const Color.fromARGB(255, 238, 150, 78),
-      popoverText: ds.CoconutColors.white,
+      popoverBackground: lagoonLight,
+      popoverText: huskDeep,
       surfaceSkeletonBase: cream,
       surfaceSkeletonHighlight: shell,
       loadingIndicatorColor: huskDeep,
